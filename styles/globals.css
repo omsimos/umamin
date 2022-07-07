@@ -1,19 +1,25 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@400;500;600;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 .font-inter {
-  font-family: "Inter", sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .font-syne {
-  font-family: "Syne", sans-serif;
+  font-family: 'Syne', sans-serif;
 }
 
 @layer base {
   body {
     @apply font-inter bg-secondary-200 text-white;
+  }
+}
+
+@layer components {
+  .primary-btn {
+    @apply rounded bg-primary-200 px-6 py-2 text-sm font-medium md:text-base;
   }
 }
