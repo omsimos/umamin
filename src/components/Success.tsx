@@ -9,7 +9,7 @@ export const Success = () => {
   return (
     <section className='mx-auto flex flex-col items-center sm:w-[500px]'>
       <h1 className='h1-text'>Success!</h1>
-      <div className='card relative mt-8 w-full p-8 [&>p>span]:text-primary-100'>
+      <div className='card relative mt-8 w-full p-6 [&>p>span]:text-primary-100'>
         <p>
           Username: <span>johndoe</span>
         </p>

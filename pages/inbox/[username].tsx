@@ -1,11 +1,13 @@
 import React, { useId } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/router';
 import { IoIosCopy } from 'react-icons/io';
+import { useQuery, dehydrate } from 'react-query';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
-const Inbox = () => {
-  const { query } = useRouter();
+import { queryClient, getUser } from '@/api';
+
+const Inbox = ({ username }: { username: string }) => {
+  const { data } = useQuery('user', () => getUser({ username }));
 
   return (
     <section className='mx-auto flex flex-col items-center pb-24 sm:w-[500px]'>
@@ -13,7 +15,7 @@ const Inbox = () => {
       <div className='mt-8 flex w-full gap-3'>
         <div className='card flex w-full items-center gap-3 px-4 py-3'>
           <IoIosCopy className='text-primary-100' />
-          <p>umamin.link/to/{query.username}</p>
+          <p>umamin.link/to/{data?.user.username}</p>
         </div>
 
         <button type='button' className='secondary-btn flex-none'>
@@ -48,5 +50,22 @@ const Inbox = () => {
     </section>
   );
 };
+
+export async function getServerSideProps({
+  params,
+}: {
+  params: { username: string };
+}) {
+  await queryClient.prefetchQuery('user', () =>
+    getUser({ username: params.username })
+  );
+
+  return {
+    props: {
+      username: params.username,
+      dehydratedState: dehydrate(queryClient),
+    },
+  };
+}
 
 export default Inbox;

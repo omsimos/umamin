@@ -1,13 +1,12 @@
-import { Resolver, Query } from 'type-graphql';
+import { Resolver, Query, Arg } from 'type-graphql';
 import { User } from '.';
 
 @Resolver()
 export class UserResolver {
   @Query(() => User)
-  user(): User {
+  user(@Arg('username', () => String) username: string): User {
     return {
-      id: '1',
-      username: 'johndoe',
+      username,
       pin: '123456',
     };
   }

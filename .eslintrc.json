@@ -27,6 +27,7 @@
     "react/function-component-definition": "off",
     "class-methods-use-this": ["off"]
   },
+  "ignorePatterns": ["**/generated/*.ts"],
   "settings": {
     "import/resolver": {
       "typescript": {

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "prepare": "husky install",
+    "generate": "graphql-codegen",
     "check-lint": "eslint . --ext ts --ext tsx",
     "check-types": "tsc --pretty --noEmit"
   },
@@ -16,11 +17,13 @@
     "apollo-server-micro": "^3.9.0",
     "class-validator": "^0.13.2",
     "graphql": "15.3.0",
+    "graphql-request": "^4.3.0",
     "micro": "^9.3.4",
     "next": "^12.2.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-icons": "^4.4.0",
+    "react-query": "^3.39.1",
     "reflect-metadata": "^0.1.13",
     "type-graphql": "^1.1.1"
   },

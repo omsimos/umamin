@@ -7,7 +7,7 @@ export const Navbar = () => {
   const { push } = useRouter();
 
   return (
-    <nav className='xl-mb-24 mb-12 flex items-center justify-between'>
+    <nav className='mb-12 flex items-center justify-between xl:mb-24'>
       <Link href='/'>
         <div className='relative h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'>
           <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
