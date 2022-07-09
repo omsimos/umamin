@@ -42,7 +42,22 @@ DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=pub
 NEXT_PUBLIC_GQL_ENDPOINT="http://localhost:3000/api/graphql"
 ```
 
-5. To run locally:
+4. _(optional)_ Postgres image with docker
+
+```sh
+yarn docker:up # start up a postgres image
+yarn docker:down # stop postgres image
+```
+
+5. Sync database schema
+
+```sh
+npx prisma db push
+```
+
+> Or run a migration. [Guide &rarr;](https://www.prisma.io/docs/concepts/components/prisma-migrate)
+
+6. To run locally:
 
 ```sh
 # Only use yarn as your package manager
@@ -50,7 +65,7 @@ $ yarn
 $ yarn dev
 ```
 
-5. Commit your changes and push your branch.
+7. Commit your changes and push your branch.
 
 ```sh
 $ git add .
@@ -60,7 +75,7 @@ $ git commit -m "chore: some changes"
 $ git push origin HEAD
 ```
 
-6. Submit a pull request on the `dev` branch. (resolve conflicts if present)
+8. Submit a pull request on the `dev` branch. (resolve conflicts if present)
 
 ## License
 

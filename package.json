@@ -7,10 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prepare": "husky install",
-    "generate": "graphql-codegen",
     "check-lint": "eslint . --ext ts --ext tsx",
-    "check-types": "tsc --pretty --noEmit"
+    "check-types": "tsc --pretty --noEmit",
+    "docker:down": "docker-compose down",
+    "docker:up": "docker-compose up -d",
+    "db:seed": "node prisma/seed.js",
+    "generate": "graphql-codegen",
+    "postinstall": "prisma generate",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@prisma/client": "^4.0.0",
