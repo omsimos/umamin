@@ -23,7 +23,7 @@ export type Scalars = {
 
 export type Query = {
   __typename?: 'Query';
-  user: User;
+  user?: Maybe<User>;
 };
 
 export type QueryUserArgs = {
@@ -32,7 +32,7 @@ export type QueryUserArgs = {
 
 export type User = {
   __typename?: 'User';
-  pin: Scalars['String'];
+  pin: Scalars['Float'];
   username: Scalars['String'];
 };
 
@@ -42,7 +42,7 @@ export type GetUserQueryVariables = Exact<{
 
 export type GetUserQuery = {
   __typename?: 'Query';
-  user: { __typename?: 'User'; username: string; pin: string };
+  user?: { __typename?: 'User'; username: string; pin: number } | null;
 };
 
 export const GetUserDocument = gql`

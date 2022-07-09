@@ -1,13 +1,14 @@
-import { Resolver, Query, Arg } from 'type-graphql';
-
+/* eslint-disable no-console */
+import { Resolver, Query, Arg, Ctx } from 'type-graphql';
 import { User } from '.';
-import { prisma } from '@/db';
+import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
 export class UserResolver {
   @Query(() => User, { nullable: true })
   async user(
-    @Arg('username', () => String) username: string
+    @Arg('username', () => String) username: string,
+    @Ctx() { prisma }: TContext
   ): Promise<User | null> {
     let data = {} as User | null;
 
