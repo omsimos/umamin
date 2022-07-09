@@ -24,7 +24,8 @@
     "import/extensions": ["error", "never"],
     "no-underscore-dangle": "off",
     "no-console": "warn",
-    "react/function-component-definition": "off"
+    "react/function-component-definition": "off",
+    "class-methods-use-this": ["off"]
   },
   "settings": {
     "import/resolver": {
