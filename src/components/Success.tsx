@@ -31,7 +31,7 @@ export const Success = () => {
         </button>
 
         <button
-          onClick={() => push('/messages/johndoe')}
+          onClick={() => push('/inbox/johndoe')}
           type='button'
           className='primary-btn'
         >
