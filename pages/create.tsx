@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { Success } from '@/components';
 
 const Create = () => {
-  return (
+  const [success, setSuccess] = useState(false);
+
+  return success ? (
+    <Success />
+  ) : (
     <section className='flex flex-col items-center gap-8'>
       <h1 className='h1-text'>Create your profile</h1>
       <div className='flex w-full flex-col justify-center gap-3 md:flex-row'>
@@ -20,7 +25,11 @@ const Create = () => {
           </div>
         </div>
 
-        <button type='button' className='primary-btn'>
+        <button
+          onClick={() => setSuccess(true)}
+          type='button'
+          className='primary-btn'
+        >
           Check availability
         </button>
 

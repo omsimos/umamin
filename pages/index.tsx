@@ -41,7 +41,7 @@ const Home: NextPage = () => {
             href='https://github.com/joshxfi/umamin'
             target='_blank'
             rel='noopener noreferrer'
-            className='rounded border border-gray-400 bg-secondary-100 px-6 py-3 text-sm font-medium transition-colors hover:bg-secondary-100/80 md:text-base'
+            className='secondary-btn'
           >
             View source
           </a>
@@ -49,7 +49,7 @@ const Home: NextPage = () => {
       </div>
 
       <div className='relative mt-28 self-end md:mt-16 lg:mt-10 xl:mt-0 xl:self-start'>
-        <div className='font-syne w-full self-end rounded border-2 border-primary-100 bg-secondary-200 p-8 md:w-[450px]'>
+        <div className='font-syne card w-full self-end p-8 md:w-[450px]'>
           <p>
             <span className='mr-2 text-lg font-bold'>Umamin</span>
             <span>(verb) [/uˈmɑːmin/]</span>
