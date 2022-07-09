@@ -9,14 +9,14 @@ const Home: NextPage = () => {
   const { push } = useRouter();
 
   return (
-    <section className='relative mt-12 flex flex-col justify-between xl:mt-24 xl:flex-row'>
+    <section className='relative flex flex-col justify-between xl:flex-row'>
       <div>
-        <h1 className='text-3xl font-extrabold md:text-5xl 2xl:text-6xl'>
+        <h1 className='h1-text'>
           Receive confessions &<br />
           messages <span className='text-primary-100'>anonymously!</span>
         </h1>
 
-        <p className='mt-6 text-gray-200'>
+        <p className='mt-4 text-gray-200 xl:mt-6'>
           An ad-free and open-source platform for sending and receiving
           anonymous <br className='hidden sm:block' />
           messages. Start receiving messages by{' '}
@@ -28,7 +28,7 @@ const Home: NextPage = () => {
           !
         </p>
 
-        <div className='mt-12 flex space-x-4'>
+        <div className='mt-8 flex gap-3 xl:mt-12'>
           <button
             onClick={() => push('/create')}
             type='button'

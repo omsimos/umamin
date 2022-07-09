@@ -22,4 +22,8 @@
   .primary-btn {
     @apply rounded bg-primary-200 px-6 py-3 text-sm font-medium transition-colors hover:bg-primary-200/80 md:text-base;
   }
+
+  .h1-text {
+    @apply text-3xl font-extrabold md:text-5xl 2xl:text-6xl;
+  }
 }
