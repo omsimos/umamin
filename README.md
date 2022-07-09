@@ -34,7 +34,8 @@ $ git checkout -b my-new-branch
 ```
 
 3. Create a `.env` file with this content:
-   > Adjust the DATABASE_URL to your local database. [Guide &rarr;](https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases/connect-your-database-typescript-postgres)
+
+> Adjust the `DATABASE_URL` to your local database. [Guide &rarr;](https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases/connect-your-database-typescript-postgres)
 
 ```sh
 DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
