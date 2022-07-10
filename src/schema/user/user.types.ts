@@ -5,6 +5,6 @@ export class User {
   @Field(() => String)
   username: string;
 
-  @Field(() => Number)
-  pin: number;
+  @Field(() => String)
+  password: string;
 }

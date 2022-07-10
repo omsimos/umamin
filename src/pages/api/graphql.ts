@@ -2,8 +2,8 @@ import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
 import { ApolloServer } from 'apollo-server-micro';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '@/db';
 
+import { prisma } from '@/db';
 import { UserResolver } from '@/schema/user';
 
 export interface TContext {

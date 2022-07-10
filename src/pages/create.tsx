@@ -1,20 +1,53 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useMutation } from 'react-query';
+
+import { createUser } from '@/api';
 import { Success } from '@/components';
+import { IUser } from '@/types/models';
 
 const Create = () => {
   const [success, setSuccess] = useState(false);
+  const [username, setUsername] = useState('');
+  const [userInfo, setUserInfo] = useState({} as IUser);
+
+  const { mutate } = useMutation(createUser);
+
+  const handleCreate: React.FormEventHandler = (e) => {
+    e.preventDefault();
+
+    mutate(
+      {
+        username,
+      },
+      {
+        onSuccess: (data) => {
+          if (data.createUser) {
+            setUserInfo(data.createUser);
+            setSuccess(true);
+          }
+        },
+      }
+    );
+  };
 
   return success ? (
-    <Success />
+    <Success data={userInfo} />
   ) : (
     <section className='flex flex-col items-center gap-8'>
       <h1 className='h1-text'>Create your profile</h1>
-      <div className='flex w-full flex-col justify-center gap-3 md:flex-row'>
+      <form
+        onSubmit={handleCreate}
+        className='flex w-full flex-col justify-center gap-3 md:flex-row'
+      >
         <div className='relative md:w-[50%]'>
           <input
             type='text'
             placeholder='Enter a name for your link'
+            value={username}
+            onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
+            minLength={3}
+            maxLength={20}
             className='w-full rounded bg-secondary-100 py-3 px-4 text-sm md:text-base'
           />
           <div className='absolute mt-2 hidden gap-2 text-sm md:flex'>
@@ -25,11 +58,7 @@ const Create = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setSuccess(true)}
-          type='button'
-          className='primary-btn'
-        >
+        <button type='submit' className='primary-btn'>
           Check availability
         </button>
 
@@ -39,7 +68,7 @@ const Create = () => {
             <a className='text-primary-100'>Login</a>
           </Link>
         </div>
-      </div>
+      </form>
     </section>
   );
 };
