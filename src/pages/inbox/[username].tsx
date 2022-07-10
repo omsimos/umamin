@@ -25,7 +25,7 @@ const Inbox = ({ username }: { username: string }) => {
             </div>
 
             <button type='button' className='secondary-btn flex-none'>
-              Change PIN
+              Settings
             </button>
           </div>
 
