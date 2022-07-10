@@ -21,6 +21,15 @@ export type Scalars = {
   Float: number;
 };
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  createUser?: Maybe<User>;
+};
+
+export type MutationCreateUserArgs = {
+  username: Scalars['String'];
+};
+
 export type Query = {
   __typename?: 'Query';
   user?: Maybe<User>;
@@ -32,8 +41,21 @@ export type QueryUserArgs = {
 
 export type User = {
   __typename?: 'User';
-  pin: Scalars['Float'];
+  password: Scalars['String'];
   username: Scalars['String'];
+};
+
+export type CreateUserMutationVariables = Exact<{
+  username: Scalars['String'];
+}>;
+
+export type CreateUserMutation = {
+  __typename?: 'Mutation';
+  createUser?: {
+    __typename?: 'User';
+    username: string;
+    password: string;
+  } | null;
 };
 
 export type GetUserQueryVariables = Exact<{
@@ -42,14 +64,22 @@ export type GetUserQueryVariables = Exact<{
 
 export type GetUserQuery = {
   __typename?: 'Query';
-  user?: { __typename?: 'User'; username: string; pin: number } | null;
+  user?: { __typename?: 'User'; username: string; password: string } | null;
 };
 
+export const CreateUserDocument = gql`
+  mutation createUser($username: String!) {
+    createUser(username: $username) {
+      username
+      password
+    }
+  }
+`;
 export const GetUserDocument = gql`
   query getUser($username: String!) {
     user(username: $username) {
       username
-      pin
+      password
     }
   }
 `;
@@ -71,6 +101,20 @@ export function getSdk(
   withWrapper: SdkFunctionWrapper = defaultWrapper
 ) {
   return {
+    createUser(
+      variables: CreateUserMutationVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<CreateUserMutation> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<CreateUserMutation>(CreateUserDocument, variables, {
+            ...requestHeaders,
+            ...wrappedRequestHeaders,
+          }),
+        'createUser',
+        'mutation'
+      );
+    },
     getUser(
       variables: GetUserQueryVariables,
       requestHeaders?: Dom.RequestInit['headers']

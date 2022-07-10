@@ -3,7 +3,9 @@ import { useRouter } from 'next/router';
 import { BsInfoCircleFill } from 'react-icons/bs';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
-export const Success = () => {
+import { IUser } from '@/types/models';
+
+export const Success = ({ data }: { data: IUser }) => {
   const { push } = useRouter();
 
   return (
@@ -11,10 +13,10 @@ export const Success = () => {
       <h1 className='h1-text'>Success!</h1>
       <div className='card relative mt-8 w-full p-6 [&>p>span]:text-primary-100'>
         <p>
-          Username: <span>johndoe</span>
+          Username: <span>{data.username}</span>
         </p>
         <p>
-          PIN: <span>012345</span>
+          Password: <span>{data.password}</span>
         </p>
 
         <div className='mt-8 flex items-center gap-2 text-sm'>
@@ -31,7 +33,7 @@ export const Success = () => {
         </button>
 
         <button
-          onClick={() => push('/inbox/johndoe')}
+          onClick={() => push(`/inbox/${encodeURIComponent(data.username)}`)}
           type='button'
           className='primary-btn'
         >
