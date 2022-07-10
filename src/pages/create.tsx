@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { useMutation } from 'react-query';
 
 import { createUser } from '@/api';
@@ -25,6 +26,9 @@ const Create = () => {
           if (data.createUser) {
             setUserInfo(data.createUser);
             setSuccess(true);
+            toast.success('Link created!');
+          } else {
+            toast.error('Link already taken 😢');
           }
         },
       }
@@ -42,6 +46,7 @@ const Create = () => {
       >
         <div className='relative md:w-[50%]'>
           <input
+            required
             type='text'
             placeholder='Enter a name for your link'
             value={username}
