@@ -4,17 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
-.font-inter {
-  font-family: 'Inter', sans-serif;
-}
-
-.font-syne {
-  font-family: 'Syne', sans-serif;
-}
-
 @layer base {
   body {
-    @apply font-inter bg-secondary-300 text-white;
+    @apply bg-secondary-300 font-inter text-white;
   }
 }
 
