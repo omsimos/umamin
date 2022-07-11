@@ -26,4 +26,16 @@
   .card {
     @apply rounded border-2 border-primary-100 bg-secondary-200;
   }
+
+  .input-field {
+    @apply flex w-full items-center space-x-2 rounded-md bg-secondary-100 px-5 py-3;
+  }
+
+  .input-field input {
+    @apply w-full bg-secondary-100 text-xl outline-none;
+  }
+
+  .input-field svg {
+    @apply text-xl text-[#9CA3AF];
+  }
 }

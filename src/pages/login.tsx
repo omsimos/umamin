@@ -13,12 +13,12 @@ const Login = () => {
         <span className='font-syne text-5xl font-extrabold text-primary-200'>
           login
         </span>
-        <div className='w-full space-y-2 [&>div]:flex [&>div]:items-center [&>div]:space-x-2 [&>div]:rounded-md [&>div]:bg-secondary-100 [&>div]:px-5 [&>div]:py-3 [&>div,_input]:w-full [&>div>input]:bg-transparent [&>div>input]:outline-none [&>div>svg]:text-xl [&>div>svg]:text-[#9CA3AF]'>
-          <div>
+        <div className='w-full space-y-2'>
+          <div className='input-field'>
             <BsFillPersonFill />
             <input type='text' placeholder='Username' />
           </div>
-          <div>
+          <div className='input-field'>
             <HiLockClosed />
             <input type='password' placeholder='Password' />
           </div>
