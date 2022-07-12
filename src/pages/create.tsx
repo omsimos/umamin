@@ -23,13 +23,9 @@ const Create = () => {
       },
       {
         onSuccess: (data) => {
-          if (data.createUser) {
-            setUserInfo(data.createUser);
-            setSuccess(true);
-            toast.success('Link created!');
-          } else {
-            toast.error('Link already taken 😢');
-          }
+          setUserInfo(data.createUser);
+          setSuccess(true);
+          toast.success('Link created!');
         },
       }
     );

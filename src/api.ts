@@ -1,6 +1,6 @@
-/* eslint-disable no-console */
 import { GraphQLClient } from 'graphql-request';
 import { QueryClient } from 'react-query';
+import toast from 'react-hot-toast';
 
 import { getSdk } from './generated/graphql';
 
@@ -13,19 +13,13 @@ export const queryClient = new QueryClient({
       refetchOnMount: false,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      onError: (err) => {
-        /**
-         * handle toast here. i usually user [react-hot-toast](https://react-hot-toast.com/)
-         * e.g. toast.error(err.message);
-         * errors here will come from graphql resolvers
-         */
-        console.error(err);
+      onError: (err: any) => {
+        toast.error(err.response.errors[0].message);
       },
     },
     mutations: {
-      onError: (err) => {
-        // handle toast here as well
-        console.error(err);
+      onError: (err: any) => {
+        toast.error(err.response.errors[0].message);
       },
     },
   },

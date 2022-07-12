@@ -19,14 +19,13 @@ export class UserResolver {
       data = await prisma.user.findUnique({ where: { username } });
     } catch (err) {
       console.error(err);
-      // throw error or we could create a custom error class
       throw new Error('User not found');
     }
 
     return data;
   }
 
-  @Mutation(() => User, { nullable: true })
+  @Mutation(() => User)
   async createUser(
     @Arg('username', () => String) username: string,
     @Ctx() { prisma }: TContext
@@ -42,7 +41,7 @@ export class UserResolver {
       });
 
       if (user) {
-        return null;
+        throw new Error('Link already taken');
       }
 
       await prisma.user.create({
@@ -51,9 +50,9 @@ export class UserResolver {
           password,
         },
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      throw new Error('User not created');
+      throw new Error(err.message);
     }
 
     return {

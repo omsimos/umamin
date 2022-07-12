@@ -23,7 +23,7 @@ export type Scalars = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createUser?: Maybe<User>;
+  createUser: User;
 };
 
 export type MutationCreateUserArgs = {
@@ -51,11 +51,7 @@ export type CreateUserMutationVariables = Exact<{
 
 export type CreateUserMutation = {
   __typename?: 'Mutation';
-  createUser?: {
-    __typename?: 'User';
-    username: string;
-    password: string;
-  } | null;
+  createUser: { __typename?: 'User'; username: string; password: string };
 };
 
 export type GetUserQueryVariables = Exact<{
