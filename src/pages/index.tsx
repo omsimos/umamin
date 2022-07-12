@@ -5,8 +5,11 @@ import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
+import { useStore } from '@/hooks';
+
 const Home: NextPage = () => {
   const { push } = useRouter();
+  const currentUser = useStore((state) => state.currentUser);
 
   return (
     <section className='relative flex flex-col justify-between text-center sm:text-left xl:flex-row'>
@@ -16,7 +19,7 @@ const Home: NextPage = () => {
           messages <span className='text-primary-100'>anonymously!</span>
         </h1>
 
-        <p className='mt-4 text-gray-200 xl:mt-6'>
+        <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
           An ad-free and open-source platform for sending and receiving
           anonymous <br className='hidden sm:block' />
           messages. Start receiving messages by{' '}
@@ -30,11 +33,13 @@ const Home: NextPage = () => {
 
         <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
           <button
-            onClick={() => push('/create')}
+            onClick={() =>
+              push(currentUser ? `/inbox/${currentUser}` : '/create')
+            }
             type='button'
             className='primary-btn'
           >
-            Create your link
+            {currentUser ? 'View messages' : 'Create your link'}
           </button>
 
           <a
@@ -48,13 +53,13 @@ const Home: NextPage = () => {
         </div>
       </div>
 
-      <div className='relative mt-28 self-end md:mt-16 xl:mt-0 xl:self-start'>
+      <div className='relative mt-28 self-end text-left md:mt-16 xl:mt-0 xl:self-start'>
         <div className='card w-full self-end p-8 font-syne md:w-[450px]'>
           <p>
             <span className='mr-2 text-lg font-bold'>Umamin</span>
             <span>(verb) [/u&apos;m&#593;&#58;min/]</span>
           </p>
-          <p>
+          <p className='mt-1'>
             Declare to be true or admit the existence or reality or truth of
           </p>
         </div>

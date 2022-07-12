@@ -5,9 +5,11 @@ import { IoIosCopy } from 'react-icons/io';
 import { useQuery, dehydrate } from 'react-query';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
+import { useStore } from '@/hooks';
 import { queryClient, getUser } from '@/api';
 
 const Inbox = ({ username }: { username: string }) => {
+  const currentUser = useStore((state) => state.currentUser);
   const { data } = useQuery('user', () => getUser({ username }), {
     select: (d) => d.user,
   });
@@ -19,8 +21,8 @@ const Inbox = ({ username }: { username: string }) => {
 
   return (
     <section className='[&>h1]:h1-text mx-auto flex flex-col items-center pb-24 sm:w-[500px]'>
-      {!data ? (
-        <h1>User not found</h1>
+      {!data || currentUser !== username ? (
+        <h1>Are you lost?</h1>
       ) : (
         <>
           <h1>Your inbox</h1>

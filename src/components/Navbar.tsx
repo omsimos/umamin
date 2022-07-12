@@ -3,8 +3,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 
+import { useStore } from '@/hooks';
+
 export const Navbar = () => {
   const { push } = useRouter();
+  const currentUser = useStore((state) => state.currentUser);
+  const setCurrentUser = useStore((state) => state.setCurrentUser);
 
   return (
     <nav className='relative z-10 mb-12 flex items-center justify-between xl:mb-24'>
@@ -15,19 +19,31 @@ export const Navbar = () => {
       </Link>
 
       <div className='flex items-center space-x-6'>
-        <Link href='/login'>
-          <p className='cursor-pointer text-sm font-medium text-gray-200 transition-colors hover:text-gray-400 md:text-base'>
-            Login
-          </p>
-        </Link>
+        {currentUser ? (
+          <button
+            onClick={() => setCurrentUser(null)}
+            type='button'
+            className='primary-btn'
+          >
+            Logout
+          </button>
+        ) : (
+          <>
+            <Link href='/login'>
+              <p className='cursor-pointer text-sm font-medium text-gray-200 transition-colors hover:text-gray-400 md:text-base'>
+                Login
+              </p>
+            </Link>
 
-        <button
-          onClick={() => push('/create')}
-          type='button'
-          className='primary-btn'
-        >
-          Get started
-        </button>
+            <button
+              onClick={() => push('/create')}
+              type='button'
+              className='primary-btn'
+            >
+              Get started
+            </button>
+          </>
+        )}
       </div>
     </nav>
   );
