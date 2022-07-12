@@ -8,21 +8,42 @@ import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
 export class UserResolver {
-  @Query(() => User, { nullable: true })
+  @Query(() => User)
   async user(
     @Arg('username', () => String) username: string,
     @Ctx() { prisma }: TContext
-  ): Promise<User | null> {
-    let data = {} as User | null;
+  ): Promise<User> {
+    let data = {} as User;
 
     try {
-      data = await prisma.user.findUnique({ where: { username } });
-    } catch (err) {
+      const _data = await prisma.user.findUnique({ where: { username } });
+
+      if (!_data) {
+        throw new Error('User not found');
+      }
+
+      data = _data;
+    } catch (err: any) {
       console.error(err);
-      throw new Error('User not found');
+      throw new Error(err.message);
     }
 
     return data;
+  }
+
+  @Query(() => String)
+  async login(
+    @Arg('username', () => String) username: string,
+    @Arg('password', () => String) password: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<String | null> {
+    const data = await this.user(username, { prisma });
+
+    if (!(await bcrypt.compare(password, data.password))) {
+      throw new Error('Incorrect credentials');
+    }
+
+    return data.username;
   }
 
   @Mutation(() => User)

@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { getSdk } from './generated/graphql';
 
 const gqlClient = new GraphQLClient(process.env.NEXT_PUBLIC_GQL_ENDPOINT ?? '');
-export const { getUser, createUser } = getSdk(gqlClient);
+export const { getUser, createUser, loginUser } = getSdk(gqlClient);
 
 export const queryClient = new QueryClient({
   defaultOptions: {
