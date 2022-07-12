@@ -1,14 +1,42 @@
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+import React, { useState } from 'react';
 import { BsFillPersonFill } from 'react-icons/bs';
 import { HiLockClosed } from 'react-icons/hi';
+import { useMutation } from 'react-query';
+import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
+import Image from 'next/image';
+import Link from 'next/link';
+
+import { loginUser } from '@/api';
 
 const Login = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const { push } = useRouter();
+  const { mutate } = useMutation(loginUser);
+
+  const handleLogin: React.FormEventHandler = async (e) => {
+    e.preventDefault();
+
+    mutate(
+      {
+        username,
+        password,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Login successful');
+          push(`/inbox/${username}`);
+        },
+      }
+    );
+  };
+
   return (
     <section className='absolute top-0 left-0 flex h-screen w-screen items-center justify-center px-5'>
       <form
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={handleLogin}
         className='card z-[1] flex w-full flex-col space-y-10 rounded-md px-5 py-10 text-center sm:w-[500px] sm:px-10'
       >
         <span className='font-syne text-5xl font-extrabold text-primary-200'>
@@ -17,11 +45,23 @@ const Login = () => {
         <div className='w-full space-y-2'>
           <div className='input-field'>
             <BsFillPersonFill />
-            <input type='text' placeholder='Username' />
+            <input
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              type='text'
+              placeholder='Username'
+            />
           </div>
           <div className='input-field'>
             <HiLockClosed />
-            <input type='password' placeholder='Password' />
+            <input
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type='password'
+              placeholder='Password'
+            />
           </div>
         </div>
         <div className='w-full'>
