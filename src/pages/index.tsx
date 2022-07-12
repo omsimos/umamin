@@ -16,7 +16,7 @@ const Home: NextPage = () => {
           messages <span className='text-primary-100'>anonymously!</span>
         </h1>
 
-        <p className='mt-4 text-gray-200 xl:mt-6'>
+        <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
           An ad-free and open-source platform for sending and receiving
           anonymous <br className='hidden sm:block' />
           messages. Start receiving messages by{' '}
@@ -48,13 +48,13 @@ const Home: NextPage = () => {
         </div>
       </div>
 
-      <div className='relative mt-28 self-end md:mt-16 xl:mt-0 xl:self-start'>
+      <div className='relative mt-28 self-end text-left md:mt-16 xl:mt-0 xl:self-start'>
         <div className='card w-full self-end p-8 font-syne md:w-[450px]'>
           <p>
             <span className='mr-2 text-lg font-bold'>Umamin</span>
             <span>(verb) [/u&apos;m&#593;&#58;min/]</span>
           </p>
-          <p>
+          <p className='mt-1'>
             Declare to be true or admit the existence or reality or truth of
           </p>
         </div>

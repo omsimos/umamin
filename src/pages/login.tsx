@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { BsFillPersonFill } from 'react-icons/bs';
 import { HiLockClosed } from 'react-icons/hi';
@@ -24,14 +25,17 @@ const Login = () => {
           </div>
         </div>
         <div className='w-full'>
-          <input
+          <button
             type='submit'
-            value='Login'
-            className='primary-btn mb-2 w-full cursor-pointer text-lg'
-          />
-          <p className='text-base'>
+            className='primary-btn mb-2 w-full cursor-pointer'
+          >
+            Login
+          </button>
+          <p className='text-sm'>
             Don&apos;t have an account?{' '}
-            <span className='cursor-pointer text-primary-100'>Get started</span>
+            <Link href='/create'>
+              <a className='text-primary-100'>Get started</a>
+            </Link>
           </p>
         </div>
       </form>

@@ -51,12 +51,12 @@ const Create = () => {
             maxLength={20}
             className='w-full rounded bg-secondary-100 py-3 px-4 text-sm md:text-base'
           />
-          <div className='absolute mt-2 hidden gap-2 text-sm md:flex'>
-            <p>Already have an account?</p>
+          <p className='absolute mt-2 hidden text-sm md:block'>
+            Already have an account?{' '}
             <Link href='login'>
               <a className='text-primary-100'>Login</a>
             </Link>
-          </div>
+          </p>
         </div>
 
         <button type='submit' className='primary-btn'>

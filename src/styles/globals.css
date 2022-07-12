@@ -32,7 +32,7 @@
   }
 
   .input-field input {
-    @apply w-full bg-secondary-100 text-base outline-none;
+    @apply w-full bg-secondary-100 outline-none;
   }
 
   .input-field svg {
