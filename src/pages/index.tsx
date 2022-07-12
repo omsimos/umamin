@@ -9,7 +9,7 @@ const Home: NextPage = () => {
   const { push } = useRouter();
 
   return (
-    <section className='relative flex flex-col justify-between xl:flex-row'>
+    <section className='relative flex flex-col justify-between text-center sm:text-left xl:flex-row'>
       <div>
         <h1 className='h1-text'>
           Receive confessions &<br />
@@ -28,7 +28,7 @@ const Home: NextPage = () => {
           !
         </p>
 
-        <div className='mt-8 flex gap-3 xl:mt-12'>
+        <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
           <button
             onClick={() => push('/create')}
             type='button'
@@ -48,7 +48,7 @@ const Home: NextPage = () => {
         </div>
       </div>
 
-      <div className='relative mt-28 self-end md:mt-16 lg:mt-10 xl:mt-0 xl:self-start'>
+      <div className='relative mt-28 self-end md:mt-16 xl:mt-0 xl:self-start'>
         <div className='card w-full self-end p-8 font-syne md:w-[450px]'>
           <p>
             <span className='mr-2 text-lg font-bold'>Umamin</span>
@@ -62,7 +62,7 @@ const Home: NextPage = () => {
         <IoChatboxEllipses className='absolute right-4 -top-14 text-8xl text-primary-100 xl:-left-12 xl:top-28 xl:text-9xl' />
       </div>
 
-      <div className='absolute top-48 right-0 -z-10 h-[450px] w-full sm:top-40 sm:w-[450px] md:top-28 md:h-[550px] md:w-[550px] lg:h-[650px] lg:w-[650px] xl:-top-56 xl:-right-16'>
+      <div className='absolute top-48 right-0 -z-10 h-[450px] w-full sm:top-40 sm:w-[450px] md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
         <Image src='/assets/hearts.svg' layout='fill' objectFit='contain' />
       </div>
     </section>
