@@ -5,8 +5,11 @@ import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
+import { useStore } from '@/hooks';
+
 const Home: NextPage = () => {
   const { push } = useRouter();
+  const currentUser = useStore((state) => state.currentUser);
 
   return (
     <section className='relative flex flex-col justify-between text-center sm:text-left xl:flex-row'>
@@ -30,11 +33,13 @@ const Home: NextPage = () => {
 
         <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
           <button
-            onClick={() => push('/create')}
+            onClick={() =>
+              push(currentUser ? `/inbox/${currentUser}` : '/create')
+            }
             type='button'
             className='primary-btn'
           >
-            Create your link
+            {currentUser ? 'View messages' : 'Create your link'}
           </button>
 
           <a

@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { loginUser } from '@/api';
+import { useStore } from '@/hooks';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -15,6 +16,8 @@ const Login = () => {
 
   const { push } = useRouter();
   const { mutate } = useMutation(loginUser);
+
+  const setCurrentUser = useStore((state) => state.setCurrentUser);
 
   const handleLogin: React.FormEventHandler = async (e) => {
     e.preventDefault();
@@ -27,6 +30,7 @@ const Login = () => {
       {
         onSuccess: () => {
           toast.success('Login successful');
+          setCurrentUser(username);
           push(`/inbox/${username}`);
         },
       }
