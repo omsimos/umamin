@@ -49,10 +49,10 @@ const Home: NextPage = () => {
       </div>
 
       <div className='relative mt-28 self-end md:mt-16 lg:mt-10 xl:mt-0 xl:self-start'>
-        <div className='font-syne card w-full self-end p-8 md:w-[450px]'>
+        <div className='card w-full self-end p-8 font-syne md:w-[450px]'>
           <p>
             <span className='mr-2 text-lg font-bold'>Umamin</span>
-            <span>(verb) [/uˈmɑːmin/]</span>
+            <span>(verb) [/u&apos;m&#593;&#58;min/]</span>
           </p>
           <p>
             Declare to be true or admit the existence or reality or truth of
