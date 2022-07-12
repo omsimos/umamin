@@ -1,10 +1,11 @@
 import { GraphQLClient } from 'graphql-request';
 import { QueryClient } from 'react-query';
+import toast from 'react-hot-toast';
 
 import { getSdk } from './generated/graphql';
 
 const gqlClient = new GraphQLClient(process.env.NEXT_PUBLIC_GQL_ENDPOINT ?? '');
-export const { getUser } = getSdk(gqlClient);
+export const { getUser, createUser, loginUser } = getSdk(gqlClient);
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -12,6 +13,14 @@ export const queryClient = new QueryClient({
       refetchOnMount: false,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
+      onError: (err: any) => {
+        toast.error(err.response.errors[0].message);
+      },
+    },
+    mutations: {
+      onError: (err: any) => {
+        toast.error(err.response.errors[0].message);
+      },
     },
   },
 });

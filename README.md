@@ -35,14 +35,29 @@ $ git checkout -b my-new-branch
 
 3. Create a `.env` file with this content:
 
-> Adjust the `DATABASE_URL` to your local database. [Guide &rarr;](https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases/connect-your-database-typescript-postgres)
+> Adjust the `DATABASE_URL` to your local PostgreSQL database. [Guide &rarr;](https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases/connect-your-database-typescript-postgres)
 
 ```sh
 DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
 NEXT_PUBLIC_GQL_ENDPOINT="http://localhost:3000/api/graphql"
 ```
 
-5. To run locally:
+4. _(optional)_ Postgres image with docker
+
+```sh
+yarn docker:up # start up a postgres image
+yarn docker:down # stop postgres image
+```
+
+5. Sync database schema
+
+```sh
+npx prisma db push
+```
+
+> Or run a migration. [Guide &rarr;](https://www.prisma.io/docs/concepts/components/prisma-migrate)
+
+6. To run locally:
 
 ```sh
 # Only use yarn as your package manager
@@ -50,17 +65,15 @@ $ yarn
 $ yarn dev
 ```
 
-5. Commit your changes and push your branch.
+7. Commit your changes and push your branch.
 
 ```sh
 $ git add .
 $ git commit -m "chore: some changes"
-
-# Stop the dev server before pushing to prevent error
 $ git push origin HEAD
 ```
 
-6. Submit a pull request on the `dev` branch. (resolve conflicts if present)
+8. Submit a pull request on the `dev` branch. (resolve conflicts if present)
 
 ## License
 

@@ -21,6 +21,21 @@ export type Scalars = {
   Float: number;
 };
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  createUser: User;
+  login: Scalars['String'];
+};
+
+export type MutationCreateUserArgs = {
+  username: Scalars['String'];
+};
+
+export type MutationLoginArgs = {
+  password: Scalars['String'];
+  username: Scalars['String'];
+};
+
 export type Query = {
   __typename?: 'Query';
   user: User;
@@ -32,8 +47,17 @@ export type QueryUserArgs = {
 
 export type User = {
   __typename?: 'User';
-  pin: Scalars['String'];
+  password: Scalars['String'];
   username: Scalars['String'];
+};
+
+export type CreateUserMutationVariables = Exact<{
+  username: Scalars['String'];
+}>;
+
+export type CreateUserMutation = {
+  __typename?: 'Mutation';
+  createUser: { __typename?: 'User'; username: string; password: string };
 };
 
 export type GetUserQueryVariables = Exact<{
@@ -42,15 +66,35 @@ export type GetUserQueryVariables = Exact<{
 
 export type GetUserQuery = {
   __typename?: 'Query';
-  user: { __typename?: 'User'; username: string; pin: string };
+  user: { __typename?: 'User'; username: string; password: string };
 };
 
+export type LoginUserMutationVariables = Exact<{
+  username: Scalars['String'];
+  password: Scalars['String'];
+}>;
+
+export type LoginUserMutation = { __typename?: 'Mutation'; login: string };
+
+export const CreateUserDocument = gql`
+  mutation createUser($username: String!) {
+    createUser(username: $username) {
+      username
+      password
+    }
+  }
+`;
 export const GetUserDocument = gql`
   query getUser($username: String!) {
     user(username: $username) {
       username
-      pin
+      password
     }
+  }
+`;
+export const LoginUserDocument = gql`
+  mutation loginUser($username: String!, $password: String!) {
+    login(username: $username, password: $password)
   }
 `;
 
@@ -71,6 +115,20 @@ export function getSdk(
   withWrapper: SdkFunctionWrapper = defaultWrapper
 ) {
   return {
+    createUser(
+      variables: CreateUserMutationVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<CreateUserMutation> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<CreateUserMutation>(CreateUserDocument, variables, {
+            ...requestHeaders,
+            ...wrappedRequestHeaders,
+          }),
+        'createUser',
+        'mutation'
+      );
+    },
     getUser(
       variables: GetUserQueryVariables,
       requestHeaders?: Dom.RequestInit['headers']
@@ -83,6 +141,20 @@ export function getSdk(
           }),
         'getUser',
         'query'
+      );
+    },
+    loginUser(
+      variables: LoginUserMutationVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<LoginUserMutation> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<LoginUserMutation>(LoginUserDocument, variables, {
+            ...requestHeaders,
+            ...wrappedRequestHeaders,
+          }),
+        'loginUser',
+        'mutation'
       );
     },
   };

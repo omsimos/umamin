@@ -3,18 +3,27 @@ import { useRouter } from 'next/router';
 import { BsInfoCircleFill } from 'react-icons/bs';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
-export const Success = () => {
+import type { User } from '@/generated/graphql';
+import { useStore } from '@/hooks';
+
+export const Success = ({ data }: { data: User }) => {
   const { push } = useRouter();
+  const setCurrentUser = useStore((state) => state.setCurrentUser);
+
+  const handleProceed = () => {
+    setCurrentUser(data.username);
+    push(`/inbox/${encodeURIComponent(data.username)}`);
+  };
 
   return (
     <section className='mx-auto flex flex-col items-center sm:w-[500px]'>
       <h1 className='h1-text'>Success!</h1>
       <div className='card relative mt-8 w-full p-6 [&>p>span]:text-primary-100'>
         <p>
-          Username: <span>johndoe</span>
+          Username: <span>{data.username}</span>
         </p>
         <p>
-          PIN: <span>012345</span>
+          Password: <span>{data.password}</span>
         </p>
 
         <div className='mt-8 flex items-center gap-2 text-sm'>
@@ -30,11 +39,7 @@ export const Success = () => {
           Undo
         </button>
 
-        <button
-          onClick={() => push('/inbox/johndoe')}
-          type='button'
-          className='primary-btn'
-        >
+        <button onClick={handleProceed} type='button' className='primary-btn'>
           Proceed
         </button>
       </div>

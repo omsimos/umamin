@@ -12,5 +12,5 @@ datasource db {
 
 model User {
   username String @unique
-  pin      Int
+  password String
 }

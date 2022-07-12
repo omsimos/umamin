@@ -1,31 +1,43 @@
 import React, { useId } from 'react';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 import { IoIosCopy } from 'react-icons/io';
 import { useQuery, dehydrate } from 'react-query';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
+import { useStore } from '@/hooks';
 import { queryClient, getUser } from '@/api';
 
 const Inbox = ({ username }: { username: string }) => {
+  const currentUser = useStore((state) => state.currentUser);
   const { data } = useQuery('user', () => getUser({ username }), {
     select: (d) => d.user,
   });
 
+  const copyLink = () => {
+    navigator.clipboard.writeText(`https://umamin.link/${username}`);
+    toast.success('Copied to clipboard');
+  };
+
   return (
     <section className='[&>h1]:h1-text mx-auto flex flex-col items-center pb-24 sm:w-[500px]'>
-      {!data ? (
-        <h1>User not found</h1>
+      {!data || currentUser !== username ? (
+        <h1>Are you lost?</h1>
       ) : (
         <>
           <h1>Your inbox</h1>
           <div className='mt-8 flex w-full gap-3'>
-            <div className='card flex w-full items-center gap-3 px-4 py-3'>
+            <button
+              type='button'
+              onClick={copyLink}
+              className='card flex w-full items-center gap-3 px-4 py-3'
+            >
               <IoIosCopy className='text-primary-100' />
               <p>umamin.link/to/{data?.username}</p>
-            </div>
+            </button>
 
             <button type='button' className='secondary-btn flex-none'>
-              Change PIN
+              Settings
             </button>
           </div>
 
