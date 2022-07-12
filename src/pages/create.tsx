@@ -5,12 +5,12 @@ import { useMutation } from 'react-query';
 
 import { createUser } from '@/api';
 import { Success } from '@/components';
-import { IUser } from '@/types/models';
+import type { User } from '@/generated/graphql';
 
 const Create = () => {
   const [success, setSuccess] = useState(false);
   const [username, setUsername] = useState('');
-  const [userInfo, setUserInfo] = useState({} as IUser);
+  const [userInfo, setUserInfo] = useState({} as User);
 
   const { mutate } = useMutation(createUser);
 

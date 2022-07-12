@@ -3,9 +3,9 @@ import { useRouter } from 'next/router';
 import { BsInfoCircleFill } from 'react-icons/bs';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
-import { IUser } from '@/types/models';
+import type { User } from '@/generated/graphql';
 
-export const Success = ({ data }: { data: IUser }) => {
+export const Success = ({ data }: { data: User }) => {
   const { push } = useRouter();
 
   return (
