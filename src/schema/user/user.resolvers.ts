@@ -31,7 +31,7 @@ export class UserResolver {
     return data;
   }
 
-  @Query(() => String)
+  @Mutation(() => String)
   async login(
     @Arg('username', () => String) username: string,
     @Arg('password', () => String) password: string,

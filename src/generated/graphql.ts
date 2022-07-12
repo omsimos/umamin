@@ -24,21 +24,21 @@ export type Scalars = {
 export type Mutation = {
   __typename?: 'Mutation';
   createUser: User;
+  login: Scalars['String'];
 };
 
 export type MutationCreateUserArgs = {
   username: Scalars['String'];
 };
 
-export type Query = {
-  __typename?: 'Query';
-  login: Scalars['String'];
-  user: User;
-};
-
-export type QueryLoginArgs = {
+export type MutationLoginArgs = {
   password: Scalars['String'];
   username: Scalars['String'];
+};
+
+export type Query = {
+  __typename?: 'Query';
+  user: User;
 };
 
 export type QueryUserArgs = {
@@ -69,12 +69,12 @@ export type GetUserQuery = {
   user: { __typename?: 'User'; username: string; password: string };
 };
 
-export type LoginUserQueryVariables = Exact<{
+export type LoginUserMutationVariables = Exact<{
   username: Scalars['String'];
   password: Scalars['String'];
 }>;
 
-export type LoginUserQuery = { __typename?: 'Query'; login: string };
+export type LoginUserMutation = { __typename?: 'Mutation'; login: string };
 
 export const CreateUserDocument = gql`
   mutation createUser($username: String!) {
@@ -93,7 +93,7 @@ export const GetUserDocument = gql`
   }
 `;
 export const LoginUserDocument = gql`
-  query loginUser($username: String!, $password: String!) {
+  mutation loginUser($username: String!, $password: String!) {
     login(username: $username, password: $password)
   }
 `;
@@ -144,17 +144,17 @@ export function getSdk(
       );
     },
     loginUser(
-      variables: LoginUserQueryVariables,
+      variables: LoginUserMutationVariables,
       requestHeaders?: Dom.RequestInit['headers']
-    ): Promise<LoginUserQuery> {
+    ): Promise<LoginUserMutation> {
       return withWrapper(
         (wrappedRequestHeaders) =>
-          client.request<LoginUserQuery>(LoginUserDocument, variables, {
+          client.request<LoginUserMutation>(LoginUserDocument, variables, {
             ...requestHeaders,
             ...wrappedRequestHeaders,
           }),
         'loginUser',
-        'query'
+        'mutation'
       );
     },
   };
