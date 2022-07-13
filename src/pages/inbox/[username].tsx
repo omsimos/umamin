@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { IoIosCopy } from 'react-icons/io';
@@ -6,13 +6,18 @@ import { useQuery, dehydrate } from 'react-query';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
 import { useStore } from '@/hooks';
-import { queryClient, getUser } from '@/api';
+import { queryClient, getMessages } from '@/api';
 
 const Inbox = ({ username }: { username: string }) => {
   const currentUser = useStore((state) => state.currentUser);
-  const { data } = useQuery('user', () => getUser({ username }), {
-    select: (d) => d.user,
-  });
+
+  const { data: messages } = useQuery(
+    'messages',
+    () => getMessages({ username }),
+    {
+      select: (d) => d.messages,
+    }
+  );
 
   const copyLink = () => {
     navigator.clipboard.writeText(`https://umamin.link/${username}`);
@@ -21,7 +26,7 @@ const Inbox = ({ username }: { username: string }) => {
 
   return (
     <section className='[&>h1]:h1-text mx-auto flex flex-col items-center pb-24 sm:w-[500px]'>
-      {!data || currentUser !== username ? (
+      {currentUser !== username ? (
         <h1>Are you lost?</h1>
       ) : (
         <>
@@ -33,7 +38,7 @@ const Inbox = ({ username }: { username: string }) => {
               className='card flex w-full items-center gap-3 px-4 py-3'
             >
               <IoIosCopy className='text-primary-100' />
-              <p>umamin.link/to/{data?.username}</p>
+              <p>umamin.link/to/{username}</p>
             </button>
 
             <button type='button' className='secondary-btn flex-none'>
@@ -42,10 +47,12 @@ const Inbox = ({ username }: { username: string }) => {
           </div>
 
           <div className='mt-8 w-full text-left'>
-            <p className='mb-4 text-sm'>Latest messages</p>
+            <p className='mb-4 text-sm'>
+              {messages?.length ? 'Latest messages' : 'No messages to show'}
+            </p>
             <ul className='space-y-8'>
-              {Array.from({ length: 3 }).map(() => (
-                <li key={useId()} className='card p-3'>
+              {messages?.map((m) => (
+                <li key={m.id} className='card p-3'>
                   <Image
                     src='/assets/logo.svg'
                     objectFit='contain'
@@ -53,11 +60,7 @@ const Inbox = ({ username }: { username: string }) => {
                     height={30}
                   />
                   <div className='relative rounded bg-secondary-100 p-4'>
-                    <p className='font-medium'>
-                      Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                      Veniam eaque quis sapiente beatae omnis itaque? Alias sint
-                      architecto veniam, sequi vitae aliquid?
-                    </p>
+                    <p className='font-medium'>{m.content}</p>
 
                     <IoChatboxEllipses className='absolute -top-7 right-4 text-5xl text-primary-100' />
                   </div>
@@ -76,8 +79,8 @@ export async function getServerSideProps({
 }: {
   params: { username: string };
 }) {
-  await queryClient.prefetchQuery('user', () =>
-    getUser({ username: params.username })
+  await queryClient.prefetchQuery('messages', () =>
+    getMessages({ username: params.username })
   );
 
   return {
