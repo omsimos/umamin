@@ -10,7 +10,4 @@ export class Message {
 
   @Field(() => String)
   sentFor: string;
-
-  @Field(() => Date)
-  createdAt: Date;
 }

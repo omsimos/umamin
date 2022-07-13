@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
-import { Resolver, Query, Ctx, Arg, ID } from 'type-graphql';
+import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
+import { nanoid } from 'nanoid';
 
 import { Message } from './message.types';
 import type { TContext } from '@/pages/api/graphql';
@@ -53,5 +54,38 @@ export class MessageResolver {
     }
 
     return messages;
+  }
+
+  @Mutation(() => String)
+  async sendMessage(
+    @Arg('username', () => String) username: string,
+    @Arg('content', () => String) content: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<String> {
+    try {
+      await prisma.message.create({
+        data: { id: nanoid(), content, sentFor: username },
+      });
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+
+    return 'Message sent';
+  }
+
+  @Mutation(() => String)
+  async deleteMessage(
+    @Arg('id', () => ID) id: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<String> {
+    try {
+      await prisma.message.delete({ where: { id } });
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+
+    return 'Message deleted';
   }
 }
