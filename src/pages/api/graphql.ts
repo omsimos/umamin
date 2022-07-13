@@ -5,12 +5,15 @@ import { NextApiRequest, NextApiResponse } from 'next';
 
 import { prisma } from '@/db';
 import { UserResolver } from '@/schema/user';
+import { MessageResolver } from '@/schema/message';
 
 export interface TContext {
   prisma: typeof prisma;
 }
 
-const schema = await buildSchema({ resolvers: [UserResolver] });
+const schema = await buildSchema({
+  resolvers: [UserResolver, MessageResolver],
+});
 
 const server = new ApolloServer({
   schema,

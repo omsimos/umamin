@@ -1,8 +1,8 @@
-import { ObjectType, Field } from 'type-graphql';
+import { ObjectType, Field, ID } from 'type-graphql';
 
 @ObjectType()
 export class Message {
-  @Field(() => String)
+  @Field(() => ID)
   id: string;
 
   @Field(() => String)
