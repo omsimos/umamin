@@ -10,6 +10,11 @@ export const Navbar = () => {
   const currentUser = useStore((state) => state.currentUser);
   const setCurrentUser = useStore((state) => state.setCurrentUser);
 
+  const handleLogout = () => {
+    push('/');
+    setCurrentUser(null);
+  };
+
   return (
     <nav className='relative z-10 mb-12 flex items-center justify-between xl:mb-24'>
       <Link href='/'>
@@ -20,11 +25,7 @@ export const Navbar = () => {
 
       <div className='flex items-center space-x-6'>
         {currentUser ? (
-          <button
-            onClick={() => setCurrentUser(null)}
-            type='button'
-            className='primary-btn'
-          >
+          <button onClick={handleLogout} type='button' className='primary-btn'>
             Logout
           </button>
         ) : (

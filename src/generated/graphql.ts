@@ -21,14 +21,27 @@ export type Scalars = {
   Float: number;
 };
 
+export type Message = {
+  __typename?: 'Message';
+  content: Scalars['String'];
+  id: Scalars['ID'];
+  sentFor: Scalars['String'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   createUser: User;
+  deleteMessage: Scalars['String'];
   login: Scalars['String'];
+  sendMessage: Message;
 };
 
 export type MutationCreateUserArgs = {
   username: Scalars['String'];
+};
+
+export type MutationDeleteMessageArgs = {
+  id: Scalars['ID'];
 };
 
 export type MutationLoginArgs = {
@@ -36,9 +49,24 @@ export type MutationLoginArgs = {
   username: Scalars['String'];
 };
 
+export type MutationSendMessageArgs = {
+  content: Scalars['String'];
+  username: Scalars['String'];
+};
+
 export type Query = {
   __typename?: 'Query';
-  user: User;
+  message: Message;
+  messages?: Maybe<Array<Message>>;
+  user?: Maybe<User>;
+};
+
+export type QueryMessageArgs = {
+  id: Scalars['ID'];
+};
+
+export type QueryMessagesArgs = {
+  username: Scalars['String'];
 };
 
 export type QueryUserArgs = {
@@ -60,13 +88,44 @@ export type CreateUserMutation = {
   createUser: { __typename?: 'User'; username: string; password: string };
 };
 
+export type DeleteMessageMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+export type DeleteMessageMutation = {
+  __typename?: 'Mutation';
+  deleteMessage: string;
+};
+
+export type GetMessageByIdQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+export type GetMessageByIdQuery = {
+  __typename?: 'Query';
+  message: { __typename?: 'Message'; content: string };
+};
+
+export type GetMessagesQueryVariables = Exact<{
+  username: Scalars['String'];
+}>;
+
+export type GetMessagesQuery = {
+  __typename?: 'Query';
+  messages?: Array<{
+    __typename?: 'Message';
+    id: string;
+    content: string;
+  }> | null;
+};
+
 export type GetUserQueryVariables = Exact<{
   username: Scalars['String'];
 }>;
 
 export type GetUserQuery = {
   __typename?: 'Query';
-  user: { __typename?: 'User'; username: string; password: string };
+  user?: { __typename?: 'User'; username: string; password: string } | null;
 };
 
 export type LoginUserMutationVariables = Exact<{
@@ -76,11 +135,41 @@ export type LoginUserMutationVariables = Exact<{
 
 export type LoginUserMutation = { __typename?: 'Mutation'; login: string };
 
+export type SendMessageMutationVariables = Exact<{
+  username: Scalars['String'];
+  content: Scalars['String'];
+}>;
+
+export type SendMessageMutation = {
+  __typename?: 'Mutation';
+  sendMessage: { __typename?: 'Message'; content: string };
+};
+
 export const CreateUserDocument = gql`
   mutation createUser($username: String!) {
     createUser(username: $username) {
       username
       password
+    }
+  }
+`;
+export const DeleteMessageDocument = gql`
+  mutation deleteMessage($id: ID!) {
+    deleteMessage(id: $id)
+  }
+`;
+export const GetMessageByIdDocument = gql`
+  query getMessageById($id: ID!) {
+    message(id: $id) {
+      content
+    }
+  }
+`;
+export const GetMessagesDocument = gql`
+  query getMessages($username: String!) {
+    messages(username: $username) {
+      id
+      content
     }
   }
 `;
@@ -95,6 +184,13 @@ export const GetUserDocument = gql`
 export const LoginUserDocument = gql`
   mutation loginUser($username: String!, $password: String!) {
     login(username: $username, password: $password)
+  }
+`;
+export const SendMessageDocument = gql`
+  mutation sendMessage($username: String!, $content: String!) {
+    sendMessage(username: $username, content: $content) {
+      content
+    }
   }
 `;
 
@@ -129,6 +225,50 @@ export function getSdk(
         'mutation'
       );
     },
+    deleteMessage(
+      variables: DeleteMessageMutationVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<DeleteMessageMutation> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<DeleteMessageMutation>(
+            DeleteMessageDocument,
+            variables,
+            { ...requestHeaders, ...wrappedRequestHeaders }
+          ),
+        'deleteMessage',
+        'mutation'
+      );
+    },
+    getMessageById(
+      variables: GetMessageByIdQueryVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<GetMessageByIdQuery> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<GetMessageByIdQuery>(
+            GetMessageByIdDocument,
+            variables,
+            { ...requestHeaders, ...wrappedRequestHeaders }
+          ),
+        'getMessageById',
+        'query'
+      );
+    },
+    getMessages(
+      variables: GetMessagesQueryVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<GetMessagesQuery> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<GetMessagesQuery>(GetMessagesDocument, variables, {
+            ...requestHeaders,
+            ...wrappedRequestHeaders,
+          }),
+        'getMessages',
+        'query'
+      );
+    },
     getUser(
       variables: GetUserQueryVariables,
       requestHeaders?: Dom.RequestInit['headers']
@@ -154,6 +294,20 @@ export function getSdk(
             ...wrappedRequestHeaders,
           }),
         'loginUser',
+        'mutation'
+      );
+    },
+    sendMessage(
+      variables: SendMessageMutationVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<SendMessageMutation> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<SendMessageMutation>(SendMessageDocument, variables, {
+            ...requestHeaders,
+            ...wrappedRequestHeaders,
+          }),
+        'sendMessage',
         'mutation'
       );
     },

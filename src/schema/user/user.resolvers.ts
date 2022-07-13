@@ -8,7 +8,7 @@ import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
 export class UserResolver {
-  @Query(() => User)
+  @Query(() => User, { nullable: true })
   async user(
     @Arg('username', () => String) username: string,
     @Ctx() { prisma }: TContext
