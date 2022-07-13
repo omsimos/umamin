@@ -24,7 +24,7 @@ If you like this project, please consider giving it a star! Want to contribute? 
 
 ### Contributing Guide
 
-1. Fork this [repository](https://github.com/joshxfi/trackAsOne) and clone your fork.
+1. Fork this [repository](https://github.com/joshxfi/umamin) and clone your fork.
 2. Create a new branch for your changes:
 
 ```sh
@@ -77,4 +77,4 @@ $ git push origin HEAD
 
 ## License
 
-Licensed under the [GPL-3.0 license](https://github.com/joshxfi/trackAsOne/blob/main/LICENSE).
+Licensed under the [GPL-3.0 license](https://github.com/joshxfi/umamin/blob/main/LICENSE).
