@@ -15,7 +15,7 @@ const Inbox = ({ username }: { username: string }) => {
     'messages',
     () => getMessages({ username }),
     {
-      select: (d) => d.messages,
+      select: (data) => data.messages,
     }
   );
 

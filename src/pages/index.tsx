@@ -68,7 +68,12 @@ const Home: NextPage = () => {
       </div>
 
       <div className='absolute top-48 right-0 -z-10 h-[450px] w-full sm:top-40 sm:w-[450px] md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
-        <Image src='/assets/hearts.svg' layout='fill' objectFit='contain' />
+        <Image
+          priority
+          src='/assets/hearts.svg'
+          layout='fill'
+          objectFit='contain'
+        />
       </div>
     </section>
   );

@@ -56,14 +56,16 @@ export class MessageResolver {
     return messages;
   }
 
-  @Mutation(() => String)
+  @Mutation(() => Message)
   async sendMessage(
     @Arg('username', () => String) username: string,
     @Arg('content', () => String) content: string,
     @Ctx() { prisma }: TContext
-  ): Promise<String> {
+  ): Promise<Message> {
+    let message = {} as Message;
+
     try {
-      await prisma.message.create({
+      message = await prisma.message.create({
         data: { id: nanoid(), content, sentFor: username },
       });
     } catch (err: any) {
@@ -71,7 +73,7 @@ export class MessageResolver {
       throw new Error(err.message);
     }
 
-    return 'Message sent';
+    return message;
   }
 
   @Mutation(() => String)

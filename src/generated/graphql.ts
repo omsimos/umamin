@@ -33,7 +33,7 @@ export type Mutation = {
   createUser: User;
   deleteMessage: Scalars['String'];
   login: Scalars['String'];
-  sendMessage: Scalars['String'];
+  sendMessage: Message;
 };
 
 export type MutationCreateUserArgs = {
@@ -58,7 +58,7 @@ export type Query = {
   __typename?: 'Query';
   message: Message;
   messages?: Maybe<Array<Message>>;
-  user: User;
+  user?: Maybe<User>;
 };
 
 export type QueryMessageArgs = {
@@ -125,7 +125,7 @@ export type GetUserQueryVariables = Exact<{
 
 export type GetUserQuery = {
   __typename?: 'Query';
-  user: { __typename?: 'User'; username: string; password: string };
+  user?: { __typename?: 'User'; username: string; password: string } | null;
 };
 
 export type LoginUserMutationVariables = Exact<{
@@ -142,7 +142,7 @@ export type SendMessageMutationVariables = Exact<{
 
 export type SendMessageMutation = {
   __typename?: 'Mutation';
-  sendMessage: string;
+  sendMessage: { __typename?: 'Message'; content: string };
 };
 
 export const CreateUserDocument = gql`
@@ -188,7 +188,9 @@ export const LoginUserDocument = gql`
 `;
 export const SendMessageDocument = gql`
   mutation sendMessage($username: String!, $content: String!) {
-    sendMessage(username: $username, content: $content)
+    sendMessage(username: $username, content: $content) {
+      content
+    }
   }
 `;
 

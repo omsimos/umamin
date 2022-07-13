@@ -11,6 +11,7 @@ export const Navbar = () => {
   const setCurrentUser = useStore((state) => state.setCurrentUser);
 
   const handleLogout = () => {
+    push('/');
     setCurrentUser(null);
   };
 

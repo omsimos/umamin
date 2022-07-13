@@ -19,7 +19,7 @@ model User {
 
 model Message {
   id        String   @id
-  content   String
+  content   String   @db.VarChar(255)
   sentFor   String
   createdAt DateTime @default(now())
 }
