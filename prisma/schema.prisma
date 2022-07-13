@@ -16,3 +16,10 @@ model User {
   username String @unique
   password String
 }
+
+model Message {
+  id String @id
+  content String
+  sentFor String
+  createdAt DateTime @default(now())
+}
