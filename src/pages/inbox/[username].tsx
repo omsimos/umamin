@@ -3,7 +3,7 @@ import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { IoIosCopy } from 'react-icons/io';
 import { useQuery, dehydrate } from 'react-query';
-import { IoChatboxEllipses } from 'react-icons/io5';
+import { IoChatboxEllipses, IoReload } from 'react-icons/io5';
 
 import { useStore } from '@/hooks';
 import { queryClient, getMessages } from '@/api';
@@ -35,9 +35,9 @@ const Inbox = ({ username }: { username: string }) => {
             <button
               type='button'
               onClick={copyLink}
-              className='card flex w-full items-center gap-3 px-4 py-3'
+              className='card flex w-full items-center gap-3 truncate px-4 py-3'
             >
-              <IoIosCopy className='text-primary-100' />
+              <IoIosCopy className='flex-none text-primary-100' />
               <p>umamin.link/to/{username}</p>
             </button>
 
@@ -47,9 +47,17 @@ const Inbox = ({ username }: { username: string }) => {
           </div>
 
           <div className='mt-8 w-full text-left'>
-            <p className='mb-4 text-sm'>
-              {messages?.length ? 'Latest messages' : 'No messages to show'}
-            </p>
+            <div className='mb-4 flex justify-between'>
+              <p className='text-sm'>
+                {messages?.length ? 'Latest messages' : 'No messages to show'}
+              </p>
+              <button
+                type='button'
+                onClick={() => queryClient.invalidateQueries('messages')}
+              >
+                <IoReload className='text-lg' />
+              </button>
+            </div>
             <ul className='space-y-8'>
               {messages?.map((m) => (
                 <li key={m.id} className='card p-3'>
