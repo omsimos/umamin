@@ -1,40 +1,18 @@
 import React, { useState } from 'react';
 import { BsFillPersonFill } from 'react-icons/bs';
 import { HiLockClosed } from 'react-icons/hi';
-import { useMutation } from 'react-query';
-import { useRouter } from 'next/router';
-import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
-
-import { loginUser } from '@/api';
-import { useStore } from '@/hooks';
+import { getSession, signIn } from 'next-auth/react';
+import { GetServerSideProps } from 'next';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const { push } = useRouter();
-  const { mutate } = useMutation(loginUser);
-
-  const setCurrentUser = useStore((state) => state.setCurrentUser);
-
   const handleLogin: React.FormEventHandler = async (e) => {
     e.preventDefault();
-
-    mutate(
-      {
-        username,
-        password,
-      },
-      {
-        onSuccess: () => {
-          toast.success('Login successful');
-          setCurrentUser(username);
-          push(`/inbox/${username}`);
-        },
-      }
-    );
+    await signIn('credentials', { username, password });
   };
 
   return (
@@ -88,6 +66,23 @@ const Login = () => {
       </div>
     </section>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const session = await getSession({ req });
+
+  if (session?.user?.username) {
+    return {
+      redirect: {
+        statusCode: 301,
+        destination: '/inbox',
+      },
+    };
+  }
+
+  return {
+    props: {},
+  };
 };
 
 export default Login;

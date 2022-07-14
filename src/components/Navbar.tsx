@@ -2,17 +2,16 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
-
-import { useStore } from '@/hooks';
+import { signOut, useSession } from 'next-auth/react';
 
 export const Navbar = () => {
+  const { status } = useSession();
   const { push } = useRouter();
-  const currentUser = useStore((state) => state.currentUser);
-  const setCurrentUser = useStore((state) => state.setCurrentUser);
 
   const handleLogout = () => {
-    push('/');
-    setCurrentUser(null);
+    signOut().then(() => {
+      push('/login');
+    });
   };
 
   return (
@@ -24,7 +23,7 @@ export const Navbar = () => {
       </Link>
 
       <div className='flex items-center space-x-6'>
-        {currentUser ? (
+        {status === 'authenticated' ? (
           <button onClick={handleLogout} type='button' className='primary-btn'>
             Logout
           </button>

@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
 import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
 import { customAlphabet } from 'nanoid';
-import bcrypt from 'bcrypt';
 
 import { User } from '.';
 import type { TContext } from '@/pages/api/graphql';
+import { hashPassword, isPassword } from '@/utils';
 
 @Resolver()
 export class UserResolver {
@@ -39,7 +39,7 @@ export class UserResolver {
   ): Promise<String | null> {
     const data = await this.user(username, { prisma });
 
-    if (!(await bcrypt.compare(password, data.password))) {
+    if (isPassword(password, data.password)) {
       throw new Error('Incorrect credentials');
     }
 
@@ -54,7 +54,7 @@ export class UserResolver {
     const pin = customAlphabet('1234567890', 6);
     const defaultPassword = pin();
 
-    const password = await bcrypt.hash(defaultPassword, 10);
+    const password = hashPassword(defaultPassword);
 
     try {
       const user = await prisma.user.findUnique({
