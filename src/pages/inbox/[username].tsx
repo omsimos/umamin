@@ -68,7 +68,7 @@ const Inbox = ({ username }: { username: string }) => {
                     height={30}
                   />
                   <div className='relative rounded bg-secondary-100 p-4'>
-                    <p className='font-medium'>{m.content}</p>
+                    <p className='break-words font-medium'>{m.content}</p>
 
                     <IoChatboxEllipses className='absolute -top-7 right-4 text-5xl text-primary-100' />
                   </div>
