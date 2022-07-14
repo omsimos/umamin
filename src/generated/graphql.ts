@@ -25,7 +25,8 @@ export type Message = {
   __typename?: 'Message';
   content: Scalars['String'];
   id: Scalars['ID'];
-  sentFor: Scalars['String'];
+  receiverId: Scalars['String'];
+  senderId?: Maybe<Scalars['String']>;
 };
 
 export type Mutation = {
@@ -51,7 +52,8 @@ export type MutationLoginArgs = {
 
 export type MutationSendMessageArgs = {
   content: Scalars['String'];
-  username: Scalars['String'];
+  receiverUsername: Scalars['String'];
+  senderUsername?: InputMaybe<Scalars['String']>;
 };
 
 export type Query = {
@@ -103,7 +105,13 @@ export type GetMessageByIdQueryVariables = Exact<{
 
 export type GetMessageByIdQuery = {
   __typename?: 'Query';
-  message: { __typename?: 'Message'; content: string };
+  message: {
+    __typename?: 'Message';
+    id: string;
+    content: string;
+    senderId?: string | null;
+    receiverId: string;
+  };
 };
 
 export type GetMessagesQueryVariables = Exact<{
@@ -136,13 +144,14 @@ export type LoginUserMutationVariables = Exact<{
 export type LoginUserMutation = { __typename?: 'Mutation'; login: string };
 
 export type SendMessageMutationVariables = Exact<{
-  username: Scalars['String'];
   content: Scalars['String'];
+  receiverUsername: Scalars['String'];
+  senderUsername?: InputMaybe<Scalars['String']>;
 }>;
 
 export type SendMessageMutation = {
   __typename?: 'Mutation';
-  sendMessage: { __typename?: 'Message'; content: string };
+  sendMessage: { __typename?: 'Message'; id: string; content: string };
 };
 
 export const CreateUserDocument = gql`
@@ -161,7 +170,10 @@ export const DeleteMessageDocument = gql`
 export const GetMessageByIdDocument = gql`
   query getMessageById($id: ID!) {
     message(id: $id) {
+      id
       content
+      senderId
+      receiverId
     }
   }
 `;
@@ -187,8 +199,17 @@ export const LoginUserDocument = gql`
   }
 `;
 export const SendMessageDocument = gql`
-  mutation sendMessage($username: String!, $content: String!) {
-    sendMessage(username: $username, content: $content) {
+  mutation sendMessage(
+    $content: String!
+    $receiverUsername: String!
+    $senderUsername: String
+  ) {
+    sendMessage(
+      content: $content
+      receiverUsername: $receiverUsername
+      senderUsername: $senderUsername
+    ) {
+      id
       content
     }
   }

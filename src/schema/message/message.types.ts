@@ -8,6 +8,9 @@ export class Message {
   @Field(() => String)
   content: string;
 
+  @Field(() => String, { nullable: true })
+  senderId: string | null;
+
   @Field(() => String)
-  sentFor: string;
+  receiverId: string;
 }

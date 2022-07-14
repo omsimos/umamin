@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
-import { nanoid } from 'nanoid';
 
 import { Message } from './message.types';
 import type { TContext } from '@/pages/api/graphql';
@@ -12,22 +11,18 @@ export class MessageResolver {
     @Arg('id', () => ID) id: string,
     @Ctx() { prisma }: TContext
   ): Promise<Message> {
-    let message = {} as Message;
-
     try {
-      const _message = await prisma.message.findUnique({ where: { id } });
+      const message = await prisma.message.findUnique({ where: { id } });
 
-      if (!_message) {
+      if (!message) {
         throw new Error('Message not found');
       }
 
-      message = _message;
+      return message;
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);
     }
-
-    return message;
   }
 
   @Query(() => [Message], { nullable: true })
@@ -35,45 +30,47 @@ export class MessageResolver {
     @Arg('username', () => String) username: string,
     @Ctx() { prisma }: TContext
   ): Promise<Message[] | null> {
-    let messages = [] as Message[] | null;
-
     try {
-      const user = await prisma.user.findUnique({ where: { username } });
+      const user = await prisma.user.findUnique({
+        where: { username },
+        select: { receivedMessages: true },
+      });
 
       if (!user) {
         throw new Error('User not found');
       }
 
-      messages = await prisma.message.findMany({
-        where: { sentFor: username },
-        orderBy: { createdAt: 'desc' },
-      });
+      return user.receivedMessages;
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);
     }
-
-    return messages;
   }
 
   @Mutation(() => Message)
   async sendMessage(
-    @Arg('username', () => String) username: string,
+    @Arg('senderUsername', () => String, { nullable: true })
+    senderUsername: string | null,
+    @Arg('receiverUsername', () => String) receiverUsername: string,
     @Arg('content', () => String) content: string,
     @Ctx() { prisma }: TContext
   ): Promise<Message> {
-    let message = {} as Message;
-
     try {
-      message = await prisma.message.create({
-        data: { id: nanoid(), content, sentFor: username },
+      const message = await prisma.message.create({
+        data: {
+          content,
+          sender: senderUsername
+            ? { connect: { username: senderUsername } }
+            : undefined,
+          receiver: { connect: { username: receiverUsername } },
+        },
       });
+
+      return message;
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);
     }
-
-    return message;
   }
 
   @Mutation(() => String)

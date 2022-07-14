@@ -1,5 +1,6 @@
-mutation sendMessage($username: String!, $content: String!) {
-  sendMessage(username: $username, content: $content) {
+mutation sendMessage($content: String!, $receiverUsername: String!, $senderUsername: String) {
+  sendMessage(content: $content, receiverUsername: $receiverUsername, senderUsername: $senderUsername) {
+    id
     content
   }
 }

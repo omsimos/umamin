@@ -17,7 +17,7 @@ const SendTo = ({ username }: { username: string }) => {
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
     mutate(
-      { username, content: message },
+      { content: message, receiverUsername: username },
       {
         onSuccess: () => {
           setMessage('');
