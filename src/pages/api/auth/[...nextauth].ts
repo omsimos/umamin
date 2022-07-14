@@ -19,24 +19,20 @@ const options: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       authorize: async (credentials) => {
-        try {
-          if (!credentials) throw new Error('Credentials missing.');
+        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/authorize`, {
+          method: 'POST',
+          body: JSON.stringify({
+            username: credentials?.username,
+            password: credentials?.password,
+          }),
+        });
 
-          const res = await fetch(`${process.env.NEXTAUTH_URL}/api/authorize`, {
-            method: 'POST',
-            body: JSON.stringify({
-              username: credentials.username,
-              password: credentials.password,
-            }),
-          });
-
+        if (res.ok) {
           const user = (await res.json()) as AuthedUser;
           return user;
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error(e);
-          throw new Error('Invalid credentials.');
         }
+
+        return Promise.reject(new Error('Invalid credentials'));
       },
     }),
   ],

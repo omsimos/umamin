@@ -5,14 +5,35 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getSession, signIn } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/router';
 
 const Login = () => {
+  const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
+  const router = useRouter();
+
   const handleLogin: React.FormEventHandler = async (e) => {
     e.preventDefault();
-    await signIn('credentials', { username, password });
+    setLoading(true);
+
+    const res = await signIn('credentials', {
+      username,
+      password,
+      redirect: false,
+    });
+
+    if (res?.error) {
+      toast.error(res.error);
+    }
+
+    if (res?.ok) {
+      router.push('/inbox');
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -24,6 +45,7 @@ const Login = () => {
         <span className='font-syne text-5xl font-extrabold text-primary-200'>
           login
         </span>
+
         <div className='w-full space-y-2'>
           <div className='input-field'>
             <BsFillPersonFill />
@@ -46,13 +68,16 @@ const Login = () => {
             />
           </div>
         </div>
+
         <div className='w-full'>
           <button
+            disabled={loading}
             type='submit'
             className='primary-btn mb-2 w-full cursor-pointer'
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
+
           <p className='text-sm'>
             Don&apos;t have an account?{' '}
             <Link href='/create'>
