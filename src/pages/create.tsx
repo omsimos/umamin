@@ -35,7 +35,7 @@ const Create = () => {
     <Success data={userInfo} />
   ) : (
     <section className='flex flex-col items-center gap-8'>
-      <h1 className='h1-text'>Create your profile</h1>
+      <h1 className='h1-text'>Getting started</h1>
       <form
         onSubmit={handleCreate}
         className='flex w-full flex-col justify-center gap-3 sm:flex-row'
@@ -49,7 +49,7 @@ const Create = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
               minLength={3}
-              maxLength={20}
+              maxLength={15}
               className='w-full bg-secondary-100 outline-none'
             />
             {isLoading && <span className='loader' />}
@@ -67,7 +67,7 @@ const Create = () => {
           disabled={isLoading}
           className='primary-btn disabled:cursor-not-allowed'
         >
-          Check availability
+          Create your link
         </button>
 
         <div className='flex gap-2 self-end text-sm sm:hidden'>
