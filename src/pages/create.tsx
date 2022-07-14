@@ -12,7 +12,7 @@ const Create = () => {
   const [username, setUsername] = useState('');
   const [userInfo, setUserInfo] = useState({} as User);
 
-  const { mutate } = useMutation(createUser);
+  const { mutate, isLoading } = useMutation(createUser);
 
   const handleCreate: React.FormEventHandler = (e) => {
     e.preventDefault();
@@ -38,20 +38,23 @@ const Create = () => {
       <h1 className='h1-text'>Create your profile</h1>
       <form
         onSubmit={handleCreate}
-        className='flex w-full flex-col justify-center gap-3 md:flex-row'
+        className='flex w-full flex-col justify-center gap-3 sm:flex-row'
       >
-        <div className='relative md:w-[50%]'>
-          <input
-            required
-            type='text'
-            placeholder='Enter a name for your link'
-            value={username}
-            onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
-            minLength={3}
-            maxLength={20}
-            className='w-full rounded bg-secondary-100 py-3 px-4 text-sm md:text-base'
-          />
-          <p className='absolute mt-2 hidden text-sm md:block'>
+        <div className='relative sm:w-[50%] xl:w-[40%]'>
+          <div className='flex w-full justify-between rounded bg-secondary-100 py-3 px-4 text-sm md:text-base'>
+            <input
+              required
+              type='text'
+              placeholder='Enter a name for your link'
+              value={username}
+              onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
+              minLength={3}
+              maxLength={20}
+              className='w-full bg-secondary-100 outline-none'
+            />
+            {isLoading && <span className='loader' />}
+          </div>
+          <p className='absolute mt-2 hidden text-sm sm:block'>
             Already have an account?{' '}
             <Link href='login'>
               <a className='text-primary-100'>Login</a>
@@ -59,11 +62,15 @@ const Create = () => {
           </p>
         </div>
 
-        <button type='submit' className='primary-btn'>
+        <button
+          type='submit'
+          disabled={isLoading}
+          className='primary-btn disabled:cursor-not-allowed'
+        >
           Check availability
         </button>
 
-        <div className='flex gap-2 self-end text-sm md:hidden'>
+        <div className='flex gap-2 self-end text-sm sm:hidden'>
           <p>Already have an account?</p>
           <Link href='login'>
             <a className='text-primary-100'>Login</a>

@@ -12,7 +12,7 @@ const SendTo = ({ username }: { username: string }) => {
     select: (data) => data.user,
   });
 
-  const { mutate, data } = useMutation(sendMessage);
+  const { mutate, data, isLoading } = useMutation(sendMessage);
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
@@ -75,12 +75,17 @@ const SendTo = ({ username }: { username: string }) => {
                 placeholder='Send an anonymous message..'
                 className='w-full rounded-full border-2 border-primary-100 bg-secondary-100 py-2 pl-5 pr-12 outline-none'
               />
-              <button
-                type='submit'
-                className='absolute right-10 cursor-pointer text-xl text-primary-100 md:right-12'
-              >
-                <RiSendPlaneFill />
-              </button>
+
+              {isLoading ? (
+                <span className='loader absolute right-10' />
+              ) : (
+                <button
+                  type='submit'
+                  className='absolute right-10 cursor-pointer text-xl text-primary-100 md:right-12'
+                >
+                  <RiSendPlaneFill />
+                </button>
+              )}
             </form>
           </div>
         </>
