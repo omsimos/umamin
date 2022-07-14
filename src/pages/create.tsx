@@ -16,11 +16,8 @@ const Create = () => {
 
   const handleCreate: React.FormEventHandler = (e) => {
     e.preventDefault();
-
     mutate(
-      {
-        username,
-      },
+      { username },
       {
         onSuccess: (data) => {
           setUserInfo(data.createUser);

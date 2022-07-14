@@ -12,7 +12,7 @@ export const Success = ({ data }: { data: User }) => {
 
   const handleProceed = () => {
     setCurrentUser(data.username);
-    push(`/inbox/${encodeURIComponent(data.username)}`);
+    push('/inbox');
   };
 
   return (
