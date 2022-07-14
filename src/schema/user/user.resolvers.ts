@@ -13,22 +13,18 @@ export class UserResolver {
     @Arg('username', () => String) username: string,
     @Ctx() { prisma }: TContext
   ): Promise<User> {
-    let data = {} as User;
-
     try {
-      const _data = await prisma.user.findUnique({ where: { username } });
+      const data = await prisma.user.findUnique({ where: { username } });
 
-      if (!_data) {
+      if (!data) {
         throw new Error('User not found');
       }
 
-      data = _data;
+      return data;
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);
     }
-
-    return data;
   }
 
   @Mutation(() => String)
