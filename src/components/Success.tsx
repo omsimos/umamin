@@ -4,14 +4,11 @@ import { BsInfoCircleFill } from 'react-icons/bs';
 import { IoChatboxEllipses } from 'react-icons/io5';
 
 import type { User } from '@/generated/graphql';
-import { useStore } from '@/hooks';
 
 export const Success = ({ data }: { data: User }) => {
   const { push } = useRouter();
-  const setCurrentUser = useStore((state) => state.setCurrentUser);
 
   const handleProceed = () => {
-    setCurrentUser(data.username);
     push('/inbox');
   };
 
