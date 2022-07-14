@@ -38,7 +38,7 @@ const Login = () => {
   };
 
   return (
-    <section className='absolute top-0 left-0 flex h-screen w-screen items-center justify-center px-5'>
+    <section className='flex items-center justify-center px-5 md:absolute md:top-0 md:left-0 md:h-screen md:w-screen'>
       <form
         onSubmit={handleLogin}
         className='card z-[1] flex w-full flex-col space-y-10 rounded-md px-5 py-10 text-center sm:w-[500px] sm:px-10'
@@ -83,7 +83,7 @@ const Login = () => {
           </p>
         </div>
       </form>
-      <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] sm:bottom-0'>
+      <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] md:bottom-0'>
         <Image src='/assets/hearts.svg' layout='fill' objectFit='contain' />
       </div>
     </section>
