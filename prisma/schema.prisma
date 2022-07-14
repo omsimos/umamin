@@ -32,5 +32,5 @@ model Message {
   senderId   String?
   sender     User?   @relation(name: "sentMessages", fields: [senderId], references: [id])
   receiverId String
-  receiver   User    @relation(name: "receivedMessages", fields: [receiverId], references: [id])
+  receiver   User    @relation(name: "receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 }
