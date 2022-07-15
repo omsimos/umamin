@@ -29,7 +29,7 @@ const SendTo = ({ username }: { username: string }) => {
   };
 
   return (
-    <section className='absolute top-0 left-0 flex h-screen w-screen items-center justify-center px-5'>
+    <section className='flex justify-center md:absolute md:left-0 md:top-0 md:h-screen md:w-full md:items-center'>
       {!user ? (
         <h1 className='h1-text'>Are you lost?</h1>
       ) : (
@@ -51,7 +51,7 @@ const SendTo = ({ username }: { username: string }) => {
             </div>
 
             {/* Message */}
-            <div className='flex flex-col space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7'>
+            <div className='flex min-h-[160px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7'>
               <div className='chat-p receive inline-block self-start font-medium'>
                 Send me an anonymous message!
               </div>
