@@ -1,8 +1,8 @@
 import 'reflect-metadata';
-import { buildSchema } from 'type-graphql';
-import { ApolloServer } from 'apollo-server-micro';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { ApolloServer } from 'apollo-server-micro';
 import { getSession } from 'next-auth/react';
+import { buildSchema } from 'type-graphql';
 
 import { prisma } from '@/db';
 import { UserResolver } from '@/schema/user';

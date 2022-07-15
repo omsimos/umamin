@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { BsFillPersonFill } from 'react-icons/bs';
+import { getSession, signIn } from 'next-auth/react';
 import { HiLockClosed } from 'react-icons/hi';
+import { GetServerSideProps } from 'next';
+import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getSession, signIn } from 'next-auth/react';
-import { GetServerSideProps } from 'next';
-import toast from 'react-hot-toast';
-import { useRouter } from 'next/router';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
