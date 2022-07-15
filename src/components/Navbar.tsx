@@ -31,12 +31,11 @@ export const Navbar = () => {
       </Link>
 
       <div className='flex items-center space-x-6'>
-        {status === 'loading' ? (
-          <div>Loading...</div>
+        {status === 'loading' || loading ? (
+          <span className='loader' />
         ) : status === 'authenticated' ? (
           <button onClick={handleLogout} type='button' className='primary-btn'>
-            {/* TODO: use loading spinner */}
-            {loading ? 'Logging out...' : 'Logout'}
+            Logout
           </button>
         ) : (
           <>
