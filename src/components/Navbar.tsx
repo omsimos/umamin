@@ -1,18 +1,20 @@
-import React from 'react';
+/* eslint-disable no-nested-ternary */
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
-
-import { useStore } from '@/hooks';
+import { signOut, useSession } from 'next-auth/react';
 
 export const Navbar = () => {
+  const [loading, setLoading] = useState(false);
+  const { status } = useSession();
   const { push } = useRouter();
-  const currentUser = useStore((state) => state.currentUser);
-  const setCurrentUser = useStore((state) => state.setCurrentUser);
 
-  const handleLogout = () => {
-    push('/');
-    setCurrentUser(null);
+  const handleLogout = async () => {
+    setLoading(true);
+    await signOut({ redirect: false });
+    setLoading(false);
+    push('/login');
   };
 
   return (
@@ -29,9 +31,12 @@ export const Navbar = () => {
       </Link>
 
       <div className='flex items-center space-x-6'>
-        {currentUser ? (
+        {status === 'loading' ? (
+          <div>Loading...</div>
+        ) : status === 'authenticated' ? (
           <button onClick={handleLogout} type='button' className='primary-btn'>
-            Logout
+            {/* TODO: use loading spinner */}
+            {loading ? 'Logging out...' : 'Logout'}
           </button>
         ) : (
           <>

@@ -1,40 +1,39 @@
 import React, { useState } from 'react';
 import { BsFillPersonFill } from 'react-icons/bs';
 import { HiLockClosed } from 'react-icons/hi';
-import { useMutation } from 'react-query';
-import { useRouter } from 'next/router';
-import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
-
-import { loginUser } from '@/api';
-import { useStore } from '@/hooks';
+import { getSession, signIn } from 'next-auth/react';
+import { GetServerSideProps } from 'next';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/router';
 
 const Login = () => {
+  const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const { push } = useRouter();
-  const { mutate } = useMutation(loginUser);
-
-  const setCurrentUser = useStore((state) => state.setCurrentUser);
+  const router = useRouter();
 
   const handleLogin: React.FormEventHandler = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    mutate(
-      {
-        username,
-        password,
-      },
-      {
-        onSuccess: () => {
-          toast.success('Login successful');
-          setCurrentUser(username);
-          push(`/inbox/${username}`);
-        },
-      }
-    );
+    const res = await signIn('credentials', {
+      username,
+      password,
+      redirect: false,
+    });
+
+    if (res?.error) {
+      toast.error(res.error);
+    }
+
+    if (res?.ok) {
+      router.push('/inbox');
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -46,6 +45,7 @@ const Login = () => {
         <span className='font-syne text-5xl font-extrabold text-primary-200'>
           login
         </span>
+
         <div className='w-full space-y-2'>
           <div className='input-field'>
             <BsFillPersonFill />
@@ -68,13 +68,16 @@ const Login = () => {
             />
           </div>
         </div>
+
         <div className='w-full'>
           <button
+            disabled={loading}
             type='submit'
             className='primary-btn mb-2 w-full cursor-pointer'
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
+
           <p className='text-sm'>
             Don&apos;t have an account?{' '}
             <Link href='/create'>
@@ -88,6 +91,23 @@ const Login = () => {
       </div>
     </section>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const session = await getSession({ req });
+
+  if (session?.user?.username) {
+    return {
+      redirect: {
+        statusCode: 301,
+        destination: '/inbox',
+      },
+    };
+  }
+
+  return {
+    props: {},
+  };
 };
 
 export default Login;
