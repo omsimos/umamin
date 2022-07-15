@@ -3,8 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
-import { IoChatboxEllipses } from 'react-icons/io5';
 import { useSession } from 'next-auth/react';
+import { IoChatboxEllipses } from 'react-icons/io5';
 
 const Home: NextPage = () => {
   const { push } = useRouter();
@@ -66,7 +66,7 @@ const Home: NextPage = () => {
         <IoChatboxEllipses className='absolute right-4 -top-14 text-8xl text-primary-100 xl:-left-12 xl:top-28 xl:text-9xl' />
       </div>
 
-      <div className='absolute top-48 right-0 -z-10 h-[450px] w-full sm:top-40 sm:w-[450px] md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
+      <div className='absolute top-48 right-0 -z-10 h-[450px] w-[450px] sm:top-40 md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
         <Image
           priority
           src='/assets/hearts.svg'
