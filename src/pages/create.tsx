@@ -24,6 +24,9 @@ const Create = () => {
           setSuccess(true);
           toast.success('Link created!');
         },
+        onError: () => {
+          setUsername('');
+        },
       }
     );
   };

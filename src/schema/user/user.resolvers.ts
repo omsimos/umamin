@@ -47,6 +47,7 @@ export class UserResolver {
     @Arg('username', () => String) username: string,
     @Ctx() { prisma }: TContext
   ): Promise<User | null> {
+    const usernameRegex = /^[a-zA-Z0-9]+$/;
     const pin = customAlphabet('1234567890', 6);
     const defaultPassword = pin();
 
@@ -58,7 +59,11 @@ export class UserResolver {
       });
 
       if (user) {
-        throw new Error('Link already taken');
+        throw new Error('Username already taken');
+      }
+
+      if (!usernameRegex.test(username)) {
+        throw new Error('Username must be alphanumeric');
       }
 
       await prisma.user.create({
