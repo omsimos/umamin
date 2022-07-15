@@ -1,13 +1,13 @@
 import React from 'react';
-import Image from 'next/image';
-import toast from 'react-hot-toast';
-import { IoIosCopy } from 'react-icons/io';
-import { useQuery } from 'react-query';
 import { IoChatboxEllipses, IoReload } from 'react-icons/io5';
+import { useQuery, dehydrate } from 'react-query';
 import { getSession } from 'next-auth/react';
+import { IoIosCopy } from 'react-icons/io';
 import { GetServerSideProps } from 'next';
+import toast from 'react-hot-toast';
+import Image from 'next/image';
 
-import { getMessages } from '@/api';
+import { getMessages, queryClient } from '@/api';
 
 const Inbox = ({ username }: { username: string }) => {
   const {
@@ -79,8 +79,9 @@ const Inbox = ({ username }: { username: string }) => {
 
 export const getServerSideProps: GetServerSideProps = async ({ req }) => {
   const session = await getSession({ req });
+  const username = session?.user?.username;
 
-  if (!session?.user?.username) {
+  if (!username) {
     return {
       redirect: {
         statusCode: 301,
@@ -89,9 +90,14 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     };
   }
 
+  await queryClient.prefetchQuery(['messages', { username }], () =>
+    getMessages({ username })
+  );
+
   return {
     props: {
-      username: session.user.username,
+      username,
+      dehydratedState: dehydrate(queryClient),
     },
   };
 };
