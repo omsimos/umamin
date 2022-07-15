@@ -37,7 +37,7 @@ export const Footer = () => {
         </ul>
 
         <ul className='flex flex-col gap-4'>
-          <p className='font-medium text-gray-500'>Contribute</p>
+          <p className='font-medium text-gray-500'>Contact</p>
           <a
             href='mailto:contact@joshxfi.tech'
             className='transition-colors hover:text-gray-300'
@@ -72,7 +72,7 @@ export const Footer = () => {
             rel='noreferrer noopener'
             className='hover:underline'
           >
-            contributors
+            Contributors
           </a>
         </p>
       </div>
