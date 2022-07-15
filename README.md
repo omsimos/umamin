@@ -28,28 +28,31 @@ If you like this project, please consider giving it a star! Want to contribute? 
 2. Create a new branch for your changes:
 
 ```sh
-$ cd <your_cloned_fork>
+$ cd your_cloned_fork
 $ git checkout dev
 $ git checkout -b my-new-branch
 ```
 
 3. Create a `.env` file with this content:
 
-> Adjust the `DATABASE_URL` to your local PostgreSQL database. [Guide &rarr;](https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases/connect-your-database-typescript-postgres)
+> Adjust the DATABASE_URL to your local MySQL database. [Guide &rarr;](https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases/connect-your-database-typescript-mysql)
 
 ```sh
-DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
+DATABASE_URL="mysql://johndoe:randompassword@localhost:3306/mydb"
 NEXT_PUBLIC_GQL_ENDPOINT="http://localhost:3000/api/graphql"
+
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="mysupersecretkey"
 ```
 
-4. _(optional)_ Postgres image with docker
+4. _(optional)_ MySQL image with docker:
 
 ```sh
-yarn docker:up # start up a postgres image
-yarn docker:down # stop postgres image
+yarn docker:up # start up a MySQL image
+yarn docker:down # stop MySQL image
 ```
 
-5. Sync database schema
+5. Sync database schema:
 
 ```sh
 npx prisma db push
@@ -65,7 +68,7 @@ $ yarn
 $ yarn dev
 ```
 
-7. Commit your changes and push your branch.
+7. Commit your changes and push your branch:
 
 ```sh
 $ git add .

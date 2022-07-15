@@ -4,12 +4,13 @@ import Image from 'next/image';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { IoChatboxEllipses } from 'react-icons/io5';
-
-import { useStore } from '@/hooks';
+import { useSession } from 'next-auth/react';
 
 const Home: NextPage = () => {
   const { push } = useRouter();
-  const currentUser = useStore((state) => state.currentUser);
+  const { data } = useSession();
+
+  const currentUser = data?.user?.username;
 
   return (
     <section className='relative flex flex-col justify-between text-center sm:text-left xl:flex-row'>
@@ -33,9 +34,7 @@ const Home: NextPage = () => {
 
         <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
           <button
-            onClick={() =>
-              push(currentUser ? `/inbox/${currentUser}` : '/create')
-            }
+            onClick={() => push(currentUser ? '/inbox' : '/create')}
             type='button'
             className='primary-btn'
           >
@@ -68,7 +67,12 @@ const Home: NextPage = () => {
       </div>
 
       <div className='absolute top-48 right-0 -z-10 h-[450px] w-full sm:top-40 sm:w-[450px] md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
-        <Image src='/assets/hearts.svg' layout='fill' objectFit='contain' />
+        <Image
+          priority
+          src='/assets/hearts.svg'
+          layout='fill'
+          objectFit='contain'
+        />
       </div>
     </section>
   );

@@ -1,20 +1,28 @@
 import 'reflect-metadata';
-import { buildSchema } from 'type-graphql';
-import { ApolloServer } from 'apollo-server-micro';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { ApolloServer } from 'apollo-server-micro';
+import { getSession } from 'next-auth/react';
+import { buildSchema } from 'type-graphql';
 
 import { prisma } from '@/db';
 import { UserResolver } from '@/schema/user';
+import { MessageResolver } from '@/schema/message';
 
 export interface TContext {
   prisma: typeof prisma;
 }
 
-const schema = await buildSchema({ resolvers: [UserResolver] });
+const schema = await buildSchema({
+  resolvers: [UserResolver, MessageResolver],
+});
 
 const server = new ApolloServer({
   schema,
-  context: { prisma },
+  context: async ({ req }) => {
+    const session = await getSession({ req });
+    const username = session?.user?.username;
+    return { prisma, username };
+  },
 });
 const startServer = server.start();
 
