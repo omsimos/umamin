@@ -37,7 +37,7 @@ const Login = () => {
   };
 
   return (
-    <section className='flex items-center justify-center px-5 md:absolute md:top-0 md:left-0 md:h-screen md:w-screen'>
+    <section className='flex justify-center md:absolute md:left-0 md:top-0 md:h-screen md:w-full md:items-center'>
       <form
         onSubmit={handleLogin}
         className='card z-[1] flex w-full flex-col space-y-10 rounded-md px-5 py-10 text-center sm:w-[500px] sm:px-10'
