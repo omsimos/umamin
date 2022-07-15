@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import Link from 'next/link';
-import toast from 'react-hot-toast';
 import { useMutation } from 'react-query';
+import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 import { createUser } from '@/api';
 import { Success } from '@/components';
@@ -49,7 +49,7 @@ const Create = () => {
               maxLength={15}
               className='w-full bg-secondary-100 outline-none'
             />
-            {isLoading && <span className='loader' />}
+            {isLoading && <span className='loader flex-none' />}
           </div>
           <p className='absolute mt-2 hidden text-sm sm:block'>
             Already have an account?{' '}

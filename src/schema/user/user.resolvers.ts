@@ -3,8 +3,8 @@ import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
 import { customAlphabet } from 'nanoid';
 
 import { User } from '.';
-import type { TContext } from '@/pages/api/graphql';
 import { hashPassword, isPassword } from '@/utils';
+import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
 export class UserResolver {
