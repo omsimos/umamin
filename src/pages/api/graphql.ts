@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
 import { ApolloServer } from 'apollo-server-micro';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { getSession } from 'next-auth/react';
 
 import { prisma } from '@/db';
 import { UserResolver } from '@/schema/user';
@@ -17,7 +18,11 @@ const schema = await buildSchema({
 
 const server = new ApolloServer({
   schema,
-  context: { prisma },
+  context: async ({ req }) => {
+    const session = await getSession({ req });
+    const username = session?.user?.username;
+    return { prisma, username };
+  },
 });
 const startServer = server.start();
 

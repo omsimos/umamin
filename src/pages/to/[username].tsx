@@ -8,9 +8,11 @@ import { getUser, queryClient, sendMessage } from '@/api';
 const SendTo = ({ username }: { username: string }) => {
   const [message, setMessage] = useState('');
 
-  const { data: user } = useQuery('user', () => getUser({ username }), {
-    select: (data) => data.user,
-  });
+  const { data: user } = useQuery(
+    ['user', { username }],
+    () => getUser({ username }),
+    { select: (data) => data.user }
+  );
 
   const { mutate, data, isLoading } = useMutation(sendMessage);
 
@@ -99,7 +101,7 @@ export async function getServerSideProps({
 }: {
   params: { username: string };
 }) {
-  await queryClient.prefetchQuery('user', () =>
+  await queryClient.prefetchQuery(['user', { username: params.username }], () =>
     getUser({ username: params.username })
   );
 
