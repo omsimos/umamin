@@ -9,50 +9,42 @@ export const Footer = () => {
     <footer className='contain pb-12'>
       <div className='mb-12 h-[2px] bg-secondary-100' />
 
-      <div className='flex flex-wrap gap-y-16 gap-x-24 sm:justify-between'>
-        <ul className='flex flex-col gap-4'>
-          <p className='font-medium text-gray-500'>Project</p>
-          {footerItems.project.map((item) => (
+      <div className='grid grid-cols-2 flex-wrap justify-between gap-y-16 sm:flex'>
+        <div className='flex flex-col gap-4'>
+          <p className='font-medium'>Project</p>
+          {footerItems.withRoute.map((item) => (
             <Link href={item.href} key={item.name}>
-              <a className='transition-colors hover:text-gray-300'>
+              <a className='text-gray-400 transition-colors hover:text-gray-500'>
                 {item.name}
               </a>
             </Link>
           ))}
-        </ul>
-
-        <ul className='flex flex-col gap-4'>
-          <p className='font-medium text-gray-500'>Contribute</p>
-          {footerItems.contribute.map((item) => (
-            <a
-              key={item.name}
-              href={item.href}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='transition-colors hover:text-gray-300'
-            >
-              {item.name}
-            </a>
-          ))}
-        </ul>
-
-        <div className='flex flex-col gap-4'>
-          <p className='font-medium text-gray-500'>Contact</p>
-          <a
-            href='mailto:contact@joshxfi.tech'
-            className='transition-colors hover:text-gray-300'
-          >
-            contact@joshxfi.tech
-          </a>
         </div>
 
-        <div className='relative hidden h-6 w-32 sm:block'>
+        {footerItems.withUrl.map((item) => (
+          <div key={item.name} className='flex flex-col gap-4'>
+            <p className='font-medium'>{item.name}</p>
+            {item.children.map((c) => (
+              <a
+                key={c.name}
+                href={c.href}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-gray-400 transition-colors hover:text-gray-300'
+              >
+                {c.name}
+              </a>
+            ))}
+          </div>
+        ))}
+
+        <div className='relative hidden h-6 w-32 md:block'>
           <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
         </div>
       </div>
 
       <div className='mt-20 flex flex-col items-center'>
-        <div className='relative mb-4 h-6 w-32 sm:hidden'>
+        <div className='relative mb-4 h-6 w-32 md:hidden'>
           <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
         </div>
         <p className='text-xs font-medium text-gray-500 sm:text-sm md:text-base'>

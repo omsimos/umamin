@@ -70,7 +70,7 @@ const Create = () => {
           Create your link
         </button>
 
-        <div className='flex gap-2 self-end text-sm sm:hidden'>
+        <div className='flex gap-2 text-sm sm:hidden'>
           <p>Already have an account?</p>
           <Link href='login'>
             <a className='text-primary-100'>Login</a>
