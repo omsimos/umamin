@@ -3,10 +3,14 @@ import { dehydrate, useMutation, useQuery } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import Image from 'next/image';
 
+import { useRouter } from 'next/router';
 import { getUser, queryClient, sendMessage } from '@/api';
 
 const SendTo = ({ username }: { username: string }) => {
   const [message, setMessage] = useState('');
+  const [msgSent, setMsgSent] = useState<boolean>(false);
+
+  const router = useRouter();
 
   const { data: user } = useQuery(
     ['user', { username }],
@@ -23,6 +27,7 @@ const SendTo = ({ username }: { username: string }) => {
       {
         onSuccess: () => {
           setMessage('');
+          setMsgSent(true);
         },
       }
     );
@@ -37,7 +42,7 @@ const SendTo = ({ username }: { username: string }) => {
           {/* Top */}
           <div className='card w-full overflow-hidden bg-secondary-100 md:w-[720px]'>
             <div className='flex items-center justify-between border-b-2 border-primary-100 bg-secondary-200 px-7 py-2'>
-              <p className='font-medium text-white'>
+              <p className='font-medium capitalize text-white'>
                 <span className='font-light text-gray-400'>To&#58;</span>{' '}
                 {username}
               </p>
@@ -51,7 +56,7 @@ const SendTo = ({ username }: { username: string }) => {
             </div>
 
             {/* Message */}
-            <div className='flex min-h-[160px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7'>
+            <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7'>
               <div className='chat-p receive inline-block self-start font-medium'>
                 Send me an anonymous message!
               </div>
@@ -65,28 +70,50 @@ const SendTo = ({ username }: { username: string }) => {
             {/* Send Message */}
             <form
               onSubmit={handleSend}
-              className='relative flex items-center justify-between bg-secondary-200 py-5 px-4 md:px-7'
+              className='relative flex h-[100px] items-center justify-between bg-secondary-200 py-5 px-4 md:h-[85px] md:px-7'
             >
-              <input
-                required
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                minLength={1}
-                maxLength={200}
-                type='text'
-                placeholder='Send an anonymous message..'
-                className='w-full rounded-full border-2 border-primary-100 bg-secondary-100 py-2 pl-5 pr-12 outline-none'
-              />
+              {!msgSent ? (
+                <>
+                  <input
+                    required
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    minLength={1}
+                    maxLength={200}
+                    type='text'
+                    placeholder='Send an anonymous message..'
+                    className='w-full rounded-full border-2 border-primary-100 bg-secondary-100 py-3 px-5 pr-12 outline-none transition-all md:py-2'
+                  />
 
-              {isLoading ? (
-                <span className='loader absolute right-10' />
+                  {isLoading ? (
+                    <span className='loader absolute right-10' />
+                  ) : (
+                    <button
+                      type='submit'
+                      className='absolute right-9 cursor-pointer text-2xl text-primary-100 transition-all md:right-12'
+                    >
+                      <RiSendPlaneFill />
+                    </button>
+                  )}
+                </>
               ) : (
-                <button
-                  type='submit'
-                  className='absolute right-10 cursor-pointer text-xl text-primary-100 md:right-12'
-                >
-                  <RiSendPlaneFill />
-                </button>
+                <div className='w-full'>
+                  <p className='text-center font-medium text-[#DAB5D3]'>
+                    Anonymous message sent!
+                  </p>
+                  <div className='flex justify-center space-x-2 font-normal text-primary-100 [&>:nth-child(odd)]:cursor-pointer [&>:nth-child(odd)]:transition-all [&>:nth-child(odd):hover]:text-[#ED6FD5]'>
+                    <button type='button' onClick={() => setMsgSent(false)}>
+                      Send again
+                    </button>
+                    <span className='text-[#DAB5D3]'>•</span>
+                    <button
+                      type='button'
+                      onClick={() => router.push('/create')}
+                    >
+                      Create your link
+                    </button>
+                  </div>
+                </div>
               )}
             </form>
           </div>
