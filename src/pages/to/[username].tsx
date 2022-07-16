@@ -103,14 +103,14 @@ const SendTo = ({ username }: { username: string }) => {
                   </p>
                   <div className='flex justify-center space-x-2 font-normal text-primary-100 [&>:nth-child(odd)]:cursor-pointer [&>:nth-child(odd)]:transition-all [&>:nth-child(odd):hover]:text-[#ED6FD5]'>
                     <button type='button' onClick={() => setMsgSent(false)}>
-                      Send Again
+                      Send again
                     </button>
-                    <span className='text-[#DAB5D3]'>|</span>
+                    <span className='text-[#DAB5D3]'>•</span>
                     <button
                       type='button'
                       onClick={() => router.push('/create')}
                     >
-                      Create your own link
+                      Create your link
                     </button>
                   </div>
                 </div>
