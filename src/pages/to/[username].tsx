@@ -7,6 +7,7 @@ import { getUser, queryClient, sendMessage } from '@/api';
 
 const SendTo = ({ username }: { username: string }) => {
   const [message, setMessage] = useState('');
+  const [msgSent, setMsgSent] = useState<boolean>(false);
 
   const { data: user } = useQuery(
     ['user', { username }],
@@ -26,6 +27,7 @@ const SendTo = ({ username }: { username: string }) => {
         },
       }
     );
+    setMsgSent(true);
   };
 
   return (
@@ -51,7 +53,7 @@ const SendTo = ({ username }: { username: string }) => {
             </div>
 
             {/* Message */}
-            <div className='flex min-h-[160px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7'>
+            <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7'>
               <div className='chat-p receive inline-block self-start font-medium'>
                 Send me an anonymous message!
               </div>
@@ -65,28 +67,43 @@ const SendTo = ({ username }: { username: string }) => {
             {/* Send Message */}
             <form
               onSubmit={handleSend}
-              className='relative flex items-center justify-between bg-secondary-200 py-5 px-4 md:px-7'
+              className='relative flex h-[80px] items-center justify-between bg-secondary-200 py-5 px-4 md:h-[85px] md:px-7'
             >
-              <input
-                required
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                minLength={1}
-                maxLength={200}
-                type='text'
-                placeholder='Send an anonymous message..'
-                className='w-full rounded-full border-2 border-primary-100 bg-secondary-100 py-2 pl-5 pr-12 outline-none'
-              />
+              {!msgSent ? (
+                <>
+                  <input
+                    required
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    minLength={1}
+                    maxLength={200}
+                    type='text'
+                    placeholder='Send an anonymous message..'
+                    className='w-full rounded-full border-2 border-primary-100 bg-secondary-100 py-2 pl-5 pr-12 outline-none transition-all'
+                  />
 
-              {isLoading ? (
-                <span className='loader absolute right-10' />
+                  {isLoading ? (
+                    <span className='loader absolute right-10' />
+                  ) : (
+                    <button
+                      type='submit'
+                      className='absolute right-10 cursor-pointer text-xl text-primary-100 transition-all md:right-12'
+                    >
+                      <RiSendPlaneFill />
+                    </button>
+                  )}
+                </>
               ) : (
-                <button
-                  type='submit'
-                  className='absolute right-10 cursor-pointer text-xl text-primary-100 md:right-12'
-                >
-                  <RiSendPlaneFill />
-                </button>
+                <div className='w-full'>
+                  <p className='text-center font-medium text-[#DAB5D3]'>
+                    Anonymous message sent!
+                  </p>
+                  <ul className='flex justify-center space-x-2 font-normal text-primary-100 [&>:nth-child(odd)]:cursor-pointer'>
+                    <li>Send Again</li>
+                    <li className='text-[#DAB5D3]'>|</li>
+                    <li>Create your own link</li>
+                  </ul>
+                </div>
               )}
             </form>
           </div>
