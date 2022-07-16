@@ -3,11 +3,14 @@ import { dehydrate, useMutation, useQuery } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import Image from 'next/image';
 
+import { useRouter } from 'next/router';
 import { getUser, queryClient, sendMessage } from '@/api';
 
 const SendTo = ({ username }: { username: string }) => {
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
+
+  const router = useRouter();
 
   const { data: user } = useQuery(
     ['user', { username }],
@@ -24,10 +27,10 @@ const SendTo = ({ username }: { username: string }) => {
       {
         onSuccess: () => {
           setMessage('');
+          setMsgSent(true);
         },
       }
     );
-    setMsgSent(true);
   };
 
   return (
@@ -98,11 +101,18 @@ const SendTo = ({ username }: { username: string }) => {
                   <p className='text-center font-medium text-[#DAB5D3]'>
                     Anonymous message sent!
                   </p>
-                  <ul className='flex justify-center space-x-2 font-normal text-primary-100 [&>:nth-child(odd)]:cursor-pointer'>
-                    <li>Send Again</li>
-                    <li className='text-[#DAB5D3]'>|</li>
-                    <li>Create your own link</li>
-                  </ul>
+                  <div className='flex justify-center space-x-2 font-normal text-primary-100 [&>:nth-child(odd)]:cursor-pointer [&>:nth-child(odd)]:transition-all [&>:nth-child(odd):hover]:text-[#ED6FD5]'>
+                    <button type='button' onClick={() => setMsgSent(false)}>
+                      Send Again
+                    </button>
+                    <span className='text-[#DAB5D3]'>|</span>
+                    <button
+                      type='button'
+                      onClick={() => router.push('/create')}
+                    >
+                      Create your own link
+                    </button>
+                  </div>
                 </div>
               )}
             </form>
