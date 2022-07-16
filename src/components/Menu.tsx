@@ -1,14 +1,26 @@
 import React, { Fragment } from 'react';
-import { BiUserCircle, BiLogInCircle } from 'react-icons/bi';
+import { BiUserCircle, BiLogInCircle, BiLogOutCircle } from 'react-icons/bi';
 import { Popover, Transition } from '@headlessui/react';
+import { useSession } from 'next-auth/react';
 import { HiMenuAlt3 } from 'react-icons/hi';
 import Link from 'next/link';
 
-export const Menu = () => {
+interface Props {
+  handleLogout: () => void;
+  loading: boolean;
+}
+
+export const Menu = ({ handleLogout, loading }: Props) => {
+  const { status } = useSession();
+
   return (
     <Popover className='relative z-50 sm:hidden'>
       <Popover.Button className='text-2xl outline-none'>
-        <HiMenuAlt3 />
+        {status === 'loading' || loading ? (
+          <span className='loader' />
+        ) : (
+          <HiMenuAlt3 className='transition-colors hover:text-gray-300' />
+        )}
       </Popover.Button>
 
       <Transition
@@ -21,19 +33,28 @@ export const Menu = () => {
         leaveTo='opacity-0 translate-y-1'
       >
         <Popover.Panel className='absolute top-8 right-0 flex w-[150px] flex-col space-y-2 rounded border-2 border-secondary-100 bg-secondary-200 p-2'>
-          <Link href='/login'>
-            <div className='menu-item'>
-              <BiLogInCircle className='text-base' />
-              <p>Login</p>
-            </div>
-          </Link>
+          {status === 'authenticated' ? (
+            <button onClick={handleLogout} type='button' className='menu-item'>
+              <BiLogOutCircle className='text-base' />
+              <p>Logout</p>
+            </button>
+          ) : (
+            <>
+              <Link href='/login'>
+                <div className='menu-item'>
+                  <BiLogInCircle className='text-base' />
+                  <p>Login</p>
+                </div>
+              </Link>
 
-          <Link href='/create'>
-            <div className='menu-item'>
-              <BiUserCircle className='text-base' />
-              <p>Get started</p>
-            </div>
-          </Link>
+              <Link href='/create'>
+                <div className='menu-item'>
+                  <BiUserCircle className='text-base' />
+                  <p>Get started</p>
+                </div>
+              </Link>
+            </>
+          )}
         </Popover.Panel>
       </Transition>
     </Popover>

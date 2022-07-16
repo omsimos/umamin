@@ -58,7 +58,7 @@ export const Navbar = () => {
         )}
       </div>
 
-      <Menu />
+      <Menu handleLogout={handleLogout} loading={loading} />
     </nav>
   );
 };
