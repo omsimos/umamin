@@ -43,4 +43,8 @@
   .input-field svg {
     @apply text-xl text-[#9CA3AF];
   }
+
+  .menu-item {
+    @apply flex cursor-pointer items-center space-x-2 rounded p-3 transition-colors hover:bg-secondary-100;
+  }
 }

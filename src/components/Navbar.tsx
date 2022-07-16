@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { signOut, useSession } from 'next-auth/react';
 
+import { Menu } from '@/components';
+
 export const Navbar = () => {
   const [loading, setLoading] = useState(false);
   const { status } = useSession();
@@ -30,7 +32,7 @@ export const Navbar = () => {
         </div>
       </Link>
 
-      <div className='flex items-center space-x-6'>
+      <div className='hidden items-center space-x-6 sm:flex'>
         {status === 'loading' || loading ? (
           <span className='loader' />
         ) : status === 'authenticated' ? (
@@ -55,6 +57,8 @@ export const Navbar = () => {
           </>
         )}
       </div>
+
+      <Menu />
     </nav>
   );
 };
