@@ -5,12 +5,12 @@ export const footerItems = {
       href: '/about',
     },
     {
-      name: 'Privacy',
-      href: '/privacy-policy',
-    },
-    {
       name: 'Terms',
       href: '/terms-of-service',
+    },
+    {
+      name: 'Privacy',
+      href: '/privacy-policy',
     },
   ],
   contribute: [
