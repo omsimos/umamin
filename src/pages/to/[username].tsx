@@ -39,7 +39,7 @@ const SendTo = ({ username }: { username: string }) => {
           {/* Top */}
           <div className='card w-full overflow-hidden bg-secondary-100 md:w-[720px]'>
             <div className='flex items-center justify-between border-b-2 border-primary-100 bg-secondary-200 px-7 py-2'>
-              <p className='font-medium text-white'>
+              <p className='font-medium capitalize text-white'>
                 <span className='font-light text-gray-400'>To&#58;</span>{' '}
                 {username}
               </p>
@@ -67,7 +67,7 @@ const SendTo = ({ username }: { username: string }) => {
             {/* Send Message */}
             <form
               onSubmit={handleSend}
-              className='relative flex h-[80px] items-center justify-between bg-secondary-200 py-5 px-4 md:h-[85px] md:px-7'
+              className='relative flex h-[100px] items-center justify-between bg-secondary-200 py-5 px-4 md:h-[85px] md:px-7'
             >
               {!msgSent ? (
                 <>
@@ -79,7 +79,7 @@ const SendTo = ({ username }: { username: string }) => {
                     maxLength={200}
                     type='text'
                     placeholder='Send an anonymous message..'
-                    className='w-full rounded-full border-2 border-primary-100 bg-secondary-100 py-2 pl-5 pr-12 outline-none transition-all'
+                    className='w-full rounded-full border-2 border-primary-100 bg-secondary-100 py-3 px-5 pr-12 outline-none transition-all md:py-2'
                   />
 
                   {isLoading ? (
@@ -87,7 +87,7 @@ const SendTo = ({ username }: { username: string }) => {
                   ) : (
                     <button
                       type='submit'
-                      className='absolute right-10 cursor-pointer text-xl text-primary-100 transition-all md:right-12'
+                      className='absolute right-9 cursor-pointer text-2xl text-primary-100 transition-all md:right-12'
                     >
                       <RiSendPlaneFill />
                     </button>
