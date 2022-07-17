@@ -26,7 +26,7 @@ export class UserResolver {
     }
   }
 
-  @Mutation(() => String)
+  @Mutation(() => String, { nullable: true })
   async createUser(
     @Arg('username', () => String) username: string,
     @Arg('password', () => String) password: string,

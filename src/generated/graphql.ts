@@ -31,7 +31,7 @@ export type Message = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createUser: Scalars['String'];
+  createUser?: Maybe<Scalars['String']>;
   deleteMessage: Scalars['String'];
   sendMessage: Message;
 };
@@ -83,7 +83,7 @@ export type CreateUserMutationVariables = Exact<{
 
 export type CreateUserMutation = {
   __typename?: 'Mutation';
-  createUser: string;
+  createUser?: string | null;
 };
 
 export type DeleteMessageMutationVariables = Exact<{

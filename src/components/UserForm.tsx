@@ -1,34 +1,63 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { BsFillPersonFill } from 'react-icons/bs';
 import { HiLockClosed } from 'react-icons/hi';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
 
 interface Props {
-  type: 'login' | 'register';
-  // eslint-disable-next-line no-unused-vars
-  onSubmit: (username: string, password: string) => void;
-  isLoading: boolean;
+  type: 'register' | 'login';
+  onRegister?: (username: string, password: string, login: () => void) => void;
+  loading?: boolean;
 }
 
-export const UserForm = ({ type, onSubmit, isLoading }: Props) => {
+export const UserForm = ({ type, onRegister, loading }: Props) => {
   const isLogin = type === 'login';
+  const { push } = useRouter();
+
+  const [loginLoading, setLoading] = useState(false);
+  const isLoading = loading || loginLoading;
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSubmit: React.FormEventHandler = (e) => {
+  const handleLogin = async () => {
+    setLoading(true);
+
+    const res = await signIn('credentials', {
+      username,
+      password,
+      redirect: false,
+    });
+
+    if (res?.error) {
+      toast.error(res.error);
+    }
+
+    if (res?.ok) {
+      push('/inbox');
+    }
+
+    setLoading(false);
+  };
+
+  const handleSubmit: React.FormEventHandler = async (e) => {
     e.preventDefault();
-    if (!isLogin) {
+    if (onRegister) {
       if (password !== confirmPassword) {
         toast.error('Passwords do not match');
         return;
       }
+
+      onRegister(username, password, handleLogin);
+      return;
     }
 
-    onSubmit(username, password);
+    handleLogin();
   };
 
   const buttonText = () => {
