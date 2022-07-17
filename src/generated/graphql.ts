@@ -31,12 +31,13 @@ export type Message = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createUser: User;
+  createUser: Scalars['String'];
   deleteMessage: Scalars['String'];
   sendMessage: Message;
 };
 
 export type MutationCreateUserArgs = {
+  password: Scalars['String'];
   username: Scalars['String'];
 };
 
@@ -54,6 +55,7 @@ export type Query = {
   __typename?: 'Query';
   message: Message;
   messages?: Maybe<Array<Message>>;
+  user?: Maybe<User>;
 };
 
 export type QueryMessageArgs = {
@@ -61,6 +63,10 @@ export type QueryMessageArgs = {
 };
 
 export type QueryMessagesArgs = {
+  username: Scalars['String'];
+};
+
+export type QueryUserArgs = {
   username: Scalars['String'];
 };
 
@@ -72,11 +78,12 @@ export type User = {
 
 export type CreateUserMutationVariables = Exact<{
   username: Scalars['String'];
+  password: Scalars['String'];
 }>;
 
 export type CreateUserMutation = {
   __typename?: 'Mutation';
-  createUser: { __typename?: 'User'; username: string; password: string };
+  createUser: string;
 };
 
 export type DeleteMessageMutationVariables = Exact<{
@@ -128,11 +135,8 @@ export type SendMessageMutation = {
 };
 
 export const CreateUserDocument = gql`
-  mutation createUser($username: String!) {
-    createUser(username: $username) {
-      username
-      password
-    }
+  mutation createUser($username: String!, $password: String!) {
+    createUser(username: $username, password: $password)
   }
 `;
 export const DeleteMessageDocument = gql`
