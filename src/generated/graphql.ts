@@ -123,6 +123,15 @@ export type GetMessagesQuery = {
   }> | null;
 };
 
+export type GetUserQueryVariables = Exact<{
+  username: Scalars['String'];
+}>;
+
+export type GetUserQuery = {
+  __typename?: 'Query';
+  user?: { __typename?: 'User'; username: string } | null;
+};
+
 export type SendMessageMutationVariables = Exact<{
   content: Scalars['String'];
   receiverUsername: Scalars['String'];
@@ -159,6 +168,13 @@ export const GetMessagesDocument = gql`
     messages(username: $username) {
       id
       content
+    }
+  }
+`;
+export const GetUserDocument = gql`
+  query getUser($username: String!) {
+    user(username: $username) {
+      username
     }
   }
 `;
@@ -251,6 +267,20 @@ export function getSdk(
             ...wrappedRequestHeaders,
           }),
         'getMessages',
+        'query'
+      );
+    },
+    getUser(
+      variables: GetUserQueryVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<GetUserQuery> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<GetUserQuery>(GetUserDocument, variables, {
+            ...requestHeaders,
+            ...wrappedRequestHeaders,
+          }),
+        'getUser',
         'query'
       );
     },
