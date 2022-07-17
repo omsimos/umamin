@@ -48,7 +48,7 @@ export const Navbar = () => {
             </Link>
 
             <button
-              onClick={() => push('/create')}
+              onClick={() => push('/register')}
               type='button'
               className='primary-btn'
             >
