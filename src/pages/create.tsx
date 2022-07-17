@@ -47,7 +47,9 @@ const Create = () => {
               type='text'
               placeholder='Enter a name for your link'
               value={username}
-              onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
+              onChange={(e) =>
+                setUsername(e.target.value.replace(/\s/g, '').toLowerCase())
+              }
               minLength={3}
               maxLength={15}
               className='w-full bg-secondary-100 outline-none'
@@ -67,7 +69,7 @@ const Create = () => {
           disabled={isLoading}
           className='primary-btn disabled:cursor-not-allowed'
         >
-          Create your link
+          Check availability
         </button>
 
         <div className='flex gap-2 text-sm sm:hidden'>

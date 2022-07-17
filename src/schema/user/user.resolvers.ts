@@ -1,47 +1,13 @@
 /* eslint-disable no-console */
-import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
+import { Resolver, Mutation, Arg, Ctx } from 'type-graphql';
 import { customAlphabet } from 'nanoid';
 
 import { User } from '.';
-import { hashPassword, isPassword } from '@/utils';
+import { hashPassword } from '@/utils';
 import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
 export class UserResolver {
-  @Query(() => User, { nullable: true })
-  async user(
-    @Arg('username', () => String) username: string,
-    @Ctx() { prisma }: TContext
-  ): Promise<User> {
-    try {
-      const data = await prisma.user.findUnique({ where: { username } });
-
-      if (!data) {
-        throw new Error('User not found');
-      }
-
-      return data;
-    } catch (err: any) {
-      console.error(err);
-      throw new Error(err.message);
-    }
-  }
-
-  @Mutation(() => String)
-  async login(
-    @Arg('username', () => String) username: string,
-    @Arg('password', () => String) password: string,
-    @Ctx() { prisma }: TContext
-  ): Promise<String | null> {
-    const data = await this.user(username, { prisma });
-
-    if (isPassword(password, data.password)) {
-      throw new Error('Incorrect credentials');
-    }
-
-    return data.username;
-  }
-
   @Mutation(() => User)
   async createUser(
     @Arg('username', () => String) username: string,
