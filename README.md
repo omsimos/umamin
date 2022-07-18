@@ -8,7 +8,7 @@
 
 > ⚠️ This project is under heavy development! ⚠️
 
-[umamin](https://umamin.vercel.app) is an ad-free and open-source platform for sending and receiving anonymous confessions! Each user can create a unique link to which others could send anonymous messages! [Start receiving confessions and messages &rarr;](https://umamin.vercel.app)
+[umamin](https://umamin.link) is an ad-free and open-source platform for sending and receiving anonymous confessions! Each user can create a unique link to which others could send anonymous messages! [Start receiving confessions and messages &rarr;](https://umamin.link)
 
 ## Contributing
 
