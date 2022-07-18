@@ -31,23 +31,18 @@ export type Message = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createUser: User;
+  createUser?: Maybe<Scalars['String']>;
   deleteMessage: Scalars['String'];
-  login: Scalars['String'];
   sendMessage: Message;
 };
 
 export type MutationCreateUserArgs = {
+  password: Scalars['String'];
   username: Scalars['String'];
 };
 
 export type MutationDeleteMessageArgs = {
   id: Scalars['ID'];
-};
-
-export type MutationLoginArgs = {
-  password: Scalars['String'];
-  username: Scalars['String'];
 };
 
 export type MutationSendMessageArgs = {
@@ -83,11 +78,12 @@ export type User = {
 
 export type CreateUserMutationVariables = Exact<{
   username: Scalars['String'];
+  password: Scalars['String'];
 }>;
 
 export type CreateUserMutation = {
   __typename?: 'Mutation';
-  createUser: { __typename?: 'User'; username: string; password: string };
+  createUser?: string | null;
 };
 
 export type DeleteMessageMutationVariables = Exact<{
@@ -133,15 +129,8 @@ export type GetUserQueryVariables = Exact<{
 
 export type GetUserQuery = {
   __typename?: 'Query';
-  user?: { __typename?: 'User'; username: string; password: string } | null;
+  user?: { __typename?: 'User'; username: string } | null;
 };
-
-export type LoginUserMutationVariables = Exact<{
-  username: Scalars['String'];
-  password: Scalars['String'];
-}>;
-
-export type LoginUserMutation = { __typename?: 'Mutation'; login: string };
 
 export type SendMessageMutationVariables = Exact<{
   content: Scalars['String'];
@@ -155,11 +144,8 @@ export type SendMessageMutation = {
 };
 
 export const CreateUserDocument = gql`
-  mutation createUser($username: String!) {
-    createUser(username: $username) {
-      username
-      password
-    }
+  mutation createUser($username: String!, $password: String!) {
+    createUser(username: $username, password: $password)
   }
 `;
 export const DeleteMessageDocument = gql`
@@ -189,13 +175,7 @@ export const GetUserDocument = gql`
   query getUser($username: String!) {
     user(username: $username) {
       username
-      password
     }
-  }
-`;
-export const LoginUserDocument = gql`
-  mutation loginUser($username: String!, $password: String!) {
-    login(username: $username, password: $password)
   }
 `;
 export const SendMessageDocument = gql`
@@ -302,20 +282,6 @@ export function getSdk(
           }),
         'getUser',
         'query'
-      );
-    },
-    loginUser(
-      variables: LoginUserMutationVariables,
-      requestHeaders?: Dom.RequestInit['headers']
-    ): Promise<LoginUserMutation> {
-      return withWrapper(
-        (wrappedRequestHeaders) =>
-          client.request<LoginUserMutation>(LoginUserDocument, variables, {
-            ...requestHeaders,
-            ...wrappedRequestHeaders,
-          }),
-        'loginUser',
-        'mutation'
       );
     },
     sendMessage(

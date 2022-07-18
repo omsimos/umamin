@@ -34,7 +34,7 @@ const Home: NextPage = () => {
 
         <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
           <button
-            onClick={() => push(currentUser ? '/inbox' : '/create')}
+            onClick={() => push(currentUser ? '/inbox' : '/register')}
             type='button'
             className='primary-btn'
           >

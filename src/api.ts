@@ -8,7 +8,6 @@ const gqlClient = new GraphQLClient(process.env.NEXT_PUBLIC_GQL_ENDPOINT ?? '');
 export const {
   getUser,
   createUser,
-  loginUser,
   getMessageById,
   getMessages,
   sendMessage,

@@ -47,7 +47,7 @@ export const Menu = ({ handleLogout, loading }: Props) => {
                 </div>
               </Link>
 
-              <Link href='/create'>
+              <Link href='/register'>
                 <div className='menu-item'>
                   <BiUserCircle className='text-base' />
                   <p>Get started</p>

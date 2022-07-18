@@ -30,7 +30,7 @@ export const Footer = () => {
                 href={c.href}
                 target='_blank'
                 rel='noopener noreferrer'
-                className='text-gray-400 transition-colors hover:text-gray-300'
+                className='text-gray-400 transition-colors hover:text-gray-500'
               >
                 {c.name}
               </a>

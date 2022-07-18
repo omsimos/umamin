@@ -1,9 +1,8 @@
 /* eslint-disable no-console */
 import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
-import { customAlphabet } from 'nanoid';
 
 import { User } from '.';
-import { hashPassword, isPassword } from '@/utils';
+import { hashPassword } from '@/utils';
 import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
@@ -27,33 +26,20 @@ export class UserResolver {
     }
   }
 
-  @Mutation(() => String)
-  async login(
+  @Mutation(() => String, { nullable: true })
+  async createUser(
     @Arg('username', () => String) username: string,
     @Arg('password', () => String) password: string,
     @Ctx() { prisma }: TContext
-  ): Promise<String | null> {
-    const data = await this.user(username, { prisma });
-
-    if (isPassword(password, data.password)) {
-      throw new Error('Incorrect credentials');
-    }
-
-    return data.username;
-  }
-
-  @Mutation(() => User)
-  async createUser(
-    @Arg('username', () => String) username: string,
-    @Ctx() { prisma }: TContext
-  ): Promise<User | null> {
+  ): Promise<String> {
     const usernameRegex = /^[a-zA-Z0-9]+$/;
-    const pin = customAlphabet('1234567890', 6);
-    const defaultPassword = pin();
-
-    const password = hashPassword(defaultPassword);
+    const hashedPassword = hashPassword(password);
 
     try {
+      if (!usernameRegex.test(username)) {
+        throw new Error('Username must be alphanumeric');
+      }
+
       const user = await prisma.user.findUnique({
         where: { username },
       });
@@ -62,24 +48,17 @@ export class UserResolver {
         throw new Error('Username already taken');
       }
 
-      if (!usernameRegex.test(username)) {
-        throw new Error('Username must be alphanumeric');
-      }
-
       await prisma.user.create({
         data: {
           username,
-          password,
+          password: hashedPassword,
         },
       });
+
+      return 'User created';
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);
     }
-
-    return {
-      username,
-      password: defaultPassword,
-    };
   }
 }
