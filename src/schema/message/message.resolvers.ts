@@ -27,20 +27,16 @@ export class MessageResolver {
 
   @Query(() => [Message], { nullable: true })
   async messages(
-    @Arg('username', () => String) username: string,
+    @Arg('userId', () => ID) userId: string,
     @Ctx() { prisma }: TContext
   ): Promise<Message[] | null> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { username },
-        select: { receivedMessages: true },
+      const messages = await prisma.message.findMany({
+        where: { receiverId: userId },
+        orderBy: { createdAt: 'desc' },
       });
 
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      return user.receivedMessages;
+      return messages;
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);

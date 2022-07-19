@@ -63,7 +63,7 @@ export type QueryMessageArgs = {
 };
 
 export type QueryMessagesArgs = {
-  username: Scalars['String'];
+  userId: Scalars['ID'];
 };
 
 export type QueryUserArgs = {
@@ -111,7 +111,7 @@ export type GetMessageByIdQuery = {
 };
 
 export type GetMessagesQueryVariables = Exact<{
-  username: Scalars['String'];
+  userId: Scalars['ID'];
 }>;
 
 export type GetMessagesQuery = {
@@ -164,8 +164,8 @@ export const GetMessageByIdDocument = gql`
   }
 `;
 export const GetMessagesDocument = gql`
-  query getMessages($username: String!) {
-    messages(username: $username) {
+  query getMessages($userId: ID!) {
+    messages(userId: $userId) {
       id
       content
     }

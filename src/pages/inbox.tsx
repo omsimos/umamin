@@ -9,13 +9,18 @@ import Image from 'next/image';
 
 import { getMessages, queryClient } from '@/api';
 
-const Inbox = ({ username }: { username: string }) => {
+interface Props {
+  userId: string;
+  username: string;
+}
+
+const Inbox = ({ userId, username }: Props) => {
   const {
     data: messages,
     refetch,
     isLoading,
     isRefetching,
-  } = useQuery(['messages', { username }], () => getMessages({ username }), {
+  } = useQuery(['messages', { userId }], () => getMessages({ userId }), {
     select: (data) => data.messages,
   });
 
@@ -79,9 +84,9 @@ const Inbox = ({ username }: { username: string }) => {
 
 export const getServerSideProps: GetServerSideProps = async ({ req }) => {
   const session = await getSession({ req });
-  const username = session?.user?.username;
+  const { id, username } = session?.user ?? {};
 
-  if (!username) {
+  if (!id) {
     return {
       redirect: {
         statusCode: 301,
@@ -90,12 +95,13 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     };
   }
 
-  await queryClient.prefetchQuery(['messages', { username }], () =>
-    getMessages({ username })
+  await queryClient.prefetchQuery(['messages', { userId: id }], () =>
+    getMessages({ userId: id })
   );
 
   return {
     props: {
+      userId: id,
       username,
       dehydratedState: dehydrate(queryClient),
     },
