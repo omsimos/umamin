@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
 
-import { Message } from './message.types';
+import { Message, SendMessageInput } from './message.types';
 import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
@@ -27,20 +27,16 @@ export class MessageResolver {
 
   @Query(() => [Message], { nullable: true })
   async messages(
-    @Arg('username', () => String) username: string,
+    @Arg('userId', () => ID) userId: string,
     @Ctx() { prisma }: TContext
   ): Promise<Message[] | null> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { username },
-        select: { receivedMessages: true },
+      const messages = await prisma.message.findMany({
+        where: { receiverId: userId },
+        orderBy: { createdAt: 'desc' },
       });
 
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      return user.receivedMessages;
+      return messages;
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);
@@ -49,16 +45,20 @@ export class MessageResolver {
 
   @Mutation(() => Message)
   async sendMessage(
-    @Arg('senderUsername', () => String, { nullable: true })
-    senderUsername: string | null,
-    @Arg('receiverUsername', () => String) receiverUsername: string,
-    @Arg('content', () => String) content: string,
+    @Arg('input', () => SendMessageInput)
+    {
+      senderUsername,
+      receiverUsername,
+      content,
+      receiverMsg,
+    }: SendMessageInput,
     @Ctx() { prisma }: TContext
   ): Promise<Message> {
     try {
       const message = await prisma.message.create({
         data: {
           content,
+          receiverMsg,
           sender: senderUsername
             ? { connect: { username: senderUsername } }
             : undefined,

@@ -9,13 +9,18 @@ import Image from 'next/image';
 
 import { getMessages, queryClient } from '@/api';
 
-const Inbox = ({ username }: { username: string }) => {
+interface Props {
+  userId: string;
+  username: string;
+}
+
+const Inbox = ({ userId, username }: Props) => {
   const {
     data: messages,
     refetch,
     isLoading,
     isRefetching,
-  } = useQuery(['messages', { username }], () => getMessages({ username }), {
+  } = useQuery(['messages', { userId }], () => getMessages({ userId }), {
     select: (data) => data.messages,
   });
 
@@ -64,8 +69,12 @@ const Inbox = ({ username }: { username: string }) => {
                 width={110}
                 height={30}
               />
-              <div className='relative rounded bg-secondary-100 p-4'>
-                <p className='font-medium'>{m.content}</p>
+              <div className='relative rounded bg-secondary-100 p-4 font-medium'>
+                <div className='mb-3 flex items-center space-x-3'>
+                  <div className='w-1 bg-secondary-400 py-3' />
+                  <p className='text-secondary-400'>{m.receiverMsg}</p>
+                </div>
+                <p>{m.content}</p>
 
                 <IoChatboxEllipses className='absolute -top-7 right-4 text-5xl text-primary-100' />
               </div>
@@ -79,9 +88,9 @@ const Inbox = ({ username }: { username: string }) => {
 
 export const getServerSideProps: GetServerSideProps = async ({ req }) => {
   const session = await getSession({ req });
-  const username = session?.user?.username;
+  const { id, username } = session?.user ?? {};
 
-  if (!username) {
+  if (!id) {
     return {
       redirect: {
         statusCode: 301,
@@ -90,12 +99,13 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     };
   }
 
-  await queryClient.prefetchQuery(['messages', { username }], () =>
-    getMessages({ username })
+  await queryClient.prefetchQuery(['messages', { userId: id }], () =>
+    getMessages({ userId: id })
   );
 
   return {
     props: {
+      userId: id,
       username,
       dehydratedState: dehydrate(queryClient),
     },
