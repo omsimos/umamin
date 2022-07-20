@@ -1,11 +1,10 @@
 import React from 'react';
-import { IoChatboxEllipses, IoReload } from 'react-icons/io5';
+import { IoReload } from 'react-icons/io5';
 import { useQuery, dehydrate } from 'react-query';
 import { getSession } from 'next-auth/react';
 import { IoIosCopy } from 'react-icons/io';
 import { GetServerSideProps } from 'next';
 import toast from 'react-hot-toast';
-import Image from 'next/image';
 
 import { getMessages, queryClient } from '@/api';
 
@@ -62,21 +61,18 @@ const Inbox = ({ userId, username }: Props) => {
         </div>
         <ul className='space-y-8'>
           {messages?.map((m) => (
-            <li key={m.id} className='card p-3'>
-              <Image
-                src='/assets/logo.svg'
-                objectFit='contain'
-                width={110}
-                height={30}
-              />
-              <div className='relative rounded bg-secondary-100 p-4 font-medium'>
+            <li key={m.id} className='card overflow-hidden rounded-2xl p-5'>
+              <p className='flex items-center justify-center pb-2  font-syne font-extrabold'>
+                <span className='text-primary-200'>umamin</span>.link/to/
+                {username}
+              </p>
+
+              <div className='receive-inbox chat-p max-w-full px-6 py-5 font-medium'>
                 <div className='mb-3 flex items-center space-x-3'>
-                  <div className='w-1 bg-secondary-400 py-3' />
+                  <div className='w-1 rounded bg-secondary-400 py-3 ' />
                   <p className='text-secondary-400'>{m.receiverMsg}</p>
                 </div>
                 <p>{m.content}</p>
-
-                <IoChatboxEllipses className='absolute -top-7 right-4 text-5xl text-primary-100' />
               </div>
             </li>
           ))}
