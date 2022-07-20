@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { IoReload } from 'react-icons/io5';
+import { BsInfoCircleFill } from 'react-icons/bs';
 import { useQuery, dehydrate } from 'react-query';
 import { getSession } from 'next-auth/react';
 import { IoIosCopy } from 'react-icons/io';
@@ -49,19 +50,28 @@ const Inbox = ({ userId, username }: Props) => {
         </button>
       </div>
 
-      <div className='mt-10 w-full text-left'>
-        <div className='mb-4 flex justify-between'>
-          <p className='text-sm'>
-            {messages?.length ? 'Latest messages' : 'No messages to show'}
-          </p>
-          <button type='button' onClick={() => refetch()}>
-            <IoReload
-              className={`text-lg ${
-                isLoading || isRefetching ? 'animate-spin' : ''
-              }`}
-            />
-          </button>
+      <div className='my-10 w-full text-left'>
+        <div className='mb-5 flex flex-col'>
+          <div className='flex justify-between'>
+            <p className='text-base font-medium'>
+              {messages?.length ? 'Latest messages' : 'No messages to show'}
+            </p>
+            <button type='button' onClick={() => refetch()}>
+              <IoReload
+                className={`text-lg ${
+                  isLoading || isRefetching ? 'animate-spin' : ''
+                }`}
+              />
+            </button>
+          </div>
+          <span className='flex items-center space-x-1 text-sm'>
+            <BsInfoCircleFill className='text-primary-100' />
+            <p className='text-[#f0f0f0] '>
+              Tap a card to reveal an anonymous message.
+            </p>
+          </span>
         </div>
+
         <ul className='space-y-10'>
           {messages?.map((m) =>
             m.id === open ? (
