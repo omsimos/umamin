@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -21,7 +21,7 @@
   }
 
   .secondary-btn {
-    @apply rounded border border-gray-400 bg-secondary-100 px-6 py-3 text-sm font-medium transition-colors hover:bg-secondary-100/80 md:text-base;
+    @apply rounded border-2 border-gray-400 bg-secondary-100 px-6 py-3 text-sm font-medium transition-colors hover:bg-secondary-100/80 md:text-base;
   }
 
   .h1-text {
