@@ -25,7 +25,8 @@
     "no-underscore-dangle": "off",
     "no-console": "warn",
     "react/function-component-definition": "off",
-    "class-methods-use-this": ["off"]
+    "class-methods-use-this": ["off"],
+    "max-classes-per-file": ["off"]
   },
   "ignorePatterns": ["**/generated/*.ts"],
   "settings": {

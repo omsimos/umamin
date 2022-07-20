@@ -1,5 +1,6 @@
 query getUser($username: String!) {
   user(username: $username) {
     username
+    message
   }
 }

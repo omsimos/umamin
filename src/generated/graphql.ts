@@ -26,6 +26,7 @@ export type Message = {
   content: Scalars['String'];
   id: Scalars['ID'];
   receiverId: Scalars['String'];
+  receiverMsg: Scalars['String'];
   senderId?: Maybe<Scalars['String']>;
 };
 
@@ -46,9 +47,7 @@ export type MutationDeleteMessageArgs = {
 };
 
 export type MutationSendMessageArgs = {
-  content: Scalars['String'];
-  receiverUsername: Scalars['String'];
-  senderUsername?: InputMaybe<Scalars['String']>;
+  input: SendMessageInput;
 };
 
 export type Query = {
@@ -70,8 +69,16 @@ export type QueryUserArgs = {
   username: Scalars['String'];
 };
 
+export type SendMessageInput = {
+  content: Scalars['String'];
+  receiverMsg: Scalars['String'];
+  receiverUsername: Scalars['String'];
+  senderUsername?: InputMaybe<Scalars['String']>;
+};
+
 export type User = {
   __typename?: 'User';
+  message: Scalars['String'];
   password: Scalars['String'];
   username: Scalars['String'];
 };
@@ -107,6 +114,7 @@ export type GetMessageByIdQuery = {
     content: string;
     senderId?: string | null;
     receiverId: string;
+    receiverMsg: string;
   };
 };
 
@@ -120,6 +128,7 @@ export type GetMessagesQuery = {
     __typename?: 'Message';
     id: string;
     content: string;
+    receiverMsg: string;
   }> | null;
 };
 
@@ -129,13 +138,11 @@ export type GetUserQueryVariables = Exact<{
 
 export type GetUserQuery = {
   __typename?: 'Query';
-  user?: { __typename?: 'User'; username: string } | null;
+  user?: { __typename?: 'User'; username: string; message: string } | null;
 };
 
 export type SendMessageMutationVariables = Exact<{
-  content: Scalars['String'];
-  receiverUsername: Scalars['String'];
-  senderUsername?: InputMaybe<Scalars['String']>;
+  input: SendMessageInput;
 }>;
 
 export type SendMessageMutation = {
@@ -160,6 +167,7 @@ export const GetMessageByIdDocument = gql`
       content
       senderId
       receiverId
+      receiverMsg
     }
   }
 `;
@@ -168,6 +176,7 @@ export const GetMessagesDocument = gql`
     messages(userId: $userId) {
       id
       content
+      receiverMsg
     }
   }
 `;
@@ -175,20 +184,13 @@ export const GetUserDocument = gql`
   query getUser($username: String!) {
     user(username: $username) {
       username
+      message
     }
   }
 `;
 export const SendMessageDocument = gql`
-  mutation sendMessage(
-    $content: String!
-    $receiverUsername: String!
-    $senderUsername: String
-  ) {
-    sendMessage(
-      content: $content
-      receiverUsername: $receiverUsername
-      senderUsername: $senderUsername
-    ) {
+  mutation sendMessage($input: SendMessageInput!) {
+    sendMessage(input: $input) {
       id
       content
     }

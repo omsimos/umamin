@@ -18,16 +18,18 @@ model User {
   updatedAt DateTime @updatedAt
   username  String   @unique
   password  String
+  message   String   @default("Send me an anonymous message!") @db.VarChar(100)
 
   sentMessages     Message[] @relation("sentMessages")
   receivedMessages Message[] @relation("receivedMessages")
 }
 
 model Message {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  content   String   @db.VarChar(255)
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  content     String   @db.VarChar(255)
+  receiverMsg String   @db.VarChar(100)
 
   senderId   String?
   sender     User?   @relation(name: "sentMessages", fields: [senderId], references: [id])

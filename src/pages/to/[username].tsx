@@ -23,15 +23,23 @@ const SendTo = ({ username }: { username: string }) => {
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
-    mutate(
-      { content: message, receiverUsername: username },
-      {
-        onSuccess: () => {
-          setMessage('');
-          setMsgSent(true);
+    if (user) {
+      mutate(
+        {
+          input: {
+            receiverUsername: username,
+            content: message,
+            receiverMsg: user.message,
+          },
         },
-      }
-    );
+        {
+          onSuccess: () => {
+            setMessage('');
+            setMsgSent(true);
+          },
+        }
+      );
+    }
   };
 
   return (
