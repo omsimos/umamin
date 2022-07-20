@@ -78,7 +78,7 @@ const SendTo = ({ username }: { username: string }) => {
               {/* Message */}
               <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7'>
                 <div className='chat-p receive inline-block self-start font-medium'>
-                  Send me an anonymous message!
+                  {user.message}
                 </div>
                 {data?.sendMessage.content && (
                   <div className='chat-p send inline-block self-end'>
