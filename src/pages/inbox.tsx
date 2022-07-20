@@ -1,11 +1,12 @@
 import React from 'react';
-import { IoChatboxEllipses, IoReload } from 'react-icons/io5';
+import Image from 'next/image';
+import { IoReload } from 'react-icons/io5';
+import { BsInfoCircleFill } from 'react-icons/bs';
 import { useQuery, dehydrate } from 'react-query';
 import { getSession } from 'next-auth/react';
 import { IoIosCopy } from 'react-icons/io';
 import { GetServerSideProps } from 'next';
 import toast from 'react-hot-toast';
-import Image from 'next/image';
 
 import { getMessages, queryClient } from '@/api';
 
@@ -15,6 +16,8 @@ interface Props {
 }
 
 const Inbox = ({ userId, username }: Props) => {
+  const [open, setOpen] = React.useState('');
+
   const {
     data: messages,
     refetch,
@@ -47,39 +50,72 @@ const Inbox = ({ userId, username }: Props) => {
         </button>
       </div>
 
-      <div className='mt-8 w-full text-left'>
-        <div className='mb-4 flex justify-between'>
-          <p className='text-sm'>
-            {messages?.length ? 'Latest messages' : 'No messages to show'}
-          </p>
-          <button type='button' onClick={() => refetch()}>
-            <IoReload
-              className={`text-lg ${
-                isLoading || isRefetching ? 'animate-spin' : ''
-              }`}
-            />
-          </button>
-        </div>
-        <ul className='space-y-8'>
-          {messages?.map((m) => (
-            <li key={m.id} className='card p-3'>
-              <Image
-                src='/assets/logo.svg'
-                objectFit='contain'
-                width={110}
-                height={30}
+      <div className='my-10 w-full text-left'>
+        <div className='mb-5 flex flex-col'>
+          <div className='flex justify-between'>
+            <p className='text-base font-medium'>
+              {messages?.length ? 'Latest messages' : 'No messages to show'}
+            </p>
+            <button type='button' onClick={() => refetch()}>
+              <IoReload
+                className={`text-lg ${
+                  isLoading || isRefetching ? 'animate-spin' : ''
+                }`}
               />
-              <div className='relative rounded bg-secondary-100 p-4 font-medium'>
-                <div className='mb-3 flex items-center space-x-3'>
-                  <div className='w-1 bg-secondary-400 py-3' />
-                  <p className='text-secondary-400'>{m.receiverMsg}</p>
-                </div>
-                <p>{m.content}</p>
+            </button>
+          </div>
+          <span className='flex items-center space-x-1 text-sm'>
+            <BsInfoCircleFill className='text-primary-100' />
+            <p className='text-[#f0f0f0] '>
+              Tap a card to reveal an anonymous message.
+            </p>
+          </span>
+        </div>
 
-                <IoChatboxEllipses className='absolute -top-7 right-4 text-5xl text-primary-100' />
-              </div>
-            </li>
-          ))}
+        <ul className='space-y-10'>
+          {messages?.map((m) =>
+            m.id === open ? (
+              <li
+                key={m.id}
+                className='card overflow-hidden rounded-2xl px-7 py-5'
+              >
+                <p className='flex items-center justify-center pb-2  font-syne font-extrabold'>
+                  <span className='text-primary-200'>umamin</span>.link/to/
+                  {username}
+                </p>
+
+                <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 font-medium text-white before:bg-secondary-100 after:bg-secondary-200'>
+                  <div className='mb-3 flex items-center space-x-3'>
+                    <div className='w-1 rounded bg-secondary-400 py-3 ' />
+                    <p className='text-secondary-400'>{m.receiverMsg}</p>
+                  </div>
+                  <p className='text-xl'>{m.content}</p>
+                </div>
+              </li>
+            ) : (
+              <button
+                type='button'
+                key={m.id}
+                onClick={() => {
+                  setOpen(m.id);
+                }}
+                className='card w-full cursor-pointer overflow-hidden rounded-2xl px-7 py-5 text-left'
+              >
+                <div className='relative mb-3 h-[60px]'>
+                  <Image
+                    src='/assets/logo.svg'
+                    layout='fill'
+                    objectFit='contain'
+                  />
+                </div>
+
+                <div className='send chat-p flex max-w-full items-center  space-x-3 bg-secondary-100 px-6 py-5 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                  <div className='h-full w-1  rounded bg-secondary-400 py-3 ' />
+                  <p className='text-xl text-secondary-400'>{m.receiverMsg}</p>
+                </div>
+              </button>
+            )
+          )}
         </ul>
       </div>
     </section>
