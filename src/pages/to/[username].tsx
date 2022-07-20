@@ -19,7 +19,7 @@ const SendTo = ({ username }: { username: string }) => {
     { select: (data) => data.user }
   );
 
-  const { mutate, data, isLoading } = useMutation(sendMessage);
+  const { mutate, data, isLoading, reset } = useMutation(sendMessage);
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
@@ -45,6 +45,7 @@ const SendTo = ({ username }: { username: string }) => {
   return (
     <>
       <NextSeo
+        title='umamin - Send Anonymous Messages'
         openGraph={{
           title: user
             ? `👀 Send anonymous messages to ${user.username}!`
@@ -121,7 +122,13 @@ const SendTo = ({ username }: { username: string }) => {
                       Anonymous message sent!
                     </p>
                     <div className='flex justify-center space-x-2 font-normal text-primary-100 [&>:nth-child(odd)]:cursor-pointer [&>:nth-child(odd)]:transition-all [&>:nth-child(odd):hover]:text-[#ED6FD5]'>
-                      <button type='button' onClick={() => setMsgSent(false)}>
+                      <button
+                        type='button'
+                        onClick={() => {
+                          setMsgSent(false);
+                          reset();
+                        }}
+                      >
                         Send again
                       </button>
                       <span className='text-[#DAB5D3]'>•</span>
