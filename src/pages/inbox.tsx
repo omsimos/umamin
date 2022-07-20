@@ -84,7 +84,7 @@ const Inbox = ({ userId, username }: Props) => {
                   {username}
                 </p>
 
-                <div className='send chat-p max-w-full bg-secondary-100 px-6 py-5 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 font-medium text-white before:bg-secondary-100 after:bg-secondary-200'>
                   <div className='mb-3 flex items-center space-x-3'>
                     <div className='w-1 rounded bg-secondary-400 py-3 ' />
                     <p className='text-secondary-400'>{m.receiverMsg}</p>
@@ -109,7 +109,7 @@ const Inbox = ({ userId, username }: Props) => {
                   />
                 </div>
 
-                <div className='receive chat-p flex max-w-full items-center  space-x-3 bg-secondary-100 px-6 py-5 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                <div className='send chat-p flex max-w-full items-center  space-x-3 bg-secondary-100 px-6 py-5 font-medium before:bg-secondary-100 after:bg-secondary-200'>
                   <div className='h-full w-1  rounded bg-secondary-400 py-3 ' />
                   <p className='text-xl text-secondary-400'>{m.receiverMsg}</p>
                 </div>
