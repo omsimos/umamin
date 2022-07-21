@@ -47,4 +47,8 @@
   .menu-item {
     @apply flex cursor-pointer items-center space-x-2 rounded p-3 transition-colors hover:bg-secondary-100;
   }
+
+  .reply {
+    @apply border-l-4 border-l-secondary-400 pl-4 text-secondary-400;
+  }
 }
