@@ -64,12 +64,12 @@ const Inbox = ({ userId, username }: Props) => {
               />
             </button>
           </div>
-          <span className='flex items-center space-x-1 text-sm'>
+          <div className='mt-1 flex items-center space-x-1 text-sm'>
             <BsInfoCircleFill className='text-primary-100' />
             <p className='text-[#f0f0f0] '>
               Tap a card to reveal an anonymous message.
             </p>
-          </span>
+          </div>
         </div>
 
         <ul className='space-y-10'>
@@ -84,12 +84,12 @@ const Inbox = ({ userId, username }: Props) => {
                   {username}
                 </p>
 
-                <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 font-medium text-white before:bg-secondary-100 after:bg-secondary-200'>
+                <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 text-base font-medium text-white before:bg-secondary-100 after:bg-secondary-200'>
                   <div className='mb-3 flex items-center space-x-3'>
                     <div className='w-1 rounded bg-secondary-400 py-3 ' />
                     <p className='text-secondary-400'>{m.receiverMsg}</p>
                   </div>
-                  <p className='text-xl'>{m.content}</p>
+                  <p>{m.content}</p>
                 </div>
               </li>
             ) : (
@@ -101,7 +101,7 @@ const Inbox = ({ userId, username }: Props) => {
                 }}
                 className='card w-full cursor-pointer overflow-hidden rounded-2xl px-7 py-5 text-left'
               >
-                <div className='relative mb-3 h-[60px]'>
+                <div className='relative mb-3 h-[50px]'>
                   <Image
                     src='/assets/logo.svg'
                     layout='fill'
@@ -109,9 +109,11 @@ const Inbox = ({ userId, username }: Props) => {
                   />
                 </div>
 
-                <div className='send chat-p flex max-w-full items-center  space-x-3 bg-secondary-100 px-6 py-5 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
                   <div className='h-full w-1  rounded bg-secondary-400 py-3 ' />
-                  <p className='text-xl text-secondary-400'>{m.receiverMsg}</p>
+                  <p className='text-base text-secondary-400'>
+                    {m.receiverMsg}
+                  </p>
                 </div>
               </button>
             )
