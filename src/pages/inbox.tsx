@@ -7,6 +7,7 @@ import { GetServerSideProps } from 'next';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
+import { useLogEvent } from '@/hooks';
 import { Info, MessageModal } from '@/components';
 import { getMessages, queryClient } from '@/api';
 import type { Message } from '@/generated/graphql';
@@ -17,6 +18,7 @@ interface Props {
 }
 
 const Inbox = ({ userId, username }: Props) => {
+  const triggerEvent = useLogEvent();
   const [modal, setModal] = useState(false);
   const [messageData, setMessageData] = useState({} as Partial<Message>);
 
@@ -32,6 +34,8 @@ const Inbox = ({ userId, username }: Props) => {
   const copyLink = () => {
     navigator.clipboard.writeText(`https://umamin.link/${username}`);
     toast.success('Copied to clipboard');
+
+    triggerEvent('copy_link');
   };
 
   return (
@@ -85,6 +89,8 @@ const Inbox = ({ userId, username }: Props) => {
                 setTimeout(() => {
                   setModal(true);
                 }, 500);
+
+                triggerEvent('open_message');
               }}
               className='w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-secondary-100 bg-secondary-200 px-7 py-5 text-left'
             >

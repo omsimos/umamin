@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { useLogEvent } from '@/hooks';
+
 interface Props {
   type: 'register' | 'login';
   onRegister?: (username: string, password: string, login: () => void) => void;
@@ -17,6 +19,7 @@ interface Props {
 export const UserForm = ({ type, onRegister, loading }: Props) => {
   const isLogin = type === 'login';
   const { push } = useRouter();
+  const triggerEvent = useLogEvent();
 
   const [loginLoading, setLoading] = useState(false);
   const isLoading = loading || loginLoading;
@@ -54,10 +57,13 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
       }
 
       onRegister(username, password, handleLogin);
+      triggerEvent('register');
+
       return;
     }
 
     handleLogin();
+    triggerEvent('login');
   };
 
   const buttonText = () => {
@@ -84,11 +90,11 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             <input
               required
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
               type='text'
               placeholder='Username'
               minLength={3}
-              maxLength={15}
+              maxLength={12}
             />
           </div>
           <div className='input-field'>
