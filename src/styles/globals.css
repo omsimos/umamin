@@ -6,6 +6,10 @@
 @import './utils.css';
 
 @layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
   body {
     @apply bg-secondary-300 font-inter text-white;
   }

@@ -35,15 +35,14 @@ const Inbox = ({ userId, username }: Props) => {
   };
 
   return (
-    <section className='[&>h1]:h1-text mx-auto flex flex-col items-center pb-24 sm:w-[500px]'>
+    <section className='mx-auto flex flex-col items-center pb-24 sm:w-[500px]'>
       <MessageModal
         username={username}
         data={messageData}
         isOpen={modal}
         setIsOpen={setModal}
       />
-      <h1>Your inbox</h1>
-      <div className='mt-8 flex w-full gap-3'>
+      <div className='flex w-full gap-3'>
         <button
           type='button'
           onClick={copyLink}
@@ -61,7 +60,7 @@ const Inbox = ({ userId, username }: Props) => {
       <div className='my-10 w-full text-left'>
         <div className='mb-5 flex flex-col'>
           <div className='flex justify-between'>
-            <p className='text-base font-medium'>
+            <p className='font-medium'>
               {messages?.length ? 'Latest messages' : 'No messages to show'}
             </p>
             <button type='button' onClick={() => refetch()}>
@@ -75,18 +74,21 @@ const Inbox = ({ userId, username }: Props) => {
           <Info message='Tap a card to reveal an anonymous message.' />
         </div>
 
-        <div className='space-y-10'>
+        <div className='space-y-6'>
           {messages?.map((m) => (
             <button
               type='button'
               key={m.id}
               onClick={() => {
                 setMessageData(m);
-                setModal(true);
+                window.scrollTo(0, 0);
+                setTimeout(() => {
+                  setModal(true);
+                }, 500);
               }}
-              className='card w-full cursor-pointer overflow-hidden rounded-2xl px-7 py-5 text-left'
+              className='w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-secondary-100 bg-secondary-200 px-7 py-5 text-left'
             >
-              <div className='relative mb-3 h-[50px]'>
+              <div className='relative mb-3 h-[40px]'>
                 <Image
                   src='/assets/logo.svg'
                   layout='fill'
@@ -95,9 +97,7 @@ const Inbox = ({ userId, username }: Props) => {
               </div>
 
               <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
-                <p className='reply text-base text-secondary-400'>
-                  {m.receiverMsg}
-                </p>
+                <p className='reply text-secondary-400'>{m.receiverMsg}</p>
               </div>
             </button>
           ))}
