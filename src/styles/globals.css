@@ -6,6 +6,10 @@
 @import './utils.css';
 
 @layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
   body {
     @apply bg-secondary-300 font-inter text-white;
   }
@@ -46,5 +50,9 @@
 
   .menu-item {
     @apply flex cursor-pointer items-center space-x-2 rounded p-3 transition-colors hover:bg-secondary-100;
+  }
+
+  .reply {
+    @apply border-l-4 border-l-secondary-400 pl-4 text-secondary-400;
   }
 }

@@ -77,11 +77,11 @@ const SendTo = ({ username }: { username: string }) => {
 
               {/* Message */}
               <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7'>
-                <div className='chat-p receive inline-block self-start font-medium'>
+                <div className='chat-p receive inline-block max-w-[255px] self-start bg-[#e5e5ea] font-medium  text-black before:bg-[#e5e5ea] after:bg-secondary-100'>
                   {user.message}
                 </div>
                 {data?.sendMessage.content && (
-                  <div className='chat-p send inline-block self-end'>
+                  <div className='chat-p send inline-block max-w-[255px] self-end bg-primary-200 text-white  before:bg-primary-200 after:bg-secondary-100'>
                     {data.sendMessage.content}
                   </div>
                 )}

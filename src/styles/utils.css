@@ -1,13 +1,4 @@
-:root {
-  --send-bg: #da49bf;
-  --send-color: white;
-  --receive-bg: #e5e5ea;
-  --receive-text: black;
-  --page-background: #38383c;
-}
-
 .chat-p {
-  max-width: 255px;
   word-wrap: break-word;
   margin-bottom: 12px;
   line-height: 20px;
@@ -24,40 +15,57 @@
   height: 25px;
 }
 
+/* send variable - replace using tailwind
+
 .send {
   color: var(--send-color);
   background: var(--send-bg);
-  align-self: flex-end;
 }
+.send:before {
+  background-color: var(--send-bg);
+}
+  .send:after {
+  background-color: var(--page-background);
+}
+
+*/
 
 .send:before {
   right: -7px;
   width: 20px;
-  background-color: var(--send-bg);
   border-bottom-left-radius: 16px 14px;
 }
 
 .send:after {
   right: -26px;
   width: 26px;
-  background-color: var(--page-background);
   border-bottom-left-radius: 10px;
 }
+
+/* receive variable - replace using tailwind
+
 .receive {
+  color: var(--receive-color);
   background: var(--receive-bg);
-  color: black;
-  align-self: flex-start;
 }
+.receive:before {
+  background-color: var(--receive-bg);
+}
+.receive:after {
+  background-color: var(--page-background);
+ } 
+
+*/
+
 .receive:before {
   left: -7px;
   width: 20px;
-  background-color: var(--receive-bg);
   border-bottom-right-radius: 16px 14px;
 }
+
 .receive:after {
   left: -26px;
   width: 26px;
-  background-color: var(--page-background);
   border-bottom-right-radius: 10px;
 }
 
