@@ -35,7 +35,7 @@ const Inbox = ({ userId, username }: Props) => {
   };
 
   return (
-    <section className='mx-auto flex flex-col items-center pb-24 sm:w-[500px]'>
+    <section className='mx-auto flex max-w-[500px] flex-col items-center pb-24'>
       <MessageModal
         username={username}
         data={messageData}

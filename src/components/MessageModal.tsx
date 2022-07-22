@@ -28,7 +28,7 @@ export const MessageModal = ({ username, data, isOpen, setIsOpen }: Props) => {
         onClose={() => setIsOpen(false)}
       >
         <div className='fixed inset-0' />
-        <Dialog.Panel className='contain mt-32'>
+        <Dialog.Panel className='contain mt-32 flex flex-col items-center lg:mt-40'>
           <Transition.Child
             enter='ease-out duration-300'
             enterFrom='opacity-0 scale-95'
@@ -38,12 +38,12 @@ export const MessageModal = ({ username, data, isOpen, setIsOpen }: Props) => {
             leaveTo='opacity-0 scale-95'
           >
             <Info
-              className='mb-4'
+              className='mb-4 lg:hidden'
               message='Click outside the card to go back.'
             />
             <div
               id='msg_card'
-              className='card overflow-hidden rounded-2xl px-7 py-5 text-left sm:w-[500px]'
+              className='card max-w-[500px] overflow-hidden rounded-2xl px-7 py-5 text-left'
             >
               <p className='flex items-center justify-center pb-2  font-syne font-extrabold'>
                 <span className='text-primary-200'>umamin</span>.link/to/
@@ -56,8 +56,12 @@ export const MessageModal = ({ username, data, isOpen, setIsOpen }: Props) => {
               </div>
             </div>
 
-            <div className='mt-6 flex items-center justify-end space-x-4 lg:space-x-0'>
-              <div>
+            <div className='mt-6 flex items-center justify-end space-x-4 lg:mt-4 lg:space-x-0'>
+              <div className='flex items-start justify-between lg:w-full'>
+                <Info
+                  className='hidden lg:flex'
+                  message='Click outside the card to go back.'
+                />
                 <button
                   className='hover:underline'
                   type='button'
@@ -65,7 +69,6 @@ export const MessageModal = ({ username, data, isOpen, setIsOpen }: Props) => {
                 >
                   Download Image
                 </button>
-                <span> or</span>
               </div>
 
               <button
