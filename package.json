@@ -23,6 +23,7 @@
     "bcrypt": "^5.0.1",
     "class-validator": "^0.13.2",
     "downloadjs": "^1.4.7",
+    "firebase": "^9.9.0",
     "graphql": "15.3.0",
     "graphql-request": "^4.3.0",
     "html-to-image": "^1.9.0",
