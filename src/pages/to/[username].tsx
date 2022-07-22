@@ -134,7 +134,7 @@ const SendTo = ({ username }: { username: string }) => {
                       <span className='text-[#DAB5D3]'>•</span>
                       <button
                         type='button'
-                        onClick={() => router.push('/create')}
+                        onClick={() => router.push('/register')}
                       >
                         Create your link
                       </button>
