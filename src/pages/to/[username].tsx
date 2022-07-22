@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { dehydrate, useMutation, useQuery } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
+import { useRouter } from 'next/router';
 import { NextSeo } from 'next-seo';
 import Image from 'next/image';
 
-import { useRouter } from 'next/router';
+import { useLogEvent } from '@/hooks';
 import { getUser, queryClient, sendMessage } from '@/api';
 
 const SendTo = ({ username }: { username: string }) => {
+  const router = useRouter();
+  const triggerEvent = useLogEvent();
+
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
-
-  const router = useRouter();
 
   const { data: user } = useQuery(
     ['user', { username }],
@@ -39,6 +41,8 @@ const SendTo = ({ username }: { username: string }) => {
           },
         }
       );
+
+      triggerEvent('send_message');
     }
   };
 
@@ -127,6 +131,7 @@ const SendTo = ({ username }: { username: string }) => {
                         onClick={() => {
                           setMsgSent(false);
                           reset();
+                          triggerEvent('send_again');
                         }}
                       >
                         Send again

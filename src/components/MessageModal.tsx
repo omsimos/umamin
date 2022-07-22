@@ -3,6 +3,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
 
+import { useLogEvent } from '@/hooks';
 import { Info } from '@/components';
 import type { Message } from '@/generated/graphql';
 
@@ -14,10 +15,14 @@ interface Props {
 }
 
 export const MessageModal = ({ username, data, isOpen, setIsOpen }: Props) => {
+  const triggerEvent = useLogEvent();
   const storyRef = useRef<HTMLAnchorElement>(null);
+
   const saveImage = async () => {
     const imgUrl = await toPng(document.getElementById('msg_card')!);
     download(imgUrl, `${username}_${data.id?.substring(0, 5)}.png`);
+
+    triggerEvent('save_image');
   };
 
   return (
@@ -77,6 +82,7 @@ export const MessageModal = ({ username, data, isOpen, setIsOpen }: Props) => {
                 onClick={() => {
                   saveImage();
                   storyRef.current?.click();
+                  triggerEvent('share_image', { name: 'Instagram' });
                 }}
               >
                 Share to Instagram Story
