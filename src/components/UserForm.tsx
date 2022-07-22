@@ -90,7 +90,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             <input
               required
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
               type='text'
               placeholder='Username'
               minLength={3}
