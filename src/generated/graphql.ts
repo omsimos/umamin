@@ -34,9 +34,10 @@ export type Message = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createUser?: Maybe<Scalars['String']>;
+  createUser: Scalars['String'];
   deleteMessage: Scalars['String'];
   editMessage: Scalars['String'];
+  editUser: Scalars['String'];
   sendMessage: Message;
 };
 
@@ -53,6 +54,11 @@ export type MutationEditMessageArgs = {
   id: Scalars['ID'];
   isDownloaded?: InputMaybe<Scalars['Boolean']>;
   isOpened?: InputMaybe<Scalars['Boolean']>;
+};
+
+export type MutationEditUserArgs = {
+  message: Scalars['String'];
+  username: Scalars['String'];
 };
 
 export type MutationSendMessageArgs = {
@@ -100,7 +106,7 @@ export type CreateUserMutationVariables = Exact<{
 
 export type CreateUserMutation = {
   __typename?: 'Mutation';
-  createUser?: string | null;
+  createUser: string;
 };
 
 export type DeleteMessageMutationVariables = Exact<{
@@ -122,6 +128,13 @@ export type EditMessageMutation = {
   __typename?: 'Mutation';
   editMessage: string;
 };
+
+export type EditUserMutationVariables = Exact<{
+  username: Scalars['String'];
+  message: Scalars['String'];
+}>;
+
+export type EditUserMutation = { __typename?: 'Mutation'; editUser: string };
 
 export type GetMessageByIdQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -185,6 +198,11 @@ export const DeleteMessageDocument = gql`
 export const EditMessageDocument = gql`
   mutation editMessage($id: ID!, $isOpened: Boolean, $isDownloaded: Boolean) {
     editMessage(id: $id, isOpened: $isOpened, isDownloaded: $isDownloaded)
+  }
+`;
+export const EditUserDocument = gql`
+  mutation editUser($username: String!, $message: String!) {
+    editUser(username: $username, message: $message)
   }
 `;
 export const GetMessageByIdDocument = gql`
@@ -282,6 +300,20 @@ export function getSdk(
             ...wrappedRequestHeaders,
           }),
         'editMessage',
+        'mutation'
+      );
+    },
+    editUser(
+      variables: EditUserMutationVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<EditUserMutation> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<EditUserMutation>(EditUserDocument, variables, {
+            ...requestHeaders,
+            ...wrappedRequestHeaders,
+          }),
+        'editUser',
         'mutation'
       );
     },

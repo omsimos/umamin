@@ -1,24 +1,48 @@
 import React, { useState, useEffect } from 'react';
+import { useMutation } from 'react-query';
+import toast from 'react-hot-toast';
 
 import { useUser } from '@/hooks';
-import { DialogContainer, DialogContainerProps } from './Container';
+import { editUser } from '@/api';
+import { DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
   username: string;
 }
 
 export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
-  const { data: user } = useUser(username);
-  const [message, setMessage] = useState(user?.message);
+  const { data: user, refetch } = useUser(username);
+  const [message, setMessage] = useState(user?.message ?? '');
+
+  const { mutate } = useMutation(editUser);
 
   useEffect(() => {
-    setMessage(user?.message);
+    if (user?.message) {
+      setMessage(user?.message);
+    }
   }, [user?.message]);
+
+  const handleEdit = () => {
+    if (message !== user?.message) {
+      mutate(
+        {
+          username,
+          message,
+        },
+        {
+          onSuccess: () => {
+            toast.success('Message updated');
+            refetch();
+          },
+        }
+      );
+    }
+  };
 
   return (
     <DialogContainer
       setIsOpen={setIsOpen}
-      onClose={() => setMessage(user?.message)}
+      onClose={() => setMessage(user?.message ?? '')}
       {...rest}
     >
       <div className='card flex flex-col p-6'>
@@ -39,7 +63,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
             Close
           </button>
 
-          <button className='primary-btn' type='button'>
+          <button onClick={handleEdit} className='primary-btn' type='button'>
             Save
           </button>
         </div>
