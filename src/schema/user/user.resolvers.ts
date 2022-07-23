@@ -26,7 +26,7 @@ export class UserResolver {
     }
   }
 
-  @Mutation(() => String, { nullable: true })
+  @Mutation(() => String)
   async createUser(
     @Arg('username', () => String) username: string,
     @Arg('password', () => String) password: string,
@@ -56,6 +56,21 @@ export class UserResolver {
       });
 
       return 'User created';
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Mutation(() => String)
+  async editUser(
+    @Arg('username', () => String) username: string,
+    @Arg('message', () => String) message: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<String> {
+    try {
+      await prisma.user.update({ where: { username }, data: { message } });
+      return 'User edited';
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);

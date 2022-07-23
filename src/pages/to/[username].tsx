@@ -1,25 +1,20 @@
 import React, { useState } from 'react';
-import { dehydrate, useMutation, useQuery } from 'react-query';
+import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { useRouter } from 'next/router';
 import { NextSeo } from 'next-seo';
 import Image from 'next/image';
 
-import { useLogEvent } from '@/hooks';
+import { useLogEvent, useUser } from '@/hooks';
 import { getUser, queryClient, sendMessage } from '@/api';
 
 const SendTo = ({ username }: { username: string }) => {
   const router = useRouter();
+  const { data: user } = useUser(username);
   const triggerEvent = useLogEvent();
 
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
-
-  const { data: user } = useQuery(
-    ['user', { username }],
-    () => getUser({ username }),
-    { select: (data) => data.user }
-  );
 
   const { mutate, data, isLoading, reset } = useMutation(sendMessage);
 

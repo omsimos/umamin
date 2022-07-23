@@ -55,4 +55,8 @@
   .reply {
     @apply border-l-4 border-l-secondary-400 pl-4 text-secondary-400;
   }
+
+  .line {
+    @apply h-[2px] bg-secondary-100;
+  }
 }
