@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { useQuery, dehydrate } from 'react-query';
+import { useQuery, dehydrate, useMutation } from 'react-query';
 import { getSession } from 'next-auth/react';
 import { IoReload } from 'react-icons/io5';
 import { IoIosCopy } from 'react-icons/io';
+import { BsCheck2 } from 'react-icons/bs';
 import { GetServerSideProps } from 'next';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
 import { useLogEvent } from '@/hooks';
 import { Info, MessageModal } from '@/components';
-import { getMessages, queryClient } from '@/api';
 import type { Message } from '@/generated/graphql';
+import { editMessage, getMessages, queryClient } from '@/api';
 
 interface Props {
   userId: string;
@@ -30,6 +31,27 @@ const Inbox = ({ userId, username }: Props) => {
   } = useQuery(['messages', { userId }], () => getMessages({ userId }), {
     select: (data) => data.messages,
   });
+
+  const { mutate } = useMutation(editMessage);
+
+  const handleOpen = (data: Partial<Message>) => {
+    setMessageData(data);
+    window.scrollTo(0, 0);
+
+    if (data.id && !data.isOpened) {
+      mutate({
+        id: data.id,
+        isOpened: true,
+      });
+    }
+
+    setTimeout(() => {
+      setModal(true);
+      refetch();
+    }, 500);
+
+    triggerEvent('open_message');
+  };
 
   const copyLink = () => {
     navigator.clipboard.writeText(`https://umamin.link/${username}`);
@@ -83,15 +105,7 @@ const Inbox = ({ userId, username }: Props) => {
             <button
               type='button'
               key={m.id}
-              onClick={() => {
-                setMessageData(m);
-                window.scrollTo(0, 0);
-                setTimeout(() => {
-                  setModal(true);
-                }, 500);
-
-                triggerEvent('open_message');
-              }}
+              onClick={() => handleOpen(m)}
               className='w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-secondary-100 bg-secondary-200 px-7 py-5 text-left'
             >
               <div className='relative mb-3 h-[40px]'>
@@ -104,6 +118,16 @@ const Inbox = ({ userId, username }: Props) => {
 
               <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
                 <p className='reply text-secondary-400'>{m.receiverMsg}</p>
+              </div>
+              <div
+                className={
+                  m.isOpened
+                    ? 'flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'
+                    : 'hidden'
+                }
+              >
+                <p>Seen</p>
+                <BsCheck2 className='text-base' />
               </div>
             </button>
           ))}

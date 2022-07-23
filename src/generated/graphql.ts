@@ -149,6 +149,7 @@ export type GetMessagesQuery = {
     __typename?: 'Message';
     id: string;
     content: string;
+    isOpened: boolean;
     receiverMsg: string;
   }> | null;
 };
@@ -202,6 +203,7 @@ export const GetMessagesDocument = gql`
     messages(userId: $userId) {
       id
       content
+      isOpened
       receiverMsg
     }
   }
