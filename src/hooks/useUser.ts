@@ -2,9 +2,13 @@ import { useQuery } from 'react-query';
 import { getUser } from '@/api';
 
 export const useUser = (username: string) => {
-  const { data } = useQuery(['user', { username }], () =>
-    getUser({ username })
+  const queryData = useQuery(
+    ['user', { username }],
+    () => getUser({ username }),
+    {
+      select: (data) => data.user,
+    }
   );
 
-  return data?.user;
+  return { ...queryData };
 };

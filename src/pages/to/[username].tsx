@@ -10,7 +10,7 @@ import { getUser, queryClient, sendMessage } from '@/api';
 
 const SendTo = ({ username }: { username: string }) => {
   const router = useRouter();
-  const user = useUser(username);
+  const { data: user } = useUser(username);
   const triggerEvent = useLogEvent();
 
   const [message, setMessage] = useState('');
