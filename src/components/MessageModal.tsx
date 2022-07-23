@@ -3,6 +3,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
+import { nanoid } from 'nanoid';
 
 import { Info } from '@/components';
 import { editMessage } from '@/api';
@@ -24,7 +25,7 @@ export const MessageModal = ({ username, data, isOpen, setIsOpen }: Props) => {
 
   const saveImage = async () => {
     const imgUrl = await toPng(document.getElementById('msg_card')!);
-    download(imgUrl, `${username}_${data.id?.substring(0, 5)}.png`);
+    download(imgUrl, `${username}_${nanoid(5)}.png`);
 
     if (data.id && !data.isDownloaded) {
       mutate({
