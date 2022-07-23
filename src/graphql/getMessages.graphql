@@ -2,6 +2,7 @@ query getMessages($userId: ID!) {
   messages(userId: $userId) {
     id
     content
+    isOpened
     receiverMsg
   }
 }

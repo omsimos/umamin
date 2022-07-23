@@ -1,0 +1,3 @@
+mutation editMessage($id: ID!, $isOpened: Boolean, $isDownloaded: Boolean) {
+  editMessage(id: $id, isOpened: $isOpened, isDownloaded: $isDownloaded)
+}

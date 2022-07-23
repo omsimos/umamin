@@ -1,10 +1,13 @@
 import React, { Fragment, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
+import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
+import { nanoid } from 'nanoid';
 
-import { useLogEvent } from '@/hooks';
 import { Info } from '@/components';
+import { editMessage } from '@/api';
+import { useLogEvent } from '@/hooks';
 import type { Message } from '@/generated/graphql';
 
 interface Props {
@@ -18,9 +21,18 @@ export const MessageModal = ({ username, data, isOpen, setIsOpen }: Props) => {
   const triggerEvent = useLogEvent();
   const storyRef = useRef<HTMLAnchorElement>(null);
 
+  const { mutate } = useMutation(editMessage);
+
   const saveImage = async () => {
     const imgUrl = await toPng(document.getElementById('msg_card')!);
-    download(imgUrl, `${username}_${data.id?.substring(0, 5)}.png`);
+    download(imgUrl, `${username}_${nanoid(5)}.png`);
+
+    if (data.id && !data.isDownloaded) {
+      mutate({
+        id: data.id,
+        isDownloaded: true,
+      });
+    }
 
     triggerEvent('save_image');
   };
