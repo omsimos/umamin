@@ -8,10 +8,11 @@ import { GetServerSideProps } from 'next';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
+import { Info } from '@/components';
 import { useLogEvent } from '@/hooks';
-import { Info, MessageModal } from '@/components';
 import type { Message } from '@/generated/graphql';
 import { editMessage, getMessages, queryClient } from '@/api';
+import { MessageDialog, SettingsDialog } from '@/components/Dialog';
 
 interface Props {
   userId: string;
@@ -20,7 +21,8 @@ interface Props {
 
 const Inbox = ({ userId, username }: Props) => {
   const triggerEvent = useLogEvent();
-  const [modal, setModal] = useState(false);
+  const [msgModal, setMsgModal] = useState(false);
+  const [settingsModal, setSettingsModal] = useState(false);
   const [messageData, setMessageData] = useState({} as Partial<Message>);
 
   const {
@@ -46,7 +48,7 @@ const Inbox = ({ userId, username }: Props) => {
     }
 
     setTimeout(() => {
-      setModal(true);
+      setMsgModal(true);
       refetch();
     }, 500);
 
@@ -62,12 +64,19 @@ const Inbox = ({ userId, username }: Props) => {
 
   return (
     <section className='mx-auto flex max-w-[500px] flex-col items-center pb-24'>
-      <MessageModal
+      <MessageDialog
         username={username}
         data={messageData}
-        isOpen={modal}
-        setIsOpen={setModal}
+        isOpen={msgModal}
+        setIsOpen={setMsgModal}
       />
+
+      <SettingsDialog
+        username={username}
+        isOpen={settingsModal}
+        setIsOpen={setSettingsModal}
+      />
+
       <div className='flex w-full gap-3'>
         <button
           type='button'
@@ -78,7 +87,11 @@ const Inbox = ({ userId, username }: Props) => {
           <p>umamin.link/to/{username}</p>
         </button>
 
-        <button type='button' className='secondary-btn flex-none'>
+        <button
+          onClick={() => setSettingsModal(true)}
+          type='button'
+          className='secondary-btn flex-none'
+        >
           Settings
         </button>
       </div>
