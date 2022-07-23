@@ -5,7 +5,7 @@ export interface DialogContainerProps {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onClose?: () => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export const DialogContainer = ({
