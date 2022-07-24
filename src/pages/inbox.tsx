@@ -1,38 +1,41 @@
-import React, { useState } from 'react';
-import { useQuery, dehydrate, useMutation } from 'react-query';
-import { getSession } from 'next-auth/react';
+import React, { useEffect, useState } from 'react';
+import { useQuery, useMutation } from 'react-query';
+import { useSession } from 'next-auth/react';
 import { IoReload } from 'react-icons/io5';
 import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
-import { GetServerSideProps } from 'next';
+import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
 import { Info } from '@/components';
 import { useLogEvent } from '@/hooks';
+import { editMessage, getMessages } from '@/api';
 import type { Message } from '@/generated/graphql';
-import { editMessage, getMessages, queryClient } from '@/api';
 import { MessageDialog, SettingsDialog } from '@/components/Dialog';
 
-interface Props {
-  userId: string;
-  username: string;
-}
-
-const Inbox = ({ userId, username }: Props) => {
+const Inbox = () => {
+  const { push } = useRouter();
   const triggerEvent = useLogEvent();
   const [msgModal, setMsgModal] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
   const [messageData, setMessageData] = useState({} as Partial<Message>);
+
+  const { data, status } = useSession();
+  const { id, username } = data?.user ?? {};
 
   const {
     data: messages,
     refetch,
     isLoading,
     isRefetching,
-  } = useQuery(['messages', { userId }], () => getMessages({ userId }), {
-    select: (data) => data.messages,
-  });
+  } = useQuery(
+    ['messages', { userId: id ?? '' }],
+    () => getMessages({ userId: id ?? '' }),
+    {
+      select: (data) => data.messages,
+    }
+  );
 
   const { mutate } = useMutation(editMessage);
 
@@ -62,17 +65,23 @@ const Inbox = ({ userId, username }: Props) => {
     triggerEvent('copy_link');
   };
 
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      push('/login');
+    }
+  }, [status]);
+
   return (
     <section className='mx-auto flex max-w-[500px] flex-col items-center pb-24'>
       <MessageDialog
-        username={username}
+        username={username ?? ''}
         data={messageData}
         isOpen={msgModal}
         setIsOpen={setMsgModal}
       />
 
       <SettingsDialog
-        username={username}
+        username={username ?? ''}
         isOpen={settingsModal}
         setIsOpen={setSettingsModal}
       />
@@ -148,32 +157,6 @@ const Inbox = ({ userId, username }: Props) => {
       </div>
     </section>
   );
-};
-
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const session = await getSession({ req });
-  const { id, username } = session?.user ?? {};
-
-  if (!id) {
-    return {
-      redirect: {
-        statusCode: 301,
-        destination: '/login',
-      },
-    };
-  }
-
-  await queryClient.prefetchQuery(['messages', { userId: id }], () =>
-    getMessages({ userId: id })
-  );
-
-  return {
-    props: {
-      userId: id,
-      username,
-      dehydratedState: dehydrate(queryClient),
-    },
-  };
 };
 
 export default Inbox;
