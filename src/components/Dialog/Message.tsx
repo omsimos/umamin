@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
@@ -17,8 +17,6 @@ interface Props extends DialogContainerProps {
 
 export const MessageDialog = ({ username, data, ...rest }: Props) => {
   const triggerEvent = useLogEvent();
-  const storyRef = useRef<HTMLAnchorElement>(null);
-
   const { mutate } = useMutation(editMessage);
 
   const saveImage = async () => {
@@ -72,23 +70,13 @@ export const MessageDialog = ({ username, data, ...rest }: Props) => {
           type='button'
           onClick={() => {
             saveImage();
-            storyRef.current?.click();
+            window.location.assign('instagram://story-camera');
             triggerEvent('share_image', { name: 'Instagram' });
           }}
         >
           Share to Instagram Story
         </button>
       </div>
-
-      <a
-        ref={storyRef}
-        href='instagram://story-camera'
-        target='_blank'
-        rel='noreferrer noopener'
-        className='hidden'
-      >
-        Instagram Story
-      </a>
     </DialogContainer>
   );
 };
