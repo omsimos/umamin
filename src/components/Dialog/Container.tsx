@@ -5,6 +5,7 @@ export interface DialogContainerProps {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onClose?: () => void;
+  className?: string;
   children?: React.ReactNode;
 }
 
@@ -12,13 +13,14 @@ export const DialogContainer = ({
   isOpen,
   setIsOpen,
   onClose,
+  className,
   children,
 }: DialogContainerProps) => {
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog
         as='div'
-        className='fixed inset-0 z-10 bg-secondary-300'
+        className='fixed inset-0 z-20 bg-secondary-300'
         onClose={() => {
           setIsOpen(false);
           if (onClose) {
@@ -27,7 +29,9 @@ export const DialogContainer = ({
         }}
       >
         <div className='fixed inset-0' />
-        <Dialog.Panel className='contain mt-32 flex flex-col items-center md:mt-52'>
+        <Dialog.Panel
+          className={`contain flex flex-col items-center ${className}`}
+        >
           <Transition.Child
             enter='ease-out duration-300'
             enterFrom='opacity-0 scale-95'

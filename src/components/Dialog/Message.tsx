@@ -3,8 +3,8 @@ import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
 import { nanoid } from 'nanoid';
+import Image from 'next/image';
 
-import { Info } from '@/components';
 import { editMessage } from '@/api';
 import { useLogEvent } from '@/hooks';
 import type { Message } from '@/generated/graphql';
@@ -15,12 +15,17 @@ interface Props extends DialogContainerProps {
   data: Partial<Message>;
 }
 
-export const MessageDialog = ({ username, data, ...rest }: Props) => {
+export const MessageDialog = ({
+  username,
+  data,
+  setIsOpen,
+  ...rest
+}: Props) => {
   const triggerEvent = useLogEvent();
   const { mutate } = useMutation(editMessage);
 
   const saveImage = async () => {
-    const imgUrl = await toPng(document.getElementById('msg_card')!);
+    const imgUrl = await toPng(document.getElementById('card-img')!);
     download(imgUrl, `${username}_${nanoid(5)}.png`);
 
     if (data.id && !data.isDownloaded) {
@@ -29,39 +34,55 @@ export const MessageDialog = ({ username, data, ...rest }: Props) => {
         isDownloaded: true,
       });
     }
-
-    triggerEvent('save_image');
   };
 
   return (
-    <DialogContainer {...rest}>
-      <Info
-        className='mb-4 lg:hidden'
-        message='Click outside the card to go back.'
-      />
-      <div
-        id='msg_card'
-        className='card overflow-hidden rounded-2xl px-7 py-5 text-left'
+    <DialogContainer setIsOpen={setIsOpen} className='mt-12' {...rest}>
+      <button
+        onClick={() => setIsOpen(false)}
+        className='ml-4 lg:hidden'
+        type='button'
       >
-        <p className='flex items-center justify-center pb-2  font-syne font-extrabold'>
-          <span className='text-primary-200'>umamin</span>.link/to/
-          {username}
-        </p>
+        &larr; Go Back
+      </button>
+      <div id='card-img' className='flex flex-col bg-secondary-300 p-4'>
+        <div className='mb-2 flex items-center self-center font-syne text-xl font-extrabold'>
+          <Image
+            src='/assets/logo.svg'
+            objectFit='contain'
+            width={135}
+            height={40}
+          />
+          <p>.link</p>
+        </div>
 
-        <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 font-medium text-white before:bg-secondary-100 after:bg-secondary-200'>
-          <p className='reply mb-3'>{data.receiverMsg}</p>
-          <p>{data.content}</p>
+        <div className='msg-card overflow-hidden text-left'>
+          <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 text-lg font-semibold text-white before:bg-secondary-100 after:bg-secondary-200'>
+            <p className='reply mb-3'>{data.receiverMsg}</p>
+            <p>{data.content}</p>
+          </div>
         </div>
       </div>
 
-      <div className='mt-6 flex items-center justify-end space-x-4 lg:mt-4 lg:space-x-0'>
+      <div className='flex items-center justify-end space-x-4 px-4 lg:mt-4 lg:space-x-0'>
         <div className='flex items-start justify-between lg:w-full'>
-          <Info
-            className='hidden lg:flex'
-            message='Click outside the card to go back.'
-          />
-          <button className='hover:underline' type='button' onClick={saveImage}>
-            Download Image
+          <button
+            onClick={() => setIsOpen(false)}
+            className='ml-4 hidden lg:block'
+            type='button'
+          >
+            &larr; Go Back
+          </button>
+
+          <button
+            className='hover:underline'
+            type='button'
+            onClick={() => {
+              saveImage();
+              triggerEvent('save_image');
+            }}
+          >
+            Download
           </button>
         </div>
 

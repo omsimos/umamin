@@ -42,20 +42,21 @@ const Inbox = () => {
 
   const handleOpen = (data: Partial<Message>) => {
     setMessageData(data);
-    window.scrollTo(0, 0);
 
     if (data.id && !data.isOpened) {
-      mutate({
-        id: data.id,
-        isOpened: true,
-      });
+      mutate(
+        {
+          id: data.id,
+          isOpened: true,
+        },
+        {
+          onSuccess: () => {
+            refetch();
+          },
+        }
+      );
     }
-
-    setTimeout(() => {
-      setMsgModal(true);
-      refetch();
-    }, 500);
-
+    setMsgModal(true);
     triggerEvent('open_message');
   };
 
@@ -129,7 +130,7 @@ const Inbox = () => {
               type='button'
               key={m.id}
               onClick={() => handleOpen(m)}
-              className='w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-secondary-100 bg-secondary-200 px-7 py-5 text-left'
+              className='msg-card w-full cursor-pointer overflow-hidden text-left'
             >
               <div className='relative mb-3 h-[40px]'>
                 <Image
