@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { useQuery, useMutation } from 'react-query';
-import { useSession } from 'next-auth/react';
+import { useQuery, useMutation, dehydrate } from 'react-query';
+import { getSession, useSession } from 'next-auth/react';
 import { IoReload } from 'react-icons/io5';
 import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
+import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
 import { Info } from '@/components';
 import { useLogEvent } from '@/hooks';
-import { editMessage, getMessages } from '@/api';
 import type { Message } from '@/generated/graphql';
+import { editMessage, getMessages, queryClient } from '@/api';
 import { MessageDialog, SettingsDialog } from '@/components/Dialog';
 
 const Inbox = () => {
@@ -157,6 +158,25 @@ const Inbox = () => {
       </div>
     </section>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const session = await getSession({ req });
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    return { props: {} };
+  }
+
+  await queryClient.prefetchQuery(['messages', { userId }], () =>
+    getMessages({ userId })
+  );
+
+  return {
+    props: {
+      dehydratedState: dehydrate(queryClient),
+    },
+  };
 };
 
 export default Inbox;
