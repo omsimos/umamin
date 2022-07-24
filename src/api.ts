@@ -23,12 +23,20 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       onError: (err: any) => {
-        toast.error(err.response.errors[0].message);
+        if (err.response?.errors.length) {
+          toast.error(err.response.errors[0].message);
+        } else {
+          toast.error(err.message);
+        }
       },
     },
     mutations: {
       onError: (err: any) => {
-        toast.error(err.response.errors[0].message);
+        if (err.response?.errors.length) {
+          toast.error(err.response.errors[0].message);
+        } else {
+          toast.error(err.message);
+        }
       },
     },
   },

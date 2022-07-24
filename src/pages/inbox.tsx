@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { useQuery, useMutation } from 'react-query';
-import { useSession } from 'next-auth/react';
+import { useQuery, useMutation, dehydrate } from 'react-query';
+import { getSession, useSession } from 'next-auth/react';
 import { IoReload } from 'react-icons/io5';
 import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
+import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
 import { Info } from '@/components';
 import { useLogEvent } from '@/hooks';
-import { editMessage, getMessages } from '@/api';
 import type { Message } from '@/generated/graphql';
+import { editMessage, getMessages, queryClient } from '@/api';
 import { MessageDialog, SettingsDialog } from '@/components/Dialog';
 
 const Inbox = () => {
@@ -41,20 +42,21 @@ const Inbox = () => {
 
   const handleOpen = (data: Partial<Message>) => {
     setMessageData(data);
-    window.scrollTo(0, 0);
 
     if (data.id && !data.isOpened) {
-      mutate({
-        id: data.id,
-        isOpened: true,
-      });
+      mutate(
+        {
+          id: data.id,
+          isOpened: true,
+        },
+        {
+          onSuccess: () => {
+            refetch();
+          },
+        }
+      );
     }
-
-    setTimeout(() => {
-      setMsgModal(true);
-      refetch();
-    }, 500);
-
+    setMsgModal(true);
     triggerEvent('open_message');
   };
 
@@ -128,7 +130,7 @@ const Inbox = () => {
               type='button'
               key={m.id}
               onClick={() => handleOpen(m)}
-              className='w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-secondary-100 bg-secondary-200 px-7 py-5 text-left'
+              className='msg-card w-full cursor-pointer overflow-hidden text-left'
             >
               <div className='relative mb-3 h-[40px]'>
                 <Image
@@ -157,6 +159,25 @@ const Inbox = () => {
       </div>
     </section>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const session = await getSession({ req });
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    return { props: {} };
+  }
+
+  await queryClient.prefetchQuery(['messages', { userId }], () =>
+    getMessages({ userId })
+  );
+
+  return {
+    props: {
+      dehydratedState: dehydrate(queryClient),
+    },
+  };
 };
 
 export default Inbox;

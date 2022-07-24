@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useMutation } from 'react-query';
 import toast from 'react-hot-toast';
 
-import { useUser } from '@/hooks';
 import { editUser } from '@/api';
+import { useUser } from '@/hooks';
 import { DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
@@ -43,6 +43,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
     <DialogContainer
       setIsOpen={setIsOpen}
       onClose={() => setMessage(user?.message ?? '')}
+      className='mt-32 md:mt-52'
       {...rest}
     >
       <div className='card flex flex-col p-6'>
@@ -59,7 +60,13 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
         <div className='line my-4' />
 
         <div className='flex items-center space-x-4 self-end'>
-          <button onClick={() => setIsOpen(false)} type='button'>
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              setMessage(user?.message ?? '');
+            }}
+            type='button'
+          >
             Close
           </button>
 

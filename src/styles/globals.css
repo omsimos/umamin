@@ -59,4 +59,8 @@
   .line {
     @apply h-[2px] bg-secondary-100;
   }
+
+  .msg-card {
+    @apply rounded-2xl border-2 border-secondary-100 bg-secondary-200 px-7 py-5;
+  }
 }
