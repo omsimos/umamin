@@ -6,10 +6,6 @@ export const footerItems = {
       href: '/about',
     },
     {
-      name: 'Terms',
-      href: '/terms-of-service',
-    },
-    {
       name: 'Privacy',
       href: '/privacy-policy',
     },
@@ -61,8 +57,7 @@ export const footerItems = {
   ],
 };
 
-export const legal = {
-  privacy: `
+export const privacyPolicy = `
 # **PRIVACY NOTICE**
 
 **Last updated July 15, 2022**
@@ -220,5 +215,4 @@ If you have questions or comments about this notice, you may email us at contact
 Based on the applicable laws of your country, you may have the right to request access to the personal information we collect from you, change that information, or delete it. To request to review, update, or delete your personal information, please contact: contact@joshxfi.tech.
 
 This privacy policy was created using Termly's [Privacy Policy Generator](https://termly.io/products/privacy-policy-generator).
-`,
-};
+`;

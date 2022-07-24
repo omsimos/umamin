@@ -1,9 +1,9 @@
 import React from 'react';
-import { legal } from '@/constants';
 import { Markdown } from '@/components';
+import { privacyPolicy } from '@/constants';
 
 const PrivacyPolicy = () => {
-  return <Markdown content={legal.privacy} />;
+  return <Markdown content={privacyPolicy} />;
 };
 
 export default PrivacyPolicy;
