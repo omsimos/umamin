@@ -46,9 +46,13 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
     }
 
     setLoading(false);
+
+    if (isLogin) {
+      triggerEvent('login');
+    }
   };
 
-  const handleSubmit: React.FormEventHandler = async (e) => {
+  const handleSubmit: React.FormEventHandler = (e) => {
     e.preventDefault();
     if (onRegister) {
       if (password !== confirmPassword) {
@@ -57,13 +61,10 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
       }
 
       onRegister(username, password, handleLogin);
-      triggerEvent('register');
-
       return;
     }
 
     handleLogin();
-    triggerEvent('login');
   };
 
   const buttonText = () => {

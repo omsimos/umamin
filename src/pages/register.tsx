@@ -5,9 +5,11 @@ import { useMutation } from 'react-query';
 import toast from 'react-hot-toast';
 
 import { createUser } from '@/api';
+import { useLogEvent } from '@/hooks';
 import { UserForm } from '@/components';
 
 const Register = () => {
+  const triggerEvent = useLogEvent();
   const { mutate, isLoading } = useMutation(createUser);
 
   const handleRegister = (
@@ -18,9 +20,10 @@ const Register = () => {
     mutate(
       { username, password },
       {
-        onSuccess: async () => {
-          toast.success('Link created!');
+        onSuccess: () => {
           login();
+          toast.success('Link created!');
+          triggerEvent('register');
         },
       }
     );
