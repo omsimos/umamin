@@ -60,7 +60,13 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
         <div className='line my-4' />
 
         <div className='flex items-center space-x-4 self-end'>
-          <button onClick={() => setIsOpen(false)} type='button'>
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              setMessage(user?.message ?? '');
+            }}
+            type='button'
+          >
             Close
           </button>
 
