@@ -50,8 +50,8 @@ export const MessageDialog = ({
           <Image
             src='/assets/logo.svg'
             objectFit='contain'
-            width={135}
-            height={40}
+            width={130}
+            height={30}
           />
           <p>.link</p>
         </div>
