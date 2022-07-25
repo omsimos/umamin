@@ -46,7 +46,7 @@ export const MessageDialog = ({
         &larr; Go Back
       </button>
       <div id='card-img' className='flex flex-col bg-secondary-300 p-4'>
-        <div className='mb-2 flex items-center self-center font-syne text-xl font-extrabold'>
+        <div className='mb-2 flex items-center self-center font-syneExtrabold text-xl'>
           <Image
             src='/assets/logo.svg'
             objectFit='contain'
@@ -57,7 +57,7 @@ export const MessageDialog = ({
         </div>
 
         <div className='msg-card overflow-hidden text-left'>
-          <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 text-lg font-medium text-white before:bg-secondary-100 after:bg-secondary-200'>
+          <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 font-interMedium text-lg font-medium text-white before:bg-secondary-100 after:bg-secondary-200'>
             <p className='reply mb-3'>{data.receiverMsg}</p>
             <p>{data.content}</p>
           </div>

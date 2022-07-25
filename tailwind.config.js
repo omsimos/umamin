@@ -6,6 +6,8 @@ module.exports = {
       fontFamily: {
         inter: ['Inter', 'sans-serif'],
         syne: ['Syne', 'sans-serif'],
+        interMedium: ['Inter-Medium', 'sans-serif'],
+        syneExtrabold: ['Syne-Extrabold', 'sans-serif'],
       },
       colors: {
         primary: {
