@@ -75,8 +75,8 @@ const SendTo = ({ username }: { username: string }) => {
               </div>
 
               {/* Message */}
-              <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7'>
-                <div className='chat-p receive inline-block max-w-[255px] self-start bg-[#e5e5ea] font-medium  text-black before:bg-[#e5e5ea] after:bg-secondary-100'>
+              <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7 [&>*]:px-[20px] [&>*]:py-[10px]'>
+                <div className='chat-p receive  inline-block max-w-[255px] self-start bg-[#e5e5ea] font-medium  text-black before:bg-[#e5e5ea] after:bg-secondary-100'>
                   {user.message}
                 </div>
                 {data?.sendMessage.content && (
