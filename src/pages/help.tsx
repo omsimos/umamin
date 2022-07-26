@@ -2,8 +2,8 @@ import React from 'react';
 import { markdown } from '@/constants';
 import { Markdown } from '@/components';
 
-const PrivacyPolicy = () => {
-  return <Markdown content={markdown.privacy} />;
+const Help = () => {
+  return <Markdown content={markdown.help} />;
 };
 
-export default PrivacyPolicy;
+export default Help;

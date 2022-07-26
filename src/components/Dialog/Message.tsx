@@ -1,9 +1,11 @@
 import React from 'react';
+import { BsInstagram } from 'react-icons/bs';
 import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
 import { nanoid } from 'nanoid';
 import Image from 'next/image';
+import Link from 'next/link';
 
 import { editMessage } from '@/api';
 import { useLogEvent } from '@/hooks';
@@ -38,13 +40,16 @@ export const MessageDialog = ({
 
   return (
     <DialogContainer setIsOpen={setIsOpen} className='mt-12' {...rest}>
-      <button
-        onClick={() => setIsOpen(false)}
-        className='ml-4 lg:hidden'
-        type='button'
-      >
-        &larr; Go Back
-      </button>
+      <div className='mx-4 space-x-4'>
+        <button
+          onClick={() => setIsOpen(false)}
+          className='lg:hidden'
+          type='button'
+        >
+          &larr; Go Back
+        </button>
+      </div>
+
       <div id='card-img' className='flex flex-col bg-secondary-300 p-4'>
         <div className='mb-2 flex items-center self-center font-syneExtrabold text-xl'>
           <Image
@@ -87,7 +92,7 @@ export const MessageDialog = ({
         </div>
 
         <button
-          className='primary-btn lg:hidden'
+          className='primary-btn flex items-center space-x-2 lg:hidden'
           type='button'
           onClick={() => {
             saveImage();
@@ -95,8 +100,13 @@ export const MessageDialog = ({
             triggerEvent('share_image', { name: 'Instagram' });
           }}
         >
-          Share to Instagram Story
+          <BsInstagram className='text-base' />
+          <p>Share to Story</p>
         </button>
+      </div>
+
+      <div className='mt-4 w-full pr-4 text-right text-primary-100 lg:hidden'>
+        <Link href='/help'>Need Help?</Link>
       </div>
     </DialogContainer>
   );

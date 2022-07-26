@@ -2,8 +2,8 @@
 export const footerItems = {
   withRoute: [
     {
-      name: 'About',
-      href: '/about',
+      name: 'Help',
+      href: '/help',
     },
     {
       name: 'Privacy',
@@ -57,8 +57,9 @@ export const footerItems = {
   ],
 };
 
-export const privacyPolicy = `
-# **PRIVACY NOTICE**
+export const markdown = {
+  privacy: `
+# PRIVACY NOTICE
 
 **Last updated July 15, 2022**
 
@@ -215,4 +216,14 @@ If you have questions or comments about this notice, you may email us at contact
 Based on the applicable laws of your country, you may have the right to request access to the personal information we collect from you, change that information, or delete it. To request to review, update, or delete your personal information, please contact: contact@joshxfi.tech.
 
 This privacy policy was created using Termly's [Privacy Policy Generator](https://termly.io/products/privacy-policy-generator).
-`;
+`,
+  help: `
+# HELP CENTER
+
+## 1. DOWNLOADING IMAGE
+You can download a message as an image by opening a card and clicking *Download* or *Share to Story*.
+- If the *Download* button is not working, you might need to take a screenshot and crop the image instead. (esp. for iOS)
+- If *Share to Story* doesn't automatically download the image, click *Download* first.
+
+`,
+};

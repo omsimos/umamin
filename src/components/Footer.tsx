@@ -11,7 +11,7 @@ export const Footer = () => {
 
       <div className='grid grid-cols-2 flex-wrap justify-between gap-y-16 sm:flex'>
         <ul className='flex flex-col gap-4'>
-          <li className='font-medium'>Project</li>
+          <li className='font-medium'>Resources</li>
           {footerItems.withRoute.map((item) => (
             <li key={item.name}>
               <Link href={item.href}>
