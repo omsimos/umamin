@@ -32,6 +32,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
         {
           onSuccess: () => {
             toast.success('Message updated');
+            setIsOpen(false);
             refetch();
           },
         }
