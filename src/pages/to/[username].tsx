@@ -59,7 +59,7 @@ const SendTo = ({ username }: { username: string }) => {
         ) : (
           <>
             {/* Top */}
-            <div className='card w-full overflow-hidden bg-secondary-100 md:w-[720px]'>
+            <div className='w-full overflow-hidden rounded-md border-2 border-secondary-100 bg-secondary-100 md:w-[720px]'>
               <div className='flex items-center justify-between border-b-2 border-primary-100 bg-secondary-200 px-7 py-2'>
                 <p className='font-medium capitalize text-white'>
                   <span className='font-light text-gray-400'>To&#58;</span>{' '}
@@ -120,9 +120,10 @@ const SendTo = ({ username }: { username: string }) => {
                     <p className='text-center font-medium text-[#DAB5D3]'>
                       Anonymous message sent!
                     </p>
-                    <div className='flex justify-center space-x-2 font-normal text-primary-100 [&>:nth-child(odd)]:cursor-pointer [&>:nth-child(odd)]:transition-all [&>:nth-child(odd):hover]:text-[#ED6FD5]'>
+                    <div className='flex justify-center space-x-2 font-normal text-primary-100'>
                       <button
                         type='button'
+                        className='transition-colors hover:text-primary-100/80'
                         onClick={() => {
                           setMsgSent(false);
                           reset();
@@ -134,6 +135,7 @@ const SendTo = ({ username }: { username: string }) => {
                       <span className='text-[#DAB5D3]'>•</span>
                       <button
                         type='button'
+                        className='transition-colors hover:text-primary-100/80'
                         onClick={() => router.push('/register')}
                       >
                         Create your link
