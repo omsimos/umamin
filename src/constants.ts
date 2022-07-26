@@ -20,11 +20,11 @@ export const footerItems = {
         },
         {
           name: 'Bug Report',
-          href: 'https://github.com/joshxfi/umamin/issues/new/choose',
+          href: 'https://github.com/joshxfi/umamin/issues/new?assignees=&labels=&template=bug_report.md',
         },
         {
           name: 'Feature Request',
-          href: 'https://github.com/joshxfi/umamin/issues/new/choose',
+          href: 'https://github.com/joshxfi/umamin/issues/new?assignees=&labels=&template=feature_request.md',
         },
       ],
     },
