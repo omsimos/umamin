@@ -13,7 +13,10 @@ import { queryClient } from '@/api';
 import { Layout } from '@/components';
 import SEO from '../../next-seo-config';
 
-Router.events.on('routeChangeStart', () => NProgress.start());
+Router.events.on('routeChangeStart', () => {
+  NProgress.configure({ showSpinner: false });
+  NProgress.start();
+});
 Router.events.on('routeChangeComplete', () => NProgress.done());
 Router.events.on('routeChangeError', () => NProgress.done());
 

@@ -2,8 +2,8 @@
 export const footerItems = {
   withRoute: [
     {
-      name: 'About',
-      href: '/about',
+      name: 'Help',
+      href: '/help',
     },
     {
       name: 'Privacy',
@@ -20,11 +20,11 @@ export const footerItems = {
         },
         {
           name: 'Bug Report',
-          href: 'https://github.com/joshxfi/umamin/issues/new/choose',
+          href: 'https://github.com/joshxfi/umamin/issues/new?assignees=&labels=&template=bug_report.md',
         },
         {
           name: 'Feature Request',
-          href: 'https://github.com/joshxfi/umamin/issues/new/choose',
+          href: 'https://github.com/joshxfi/umamin/issues/new?assignees=&labels=&template=feature_request.md',
         },
       ],
     },
@@ -57,14 +57,15 @@ export const footerItems = {
   ],
 };
 
-export const privacyPolicy = `
-# **PRIVACY NOTICE**
+export const markdown = {
+  privacy: `
+# PRIVACY NOTICE
 
 **Last updated July 15, 2022**
 
 This privacy notice for umamin ("**Company**," "**we**," "**us**," or "**our**"), describes how and why we might collect, store, use, and/or share ("**process**") your information when you use our services ("**Services**"), such as when you:
 
--   Visit our website at , or any website of ours that links to this privacy notice
+-   Visit our website at https://umamin.link, or any website of ours that links to this privacy notice
 
 -   Engage with us in other related ways, including any sales, marketing, or events
 
@@ -215,4 +216,14 @@ If you have questions or comments about this notice, you may email us at contact
 Based on the applicable laws of your country, you may have the right to request access to the personal information we collect from you, change that information, or delete it. To request to review, update, or delete your personal information, please contact: contact@joshxfi.tech.
 
 This privacy policy was created using Termly's [Privacy Policy Generator](https://termly.io/products/privacy-policy-generator).
-`;
+`,
+  help: `
+# HELP CENTER
+
+## 1. DOWNLOADING IMAGE
+You can download a message as an image by opening a card and clicking *Download* or *Share to Story*.
+- If the *Download* button is not working, you might need to take a screenshot and crop the image instead. (esp. for iOS)
+- If *Share to Story* doesn't automatically download the image, click *Download* first.
+
+`,
+};
