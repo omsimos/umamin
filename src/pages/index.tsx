@@ -24,7 +24,7 @@ const Home: NextPage = () => {
           An ad-free and open-source platform for sending and receiving
           anonymous <br className='hidden sm:block' />
           messages. Start receiving messages by{' '}
-          <Link href='/create'>
+          <Link href='/register'>
             <span className='cursor-pointer text-primary-100'>
               creating your own link
             </span>
