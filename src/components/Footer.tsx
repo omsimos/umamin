@@ -10,32 +10,35 @@ export const Footer = () => {
       <div className='line mb-12' />
 
       <div className='grid grid-cols-2 flex-wrap justify-between gap-y-16 sm:flex'>
-        <div className='flex flex-col gap-4'>
-          <p className='font-medium'>Project</p>
+        <ul className='flex flex-col gap-4'>
+          <li className='font-medium'>Project</li>
           {footerItems.withRoute.map((item) => (
-            <Link href={item.href} key={item.name}>
-              <a className='text-gray-400 transition-colors hover:text-gray-500'>
-                {item.name}
-              </a>
-            </Link>
+            <li key={item.name}>
+              <Link href={item.href}>
+                <a className='text-gray-400 transition-colors hover:text-gray-500'>
+                  {item.name}
+                </a>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
 
         {footerItems.withUrl.map((item) => (
-          <div key={item.name} className='flex flex-col gap-4'>
-            <p className='font-medium'>{item.name}</p>
+          <ul key={item.name} className='flex flex-col gap-4'>
+            <li className='font-medium'>{item.name}</li>
             {item.children.map((c) => (
-              <a
-                key={c.name}
-                href={c.href}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='text-gray-400 transition-colors hover:text-gray-500'
-              >
-                {c.name}
-              </a>
+              <li key={c.name}>
+                <a
+                  href={c.href}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='text-gray-400 transition-colors hover:text-gray-500'
+                >
+                  {c.name}
+                </a>
+              </li>
             ))}
-          </div>
+          </ul>
         ))}
 
         <div className='relative hidden h-6 w-32 md:block'>
