@@ -39,7 +39,7 @@ export const MessageDialog = ({
   };
 
   return (
-    <DialogContainer setIsOpen={setIsOpen} className='mt-12' {...rest}>
+    <DialogContainer setIsOpen={setIsOpen} className='mt-12 lg:mt-32' {...rest}>
       <div className='mx-4 space-x-4'>
         <button
           onClick={() => setIsOpen(false)}
@@ -49,7 +49,6 @@ export const MessageDialog = ({
           &larr; Go Back
         </button>
       </div>
-
       <div id='card-img' className='flex flex-col bg-secondary-300 p-4'>
         <div className='mb-2 flex items-center self-center font-syneExtrabold text-xl'>
           <Image
