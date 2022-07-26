@@ -61,7 +61,7 @@ const Inbox = () => {
   };
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`https://umamin.link/${username}`);
+    navigator.clipboard.writeText(`https://umamin.link/to/${username}`);
     toast.success('Copied to clipboard');
 
     triggerEvent('copy_link');
