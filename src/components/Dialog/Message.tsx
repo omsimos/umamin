@@ -57,7 +57,7 @@ export const MessageDialog = ({
         </div>
 
         <div className='msg-card overflow-hidden text-left'>
-          <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 font-interMedium text-lg font-medium text-white before:bg-secondary-100 after:bg-secondary-200'>
+          <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 font-interMedium text-lg text-white before:bg-secondary-100 after:bg-secondary-200'>
             <p className='reply mb-3'>{data.receiverMsg}</p>
             <p>{data.content}</p>
           </div>

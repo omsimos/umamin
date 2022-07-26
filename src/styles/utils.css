@@ -88,3 +88,7 @@
     transform: rotate(360deg);
   }
 }
+
+.hide-tap-highlight {
+  -webkit-tap-highlight-color: transparent;
+}

@@ -130,7 +130,7 @@ const Inbox = () => {
               type='button'
               key={m.id}
               onClick={() => handleOpen(m)}
-              className='msg-card w-full cursor-pointer overflow-hidden text-left'
+              className='msg-card hide-tap-highlight w-full cursor-pointer overflow-hidden text-left'
             >
               <div className='relative mb-3 h-[40px]'>
                 <Image
