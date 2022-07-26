@@ -37,7 +37,7 @@ export const MessageDialog = ({
   };
 
   return (
-    <DialogContainer setIsOpen={setIsOpen} className='mt-12' {...rest}>
+    <DialogContainer setIsOpen={setIsOpen} className='mt-12 lg:mt-44' {...rest}>
       <button
         onClick={() => setIsOpen(false)}
         className='ml-4 lg:hidden'
