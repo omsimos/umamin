@@ -4,7 +4,6 @@ import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
 import { nanoid } from 'nanoid';
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { editMessage } from '@/api';
@@ -50,16 +49,9 @@ export const MessageDialog = ({
         </button>
       </div>
       <div id='card-img' className='flex flex-col bg-secondary-300 p-4'>
-        <div className='mb-2 flex items-center self-center font-syneExtrabold text-xl'>
-          <Image
-            priority
-            src='/assets/logo.svg'
-            objectFit='contain'
-            width={130}
-            height={30}
-          />
-          <p>.link</p>
-        </div>
+        <p className='mb-2 self-center font-syneExtrabold text-xl'>
+          <span className='text-primary-200'>umamin</span>.link
+        </p>
 
         <div className='msg-card overflow-hidden text-left'>
           <div className='receive chat-p max-w-full bg-secondary-100 px-6 py-5 font-interMedium text-lg text-white before:bg-secondary-100 after:bg-secondary-200'>
