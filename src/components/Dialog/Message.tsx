@@ -52,6 +52,7 @@ export const MessageDialog = ({
       <div id='card-img' className='flex flex-col bg-secondary-300 p-4'>
         <div className='mb-2 flex items-center self-center font-syneExtrabold text-xl'>
           <Image
+            priority
             src='/assets/logo.svg'
             objectFit='contain'
             width={130}

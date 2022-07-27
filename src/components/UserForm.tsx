@@ -145,7 +145,12 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
         </div>
       </form>
       <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] md:bottom-0'>
-        <Image src='/assets/hearts.svg' layout='fill' objectFit='contain' />
+        <Image
+          priority
+          src='/assets/hearts.svg'
+          layout='fill'
+          objectFit='contain'
+        />
       </div>
     </section>
   );

@@ -24,8 +24,8 @@ export const Navbar = () => {
       <Link href='/'>
         <div className='hide-tap-highlight relative h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'>
           <Image
-            src='/assets/logo.svg'
             priority
+            src='/assets/logo.svg'
             layout='fill'
             objectFit='contain'
           />
