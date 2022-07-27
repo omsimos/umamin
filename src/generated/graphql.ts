@@ -25,19 +25,24 @@ export type Message = {
   __typename?: 'Message';
   content: Scalars['String'];
   id: Scalars['ID'];
+  isDownloaded: Scalars['Boolean'];
+  isOpened: Scalars['Boolean'];
   receiverId: Scalars['String'];
+  receiverMsg: Scalars['String'];
   senderId?: Maybe<Scalars['String']>;
 };
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createUser: User;
+  createUser: Scalars['String'];
   deleteMessage: Scalars['String'];
-  login: Scalars['String'];
+  editMessage: Scalars['String'];
+  editUser: Scalars['String'];
   sendMessage: Message;
 };
 
 export type MutationCreateUserArgs = {
+  password: Scalars['String'];
   username: Scalars['String'];
 };
 
@@ -45,15 +50,19 @@ export type MutationDeleteMessageArgs = {
   id: Scalars['ID'];
 };
 
-export type MutationLoginArgs = {
-  password: Scalars['String'];
+export type MutationEditMessageArgs = {
+  id: Scalars['ID'];
+  isDownloaded?: InputMaybe<Scalars['Boolean']>;
+  isOpened?: InputMaybe<Scalars['Boolean']>;
+};
+
+export type MutationEditUserArgs = {
+  message: Scalars['String'];
   username: Scalars['String'];
 };
 
 export type MutationSendMessageArgs = {
-  content: Scalars['String'];
-  receiverUsername: Scalars['String'];
-  senderUsername?: InputMaybe<Scalars['String']>;
+  input: SendMessageInput;
 };
 
 export type Query = {
@@ -68,26 +77,36 @@ export type QueryMessageArgs = {
 };
 
 export type QueryMessagesArgs = {
-  username: Scalars['String'];
+  userId: Scalars['ID'];
 };
 
 export type QueryUserArgs = {
   username: Scalars['String'];
 };
 
+export type SendMessageInput = {
+  content: Scalars['String'];
+  receiverMsg: Scalars['String'];
+  receiverUsername: Scalars['String'];
+  senderUsername?: InputMaybe<Scalars['String']>;
+};
+
 export type User = {
   __typename?: 'User';
+  id: Scalars['ID'];
+  message: Scalars['String'];
   password: Scalars['String'];
   username: Scalars['String'];
 };
 
 export type CreateUserMutationVariables = Exact<{
   username: Scalars['String'];
+  password: Scalars['String'];
 }>;
 
 export type CreateUserMutation = {
   __typename?: 'Mutation';
-  createUser: { __typename?: 'User'; username: string; password: string };
+  createUser: string;
 };
 
 export type DeleteMessageMutationVariables = Exact<{
@@ -98,6 +117,24 @@ export type DeleteMessageMutation = {
   __typename?: 'Mutation';
   deleteMessage: string;
 };
+
+export type EditMessageMutationVariables = Exact<{
+  id: Scalars['ID'];
+  isOpened?: InputMaybe<Scalars['Boolean']>;
+  isDownloaded?: InputMaybe<Scalars['Boolean']>;
+}>;
+
+export type EditMessageMutation = {
+  __typename?: 'Mutation';
+  editMessage: string;
+};
+
+export type EditUserMutationVariables = Exact<{
+  username: Scalars['String'];
+  message: Scalars['String'];
+}>;
+
+export type EditUserMutation = { __typename?: 'Mutation'; editUser: string };
 
 export type GetMessageByIdQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -111,11 +148,12 @@ export type GetMessageByIdQuery = {
     content: string;
     senderId?: string | null;
     receiverId: string;
+    receiverMsg: string;
   };
 };
 
 export type GetMessagesQueryVariables = Exact<{
-  username: Scalars['String'];
+  userId: Scalars['ID'];
 }>;
 
 export type GetMessagesQuery = {
@@ -124,6 +162,8 @@ export type GetMessagesQuery = {
     __typename?: 'Message';
     id: string;
     content: string;
+    isOpened: boolean;
+    receiverMsg: string;
   }> | null;
 };
 
@@ -133,20 +173,11 @@ export type GetUserQueryVariables = Exact<{
 
 export type GetUserQuery = {
   __typename?: 'Query';
-  user?: { __typename?: 'User'; username: string; password: string } | null;
+  user?: { __typename?: 'User'; username: string; message: string } | null;
 };
 
-export type LoginUserMutationVariables = Exact<{
-  username: Scalars['String'];
-  password: Scalars['String'];
-}>;
-
-export type LoginUserMutation = { __typename?: 'Mutation'; login: string };
-
 export type SendMessageMutationVariables = Exact<{
-  content: Scalars['String'];
-  receiverUsername: Scalars['String'];
-  senderUsername?: InputMaybe<Scalars['String']>;
+  input: SendMessageInput;
 }>;
 
 export type SendMessageMutation = {
@@ -155,16 +186,23 @@ export type SendMessageMutation = {
 };
 
 export const CreateUserDocument = gql`
-  mutation createUser($username: String!) {
-    createUser(username: $username) {
-      username
-      password
-    }
+  mutation createUser($username: String!, $password: String!) {
+    createUser(username: $username, password: $password)
   }
 `;
 export const DeleteMessageDocument = gql`
   mutation deleteMessage($id: ID!) {
     deleteMessage(id: $id)
+  }
+`;
+export const EditMessageDocument = gql`
+  mutation editMessage($id: ID!, $isOpened: Boolean, $isDownloaded: Boolean) {
+    editMessage(id: $id, isOpened: $isOpened, isDownloaded: $isDownloaded)
+  }
+`;
+export const EditUserDocument = gql`
+  mutation editUser($username: String!, $message: String!) {
+    editUser(username: $username, message: $message)
   }
 `;
 export const GetMessageByIdDocument = gql`
@@ -174,14 +212,17 @@ export const GetMessageByIdDocument = gql`
       content
       senderId
       receiverId
+      receiverMsg
     }
   }
 `;
 export const GetMessagesDocument = gql`
-  query getMessages($username: String!) {
-    messages(username: $username) {
+  query getMessages($userId: ID!) {
+    messages(userId: $userId) {
       id
       content
+      isOpened
+      receiverMsg
     }
   }
 `;
@@ -189,26 +230,13 @@ export const GetUserDocument = gql`
   query getUser($username: String!) {
     user(username: $username) {
       username
-      password
+      message
     }
   }
 `;
-export const LoginUserDocument = gql`
-  mutation loginUser($username: String!, $password: String!) {
-    login(username: $username, password: $password)
-  }
-`;
 export const SendMessageDocument = gql`
-  mutation sendMessage(
-    $content: String!
-    $receiverUsername: String!
-    $senderUsername: String
-  ) {
-    sendMessage(
-      content: $content
-      receiverUsername: $receiverUsername
-      senderUsername: $senderUsername
-    ) {
+  mutation sendMessage($input: SendMessageInput!) {
+    sendMessage(input: $input) {
       id
       content
     }
@@ -261,6 +289,34 @@ export function getSdk(
         'mutation'
       );
     },
+    editMessage(
+      variables: EditMessageMutationVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<EditMessageMutation> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<EditMessageMutation>(EditMessageDocument, variables, {
+            ...requestHeaders,
+            ...wrappedRequestHeaders,
+          }),
+        'editMessage',
+        'mutation'
+      );
+    },
+    editUser(
+      variables: EditUserMutationVariables,
+      requestHeaders?: Dom.RequestInit['headers']
+    ): Promise<EditUserMutation> {
+      return withWrapper(
+        (wrappedRequestHeaders) =>
+          client.request<EditUserMutation>(EditUserDocument, variables, {
+            ...requestHeaders,
+            ...wrappedRequestHeaders,
+          }),
+        'editUser',
+        'mutation'
+      );
+    },
     getMessageById(
       variables: GetMessageByIdQueryVariables,
       requestHeaders?: Dom.RequestInit['headers']
@@ -302,20 +358,6 @@ export function getSdk(
           }),
         'getUser',
         'query'
-      );
-    },
-    loginUser(
-      variables: LoginUserMutationVariables,
-      requestHeaders?: Dom.RequestInit['headers']
-    ): Promise<LoginUserMutation> {
-      return withWrapper(
-        (wrappedRequestHeaders) =>
-          client.request<LoginUserMutation>(LoginUserDocument, variables, {
-            ...requestHeaders,
-            ...wrappedRequestHeaders,
-          }),
-        'loginUser',
-        'mutation'
       );
     },
     sendMessage(

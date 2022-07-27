@@ -1,6 +1,13 @@
 #!/usr/bin/env sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Check Types
+yarn check-types ||
+    (
+        echo '❌ Type Check Failed. Check your TypeScript types.'
+        false
+    )
+
 # Check ESLint Standards
 yarn lint-staged ||
     (

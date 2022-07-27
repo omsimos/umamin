@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { signOut, useSession } from 'next-auth/react';
 
+import { Menu } from '@/components';
+
 export const Navbar = () => {
   const [loading, setLoading] = useState(false);
   const { status } = useSession();
@@ -13,30 +15,29 @@ export const Navbar = () => {
   const handleLogout = async () => {
     setLoading(true);
     await signOut({ redirect: false });
-    setLoading(false);
     push('/login');
+    setLoading(false);
   };
 
   return (
     <nav className='relative z-10 mb-12 flex items-center justify-between xl:mb-24'>
       <Link href='/'>
-        <div className='relative h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'>
+        <div className='hide-tap-highlight relative h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'>
           <Image
-            src='/assets/logo.svg'
             priority
+            src='/assets/logo.svg'
             layout='fill'
             objectFit='contain'
           />
         </div>
       </Link>
 
-      <div className='flex items-center space-x-6'>
-        {status === 'loading' ? (
-          <div>Loading...</div>
+      <div className='hidden items-center space-x-6 sm:flex'>
+        {status === 'loading' || loading ? (
+          <span className='loader' />
         ) : status === 'authenticated' ? (
           <button onClick={handleLogout} type='button' className='primary-btn'>
-            {/* TODO: use loading spinner */}
-            {loading ? 'Logging out...' : 'Logout'}
+            Logout
           </button>
         ) : (
           <>
@@ -47,7 +48,7 @@ export const Navbar = () => {
             </Link>
 
             <button
-              onClick={() => push('/create')}
+              onClick={() => push('/register')}
               type='button'
               className='primary-btn'
             >
@@ -56,6 +57,8 @@ export const Navbar = () => {
           </>
         )}
       </div>
+
+      <Menu handleLogout={handleLogout} loading={loading} />
     </nav>
   );
 };

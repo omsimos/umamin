@@ -1,3 +1,4 @@
+/* eslint-disable global-require */
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./pages/**/*.{js,ts,jsx,tsx}', './src/**/*.{js,ts,jsx,tsx}'],
@@ -6,6 +7,8 @@ module.exports = {
       fontFamily: {
         inter: ['Inter', 'sans-serif'],
         syne: ['Syne', 'sans-serif'],
+        interMedium: ['Inter-Medium', 'sans-serif'],
+        syneExtrabold: ['Syne-Extrabold', 'sans-serif'],
       },
       colors: {
         primary: {
@@ -16,9 +19,10 @@ module.exports = {
           100: '#38383C',
           200: '#27272A',
           300: '#16171A',
+          400: '#8E8E93',
         },
       },
     },
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/typography')],
 };

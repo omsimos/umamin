@@ -4,5 +4,6 @@ query getMessageById($id: ID!) {
     content
     senderId
     receiverId
+    receiverMsg
   }
 }

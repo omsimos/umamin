@@ -1,4 +1,5 @@
-import { ObjectType, Field, ID } from 'type-graphql';
+import { ObjectType, Field, ID, InputType, ArgsType } from 'type-graphql';
+import { MaxLength, MinLength, IsNotEmpty } from 'class-validator';
 
 @ObjectType()
 export class Message {
@@ -8,9 +9,52 @@ export class Message {
   @Field(() => String)
   content: string;
 
+  @Field(() => String)
+  receiverMsg: string;
+
   @Field(() => String, { nullable: true })
   senderId: string | null;
 
   @Field(() => String)
   receiverId: string;
+
+  @Field(() => Boolean)
+  isOpened: boolean;
+
+  @Field(() => Boolean)
+  isDownloaded: boolean;
+}
+
+@InputType()
+export class SendMessageInput {
+  @Field(() => String, { nullable: true })
+  senderUsername: string;
+
+  @IsNotEmpty()
+  @Field(() => String)
+  receiverUsername: string;
+
+  @IsNotEmpty()
+  @MinLength(1)
+  @MaxLength(200)
+  @Field(() => String)
+  content: string;
+
+  @IsNotEmpty()
+  @MinLength(1)
+  @MaxLength(100)
+  @Field(() => String)
+  receiverMsg: string;
+}
+
+@ArgsType()
+export class EditMessageArgs {
+  @Field(() => ID)
+  id: string;
+
+  @Field(() => Boolean, { nullable: true })
+  isOpened?: boolean;
+
+  @Field(() => Boolean, { nullable: true })
+  isDownloaded?: boolean;
 }

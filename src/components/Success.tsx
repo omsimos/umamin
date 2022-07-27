@@ -1,16 +1,12 @@
 import React from 'react';
-import { useRouter } from 'next/router';
-import { BsInfoCircleFill } from 'react-icons/bs';
 import { IoChatboxEllipses } from 'react-icons/io5';
+import { BsInfoCircleFill } from 'react-icons/bs';
+import { useRouter } from 'next/router';
 
 import type { User } from '@/generated/graphql';
 
 export const Success = ({ data }: { data: User }) => {
   const { push } = useRouter();
-
-  const handleProceed = () => {
-    push('/inbox');
-  };
 
   return (
     <section className='mx-auto flex flex-col items-center sm:w-[500px]'>
@@ -36,7 +32,11 @@ export const Success = ({ data }: { data: User }) => {
           Undo
         </button>
 
-        <button onClick={handleProceed} type='button' className='primary-btn'>
+        <button
+          onClick={() => push('/login')}
+          type='button'
+          className='primary-btn'
+        >
           Proceed
         </button>
       </div>

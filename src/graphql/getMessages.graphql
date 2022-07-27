@@ -1,6 +1,8 @@
-query getMessages($username: String!) {
-  messages(username: $username) {
+query getMessages($userId: ID!) {
+  messages(userId: $userId) {
     id
     content
+    isOpened
+    receiverMsg
   }
 }
