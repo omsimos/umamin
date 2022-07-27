@@ -15,8 +15,8 @@ export const Navbar = () => {
   const handleLogout = async () => {
     setLoading(true);
     await signOut({ redirect: false });
-    setLoading(false);
     push('/login');
+    setLoading(false);
   };
 
   return (

@@ -1,8 +1,8 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { BsFillPersonFill } from 'react-icons/bs';
 import { HiLockClosed } from 'react-icons/hi';
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
@@ -19,7 +19,14 @@ interface Props {
 export const UserForm = ({ type, onRegister, loading }: Props) => {
   const isLogin = type === 'login';
   const { push } = useRouter();
+  const { status } = useSession();
   const triggerEvent = useLogEvent();
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      push('/inbox');
+    }
+  }, [status]);
 
   const [loginLoading, setLoading] = useState(false);
   const isLoading = loading || loginLoading;
