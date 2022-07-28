@@ -12,6 +12,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+
       - name: Deploy migration
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
