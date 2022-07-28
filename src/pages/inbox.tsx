@@ -9,10 +9,12 @@ import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
+import { BiMessageDots } from 'react-icons/bi';
+import SwipeToDelete from 'react-swipe-to-delete-ios';
 import { Info } from '@/components';
 import { useLogEvent } from '@/hooks';
 import type { Message } from '@/generated/graphql';
-import { editMessage, getMessages, queryClient } from '@/api';
+import { deleteMessage, editMessage, getMessages, queryClient } from '@/api';
 import { MessageDialog, SettingsDialog } from '@/components/Dialog';
 
 const Inbox = () => {
@@ -59,6 +61,8 @@ const Inbox = () => {
     setMsgModal(true);
     triggerEvent('open_message');
   };
+
+  const handleDelete = useMutation(deleteMessage);
 
   const copyLink = () => {
     navigator.clipboard.writeText(`https://umamin.link/to/${username}`);
@@ -108,52 +112,80 @@ const Inbox = () => {
       </div>
 
       <div className='my-10 w-full text-left'>
-        <div className='mb-5 flex flex-col'>
-          <div className='flex justify-between'>
-            <p className='font-medium'>
-              {messages?.length ? 'Latest messages' : 'No messages to show'}
-            </p>
-            <button type='button' onClick={() => refetch()}>
-              <IoReload
-                className={`text-lg ${
-                  isLoading || isRefetching ? 'animate-spin' : ''
-                }`}
+        {messages?.length ? (
+          <div className='mb-5 flex flex-col'>
+              <div className='flex justify-between'>
+                <p className='font-medium'>Latest messages</p>
+                <button type='button' onClick={() => refetch()}>
+                  <IoReload
+                    className={`text-lg ${
+                      isLoading || isRefetching ? 'animate-spin' : ''
+                    }`}
+                  />
+                </button>
+              </div>
+              <Info
+                className='text-xs'
+                message='Tap a card to reveal an anonymous message or swipe left to delete.'
               />
-            </button>
-          </div>
-          <Info message='Tap a card to reveal an anonymous message.' />
-        </div>
+            </div>
+        ) : (
+          <div className='mb-5 text-center'>
+              <BiMessageDots className='mx-auto text-3xl' />
+              <p className='font-medium'>No messages yet.</p>
+              <button
+                type='button'
+                onClick={() => refetch()}
+                className='text-xs text-primary-100'
+              >
+                Tap to refresh
+              </button>
+            </div>
+        )}
 
         <div className='space-y-6'>
           {messages?.map((m) => (
-            <button
-              type='button'
+            <SwipeToDelete
               key={m.id}
-              onClick={() => handleOpen(m)}
-              className='msg-card hide-tap-highlight w-full cursor-pointer overflow-hidden text-left'
+              onDelete={() => {
+                handleDelete.mutate({ id: m.id });
+                toast.success('Message deleted');
+                refetch();
+              }}
+              height={180}
+              deleteWidth={100}
+              deleteColor='transparent'
+              className='my-auto'
             >
-              <div className='relative mb-3 h-[40px]'>
-                <Image
-                  src='/assets/logo.svg'
-                  layout='fill'
-                  objectFit='contain'
-                />
-              </div>
-
-              <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
-                <p className='reply text-secondary-400'>{m.receiverMsg}</p>
-              </div>
-              <div
-                className={
-                  m.isOpened
-                    ? 'flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'
-                    : 'hidden'
-                }
+              <button
+                type='button'
+                key={m.id}
+                onClick={() => handleOpen(m)}
+                className='msg-card hide-tap-highlight h-[180px] w-full cursor-pointer overflow-hidden text-left'
               >
-                <p>Seen</p>
-                <BsCheck2 className='text-base' />
-              </div>
-            </button>
+                <div className='relative mb-3 h-[40px]'>
+                  <Image
+                    src='/assets/logo.svg'
+                    layout='fill'
+                    objectFit='contain'
+                  />
+                </div>
+
+                <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                  <p className='reply text-secondary-400'>{m.receiverMsg}</p>
+                </div>
+                <div
+                  className={
+                    m.isOpened
+                      ? 'flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'
+                      : 'hidden'
+                  }
+                >
+                  <p>Seen</p>
+                  <BsCheck2 className='text-base' />
+                </div>
+              </button>
+            </SwipeToDelete>
           ))}
         </div>
       </div>
