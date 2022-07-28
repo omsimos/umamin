@@ -22,6 +22,8 @@ model User {
 
   sentMessages     Message[] @relation("sentMessages")
   receivedMessages Message[] @relation("receivedMessages")
+
+  @@index(username)
 }
 
 model Message {
@@ -37,4 +39,6 @@ model Message {
   sender     User?   @relation(name: "sentMessages", fields: [senderId], references: [id])
   receiverId String
   receiver   User    @relation(name: "receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId, createdAt(sort: Desc)])
 }
