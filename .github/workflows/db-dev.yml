@@ -1,14 +1,20 @@
-name: Sync database
+name: Sync dev database
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types:
-      - completed
+  push:
+    branches:
+      - dev
+    paths:
+      - 'prisma/schema.prisma'
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - 'prisma/schema.prisma'
 
 jobs:
   migration:
-    name: Sync schema change to database
+    name: Sync schema change to dev database
     runs-on: ubuntu-latest
 
     steps:
@@ -25,5 +31,5 @@ jobs:
 
       - name: Deploy migration
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
         run: npx prisma migrate deploy
