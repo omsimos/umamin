@@ -32,3 +32,6 @@ jobs:
 
       - name: Build project
         run: yarn build
+
+      - name: Deploy migration
+        run: npx prisma migrate deploy
