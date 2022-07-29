@@ -10,7 +10,7 @@ import Router from 'next/router';
 import '../styles/globals.css';
 
 import { queryClient } from '@/api';
-import { Layout } from '@/components';
+import { Layout, Maintenance } from '@/components';
 import SEO from '../../next-seo-config';
 
 Router.events.on('routeChangeStart', () => {
@@ -27,7 +27,11 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
         <Hydrate state={pageProps.dehydratedState}>
           <DefaultSeo {...SEO} />
           <Layout>
-            <Component {...pageProps} />
+            {process.env.NEXT_PUBLIC_MAINTENANCE === 'true' ? (
+              <Maintenance />
+            ) : (
+              <Component {...pageProps} />
+            )}
           </Layout>
           <Toaster />
         </Hydrate>

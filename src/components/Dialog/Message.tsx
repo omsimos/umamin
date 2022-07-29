@@ -1,12 +1,10 @@
 import React from 'react';
 import { BsInstagram } from 'react-icons/bs';
-import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
 
-import { editMessage } from '@/api';
 import { useLogEvent } from '@/hooks';
 import type { Message } from '@/generated/graphql';
 import { DialogContainer, DialogContainerProps } from '.';
@@ -23,18 +21,10 @@ export const MessageDialog = ({
   ...rest
 }: Props) => {
   const triggerEvent = useLogEvent();
-  const { mutate } = useMutation(editMessage);
 
   const saveImage = async () => {
     const imgUrl = await toPng(document.getElementById('card-img')!);
     download(imgUrl, `${username}_${nanoid(5)}.png`);
-
-    if (data.id && !data.isDownloaded) {
-      mutate({
-        id: data.id,
-        isDownloaded: true,
-      });
-    }
   };
 
   return (

@@ -52,8 +52,7 @@ export type MutationDeleteMessageArgs = {
 
 export type MutationEditMessageArgs = {
   id: Scalars['ID'];
-  isDownloaded?: InputMaybe<Scalars['Boolean']>;
-  isOpened?: InputMaybe<Scalars['Boolean']>;
+  isOpened: Scalars['Boolean'];
 };
 
 export type MutationEditUserArgs = {
@@ -120,8 +119,7 @@ export type DeleteMessageMutation = {
 
 export type EditMessageMutationVariables = Exact<{
   id: Scalars['ID'];
-  isOpened?: InputMaybe<Scalars['Boolean']>;
-  isDownloaded?: InputMaybe<Scalars['Boolean']>;
+  isOpened: Scalars['Boolean'];
 }>;
 
 export type EditMessageMutation = {
@@ -196,8 +194,8 @@ export const DeleteMessageDocument = gql`
   }
 `;
 export const EditMessageDocument = gql`
-  mutation editMessage($id: ID!, $isOpened: Boolean, $isDownloaded: Boolean) {
-    editMessage(id: $id, isOpened: $isOpened, isDownloaded: $isDownloaded)
+  mutation editMessage($id: ID!, $isOpened: Boolean!) {
+    editMessage(id: $id, isOpened: $isOpened)
   }
 `;
 export const EditUserDocument = gql`
