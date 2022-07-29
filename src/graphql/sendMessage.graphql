@@ -1,6 +1,3 @@
 mutation sendMessage($input: SendMessageInput!) {
-  sendMessage(input: $input) {
-    id
-    content
-  }
+  sendMessage(input: $input)
 }

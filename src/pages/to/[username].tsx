@@ -79,9 +79,9 @@ const SendTo = ({ username }: { username: string }) => {
                 <div className='chat-p receive  inline-block max-w-[255px] self-start bg-[#e5e5ea] font-medium  text-black before:bg-[#e5e5ea] after:bg-secondary-100'>
                   {user.message}
                 </div>
-                {data?.sendMessage.content && (
+                {data?.sendMessage && (
                   <div className='chat-p send inline-block max-w-[255px] self-end bg-primary-200 text-white  before:bg-primary-200 after:bg-secondary-100'>
-                    {data.sendMessage.content}
+                    {data.sendMessage}
                   </div>
                 )}
               </div>
