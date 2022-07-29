@@ -26,13 +26,13 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       <QueryClientProvider client={queryClient}>
         <Hydrate state={pageProps.dehydratedState}>
           <DefaultSeo {...SEO} />
-          <Layout>
-            {process.env.NEXT_PUBLIC_MAINTENANCE === 'true' ? (
-              <Maintenance />
-            ) : (
+          {process.env.NEXT_PUBLIC_MAINTENANCE === 'true' ? (
+            <Maintenance />
+          ) : (
+            <Layout>
               <Component {...pageProps} />
-            )}
-          </Layout>
+            </Layout>
+          )}
           <Toaster />
         </Hydrate>
       </QueryClientProvider>
