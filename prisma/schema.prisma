@@ -33,7 +33,6 @@ model Message {
   content      String   @db.VarChar(255)
   receiverMsg  String   @db.VarChar(100)
   isOpened     Boolean  @default(false)
-  isDownloaded Boolean  @default(false)
 
   senderId   String?
   sender     User?   @relation(name: "sentMessages", fields: [senderId], references: [id])

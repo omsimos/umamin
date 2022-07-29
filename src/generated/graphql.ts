@@ -25,7 +25,6 @@ export type Message = {
   __typename?: 'Message';
   content: Scalars['String'];
   id: Scalars['ID'];
-  isDownloaded: Scalars['Boolean'];
   isOpened: Scalars['Boolean'];
   receiverId: Scalars['String'];
   receiverMsg: Scalars['String'];

@@ -30,10 +30,6 @@ export class MessageResolver {
     @Ctx() { prisma, id }: TContext
   ): Promise<Message[] | null> {
     try {
-      if (!id) {
-        throw new Error('User not logged in');
-      }
-
       if (userId !== id) {
         throw new Error('User not authorized');
       }

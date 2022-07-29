@@ -20,9 +20,6 @@ export class Message {
 
   @Field(() => Boolean)
   isOpened: boolean;
-
-  @Field(() => Boolean)
-  isDownloaded: boolean;
 }
 
 @InputType()
