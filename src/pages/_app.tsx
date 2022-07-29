@@ -8,7 +8,6 @@ import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
 import Router from 'next/router';
 import Script from 'next/script';
-import Head from 'next/head';
 
 import '../styles/globals.css';
 import { queryClient } from '@/api';
@@ -27,13 +26,12 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
         <Hydrate state={pageProps.dehydratedState}>
-          <Head>
-            <Script
-              async
-              src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4274133898976040'
-              crossOrigin='anonymous'
-            />
-          </Head>
+          <Script
+            async
+            strategy='beforeInteractive'
+            src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4274133898976040'
+            crossOrigin='anonymous'
+          />
           <DefaultSeo {...SEO} />
           {process.env.NEXT_PUBLIC_MAINTENANCE === 'true' ? (
             <Maintenance />
