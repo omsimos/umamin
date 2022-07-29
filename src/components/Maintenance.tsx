@@ -1,9 +1,19 @@
 import React from 'react';
+import Image from 'next/image';
 
 export const Maintenance = () => {
   return (
-    <div className='text-base'>
-      <h1 className='mb-2 text-5xl font-bold'>Maintenance</h1>
+    <section className='contain text-base'>
+      <div className='relative h-[75px] w-[150px] md:h-[100px] md:w-[200px]'>
+        <Image
+          priority
+          src='/assets/logo.svg'
+          layout='fill'
+          objectFit='contain'
+        />
+      </div>
+
+      <h1 className='mt-24 mb-2 text-5xl font-bold'>Maintenance</h1>
       <p className='mb-4 font-medium'>Please check back soon. Thank You 💖</p>
 
       <a
@@ -12,6 +22,6 @@ export const Maintenance = () => {
       >
         More Info &rarr;
       </a>
-    </div>
+    </section>
   );
 };
