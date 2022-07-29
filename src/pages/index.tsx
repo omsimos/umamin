@@ -21,8 +21,9 @@ const Home: NextPage = () => {
         </h1>
 
         <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
-          An ad-free and open-source platform for sending and receiving
-          anonymous <br className='hidden sm:block' />
+          An <span className='line-through'>ad-free</span> and open-source
+          platform for sending and receiving anonymous{' '}
+          <br className='hidden sm:block' />
           messages. Start receiving messages by{' '}
           <Link href='/register'>
             <span className='cursor-pointer text-primary-100'>
