@@ -41,6 +41,7 @@
     "react-icons": "^4.4.0",
     "react-markdown": "^8.0.3",
     "react-query": "^3.39.1",
+    "react-swipe-to-delete-ios": "^2.0.71",
     "reflect-metadata": "^0.1.13",
     "remark-gfm": "^3.0.1",
     "type-graphql": "^1.1.1",

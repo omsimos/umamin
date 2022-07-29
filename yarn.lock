@@ -6843,6 +6843,11 @@ react-query@^3.39.1:
     broadcast-channel "^3.4.1"
     match-sorter "^6.0.2"
 
+react-swipe-to-delete-ios@^2.0.71:
+  version "2.0.71"
+  resolved "https://registry.yarnpkg.com/react-swipe-to-delete-ios/-/react-swipe-to-delete-ios-2.0.71.tgz#96342e7ff2b06797b88d15e0012d0ca6777ad5dd"
+  integrity sha512-+lhd+Xhs7Wqn3nLb1V4o/AS+qW8k+U9iVKErt74nmUOAJyUlqmaWraHP9V9hr2XjzisUq8JtJq+OHbkkLxDdkA==
+
 react@18.2.0:
   version "18.2.0"
   resolved "https://registry.yarnpkg.com/react/-/react-18.2.0.tgz#555bd98592883255fa00de14f1151a917b5d77d5"
