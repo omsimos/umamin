@@ -92,9 +92,7 @@ export type SendMessageInput = {
 
 export type User = {
   __typename?: 'User';
-  id: Scalars['ID'];
   message: Scalars['String'];
-  password: Scalars['String'];
   username: Scalars['String'];
 };
 
