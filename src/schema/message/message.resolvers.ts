@@ -30,10 +30,6 @@ export class MessageResolver {
     @Ctx() { prisma, id }: TContext
   ): Promise<Message[] | null> {
     try {
-      if (!id) {
-        throw new Error('User not logged in');
-      }
-
       if (userId !== id) {
         throw new Error('User not authorized');
       }
@@ -50,7 +46,7 @@ export class MessageResolver {
     }
   }
 
-  @Mutation(() => Message)
+  @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
     {
@@ -60,7 +56,7 @@ export class MessageResolver {
       receiverMsg,
     }: SendMessageInput,
     @Ctx() { prisma }: TContext
-  ): Promise<Message> {
+  ): Promise<String> {
     try {
       const message = await prisma.message.create({
         data: {
@@ -73,7 +69,7 @@ export class MessageResolver {
         },
       });
 
-      return message;
+      return message.content;
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);

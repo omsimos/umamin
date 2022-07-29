@@ -19,7 +19,10 @@ export class UserResolver {
         throw new Error('User not found');
       }
 
-      return data;
+      return {
+        username: data.username,
+        message: data.message,
+      };
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);
@@ -66,9 +69,13 @@ export class UserResolver {
   async editUser(
     @Arg('username', () => String) username: string,
     @Arg('message', () => String) message: string,
-    @Ctx() { prisma }: TContext
+    @Ctx() { prisma, username: user }: TContext
   ): Promise<String> {
     try {
+      if (username !== user) {
+        throw new Error('You can only edit your own profile');
+      }
+
       await prisma.user.update({ where: { username }, data: { message } });
       return 'User edited';
     } catch (err: any) {

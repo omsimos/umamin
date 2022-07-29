@@ -25,7 +25,6 @@ export type Message = {
   __typename?: 'Message';
   content: Scalars['String'];
   id: Scalars['ID'];
-  isDownloaded: Scalars['Boolean'];
   isOpened: Scalars['Boolean'];
   receiverId: Scalars['String'];
   receiverMsg: Scalars['String'];
@@ -38,7 +37,7 @@ export type Mutation = {
   deleteMessage: Scalars['String'];
   editMessage: Scalars['String'];
   editUser: Scalars['String'];
-  sendMessage: Message;
+  sendMessage: Scalars['String'];
 };
 
 export type MutationCreateUserArgs = {
@@ -92,9 +91,7 @@ export type SendMessageInput = {
 
 export type User = {
   __typename?: 'User';
-  id: Scalars['ID'];
   message: Scalars['String'];
-  password: Scalars['String'];
   username: Scalars['String'];
 };
 
@@ -180,7 +177,7 @@ export type SendMessageMutationVariables = Exact<{
 
 export type SendMessageMutation = {
   __typename?: 'Mutation';
-  sendMessage: { __typename?: 'Message'; id: string; content: string };
+  sendMessage: string;
 };
 
 export const CreateUserDocument = gql`
@@ -234,10 +231,7 @@ export const GetUserDocument = gql`
 `;
 export const SendMessageDocument = gql`
   mutation sendMessage($input: SendMessageInput!) {
-    sendMessage(input: $input) {
-      id
-      content
-    }
+    sendMessage(input: $input)
   }
 `;
 
