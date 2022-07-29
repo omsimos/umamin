@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
-import { Resolver, Query, Mutation, Ctx, Arg, ID, Args } from 'type-graphql';
-
-import { EditMessageArgs, Message, SendMessageInput } from './message.types';
+import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
+import { Message, SendMessageInput } from './message.types';
 import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
@@ -75,13 +74,14 @@ export class MessageResolver {
 
   @Mutation(() => String)
   async editMessage(
-    @Args() { id, isOpened, isDownloaded }: EditMessageArgs,
+    @Arg('id', () => ID) id: string,
+    @Arg('isOpened', () => Boolean) isOpened: boolean,
     @Ctx() { prisma }: TContext
   ): Promise<String> {
     try {
       await prisma.message.update({
         where: { id },
-        data: { isOpened, isDownloaded },
+        data: { isOpened },
       });
 
       return 'Message edited';

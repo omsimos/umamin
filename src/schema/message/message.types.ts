@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, InputType, ArgsType } from 'type-graphql';
+import { ObjectType, Field, ID, InputType } from 'type-graphql';
 import { MaxLength, MinLength, IsNotEmpty } from 'class-validator';
 
 @ObjectType()
@@ -45,16 +45,4 @@ export class SendMessageInput {
   @MaxLength(100)
   @Field(() => String)
   receiverMsg: string;
-}
-
-@ArgsType()
-export class EditMessageArgs {
-  @Field(() => ID)
-  id: string;
-
-  @Field(() => Boolean, { nullable: true })
-  isOpened?: boolean;
-
-  @Field(() => Boolean, { nullable: true })
-  isDownloaded?: boolean;
 }
