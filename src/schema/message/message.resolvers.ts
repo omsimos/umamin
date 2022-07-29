@@ -27,9 +27,17 @@ export class MessageResolver {
   @Query(() => [Message], { nullable: true })
   async messages(
     @Arg('userId', () => ID) userId: string,
-    @Ctx() { prisma }: TContext
+    @Ctx() { prisma, id }: TContext
   ): Promise<Message[] | null> {
     try {
+      if (!id) {
+        throw new Error('User not logged in');
+      }
+
+      if (userId !== id) {
+        throw new Error('User not authorized');
+      }
+
       const messages = await prisma.message.findMany({
         where: { receiverId: userId },
         orderBy: { createdAt: 'desc' },

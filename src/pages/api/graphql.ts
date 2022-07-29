@@ -10,6 +10,8 @@ import { MessageResolver } from '@/schema/message';
 
 export interface TContext {
   prisma: typeof prisma;
+  username?: string;
+  id?: string;
 }
 
 const schema = await buildSchema({
@@ -21,7 +23,8 @@ const server = new ApolloServer({
   context: async ({ req }) => {
     const session = await getSession({ req });
     const username = session?.user?.username;
-    return { prisma, username };
+    const id = session?.user?.id;
+    return { prisma, username, id };
   },
 });
 const startServer = server.start();
