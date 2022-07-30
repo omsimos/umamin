@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { useSession } from 'next-auth/react';
-import { IoReload } from 'react-icons/io5';
 import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
 import { useRouter } from 'next/router';
@@ -28,12 +27,7 @@ const Inbox = () => {
   const { data, status } = useSession();
   const { id, username } = data?.user ?? {};
 
-  const {
-    data: messages,
-    refetch,
-    isLoading,
-    isRefetching,
-  } = useQuery(
+  const { data: messages, refetch } = useQuery(
     ['messages', { userId: id ?? '', cursorId }],
     () => getMessages({ userId: id ?? '', cursorId }),
     {
@@ -112,18 +106,9 @@ const Inbox = () => {
 
       <div className='my-10 w-full text-left'>
         <div className='mb-5 flex flex-col'>
-          <div className='flex justify-between'>
-            <p className='font-medium'>
-              {messages?.length ? 'Latest messages' : 'No messages to show'}
-            </p>
-            <button type='button' onClick={() => refetch()}>
-              <IoReload
-                className={`text-lg ${
-                  isLoading || isRefetching ? 'animate-spin' : ''
-                }`}
-              />
-            </button>
-          </div>
+          <p className='font-medium'>
+            {messages?.length ? 'Latest messages' : 'No messages to show'}
+          </p>
           <Info message='Tap a card to reveal an anonymous message.' />
         </div>
 
