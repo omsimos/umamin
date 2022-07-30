@@ -14,14 +14,18 @@ export const Maintenance = () => {
       </div>
 
       <h1 className='mt-24 mb-2 text-5xl font-bold'>Maintenance</h1>
-      <p className='mb-4 font-medium'>Please check back soon. Thank You 💖</p>
+      <p className='mb-4 font-medium'>
+        {process.env.NEXT_PUBLIC_MAINTENANCE_INFO}
+      </p>
 
-      <a
-        className='text-primary-100'
-        href={process.env.NEXT_PUBLIC_MAINTENANCE_URL ?? '#'}
-      >
-        More Info &rarr;
-      </a>
+      {process.env.NEXT_PUBLIC_MAINTENANCE_URL && (
+        <a
+          className='text-primary-100'
+          href={process.env.NEXT_PUBLIC_MAINTENANCE_URL}
+        >
+          More Info &rarr;
+        </a>
+      )}
     </section>
   );
 };
