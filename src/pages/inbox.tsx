@@ -5,8 +5,8 @@ import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
-import { nanoid } from 'nanoid';
 import Image from 'next/image';
+import { nanoid } from 'nanoid';
 
 import { Info } from '@/components';
 import { useLogEvent } from '@/hooks';
@@ -120,32 +120,30 @@ const Inbox = () => {
 
         <div className='space-y-6'>
           {isLoading
-            ? Array(3)
-                .fill(0)
-                .map(() => (
-                  <div
-                    key={nanoid()}
-                    className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
-                  >
-                    <div className='relative mb-3 h-[40px]'>
-                      <Image
-                        src='/assets/logo.svg'
-                        layout='fill'
-                        objectFit='contain'
-                      />
-                    </div>
-
-                    <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
-                      <p className='reply text-secondary-400'>
-                        Send me an anonymous message!
-                      </p>
-                    </div>
-                    <div className='flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'>
-                      <p>Seen</p>
-                      <BsCheck2 className='text-base' />
-                    </div>
+            ? Array.from({ length: 3 }).map(() => (
+                <div
+                  key={nanoid()}
+                  className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+                >
+                  <div className='relative mb-3 h-[40px]'>
+                    <Image
+                      src='/assets/logo.svg'
+                      layout='fill'
+                      objectFit='contain'
+                    />
                   </div>
-                ))
+
+                  <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                    <p className='reply text-secondary-400'>
+                      Send me an anonymous message!
+                    </p>
+                  </div>
+                  <div className='flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'>
+                    <p>Seen</p>
+                    <BsCheck2 className='text-base' />
+                  </div>
+                </div>
+              ))
             : messages?.map((m) => (
                 <button
                   type='button'
@@ -177,33 +175,54 @@ const Inbox = () => {
                 </button>
               ))}
 
-          <div
-            className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}
-          >
-            {cursorId && (
+          {!messages?.length && cursorId && !isLoading && (
+            <div className='mt-24 flex justify-center'>
               <button
                 onClick={() => {
                   setPageNo(1);
                   setCursorId('');
                 }}
+                className='hover:underline'
                 type='button'
               >
-                &larr; Latest
+                &larr; Go back to latest messages
               </button>
-            )}
+            </div>
+          )}
 
-            {cursorId && <p>{pageNo}</p>}
-
-            <button
-              onClick={() => {
-                setPageNo(cursorId ? pageNo + 1 : 2);
-                setCursorId(messages?.length ? messages[2]?.id : '');
-              }}
-              type='button'
+          {!isLoading && messages && messages?.length > 0 && (
+            <div
+              className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}
             >
-              More &rarr;
-            </button>
-          </div>
+              {cursorId && (
+                <button
+                  className='hover:underline'
+                  onClick={() => {
+                    setPageNo(1);
+                    setCursorId('');
+                  }}
+                  type='button'
+                >
+                  &larr; Latest
+                </button>
+              )}
+
+              {cursorId && <p>{pageNo}</p>}
+
+              {messages.length === 3 && (
+                <button
+                  className='hover:underline'
+                  onClick={() => {
+                    setPageNo(cursorId ? pageNo + 1 : 2);
+                    setCursorId(messages?.length ? messages[2]?.id : '');
+                  }}
+                  type='button'
+                >
+                  More &rarr;
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </section>

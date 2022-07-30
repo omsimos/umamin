@@ -6,8 +6,6 @@
 
 ## About
 
-> ⚠️ This project is under heavy development! ⚠️
-
 [umamin](https://umamin.link) is an open-source platform for sending and receiving anonymous confessions! Each user can create a unique link to which others could send anonymous messages! [Start receiving confessions and messages &rarr;](https://umamin.link)
 
 ## Contributing
