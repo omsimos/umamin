@@ -75,6 +75,7 @@ export type QueryMessageArgs = {
 };
 
 export type QueryMessagesArgs = {
+  cursorId?: InputMaybe<Scalars['ID']>;
   userId: Scalars['ID'];
 };
 
@@ -149,6 +150,7 @@ export type GetMessageByIdQuery = {
 
 export type GetMessagesQueryVariables = Exact<{
   userId: Scalars['ID'];
+  cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 export type GetMessagesQuery = {
@@ -212,8 +214,8 @@ export const GetMessageByIdDocument = gql`
   }
 `;
 export const GetMessagesDocument = gql`
-  query getMessages($userId: ID!) {
-    messages(userId: $userId) {
+  query getMessages($userId: ID!, $cursorId: ID) {
+    messages(userId: $userId, cursorId: $cursorId) {
       id
       content
       isOpened
