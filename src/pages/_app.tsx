@@ -33,7 +33,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
             crossOrigin='anonymous'
           />
           <DefaultSeo {...SEO} />
-          {process.env.NEXT_PUBLIC_MAINTENANCE === 'true' ? (
+          {process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ? (
             <Maintenance />
           ) : (
             <Layout>
