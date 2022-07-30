@@ -1,23 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { useQuery, useMutation, dehydrate } from 'react-query';
-import { getSession, useSession } from 'next-auth/react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useQuery, useMutation } from 'react-query';
+import { useSession } from 'next-auth/react';
 import { IoReload } from 'react-icons/io5';
 import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
-import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
 import { Info } from '@/components';
 import { useLogEvent } from '@/hooks';
+import { editMessage, getMessages } from '@/api';
 import type { Message } from '@/generated/graphql';
-import { editMessage, getMessages, queryClient } from '@/api';
 import { MessageDialog, SettingsDialog } from '@/components/Dialog';
 
 const Inbox = () => {
   const { push } = useRouter();
   const triggerEvent = useLogEvent();
+  const showMoreRef = useRef<HTMLButtonElement>(null);
+
+  const [pageNo, setPageNo] = useState(1);
+  const [cursorId, setCursorId] = useState('');
   const [msgModal, setMsgModal] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
   const [messageData, setMessageData] = useState({} as Partial<Message>);
@@ -31,8 +34,8 @@ const Inbox = () => {
     isLoading,
     isRefetching,
   } = useQuery(
-    ['messages', { userId: id ?? '' }],
-    () => getMessages({ userId: id ?? '' }),
+    ['messages', { userId: id ?? '', cursorId }],
+    () => getMessages({ userId: id ?? '', cursorId }),
     {
       select: (data) => data.messages,
     }
@@ -125,12 +128,13 @@ const Inbox = () => {
         </div>
 
         <div className='space-y-6'>
-          {messages?.map((m) => (
+          {messages?.map((m, i) => (
             <button
+              ref={i === messages.length - 5 ? showMoreRef : null}
               type='button'
               key={m.id}
               onClick={() => handleOpen(m)}
-              className='msg-card hide-tap-highlight w-full cursor-pointer overflow-hidden text-left'
+              className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
             >
               <div className='relative mb-3 h-[40px]'>
                 <Image
@@ -155,29 +159,37 @@ const Inbox = () => {
               </div>
             </button>
           ))}
+          <div
+            className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}
+          >
+            {cursorId && (
+              <button
+                onClick={() => {
+                  setPageNo(1);
+                  setCursorId('');
+                }}
+                type='button'
+              >
+                &larr; Latest
+              </button>
+            )}
+
+            {cursorId && <p>{pageNo}</p>}
+
+            <button
+              onClick={() => {
+                setPageNo(cursorId ? pageNo + 1 : 2);
+                setCursorId(messages?.length ? messages[2]?.id : '');
+              }}
+              type='button'
+            >
+              More &rarr;
+            </button>
+          </div>
         </div>
       </div>
     </section>
   );
-};
-
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const session = await getSession({ req });
-  const userId = session?.user?.id;
-
-  if (!userId) {
-    return { props: {} };
-  }
-
-  await queryClient.prefetchQuery(['messages', { userId }], () =>
-    getMessages({ userId })
-  );
-
-  return {
-    props: {
-      dehydratedState: dehydrate(queryClient),
-    },
-  };
 };
 
 export default Inbox;
