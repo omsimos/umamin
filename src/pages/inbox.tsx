@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { useSession } from 'next-auth/react';
 import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
+import { nanoid } from 'nanoid';
 import Image from 'next/image';
 
 import { Info } from '@/components';
@@ -16,7 +17,6 @@ import { MessageDialog, SettingsDialog } from '@/components/Dialog';
 const Inbox = () => {
   const { push } = useRouter();
   const triggerEvent = useLogEvent();
-  const showMoreRef = useRef<HTMLButtonElement>(null);
 
   const [pageNo, setPageNo] = useState(1);
   const [cursorId, setCursorId] = useState('');
@@ -27,7 +27,11 @@ const Inbox = () => {
   const { data, status } = useSession();
   const { id, username } = data?.user ?? {};
 
-  const { data: messages, refetch } = useQuery(
+  const {
+    data: messages,
+    refetch,
+    isLoading,
+  } = useQuery(
     ['messages', { userId: id ?? '', cursorId }],
     () => getMessages({ userId: id ?? '', cursorId }),
     {
@@ -107,43 +111,72 @@ const Inbox = () => {
       <div className='my-10 w-full text-left'>
         <div className='mb-5 flex flex-col'>
           <p className='font-medium'>
-            {messages?.length ? 'Latest messages' : 'No messages to show'}
+            {messages?.length || isLoading
+              ? 'Latest messages'
+              : 'No messages to show'}
           </p>
           <Info message='Tap a card to reveal an anonymous message.' />
         </div>
 
         <div className='space-y-6'>
-          {messages?.map((m, i) => (
-            <button
-              ref={i === messages.length - 5 ? showMoreRef : null}
-              type='button'
-              key={m.id}
-              onClick={() => handleOpen(m)}
-              className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
-            >
-              <div className='relative mb-3 h-[40px]'>
-                <Image
-                  src='/assets/logo.svg'
-                  layout='fill'
-                  objectFit='contain'
-                />
-              </div>
+          {isLoading
+            ? Array(3)
+                .fill(0)
+                .map(() => (
+                  <div
+                    key={nanoid()}
+                    className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+                  >
+                    <div className='relative mb-3 h-[40px]'>
+                      <Image
+                        src='/assets/logo.svg'
+                        layout='fill'
+                        objectFit='contain'
+                      />
+                    </div>
 
-              <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
-                <p className='reply text-secondary-400'>{m.receiverMsg}</p>
-              </div>
-              <div
-                className={
-                  m.isOpened
-                    ? 'flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'
-                    : 'hidden'
-                }
-              >
-                <p>Seen</p>
-                <BsCheck2 className='text-base' />
-              </div>
-            </button>
-          ))}
+                    <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                      <p className='reply text-secondary-400'>
+                        Send me an anonymous message!
+                      </p>
+                    </div>
+                    <div className='flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'>
+                      <p>Seen</p>
+                      <BsCheck2 className='text-base' />
+                    </div>
+                  </div>
+                ))
+            : messages?.map((m) => (
+                <button
+                  type='button'
+                  key={m.id}
+                  onClick={() => handleOpen(m)}
+                  className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+                >
+                  <div className='relative mb-3 h-[40px]'>
+                    <Image
+                      src='/assets/logo.svg'
+                      layout='fill'
+                      objectFit='contain'
+                    />
+                  </div>
+
+                  <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                    <p className='reply text-secondary-400'>{m.receiverMsg}</p>
+                  </div>
+                  <div
+                    className={
+                      m.isOpened
+                        ? 'flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'
+                        : 'hidden'
+                    }
+                  >
+                    <p>Seen</p>
+                    <BsCheck2 className='text-base' />
+                  </div>
+                </button>
+              ))}
+
           <div
             className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}
           >
