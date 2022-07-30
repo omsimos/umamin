@@ -7,12 +7,12 @@
 
 @font-face {
   font-family: 'Inter-Medium';
-  src: url('/fonts/Inter-Medium.ttf');
+  src: url('/fonts/Inter-Medium.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'Syne-Extrabold';
-  src: url('/fonts/Syne-ExtraBold.ttf');
+  src: url('/fonts/Syne-ExtraBold.woff2') format('woff2');
 }
 
 @layer base {
