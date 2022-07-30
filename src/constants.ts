@@ -37,7 +37,7 @@ export const footerItems = {
       children: [
         {
           name: 'Email',
-          href: 'https://github.com/joshxfi/umamin',
+          href: 'mailto:hello@joshxfi.tech',
         },
         {
           name: 'Twitter',
