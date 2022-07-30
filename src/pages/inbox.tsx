@@ -1,23 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { useQuery, useMutation, dehydrate } from 'react-query';
-import { getSession, useSession } from 'next-auth/react';
-import { IoReload } from 'react-icons/io5';
+import { useQuery, useMutation } from 'react-query';
+import { useSession } from 'next-auth/react';
 import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
-import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
+import { nanoid } from 'nanoid';
 import Image from 'next/image';
 
 import { Info } from '@/components';
 import { useLogEvent } from '@/hooks';
+import { editMessage, getMessages } from '@/api';
 import type { Message } from '@/generated/graphql';
-import { editMessage, getMessages, queryClient } from '@/api';
 import { MessageDialog, SettingsDialog } from '@/components/Dialog';
 
 const Inbox = () => {
   const { push } = useRouter();
   const triggerEvent = useLogEvent();
+
+  const [pageNo, setPageNo] = useState(1);
+  const [cursorId, setCursorId] = useState('');
   const [msgModal, setMsgModal] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
   const [messageData, setMessageData] = useState({} as Partial<Message>);
@@ -29,10 +31,9 @@ const Inbox = () => {
     data: messages,
     refetch,
     isLoading,
-    isRefetching,
   } = useQuery(
-    ['messages', { userId: id ?? '' }],
-    () => getMessages({ userId: id ?? '' }),
+    ['messages', { userId: id ?? '', cursorId }],
+    () => getMessages({ userId: id ?? '', cursorId }),
     {
       select: (data) => data.messages,
     }
@@ -109,75 +110,104 @@ const Inbox = () => {
 
       <div className='my-10 w-full text-left'>
         <div className='mb-5 flex flex-col'>
-          <div className='flex justify-between'>
-            <p className='font-medium'>
-              {messages?.length ? 'Latest messages' : 'No messages to show'}
-            </p>
-            <button type='button' onClick={() => refetch()}>
-              <IoReload
-                className={`text-lg ${
-                  isLoading || isRefetching ? 'animate-spin' : ''
-                }`}
-              />
-            </button>
-          </div>
+          <p className='font-medium'>
+            {messages?.length || isLoading
+              ? 'Latest messages'
+              : 'No messages to show'}
+          </p>
           <Info message='Tap a card to reveal an anonymous message.' />
         </div>
 
         <div className='space-y-6'>
-          {messages?.map((m) => (
-            <button
-              type='button'
-              key={m.id}
-              onClick={() => handleOpen(m)}
-              className='msg-card hide-tap-highlight w-full cursor-pointer overflow-hidden text-left'
-            >
-              <div className='relative mb-3 h-[40px]'>
-                <Image
-                  src='/assets/logo.svg'
-                  layout='fill'
-                  objectFit='contain'
-                />
-              </div>
+          {isLoading
+            ? Array(3)
+                .fill(0)
+                .map(() => (
+                  <div
+                    key={nanoid()}
+                    className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+                  >
+                    <div className='relative mb-3 h-[40px]'>
+                      <Image
+                        src='/assets/logo.svg'
+                        layout='fill'
+                        objectFit='contain'
+                      />
+                    </div>
 
-              <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
-                <p className='reply text-secondary-400'>{m.receiverMsg}</p>
-              </div>
-              <div
-                className={
-                  m.isOpened
-                    ? 'flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'
-                    : 'hidden'
-                }
+                    <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                      <p className='reply text-secondary-400'>
+                        Send me an anonymous message!
+                      </p>
+                    </div>
+                    <div className='flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'>
+                      <p>Seen</p>
+                      <BsCheck2 className='text-base' />
+                    </div>
+                  </div>
+                ))
+            : messages?.map((m) => (
+                <button
+                  type='button'
+                  key={m.id}
+                  onClick={() => handleOpen(m)}
+                  className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+                >
+                  <div className='relative mb-3 h-[40px]'>
+                    <Image
+                      src='/assets/logo.svg'
+                      layout='fill'
+                      objectFit='contain'
+                    />
+                  </div>
+
+                  <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
+                    <p className='reply text-secondary-400'>{m.receiverMsg}</p>
+                  </div>
+                  <div
+                    className={
+                      m.isOpened
+                        ? 'flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'
+                        : 'hidden'
+                    }
+                  >
+                    <p>Seen</p>
+                    <BsCheck2 className='text-base' />
+                  </div>
+                </button>
+              ))}
+
+          <div
+            className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}
+          >
+            {cursorId && (
+              <button
+                onClick={() => {
+                  setPageNo(1);
+                  setCursorId('');
+                }}
+                type='button'
               >
-                <p>Seen</p>
-                <BsCheck2 className='text-base' />
-              </div>
+                &larr; Latest
+              </button>
+            )}
+
+            {cursorId && <p>{pageNo}</p>}
+
+            <button
+              onClick={() => {
+                setPageNo(cursorId ? pageNo + 1 : 2);
+                setCursorId(messages?.length ? messages[2]?.id : '');
+              }}
+              type='button'
+            >
+              More &rarr;
             </button>
-          ))}
+          </div>
         </div>
       </div>
     </section>
   );
-};
-
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const session = await getSession({ req });
-  const userId = session?.user?.id;
-
-  if (!userId) {
-    return { props: {} };
-  }
-
-  await queryClient.prefetchQuery(['messages', { userId }], () =>
-    getMessages({ userId })
-  );
-
-  return {
-    props: {
-      dehydratedState: dehydrate(queryClient),
-    },
-  };
 };
 
 export default Inbox;
