@@ -1,19 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-# Check Types
-yarn check-types ||
-    (
-        echo '❌ Type Check Failed. Check your TypeScript types.'
-        false
-    )
-
-# Check ESLint Standards
-yarn lint-staged ||
-    (
-        echo '❌ ESLint Check Failed. Make the required changes listed above, add changes and try to commit again.'
-        false
-    )
-
-# If everything passes... Now we can commit
-echo '✅ All checks passed.'
+npx turbo run lint
