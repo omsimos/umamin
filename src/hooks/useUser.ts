@@ -5,9 +5,7 @@ export const useUser = (username: string) => {
   const queryData = useQuery(
     ['user', { username }],
     () => getUser({ username }),
-    {
-      select: (data) => data.user,
-    }
+    { select: (data) => data.user, enabled: !!username }
   );
 
   return { ...queryData };

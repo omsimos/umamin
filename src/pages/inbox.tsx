@@ -34,9 +34,7 @@ const Inbox = () => {
   } = useQuery(
     ['messages', { userId: id ?? '', cursorId }],
     () => getMessages({ userId: id ?? '', cursorId }),
-    {
-      select: (data) => data.messages,
-    }
+    { select: (data) => data.messages, enabled: !!id }
   );
 
   const { mutate } = useMutation(editMessage);
