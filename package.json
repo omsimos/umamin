@@ -13,7 +13,9 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
     "lint": "turbo run lint",
     "start": "turbo run start --parallel",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "docker:down": "docker-compose down",
+    "docker:up": "docker-compose up -d"
   },
   "devDependencies": {
     "husky": "^8.0.1",
