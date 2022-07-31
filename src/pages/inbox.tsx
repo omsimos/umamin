@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { useSession } from 'next-auth/react';
 import { IoIosCopy } from 'react-icons/io';
@@ -34,9 +34,7 @@ const Inbox = () => {
   } = useQuery(
     ['messages', { userId: id ?? '', cursorId }],
     () => getMessages({ userId: id ?? '', cursorId }),
-    {
-      select: (data) => data.messages,
-    }
+    { select: (data) => data.messages, enabled: !!id }
   );
 
   const { mutate } = useMutation(editMessage);
@@ -68,11 +66,9 @@ const Inbox = () => {
     triggerEvent('copy_link');
   };
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      push('/login');
-    }
-  }, [status]);
+  if (status === 'unauthenticated') {
+    push('/login');
+  }
 
   return (
     <section className='mx-auto flex max-w-[500px] flex-col items-center pb-24'>

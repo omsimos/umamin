@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { ApolloServerPluginCacheControl } from 'apollo-server-core';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ApolloServer } from 'apollo-server-micro';
 import { getSession } from 'next-auth/react';
@@ -26,7 +27,9 @@ const server = new ApolloServer({
     const id = session?.user?.id;
     return { prisma, username, id };
   },
+  plugins: [ApolloServerPluginCacheControl({ defaultMaxAge: 60 })],
 });
+
 const startServer = server.start();
 
 export const config = {

@@ -5,4 +5,4 @@
 
 */
 -- AlterTable
-ALTER TABLE `message` DROP COLUMN `isDownloaded`;
+ALTER TABLE `Message` DROP COLUMN `isDownloaded`;

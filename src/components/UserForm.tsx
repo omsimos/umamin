@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { BsFillPersonFill } from 'react-icons/bs';
 import { HiLockClosed } from 'react-icons/hi';
@@ -22,18 +22,16 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
   const { status } = useSession();
   const triggerEvent = useLogEvent();
 
-  useEffect(() => {
-    if (status === 'authenticated') {
-      push('/inbox');
-    }
-  }, [status]);
-
   const [loginLoading, setLoading] = useState(false);
   const isLoading = loading || loginLoading;
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  if (status === 'authenticated') {
+    push('/inbox');
+  }
 
   const handleLogin = async () => {
     setLoading(true);
