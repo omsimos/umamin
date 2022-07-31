@@ -28,7 +28,7 @@ jobs:
         run: yarn
 
       - name: Lint files
-        run: yarn check-lint
+        run: yarn lint
 
       - name: Build project
         run: yarn build

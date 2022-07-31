@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'prisma/schema.prisma'
+      - 'packages/db/prisma/schema.prisma'
   pull_request:
     branches:
       - main
     paths:
-      - 'prisma/schema.prisma'
+      - 'packages/db/prisma/schema.prisma'
 
 jobs:
   migration:
@@ -32,4 +32,4 @@ jobs:
       - name: Deploy migration
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
-        run: npx prisma migrate deploy
+        run: yarn workspace @umamin/db prisma migrate deploy
