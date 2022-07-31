@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "prisma generate && tsc",
     "build": "prisma generate && tsc",
-    "clean": "rm -rf .turbo node_modules",
+    "clean": "rm -rf dist/ .turbo/ node_modules/",
     "postinstall": "prisma generate"
   },
   "keywords": [],

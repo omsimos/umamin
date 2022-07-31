@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "clean": "rm -rf .next/ node_modules/",
+    "clean": "rm -rf .next/ .turbo/ node_modules/",
     "docker:down": "docker-compose down",
     "docker:up": "docker-compose up -d",
     "generate": "graphql-codegen"
