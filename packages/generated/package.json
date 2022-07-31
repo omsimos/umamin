@@ -6,9 +6,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "generate": "graphql-codegen",
-    "build": "tsc",
     "clean": "rm -rf dist/ .turbo/ node_modules/",
-    "postinstall": "prisma generate"
+    "build": "tsc",
+    "postinstall": "tsc"
   },
   "keywords": [],
   "author": "",
