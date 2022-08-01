@@ -11,6 +11,15 @@ const nextConfig = {
     config.experiments.topLevelAwait = true;
     return config;
   },
+  async redirects() {
+    return [
+      {
+        source: '/discord',
+        destination: 'https://discord.gg/bQKG7axhcF',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 module.exports = withPWA({
