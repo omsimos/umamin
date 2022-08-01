@@ -15,7 +15,10 @@ export interface TContext {
   id?: string;
 }
 
-const cors = Cors();
+const cors = Cors({
+  origin:
+    process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL : '*',
+});
 
 const schema = await buildSchema({
   resolvers: [UserResolver, MessageResolver],
