@@ -1047,6 +1047,13 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@babel/runtime@^7.17.9":
+  version "7.18.9"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.18.9.tgz#b4fcfce55db3d2e5e080d2490f608a3b9f407f4a"
+  integrity sha512-lkqXDcvlFT5rvEjiu6+QYO+1GXrEHRo2LOtS7E4GtX5ESIZOgepqsZBVIj6Pv+a6zqsya9VCgiK1KAK4BvJDAw==
+  dependencies:
+    regenerator-runtime "^0.13.4"
+
 "@babel/template@^7.18.6":
   version "7.18.6"
   resolved "https://registry.yarnpkg.com/@babel/template/-/template-7.18.6.tgz#1283f4993e00b929d6e2d3c72fdc9168a2977a31"
@@ -1879,6 +1886,13 @@
   resolved "https://registry.yarnpkg.com/@hapi/hoek/-/hoek-9.3.0.tgz#8368869dcb735be2e7f5cb7647de78e167a251fb"
   integrity sha512-/c6rf4UJlmHlC9b5BaNvzAcFv7HZ2QHaV0D4/HNlBdvFnvQq8RI4kYdhyPCl7Xj+oWvTWQ8ujhqS53LIgAe6KQ==
 
+"@hcaptcha/react-hcaptcha@^1.4.4":
+  version "1.4.4"
+  resolved "https://registry.yarnpkg.com/@hcaptcha/react-hcaptcha/-/react-hcaptcha-1.4.4.tgz#529c55369160995115735b5fe5453daef4670f04"
+  integrity sha512-Aen217LDnf5ywbPSwBG5CsoqBLIHIAS9lhj3zQjXJuO13doQ6/ubkCWNuY8jmwYLefoFt3V3MrZmCdKDaFoTuQ==
+  dependencies:
+    "@babel/runtime" "^7.17.9"
+
 "@headlessui/react@^1.6.6":
   version "1.6.6"
   resolved "https://registry.yarnpkg.com/@headlessui/react/-/react-1.6.6.tgz#3073c066b85535c9d28783da0a4d9288b5354d0c"
@@ -2309,6 +2323,20 @@
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@types/mdurl/-/mdurl-1.0.2.tgz#e2ce9d83a613bacf284c7be7d491945e39e1f8e9"
   integrity sha512-eC4U9MlIcu2q0KQmXszyn5Akca/0jrQmwDRgpAMJai7qBWq4amIQhZyNau4VYGtCeALvW1/NtjzJJ567aZxfKA==
+
+"@types/micro-cors@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@types/micro-cors/-/micro-cors-0.1.2.tgz#3004f5935d06b6f03016aa5975e8851e803d8374"
+  integrity sha512-dlNOHHaatKcuYXGMHkqICtFdthd+3tE8pFIrDTbDBYAtlTb7HzYh+NeEgfNWiARgOnsIOuoh2L2XR4UHow84nw==
+  dependencies:
+    "@types/micro" "*"
+
+"@types/micro@*":
+  version "7.3.7"
+  resolved "https://registry.yarnpkg.com/@types/micro/-/micro-7.3.7.tgz#84bef63ef8cc113a70b9a64345ebea2d99946647"
+  integrity sha512-MFsX7eCj0Tg3TtphOQvANNvNtFpya+s/rYOCdV6o+DFjOQPFi2EVRbBALjbbgZTXUaJP1Q281MJiJOD40d0UxQ==
+  dependencies:
+    "@types/node" "*"
 
 "@types/minimatch@*":
   version "3.0.5"
@@ -5723,6 +5751,11 @@ meros@^1.1.4:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/meros/-/meros-1.2.0.tgz#096cdede2eb0b1610b219b1031b935260de1ad08"
   integrity sha512-3QRZIS707pZQnijHdhbttXRWwrHhZJ/gzolneoxKVz9N/xmsvY/7Ls8lpnI9gxbgxjcHsAVEW3mgwiZCo6kkJQ==
+
+micro-cors@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/micro-cors/-/micro-cors-0.1.1.tgz#af7a480182c114ffd1ada84ad9dffc52bb4f4054"
+  integrity sha512-6WqIahA5sbQR1Gjexp1VuWGFDKbZZleJb/gy1khNGk18a6iN1FdTcr3Q8twaxkV5H94RjxIBjirYbWCehpMBFw==
 
 micro@^9.3.4:
   version "9.3.4"
