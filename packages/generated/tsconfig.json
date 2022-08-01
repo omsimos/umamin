@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "@umamin/generated",
+  "compilerOptions": {
+    "target": "ES6",
+    "lib": ["ESNext"],
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "esModuleInterop": true,
+    "module": "commonjs",
+    "outDir": "dist",
+    "skipLibCheck": true,
+    "strict": true
+  },
+  "exclude": ["node_modules", "dist"]
+}

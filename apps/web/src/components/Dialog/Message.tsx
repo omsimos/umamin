@@ -4,9 +4,9 @@ import { toPng } from 'html-to-image';
 import download from 'downloadjs';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
+import type { Message } from '@umamin/generated';
 
-import { useLogEvent } from '@/hooks';
-import type { Message } from '@/generated/graphql';
+import { useLogEvent } from '../../hooks';
 import { DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {

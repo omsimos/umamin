@@ -31,7 +31,7 @@ $ git checkout dev
 $ git checkout -b my-new-branch
 ```
 
-3. Create a `.env` file with this content:
+3. Create a `.env` in `apps/web` file with this content:
 
 > Adjust the DATABASE_URL to your local MySQL database. [Guide &rarr;](https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases/connect-your-database-typescript-mysql)
 
@@ -43,22 +43,28 @@ NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="mysupersecretkey"
 ```
 
-4. _(optional)_ MySQL image with docker:
+4. Create a `.env` in `packages/db` file with this content:
+
+```sh
+DATABASE_URL="mysql://johndoe:randompassword@localhost:3306/mydb"
+```
+
+5. _(optional)_ MySQL image with docker:
 
 ```sh
 yarn docker:up # start up a MySQL image
 yarn docker:down # stop MySQL image
 ```
 
-5. Sync database schema:
+6. Sync database schema:
 
 ```sh
-npx prisma db push
+yarn workspace @umamin/db prisma db push
 ```
 
 > Or run a migration. [Guide &rarr;](https://www.prisma.io/docs/concepts/components/prisma-migrate)
 
-6. To run locally:
+7. To run locally:
 
 ```sh
 # Only use yarn as your package manager
@@ -66,7 +72,7 @@ $ yarn
 $ yarn dev
 ```
 
-7. Commit your changes and push your branch:
+8. Commit your changes and push your branch:
 
 ```sh
 $ git add .
@@ -74,7 +80,7 @@ $ git commit -m "chore: some changes"
 $ git push origin HEAD
 ```
 
-8. Submit a pull request on the `dev` branch. (resolve conflicts if present)
+9. Submit a pull request on the `dev` branch. (resolve conflicts if present)
 
 ## License
 
