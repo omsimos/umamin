@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { signOut, useSession } from 'next-auth/react';
 
 import { Menu } from '@/components';
+import { queryClient } from '@/api';
 
 export const Navbar = () => {
   const [loading, setLoading] = useState(false);
@@ -14,6 +15,7 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     setLoading(true);
+    await queryClient.invalidateQueries()
     await signOut({ redirect: false });
     push('/login');
     setLoading(false);
