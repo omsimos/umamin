@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { ApolloServerPluginCacheControl } from 'apollo-server-core';
-import { NextApiRequest, NextApiResponse } from 'next';
 import { ApolloServer } from 'apollo-server-micro';
 import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
+import Cors from 'micro-cors';
 
 import { prisma } from '@/db';
 import { UserResolver } from '@/schema/user';
@@ -14,6 +14,8 @@ export interface TContext {
   username?: string;
   id?: string;
 }
+
+const cors = Cors();
 
 const schema = await buildSchema({
   resolvers: [UserResolver, MessageResolver],
@@ -28,9 +30,8 @@ const server = new ApolloServer({
     return { prisma, username, id };
   },
   plugins: [ApolloServerPluginCacheControl({ defaultMaxAge: 60 })],
+  csrfPrevention: true,
 });
-
-const startServer = server.start();
 
 export const config = {
   api: {
@@ -38,31 +39,15 @@ export const config = {
   },
 };
 
+const startServer = server.start();
+
 // eslint-disable-next-line consistent-return
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (process.env.NODE_ENV !== 'production') {
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader(
-      'Access-Control-Allow-Origin',
-      'https://studio.apollographql.com'
-    );
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Methods, Access-Control-Allow-Origin, Access-Control-Allow-Credentials, Access-Control-Allow-Headers'
-    );
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'POST, GET, PUT, PATCH, DELETE, OPTIONS, HEAD'
-    );
-    if (req.method === 'OPTIONS') {
-      res.end();
-      return false;
-    }
+export default cors(async (req, res) => {
+  if (req.method === 'OPTIONS') {
+    res.end();
+    return false;
   }
 
   await startServer;
-  await server.createHandler({ path: '/api/graphql' })(req, res);
-}
+  return server.createHandler({ path: '/api/graphql' })(req, res);
+});
