@@ -15,7 +15,9 @@
     "start": "turbo run start --parallel",
     "prepare": "husky install",
     "docker:down": "docker-compose down",
-    "docker:up": "docker-compose up -d"
+    "docker:up": "docker-compose up -d",
+    "codegen": "yarn workspace @umamin/generated generate",
+    "clean:cache": "turbo run clean:cache"
   },
   "devDependencies": {
     "husky": "^8.0.1",

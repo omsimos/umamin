@@ -7,8 +7,9 @@
   "scripts": {
     "generate": "graphql-codegen",
     "clean": "rm -rf dist/ .turbo/ node_modules/",
+    "clean:cache": "rm -rf dist/ .turbo/",
     "build": "tsc",
-    "postinstall": "tsc"
+    "dev": "tsc"
   },
   "keywords": [],
   "author": "",

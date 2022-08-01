@@ -8,6 +8,7 @@
     "dev": "prisma generate && tsc",
     "build": "prisma generate && tsc",
     "clean": "rm -rf dist/ .turbo/ node_modules/",
+    "clean:cache": "rm -rf dist/ .turbo/",
     "postinstall": "prisma generate"
   },
   "keywords": [],

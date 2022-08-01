@@ -8,6 +8,7 @@
     "start": { "outputs": [] },
     "lint": { "outputs": [] },
     "dev": { "cache": false },
-    "clean": { "cache": false }
+    "clean": { "cache": false },
+    "clean:cache": { "cache": false }
   }
 }
