@@ -7,12 +7,12 @@ import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { nanoid } from 'nanoid';
+import type { Message } from '@umamin/generated';
 
-import { Info } from '@/components';
-import { useLogEvent } from '@/hooks';
-import { editMessage, getMessages } from '@/api';
-import type { Message } from '@/generated/graphql';
-import { MessageDialog, SettingsDialog } from '@/components/Dialog';
+import { Info } from '../components';
+import { useLogEvent } from '../hooks';
+import { editMessage, getMessages } from '../api';
+import { MessageDialog, SettingsDialog } from '../components/Dialog';
 
 const Inbox = () => {
   const { push } = useRouter();

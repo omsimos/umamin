@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@umamin/db';
 
 declare global {
   // allow global `var` declarations

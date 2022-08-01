@@ -27,12 +27,12 @@ model User {
 }
 
 model Message {
-  id           String   @id @default(uuid())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  content      String   @db.VarChar(255)
-  receiverMsg  String   @db.VarChar(100)
-  isOpened     Boolean  @default(false)
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  content     String   @db.VarChar(255)
+  receiverMsg String   @db.VarChar(100)
+  isOpened    Boolean  @default(false)
 
   senderId   String?
   sender     User?   @relation(name: "sentMessages", fields: [senderId], references: [id])
