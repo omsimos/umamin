@@ -41,7 +41,6 @@ export const config = {
 
 const startServer = server.start();
 
-// eslint-disable-next-line consistent-return
 export default cors(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.end();

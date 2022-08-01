@@ -17,6 +17,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@hcaptcha/react-hcaptcha": "^1.4.4",
     "@headlessui/react": "^1.6.6",
     "@prisma/client": "^4.0.0",
     "apollo-server-core": "^3.10.0",
