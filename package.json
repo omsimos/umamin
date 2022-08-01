@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "turbo run build",
-    "clean": "turbo run clean --parallel && rm -rf node_modules",
+    "clean": "turbo run clean --parallel && rimraf node_modules",
     "dev": "turbo run dev --parallel",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
     "lint": "turbo run lint",
@@ -17,11 +17,12 @@
     "docker:down": "docker-compose down",
     "docker:up": "docker-compose up -d",
     "codegen": "yarn workspace @umamin/generated generate",
-    "clean:cache": "turbo run clean:cache && rm -rf node_modules/.cache"
+    "clean:cache": "turbo run clean:cache && rimraf node_modules/.cache"
   },
   "devDependencies": {
     "husky": "^8.0.1",
     "prettier": "latest",
+    "rimraf": "^3.0.2",
     "turbo": "latest"
   },
   "engines": {

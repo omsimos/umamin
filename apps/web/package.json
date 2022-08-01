@@ -1,5 +1,5 @@
 {
-  "name": "umamin",
+  "name": "web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "clean": "rm -rf .next/ .turbo/ node_modules/",
-    "clean:cache": "rm -rf .next/ .turbo/"
+    "clean": "rimraf .next/ .turbo/ node_modules/",
+    "clean:cache": "rimraf .next/ .turbo/"
   },
   "dependencies": {
     "@hcaptcha/react-hcaptcha": "^1.4.4",

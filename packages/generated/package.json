@@ -6,8 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "generate": "graphql-codegen",
-    "clean": "rm -rf dist/ .turbo/ node_modules/",
-    "clean:cache": "rm -rf dist/ .turbo/",
+    "clean": "rimraf dist/ .turbo/ node_modules/",
+    "clean:cache": "rimraf dist/ .turbo/",
     "build": "tsc",
     "dev": "tsc"
   },
