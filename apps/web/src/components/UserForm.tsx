@@ -61,9 +61,27 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
     }
   };
 
+  const handleAuth = () => {
+    if (onRegister) {
+      if (password !== confirmPassword) {
+        toast.error('Passwords do not match');
+        return;
+      }
+
+      onRegister(username, password, handleLogin);
+      return;
+    }
+
+    handleLogin();
+  };
+
   const handleSubmit: React.FormEventHandler = (e) => {
     e.preventDefault();
-    captchaRef.current?.execute();
+    if (process.env.NODE_ENV === 'development') {
+      handleAuth();
+    } else {
+      captchaRef.current?.execute();
+    }
   };
 
   const onCAPTCHAChange = async (token?: string) => {
@@ -82,17 +100,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
       });
 
       if (res.ok) {
-        if (onRegister) {
-          if (password !== confirmPassword) {
-            toast.error('Passwords do not match');
-            return;
-          }
-
-          onRegister(username, password, handleLogin);
-          return;
-        }
-
-        handleLogin();
+        handleAuth();
       } else {
         toast.error('Something went wrong');
       }
