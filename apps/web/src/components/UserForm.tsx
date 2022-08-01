@@ -1,7 +1,8 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { BsFillPersonFill } from 'react-icons/bs';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { HiLockClosed } from 'react-icons/hi';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
@@ -21,6 +22,8 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
   const { push } = useRouter();
   const { status } = useSession();
   const triggerEvent = useLogEvent();
+
+  const captchaRef = useRef<HCaptcha>(null);
 
   const [loginLoading, setLoading] = useState(false);
   const isLoading = loading || loginLoading;
@@ -51,6 +54,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
     }
 
     setLoading(false);
+    captchaRef.current?.resetCaptcha();
 
     if (isLogin) {
       triggerEvent('login');
@@ -59,17 +63,42 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
 
   const handleSubmit: React.FormEventHandler = (e) => {
     e.preventDefault();
-    if (onRegister) {
-      if (password !== confirmPassword) {
-        toast.error('Passwords do not match');
-        return;
-      }
+    captchaRef.current?.execute();
+  };
 
-      onRegister(username, password, handleLogin);
+  const onCAPTCHAChange = async (token?: string) => {
+    if (!token) {
+      toast.error('CAPTCHA expired');
       return;
     }
 
-    handleLogin();
+    try {
+      const res = await fetch('/api/captcha', {
+        method: 'POST',
+        body: JSON.stringify({ captcha: token }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.ok) {
+        if (onRegister) {
+          if (password !== confirmPassword) {
+            toast.error('Passwords do not match');
+            return;
+          }
+
+          onRegister(username, password, handleLogin);
+          return;
+        }
+
+        handleLogin();
+      } else {
+        toast.error('Something went wrong');
+      }
+    } catch (e: any) {
+      toast.error('Something went wrong');
+    }
   };
 
   const buttonText = () => {
@@ -131,6 +160,13 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
         </div>
 
         <div className='w-full'>
+          <HCaptcha
+            ref={captchaRef}
+            size='invisible'
+            onVerify={onCAPTCHAChange}
+            sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY ?? ''}
+          />
+
           <button
             disabled={isLoading}
             type='submit'
