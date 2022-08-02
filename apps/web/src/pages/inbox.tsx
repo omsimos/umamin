@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import type { Message } from '@umamin/generated';
+import { formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
@@ -139,12 +140,15 @@ const Inbox = () => {
                 </div>
                 <div className='text-secondary-400 flex items-center justify-between text-sm font-medium italic'>
                   <p>
-                    {(() => {
-                      const date = new Date(m.createdAt);
-                      return date.toLocaleString();
-                    })()}
+                    {formatDistanceToNow(new Date(m.createdAt), {
+                      addSuffix: true,
+                    })}
                   </p>
-                  <div className={m.isOpened ? 'flex items-center space-x-1' : 'hidden'}>
+                  <div
+                    className={
+                      m.isOpened ? 'flex items-center space-x-1' : 'hidden'
+                    }
+                  >
                     <p>Seen</p>
                     <BsCheck2 className='text-base' />
                   </div>
