@@ -115,7 +115,7 @@ const Inbox = () => {
 
         <div className='space-y-6'>
           {isLoading ? (
-            <div className='flex justify-center mt-24'>
+            <div className='mt-24 flex justify-center'>
               <span className='loader-2' />
             </div>
           ) : (
@@ -137,15 +137,17 @@ const Inbox = () => {
                 <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
                   <p className='reply text-secondary-400'>{m.receiverMsg}</p>
                 </div>
-                <div
-                  className={
-                    m.isOpened
-                      ? 'text-secondary-400 flex items-center justify-end space-x-1 text-right text-sm font-medium italic'
-                      : 'hidden'
-                  }
-                >
-                  <p>Seen</p>
-                  <BsCheck2 className='text-base' />
+                <div className='text-secondary-400 flex items-center justify-between text-sm font-medium italic'>
+                  <p>
+                    {(() => {
+                      const date = new Date(m.createdAt);
+                      return date.toLocaleString();
+                    })()}
+                  </p>
+                  <div className={m.isOpened ? 'flex items-center space-x-1' : 'hidden'}>
+                    <p>Seen</p>
+                    <BsCheck2 className='text-base' />
+                  </div>
                 </div>
               </button>
             ))
