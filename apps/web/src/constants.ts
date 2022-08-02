@@ -36,8 +36,8 @@ export const footerItems = {
       name: 'Contact',
       children: [
         {
-          name: 'Email',
-          href: 'mailto:hello@joshxfi.tech',
+          name: 'Discord',
+          href: 'https://discord.gg/bQKG7axhcF',
         },
         {
           name: 'Twitter',

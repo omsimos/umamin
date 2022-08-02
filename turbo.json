@@ -5,6 +5,7 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**"]
     },
+    "generate": { "outputs": ["dist/**"] },
     "start": { "outputs": [] },
     "lint": { "outputs": [] },
     "dev": { "cache": false },

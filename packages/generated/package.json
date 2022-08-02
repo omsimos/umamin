@@ -5,11 +5,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "generate": "graphql-codegen",
-    "clean": "rimraf dist/ .turbo/ node_modules/",
-    "clean:cache": "rimraf dist/ .turbo/",
+    "dev": "tsc",
     "build": "tsc",
-    "dev": "tsc"
+    "generate": "graphql-codegen && tsc",
+    "clean": "rimraf dist/ .turbo/ node_modules/",
+    "clean:cache": "rimraf dist/ .turbo/"
   },
   "keywords": [],
   "author": "",

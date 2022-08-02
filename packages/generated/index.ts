@@ -13,11 +13,13 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
+  DateTime: any;
 };
 
 export type Message = {
   __typename?: 'Message';
   content: Scalars['String'];
+  createdAt: Scalars['DateTime'];
   id: Scalars['ID'];
   isOpened: Scalars['Boolean'];
   receiverId: Scalars['String'];
@@ -142,7 +144,7 @@ export type GetMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetMessagesQuery = { __typename?: 'Query', messages?: Array<{ __typename?: 'Message', id: string, content: string, isOpened: boolean, receiverMsg: string }> | null };
+export type GetMessagesQuery = { __typename?: 'Query', messages?: Array<{ __typename?: 'Message', id: string, content: string, isOpened: boolean, createdAt: any, receiverMsg: string }> | null };
 
 export type GetUserQueryVariables = Exact<{
   username: Scalars['String'];
@@ -196,6 +198,7 @@ export const GetMessagesDocument = gql`
     id
     content
     isOpened
+    createdAt
     receiverMsg
   }
 }

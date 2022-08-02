@@ -3,6 +3,7 @@ query getMessages($userId: ID!, $cursorId: ID) {
     id
     content
     isOpened
+    createdAt
     receiverMsg
   }
 }

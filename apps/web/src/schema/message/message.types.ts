@@ -20,6 +20,9 @@ export class Message {
 
   @Field(() => Boolean)
   isOpened: boolean;
+
+  @Field(() => Date)
+  createdAt: Date;
 }
 
 @InputType()

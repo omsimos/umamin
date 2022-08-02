@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from 'react-query';
+import type { Message } from '@umamin/generated';
+import { formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
-import { nanoid } from 'nanoid';
-import type { Message } from '@umamin/generated';
 
 import { Info } from '../components';
 import { useLogEvent } from '../hooks';
@@ -91,7 +91,7 @@ const Inbox = () => {
           onClick={copyLink}
           className='card flex w-full items-center gap-3 truncate px-4 py-3'
         >
-          <IoIosCopy className='flex-none text-primary-100' />
+          <IoIosCopy className='text-primary-100 flex-none' />
           <p>umamin.link/to/{username}</p>
         </button>
 
@@ -115,61 +115,47 @@ const Inbox = () => {
         </div>
 
         <div className='space-y-6'>
-          {isLoading
-            ? Array.from({ length: 3 }).map(() => (
-                <div
-                  key={nanoid()}
-                  className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
-                >
-                  <div className='relative mb-3 h-[40px]'>
-                    <Image
-                      src='/assets/logo.svg'
-                      layout='fill'
-                      objectFit='contain'
-                    />
-                  </div>
-
-                  <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
-                    <p className='reply text-secondary-400'>
-                      Send me an anonymous message!
-                    </p>
-                  </div>
-                  <div className='flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'>
-                    <p>Seen</p>
-                    <BsCheck2 className='text-base' />
-                  </div>
+          {isLoading ? (
+            <div className='mt-24 flex justify-center'>
+              <span className='loader-2' />
+            </div>
+          ) : (
+            messages?.map((m) => (
+              <button
+                type='button'
+                key={m.id}
+                onClick={() => handleOpen(m)}
+                className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+              >
+                <div className='relative mb-3 h-[40px]'>
+                  <Image
+                    src='/assets/logo.svg'
+                    layout='fill'
+                    objectFit='contain'
+                  />
                 </div>
-              ))
-            : messages?.map((m) => (
-                <button
-                  type='button'
-                  key={m.id}
-                  onClick={() => handleOpen(m)}
-                  className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
-                >
-                  <div className='relative mb-3 h-[40px]'>
-                    <Image
-                      src='/assets/logo.svg'
-                      layout='fill'
-                      objectFit='contain'
-                    />
-                  </div>
 
-                  <div className='send chat-p flex max-w-full items-center space-x-3 bg-secondary-100 px-6 py-4 font-medium before:bg-secondary-100 after:bg-secondary-200'>
-                    <p className='reply text-secondary-400'>{m.receiverMsg}</p>
-                  </div>
+                <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
+                  <p className='reply text-secondary-400'>{m.receiverMsg}</p>
+                </div>
+                <div className='text-secondary-400 flex items-center justify-between text-sm font-medium italic'>
+                  <p>
+                    {formatDistanceToNow(new Date(m.createdAt), {
+                      addSuffix: true,
+                    })}
+                  </p>
                   <div
                     className={
-                      m.isOpened
-                        ? 'flex items-center justify-end space-x-1 text-right text-sm font-medium italic text-secondary-400'
-                        : 'hidden'
+                      m.isOpened ? 'flex items-center space-x-1' : 'hidden'
                     }
                   >
                     <p>Seen</p>
                     <BsCheck2 className='text-base' />
                   </div>
-                </button>
-              ))}
+                </div>
+              </button>
+            ))
+          )}
 
           {!messages?.length && cursorId && !isLoading && (
             <div className='mt-24 flex justify-center'>

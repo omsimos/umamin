@@ -1,5 +1,4 @@
 import React from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
@@ -23,13 +22,15 @@ const Home: NextPage = () => {
         <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
           An open-source platform for sending and receiving anonymous{' '}
           <br className='hidden sm:block' />
-          messages. Start receiving messages by{' '}
-          <Link href='/register'>
-            <span className='cursor-pointer text-primary-100'>
-              creating your own link
-            </span>
-          </Link>
-          !
+          messages.{' '}
+          <a
+            href='https://discord.gg/bQKG7axhcF'
+            target='_blank'
+            rel='noreferrer noopener'
+            className='text-primary-100'
+          >
+            Join our Discord Server!
+          </a>
         </p>
 
         <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
@@ -53,7 +54,7 @@ const Home: NextPage = () => {
       </div>
 
       <div className='relative mt-28 self-end text-left md:mt-16 xl:mt-0 xl:self-start'>
-        <div className='card w-full self-end p-8 font-syne md:w-[450px]'>
+        <div className='card font-syne w-full self-end p-8 md:w-[450px]'>
           <p>
             <span className='mr-2 text-lg font-bold'>Umamin</span>
             <span>(verb) [/u&apos;m&#593;&#58;min/]</span>
@@ -63,7 +64,7 @@ const Home: NextPage = () => {
           </p>
         </div>
 
-        <IoChatboxEllipses className='absolute right-4 -top-14 text-8xl text-primary-100 xl:-left-12 xl:top-28 xl:text-9xl' />
+        <IoChatboxEllipses className='text-primary-100 absolute right-4 -top-14 text-8xl xl:-left-12 xl:top-28 xl:text-9xl' />
       </div>
 
       <div className='absolute top-48 right-0 -z-10 h-[450px] w-[450px] sm:top-40 md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>

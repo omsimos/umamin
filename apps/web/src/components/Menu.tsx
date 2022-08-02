@@ -3,6 +3,7 @@ import { BiUserCircle, BiLogInCircle, BiLogOutCircle } from 'react-icons/bi';
 import { Popover, Transition } from '@headlessui/react';
 import { useSession } from 'next-auth/react';
 import { HiMenuAlt3 } from 'react-icons/hi';
+import { FaDiscord } from 'react-icons/fa';
 import Link from 'next/link';
 
 interface Props {
@@ -32,7 +33,7 @@ export const Menu = ({ handleLogout, loading }: Props) => {
         leaveFrom='opacity-100 translate-y-0'
         leaveTo='opacity-0 translate-y-1'
       >
-        <Popover.Panel className='absolute top-8 right-0 flex w-[150px] flex-col space-y-2 rounded border-2 border-secondary-100 bg-secondary-200 p-2'>
+        <Popover.Panel className='border-secondary-100 bg-secondary-200 absolute top-8 right-0 flex w-[150px] flex-col space-y-2 rounded border-2 p-2'>
           {status === 'authenticated' ? (
             <button onClick={handleLogout} type='button' className='menu-item'>
               <BiLogOutCircle className='text-base' />
@@ -55,6 +56,15 @@ export const Menu = ({ handleLogout, loading }: Props) => {
               </Link>
             </>
           )}
+          <a
+            href='https://discord.gg/bQKG7axhcF'
+            target='_blank'
+            rel='noreferrer noopener'
+            className='menu-item'
+          >
+            <FaDiscord className='text-base' />
+            <p>Discord</p>
+          </a>
         </Popover.Panel>
       </Transition>
     </Popover>
