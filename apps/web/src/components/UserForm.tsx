@@ -6,10 +6,14 @@ import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { HiLockClosed } from 'react-icons/hi';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-
 import { useLogEvent } from '@/hooks';
+
+const AdContainer = dynamic(() => import('@/components/AdContainer'), {
+  ssr: false,
+});
 
 interface Props {
   type: 'register' | 'login';
@@ -118,89 +122,92 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
   };
 
   return (
-    <section className='flex justify-center md:absolute md:left-0 md:top-0 md:h-screen md:w-full md:items-center'>
-      <form
-        onSubmit={handleSubmit}
-        className='card z-[1] flex w-full flex-col space-y-10 rounded-md px-5 py-10 text-center sm:w-[500px] sm:px-10'
-      >
-        <span className='font-syne text-5xl font-extrabold text-primary-200'>
-          {type}
-        </span>
+    <section className='min-h-screen space-y-8'>
+      <div className='flex flex-col items-center space-y-12'>
+        <form
+          onSubmit={handleSubmit}
+          className='card z-[1] flex w-full flex-col space-y-10 rounded-md px-5 py-10 text-center sm:w-[500px] sm:px-10'
+        >
+          <span className='font-syne text-primary-200 text-5xl font-extrabold'>
+            {type}
+          </span>
 
-        <div className='w-full space-y-2'>
-          <div className='input-field'>
-            <BsFillPersonFill />
-            <input
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              type='text'
-              placeholder='Username'
-              minLength={3}
-              maxLength={12}
-            />
-          </div>
-          <div className='input-field'>
-            <HiLockClosed />
-            <input
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type='password'
-              placeholder='Password'
-              minLength={5}
-            />
-          </div>
-
-          {!isLogin && (
+          <div className='w-full space-y-2'>
+            <div className='input-field'>
+              <BsFillPersonFill />
+              <input
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                type='text'
+                placeholder='Username'
+                minLength={3}
+                maxLength={12}
+              />
+            </div>
             <div className='input-field'>
               <HiLockClosed />
               <input
                 required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 type='password'
-                placeholder='Confirm Password'
+                placeholder='Password'
                 minLength={5}
               />
             </div>
-          )}
-        </div>
 
-        <div className='w-full'>
-          <HCaptcha
-            ref={captchaRef}
-            size='invisible'
-            onVerify={onCAPTCHAChange}
-            sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY ?? ''}
+            {!isLogin && (
+              <div className='input-field'>
+                <HiLockClosed />
+                <input
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  type='password'
+                  placeholder='Confirm Password'
+                  minLength={5}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className='w-full'>
+            <HCaptcha
+              ref={captchaRef}
+              size='invisible'
+              onVerify={onCAPTCHAChange}
+              sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY ?? ''}
+            />
+
+            <button
+              disabled={isLoading}
+              type='submit'
+              className='primary-btn mb-2 w-full cursor-pointer'
+            >
+              {buttonText()}
+            </button>
+
+            <p className='text-sm'>
+              {isLogin ? "Don't" : 'Already'} have an account?{' '}
+              <Link href={`${isLogin ? '/register' : 'login'}`}>
+                <a className='text-primary-100'>
+                  {isLogin ? 'Get started' : 'Login'}
+                </a>
+              </Link>
+            </p>
+          </div>
+        </form>
+        <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] md:bottom-0'>
+          <Image
+            priority
+            src='/assets/hearts.svg'
+            layout='fill'
+            objectFit='contain'
           />
-
-          <button
-            disabled={isLoading}
-            type='submit'
-            className='primary-btn mb-2 w-full cursor-pointer'
-          >
-            {buttonText()}
-          </button>
-
-          <p className='text-sm'>
-            {isLogin ? "Don't" : 'Already'} have an account?{' '}
-            <Link href={`${isLogin ? '/register' : 'login'}`}>
-              <a className='text-primary-100'>
-                {isLogin ? 'Get started' : 'Login'}
-              </a>
-            </Link>
-          </p>
         </div>
-      </form>
-      <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] md:bottom-0'>
-        <Image
-          priority
-          src='/assets/hearts.svg'
-          layout='fill'
-          objectFit='contain'
-        />
       </div>
+      <AdContainer slot='7063833038' />
     </section>
   );
 };

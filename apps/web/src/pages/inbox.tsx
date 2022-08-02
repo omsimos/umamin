@@ -77,7 +77,7 @@ const Inbox = () => {
 
   return (
     <section className='space-y-8'>
-      <div className='mx-auto flex max-w-[500px] flex-col items-center pb-24'>
+      <div className='mx-auto flex max-w-[500px] flex-col items-center'>
         <MessageDialog
           username={username ?? ''}
           data={messageData}
@@ -216,6 +216,7 @@ const Inbox = () => {
           </div>
         </div>
       </div>
+
       <AdContainer slot='7063833038' />
     </section>
   );
