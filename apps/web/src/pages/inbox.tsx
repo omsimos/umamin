@@ -7,12 +7,17 @@ import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import { Info } from '../components';
 import { useLogEvent } from '../hooks';
 import { editMessage, getMessages } from '../api';
 import { MessageDialog, SettingsDialog } from '../components/Dialog';
+
+const AdContainer = dynamic(() => import('@/components/AdContainer'), {
+  ssr: false,
+});
 
 const Inbox = () => {
   const { push } = useRouter();
@@ -207,6 +212,7 @@ const Inbox = () => {
           )}
         </div>
       </div>
+      <AdContainer slot='8480786670' />
     </section>
   );
 };
