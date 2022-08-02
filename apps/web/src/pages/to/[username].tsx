@@ -3,10 +3,15 @@ import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { useRouter } from 'next/router';
 import { NextSeo } from 'next-seo';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import { useLogEvent, useUser } from '@/hooks';
 import { getUser, queryClient, sendMessage } from '@/api';
+
+const AdContainer = dynamic(() => import('@/components/AdContainer'), {
+  ssr: false,
+});
 
 const SendTo = ({ username }: { username: string }) => {
   const router = useRouter();
@@ -53,14 +58,14 @@ const SendTo = ({ username }: { username: string }) => {
             'Create your own link to start receiving anonymous confessions and messages!',
         }}
       />
-      <section className='flex justify-center md:absolute md:left-0 md:top-0 md:h-screen md:w-full md:items-center'>
+      <section className='flex flex-col items-center space-y-12 mb-8'>
         {!user ? (
           <h1 className='h1-text'>Are you lost?</h1>
         ) : (
           <>
             {/* Top */}
-            <div className='w-full overflow-hidden rounded-md border-2 border-secondary-100 bg-secondary-100 md:w-[720px]'>
-              <div className='flex items-center justify-between border-b-2 border-primary-100 bg-secondary-200 px-7 py-2'>
+            <div className='border-secondary-100 bg-secondary-100 w-full overflow-hidden rounded-md border-2 md:w-[720px]'>
+              <div className='border-primary-100 bg-secondary-200 flex items-center justify-between border-b-2 px-7 py-2'>
                 <p className='font-medium capitalize text-white'>
                   <span className='font-light text-gray-400'>To&#58;</span>{' '}
                   {username}
@@ -76,11 +81,11 @@ const SendTo = ({ username }: { username: string }) => {
 
               {/* Message */}
               <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7 [&>*]:px-[20px] [&>*]:py-[10px]'>
-                <div className='chat-p receive  inline-block max-w-[255px] self-start bg-[#e5e5ea] font-medium  text-black before:bg-[#e5e5ea] after:bg-secondary-100'>
+                <div className='chat-p receive  after:bg-secondary-100 inline-block max-w-[255px] self-start bg-[#e5e5ea]  font-medium text-black before:bg-[#e5e5ea]'>
                   {user.message}
                 </div>
                 {data?.sendMessage && (
-                  <div className='chat-p send inline-block max-w-[255px] self-end bg-primary-200 text-white  before:bg-primary-200 after:bg-secondary-100'>
+                  <div className='chat-p send bg-primary-200 before:bg-primary-200 after:bg-secondary-100 inline-block max-w-[255px]  self-end text-white'>
                     {data.sendMessage}
                   </div>
                 )}
@@ -89,7 +94,7 @@ const SendTo = ({ username }: { username: string }) => {
               {/* Send Message */}
               <form
                 onSubmit={handleSend}
-                className='relative flex h-[100px] items-center justify-between bg-secondary-200 py-5 px-4 md:h-[85px] md:px-7'
+                className='bg-secondary-200 relative flex h-[100px] items-center justify-between py-5 px-4 md:h-[85px] md:px-7'
               >
                 {!msgSent ? (
                   <>
@@ -101,7 +106,7 @@ const SendTo = ({ username }: { username: string }) => {
                       maxLength={200}
                       type='text'
                       placeholder='Send an anonymous message..'
-                      className='w-full rounded-full border-2 border-primary-100 bg-secondary-100 py-3 px-5 pr-12 outline-none transition-all md:py-2'
+                      className='border-primary-100 bg-secondary-100 w-full rounded-full border-2 py-3 px-5 pr-12 outline-none transition-all md:py-2'
                     />
 
                     {isLoading ? (
@@ -109,7 +114,7 @@ const SendTo = ({ username }: { username: string }) => {
                     ) : (
                       <button
                         type='submit'
-                        className='absolute right-9 cursor-pointer text-2xl text-primary-100 transition-all md:right-12'
+                        className='text-primary-100 absolute right-9 cursor-pointer text-2xl transition-all md:right-12'
                       >
                         <RiSendPlaneFill />
                       </button>
@@ -120,10 +125,10 @@ const SendTo = ({ username }: { username: string }) => {
                     <p className='text-center font-medium text-[#DAB5D3]'>
                       Anonymous message sent!
                     </p>
-                    <div className='flex justify-center space-x-2 font-normal text-primary-100'>
+                    <div className='text-primary-100 flex justify-center space-x-2 font-normal'>
                       <button
                         type='button'
-                        className='transition-colors hover:text-primary-100/80'
+                        className='hover:text-primary-100/80 transition-colors'
                         onClick={() => {
                           setMsgSent(false);
                           reset();
@@ -135,7 +140,7 @@ const SendTo = ({ username }: { username: string }) => {
                       <span className='text-[#DAB5D3]'>•</span>
                       <button
                         type='button'
-                        className='transition-colors hover:text-primary-100/80'
+                        className='hover:text-primary-100/80 transition-colors'
                         onClick={() => router.push('/register')}
                       >
                         Create your link
@@ -148,6 +153,7 @@ const SendTo = ({ username }: { username: string }) => {
           </>
         )}
       </section>
+      <AdContainer slot='7063833038' />
     </>
   );
 };

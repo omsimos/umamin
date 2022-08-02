@@ -6,7 +6,7 @@ import { footerItems } from '@/constants';
 
 export const Footer = () => {
   return (
-    <footer className='contain pb-12'>
+    <footer className='contain py-12'>
       <div className='line mb-12' />
 
       <div className='grid grid-cols-2 flex-wrap justify-between gap-y-16 sm:flex'>
