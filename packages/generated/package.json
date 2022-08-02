@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsc",
     "build": "tsc",
-    "generate": "graphql-codegen",
+    "generate": "graphql-codegen && tsc",
     "clean": "rimraf dist/ .turbo/ node_modules/",
     "clean:cache": "rimraf dist/ .turbo/"
   },
