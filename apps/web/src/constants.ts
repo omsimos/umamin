@@ -9,10 +9,6 @@ export const footerItems = {
       name: 'Privacy',
       href: '/privacy-policy',
     },
-    {
-      name: 'Donate',
-      href: '/donate',
-    },
   ],
   withUrl: [
     {
@@ -270,16 +266,5 @@ This privacy policy was created using Termly's [Privacy Policy Generator](https:
 You can download a message as an image by opening a card and clicking *Download* or *Share to Story*.
 - If the *Download* button is not working, you might need to take a screenshot and crop the image instead. (esp. for iOS)
 - If *Share to Story* doesn't automatically download the image, click *Download* first.
-
-`,
-  donation: `
-# Support Project
-
-Hello! Josh here, the author of this project. Since this project is ad-free we do not make any revenue, but if you want to support the project, I'd gladly accept donations of any amount! Thank you for using umamin!
-
-## Maya
-You can donate through my PayMaya/Maya account!
-- Account Name: Josh Daniel Banares
-- Account Number: 09283092128
 `,
 };
