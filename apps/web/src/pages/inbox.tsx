@@ -76,140 +76,144 @@ const Inbox = () => {
   }
 
   return (
-    <section className='mx-auto flex flex-col items-center pb-24'>
-      <MessageDialog
-        username={username ?? ''}
-        data={messageData}
-        isOpen={msgModal}
-        setIsOpen={setMsgModal}
-      />
+    <section className='space-y-8'>
+      <div className='mx-auto flex max-w-[500px] flex-col items-center pb-24'>
+        <MessageDialog
+          username={username ?? ''}
+          data={messageData}
+          isOpen={msgModal}
+          setIsOpen={setMsgModal}
+        />
 
-      <SettingsDialog
-        username={username ?? ''}
-        isOpen={settingsModal}
-        setIsOpen={setSettingsModal}
-      />
+        <SettingsDialog
+          username={username ?? ''}
+          isOpen={settingsModal}
+          setIsOpen={setSettingsModal}
+        />
 
-      <div className='flex w-full gap-3 max-w-[500px]'>
-        <button
-          type='button'
-          onClick={copyLink}
-          className='card flex w-full items-center gap-3 truncate px-4 py-3'
-        >
-          <IoIosCopy className='text-primary-100 flex-none' />
-          <p>umamin.link/to/{username}</p>
-        </button>
+        <div className='flex w-full gap-3'>
+          <button
+            type='button'
+            onClick={copyLink}
+            className='card flex w-full items-center gap-3 truncate px-4 py-3'
+          >
+            <IoIosCopy className='text-primary-100 flex-none' />
+            <p>umamin.link/to/{username}</p>
+          </button>
 
-        <button
-          onClick={() => setSettingsModal(true)}
-          type='button'
-          className='secondary-btn flex-none'
-        >
-          Settings
-        </button>
-      </div>
-
-      <div className='max-w-[500px] my-10 w-full text-left'>
-        <div className='mb-5 flex flex-col'>
-          <p className='font-medium'>
-            {messages?.length || isLoading
-              ? 'Latest messages'
-              : 'No messages to show'}
-          </p>
-          <Info message='Tap a card to reveal an anonymous message.' />
+          <button
+            onClick={() => setSettingsModal(true)}
+            type='button'
+            className='secondary-btn flex-none'
+          >
+            Settings
+          </button>
         </div>
 
-        <div className='space-y-6'>
-          {isLoading ? (
-            <div className='mt-24 flex justify-center'>
-              <span className='loader-2' />
-            </div>
-          ) : (
-            messages?.map((m) => (
-              <button
-                type='button'
-                key={m.id}
-                onClick={() => handleOpen(m)}
-                className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
-              >
-                <div className='relative mb-3 h-[40px]'>
-                  <Image
-                    src='/assets/logo.svg'
-                    layout='fill'
-                    objectFit='contain'
-                  />
-                </div>
+        <div className='my-10 w-full text-left'>
+          <div className='mb-5 flex flex-col'>
+            <p className='font-medium'>
+              {messages?.length || isLoading
+                ? 'Latest messages'
+                : 'No messages to show'}
+            </p>
+            <Info message='Tap a card to reveal an anonymous message.' />
+          </div>
 
-                <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
-                  <p className='reply text-secondary-400'>{m.receiverMsg}</p>
-                </div>
-                <div className='text-secondary-400 flex items-center justify-between text-sm font-medium italic'>
-                  <p>
-                    {formatDistanceToNow(new Date(m.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                  <div
-                    className={
-                      m.isOpened ? 'flex items-center space-x-1' : 'hidden'
-                    }
-                  >
-                    <p>Seen</p>
-                    <BsCheck2 className='text-base' />
-                  </div>
-                </div>
-              </button>
-            ))
-          )}
-
-          {!messages?.length && cursorId && !isLoading && (
-            <div className='mt-24 flex justify-center'>
-              <button
-                onClick={() => {
-                  setPageNo(1);
-                  setCursorId('');
-                }}
-                className='hover:underline'
-                type='button'
-              >
-                &larr; Go back to latest messages
-              </button>
-            </div>
-          )}
-
-          {!isLoading && messages && messages?.length > 0 && (
-            <div
-              className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}
-            >
-              {cursorId && (
+          <div className='space-y-6'>
+            {isLoading ? (
+              <div className='mt-24 flex justify-center'>
+                <span className='loader-2' />
+              </div>
+            ) : (
+              messages?.map((m) => (
                 <button
-                  className='hover:underline'
+                  type='button'
+                  key={m.id}
+                  onClick={() => handleOpen(m)}
+                  className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+                >
+                  <div className='relative mb-3 h-[40px]'>
+                    <Image
+                      src='/assets/logo.svg'
+                      layout='fill'
+                      objectFit='contain'
+                    />
+                  </div>
+
+                  <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
+                    <p className='reply text-secondary-400'>{m.receiverMsg}</p>
+                  </div>
+                  <div className='text-secondary-400 flex items-center justify-between text-sm font-medium italic'>
+                    <p>
+                      {formatDistanceToNow(new Date(m.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                    <div
+                      className={
+                        m.isOpened ? 'flex items-center space-x-1' : 'hidden'
+                      }
+                    >
+                      <p>Seen</p>
+                      <BsCheck2 className='text-base' />
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+
+            {!messages?.length && cursorId && !isLoading && (
+              <div className='mt-24 flex justify-center'>
+                <button
                   onClick={() => {
                     setPageNo(1);
                     setCursorId('');
                   }}
-                  type='button'
-                >
-                  &larr; Latest
-                </button>
-              )}
-
-              {cursorId && <p>{pageNo}</p>}
-
-              {messages.length === 3 && (
-                <button
                   className='hover:underline'
-                  onClick={() => {
-                    setPageNo(cursorId ? pageNo + 1 : 2);
-                    setCursorId(messages?.length ? messages[2]?.id : '');
-                  }}
                   type='button'
                 >
-                  More &rarr;
+                  &larr; Go back to latest messages
                 </button>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+
+            {!isLoading && messages && messages?.length > 0 && (
+              <div
+                className={`flex ${
+                  cursorId ? 'justify-between' : 'justify-end'
+                }`}
+              >
+                {cursorId && (
+                  <button
+                    className='hover:underline'
+                    onClick={() => {
+                      setPageNo(1);
+                      setCursorId('');
+                    }}
+                    type='button'
+                  >
+                    &larr; Latest
+                  </button>
+                )}
+
+                {cursorId && <p>{pageNo}</p>}
+
+                {messages.length === 3 && (
+                  <button
+                    className='hover:underline'
+                    onClick={() => {
+                      setPageNo(cursorId ? pageNo + 1 : 2);
+                      setCursorId(messages?.length ? messages[2]?.id : '');
+                    }}
+                    type='button'
+                  >
+                    More &rarr;
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <AdContainer slot='7063833038' />

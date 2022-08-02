@@ -9,7 +9,7 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 
 const PrivacyPolicy = () => {
   return (
-    <section className='space-y-4'>
+    <section className='space-y-8'>
       <AdContainer slot='7063833038' />
       <Markdown content={markdown.privacy} />
       <AdContainer slot='7063833038' />

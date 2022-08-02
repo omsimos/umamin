@@ -9,7 +9,7 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 
 const Help = () => {
   return (
-    <section className='space-y-4'>
+    <section className='space-y-8'>
       <AdContainer slot='7063833038' />
       <Markdown content={markdown.help} />
       <AdContainer slot='7063833038' />
