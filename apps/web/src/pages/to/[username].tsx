@@ -152,7 +152,7 @@ const SendTo = ({ username }: { username: string }) => {
             </div>
           </>
         )}
-        <AdContainer slot='8480786670' />
+        <AdContainer slot='7063833038' />
       </section>
     </>
   );

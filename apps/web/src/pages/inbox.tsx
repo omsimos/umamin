@@ -76,7 +76,7 @@ const Inbox = () => {
   }
 
   return (
-    <section className='mx-auto flex max-w-[500px] flex-col items-center pb-24'>
+    <section className='mx-auto flex flex-col items-center pb-24'>
       <MessageDialog
         username={username ?? ''}
         data={messageData}
@@ -90,7 +90,7 @@ const Inbox = () => {
         setIsOpen={setSettingsModal}
       />
 
-      <div className='flex w-full gap-3'>
+      <div className='flex w-full gap-3 max-w-[500px]'>
         <button
           type='button'
           onClick={copyLink}
@@ -109,7 +109,7 @@ const Inbox = () => {
         </button>
       </div>
 
-      <div className='my-10 w-full text-left'>
+      <div className='max-w-[500px] my-10 w-full text-left'>
         <div className='mb-5 flex flex-col'>
           <p className='font-medium'>
             {messages?.length || isLoading
