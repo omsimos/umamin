@@ -58,7 +58,7 @@ const SendTo = ({ username }: { username: string }) => {
             'Create your own link to start receiving anonymous confessions and messages!',
         }}
       />
-      <section className='flex flex-col min-h-screen items-center space-y-12'>
+      <section className='flex flex-col items-center space-y-12 mb-8'>
         {!user ? (
           <h1 className='h1-text'>Are you lost?</h1>
         ) : (
@@ -152,8 +152,8 @@ const SendTo = ({ username }: { username: string }) => {
             </div>
           </>
         )}
-        <AdContainer slot='7063833038' />
       </section>
+      <AdContainer slot='7063833038' />
     </>
   );
 };
