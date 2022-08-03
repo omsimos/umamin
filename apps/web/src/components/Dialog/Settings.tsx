@@ -62,6 +62,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
             <div>
               <p className='settings-label'>Custom Message</p>
               <textarea
+                minLength={1}
                 maxLength={100}
                 className='settings-input min-h-[100px] resize-none'
                 value={message}
