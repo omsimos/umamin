@@ -18,6 +18,7 @@
     "apollo-server-core": "^3.10.0",
     "apollo-server-micro": "^3.9.0",
     "bcrypt": "^5.0.1",
+    "bcryptjs": "^2.4.3",
     "class-validator": "^0.13.2",
     "date-fns": "^2.29.1",
     "downloadjs": "^1.4.7",
@@ -48,6 +49,7 @@
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.4",
     "@types/bcrypt": "^5.0.0",
+    "@types/bcryptjs": "^2.4.2",
     "@types/downloadjs": "^1.4.3",
     "@types/lodash": "^4.14.182",
     "@types/micro-cors": "^0.1.2",

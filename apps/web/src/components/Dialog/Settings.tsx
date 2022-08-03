@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { MdArrowDropDown, MdArrowDropUp } from 'react-icons/md';
 import { useMutation } from 'react-query';
 import toast from 'react-hot-toast';
 
 import { editUser } from '@/api';
 import { useUser } from '@/hooks';
+import { ChangePassword } from '../Settings';
 import { DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
@@ -13,8 +15,15 @@ interface Props extends DialogContainerProps {
 export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
   const { data: user, refetch } = useUser(username);
   const [message, setMessage] = useState(user?.message ?? '');
+  const [openChangePass, setOpenChangePass] = useState(false);
 
   const { mutate } = useMutation(editUser);
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setOpenChangePass(false);
+    setMessage(user?.message ?? '');
+  };
 
   useEffect(() => {
     if (user?.message) {
@@ -44,37 +53,56 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
     <DialogContainer
       setIsOpen={setIsOpen}
       onClose={() => setMessage(user?.message ?? '')}
-      className='mt-32 md:mt-52'
+      className='grid h-full place-items-center'
       {...rest}
     >
-      <div className='card flex flex-col p-6'>
-        <p className='mb-2 text-sm font-medium text-secondary-400'>
-          Custom Message
-        </p>
-        <textarea
-          maxLength={100}
-          className='min-h-[100px] w-full resize-none rounded-md bg-secondary-100 px-5 py-3 outline-none'
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
+      <div className='card flex flex-col space-y-4 p-6'>
+        {!openChangePass && (
+          <>
+            <div>
+              <p className='settings-label'>Custom Message</p>
+              <textarea
+                maxLength={100}
+                className='settings-input min-h-[100px] resize-none'
+                value={message}
+                placeholder='Enter a custom message'
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </div>
+            <div className='line' />
+          </>
+        )}
 
-        <div className='line my-4' />
-
-        <div className='flex items-center space-x-4 self-end'>
+        <div>
           <button
-            onClick={() => {
-              setIsOpen(false);
-              setMessage(user?.message ?? '');
-            }}
             type='button'
+            onClick={() => setOpenChangePass((p) => !p)}
+            className='settings-label flex items-center space-x-1'
           >
-            Close
+            <p>Change Password</p>
+            {openChangePass ? (
+              <MdArrowDropUp className='text-2xl' />
+            ) : (
+              <MdArrowDropDown className='text-2xl' />
+            )}
           </button>
 
-          <button onClick={handleEdit} className='primary-btn' type='button'>
-            Save
-          </button>
+          {user && openChangePass && (
+            <ChangePassword user={user} handleClose={handleClose} />
+          )}
         </div>
+
+        {!openChangePass && (
+          <div className='flex items-center space-x-4 self-end'>
+            <button onClick={handleClose} type='button'>
+              Close
+            </button>
+
+            <button onClick={handleEdit} className='primary-btn' type='button'>
+              Save
+            </button>
+          </div>
+        )}
       </div>
     </DialogContainer>
   );

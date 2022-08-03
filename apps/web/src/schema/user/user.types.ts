@@ -6,5 +6,8 @@ export class User {
   username: string;
 
   @Field(() => String)
+  password: string;
+
+  @Field(() => String)
   message: string;
 }

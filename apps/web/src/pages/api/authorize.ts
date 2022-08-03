@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { omit } from 'lodash';
 import { z } from 'zod';
 
 import { prisma } from '@/db';
@@ -34,9 +33,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     if (user && isPassword(password, user.password)) {
-      const stripped = omit(user, 'password');
       try {
-        const data = await userSchema.parseAsync(stripped);
+        const data = await userSchema.parseAsync(user);
         return res.status(200).json(data);
       } catch (e) {
         // eslint-disable-next-line no-console

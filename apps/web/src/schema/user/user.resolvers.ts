@@ -19,10 +19,7 @@ export class UserResolver {
         throw new Error('User not found');
       }
 
-      return {
-        username: data.username,
-        message: data.message,
-      };
+      return data;
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);
