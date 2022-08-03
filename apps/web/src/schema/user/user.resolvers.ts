@@ -19,10 +19,7 @@ export class UserResolver {
         throw new Error('User not found');
       }
 
-      return {
-        username: data.username,
-        message: data.message,
-      };
+      return data;
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);
@@ -73,11 +70,42 @@ export class UserResolver {
   ): Promise<String> {
     try {
       if (username !== user) {
-        throw new Error('You can only edit your own profile');
+        throw new Error('Not authorized');
       }
 
       await prisma.user.update({ where: { username }, data: { message } });
       return 'User edited';
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Mutation(() => String)
+  async changePassword(
+    @Arg('username', () => String) username: string,
+    @Arg('newPassword', () => String) newPassword: string,
+    @Ctx() { prisma, username: user }: TContext
+  ): Promise<String> {
+    const hashedPassword = hashPassword(newPassword);
+
+    try {
+      if (username !== user) {
+        throw new Error('Not authorized');
+      }
+
+      await prisma.user.findUnique({
+        where: { username },
+      });
+
+      await prisma.user.update({
+        where: { username },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      return 'Password changed';
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);

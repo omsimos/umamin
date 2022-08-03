@@ -13,6 +13,7 @@ export interface TContext {
   prisma: typeof prisma;
   username?: string;
   id?: string;
+  password?: string;
 }
 
 const cors = Cors({

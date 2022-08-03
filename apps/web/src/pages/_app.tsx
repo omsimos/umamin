@@ -40,7 +40,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
               <Component {...pageProps} />
             </Layout>
           )}
-          <Toaster />
+          <Toaster position='bottom-center' />
         </Hydrate>
       </QueryClientProvider>
     </SessionProvider>

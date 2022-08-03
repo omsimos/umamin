@@ -14,6 +14,7 @@ export const {
   sendMessage,
   editMessage,
   deleteMessage,
+  changePassword,
 } = getSdk(gqlClient);
 
 export const queryClient = new QueryClient({
