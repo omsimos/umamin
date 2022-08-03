@@ -29,11 +29,18 @@ export type Message = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  changePassword: Scalars['String'];
   createUser: Scalars['String'];
   deleteMessage: Scalars['String'];
   editMessage: Scalars['String'];
   editUser: Scalars['String'];
   sendMessage: Scalars['String'];
+};
+
+
+export type MutationChangePasswordArgs = {
+  newPassword: Scalars['String'];
+  username: Scalars['String'];
 };
 
 
@@ -100,6 +107,14 @@ export type User = {
   username: Scalars['String'];
 };
 
+export type ChangePasswordMutationVariables = Exact<{
+  username: Scalars['String'];
+  newPassword: Scalars['String'];
+}>;
+
+
+export type ChangePasswordMutation = { __typename?: 'Mutation', changePassword: string };
+
 export type CreateUserMutationVariables = Exact<{
   username: Scalars['String'];
   password: Scalars['String'];
@@ -161,6 +176,11 @@ export type SendMessageMutationVariables = Exact<{
 export type SendMessageMutation = { __typename?: 'Mutation', sendMessage: string };
 
 
+export const ChangePasswordDocument = gql`
+    mutation changePassword($username: String!, $newPassword: String!) {
+  changePassword(username: $username, newPassword: $newPassword)
+}
+    `;
 export const CreateUserDocument = gql`
     mutation createUser($username: String!, $password: String!) {
   createUser(username: $username, password: $password)
@@ -224,6 +244,9 @@ const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationTy
 
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
+    changePassword(variables: ChangePasswordMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<ChangePasswordMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ChangePasswordMutation>(ChangePasswordDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'changePassword', 'mutation');
+    },
     createUser(variables: CreateUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<CreateUserMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CreateUserMutation>(CreateUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'createUser', 'mutation');
     },
