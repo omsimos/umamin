@@ -171,7 +171,6 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
                 />
               </div>
             )}
-
           </div>
 
           <div className='w-full'>
@@ -193,16 +192,14 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             {isLogin && (
               <button
                 type='button'
-                className='bg-dcblue hover:bg-dcblue/80 btn w-full mb-2 flex items-center justify-center space-x-2'
+                className='bg-dcblue hover:bg-dcblue/80 btn mb-2 flex w-full items-center justify-center space-x-2'
                 onClick={() => {
-                  signIn('discord');
+                  signIn('discord', { redirect: false });
                   triggerEvent('login', { provider: 'discord' });
                 }}
               >
                 <FaDiscord className='text-lg' />
-                <p>
-                  Sign in with Discord
-                </p>
+                <p>Sign in with Discord</p>
               </button>
             )}
 

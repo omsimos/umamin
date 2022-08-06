@@ -104,7 +104,7 @@ export type SendMessageInput = {
 export type User = {
   __typename?: 'User';
   email?: Maybe<Scalars['String']>;
-  imgUrl?: Maybe<Scalars['String']>;
+  image?: Maybe<Scalars['String']>;
   message: Scalars['String'];
   password: Scalars['String'];
   username: Scalars['String'];
@@ -169,7 +169,7 @@ export type GetUserQueryVariables = Exact<{
 }>;
 
 
-export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', username: string, password: string, message: string, email?: string | null, imgUrl?: string | null } | null };
+export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', username: string, password: string, message: string, email?: string | null, image?: string | null } | null };
 
 export type SendMessageMutationVariables = Exact<{
   input: SendMessageInput;
@@ -233,7 +233,7 @@ export const GetUserDocument = gql`
     password
     message
     email
-    imgUrl
+    image
   }
 }
     `;

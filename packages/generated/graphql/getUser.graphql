@@ -4,6 +4,6 @@ query getUser($username: String!) {
     password
     message
     email
-    imgUrl
+    image
   }
 }

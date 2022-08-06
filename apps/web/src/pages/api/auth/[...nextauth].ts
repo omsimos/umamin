@@ -2,6 +2,7 @@
 import { NextApiHandler } from 'next';
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import DiscordProvider from 'next-auth/providers/discord';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { prisma } from '@/db';
@@ -9,6 +10,7 @@ import { AuthedUser } from '../authorize';
 
 const options: NextAuthOptions = {
   debug: true,
+  adapter: PrismaAdapter(prisma),
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
@@ -46,11 +48,7 @@ const options: NextAuthOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async jwt({ token, user, account }) {
-      if (account) {
-        token.accessToken = account.access_token;
-      }
-
+    async jwt({ token, user }) {
       if (user) {
         token.username = user.username;
       }
@@ -59,8 +57,6 @@ const options: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      session.accessToken = token.accessToken;
-
       if (session.user) {
         session.user.id = token.sub;
         session.user.username = token.username as string;
@@ -69,19 +65,19 @@ const options: NextAuthOptions = {
       return session;
     },
 
-    async signIn({ account, profile }) {
-      if (account.provider === 'discord') {
-        const isUser = await prisma.user.findUnique({
-          where: { email: profile.email },
-        });
-
-        if (!isUser) {
-          return '/register';
-        }
-      }
-
-      return true;
-    },
+    /*     async signIn({ account, profile }) {
+     *       if (account.provider === 'discord') {
+     *         const isUser = await prisma.user.findUnique({
+     *           where: { email: profile.email },
+     *         });
+     *
+     *         if (!isUser) {
+     *           return '/register';
+     *         }
+     *       }
+     *
+     *       return true;
+     *     }, */
   },
   session: { strategy: 'jwt' },
 };
