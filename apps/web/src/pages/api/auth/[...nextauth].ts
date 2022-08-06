@@ -65,24 +65,19 @@ const options: NextAuthOptions = {
         session.user.id = token.sub;
         session.user.username = token.username as string;
       }
+
       return session;
     },
 
-    async signIn({ user: { email }, account }) {
+    async signIn({ account, profile }) {
       if (account.provider === 'discord') {
-        if (!email) {
-          return '/register';
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email },
+        const isUser = await prisma.user.findUnique({
+          where: { email: profile.email },
         });
 
-        if (!user) {
+        if (!isUser) {
           return '/register';
         }
-
-        return true;
       }
 
       return true;

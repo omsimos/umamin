@@ -193,7 +193,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             {isLogin && (
               <button
                 type='button'
-                className='bg-[#5865f2] hover:bg-[#5865f2]/80 btn w-full mb-2 flex items-center justify-center space-x-2'
+                className='bg-dcblue hover:bg-dcblue/80 btn w-full mb-2 flex items-center justify-center space-x-2'
                 onClick={() => {
                   signIn('discord');
                   triggerEvent('login', { provider: 'discord' });

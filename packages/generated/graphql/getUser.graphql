@@ -3,5 +3,7 @@ query getUser($username: String!) {
     username
     password
     message
+    email
+    imgUrl
   }
 }

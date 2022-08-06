@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MdArrowDropDown, MdArrowDropUp } from 'react-icons/md';
+import { FaDiscord } from 'react-icons/fa';
 import { useMutation } from 'react-query';
+import { signIn } from 'next-auth/react';
 import toast from 'react-hot-toast';
 
 import { editUser } from '@/api';
@@ -70,7 +72,17 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
                 onChange={(e) => setMessage(e.target.value)}
               />
             </div>
-            <div className='line' />
+
+            <button
+              type='button'
+              className='bg-dcblue hover:bg-dcblue/80 btn mb-2 flex w-full items-center justify-center space-x-2'
+              onClick={() => {
+                signIn('discord');
+              }}
+            >
+              <FaDiscord className='text-lg' />
+              <p>Connect to Discord</p>
+            </button>
           </>
         )}
 
