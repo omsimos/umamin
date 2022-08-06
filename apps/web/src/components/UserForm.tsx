@@ -170,6 +170,10 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
                 />
               </div>
             )}
+
+            <button type='button' onClick={() => signIn('discord')}>
+              Sign in with Discord
+            </button>
           </div>
 
           <div className='w-full'>

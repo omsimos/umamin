@@ -98,7 +98,7 @@ const Inbox = () => {
             className='card flex w-full items-center gap-3 truncate px-4 py-3'
           >
             <IoIosCopy className='text-primary-100 flex-none' />
-            <p>umamin.link/to/{username}</p>
+            <p>umamin.link/to/{data?.user?.username}</p>
           </button>
 
           <button
