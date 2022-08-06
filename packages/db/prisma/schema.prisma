@@ -16,6 +16,7 @@ model User {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  email     String?  @unique
   username  String   @unique
   password  String
   message   String   @default("Send me an anonymous message!") @db.VarChar(100)

@@ -30,12 +30,16 @@
     @apply mx-auto w-[90%] max-w-screen-xl text-sm md:text-base 2xl:w-full;
   }
 
+  .btn {
+    @apply rounded px-6 py-3 text-sm font-medium transition-colors md:text-base;
+  }
+
   .primary-btn {
-    @apply bg-primary-200 hover:bg-primary-200/80 rounded px-6 py-3 text-sm font-medium transition-colors md:text-base;
+    @apply bg-primary-200 hover:bg-primary-200/80 btn;
   }
 
   .secondary-btn {
-    @apply bg-secondary-100 hover:bg-secondary-100/80 rounded border-2 border-gray-400 px-6 py-3 text-sm font-medium transition-colors md:text-base;
+    @apply bg-secondary-100 hover:bg-secondary-100/80 btn border-2 border-gray-400;
   }
 
   .h1-text {

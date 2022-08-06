@@ -4,6 +4,7 @@ import { signIn, useSession } from 'next-auth/react';
 import { BsFillPersonFill } from 'react-icons/bs';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { HiLockClosed } from 'react-icons/hi';
+import { FaDiscord } from 'react-icons/fa';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
@@ -61,7 +62,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
     captchaRef.current?.resetCaptcha();
 
     if (isLogin) {
-      triggerEvent('login');
+      triggerEvent('login', { provider: 'credentials' });
     }
   };
 
@@ -171,9 +172,6 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
               </div>
             )}
 
-            <button type='button' onClick={() => signIn('discord')}>
-              Sign in with Discord
-            </button>
           </div>
 
           <div className='w-full'>
@@ -187,10 +185,26 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             <button
               disabled={isLoading}
               type='submit'
-              className='primary-btn mb-2 w-full cursor-pointer'
+              className='primary-btn mb-2 w-full'
             >
               {buttonText()}
             </button>
+
+            {isLogin && (
+              <button
+                type='button'
+                className='bg-[#5865f2] hover:bg-[#5865f2]/80 btn w-full mb-2 flex items-center justify-center space-x-2'
+                onClick={() => {
+                  signIn('discord');
+                  triggerEvent('login', { provider: 'discord' });
+                }}
+              >
+                <FaDiscord className='text-lg' />
+                <p>
+                  Sign in with Discord
+                </p>
+              </button>
+            )}
 
             <p className='text-sm'>
               {isLogin ? "Don't" : 'Already'} have an account?{' '}

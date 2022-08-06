@@ -4,6 +4,7 @@ import NextAuth, { NextAuthOptions } from 'next-auth';
 import DiscordProvider from 'next-auth/providers/discord';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
+import { prisma } from '@/db';
 import { AuthedUser } from '../authorize';
 
 const options: NextAuthOptions = {
@@ -22,7 +23,6 @@ const options: NextAuthOptions = {
         username: {
           label: 'Username',
           type: 'text',
-          placeholder: 'john',
         },
         password: { label: 'Password', type: 'password' },
       },
@@ -57,6 +57,7 @@ const options: NextAuthOptions = {
 
       return token;
     },
+
     async session({ session, token }) {
       session.accessToken = token.accessToken;
 
@@ -65,6 +66,26 @@ const options: NextAuthOptions = {
         session.user.username = token.username as string;
       }
       return session;
+    },
+
+    async signIn({ user: { email }, account }) {
+      if (account.provider === 'discord') {
+        if (!email) {
+          return '/register';
+        }
+
+        const user = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (!user) {
+          return '/register';
+        }
+
+        return true;
+      }
+
+      return true;
     },
   },
   session: { strategy: 'jwt' },
