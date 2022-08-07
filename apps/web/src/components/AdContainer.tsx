@@ -2,8 +2,7 @@ import React, { useEffect } from 'react';
 
 const AdContainer = ({ slot }: { slot: string }) => {
   useEffect(() => {
-    const env = process.env.NODE_ENV;
-    if (env === 'production') {
+    if (process.env.NODE_ENV === 'production') {
       if (typeof window !== 'undefined') {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       }
