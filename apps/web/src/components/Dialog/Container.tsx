@@ -4,6 +4,7 @@ import { Dialog, Transition } from '@headlessui/react';
 export interface DialogContainerProps {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  transparent?: boolean;
   onClose?: () => void;
   className?: string;
   children?: React.ReactNode;
@@ -12,6 +13,7 @@ export interface DialogContainerProps {
 export const DialogContainer = ({
   isOpen,
   setIsOpen,
+  transparent,
   onClose,
   className,
   children,
@@ -20,7 +22,7 @@ export const DialogContainer = ({
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog
         as='div'
-        className='fixed inset-0 z-20 bg-secondary-300'
+        className={`fixed inset-0 z-20 ${transparent ? 'bg-secondary-300/90': 'bg-secondary-300'}`}
         onClose={() => {
           setIsOpen(false);
           if (onClose) {

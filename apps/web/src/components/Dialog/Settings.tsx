@@ -51,6 +51,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
 
   return (
     <DialogContainer
+      transparent
       setIsOpen={setIsOpen}
       onClose={() => setMessage(user?.message ?? '')}
       className='grid h-full place-items-center'

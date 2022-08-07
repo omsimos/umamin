@@ -42,6 +42,10 @@
     @apply bg-secondary-100 hover:bg-secondary-100/80 btn border-2 border-gray-400;
   }
 
+  .red-btn {
+    @apply bg-red-500 hover:bg-red-500/80 btn;
+  }
+
   .h1-text {
     @apply text-[6vw] font-extrabold leading-8 sm:text-4xl md:text-5xl 2xl:text-6xl;
   }
