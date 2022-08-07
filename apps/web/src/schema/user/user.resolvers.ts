@@ -73,7 +73,11 @@ export class UserResolver {
         throw new Error('Not authorized');
       }
 
-      await prisma.user.update({ where: { username }, data: { message } });
+      await prisma.user.update({
+        where: { username },
+        data: { message },
+      });
+
       return 'User edited';
     } catch (err: any) {
       console.error(err);
@@ -106,6 +110,27 @@ export class UserResolver {
       });
 
       return 'Password changed';
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Mutation(() => String)
+  async deleteUser(
+    @Arg('username', () => String) username: string,
+    @Ctx() { prisma, username: user }: TContext
+  ): Promise<String> {
+    try {
+      if (username !== user) {
+        throw new Error('Not authorized');
+      }
+
+      await prisma.user.delete({
+        where: { username },
+      });
+
+      return 'User deleted';
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);

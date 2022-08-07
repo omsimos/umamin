@@ -27,6 +27,7 @@ export const DeleteDialog = ({ id, content, setIsOpen, ...rest }: Props) => {
       );
     }
   };
+
   return (
     <DialogContainer
       transparent
