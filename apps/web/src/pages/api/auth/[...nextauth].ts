@@ -9,7 +9,7 @@ import { prisma } from '@/db';
 import { AuthedUser } from '../authorize';
 
 const options: NextAuthOptions = {
-  debug: true,
+  debug: process.env.NODE_ENV === 'development',
   adapter: PrismaAdapter(prisma),
   providers: [
     DiscordProvider({

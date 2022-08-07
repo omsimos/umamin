@@ -72,7 +72,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
                 onChange={(e) => setMessage(e.target.value)}
               />
             </div>
-
+              
             <button
               type='button'
               className='bg-dcblue hover:bg-dcblue/80 btn mb-2 flex w-full items-center justify-center space-x-2'
