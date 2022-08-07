@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import type { Message } from '@umamin/generated';
 import { BsTrashFill } from 'react-icons/bs';
+import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
+import toast from 'react-hot-toast';
 import download from 'downloadjs';
 import { nanoid } from 'nanoid';
 
 import { useLogEvent } from '../../hooks';
-import { DialogContainer, DialogContainerProps, DeleteDialog } from '.';
+import { deleteMessage, queryClient } from '@/api';
+import { DialogContainer, DialogContainerProps, ConfirmDialog } from '.';
 
 interface Props extends DialogContainerProps {
   username: string;
@@ -21,6 +24,22 @@ export const MessageDialog = ({
 }: Props) => {
   const triggerEvent = useLogEvent();
   const [deleteModal, setDeleteModal] = useState(false);
+  const { mutate } = useMutation(deleteMessage);
+
+  const handleDelete = () => {
+    if (data.id) {
+      mutate(
+        { id: data.id },
+        {
+          onSuccess: () => {
+            setDeleteModal(false);
+            toast.success('Message deleted');
+            queryClient.invalidateQueries('messages');
+          },
+        }
+      );
+    }
+  };
 
   const saveImage = async () => {
     const imgUrl = await toPng(document.getElementById('card-img')!);
@@ -29,11 +48,16 @@ export const MessageDialog = ({
 
   return (
     <>
-      <DeleteDialog
-        id={data.id}
-        content={data.content}
+      <ConfirmDialog
         isOpen={deleteModal}
         setIsOpen={setDeleteModal}
+        content={
+          <>
+            <p className='reply mb-2'>{data.content}</p>
+            <p>Are you sure you want to delete this message?</p>
+          </>
+        }
+        handleConfirm={handleDelete}
       />
       <DialogContainer
         setIsOpen={setIsOpen}
@@ -92,7 +116,7 @@ export const MessageDialog = ({
                 setDeleteModal(true);
               }, 500);
             }}
-            className='flex items-center space-x-2 red-btn'
+            className='red-btn flex items-center space-x-2'
             type='button'
           >
             <BsTrashFill className='text-base' />

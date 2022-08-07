@@ -1,4 +1,4 @@
-export * from './Delete';
+export * from './Confirm';
 export * from './Message';
 export * from './Settings';
 export * from './Container';

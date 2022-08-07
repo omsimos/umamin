@@ -97,14 +97,22 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
         </div>
 
         {!openChangePass && (
-          <div className='flex items-center space-x-4 self-end'>
-            <button onClick={handleClose} type='button'>
-              Close
-            </button>
+          <div className='flex items-center justify-between'>
+            <button className='text-red-500 hover:underline' type='button'>Delete Account</button>
 
-            <button onClick={handleEdit} className='primary-btn' type='button'>
-              Save
-            </button>
+            <div className='flex items-center space-x-4'>
+              <button onClick={handleClose} type='button'>
+                Close
+              </button>
+
+              <button
+                onClick={handleEdit}
+                className='primary-btn'
+                type='button'
+              >
+                Save
+              </button>
+            </div>
           </div>
         )}
       </div>
