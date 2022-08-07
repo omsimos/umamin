@@ -7,14 +7,15 @@ import { getSdk } from '@umamin/generated';
 const gqlClient = new GraphQLClient(process.env.NEXT_PUBLIC_GQL_ENDPOINT ?? '');
 export const {
   getUser,
-  createUser,
   editUser,
-  getMessageById,
+  deleteUser,
+  createUser,
   getMessages,
   sendMessage,
   editMessage,
   deleteMessage,
   changePassword,
+  getMessageById,
 } = getSdk(gqlClient);
 
 export const queryClient = new QueryClient({

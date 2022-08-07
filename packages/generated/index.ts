@@ -32,6 +32,7 @@ export type Mutation = {
   changePassword: Scalars['String'];
   createUser: Scalars['String'];
   deleteMessage: Scalars['String'];
+  deleteUser: Scalars['String'];
   editMessage: Scalars['String'];
   editUser: Scalars['String'];
   sendMessage: Scalars['String'];
@@ -52,6 +53,11 @@ export type MutationCreateUserArgs = {
 
 export type MutationDeleteMessageArgs = {
   id: Scalars['ID'];
+};
+
+
+export type MutationDeleteUserArgs = {
+  username: Scalars['String'];
 };
 
 
@@ -131,6 +137,13 @@ export type DeleteMessageMutationVariables = Exact<{
 
 export type DeleteMessageMutation = { __typename?: 'Mutation', deleteMessage: string };
 
+export type DeleteUserMutationVariables = Exact<{
+  username: Scalars['String'];
+}>;
+
+
+export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: string };
+
 export type EditMessageMutationVariables = Exact<{
   id: Scalars['ID'];
   isOpened: Scalars['Boolean'];
@@ -190,6 +203,11 @@ export const CreateUserDocument = gql`
 export const DeleteMessageDocument = gql`
     mutation deleteMessage($id: ID!) {
   deleteMessage(id: $id)
+}
+    `;
+export const DeleteUserDocument = gql`
+    mutation deleteUser($username: String!) {
+  deleteUser(username: $username)
 }
     `;
 export const EditMessageDocument = gql`
@@ -254,6 +272,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     deleteMessage(variables: DeleteMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<DeleteMessageMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteMessageMutation>(DeleteMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteMessage', 'mutation');
+    },
+    deleteUser(variables: DeleteUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<DeleteUserMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DeleteUserMutation>(DeleteUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteUser', 'mutation');
     },
     editMessage(variables: EditMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditMessageMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<EditMessageMutation>(EditMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editMessage', 'mutation');
