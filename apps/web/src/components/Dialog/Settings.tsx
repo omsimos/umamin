@@ -21,8 +21,10 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
 
   const handleClose = () => {
     setIsOpen(false);
-    setOpenChangePass(false);
-    setMessage(user?.message ?? '');
+    setTimeout(() => {
+      setOpenChangePass(false);
+      setMessage(user?.message ?? '');
+    }, 500);
   };
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
       className='grid h-full place-items-center'
       {...rest}
     >
-      <div className='card flex flex-col space-y-4 p-6'>
+      <div className='msg-card flex flex-col space-y-4 p-6'>
         {!openChangePass && (
           <>
             <div>
