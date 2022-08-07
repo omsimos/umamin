@@ -1,10 +1,9 @@
 import React from 'react';
-import { BsInstagram } from 'react-icons/bs';
+import type { Message } from '@umamin/generated';
+import { BsTrashFill } from 'react-icons/bs';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
 import { nanoid } from 'nanoid';
-import Link from 'next/link';
-import type { Message } from '@umamin/generated';
 
 import { useLogEvent } from '../../hooks';
 import { DialogContainer, DialogContainerProps } from '.';
@@ -74,21 +73,12 @@ export const MessageDialog = ({
         </div>
 
         <button
-          className='primary-btn flex items-center space-x-2 lg:hidden'
+          className='bg-red-500 hover:bg-red-500/80 btn flex items-center space-x-2'
           type='button'
-          onClick={() => {
-            saveImage();
-            window.location.assign('instagram://story-camera');
-            triggerEvent('share_image', { name: 'Instagram' });
-          }}
         >
-          <BsInstagram className='text-base' />
-          <p>Share to Story</p>
+          <BsTrashFill className='text-base' />
+          <p>Delete</p>
         </button>
-      </div>
-
-      <div className='mt-4 w-full pr-4 text-right text-primary-100 lg:hidden'>
-        <Link href='/help'>Need Help?</Link>
       </div>
     </DialogContainer>
   );
