@@ -13,7 +13,9 @@ export const Maintenance = () => {
         />
       </div>
 
-      <h1 className='mt-24 mb-2 text-5xl font-bold'>Maintenance</h1>
+      <h1 className='mt-24 mb-2 text-5xl font-bold'>
+        {process.env.NEXT_PUBLIC_MAINTENANCE_TITLE}
+      </h1>
       <p className='mb-4 font-medium'>
         {process.env.NEXT_PUBLIC_MAINTENANCE_INFO}
       </p>
