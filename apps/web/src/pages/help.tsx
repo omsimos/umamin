@@ -10,9 +10,9 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 const Help = () => {
   return (
     <section className='space-y-8'>
-      <AdContainer slot='7063833038' />
+      <AdContainer slot='2204878701' />
       <Markdown content={markdown.help} />
-      <AdContainer slot='7063833038' />
+      <AdContainer slot='2013307015' />
     </section>
   );
 };
