@@ -217,7 +217,7 @@ const Inbox = () => {
         </div>
       </div>
 
-      <AdContainer slot='7063833038' />
+      <AdContainer slot='7293553855' />
     </section>
   );
 };
