@@ -46,12 +46,12 @@ export const Footer = () => {
         </div>
       </div>
 
-      <div className='mt-20 flex flex-col items-center'>
+      <div className='mt-20 flex flex-col items-center md:items-start'>
         <div className='relative mb-4 h-6 w-32 md:hidden'>
           <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
         </div>
         <p className='text-xs font-medium text-gray-500 sm:text-sm md:text-base'>
-          Created with 💖 by{' '}
+          Created by{' '}
           <a
             href='https://github.com/joshxfi'
             target='_blank'
