@@ -8,7 +8,7 @@ interface Props {
 
 export const Layout = ({ children, className = '' }: Props) => {
   return (
-    <SafeAreaView className={`bg-secondary-300 flex-1 ${className}`}>
+    <SafeAreaView className={`bg-secondary-300 p-6 flex-1 ${className}`}>
       {children}
     </SafeAreaView>
   );
