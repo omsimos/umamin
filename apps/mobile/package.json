@@ -17,6 +17,7 @@
     "@umamin/generated": "*",
     "expo": "~46.0.7",
     "expo-status-bar": "~1.4.0",
+    "graphql-request": "^4.3.0",
     "nativewind": "^2.0.0-next.58",
     "react": "18.0.0",
     "react-dom": "18.0.0",
