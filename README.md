@@ -72,7 +72,23 @@ $ yarn
 $ yarn dev
 ```
 
-8. Commit your changes and push your branch:
+8. For `apps/mobile`:
+
+- get your ipv4 address with `ipconfig` or use `localhost` if using an emulator.
+- Create a `.env` in `apps/mobile` file with this content:
+
+> This points to the nextjs graphql api
+```sh
+GQL_ENDPOINT="http://192.168.1.7:3000/api/graphql"
+# or
+GQL_ENDPOINT="http://localhost:3000/api/graphql"
+```
+
+- run `yarn dev` then
+- run `yarn workspace mobile dev:start`
+- scan QR Code with your iOS or Android device.
+
+9. Commit your changes and push your branch:
 
 ```sh
 $ git add .
@@ -80,7 +96,7 @@ $ git commit -m "chore: some changes"
 $ git push origin HEAD
 ```
 
-9. Submit a pull request on the `dev` branch. (resolve conflicts if present)
+10. Submit a pull request on the `dev` branch. (resolve conflicts if present)
 
 ## License
 
