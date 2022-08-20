@@ -10,7 +10,7 @@ export const Login = ({
   const [username, setUsername] = useState('joogie');
 
   return (
-    <Layout className='justify-center'>
+    <Layout className='justify-center px-6'>
       <Text className='w-full text-2xl font-bold text-white'>
         Receive confessions & messages{' '}
         <Text className='text-primary-100'>anonymously!</Text>
