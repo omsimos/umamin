@@ -3,10 +3,8 @@ import { NextApiHandler } from 'next';
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import DiscordProvider from 'next-auth/providers/discord';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
-import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { prisma } from '@/db';
-import { AuthedUser } from '../authorize';
 
 const options: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
@@ -15,71 +13,9 @@ const options: NextAuthOptions = {
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
-      authorization: 'https://discord.com/api/oauth2/authorize',
-      token: 'https://discord.com/api/oauth2/token',
-    }),
-    CredentialsProvider({
-      id: 'credentials',
-      name: 'credentials',
-      credentials: {
-        username: {
-          label: 'Username',
-          type: 'text',
-        },
-        password: { label: 'Password', type: 'password' },
-      },
-      authorize: async (credentials) => {
-        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/authorize`, {
-          method: 'POST',
-          body: JSON.stringify({
-            username: credentials?.username,
-            password: credentials?.password,
-          }),
-        });
-
-        if (res.ok) {
-          const user = (await res.json()) as AuthedUser;
-          return user;
-        }
-
-        return Promise.reject(new Error('Invalid credentials'));
-      },
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.username = user.username;
-      }
-
-      return token;
-    },
-
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub;
-        session.user.username = token.username as string;
-      }
-
-      return session;
-    },
-
-    /*     async signIn({ account, profile }) {
-     *       if (account.provider === 'discord') {
-     *         const isUser = await prisma.user.findUnique({
-     *           where: { email: profile.email },
-     *         });
-     *
-     *         if (!isUser) {
-     *           return '/register';
-     *         }
-     *       }
-     *
-     *       return true;
-     *     }, */
-  },
-  session: { strategy: 'jwt' },
 };
 
 const authHandler: NextApiHandler = (req, res) => NextAuth(req, res, options);

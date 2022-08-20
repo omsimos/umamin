@@ -40,14 +40,13 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(uuid())
+  id            String    @id @default(cuid())
   name          String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   email         String?   @unique
   emailVerified DateTime?
-  username      String    @unique
-  password      String
+  username      String?   @unique
   image         String?
   message       String    @default("Send me an anonymous message!") @db.VarChar(100)
 
@@ -68,7 +67,7 @@ model VerificationToken {
 }
 
 model Message {
-  id          String   @id @default(uuid())
+  id          String   @id @default(cuid())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   content     String   @db.VarChar(255)
