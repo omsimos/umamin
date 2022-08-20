@@ -43,7 +43,6 @@ model User {
   id            String    @id @default(cuid())
   name          String?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
   email         String?   @unique
   emailVerified DateTime?
   username      String?   @unique

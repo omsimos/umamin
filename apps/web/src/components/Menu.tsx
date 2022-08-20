@@ -1,9 +1,9 @@
 import React, { Fragment } from 'react';
-import { BiUserCircle, BiLogInCircle, BiLogOutCircle } from 'react-icons/bi';
+import { BiUserCircle, BiLogOutCircle } from 'react-icons/bi';
 import { Popover, Transition } from '@headlessui/react';
+import { FaDiscord, FaFacebook } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
 import { HiMenuAlt3 } from 'react-icons/hi';
-import { FaDiscord } from 'react-icons/fa';
 import Link from 'next/link';
 
 interface Props {
@@ -40,22 +40,22 @@ export const Menu = ({ handleLogout, loading }: Props) => {
               <p>Logout</p>
             </button>
           ) : (
-            <>
-              <Link href='/login'>
-                <div className='menu-item'>
-                  <BiLogInCircle className='text-base' />
-                  <p>Login</p>
-                </div>
-              </Link>
-
-              <Link href='/register'>
-                <div className='menu-item'>
-                  <BiUserCircle className='text-base' />
-                  <p>Get started</p>
-                </div>
-              </Link>
-            </>
+            <Link href='/login'>
+              <div className='menu-item'>
+                <BiUserCircle className='text-base' />
+                <p>Get started</p>
+              </div>
+            </Link>
           )}
+          <a
+            href='https://www.facebook.com/umamin.official'
+            target='_blank'
+            rel='noreferrer noopener'
+            className='menu-item'
+          >
+            <FaFacebook />
+            <p>Facebook</p>
+          </a>
           <a
             href='https://discord.gg/bQKG7axhcF'
             target='_blank'
