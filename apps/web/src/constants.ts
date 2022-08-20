@@ -12,6 +12,19 @@ export const footerItems = {
   ],
   withUrl: [
     {
+      name: 'Socials',
+      children: [
+        {
+          name: 'Discord',
+          href: 'https://discord.gg/bQKG7axhcF',
+        },
+        {
+          name: 'Facebook',
+          href: 'https://www.facebook.com/umamin.official',
+        },
+      ],
+    },
+    {
       name: 'Open Source',
       children: [
         {
@@ -28,32 +41,6 @@ export const footerItems = {
         },
       ],
     },
-    {
-      name: 'Contact',
-      children: [
-        {
-          name: 'Discord',
-          href: 'https://discord.gg/bQKG7axhcF',
-        },
-        {
-          name: 'Twitter',
-          href: 'https://twitter.com/joshxfi',
-        },
-        {
-          name: 'Instagram',
-          href: 'https://www.instagram.com/josh.xfi/',
-        },
-      ],
-    },
-    /* {
-     *   name: 'Support',
-     *   children: [
-     *     {
-     *       name: 'Buy Coffee',
-     *       href: 'https://ko-fi.com/joshxfi',
-     *     },
-     *   ],
-     * }, */
   ],
 };
 

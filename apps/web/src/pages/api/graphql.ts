@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { ApolloServerPluginCacheControl } from 'apollo-server-core';
 import { ApolloServer } from 'apollo-server-micro';
 import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
@@ -33,7 +32,6 @@ const server = new ApolloServer({
     const id = session?.user?.id;
     return { prisma, username, id };
   },
-  plugins: [ApolloServerPluginCacheControl({ defaultMaxAge: 60 })],
   csrfPrevention: true,
 });
 
@@ -46,6 +44,12 @@ export const config = {
 const startServer = server.start();
 
 export default cors(async (req, res) => {
+  res.setHeader('Cache-Control', [
+    'max-age=0',
+    's-maxage=1',
+    'stale-while-revalidate',
+  ]);
+
   if (req.method === 'OPTIONS') {
     res.end();
     return false;
