@@ -44,6 +44,10 @@ const Login = () => {
             <button
               type='button'
               className='btn mb-2 flex w-full items-center justify-center space-x-2 bg-white font-semibold text-black hover:bg-white/80'
+              onClick={() => {
+                signIn('google');
+                triggerEvent('login', { provider: 'google' });
+              }}
             >
               <FcGoogle className='text-xl' />
               <p>Sign in with Google</p>
