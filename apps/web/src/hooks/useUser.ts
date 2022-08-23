@@ -1,11 +1,17 @@
 import { useQuery } from 'react-query';
 import { getUser } from '@/api';
 
-export const useUser = (username: string) => {
+export const useUser = (
+  user: string,
+  type: 'email' | 'username' = 'username'
+) => {
   const queryData = useQuery(
-    ['user', { username }],
-    () => getUser({ username }),
-    { select: (data) => data.user, enabled: !!username }
+    ['user', { user, type }],
+    () => getUser({ user, type }),
+    {
+      select: (data) => data.user,
+      enabled: !!user,
+    }
   );
 
   return { ...queryData };

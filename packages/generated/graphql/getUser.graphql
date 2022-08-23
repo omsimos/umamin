@@ -1,7 +1,7 @@
-query getUser($username: String!) {
-  user(username: $username) {
+query getUser($user: String!, $type: String!) {
+  user(user: $user, type: $type) {
+    id
     username
-    password
     message
     email
     image

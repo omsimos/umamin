@@ -9,12 +9,10 @@ export const {
   getUser,
   editUser,
   deleteUser,
-  createUser,
   getMessages,
   sendMessage,
   editMessage,
   deleteMessage,
-  changePassword,
   getMessageById,
 } = getSdk(gqlClient);
 

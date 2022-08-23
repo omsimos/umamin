@@ -26,27 +26,23 @@ export class MessageResolver {
 
   @Query(() => [Message], { nullable: true })
   async messages(
-    @Arg('userId', () => ID) userId: string,
+    @Arg('userId', () => ID) id: string,
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     /* @Arg('goPrev', () => Boolean) goPrev: boolean, */
-    @Ctx() { prisma, id }: TContext
+    @Ctx() { prisma }: TContext
   ): Promise<Message[] | null> {
     try {
-      if (userId !== id) {
-        throw new Error('User not authorized');
-      }
-
       let messages: Message[];
 
       if (!cursorId) {
         messages = await prisma.message.findMany({
-          where: { receiverId: userId },
+          where: { receiverId: id },
           orderBy: { createdAt: 'desc' },
           take: 3,
         });
         /* } else if (goPrev) {
          *   messages = await prisma.message.findMany({
-         *     where: { receiverId: userId },
+         *     where: { receiverId: email },
          *     orderBy: { createdAt: 'desc' },
          *     take: -3,
          *     cursor: {
@@ -55,7 +51,7 @@ export class MessageResolver {
          *   }); */
       } else {
         messages = await prisma.message.findMany({
-          where: { receiverId: userId },
+          where: { receiverId: id },
           orderBy: { createdAt: 'desc' },
           take: 3,
           skip: 1,

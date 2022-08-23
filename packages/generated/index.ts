@@ -29,25 +29,11 @@ export type Message = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  changePassword: Scalars['String'];
-  createUser: Scalars['String'];
   deleteMessage: Scalars['String'];
   deleteUser: Scalars['String'];
   editMessage: Scalars['String'];
   editUser: Scalars['String'];
   sendMessage: Scalars['String'];
-};
-
-
-export type MutationChangePasswordArgs = {
-  newPassword: Scalars['String'];
-  username: Scalars['String'];
-};
-
-
-export type MutationCreateUserArgs = {
-  password: Scalars['String'];
-  username: Scalars['String'];
 };
 
 
@@ -57,7 +43,7 @@ export type MutationDeleteMessageArgs = {
 
 
 export type MutationDeleteUserArgs = {
-  username: Scalars['String'];
+  email: Scalars['String'];
 };
 
 
@@ -68,8 +54,8 @@ export type MutationEditMessageArgs = {
 
 
 export type MutationEditUserArgs = {
+  email: Scalars['String'];
   message: Scalars['String'];
-  username: Scalars['String'];
 };
 
 
@@ -97,7 +83,8 @@ export type QueryMessagesArgs = {
 
 
 export type QueryUserArgs = {
-  username: Scalars['String'];
+  type: Scalars['String'];
+  user: Scalars['String'];
 };
 
 export type SendMessageInput = {
@@ -110,27 +97,12 @@ export type SendMessageInput = {
 export type User = {
   __typename?: 'User';
   email?: Maybe<Scalars['String']>;
+  id: Scalars['ID'];
   image?: Maybe<Scalars['String']>;
   message: Scalars['String'];
-  password: Scalars['String'];
-  username: Scalars['String'];
+  name?: Maybe<Scalars['String']>;
+  username?: Maybe<Scalars['String']>;
 };
-
-export type ChangePasswordMutationVariables = Exact<{
-  username: Scalars['String'];
-  newPassword: Scalars['String'];
-}>;
-
-
-export type ChangePasswordMutation = { __typename?: 'Mutation', changePassword: string };
-
-export type CreateUserMutationVariables = Exact<{
-  username: Scalars['String'];
-  password: Scalars['String'];
-}>;
-
-
-export type CreateUserMutation = { __typename?: 'Mutation', createUser: string };
 
 export type DeleteMessageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -140,7 +112,7 @@ export type DeleteMessageMutationVariables = Exact<{
 export type DeleteMessageMutation = { __typename?: 'Mutation', deleteMessage: string };
 
 export type DeleteUserMutationVariables = Exact<{
-  username: Scalars['String'];
+  email: Scalars['String'];
 }>;
 
 
@@ -155,7 +127,7 @@ export type EditMessageMutationVariables = Exact<{
 export type EditMessageMutation = { __typename?: 'Mutation', editMessage: string };
 
 export type EditUserMutationVariables = Exact<{
-  username: Scalars['String'];
+  email: Scalars['String'];
   message: Scalars['String'];
 }>;
 
@@ -178,11 +150,12 @@ export type GetMessagesQueryVariables = Exact<{
 export type GetMessagesQuery = { __typename?: 'Query', messages?: Array<{ __typename?: 'Message', id: string, content: string, isOpened: boolean, createdAt: any, receiverMsg: string }> | null };
 
 export type GetUserQueryVariables = Exact<{
-  username: Scalars['String'];
+  user: Scalars['String'];
+  type: Scalars['String'];
 }>;
 
 
-export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', username: string, password: string, message: string, email?: string | null, image?: string | null } | null };
+export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, username?: string | null, message: string, email?: string | null, image?: string | null } | null };
 
 export type SendMessageMutationVariables = Exact<{
   input: SendMessageInput;
@@ -192,24 +165,14 @@ export type SendMessageMutationVariables = Exact<{
 export type SendMessageMutation = { __typename?: 'Mutation', sendMessage: string };
 
 
-export const ChangePasswordDocument = gql`
-    mutation changePassword($username: String!, $newPassword: String!) {
-  changePassword(username: $username, newPassword: $newPassword)
-}
-    `;
-export const CreateUserDocument = gql`
-    mutation createUser($username: String!, $password: String!) {
-  createUser(username: $username, password: $password)
-}
-    `;
 export const DeleteMessageDocument = gql`
     mutation deleteMessage($id: ID!) {
   deleteMessage(id: $id)
 }
     `;
 export const DeleteUserDocument = gql`
-    mutation deleteUser($username: String!) {
-  deleteUser(username: $username)
+    mutation deleteUser($email: String!) {
+  deleteUser(email: $email)
 }
     `;
 export const EditMessageDocument = gql`
@@ -218,8 +181,8 @@ export const EditMessageDocument = gql`
 }
     `;
 export const EditUserDocument = gql`
-    mutation editUser($username: String!, $message: String!) {
-  editUser(username: $username, message: $message)
+    mutation editUser($email: String!, $message: String!) {
+  editUser(email: $email, message: $message)
 }
     `;
 export const GetMessageByIdDocument = gql`
@@ -245,10 +208,10 @@ export const GetMessagesDocument = gql`
 }
     `;
 export const GetUserDocument = gql`
-    query getUser($username: String!) {
-  user(username: $username) {
+    query getUser($user: String!, $type: String!) {
+  user(user: $user, type: $type) {
+    id
     username
-    password
     message
     email
     image
@@ -268,12 +231,6 @@ const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationTy
 
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
-    changePassword(variables: ChangePasswordMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<ChangePasswordMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<ChangePasswordMutation>(ChangePasswordDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'changePassword', 'mutation');
-    },
-    createUser(variables: CreateUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<CreateUserMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<CreateUserMutation>(CreateUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'createUser', 'mutation');
-    },
     deleteMessage(variables: DeleteMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<DeleteMessageMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteMessageMutation>(DeleteMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteMessage', 'mutation');
     },
