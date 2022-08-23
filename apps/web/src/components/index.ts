@@ -4,4 +4,5 @@ export * from './Navbar';
 export * from './Footer';
 export * from './Layout';
 export * from './Markdown';
+export * from './ImageFill';
 export * from './Maintenance';

@@ -91,6 +91,7 @@ const Inbox = () => {
           setIsOpen={setSettingsModal}
         />
 
+        <h1>data here: {data?.user?.email}</h1>
         <div className='flex w-full gap-3'>
           <button
             type='button'
