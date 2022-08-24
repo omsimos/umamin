@@ -1,26 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { MdArrowDropDown, MdArrowDropUp } from 'react-icons/md';
-import { signIn, signOut } from 'next-auth/react';
-import { FaDiscord } from 'react-icons/fa';
+import { signOut } from 'next-auth/react';
 import { useMutation } from 'react-query';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
 import { editUser, deleteUser } from '@/api';
 import { useUser } from '@/hooks';
-import { ChangePassword } from '../Settings';
 import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
-  username: string;
+  email: string;
 }
 
-export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
+export const SettingsDialog = ({ email, setIsOpen, ...rest }: Props) => {
   const { push } = useRouter();
-  const { data: user, refetch } = useUser(username);
+  const { data: user, refetch } = useUser(email, 'email');
   const [deleteModal, setDeleteModal] = useState(false);
   const [message, setMessage] = useState(user?.message ?? '');
-  const [openChangePass, setOpenChangePass] = useState(false);
 
   const { mutate: editUserMutate } = useMutation(editUser);
   const { mutate: deleteUserMutate } = useMutation(deleteUser);
@@ -28,7 +24,6 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
   const handleClose = () => {
     setIsOpen(false);
     setTimeout(() => {
-      setOpenChangePass(false);
       setMessage(user?.message ?? '');
     }, 500);
   };
@@ -43,7 +38,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
     if (message !== user?.message) {
       editUserMutate(
         {
-          username,
+          email,
           message,
         },
         {
@@ -59,7 +54,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
 
   const handleDeleteUser = () => {
     deleteUserMutate(
-      { username },
+      { email },
       {
         onSuccess: async () => {
           toast.success('User deleted');
@@ -91,8 +86,6 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
         {...rest}
       >
         <div className='msg-card flex flex-col space-y-4 p-6'>
-          {!openChangePass && (
-            <>
               <div>
                 <p className='settings-label'>Custom Message</p>
                 <textarea
@@ -105,39 +98,6 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
                 />
               </div>
 
-              <button
-                type='button'
-                className='bg-dcblue hover:bg-dcblue/80 btn mb-2 flex w-full items-center justify-center space-x-2'
-                onClick={() => {
-                  signIn('discord');
-                }}
-              >
-                <FaDiscord className='text-lg' />
-                <p>Connect to Discord</p>
-              </button>
-            </>
-          )}
-
-          <div>
-            <button
-              type='button'
-              onClick={() => setOpenChangePass((p) => !p)}
-              className='settings-label flex items-center space-x-1'
-            >
-              <p>Change Password</p>
-              {openChangePass ? (
-                <MdArrowDropUp className='text-2xl' />
-              ) : (
-                <MdArrowDropDown className='text-2xl' />
-              )}
-            </button>
-
-            {user && openChangePass && (
-              <ChangePassword user={user} handleClose={handleClose} />
-            )}
-          </div>
-
-          {!openChangePass && (
             <div className='flex items-center justify-between'>
               <button
                 onClick={() => {
@@ -167,7 +127,6 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
                 </button>
               </div>
             </div>
-          )}
         </div>
       </DialogContainer>
     </>
