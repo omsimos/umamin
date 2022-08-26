@@ -33,7 +33,7 @@ export class UserResolver {
   }
 
   @Mutation(() => String)
-  async editUser(
+  async editUserMessage(
     @Arg('email', () => String) email: string,
     @Arg('message', () => String) message: string,
     @Ctx() { prisma }: TContext
@@ -44,7 +44,32 @@ export class UserResolver {
         data: { message },
       });
 
-      return 'User edited';
+      return 'User message edited';
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Mutation(() => String)
+  async editUsername(
+    @Arg('email', () => String) email: string,
+    @Arg('username', () => String) username: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<String> {
+    const usernameRegex = /^[a-zA-Z0-9]+$/;
+
+    try {
+      if (!usernameRegex.test(username)) {
+        throw new Error('Username must be alphanumeric');
+      }
+
+      await prisma.user.update({
+        where: { email },
+        data: { username },
+      });
+
+      return 'Username edited';
     } catch (err: any) {
       console.error(err);
       throw new Error(err.message);

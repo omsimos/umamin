@@ -1,0 +1,3 @@
+mutation editUserMessage($email: String!, $message: String!) {
+  editUserMessage(email: $email, message: $message)
+}

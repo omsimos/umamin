@@ -32,7 +32,8 @@ export type Mutation = {
   deleteMessage: Scalars['String'];
   deleteUser: Scalars['String'];
   editMessage: Scalars['String'];
-  editUser: Scalars['String'];
+  editUserMessage: Scalars['String'];
+  editUsername: Scalars['String'];
   sendMessage: Scalars['String'];
 };
 
@@ -53,9 +54,15 @@ export type MutationEditMessageArgs = {
 };
 
 
-export type MutationEditUserArgs = {
+export type MutationEditUserMessageArgs = {
   email: Scalars['String'];
   message: Scalars['String'];
+};
+
+
+export type MutationEditUsernameArgs = {
+  email: Scalars['String'];
+  username: Scalars['String'];
 };
 
 
@@ -126,13 +133,21 @@ export type EditMessageMutationVariables = Exact<{
 
 export type EditMessageMutation = { __typename?: 'Mutation', editMessage: string };
 
-export type EditUserMutationVariables = Exact<{
+export type EditUserMessageMutationVariables = Exact<{
   email: Scalars['String'];
   message: Scalars['String'];
 }>;
 
 
-export type EditUserMutation = { __typename?: 'Mutation', editUser: string };
+export type EditUserMessageMutation = { __typename?: 'Mutation', editUserMessage: string };
+
+export type EditUsernameMutationVariables = Exact<{
+  email: Scalars['String'];
+  username: Scalars['String'];
+}>;
+
+
+export type EditUsernameMutation = { __typename?: 'Mutation', editUsername: string };
 
 export type GetMessageByIdQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -180,9 +195,14 @@ export const EditMessageDocument = gql`
   editMessage(id: $id, isOpened: $isOpened)
 }
     `;
-export const EditUserDocument = gql`
-    mutation editUser($email: String!, $message: String!) {
-  editUser(email: $email, message: $message)
+export const EditUserMessageDocument = gql`
+    mutation editUserMessage($email: String!, $message: String!) {
+  editUserMessage(email: $email, message: $message)
+}
+    `;
+export const EditUsernameDocument = gql`
+    mutation editUsername($email: String!, $username: String!) {
+  editUsername(email: $email, username: $username)
 }
     `;
 export const GetMessageByIdDocument = gql`
@@ -240,8 +260,11 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     editMessage(variables: EditMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditMessageMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<EditMessageMutation>(EditMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editMessage', 'mutation');
     },
-    editUser(variables: EditUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditUserMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<EditUserMutation>(EditUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editUser', 'mutation');
+    editUserMessage(variables: EditUserMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditUserMessageMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<EditUserMessageMutation>(EditUserMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editUserMessage', 'mutation');
+    },
+    editUsername(variables: EditUsernameMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditUsernameMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<EditUsernameMutation>(EditUsernameDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editUsername', 'mutation');
     },
     getMessageById(variables: GetMessageByIdQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetMessageByIdQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMessageByIdQuery>(GetMessageByIdDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMessageById', 'query');
