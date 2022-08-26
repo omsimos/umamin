@@ -1,3 +1,0 @@
-mutation editUsername($email: String!, $username: String!) {
-  editUsername(email: $email, username: $username)
-}

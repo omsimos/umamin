@@ -1,9 +1,0 @@
-query getUser($user: String!, $type: String!) {
-  user(user: $user, type: $type) {
-    id
-    username
-    message
-    email
-    image
-  }
-}

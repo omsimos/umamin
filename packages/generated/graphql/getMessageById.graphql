@@ -1,9 +1,0 @@
-query getMessageById($id: ID!) {
-  message(id: $id) {
-    id
-    content
-    senderId
-    receiverId
-    receiverMsg
-  }
-}
