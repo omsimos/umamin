@@ -4,8 +4,8 @@ import { useMutation } from 'react-query';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
-import { editUser, deleteUser } from '@/api';
 import { useUser } from '@/hooks';
+import { editUserMessage, deleteUser } from '@/api';
 import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
@@ -18,7 +18,7 @@ export const SettingsDialog = ({ email, setIsOpen, ...rest }: Props) => {
   const [deleteModal, setDeleteModal] = useState(false);
   const [message, setMessage] = useState(user?.message ?? '');
 
-  const { mutate: editUserMutate } = useMutation(editUser);
+  const { mutate: edutUserMessageMutate } = useMutation(editUserMessage);
   const { mutate: deleteUserMutate } = useMutation(deleteUser);
 
   const handleClose = () => {
@@ -36,7 +36,7 @@ export const SettingsDialog = ({ email, setIsOpen, ...rest }: Props) => {
 
   const handleEdit = () => {
     if (message !== user?.message) {
-      editUserMutate(
+      edutUserMessageMutate(
         {
           email,
           message,
@@ -86,47 +86,47 @@ export const SettingsDialog = ({ email, setIsOpen, ...rest }: Props) => {
         {...rest}
       >
         <div className='msg-card flex flex-col space-y-4 p-6'>
-              <div>
-                <p className='settings-label'>Custom Message</p>
-                <textarea
-                  minLength={1}
-                  maxLength={100}
-                  className='settings-input min-h-[100px] resize-none'
-                  value={message}
-                  placeholder='Enter a custom message'
-                  onChange={(e) => setMessage(e.target.value)}
-                />
-              </div>
+          <div>
+            <p className='settings-label'>Custom Message</p>
+            <textarea
+              minLength={1}
+              maxLength={100}
+              className='settings-input min-h-[100px] resize-none'
+              value={message}
+              placeholder='Enter a custom message'
+              onChange={(e) => setMessage(e.target.value)}
+            />
+          </div>
 
-            <div className='flex items-center justify-between'>
-              <button
-                onClick={() => {
-                  setIsOpen(false);
+          <div className='flex items-center justify-between'>
+            <button
+              onClick={() => {
+                setIsOpen(false);
 
-                  setTimeout(() => {
-                    setDeleteModal(true);
-                  }, 500);
-                }}
-                className='text-red-500 hover:underline'
-                type='button'
-              >
-                Delete Account
+                setTimeout(() => {
+                  setDeleteModal(true);
+                }, 500);
+              }}
+              className='text-red-500 hover:underline'
+              type='button'
+            >
+              Delete Account
+            </button>
+
+            <div className='flex items-center space-x-4'>
+              <button onClick={handleClose} type='button'>
+                Close
               </button>
 
-              <div className='flex items-center space-x-4'>
-                <button onClick={handleClose} type='button'>
-                  Close
-                </button>
-
-                <button
-                  onClick={handleEdit}
-                  className='primary-btn'
-                  type='button'
-                >
-                  Save
-                </button>
-              </div>
+              <button
+                onClick={handleEdit}
+                className='primary-btn'
+                type='button'
+              >
+                Save
+              </button>
             </div>
+          </div>
         </div>
       </DialogContainer>
     </>

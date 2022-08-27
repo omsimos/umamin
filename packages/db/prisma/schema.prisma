@@ -31,14 +31,6 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -50,7 +42,6 @@ model User {
   message       String    @default("Send me an anonymous message!") @db.VarChar(100)
 
   accounts         Account[]
-  sessions         Session[]
   sentMessages     Message[] @relation("sentMessages")
   receivedMessages Message[] @relation("receivedMessages")
 

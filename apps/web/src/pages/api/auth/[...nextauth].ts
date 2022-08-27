@@ -27,6 +27,10 @@ const options: NextAuthOptions = {
       },
     }),
   ],
+  secret: process.env.NEXTAUTH_SECRET,
+  session: {
+    strategy: 'jwt',
+  },
 };
 
 const authHandler: NextApiHandler = (req, res) => NextAuth(req, res, options);
