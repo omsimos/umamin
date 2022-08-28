@@ -1,3 +1,0 @@
-mutation editMessage($id: ID!, $isOpened: Boolean!) {
-  editMessage(id: $id, isOpened: $isOpened)
-}

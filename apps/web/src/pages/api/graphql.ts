@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import { ApolloServer } from 'apollo-server-micro';
-import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
 import Cors from 'micro-cors';
 
@@ -10,9 +9,6 @@ import { MessageResolver } from '@/schema/message';
 
 export interface TContext {
   prisma: typeof prisma;
-  username?: string;
-  id?: string;
-  password?: string;
 }
 
 const cors = Cors({
@@ -26,12 +22,7 @@ const schema = await buildSchema({
 
 const server = new ApolloServer({
   schema,
-  context: async ({ req }) => {
-    const session = await getSession({ req });
-    const username = session?.user?.username;
-    const id = session?.user?.id;
-    return { prisma, username, id };
-  },
+  context: { prisma },
   csrfPrevention: true,
 });
 
@@ -44,11 +35,7 @@ export const config = {
 const startServer = server.start();
 
 export default cors(async (req, res) => {
-  res.setHeader('Cache-Control', [
-    'max-age=0',
-    's-maxage=1',
-    'stale-while-revalidate',
-  ]);
+  res.setHeader('Cache-Control', ['s-maxage=1', 'stale-while-revalidate']);
 
   if (req.method === 'OPTIONS') {
     res.end();

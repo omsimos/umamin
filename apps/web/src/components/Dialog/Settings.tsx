@@ -1,33 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { MdArrowDropDown, MdArrowDropUp } from 'react-icons/md';
 import { signOut } from 'next-auth/react';
 import { useMutation } from 'react-query';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
-import { editUser, deleteUser } from '@/api';
 import { useUser } from '@/hooks';
-import { ChangePassword } from '../Settings';
+import { editUserMessage, deleteUser } from '@/api';
 import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
-  username: string;
+  email: string;
 }
 
-export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
+export const SettingsDialog = ({ email, setIsOpen, ...rest }: Props) => {
   const { push } = useRouter();
-  const { data: user, refetch } = useUser(username);
+  const { data: user, refetch } = useUser(email, 'email');
   const [deleteModal, setDeleteModal] = useState(false);
   const [message, setMessage] = useState(user?.message ?? '');
-  const [openChangePass, setOpenChangePass] = useState(false);
 
-  const { mutate: editUserMutate } = useMutation(editUser);
+  const { mutate: edutUserMessageMutate } = useMutation(editUserMessage);
   const { mutate: deleteUserMutate } = useMutation(deleteUser);
 
   const handleClose = () => {
     setIsOpen(false);
     setTimeout(() => {
-      setOpenChangePass(false);
       setMessage(user?.message ?? '');
     }, 500);
   };
@@ -40,9 +36,9 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
 
   const handleEdit = () => {
     if (message !== user?.message) {
-      editUserMutate(
+      edutUserMessageMutate(
         {
-          username,
+          email,
           message,
         },
         {
@@ -58,7 +54,7 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
 
   const handleDeleteUser = () => {
     deleteUserMutate(
-      { username },
+      { email },
       {
         onSuccess: async () => {
           toast.success('User deleted');
@@ -90,73 +86,47 @@ export const SettingsDialog = ({ username, setIsOpen, ...rest }: Props) => {
         {...rest}
       >
         <div className='msg-card flex flex-col space-y-4 p-6'>
-          {!openChangePass && (
-            <>
-              <div>
-                <p className='settings-label'>Custom Message</p>
-                <textarea
-                  minLength={1}
-                  maxLength={100}
-                  className='settings-input min-h-[100px] resize-none'
-                  value={message}
-                  placeholder='Enter a custom message'
-                  onChange={(e) => setMessage(e.target.value)}
-                />
-              </div>
-              <div className='line' />
-            </>
-          )}
-
           <div>
-            <button
-              type='button'
-              onClick={() => setOpenChangePass((p) => !p)}
-              className='settings-label flex items-center space-x-1'
-            >
-              <p>Change Password</p>
-              {openChangePass ? (
-                <MdArrowDropUp className='text-2xl' />
-              ) : (
-                <MdArrowDropDown className='text-2xl' />
-              )}
-            </button>
-
-            {user && openChangePass && (
-              <ChangePassword user={user} handleClose={handleClose} />
-            )}
+            <p className='settings-label'>Custom Message</p>
+            <textarea
+              minLength={1}
+              maxLength={100}
+              className='settings-input min-h-[100px] resize-none'
+              value={message}
+              placeholder='Enter a custom message'
+              onChange={(e) => setMessage(e.target.value)}
+            />
           </div>
 
-          {!openChangePass && (
-            <div className='flex items-center justify-between'>
-              <button
-                onClick={() => {
-                  setIsOpen(false);
+          <div className='flex items-center justify-between'>
+            <button
+              onClick={() => {
+                setIsOpen(false);
 
-                  setTimeout(() => {
-                    setDeleteModal(true);
-                  }, 500);
-                }}
-                className='text-red-500 hover:underline'
-                type='button'
-              >
-                Delete Account
+                setTimeout(() => {
+                  setDeleteModal(true);
+                }, 500);
+              }}
+              className='text-red-500 hover:underline'
+              type='button'
+            >
+              Delete Account
+            </button>
+
+            <div className='flex items-center space-x-4'>
+              <button onClick={handleClose} type='button'>
+                Close
               </button>
 
-              <div className='flex items-center space-x-4'>
-                <button onClick={handleClose} type='button'>
-                  Close
-                </button>
-
-                <button
-                  onClick={handleEdit}
-                  className='primary-btn'
-                  type='button'
-                >
-                  Save
-                </button>
-              </div>
+              <button
+                onClick={handleEdit}
+                className='primary-btn'
+                type='button'
+              >
+                Save
+              </button>
             </div>
-          )}
+          </div>
         </div>
       </DialogContainer>
     </>

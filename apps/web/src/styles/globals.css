@@ -43,7 +43,7 @@
   }
 
   .red-btn {
-    @apply bg-red-500 hover:bg-red-500/80 btn;
+    @apply btn bg-red-500 hover:bg-red-500/80;
   }
 
   .h1-text {

@@ -1,9 +1,0 @@
-query getMessages($userId: ID!, $cursorId: ID) {
-  messages(userId: $userId, cursorId: $cursorId) {
-    id
-    content
-    isOpened
-    createdAt
-    receiverMsg
-  }
-}
