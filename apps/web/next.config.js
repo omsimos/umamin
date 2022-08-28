@@ -5,7 +5,7 @@ const withPWA = require('next-pwa');
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['cdn.discordapp.com'],
+    domains: ['cdn.discordapp.com', 'lh3.googleusercontent.com'],
   },
   webpack: (config) => {
     if (!config.experiments) {
