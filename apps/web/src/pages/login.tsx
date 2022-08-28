@@ -13,8 +13,8 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 });
 
 const Login = () => {
-  const { push } = useRouter();
   const { status } = useSession();
+  const { push, query } = useRouter();
   const triggerEvent = useLogEvent();
 
   if (status === 'authenticated') {
@@ -52,6 +52,12 @@ const Login = () => {
               <FcGoogle className='text-xl' />
               <p>Sign in with Google</p>
             </button>
+
+            {query.error === 'OAuthAccountNotLinked' && (
+              <p className='mt-4'>
+                Email is already linked to a different provider
+              </p>
+            )}
           </div>
         </div>
         <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] md:bottom-0'>
