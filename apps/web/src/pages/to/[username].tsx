@@ -15,7 +15,7 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 
 const SendTo = ({ username }: { username: string }) => {
   const router = useRouter();
-  const { data: user } = useUser(username);
+  const { data: user } = useUser(username, 'username');
   const triggerEvent = useLogEvent();
 
   const [message, setMessage] = useState('');
@@ -58,7 +58,7 @@ const SendTo = ({ username }: { username: string }) => {
             'Create your own link to start receiving anonymous confessions and messages!',
         }}
       />
-      <section className='flex flex-col items-center space-y-12 mb-8'>
+      <section className='mb-8 flex flex-col items-center space-y-12'>
         {!user ? (
           <h1 className='h1-text'>Are you lost?</h1>
         ) : (
@@ -163,8 +163,9 @@ export async function getServerSideProps({
 }: {
   params: { username: string };
 }) {
-  await queryClient.prefetchQuery(['user', { username: params.username }], () =>
-    getUser({ username: params.username })
+  await queryClient.prefetchQuery(
+    ['user', { user: params.username, type: 'username' }],
+    () => getUser({ user: params.username, type: 'username' })
   );
 
   return {

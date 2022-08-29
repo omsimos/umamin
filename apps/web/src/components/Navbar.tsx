@@ -1,11 +1,10 @@
 /* eslint-disable no-nested-ternary */
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { signOut, useSession } from 'next-auth/react';
 
-import { Menu } from '@/components';
+import { ImageFill, Menu } from '@/components';
 import { queryClient } from '@/api';
 
 export const Navbar = () => {
@@ -15,7 +14,7 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     setLoading(true);
-    await queryClient.invalidateQueries()
+    await queryClient.invalidateQueries();
     await signOut({ redirect: false });
     push('/login');
     setLoading(false);
@@ -24,14 +23,11 @@ export const Navbar = () => {
   return (
     <nav className='relative z-10 mb-12 flex items-center justify-between xl:mb-24'>
       <Link href='/'>
-        <div className='hide-tap-highlight relative h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'>
-          <Image
-            priority
-            src='/assets/logo.svg'
-            layout='fill'
-            objectFit='contain'
-          />
-        </div>
+        <ImageFill
+          src='/assets/logo.svg'
+          objectFit='contain'
+          className='hide-tap-highlight h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'
+        />
       </Link>
 
       <div className='hidden items-center space-x-6 sm:flex'>

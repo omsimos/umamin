@@ -12,9 +12,8 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 
 const Home: NextPage = () => {
   const { push } = useRouter();
-  const { data } = useSession();
-
-  const currentUser = data?.user?.username;
+  const { status } = useSession();
+  const isAuthenticated = status === 'authenticated';
 
   return (
     <section className='space-y-12'>
@@ -41,11 +40,11 @@ const Home: NextPage = () => {
 
           <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
             <button
-              onClick={() => push(currentUser ? '/inbox' : '/register')}
+              onClick={() => push(isAuthenticated ? '/inbox' : '/login')}
               type='button'
               className='primary-btn'
             >
-              {currentUser ? 'View messages' : 'Create your link'}
+              {isAuthenticated ? 'View messages' : 'Create your link'}
             </button>
 
             <a
