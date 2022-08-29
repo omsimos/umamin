@@ -44,11 +44,7 @@ export const config = {
 const startServer = server.start();
 
 export default cors(async (req, res) => {
-  res.setHeader('Cache-Control', [
-    'max-age=0',
-    's-maxage=1',
-    'stale-while-revalidate',
-  ]);
+  res.setHeader('Cache-Control', ['s-maxage=1', 'stale-while-revalidate']);
 
   if (req.method === 'OPTIONS') {
     res.end();
