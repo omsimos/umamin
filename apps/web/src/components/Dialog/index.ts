@@ -1,3 +1,4 @@
+export * from './Info';
 export * from './Confirm';
 export * from './Message';
 export * from './Settings';
