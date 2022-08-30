@@ -2,8 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
-import { footerItems } from '@/constants';
 import { ImageFill } from './ImageFill';
+import { footerItems } from '@/utils/constants';
 
 export const Footer = () => {
   return (

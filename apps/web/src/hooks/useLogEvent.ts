@@ -1,5 +1,5 @@
 import { logEvent } from 'firebase/analytics';
-import { analytics } from '@/firebase';
+import { analytics } from '@/utils/firebase';
 
 type EventType =
   | 'login'

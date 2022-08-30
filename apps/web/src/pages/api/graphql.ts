@@ -1,11 +1,13 @@
 import 'reflect-metadata';
 import { ApolloServer } from 'apollo-server-micro';
 import { buildSchema } from 'type-graphql';
+import { PrismaClient } from '@umamin/db';
 import Cors from 'micro-cors';
 
-import { prisma } from '@/db';
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
+
+const prisma = new PrismaClient();
 
 export interface TContext {
   prisma: typeof prisma;
