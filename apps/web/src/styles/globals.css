@@ -31,7 +31,7 @@
   }
 
   .btn {
-    @apply rounded px-6 py-3 text-sm font-medium transition-colors md:text-base;
+    @apply rounded-md  px-6 py-3 text-sm font-medium transition-colors md:text-base;
   }
 
   .primary-btn {
@@ -39,7 +39,7 @@
   }
 
   .secondary-btn {
-    @apply bg-secondary-100 hover:bg-secondary-100/80 btn border-2 border-gray-400;
+    @apply bg-secondary-100 hover:bg-secondary-100/80 btn border-secondary-border border-[1.5px];
   }
 
   .red-btn {
@@ -51,7 +51,7 @@
   }
 
   .card {
-    @apply border-primary-100 bg-secondary-200 rounded border-2;
+    @apply border-secondary-border bg-secondary-200 rounded-lg border-[1.5px];
   }
 
   .input-field {

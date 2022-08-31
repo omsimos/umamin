@@ -61,17 +61,17 @@ const Home: NextPage = () => {
         </div>
 
         <div className='relative mt-28 self-end text-left md:mt-16 xl:mt-0 xl:self-start'>
-          <div className='card font-syne w-full self-end p-8 md:w-[450px]'>
-            <p>
+          <div className='card font-syne w-full self-end px-8 pt-5 pb-10 md:w-[450px] lg:w-[380px]'>
+            <p className='tracking-wider'>
               <span className='mr-2 text-lg font-bold'>Umamin</span>
               <span>(verb) [/u&apos;m&#593;&#58;min/]</span>
             </p>
-            <p className='mt-1'>
+            <p className='font-inter mt-4'>
               Declare to be true or admit the existence or reality or truth of
             </p>
           </div>
 
-          <IoChatboxEllipses className='text-primary-100 absolute right-4 -top-14 text-8xl xl:-left-12 xl:top-28 xl:text-9xl' />
+          <IoChatboxEllipses className='text-primary-100 absolute right-4 -top-14 text-8xl xl:-left-12 xl:top-32 xl:text-8xl' />
         </div>
 
         <div className='absolute top-48 right-0 -z-10 h-[450px] w-[450px] sm:top-40 md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
@@ -84,11 +84,11 @@ const Home: NextPage = () => {
         </div>
       </div>
 
-      <div className='grid grid-cols-1 justify-center justify-items-center gap-10 pt-24 md:grid-cols-2 md:gap-5 lg:gap-7 xl:grid-cols-3 xl:gap-0'>
+      <div className='grid grid-cols-1 justify-center justify-items-center gap-10 pt-24 md:grid-cols-2 md:gap-5 lg:gap-7 xl:grid-cols-3'>
         {indexItems.map(({ title, description, Icon, link, className }) => (
           <div
             key={link.url}
-            className={`${className} bg-secondary-200 border-secondary-border flex max-w-[360px] flex-col justify-between gap-7 rounded-xl border-[1.5px] p-7 lg:w-[390px] xl:justify-self-auto`}
+            className={`${className} bg-secondary-200 border-secondary-border flex max-w-[360px] flex-col justify-between gap-7 rounded-xl border-[1.5px] p-7 xl:max-w-[390px] xl:justify-self-auto`}
           >
             <div className='space-y-4'>
               <Icon className='text-primary-100 text-4xl' />
