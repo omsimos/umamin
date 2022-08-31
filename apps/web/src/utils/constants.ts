@@ -1,3 +1,5 @@
+import { BsDiscord, BsFacebook, BsGithub } from 'react-icons/bs';
+
 /* eslint-disable no-irregular-whitespace */
 export const footerItems = {
   withRoute: [
@@ -43,6 +45,36 @@ export const footerItems = {
     },
   ],
 };
+
+export const indexItems = [
+  {
+    title: 'Join the Community',
+    description: 'Where just you and a handful of friends can spend time together. A place that makes it easy to talk every day and hang out more often.',
+    Icon: BsDiscord,
+    link: {
+      title: 'Discord Server',
+      url: 'https://umamin.link/discord'
+    }
+  },
+  {
+    title: 'Follow for Updates',
+    description: 'Meta helps people, communities, and businesses do more together through our technologies and immersive experiences.',
+    Icon: BsFacebook,
+    link: {
+      title: 'Facebook Page',
+      url: 'https://www.facebook.com/umamin.official'
+    }
+  },
+  {
+    title: 'Open Source',
+    description: 'The complete developer platform to build, scale, and deliver secure software.',
+    Icon: BsGithub,
+    link: {
+      title: 'GitHub Repo',
+      url: 'https://github.com/omsimos/umamin'
+    }
+  },
+]
 
 export const markdown = {
   privacy: `

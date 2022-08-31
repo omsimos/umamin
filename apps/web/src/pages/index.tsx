@@ -5,6 +5,8 @@ import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { IoChatboxEllipses } from 'react-icons/io5';
+import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
+import { indexItems } from '@/utils/constants';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -80,6 +82,25 @@ const Home: NextPage = () => {
             objectFit='contain'
           />
         </div>
+      </div>
+
+      <div className='flex justify-between pt-24'>
+        {indexItems.map(({ title, description, Icon, link }) => (
+          <div
+            key={link.url}
+            className='bg-secondary-200 border-secondary-100 flex max-w-[390px] flex-col justify-between gap-7 rounded-xl border-[1.5px] p-7'
+          >
+            <div className='space-y-4'>
+              <Icon className='text-primary-100 text-4xl' />
+              <h3 className='text-lg font-medium'>{title}</h3>
+              <p className='text-secondary-400'>{description}</p>
+            </div>
+            <div className='text-primary-100 flex items-center gap-2'>
+              <a href={link.url}>{link.title}</a>
+              <HiOutlineArrowNarrowRight />
+            </div>
+          </div>
+        ))}
       </div>
 
       <AdContainer slot='7063833038' />
