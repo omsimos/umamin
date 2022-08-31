@@ -1,7 +1,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { markdown } from '@/constants';
 import { Markdown } from '@/components';
+import { markdown } from '@/utils/constants';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
