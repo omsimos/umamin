@@ -96,7 +96,9 @@ const Home: NextPage = () => {
               <p className='text-secondary-400'>{description}</p>
             </div>
             <div className='text-primary-100 flex items-center gap-2'>
-              <a href={link.url}>{link.title}</a>
+              <a href={link.url} target='_blank' rel='noreferrer noopener'>
+                {link.title}
+              </a>
               <HiOutlineArrowNarrowRight />
             </div>
           </div>
