@@ -39,7 +39,7 @@
   }
 
   .secondary-btn {
-    @apply bg-secondary-100 hover:bg-secondary-100/80 btn border-secondary-border border-[1.5px];
+    @apply bg-secondary-100 hover:bg-secondary-100/80 btn border-2 border-[#505059];
   }
 
   .red-btn {
@@ -51,7 +51,7 @@
   }
 
   .card {
-    @apply border-secondary-border bg-secondary-200 rounded-lg border-[1.5px];
+    @apply border-secondary-100 bg-secondary-200 rounded-lg border-2;
   }
 
   .input-field {

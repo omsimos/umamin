@@ -88,7 +88,7 @@ const Home: NextPage = () => {
         {indexItems.map(({ title, description, Icon, link, className }) => (
           <div
             key={link.url}
-            className={`${className} bg-secondary-200 border-secondary-border flex max-w-[360px] flex-col justify-between gap-7 rounded-xl border-[1.5px] p-7 xl:max-w-[390px] xl:justify-self-auto`}
+            className={`${className} bg-secondary-200 border-secondary-100 flex max-w-[360px] flex-col justify-between gap-7 rounded-xl border-2 p-7 xl:max-w-[390px] xl:justify-self-auto`}
           >
             <div className='space-y-4'>
               <Icon className='text-primary-100 text-4xl' />
