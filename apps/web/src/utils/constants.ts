@@ -54,7 +54,8 @@ export const indexItems = [
     link: {
       title: 'Discord Server',
       url: 'https://umamin.link/discord'
-    }
+    },
+    className: 'md:justify-self-end'
   },
   {
     title: 'Follow for Updates',
@@ -63,7 +64,9 @@ export const indexItems = [
     link: {
       title: 'Facebook Page',
       url: 'https://www.facebook.com/umamin.official'
-    }
+    },
+    className: 'md:justify-self-start'
+
   },
   {
     title: 'Open Source',
@@ -72,7 +75,9 @@ export const indexItems = [
     link: {
       title: 'GitHub Repo',
       url: 'https://github.com/omsimos/umamin'
-    }
+    },
+    className: 'md:col-span-2 xl:col-span-1'
+
   },
 ]
 

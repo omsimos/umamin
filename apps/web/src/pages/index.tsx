@@ -84,11 +84,11 @@ const Home: NextPage = () => {
         </div>
       </div>
 
-      <div className='flex justify-between pt-24'>
-        {indexItems.map(({ title, description, Icon, link }) => (
+      <div className='grid grid-cols-1 justify-center justify-items-center gap-10 pt-24 md:grid-cols-2 md:gap-5 lg:gap-7 xl:grid-cols-3 xl:gap-0'>
+        {indexItems.map(({ title, description, Icon, link, className }) => (
           <div
             key={link.url}
-            className='bg-secondary-200 border-secondary-100 flex max-w-[390px] flex-col justify-between gap-7 rounded-xl border-[1.5px] p-7'
+            className={`${className} bg-secondary-200 border-secondary-border flex max-w-[360px] flex-col justify-between gap-7 rounded-xl border-[1.5px] p-7 lg:w-[390px] xl:justify-self-auto`}
           >
             <div className='space-y-4'>
               <Icon className='text-primary-100 text-4xl' />
