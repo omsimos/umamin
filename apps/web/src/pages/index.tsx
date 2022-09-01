@@ -61,7 +61,7 @@ const Home: NextPage = () => {
         </div>
 
         <div className='relative mt-28 self-end text-left md:mt-16 xl:mt-0 xl:self-start'>
-          <div className='card font-syne w-full self-end px-8 pt-5 pb-10 md:w-[450px] lg:w-[380px]'>
+          <div className='card font-syne max-w-[380px] px-8 pt-5 pb-10'>
             <p className='tracking-wider'>
               <span className='mr-2 text-lg font-bold'>Umamin</span>
               <span>(verb) [/u&apos;m&#593;&#58;min/]</span>
@@ -71,10 +71,10 @@ const Home: NextPage = () => {
             </p>
           </div>
 
-          <IoChatboxEllipses className='text-primary-100 absolute right-4 -top-14 text-8xl xl:-left-12 xl:top-32 xl:text-8xl' />
+          <IoChatboxEllipses className='text-primary-100 absolute right-3 -top-11 text-7xl lg:right-2 lg:-top-14 lg:text-8xl xl:-left-12 xl:top-32' />
         </div>
 
-        <div className='absolute top-48 right-0 -z-10 h-[450px] w-[450px] sm:top-40 md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
+        <div className='absolute top-44 right-0 -z-10 h-[450px] w-[450px] sm:top-40 md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
           <Image
             priority
             src='/assets/hearts.svg'
@@ -84,7 +84,7 @@ const Home: NextPage = () => {
         </div>
       </div>
 
-      <div className='grid grid-cols-1 justify-center justify-items-center gap-10 pt-24 md:grid-cols-2 md:gap-5 lg:gap-7 xl:grid-cols-3'>
+      <div className='grid grid-cols-1 justify-center justify-items-center gap-12 pt-24 sm:gap-24 sm:px-14 md:grid-cols-2 md:gap-7 md:px-0 xl:grid-cols-3'>
         {indexItems.map(({ title, description, Icon, link, className }) => (
           <div
             key={link.url}

@@ -31,7 +31,7 @@
   }
 
   .btn {
-    @apply rounded-md  px-6 py-3 text-sm font-medium transition-colors md:text-base;
+    @apply rounded-md px-6 py-3 text-sm font-medium transition-colors md:text-base;
   }
 
   .primary-btn {
@@ -47,7 +47,7 @@
   }
 
   .h1-text {
-    @apply text-[6vw] font-extrabold leading-8 sm:text-4xl md:text-5xl 2xl:text-6xl;
+    @apply text-[clamp(1.4rem,7vw,2.3rem)] font-extrabold  leading-[2rem] sm:text-4xl md:text-5xl 2xl:text-6xl;
   }
 
   .card {
