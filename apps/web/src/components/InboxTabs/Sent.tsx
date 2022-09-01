@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 import { ChatBubble } from '../ChatBubble';
 
-export const Sent = ({ username = 'johndoe' }: { username: string }) => {
+export const Sent = () => {
   const [msgReplied] = useState<boolean>(true);
 
   return (
@@ -12,7 +12,7 @@ export const Sent = ({ username = 'johndoe' }: { username: string }) => {
       <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2 md:w-[500px]'>
         <div className='border-secondary-100 flex items-center justify-between border-b-2 bg-[#171819] px-7 py-2'>
           <p className='font-medium capitalize text-gray-100'>
-            <span className='font-light text-gray-400'>To&#58;</span> {username}
+            <span className='font-light text-gray-400'>To&#58;</span> Johndoe
           </p>
           <div className='relative h-[40px] w-[110px]'>
             <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
