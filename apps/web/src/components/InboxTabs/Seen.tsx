@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { RiSendPlaneFill } from 'react-icons/ri';
 import Image from 'next/image';
+import { RiSendPlaneFill } from 'react-icons/ri';
+
+import { ChatBubble } from '../ChatBubble';
 
 export const Seen = () => {
   const [message, setMessage] = useState('');
@@ -24,18 +26,13 @@ export const Seen = () => {
         </div>
 
         {/* Message */}
-        <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-7 pt-10 pb-3 text-lg sm:pt-7 md:space-y-3 [&>*]:px-[20px] [&>*]:py-[15px]'>
-          <div className='chat-p send bg-primary-200 before:bg-primary-200 after:bg-secondary-200 inline-block max-w-[255px]  self-end text-white'>
-            Send me an anonymous message!
-          </div>
-          <div
-            className='chat-p receive
-            after:bg-secondary-200 bg-secondary-100 before:bg-secondary-100 inline-block max-w-[255px] self-start text-white
-          '
-          >
-            The quick brown fox jumps over the lazy dog near the bank of the
-            river. LMAO
-          </div>
+        <div className='flex min-h-[170px] flex-col justify-between gap-4 px-7 pt-10 pb-3 text-lg sm:pt-7 md:gap-3'>
+          <ChatBubble state='send' content='Send me an anonymous message!' />
+          <ChatBubble
+            state='receive'
+            content='The quick brown fox jumps over the lazy dog near the bank of the
+            river. LMAO'
+          />
         </div>
 
         {/* Send Message */}

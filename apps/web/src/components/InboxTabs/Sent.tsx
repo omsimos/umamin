@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 
+import { ChatBubble } from '../ChatBubble';
+
 export const Sent = ({ username = 'johndoe' }: { username: string }) => {
   const [msgReplied] = useState<boolean>(true);
 
@@ -19,15 +21,23 @@ export const Sent = ({ username = 'johndoe' }: { username: string }) => {
 
         {/* Message */}
         <div className='flex min-h-[170px] flex-col justify-between gap-4 pr-7 pl-6 pt-10 pb-3 text-lg sm:pt-8 md:gap-3'>
-          <ReceivedMsg content='Send me an anonymous message!' />
-
-          <div className='chat-p send bg-primary-200 before:bg-primary-200 after:bg-secondary-200 inline-block max-w-[255px] self-end px-[20px] py-[15px] text-white'>
-            The quick brown fox jumps over the lazy dog near the bank of the
-            river. LMAO
-          </div>
+          <ChatBubble
+            state='receive'
+            senderInfo
+            content='Send me an anonymous message!'
+          />
+          <ChatBubble
+            state='send'
+            content=' The quick brown fox jumps over the lazy dog near the bank of the
+            river. LMAO'
+          />
 
           {msgReplied && (
-            <ReceivedMsg content='Excellent! See you Saturday at 1pm in front of the cafe. 😉' />
+            <ChatBubble
+              state='receive'
+              senderInfo
+              content='Excellent! See you Saturday at 1pm in front of the cafe. 😉'
+            />
           )}
         </div>
 
@@ -40,25 +50,3 @@ export const Sent = ({ username = 'johndoe' }: { username: string }) => {
     </section>
   );
 };
-
-const ReceivedMsg = ({ content }: { content: string }) => (
-  <div className='flex space-x-2'>
-    {/* <Image
-      width={35}
-      height={35}
-      layout="fixed"
-      src={message.author.photoURL as string}
-      alt="user image"
-      className="z-10 rounded-full"
-    /> */}
-    <span className='relative bottom-2 z-10 inline-block h-[35px] w-[35px] self-end rounded-full bg-gray-500' />
-    <div className='relative self-start'>
-      <span className='text-secondary-400 absolute left-4 -top-4 block text-xs'>
-        Eliza
-      </span>
-      <div className='chat-p receive after:bg-secondary-200 bg-secondary-100 before:bg-secondary-100 inline-block max-w-[255px] self-start px-5 py-4 text-white'>
-        {content}
-      </div>
-    </div>
-  </div>
-);
