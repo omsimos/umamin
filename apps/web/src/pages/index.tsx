@@ -88,7 +88,7 @@ const Home: NextPage = () => {
         {indexItems.map(({ title, description, Icon, link, className }) => (
           <div
             key={link.url}
-            className={`${className} bg-secondary-200 border-secondary-100 flex max-w-[360px] flex-col justify-between gap-7 rounded-xl border-2 p-7 xl:max-w-[390px] xl:justify-self-auto`}
+            className={`${className} bg-secondary-200 border-secondary-100 flex max-w-[360px] flex-col justify-between gap-7 rounded-xl border-2 p-7 transition-all duration-300 hover:scale-105 xl:max-w-[390px] xl:justify-self-auto`}
           >
             <div className='space-y-4'>
               <Icon className='text-primary-100 text-4xl' />
@@ -96,7 +96,12 @@ const Home: NextPage = () => {
               <p className='text-secondary-400'>{description}</p>
             </div>
             <div className='text-primary-100 flex items-center gap-2'>
-              <a href={link.url} target='_blank' rel='noreferrer noopener'>
+              <a
+                href={link.url}
+                target='_blank'
+                rel='noreferrer noopener'
+                className='hover-effect'
+              >
                 {link.title}
               </a>
               <HiOutlineArrowNarrowRight />
