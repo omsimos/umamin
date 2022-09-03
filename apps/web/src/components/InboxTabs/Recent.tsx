@@ -3,17 +3,15 @@ import { useQuery, useMutation } from 'react-query';
 import type { Message } from '@umamin/generated';
 import { formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
-import { IoIosCopy } from 'react-icons/io';
 import { BsCheck2 } from 'react-icons/bs';
 import { useRouter } from 'next/router';
-import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import { useLogEvent, useUser } from '@/hooks';
 import { editMessage, getMessages } from '@/api';
-import { Create, ImageFill, Info } from '@/components';
-import { MessageDialog, SettingsDialog } from '@/components/Dialog';
+import { Create } from '@/components';
+import { MessageDialog } from '@/components/Dialog';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -26,11 +24,10 @@ export const Recent = () => {
   const [pageNo, setPageNo] = useState(1);
   const [cursorId, setCursorId] = useState('');
   const [msgModal, setMsgModal] = useState(false);
-  const [settingsModal, setSettingsModal] = useState(false);
   const [messageData, setMessageData] = useState({} as Partial<Message>);
 
   const { data, status } = useSession();
-  const { image, email } = data?.user ?? {};
+  const { email } = data?.user ?? {};
 
   const { data: userData, refetch: refetchUser } = useUser(
     email ?? '',
@@ -70,13 +67,6 @@ export const Recent = () => {
     triggerEvent('open_message');
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(`https://umamin.link/to/${username}`);
-    toast.success('Copied to clipboard');
-
-    triggerEvent('copy_link');
-  };
-
   if (status === 'unauthenticated') {
     push('/login');
   }
@@ -86,7 +76,7 @@ export const Recent = () => {
       {!username ? (
         <Create refetch={refetchUser} />
       ) : (
-        <div className='mx-auto flex max-w-[500px] flex-col items-center'>
+        <div className='mx-auto flex flex-col items-center'>
           <MessageDialog
             username={username ?? ''}
             data={messageData}
@@ -94,44 +84,11 @@ export const Recent = () => {
             setIsOpen={setMsgModal}
           />
 
-          <SettingsDialog
-            email={email ?? ''}
-            isOpen={settingsModal}
-            setIsOpen={setSettingsModal}
-          />
-
-          <ImageFill
-            src={image}
-            objectFit='cover'
-            className='mb-4 h-[100px] w-[100px] rounded-full'
-          />
-          <div className='flex w-full gap-3'>
-            <button
-              type='button'
-              onClick={copyLink}
-              className='card flex w-full items-center gap-3 truncate px-4 py-3'
-            >
-              <IoIosCopy className='text-primary-100 flex-none' />
-              <p>umamin.link/to/{username}</p>
-            </button>
-
-            <button
-              onClick={() => setSettingsModal(true)}
-              type='button'
-              className='secondary-btn flex-none'
-            >
-              Settings
-            </button>
-          </div>
-
-          <div className='my-10 w-full text-left'>
-            <div className='mb-5 flex flex-col'>
+          <div className='mb-10 w-full text-left'>
+            <div className='mb-2 flex flex-col'>
               <p className='font-medium'>
-                {messages?.length || isLoading
-                  ? 'Latest messages'
-                  : 'No messages to show'}
+                {messages?.length || isLoading ? null : 'No messages to show'}
               </p>
-              <Info message='Tap a card to reveal an anonymous message.' />
             </div>
 
             <div className='space-y-6'>
