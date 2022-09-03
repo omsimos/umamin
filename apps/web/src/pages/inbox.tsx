@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Tab } from '@headlessui/react';
 import { IoIosCopy } from 'react-icons/io';
+import { RiSettings3Fill } from 'react-icons/ri';
 import { useSession } from 'next-auth/react';
 import { useLogEvent, useUser } from '@/hooks';
 
@@ -49,39 +50,43 @@ const Inbox = () => {
 
   return (
     <section className='grid place-items-center gap-y-5'>
-      <div className='flex w-full max-w-lg flex-col items-center px-2 sm:px-0'>
-        <SettingsDialog
-          email={email ?? ''}
-          isOpen={settingsModal}
-          setIsOpen={setSettingsModal}
-        />
+      <SettingsDialog
+        email={email ?? ''}
+        isOpen={settingsModal}
+        setIsOpen={setSettingsModal}
+      />
 
+      <div className='flex w-full max-w-lg items-center justify-center gap-3 px-2 sm:flex-row sm:gap-20 sm:px-0'>
         <ImageFill
           src={image}
           objectFit='cover'
-          className='mb-4 h-[100px] w-[100px] rounded-full'
+          className='h-[80px] w-[80px] rounded-full sm:h-[120px] sm:w-[120px]'
         />
-        <div className='flex w-full gap-3'>
+        <div className='flex flex-col gap-2'>
+          <div className='flex items-center justify-between'>
+            <p className='text-xl sm:text-2xl'>{username}</p>
+            <button
+              onClick={() => setSettingsModal(true)}
+              type='button'
+              className='border-secondary-100 flex items-center gap-3 rounded-lg border-2 px-4 py-2'
+            >
+              <p>Settings</p>
+              <RiSettings3Fill className='text-primary-100 flex-none' />
+            </button>
+          </div>
+
           <button
             type='button'
             onClick={copyLink}
-            className='card flex w-full items-center gap-3 truncate px-4 py-3'
+            className='border-secondary-100 flex items-center justify-center gap-3 truncate rounded-lg border-2 px-4 py-2'
           >
-            <IoIosCopy className='text-primary-100 flex-none' />
             <p>umamin.link/to/{username}</p>
-          </button>
-
-          <button
-            onClick={() => setSettingsModal(true)}
-            type='button'
-            className='secondary-btn flex-none'
-          >
-            Settings
+            <IoIosCopy className='text-primary-100 flex-none' />
           </button>
         </div>
       </div>
 
-      <div className='w-full max-w-lg px-2 pb-16 sm:px-0'>
+      <div className='w-full max-w-lg pb-16'>
         <Info message='Tap a card to reveal an anonymous message.' />
         <Tab.Group>
           <Tab.List className='bg-secondary-200 mt-1 mb-4 flex space-x-1 rounded-xl p-1'>
