@@ -20,7 +20,7 @@ export const Sent = () => {
         </div>
 
         {/* Message */}
-        <div className='flex min-h-[170px] flex-col justify-between gap-4 pr-7 pl-6 pt-10 pb-3 text-lg sm:pt-8 md:gap-3'>
+        <div className='flex min-h-[170px] flex-col justify-between gap-4 pr-5 pl-4 pt-10 pb-3 text-lg sm:pl-6 sm:pr-7 sm:pt-8 md:gap-3'>
           <ChatBubble
             state='receive'
             senderInfo
