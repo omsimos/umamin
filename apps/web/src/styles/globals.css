@@ -91,7 +91,7 @@
   }
 
   .chat-send {
-    @apply bg-primary-200 before:bg-primary-200 after:bg-secondary-200 self-end;
+    @apply after:bg-secondary-200 self-end bg-[#CF49A3] before:bg-[#CF49A3];
   }
 
   .chat-receive {

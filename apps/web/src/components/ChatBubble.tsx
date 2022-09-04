@@ -42,7 +42,9 @@ export const ChatBubble = ({ state, content, senderInfo }: ChatBubbleProps) => {
               : 'chat-receive chat-p receive'
           } inline-block max-w-[255px] px-5 py-4 text-white`}
         >
-          {state === 'receive' ? content : 'WARN: Change state prop to send.'}
+          {state === 'receive'
+            ? content
+            : 'WARN: Change state prop to receive or remove senderInfo prop.'}
         </p>
       </div>
     </div>
