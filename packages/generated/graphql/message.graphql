@@ -29,3 +29,7 @@ mutation deleteMessage($id: ID!) {
 mutation sendMessage($input: SendMessageInput!) {
   sendMessage(input: $input)
 }
+
+mutation addReply($id: ID!, $content: String!) {
+  addReply(id: $id, content: $content)
+}

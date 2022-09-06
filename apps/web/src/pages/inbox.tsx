@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Tab } from '@headlessui/react';
 import { IoIosCopy } from 'react-icons/io';
-import { RiSettings3Fill } from 'react-icons/ri';
 import { useSession } from 'next-auth/react';
-import { useLogEvent, useUser } from '@/hooks';
+import { RiSettings3Fill } from 'react-icons/ri';
 
+import { useLogEvent, useUser } from '@/hooks';
 import { ImageFill, Info } from '@/components';
 import { Sent } from '@/components/InboxTabs/Sent';
 import { Seen } from '@/components/InboxTabs/Seen';

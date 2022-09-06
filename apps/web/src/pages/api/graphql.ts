@@ -44,21 +44,37 @@ export default async function handler(
 ) {
   res.setHeader('Cache-Control', ['s-maxage=1', 'stale-while-revalidate']);
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (process.env.NODE_ENV === 'development') {
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader(
+      'Access-Control-Allow-Origin',
+      'https://studio.apollographql.com'
+    );
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Methods, Access-Control-Allow-Origin, Access-Control-Allow-Credentials, Access-Control-Allow-Headers'
+    );
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'POST, GET, PUT, PATCH, DELETE, OPTIONS, HEAD'
+    );
+    if (req.method === 'OPTIONS') {
+      res.end();
+      return false;
+    }
+  } else {
+    try {
+      await limiter.check(res, 10, 'CACHE_TOKEN'); // 10 requests per minute
+    } catch {
+      res
+        .status(429)
+        .json({ errors: [{ message: 'You are being rate limited' }] });
+    }
 
-  const token = await getToken({ req });
-  if (!token) {
-    return res.status(401).json({ error: 'Not authorized' });
-  }
-
-  try {
-    await limiter.check(res, 10, 'CACHE_TOKEN'); // 10 requests per minute
-  } catch {
-    res
-      .status(429)
-      .json({ errors: [{ message: 'You are being rate limited' }] });
+    const token = await getToken({ req });
+    if (!token) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
   }
 
   await startServer;

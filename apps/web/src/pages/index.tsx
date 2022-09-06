@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
+
 import { indexItems } from '@/utils/constants';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {

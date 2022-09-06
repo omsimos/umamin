@@ -131,4 +131,23 @@ export class MessageResolver {
 
     return 'Message deleted';
   }
+
+  @Mutation(() => String)
+  async addReply(
+    @Arg('id', () => ID) id: string,
+    @Arg('content', () => String) content: string,
+    @Ctx() { prisma }: TContext
+  ) {
+    try {
+      await prisma.message.update({
+        where: { id },
+        data: { reply: content },
+      });
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+
+    return 'Reply added';
+  }
 }
