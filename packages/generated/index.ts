@@ -24,6 +24,7 @@ export type Message = {
   isOpened: Scalars['Boolean'];
   receiverId: Scalars['String'];
   receiverMsg: Scalars['String'];
+  reply?: Maybe<Scalars['String']>;
   senderId?: Maybe<Scalars['String']>;
 };
 
@@ -118,20 +119,22 @@ export type User = {
   username?: Maybe<Scalars['String']>;
 };
 
+export type MessageFieldsFragment = { __typename?: 'Message', id: string, reply?: string | null, content: string, receiverMsg: string };
+
 export type GetMessagesQueryVariables = Exact<{
   userId: Scalars['ID'];
   cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type GetMessagesQuery = { __typename?: 'Query', messages?: Array<{ __typename?: 'Message', id: string, content: string, isOpened: boolean, createdAt: any, receiverMsg: string }> | null };
+export type GetMessagesQuery = { __typename?: 'Query', messages?: Array<{ __typename?: 'Message', isOpened: boolean, createdAt: any, id: string, reply?: string | null, content: string, receiverMsg: string }> | null };
 
 export type GetMessageByIdQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type GetMessageByIdQuery = { __typename?: 'Query', message: { __typename?: 'Message', id: string, content: string, senderId?: string | null, receiverId: string, receiverMsg: string } };
+export type GetMessageByIdQuery = { __typename?: 'Query', message: { __typename?: 'Message', senderId?: string | null, receiverId: string, id: string, reply?: string | null, content: string, receiverMsg: string } };
 
 export type EditMessageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -194,29 +197,32 @@ export type DeleteUserMutationVariables = Exact<{
 
 export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: string };
 
-
+export const MessageFieldsFragmentDoc = gql`
+    fragment MessageFields on Message {
+  id
+  reply
+  content
+  receiverMsg
+}
+    `;
 export const GetMessagesDocument = gql`
     query getMessages($userId: ID!, $cursorId: ID) {
   messages(userId: $userId, cursorId: $cursorId) {
-    id
-    content
     isOpened
     createdAt
-    receiverMsg
+    ...MessageFields
   }
 }
-    `;
+    ${MessageFieldsFragmentDoc}`;
 export const GetMessageByIdDocument = gql`
     query getMessageById($id: ID!) {
   message(id: $id) {
-    id
-    content
     senderId
     receiverId
-    receiverMsg
+    ...MessageFields
   }
 }
-    `;
+    ${MessageFieldsFragmentDoc}`;
 export const EditMessageDocument = gql`
     mutation editMessage($id: ID!, $isOpened: Boolean!) {
   editMessage(id: $id, isOpened: $isOpened)

@@ -9,6 +9,9 @@ export class Message {
   @Field(() => String)
   content: string;
 
+  @Field(() => String, { nullable: true })
+  reply: string | null;
+
   @Field(() => String)
   receiverMsg: string;
 
