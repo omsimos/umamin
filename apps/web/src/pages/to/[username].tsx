@@ -81,10 +81,14 @@ const SendTo = ({ username }: { username: string }) => {
 
             {/* Message */}
             <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 pt-10 sm:space-y-0 sm:px-7 md:mb-4'>
-              <ChatBubble state='receive' content={user.message} senderInfo />
+              <ChatBubble
+                type='receiver'
+                content={user.message}
+                userData={{ username, image: user.image }}
+              />
 
               {data?.sendMessage && (
-                <ChatBubble state='send' content={data.sendMessage} />
+                <ChatBubble type='sender' content={data.sendMessage} />
               )}
             </div>
 
@@ -102,7 +106,7 @@ const SendTo = ({ username }: { username: string }) => {
                     minLength={3}
                     maxLength={200}
                     type='text'
-                    placeholder='Send an anonymous message..'
+                    placeholder='Send an anonymous message...'
                     className='bg-secondary-100 w-full rounded-full py-3 px-5 pr-12 outline-none transition-all'
                   />
 

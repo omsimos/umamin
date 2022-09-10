@@ -1,16 +1,19 @@
 import React from 'react';
+import { User } from '@umamin/generated';
+
+import { ImageFill } from './ImageFill';
 
 interface ChatBubbleProps {
-  state: 'send' | 'receive';
+  type: 'sender' | 'receiver';
   content: string;
-  senderInfo?: boolean;
+  userData?: Pick<User, 'username' | 'image'>;
 }
 
-export const ChatBubble = ({ state, content, senderInfo }: ChatBubbleProps) => {
-  return !senderInfo ? (
+export const ChatBubble = ({ type, content, userData }: ChatBubbleProps) => {
+  return !userData ? (
     <p
       className={`${
-        state === 'send'
+        type === 'sender'
           ? 'chat-send chat-p send'
           : 'chat-receive chat-p receive'
       } inline-block max-w-[255px] px-5 py-4 text-white`}
@@ -18,33 +21,25 @@ export const ChatBubble = ({ state, content, senderInfo }: ChatBubbleProps) => {
       {content}
     </p>
   ) : (
-    <div className='flex space-x-2'>
-      {/*
-                <Image
-                width={35}
-                height={35}
-                layout="fixed"
-                src={message.author.photoURL as string}
-                alt="user image"
-                className="z-10 rounded-full"
-                /> 
+    <div className='flex space-x-2 items-end'>
+      <ImageFill
+        src={userData.image as string}
+        alt='user image'
+        className='rounded-full w-[35px] h-[35px] z-10 bottom-3'
+      />
 
-            */}
-      <span className='relative bottom-2 z-10 inline-block h-[35px] w-[35px] self-end rounded-full bg-gray-500' />
       <div className='relative self-start'>
         <span className='text-secondary-400 absolute left-4 -top-4 block text-xs'>
-          Eliza
+          {userData.username}
         </span>
         <p
           className={`${
-            state === 'send'
+            type === 'sender'
               ? 'chat-send chat-p send'
               : 'chat-receive chat-p receive'
           } inline-block max-w-[255px] px-5 py-4 text-white`}
         >
-          {state === 'receive'
-            ? content
-            : 'WARN: Change state prop to receive or remove senderInfo prop.'}
+          {content}
         </p>
       </div>
     </div>

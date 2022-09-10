@@ -43,8 +43,8 @@ export const Seen = () => {
 
           {/* Message */}
           <div className='flex min-h-[170px] flex-col justify-between gap-4 px-5 pt-10 pb-3 sm:px-7 sm:pt-7 md:gap-3'>
-            <ChatBubble state='send' content={m.receiverMsg} />
-            <ChatBubble state='receive' content={m.content} />
+            <ChatBubble type='sender' content={m.receiverMsg} />
+            <ChatBubble type='receiver' content={m.content} />
           </div>
 
           {/* Send Message */}

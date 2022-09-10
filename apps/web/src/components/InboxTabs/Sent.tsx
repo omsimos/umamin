@@ -36,14 +36,24 @@ export const Sent = () => {
 
           {/* Message */}
           <div className='flex min-h-[170px] flex-col justify-between gap-4 pr-5 pl-4 pt-10 pb-3 sm:pl-6 sm:pr-7 sm:pt-8 md:gap-3'>
-            <ChatBubble state='receive' senderInfo content={m.receiverMsg} />
-            <ChatBubble state='send' content={m.content} />
+            <ChatBubble
+              type='receiver'
+              content={m.receiverMsg}
+              userData={{
+                username: userData?.username,
+                image: userData?.image,
+              }}
+            />
+            <ChatBubble type='sender' content={m.content} />
 
             {m.reply && (
               <ChatBubble
-                state='receive'
-                senderInfo
-                content='Excellent! See you Saturday at 1pm in front of the cafe. 😉'
+                type='receiver'
+                content={m.reply}
+                userData={{
+                  username: userData?.username,
+                  image: userData?.image,
+                }}
               />
             )}
           </div>
