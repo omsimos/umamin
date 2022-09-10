@@ -3,7 +3,6 @@ import { useQuery, useMutation } from 'react-query';
 import type { Message } from '@umamin/generated';
 import { formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
-import { BsCheck2 } from 'react-icons/bs';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
@@ -113,21 +112,11 @@ export const Recent = () => {
                         {m.receiverMsg}
                       </p>
                     </div>
-                    <div className='text-secondary-400 flex items-center justify-between text-sm font-medium italic'>
-                      <p>
-                        {formatDistanceToNow(new Date(m.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </p>
-                      <div
-                        className={
-                          m.isOpened ? 'flex items-center space-x-1' : 'hidden'
-                        }
-                      >
-                        <p>Seen</p>
-                        <BsCheck2 className='text-base' />
-                      </div>
-                    </div>
+                    <p className='text-secondary-400 text-sm font-medium italic'>
+                      {formatDistanceToNow(new Date(m.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </p>
                   </button>
                 ))
               )}
