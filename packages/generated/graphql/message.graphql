@@ -5,8 +5,16 @@ fragment MessageFields on Message {
   receiverMsg
 }
 
-query getMessages($userId: ID!, $cursorId: ID) {
-  messages(userId: $userId, cursorId: $cursorId) {
+query getMessages($userId: ID!, $cursorId: ID, $type: String!) {
+  getMessages(userId: $userId, cursorId: $cursorId, type: $type) {
+    isOpened
+    createdAt
+    ...MessageFields
+  }
+}
+
+query getRepliedMessages($userId: ID!, $cursorId: ID) {
+  getRepliedMessages(userId: $userId, cursorId: $cursorId) {
     isOpened
     createdAt
     ...MessageFields

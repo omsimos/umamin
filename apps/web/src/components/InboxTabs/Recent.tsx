@@ -4,12 +4,11 @@ import type { Message } from '@umamin/generated';
 import { formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { BsCheck2 } from 'react-icons/bs';
-import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import { useLogEvent, useUser } from '@/hooks';
-import { editMessage, getMessages } from '@/api';
+import { editMessage, getMessages, queryClient } from '@/api';
 import { Create } from '@/components';
 import { MessageDialog } from '@/components/Dialog';
 
@@ -18,7 +17,6 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 });
 
 export const Recent = () => {
-  const { push } = useRouter();
   const triggerEvent = useLogEvent();
 
   const [pageNo, setPageNo] = useState(1);
@@ -26,7 +24,7 @@ export const Recent = () => {
   const [msgModal, setMsgModal] = useState(false);
   const [messageData, setMessageData] = useState({} as Partial<Message>);
 
-  const { data, status } = useSession();
+  const { data } = useSession();
   const { email } = data?.user ?? {};
 
   const { data: userData, refetch: refetchUser } = useUser(
@@ -40,9 +38,9 @@ export const Recent = () => {
     refetch,
     isLoading,
   } = useQuery(
-    ['messages', { userId: userData?.id ?? '', cursorId }],
-    () => getMessages({ userId: userData?.id ?? '', cursorId }),
-    { select: (data) => data.messages, enabled: !!userData?.id }
+    ['messages', { userId: userData?.id ?? '', cursorId, type: 'recent' }],
+    () => getMessages({ userId: userData?.id ?? '', cursorId, type: 'recent' }),
+    { select: (data) => data.getMessages, enabled: !!userData?.id }
   );
 
   const { mutate } = useMutation(editMessage);
@@ -59,6 +57,10 @@ export const Recent = () => {
         {
           onSuccess: () => {
             refetch();
+            queryClient.invalidateQueries([
+              'messages',
+              { userId: userData?.id ?? '', cursorId: '', type: 'seen' },
+            ]);
           },
         }
       );
@@ -66,10 +68,6 @@ export const Recent = () => {
     setMsgModal(true);
     triggerEvent('open_message');
   };
-
-  if (status === 'unauthenticated') {
-    push('/login');
-  }
 
   return (
     <section className='space-y-8'>
@@ -85,11 +83,9 @@ export const Recent = () => {
           />
 
           <div className='mb-10 w-full text-left'>
-            <div className='mb-2 flex flex-col'>
-              <p className='font-medium'>
-                {messages?.length || isLoading ? null : 'No messages to show'}
-              </p>
-            </div>
+            <p className='font-medium'>
+              {messages?.length || isLoading ? null : 'No messages to show'}
+            </p>
 
             <div className='space-y-6'>
               {isLoading ? (

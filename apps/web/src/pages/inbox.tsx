@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Tab } from '@headlessui/react';
+import { useRouter } from 'next/router';
 import { IoIosCopy } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import { RiSettings3Fill } from 'react-icons/ri';
 
-import { useLogEvent, useUser } from '@/hooks';
 import { ImageFill, Info } from '@/components';
+import { useLogEvent, useUser } from '@/hooks';
 import { Sent } from '@/components/InboxTabs/Sent';
 import { Seen } from '@/components/InboxTabs/Seen';
 import { SettingsDialog } from '@/components/Dialog';
@@ -17,9 +18,10 @@ function classNames(...classes: any[]) {
 }
 
 const Inbox = () => {
+  const { push } = useRouter();
   const [settingsModal, setSettingsModal] = useState(false);
 
-  const { data } = useSession();
+  const { data, status } = useSession();
   const triggerEvent = useLogEvent();
   const { image, email } = data?.user ?? {};
 
@@ -48,22 +50,26 @@ const Inbox = () => {
     },
   ];
 
+  if (status === 'unauthenticated') {
+    push('/login');
+  }
+
   return (
-    <section className='grid place-items-center gap-y-5'>
+    <section className='max-w-lg mx-auto'>
       <SettingsDialog
         email={email ?? ''}
         isOpen={settingsModal}
         setIsOpen={setSettingsModal}
       />
 
-      <div className='flex w-full max-w-lg items-center justify-center gap-3 px-2 sm:flex-row sm:gap-20 sm:px-0'>
+      <div className='flex w-full items-center justify-between px-4 mb-5'>
         <ImageFill
           src={image}
           objectFit='cover'
           className='h-[80px] w-[80px] rounded-full sm:h-[120px] sm:w-[120px]'
         />
-        <div className='flex flex-col gap-2'>
-          <div className='flex items-center justify-between'>
+        <div className='flex flex-col gap-2 items-end'>
+          <div className='flex items-center gap-4'>
             <p className='text-xl sm:text-2xl'>{username}</p>
             <button
               onClick={() => setSettingsModal(true)}
@@ -86,7 +92,7 @@ const Inbox = () => {
         </div>
       </div>
 
-      <div className='w-full max-w-lg pb-16'>
+      <div className='w-full pb-16'>
         <Info message='Tap a card to reveal an anonymous message.' />
         <Tab.Group>
           <Tab.List className='bg-secondary-200 mt-1 mb-4 flex space-x-1 rounded-xl p-1'>

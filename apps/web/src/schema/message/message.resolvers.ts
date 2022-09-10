@@ -25,7 +25,43 @@ export class MessageResolver {
   }
 
   @Query(() => [Message], { nullable: true })
-  async messages(
+  async getMessages(
+    @Arg('userId', () => ID) id: string,
+    @Arg('type', () => String) type: 'recent' | 'seen',
+    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
+    /* @Arg('goPrev', () => Boolean) goPrev: boolean, */
+    @Ctx() { prisma }: TContext
+  ): Promise<Message[] | null> {
+    try {
+      let messages: Message[];
+
+      if (!cursorId) {
+        messages = await prisma.message.findMany({
+          where: { receiverId: id, isOpened: type === 'seen' },
+          orderBy: { createdAt: 'desc' },
+          take: 3,
+        });
+      } else {
+        messages = await prisma.message.findMany({
+          where: { receiverId: id },
+          orderBy: { createdAt: 'desc' },
+          take: 3,
+          skip: 1,
+          cursor: {
+            id: cursorId,
+          },
+        });
+      }
+
+      return messages;
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Query(() => [Message], { nullable: true })
+  async getRepliedMessages(
     @Arg('userId', () => ID) id: string,
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     /* @Arg('goPrev', () => Boolean) goPrev: boolean, */
@@ -36,22 +72,27 @@ export class MessageResolver {
 
       if (!cursorId) {
         messages = await prisma.message.findMany({
-          where: { receiverId: id },
+          where: {
+            receiverId: id,
+            NOT: [
+              {
+                reply: null,
+              },
+            ],
+          },
           orderBy: { createdAt: 'desc' },
           take: 3,
         });
-        /* } else if (goPrev) {
-         *   messages = await prisma.message.findMany({
-         *     where: { receiverId: email },
-         *     orderBy: { createdAt: 'desc' },
-         *     take: -3,
-         *     cursor: {
-         *       id: cursorId,
-         *     },
-         *   }); */
       } else {
         messages = await prisma.message.findMany({
-          where: { receiverId: id },
+          where: {
+            receiverId: id,
+            NOT: [
+              {
+                reply: null,
+              },
+            ],
+          },
           orderBy: { createdAt: 'desc' },
           take: 3,
           skip: 1,
