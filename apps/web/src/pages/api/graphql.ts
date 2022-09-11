@@ -70,7 +70,7 @@ export default async function handler(
   }
 
   try {
-    await limiter.check(res, 10, 'CACHE_TOKEN'); // 10 requests per minute
+    await limiter.check(res, 20, 'CACHE_TOKEN'); // 10 requests per minute
   } catch {
     res
       .status(429)

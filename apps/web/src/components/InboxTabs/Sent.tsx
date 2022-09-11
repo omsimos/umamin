@@ -14,7 +14,7 @@ export const Sent = () => {
   const { data: userData } = useUser(email ?? '', 'email');
 
   const { data: messages } = useQuery(
-    ['messages', { userId: userData?.id ?? '', cursorId: '', type: 'seen' }],
+    ['sent_messages', { userId: userData?.id ?? '', cursorId: '' }],
     () => getRepliedMessages({ userId: userData?.id ?? '', cursorId: '' }),
     { select: (data) => data.getRepliedMessages, enabled: !!userData?.id }
   );
@@ -24,7 +24,10 @@ export const Sent = () => {
       {!messages?.length && <p className='font-medium'>No messages to show</p>}
 
       {messages?.map((m) => (
-        <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2'>
+        <div
+          key={m.id}
+          className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2'
+        >
           <div className='border-secondary-100 flex items-center justify-between border-b-2 bg-[#171819] px-7 py-2'>
             <p className='font-medium capitalize text-gray-100'>
               <span className='font-light text-gray-400'>To&#58;</span> {m.id}

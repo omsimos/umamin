@@ -6,10 +6,10 @@ import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
-import { useLogEvent, useUser } from '@/hooks';
-import { editMessage, getMessages, queryClient } from '@/api';
 import { Create } from '@/components';
+import { useLogEvent, useUser } from '@/hooks';
 import { MessageDialog } from '@/components/Dialog';
+import { editMessage, getMessages, queryClient } from '@/api';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -37,7 +37,10 @@ export const Recent = () => {
     refetch,
     isLoading,
   } = useQuery(
-    ['messages', { userId: userData?.id ?? '', cursorId, type: 'recent' }],
+    [
+      'recent_messages',
+      { userId: userData?.id ?? '', cursorId, type: 'recent' },
+    ],
     () => getMessages({ userId: userData?.id ?? '', cursorId, type: 'recent' }),
     { select: (data) => data.getMessages, enabled: !!userData?.id }
   );
@@ -47,7 +50,7 @@ export const Recent = () => {
   const handleOpen = (data: Partial<Message>) => {
     setMessageData(data);
 
-    if (data.id && !data.isOpened) {
+    if (data.id) {
       mutate(
         {
           id: data.id,
@@ -56,16 +59,14 @@ export const Recent = () => {
         {
           onSuccess: () => {
             refetch();
-            queryClient.invalidateQueries([
-              'messages',
-              { userId: userData?.id ?? '', cursorId: '', type: 'seen' },
-            ]);
+            queryClient.invalidateQueries(['seen_messages']);
+
+            triggerEvent('open_message');
           },
         }
       );
+      setMsgModal(true);
     }
-    setMsgModal(true);
-    triggerEvent('open_message');
   };
 
   return (

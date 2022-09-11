@@ -70,7 +70,7 @@ const Inbox = () => {
         />
         <div className='flex flex-col gap-2 items-end'>
           <div className='flex items-center gap-4'>
-            <p className='text-xl sm:text-2xl'>{username}</p>
+            <p className='text-lg md:text-xl'>{username}</p>
             <button
               onClick={() => setSettingsModal(true)}
               type='button'

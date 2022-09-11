@@ -3,6 +3,7 @@ import { analytics } from '@/utils/firebase';
 
 type EventType =
   | 'login'
+  | 'reply'
   | 'register'
   | 'open_message'
   | 'save_image'

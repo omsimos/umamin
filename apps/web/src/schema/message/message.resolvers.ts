@@ -80,7 +80,7 @@ export class MessageResolver {
               },
             ],
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { updatedAt: 'desc' },
           take: 3,
         });
       } else {
@@ -93,7 +93,7 @@ export class MessageResolver {
               },
             ],
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { updatedAt: 'desc' },
           take: 3,
           skip: 1,
           cursor: {
