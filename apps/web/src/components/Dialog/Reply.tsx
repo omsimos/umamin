@@ -102,7 +102,7 @@ export const ReplyDialog = ({
             minLength={3}
             maxLength={200}
             type='text'
-            placeholder='Reply..'
+            placeholder='Reply...'
             className='bg-secondary-100 w-full rounded-full py-3 px-5 pr-12 outline-none transition-all md:py-2'
           />
 

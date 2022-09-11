@@ -21,15 +21,17 @@ export const ChatBubble = ({ type, content, userData }: ChatBubbleProps) => {
       {content}
     </p>
   ) : (
-    <div className='flex space-x-2 items-end'>
-      <ImageFill
-        src={userData.image as string}
-        alt='user image'
-        className='rounded-full w-[35px] h-[35px] z-10 bottom-3'
-      />
+    <div className='flex items-end space-x-2'>
+      {userData.image && (
+        <ImageFill
+          src={userData.image as string}
+          alt='user image'
+          className='bottom-3 z-10 h-[35px] w-[35px] rounded-full'
+        />
+      )}
 
       <div className='relative self-start'>
-        <span className='text-secondary-400 absolute left-4 -top-4 block text-xs'>
+        <span className='text-secondary-400 absolute left-4 -top-5 block text-xs'>
           {userData.username}
         </span>
         <p

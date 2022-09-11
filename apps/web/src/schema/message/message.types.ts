@@ -9,6 +9,9 @@ export class Message {
   @Field(() => String)
   content: string;
 
+  @Field(() => String)
+  username: string;
+
   @Field(() => String, { nullable: true })
   reply: string | null;
 
@@ -31,7 +34,7 @@ export class Message {
 @InputType()
 export class SendMessageInput {
   @Field(() => String, { nullable: true })
-  senderUsername: string;
+  senderEmail: string;
 
   @IsNotEmpty()
   @Field(() => String)

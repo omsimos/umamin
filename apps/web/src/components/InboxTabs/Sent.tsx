@@ -3,9 +3,9 @@ import { useSession } from 'next-auth/react';
 import { useQuery } from 'react-query';
 import Image from 'next/image';
 
-import { ChatBubble } from '../ChatBubble';
 import { useUser } from '@/hooks';
-import { getRepliedMessages } from '@/api';
+import { getMessages } from '@/api';
+import { ChatBubble } from '../ChatBubble';
 
 export const Sent = () => {
   const { data } = useSession();
@@ -14,9 +14,10 @@ export const Sent = () => {
   const { data: userData } = useUser(email ?? '', 'email');
 
   const { data: messages } = useQuery(
-    ['sent_messages', { userId: userData?.id ?? '', cursorId: '' }],
-    () => getRepliedMessages({ userId: userData?.id ?? '', cursorId: '' }),
-    { select: (data) => data.getRepliedMessages, enabled: !!userData?.id }
+    ['sent_messages', { userId: userData?.id ?? '', cursorId: '', type: 'sent' }],
+    () =>
+      getMessages({ userId: userData?.id ?? '', cursorId: '', type: 'sent' }),
+    { select: (data) => data.getMessages, enabled: !!userData?.id }
   );
 
   return (
@@ -30,7 +31,7 @@ export const Sent = () => {
         >
           <div className='border-secondary-100 flex items-center justify-between border-b-2 bg-[#171819] px-7 py-2'>
             <p className='font-medium capitalize text-gray-100'>
-              <span className='font-light text-gray-400'>To&#58;</span> {m.id}
+              <span className='font-light text-gray-400'>To&#58;</span> {m.username}
             </p>
             <div className='relative h-[40px] w-[110px]'>
               <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
@@ -43,8 +44,7 @@ export const Sent = () => {
               type='receiver'
               content={m.receiverMsg}
               userData={{
-                username: userData?.username,
-                image: userData?.image,
+                username: m?.username,
               }}
             />
             <ChatBubble type='sender' content={m.content} />
@@ -54,18 +54,12 @@ export const Sent = () => {
                 type='receiver'
                 content={m.reply}
                 userData={{
-                  username: userData?.username,
+                  username: m.username,
                   image: userData?.image,
                 }}
               />
             )}
           </div>
-
-          {!m.reply && (
-            <p className='text-secondary-400 mx-auto py-5 px-4 text-center md:px-5'>
-              No reply from Johndoe
-            </p>
-          )}
         </div>
       ))}
     </section>

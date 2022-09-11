@@ -16,7 +16,6 @@ export const {
   deleteMessage,
   getMessageById,
   editUserMessage,
-  getRepliedMessages,
 } = getSdk(gqlClient);
 
 export const queryClient = new QueryClient({

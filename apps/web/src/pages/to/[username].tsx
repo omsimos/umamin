@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import { useLogEvent, useUser } from '@/hooks';
-import { getUser, queryClient, sendMessage } from '@/api';
 import { ChatBubble } from '@/components/ChatBubble';
+import { getUser, queryClient, sendMessage } from '@/api';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -16,8 +17,11 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 
 const SendTo = ({ username }: { username: string }) => {
   const router = useRouter();
-  const { data: user } = useUser(username, 'username');
   const triggerEvent = useLogEvent();
+  const { data: user } = useUser(username, 'username');
+
+  const { data: session } = useSession();
+  const { email } = session?.user ?? {};
 
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
@@ -31,6 +35,7 @@ const SendTo = ({ username }: { username: string }) => {
         {
           input: {
             receiverUsername: username,
+            senderEmail: email,
             content: message,
             receiverMsg: user.message,
           },

@@ -5,29 +5,10 @@ import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
 export class MessageResolver {
-  @Query(() => Message)
-  async message(
-    @Arg('id', () => ID) id: string,
-    @Ctx() { prisma }: TContext
-  ): Promise<Message> {
-    try {
-      const message = await prisma.message.findUnique({ where: { id } });
-
-      if (!message) {
-        throw new Error('Message not found');
-      }
-
-      return message;
-    } catch (err: any) {
-      console.error(err);
-      throw new Error(err.message);
-    }
-  }
-
   @Query(() => [Message], { nullable: true })
   async getMessages(
     @Arg('userId', () => ID) id: string,
-    @Arg('type', () => String) type: 'recent' | 'seen',
+    @Arg('type', () => String) type: 'recent' | 'seen' | 'sent',
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     /* @Arg('goPrev', () => Boolean) goPrev: boolean, */
     @Ctx() { prisma }: TContext
@@ -35,65 +16,21 @@ export class MessageResolver {
     try {
       let messages: Message[];
 
+      const where =
+        type === 'sent'
+          ? { senderId: id }
+          : { receiverId: id, isOpened: type === 'seen' };
+
       if (!cursorId) {
         messages = await prisma.message.findMany({
-          where: { receiverId: id, isOpened: type === 'seen' },
+          where,
           orderBy: { createdAt: 'desc' },
           take: 3,
         });
       } else {
         messages = await prisma.message.findMany({
-          where: { receiverId: id },
+          where,
           orderBy: { createdAt: 'desc' },
-          take: 3,
-          skip: 1,
-          cursor: {
-            id: cursorId,
-          },
-        });
-      }
-
-      return messages;
-    } catch (err: any) {
-      console.error(err);
-      throw new Error(err.message);
-    }
-  }
-
-  @Query(() => [Message], { nullable: true })
-  async getRepliedMessages(
-    @Arg('userId', () => ID) id: string,
-    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    /* @Arg('goPrev', () => Boolean) goPrev: boolean, */
-    @Ctx() { prisma }: TContext
-  ): Promise<Message[] | null> {
-    try {
-      let messages: Message[];
-
-      if (!cursorId) {
-        messages = await prisma.message.findMany({
-          where: {
-            receiverId: id,
-            NOT: [
-              {
-                reply: null,
-              },
-            ],
-          },
-          orderBy: { updatedAt: 'desc' },
-          take: 3,
-        });
-      } else {
-        messages = await prisma.message.findMany({
-          where: {
-            receiverId: id,
-            NOT: [
-              {
-                reply: null,
-              },
-            ],
-          },
-          orderBy: { updatedAt: 'desc' },
           take: 3,
           skip: 1,
           cursor: {
@@ -112,12 +49,7 @@ export class MessageResolver {
   @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
-    {
-      senderUsername,
-      receiverUsername,
-      content,
-      receiverMsg,
-    }: SendMessageInput,
+    { senderEmail, receiverUsername, content, receiverMsg }: SendMessageInput,
     @Ctx() { prisma }: TContext
   ): Promise<String> {
     try {
@@ -125,10 +57,9 @@ export class MessageResolver {
         data: {
           content,
           receiverMsg,
-          sender: senderUsername
-            ? { connect: { username: senderUsername } }
-            : undefined,
+          sender: senderEmail ? { connect: { email: senderEmail } } : undefined,
           receiver: { connect: { username: receiverUsername } },
+          username: receiverUsername,
         },
       });
 

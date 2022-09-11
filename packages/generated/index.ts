@@ -26,6 +26,7 @@ export type Message = {
   receiverMsg: Scalars['String'];
   reply?: Maybe<Scalars['String']>;
   senderId?: Maybe<Scalars['String']>;
+  username: Scalars['String'];
 };
 
 export type Mutation = {
@@ -81,8 +82,6 @@ export type MutationSendMessageArgs = {
 export type Query = {
   __typename?: 'Query';
   getMessages?: Maybe<Array<Message>>;
-  getRepliedMessages?: Maybe<Array<Message>>;
-  message: Message;
   user?: Maybe<User>;
 };
 
@@ -91,17 +90,6 @@ export type QueryGetMessagesArgs = {
   cursorId?: InputMaybe<Scalars['ID']>;
   type: Scalars['String'];
   userId: Scalars['ID'];
-};
-
-
-export type QueryGetRepliedMessagesArgs = {
-  cursorId?: InputMaybe<Scalars['ID']>;
-  userId: Scalars['ID'];
-};
-
-
-export type QueryMessageArgs = {
-  id: Scalars['ID'];
 };
 
 
@@ -114,7 +102,7 @@ export type SendMessageInput = {
   content: Scalars['String'];
   receiverMsg: Scalars['String'];
   receiverUsername: Scalars['String'];
-  senderUsername?: InputMaybe<Scalars['String']>;
+  senderEmail?: InputMaybe<Scalars['String']>;
 };
 
 export type User = {
@@ -127,8 +115,6 @@ export type User = {
   username?: Maybe<Scalars['String']>;
 };
 
-export type MessageFieldsFragment = { __typename?: 'Message', id: string, reply?: string | null, content: string, receiverMsg: string };
-
 export type GetMessagesQueryVariables = Exact<{
   userId: Scalars['ID'];
   cursorId?: InputMaybe<Scalars['ID']>;
@@ -136,22 +122,7 @@ export type GetMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetMessagesQuery = { __typename?: 'Query', getMessages?: Array<{ __typename?: 'Message', isOpened: boolean, createdAt: any, id: string, reply?: string | null, content: string, receiverMsg: string }> | null };
-
-export type GetRepliedMessagesQueryVariables = Exact<{
-  userId: Scalars['ID'];
-  cursorId?: InputMaybe<Scalars['ID']>;
-}>;
-
-
-export type GetRepliedMessagesQuery = { __typename?: 'Query', getRepliedMessages?: Array<{ __typename?: 'Message', isOpened: boolean, createdAt: any, id: string, reply?: string | null, content: string, receiverMsg: string }> | null };
-
-export type GetMessageByIdQueryVariables = Exact<{
-  id: Scalars['ID'];
-}>;
-
-
-export type GetMessageByIdQuery = { __typename?: 'Query', message: { __typename?: 'Message', senderId?: string | null, receiverId: string, id: string, reply?: string | null, content: string, receiverMsg: string } };
+export type GetMessagesQuery = { __typename?: 'Query', getMessages?: Array<{ __typename?: 'Message', id: string, reply?: string | null, content: string, username: string, isOpened: boolean, createdAt: any, receiverMsg: string }> | null };
 
 export type EditMessageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -214,41 +185,20 @@ export type DeleteUserMutationVariables = Exact<{
 
 export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: string };
 
-export const MessageFieldsFragmentDoc = gql`
-    fragment MessageFields on Message {
-  id
-  reply
-  content
-  receiverMsg
-}
-    `;
+
 export const GetMessagesDocument = gql`
     query getMessages($userId: ID!, $cursorId: ID, $type: String!) {
   getMessages(userId: $userId, cursorId: $cursorId, type: $type) {
+    id
+    reply
+    content
+    username
     isOpened
     createdAt
-    ...MessageFields
+    receiverMsg
   }
 }
-    ${MessageFieldsFragmentDoc}`;
-export const GetRepliedMessagesDocument = gql`
-    query getRepliedMessages($userId: ID!, $cursorId: ID) {
-  getRepliedMessages(userId: $userId, cursorId: $cursorId) {
-    isOpened
-    createdAt
-    ...MessageFields
-  }
-}
-    ${MessageFieldsFragmentDoc}`;
-export const GetMessageByIdDocument = gql`
-    query getMessageById($id: ID!) {
-  message(id: $id) {
-    senderId
-    receiverId
-    ...MessageFields
-  }
-}
-    ${MessageFieldsFragmentDoc}`;
+    `;
 export const EditMessageDocument = gql`
     mutation editMessage($id: ID!, $isOpened: Boolean!) {
   editMessage(id: $id, isOpened: $isOpened)
@@ -305,12 +255,6 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
   return {
     getMessages(variables: GetMessagesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetMessagesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMessagesQuery>(GetMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMessages', 'query');
-    },
-    getRepliedMessages(variables: GetRepliedMessagesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetRepliedMessagesQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetRepliedMessagesQuery>(GetRepliedMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRepliedMessages', 'query');
-    },
-    getMessageById(variables: GetMessageByIdQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetMessageByIdQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetMessageByIdQuery>(GetMessageByIdDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMessageById', 'query');
     },
     editMessage(variables: EditMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditMessageMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<EditMessageMutation>(EditMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editMessage', 'mutation');

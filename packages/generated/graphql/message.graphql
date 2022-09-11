@@ -1,31 +1,12 @@
-fragment MessageFields on Message {
-  id
-  reply
-  content
-  receiverMsg
-}
-
 query getMessages($userId: ID!, $cursorId: ID, $type: String!) {
   getMessages(userId: $userId, cursorId: $cursorId, type: $type) {
+    id
+    reply
+    content
+    username
     isOpened
     createdAt
-    ...MessageFields
-  }
-}
-
-query getRepliedMessages($userId: ID!, $cursorId: ID) {
-  getRepliedMessages(userId: $userId, cursorId: $cursorId) {
-    isOpened
-    createdAt
-    ...MessageFields
-  }
-}
-
-query getMessageById($id: ID!) {
-  message(id: $id) {
-    senderId
-    receiverId
-    ...MessageFields
+    receiverMsg
   }
 }
 
