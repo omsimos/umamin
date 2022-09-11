@@ -14,7 +14,6 @@ export const {
   editMessage,
   editUsername,
   deleteMessage,
-  getMessageById,
   editUserMessage,
 } = getSdk(gqlClient);
 

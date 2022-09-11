@@ -14,7 +14,7 @@ export const Sent = () => {
   const { data: userData } = useUser(email ?? '', 'email');
 
   const { data: messages } = useQuery(
-    ['sent_messages', { userId: userData?.id ?? '', cursorId: '', type: 'sent' }],
+    ['messages', { userId: userData?.id ?? '', cursorId: '', type: 'sent' }],
     () =>
       getMessages({ userId: userData?.id ?? '', cursorId: '', type: 'sent' }),
     { select: (data) => data.getMessages, enabled: !!userData?.id }
@@ -31,7 +31,8 @@ export const Sent = () => {
         >
           <div className='border-secondary-100 flex items-center justify-between border-b-2 bg-[#171819] px-7 py-2'>
             <p className='font-medium capitalize text-gray-100'>
-              <span className='font-light text-gray-400'>To&#58;</span> {m.username}
+              <span className='font-light text-gray-400'>To&#58;</span>{' '}
+              {m.username}
             </p>
             <div className='relative h-[40px] w-[110px]'>
               <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import type { Message } from '@umamin/generated';
 import { formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
@@ -7,8 +7,8 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import { useLogEvent, useUser } from '@/hooks';
+import { editMessage, getMessages } from '@/api';
 import { MessageDialog } from '@/components/Dialog';
-import { editMessage, getMessages, queryClient } from '@/api';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -23,12 +23,10 @@ export const Recent = () => {
   const [messageData, setMessageData] = useState({} as Partial<Message>);
 
   const { data } = useSession();
-  const { email } = data?.user ?? {};
+  const queryClient = useQueryClient();
 
-  const { data: userData } = useUser(
-    email ?? '',
-    'email'
-  );
+  const { email } = data?.user ?? {};
+  const { data: userData } = useUser(email ?? '', 'email');
   const { username } = userData ?? {};
 
   const {
@@ -36,10 +34,7 @@ export const Recent = () => {
     refetch,
     isLoading,
   } = useQuery(
-    [
-      'recent_messages',
-      { userId: userData?.id ?? '', cursorId, type: 'recent' },
-    ],
+    ['messages', { userId: userData?.id ?? '', cursorId, type: 'recent' }],
     () => getMessages({ userId: userData?.id ?? '', cursorId, type: 'recent' }),
     { select: (data) => data.getMessages, enabled: !!userData?.id }
   );
@@ -47,9 +42,9 @@ export const Recent = () => {
   const { mutate } = useMutation(editMessage);
 
   const handleOpen = (data: Partial<Message>) => {
-    setMessageData(data);
-
     if (data.id) {
+      setMessageData(data);
+
       mutate(
         {
           id: data.id,
@@ -58,7 +53,10 @@ export const Recent = () => {
         {
           onSuccess: () => {
             refetch();
-            queryClient.invalidateQueries(['seen_messages']);
+            queryClient.invalidateQueries([
+              'messages',
+              { userId: userData?.id ?? '', cursorId: '', type: 'seen' },
+            ]);
 
             triggerEvent('open_message');
           },

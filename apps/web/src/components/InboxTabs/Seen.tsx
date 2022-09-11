@@ -20,10 +20,7 @@ export const Seen = () => {
   const { data: userData } = useUser(email ?? '', 'email');
 
   const { data: messages, refetch } = useQuery(
-    [
-      'seen_messages',
-      { userId: userData?.id ?? '', cursorId: '', type: 'seen' },
-    ],
+    ['messages', { userId: userData?.id ?? '', cursorId: '', type: 'seen' }],
     () =>
       getMessages({ userId: userData?.id ?? '', cursorId: '', type: 'seen' }),
     { select: (data) => data.getMessages }
