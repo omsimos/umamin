@@ -28,16 +28,16 @@ export const Recent = () => {
   const { email } = data?.user ?? {};
   const { data: userData } = useUser(email ?? '', 'email');
   const { username } = userData ?? {};
+  const queryArgs = { userId: userData?.id ?? '', cursorId, type: 'recent' };
 
   const {
     data: messages,
     refetch,
     isLoading,
-  } = useQuery(
-    ['messages', { userId: userData?.id ?? '', cursorId, type: 'recent' }],
-    () => getMessages({ userId: userData?.id ?? '', cursorId, type: 'recent' }),
-    { select: (data) => data.getMessages, enabled: !!userData?.id }
-  );
+  } = useQuery(['messages', queryArgs], () => getMessages(queryArgs), {
+    select: (data) => data.getMessages,
+    enabled: !!userData?.id,
+  });
 
   const { mutate } = useMutation(editMessage);
 

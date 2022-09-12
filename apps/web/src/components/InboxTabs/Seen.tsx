@@ -11,6 +11,8 @@ import { ChatBubble } from '../ChatBubble';
 import { ReplyData, ReplyDialog } from '../Dialog';
 
 export const Seen = () => {
+  const [pageNo, setPageNo] = useState(1);
+  const [cursorId, setCursorId] = useState('');
   const [openReply, setOpenReply] = useState(false);
   const [replyData, setMsgData] = useState({} as ReplyData);
 
@@ -18,13 +20,15 @@ export const Seen = () => {
   const { email } = data?.user ?? {};
 
   const { data: userData } = useUser(email ?? '', 'email');
+  const queryArgs = { userId: userData?.id ?? '', cursorId, type: 'seen' };
 
-  const { data: messages, refetch } = useQuery(
-    ['messages', { userId: userData?.id ?? '', cursorId: '', type: 'seen' }],
-    () =>
-      getMessages({ userId: userData?.id ?? '', cursorId: '', type: 'seen' }),
-    { select: (data) => data.getMessages }
-  );
+  const {
+    data: messages,
+    isLoading,
+    refetch,
+  } = useQuery(['messages', queryArgs], () => getMessages(queryArgs), {
+    select: (data) => data.getMessages,
+  });
 
   return (
     <section className='mb-8 flex flex-col space-y-12'>
@@ -73,6 +77,53 @@ export const Seen = () => {
           )}
         </div>
       ))}
+
+      {!messages?.length && cursorId && !isLoading && (
+        <div className='mt-24 flex justify-center'>
+          <button
+            onClick={() => {
+              setPageNo(1);
+              setCursorId('');
+            }}
+            className='hover:underline'
+            type='button'
+          >
+            &larr; Go back to latest messages
+          </button>
+        </div>
+      )}
+
+      {!isLoading && messages && messages?.length > 0 && (
+        <div className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}>
+          {cursorId && (
+            <button
+              className='hover:underline'
+              onClick={() => {
+                setPageNo(1);
+                setCursorId('');
+              }}
+              type='button'
+            >
+              &larr; Latest
+            </button>
+          )}
+
+          {cursorId && <p>{pageNo}</p>}
+
+          {messages.length === 3 && (
+            <button
+              className='hover:underline'
+              onClick={() => {
+                setPageNo(cursorId ? pageNo + 1 : 2);
+                setCursorId(messages?.length ? messages[2]?.id : '');
+              }}
+              type='button'
+            >
+              More &rarr;
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 };

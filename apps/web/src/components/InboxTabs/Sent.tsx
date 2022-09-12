@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery } from 'react-query';
 import Image from 'next/image';
@@ -8,15 +8,18 @@ import { getMessages } from '@/api';
 import { ChatBubble } from '../ChatBubble';
 
 export const Sent = () => {
+  const [pageNo, setPageNo] = useState(1);
+  const [cursorId, setCursorId] = useState('');
+
   const { data } = useSession();
   const { email } = data?.user ?? {};
 
   const { data: userData } = useUser(email ?? '', 'email');
+  const queryArgs = { userId: userData?.id ?? '', cursorId, type: 'sent' };
 
-  const { data: messages } = useQuery(
-    ['messages', { userId: userData?.id ?? '', cursorId: '', type: 'sent' }],
-    () =>
-      getMessages({ userId: userData?.id ?? '', cursorId: '', type: 'sent' }),
+  const { data: messages, isLoading } = useQuery(
+    ['messages', queryArgs],
+    () => getMessages(queryArgs),
     { select: (data) => data.getMessages, enabled: !!userData?.id }
   );
 
@@ -62,6 +65,53 @@ export const Sent = () => {
           </div>
         </div>
       ))}
+
+      {!messages?.length && cursorId && !isLoading && (
+        <div className='mt-24 flex justify-center'>
+          <button
+            onClick={() => {
+              setPageNo(1);
+              setCursorId('');
+            }}
+            className='hover:underline'
+            type='button'
+          >
+            &larr; Go back to latest messages
+          </button>
+        </div>
+      )}
+
+      {!isLoading && messages && messages?.length > 0 && (
+        <div className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}>
+          {cursorId && (
+            <button
+              className='hover:underline'
+              onClick={() => {
+                setPageNo(1);
+                setCursorId('');
+              }}
+              type='button'
+            >
+              &larr; Latest
+            </button>
+          )}
+
+          {cursorId && <p>{pageNo}</p>}
+
+          {messages.length === 3 && (
+            <button
+              className='hover:underline'
+              onClick={() => {
+                setPageNo(cursorId ? pageNo + 1 : 2);
+                setCursorId(messages?.length ? messages[2]?.id : '');
+              }}
+              type='button'
+            >
+              More &rarr;
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 };
