@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useMutation } from 'react-query';
 import { Message } from '@umamin/generated';
-import { useSession } from 'next-auth/react';
 import { RiSendPlaneFill } from 'react-icons/ri';
 
+import { addReply } from '@/api';
+import { useLogEvent } from '@/hooks';
 import { ImageFill } from '../ImageFill';
 import { ChatBubble } from '../ChatBubble';
-import { addReply, queryClient } from '@/api';
-import { useLogEvent, useUser } from '@/hooks';
 import { DialogContainer, DialogContainerProps } from '.';
 
 export type ReplyData = Pick<Message, 'id' | 'content' | 'receiverMsg'>;
@@ -28,10 +27,6 @@ export const ReplyDialog = ({
   const [message, setMessage] = useState('');
   const triggerEvent = useLogEvent();
 
-  const { data } = useSession();
-  const { email } = data?.user ?? {};
-
-  const { data: userData } = useUser(email ?? '', 'email');
   const { mutate } = useMutation(addReply);
 
   const handleReply: React.FormEventHandler = (e) => {
@@ -52,11 +47,6 @@ export const ReplyDialog = ({
           }, 500);
 
           toast.success('Reply sent');
-          queryClient.invalidateQueries([
-            'repliedMessages',
-            { userId: userData?.id ?? '', cursorId: '' },
-          ]);
-
           triggerEvent('open_message');
         },
       }

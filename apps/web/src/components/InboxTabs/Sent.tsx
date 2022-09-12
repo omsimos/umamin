@@ -56,7 +56,6 @@ export const Sent = () => {
                 content={m.reply}
                 userData={{
                   username: m.username,
-                  image: userData?.image,
                 }}
               />
             )}
