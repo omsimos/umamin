@@ -3,6 +3,7 @@ import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -19,9 +20,7 @@ const SendTo = ({ username }: { username: string }) => {
   const router = useRouter();
   const triggerEvent = useLogEvent();
   const { data: user } = useUser(username, 'username');
-
   const { data: session } = useSession();
-  const { email } = session?.user ?? {};
 
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
@@ -30,12 +29,15 @@ const SendTo = ({ username }: { username: string }) => {
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
-    if (user) {
+    if (user?.email === session?.user?.email) {
+      setMessage('');
+      toast.error("You can't send a message to yourself");
+    } else if (user) {
       mutate(
         {
           input: {
             receiverUsername: username,
-            senderEmail: email,
+            senderEmail: session?.user?.email,
             content: message,
             receiverMsg: user.message,
           },
