@@ -8,10 +8,8 @@ import { RiSettings3Fill } from 'react-icons/ri';
 
 import { ImageFill, Info } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
-import { Sent } from '@/components/InboxTabs/Sent';
-import { Seen } from '@/components/InboxTabs/Seen';
 import { SettingsDialog } from '@/components/Dialog';
-import { Recent } from '@/components/InboxTabs/Recent';
+import { Recent, Seen, Sent } from '@/components/InboxTabs';
 
 function classNames(...classes: any[]) {
   return classes.filter(Boolean).join(' ');

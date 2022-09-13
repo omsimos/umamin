@@ -3,16 +3,12 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import type { Message } from '@umamin/generated';
 import { formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import { useLogEvent, useUser } from '@/hooks';
 import { editMessage, getMessages } from '@/api';
 import { MessageDialog } from '@/components/Dialog';
-
-const AdContainer = dynamic(() => import('@/components/AdContainer'), {
-  ssr: false,
-});
+import { InboxTabContainer } from './Container';
 
 export const Recent = () => {
   const triggerEvent = useLogEvent();
@@ -67,108 +63,42 @@ export const Recent = () => {
   };
 
   return (
-    <section className='space-y-8'>
-      <div className='mx-auto flex flex-col items-center'>
-        <MessageDialog
-          username={username ?? ''}
-          data={messageData}
-          isOpen={msgModal}
-          setIsOpen={setMsgModal}
-        />
+    <InboxTabContainer
+      pageNo={pageNo}
+      cursorId={cursorId}
+      messages={messages}
+      isLoading={isLoading}
+      setPageNo={setPageNo}
+      setCursorId={setCursorId}
+    >
+      <MessageDialog
+        username={username ?? ''}
+        data={messageData}
+        isOpen={msgModal}
+        setIsOpen={setMsgModal}
+      />
 
-        <div className='mb-10 w-full text-left'>
-          <p className='font-medium'>
-            {messages?.length || isLoading ? null : 'No messages to show'}
-          </p>
-
-          <div className='space-y-6'>
-            {isLoading ? (
-              <div className='mt-24 flex justify-center'>
-                <span className='loader-2' />
-              </div>
-            ) : (
-              messages?.map((m) => (
-                <button
-                  type='button'
-                  key={m.id}
-                  onClick={() => handleOpen(m)}
-                  className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
-                >
-                  <div className='relative mb-3 h-[40px]'>
-                    <Image
-                      src='/assets/logo.svg'
-                      layout='fill'
-                      objectFit='contain'
-                    />
-                  </div>
-
-                  <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
-                    <p className='reply text-secondary-400'>{m.receiverMsg}</p>
-                  </div>
-                  <p className='text-secondary-400 text-sm font-medium italic'>
-                    {formatDistanceToNow(new Date(m.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </button>
-              ))
-            )}
-
-            {!messages?.length && cursorId && !isLoading && (
-              <div className='mt-24 flex justify-center'>
-                <button
-                  onClick={() => {
-                    setPageNo(1);
-                    setCursorId('');
-                  }}
-                  className='hover:underline'
-                  type='button'
-                >
-                  &larr; Go back to latest messages
-                </button>
-              </div>
-            )}
-
-            {!isLoading && messages && messages?.length > 0 && (
-              <div
-                className={`flex ${
-                  cursorId ? 'justify-between' : 'justify-end'
-                }`}
-              >
-                {cursorId && (
-                  <button
-                    className='hover:underline'
-                    onClick={() => {
-                      setPageNo(1);
-                      setCursorId('');
-                    }}
-                    type='button'
-                  >
-                    &larr; Latest
-                  </button>
-                )}
-
-                {cursorId && <p>{pageNo}</p>}
-
-                {messages.length === 3 && (
-                  <button
-                    className='hover:underline'
-                    onClick={() => {
-                      setPageNo(cursorId ? pageNo + 1 : 2);
-                      setCursorId(messages?.length ? messages[2]?.id : '');
-                    }}
-                    type='button'
-                  >
-                    More &rarr;
-                  </button>
-                )}
-              </div>
-            )}
+      {messages?.map((m) => (
+        <button
+          type='button'
+          key={m.id}
+          onClick={() => handleOpen(m)}
+          className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+        >
+          <div className='relative mb-3 h-[40px]'>
+            <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
           </div>
-        </div>
-      </div>
 
-      <AdContainer slot='7293553855' />
-    </section>
+          <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
+            <p className='reply text-secondary-400'>{m.receiverMsg}</p>
+          </div>
+          <p className='text-secondary-400 text-sm font-medium italic'>
+            {formatDistanceToNow(new Date(m.createdAt), {
+              addSuffix: true,
+            })}
+          </p>
+        </button>
+      ))}
+    </InboxTabContainer>
   );
 };

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useQuery } from 'react-query';
@@ -8,6 +7,7 @@ import { RiSendPlaneFill } from 'react-icons/ri';
 import { useUser } from '@/hooks';
 import { getMessages } from '@/api';
 import { ChatBubble } from '../ChatBubble';
+import { InboxTabContainer } from './Container';
 import { ReplyData, ReplyDialog } from '../Dialog';
 
 export const Seen = () => {
@@ -31,15 +31,20 @@ export const Seen = () => {
   });
 
   return (
-    <section className='mb-8 flex flex-col space-y-12'>
+    <InboxTabContainer
+      pageNo={pageNo}
+      cursorId={cursorId}
+      messages={messages}
+      isLoading={isLoading}
+      setPageNo={setPageNo}
+      setCursorId={setCursorId}
+    >
       <ReplyDialog
         refetch={refetch}
         isOpen={openReply}
-        setIsOpen={setOpenReply}
         replyData={replyData}
+        setIsOpen={setOpenReply}
       />
-
-      {!messages?.length && <p className='font-medium'>No messages to show</p>}
 
       {messages?.map((m) => (
         <div
@@ -77,53 +82,6 @@ export const Seen = () => {
           )}
         </div>
       ))}
-
-      {!messages?.length && cursorId && !isLoading && (
-        <div className='mt-24 flex justify-center'>
-          <button
-            onClick={() => {
-              setPageNo(1);
-              setCursorId('');
-            }}
-            className='hover:underline'
-            type='button'
-          >
-            &larr; Go back to latest messages
-          </button>
-        </div>
-      )}
-
-      {!isLoading && messages && messages?.length > 0 && (
-        <div className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}>
-          {cursorId && (
-            <button
-              className='hover:underline'
-              onClick={() => {
-                setPageNo(1);
-                setCursorId('');
-              }}
-              type='button'
-            >
-              &larr; Latest
-            </button>
-          )}
-
-          {cursorId && <p>{pageNo}</p>}
-
-          {messages.length === 3 && (
-            <button
-              className='hover:underline'
-              onClick={() => {
-                setPageNo(cursorId ? pageNo + 1 : 2);
-                setCursorId(messages?.length ? messages[2]?.id : '');
-              }}
-              type='button'
-            >
-              More &rarr;
-            </button>
-          )}
-        </div>
-      )}
-    </section>
+    </InboxTabContainer>
   );
 };
