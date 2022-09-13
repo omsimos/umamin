@@ -1,5 +1,4 @@
 import React, { Dispatch, SetStateAction } from 'react';
-import { GetMessagesQuery } from '@umamin/generated';
 import dynamic from 'next/dynamic';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
@@ -10,7 +9,7 @@ interface Props {
   pageNo: number;
   cursorId: string;
   isLoading: boolean;
-  messages?: GetMessagesQuery['getMessages'];
+  messages?: any;
   setPageNo: Dispatch<SetStateAction<number>>;
   setCursorId: Dispatch<SetStateAction<string>>;
   children: React.ReactNode;
@@ -76,7 +75,7 @@ export const InboxTabContainer = ({
               className='hover:underline'
               onClick={() => {
                 setPageNo(cursorId ? pageNo + 1 : 2);
-                setCursorId(messages?.length ? messages[2]?.id : '');
+                setCursorId(messages?.length ? messages[2]?.id! : '');
               }}
               type='button'
             >

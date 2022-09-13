@@ -1,12 +1,28 @@
-query getMessages($userId: ID!, $cursorId: ID, $type: String!) {
-  getMessages(userId: $userId, cursorId: $cursorId, type: $type) {
-    id
+fragment MessageFields on Message {
+  id
+  content
+  createdAt
+  receiverMsg
+}
+
+query getRecentMessages($userId: ID!, $cursorId: ID) {
+  getMessages(userId: $userId, cursorId: $cursorId, type: "recent") {
+    ...MessageFields
+  }
+}
+
+query getSeenMessages($userId: ID!, $cursorId: ID) {
+  getMessages(userId: $userId, cursorId: $cursorId, type: "seen") {
     reply
-    content
+    ...MessageFields
+  }
+}
+
+query getSentMessages($userId: ID!, $cursorId: ID) {
+  getMessages(userId: $userId, cursorId: $cursorId, type: "sent") {
+    reply
     username
-    isOpened
-    createdAt
-    receiverMsg
+    ...MessageFields
   }
 }
 

@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { RiSendPlaneFill } from 'react-icons/ri';
 
 import { useUser } from '@/hooks';
-import { getMessages } from '@/api';
+import { getSeenMessages } from '@/api';
 import { ChatBubble } from '../ChatBubble';
 import { InboxTabContainer } from './Container';
 import { ReplyData, ReplyDialog } from '../Dialog';
@@ -20,13 +20,13 @@ export const Seen = () => {
   const { email } = data?.user ?? {};
 
   const { data: userData } = useUser(email ?? '', 'email');
-  const queryArgs = { userId: userData?.id ?? '', cursorId, type: 'seen' };
+  const queryArgs = { userId: userData?.id ?? '', cursorId };
 
   const {
     data: messages,
     isLoading,
     refetch,
-  } = useQuery(['messages', queryArgs], () => getMessages(queryArgs), {
+  } = useQuery(['messages', queryArgs], () => getSeenMessages(queryArgs), {
     select: (data) => data.getMessages,
   });
 

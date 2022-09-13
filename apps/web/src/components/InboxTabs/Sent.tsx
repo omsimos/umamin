@@ -4,7 +4,7 @@ import { useQuery } from 'react-query';
 import Image from 'next/image';
 
 import { useUser } from '@/hooks';
-import { getMessages } from '@/api';
+import { getSentMessages } from '@/api';
 import { ChatBubble } from '../ChatBubble';
 import { InboxTabContainer } from './Container';
 
@@ -16,11 +16,11 @@ export const Sent = () => {
   const { email } = data?.user ?? {};
 
   const { data: userData } = useUser(email ?? '', 'email');
-  const queryArgs = { userId: userData?.id ?? '', cursorId, type: 'sent' };
+  const queryArgs = { userId: userData?.id ?? '', cursorId };
 
   const { data: messages, isLoading } = useQuery(
     ['messages', queryArgs],
-    () => getMessages(queryArgs),
+    () => getSentMessages(queryArgs),
     { select: (data) => data.getMessages, enabled: !!userData?.id }
   );
 

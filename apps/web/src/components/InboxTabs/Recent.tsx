@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 
 import { useLogEvent, useUser } from '@/hooks';
-import { editMessage, getMessages } from '@/api';
+import { editMessage, getRecentMessages } from '@/api';
 import { MessageDialog } from '@/components/Dialog';
 import { InboxTabContainer } from './Container';
 
@@ -24,13 +24,13 @@ export const Recent = () => {
   const { email } = data?.user ?? {};
   const { data: userData } = useUser(email ?? '', 'email');
   const { username } = userData ?? {};
-  const queryArgs = { userId: userData?.id ?? '', cursorId, type: 'recent' };
+  const queryArgs = { userId: userData?.id ?? '', cursorId };
 
   const {
     data: messages,
     refetch,
     isLoading,
-  } = useQuery(['messages', queryArgs], () => getMessages(queryArgs), {
+  } = useQuery(['messages', queryArgs], () => getRecentMessages(queryArgs), {
     select: (data) => data.getMessages,
     enabled: !!userData?.id,
   });

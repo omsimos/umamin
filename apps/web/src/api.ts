@@ -9,12 +9,14 @@ export const {
   getUser,
   addReply,
   deleteUser,
-  getMessages,
   sendMessage,
   editMessage,
   editUsername,
   deleteMessage,
   editUserMessage,
+  getSeenMessages,
+  getSentMessages,
+  getRecentMessages,
 } = getSdk(gqlClient);
 
 export const queryClient = new QueryClient({
