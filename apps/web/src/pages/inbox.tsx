@@ -67,7 +67,8 @@ const Inbox = () => {
       ) : (
         <>
           <SettingsDialog
-            email={email ?? ''}
+            user={userData}
+            refetch={refetch}
             isOpen={settingsModal}
             setIsOpen={setSettingsModal}
           />

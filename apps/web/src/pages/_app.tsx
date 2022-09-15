@@ -21,7 +21,15 @@ Router.events.on('routeChangeStart', () => {
 Router.events.on('routeChangeComplete', () => NProgress.done());
 Router.events.on('routeChangeError', () => NProgress.done());
 
-function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
+interface PageProps {
+  session: any;
+  dehydratedState: any;
+}
+
+function MyApp({
+  Component,
+  pageProps: { session, ...pageProps },
+}: AppProps<PageProps>) {
   return (
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>

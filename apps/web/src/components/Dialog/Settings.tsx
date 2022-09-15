@@ -1,25 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { GetUserQuery } from '@umamin/generated';
 import { signOut } from 'next-auth/react';
 import { useMutation } from 'react-query';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
-import { useUser } from '@/hooks';
-import { editUserMessage, deleteUser } from '@/api';
+import { editUserMessage, deleteUser, editUsername } from '@/api';
 import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
-  email: string;
+  user: GetUserQuery['user'];
+  refetch: () => void;
 }
 
-export const SettingsDialog = ({ email, setIsOpen, ...rest }: Props) => {
+export const SettingsDialog = ({
+  user,
+  refetch,
+  setIsOpen,
+  ...rest
+}: Props) => {
   const { push } = useRouter();
-  const { data: user, refetch } = useUser(email, 'email');
   const [deleteModal, setDeleteModal] = useState(false);
   const [message, setMessage] = useState(user?.message ?? '');
+  const [username, setUsername] = useState(user?.username ?? '');
 
-  const { mutate: edutUserMessageMutate } = useMutation(editUserMessage);
+  const { mutate: editUsernameMutate } = useMutation(editUsername);
   const { mutate: deleteUserMutate } = useMutation(deleteUser);
+  const { mutate: editUserMessageMutate } = useMutation(editUserMessage);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -35,34 +42,56 @@ export const SettingsDialog = ({ email, setIsOpen, ...rest }: Props) => {
   }, [user?.message]);
 
   const handleEdit = () => {
-    if (message !== user?.message) {
-      edutUserMessageMutate(
-        {
-          email,
-          message,
-        },
-        {
-          onSuccess: () => {
-            toast.success('Message updated');
-            setIsOpen(false);
-            refetch();
+    if (user?.email) {
+      if (message !== user.message) {
+        editUserMessageMutate(
+          {
+            email: user?.email,
+            message,
           },
-        }
-      );
+          {
+            onSuccess: () => {
+              toast.success('Message updated');
+              setIsOpen(false);
+            },
+          }
+        );
+      }
+
+      if (username !== user.username) {
+        editUsernameMutate(
+          {
+            email: user?.email,
+            username,
+          },
+          {
+            onSuccess: () => {
+              toast.success('Username updated');
+              setIsOpen(false);
+            },
+          }
+        );
+      }
+
+      if (username !== user.username || message !== user.message) {
+        refetch();
+      }
     }
   };
 
   const handleDeleteUser = () => {
-    deleteUserMutate(
-      { email },
-      {
-        onSuccess: async () => {
-          toast.success('User deleted');
-          await signOut({ redirect: false });
-          push('/login');
-        },
-      }
-    );
+    if (user?.email) {
+      deleteUserMutate(
+        { email: user.email },
+        {
+          onSuccess: async () => {
+            toast.success('User deleted');
+            await signOut({ redirect: false });
+            push('/login');
+          },
+        }
+      );
+    }
   };
 
   return (
@@ -86,6 +115,18 @@ export const SettingsDialog = ({ email, setIsOpen, ...rest }: Props) => {
         {...rest}
       >
         <div className='msg-card flex flex-col space-y-4 p-6'>
+          <div>
+            <p className='settings-label'>Change Username</p>
+            <input
+              minLength={3}
+              maxLength={12}
+              className='settings-input'
+              value={username}
+              placeholder='Enter a your username'
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+
           <div>
             <p className='settings-label'>Custom Message</p>
             <textarea
