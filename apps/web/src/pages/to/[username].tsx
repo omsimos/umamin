@@ -8,7 +8,9 @@ import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
+import { Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
+import type { NextPageWithLayout } from '@/index';
 import { ChatBubble } from '@/components/ChatBubble';
 import { getUser, queryClient, sendMessage } from '@/api';
 
@@ -16,7 +18,7 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const SendTo = ({ username }: { username: string }) => {
+const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   const router = useRouter();
   const triggerEvent = useLogEvent();
   const { data: user } = useUser(username, 'username');
@@ -164,6 +166,8 @@ const SendTo = ({ username }: { username: string }) => {
     </>
   );
 };
+
+SendTo.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
 export async function getServerSideProps({
   params,

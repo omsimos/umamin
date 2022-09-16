@@ -49,37 +49,39 @@ export const footerItems = {
 export const indexItems = [
   {
     title: 'Join the Community',
-    description: 'Where just you and a handful of friends can spend time together. A place that makes it easy to talk every day and hang out more often.',
+    description:
+      'Where just you and a handful of friends can spend time together. A place that makes it easy to talk every day and hang out more often.',
     Icon: BsDiscord,
     link: {
       title: 'Discord Server',
-      url: 'https://umamin.link/discord'
+      url: 'https://umamin.link/discord',
     },
-    className: 'md:justify-self-end sm:justify-self-start'
+    className: 'md:justify-self-end sm:justify-self-start',
   },
   {
     title: 'Follow for Updates',
-    description: 'Meta helps people, communities, and businesses do more together through our technologies and immersive experiences.',
+    description:
+      'Meta helps people, communities, and businesses do more together through our technologies and immersive experiences.',
     Icon: BsFacebook,
     link: {
       title: 'Facebook Page',
-      url: 'https://www.facebook.com/umamin.official'
+      url: 'https://www.facebook.com/umamin.official',
     },
-    className: 'md:justify-self-start sm:justify-self-end'
-
+    className: 'md:justify-self-start sm:justify-self-end',
   },
   {
     title: 'Open Source',
-    description: 'The complete developer platform to build, scale, and deliver secure software.',
+    description:
+      'The complete developer platform to build, scale, and deliver secure software.',
     Icon: BsGithub,
     link: {
       title: 'GitHub Repo',
-      url: 'https://github.com/omsimos/umamin'
+      url: 'https://github.com/omsimos/umamin',
     },
-    className: 'md:col-span-2 xl:col-span-1 sm:justify-self-start md:justify-self-auto'
-
+    className:
+      'md:col-span-2 xl:col-span-1 sm:justify-self-start md:justify-self-auto',
   },
-]
+];
 
 export const markdown = {
   privacy: `
@@ -289,6 +291,5 @@ This privacy policy was created using Termly's [Privacy Policy Generator](https:
 ## 1. DOWNLOADING IMAGE
 You can download a message as an image by opening a card and clicking *Download* or *Share to Story*.
 - If the *Download* button is not working, you might need to take a screenshot and crop the image instead. (esp. for iOS)
-- If *Share to Story* doesn't automatically download the image, click *Download* first.
 `,
 };

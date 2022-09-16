@@ -11,8 +11,9 @@ import Script from 'next/script';
 
 import '../styles/globals.css';
 import { queryClient } from '@/api';
-import { Layout, Maintenance } from '@/components';
 import SEO from '../../next-seo-config';
+import { Maintenance } from '@/components';
+import type { NextPageWithLayout } from '..';
 
 Router.events.on('routeChangeStart', () => {
   NProgress.configure({ showSpinner: false });
@@ -21,15 +22,16 @@ Router.events.on('routeChangeStart', () => {
 Router.events.on('routeChangeComplete', () => NProgress.done());
 Router.events.on('routeChangeError', () => NProgress.done());
 
-interface PageProps {
-  session: any;
-  dehydratedState: any;
-}
+type AppPropsWithLayout = AppProps<{ session: any; dehydratedState: any }> & {
+  Component: NextPageWithLayout;
+};
 
 function MyApp({
   Component,
   pageProps: { session, ...pageProps },
-}: AppProps<PageProps>) {
+}: AppPropsWithLayout) {
+  const getLayout = Component.getLayout ?? ((page: React.ReactElement) => page);
+
   return (
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
@@ -44,9 +46,7 @@ function MyApp({
           {process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ? (
             <Maintenance />
           ) : (
-            <Layout>
-              <Component {...pageProps} />
-            </Layout>
+            <>{getLayout(<Component {...pageProps} />)}</>
           )}
           <Toaster position='bottom-center' />
         </Hydrate>

@@ -7,12 +7,14 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import { useLogEvent } from '@/hooks';
+import { Layout } from '@/components';
+import type { NextPageWithLayout } from '..';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const Login = () => {
+const Login: NextPageWithLayout = () => {
   const { status } = useSession();
   const { push, query } = useRouter();
   const triggerEvent = useLogEvent();
@@ -73,5 +75,7 @@ const Login = () => {
     </section>
   );
 };
+
+Login.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
 export default Login;

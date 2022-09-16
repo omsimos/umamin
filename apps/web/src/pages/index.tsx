@@ -1,19 +1,20 @@
 import React from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
 
+import type { NextPageWithLayout } from '..';
 import { indexItems } from '@/utils/constants';
+import { Layout } from '@/components';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const Home: NextPage = () => {
+const Home: NextPageWithLayout = () => {
   const { push } = useRouter();
   const { status } = useSession();
   const isAuthenticated = status === 'authenticated';
@@ -115,5 +116,7 @@ const Home: NextPage = () => {
     </section>
   );
 };
+
+Home.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
 export default Home;
