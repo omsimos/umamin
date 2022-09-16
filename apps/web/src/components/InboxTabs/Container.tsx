@@ -31,7 +31,7 @@ export const InboxTabContainer = ({
       )}
 
       {isLoading ? (
-        <div className='mt-20 flex justify-center'>
+        <div className='mt-20 flex justify-center min-h-screen'>
           <span className='loader-2' />
         </div>
       ) : (

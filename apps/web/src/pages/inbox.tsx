@@ -9,8 +9,8 @@ import { RiSettings3Fill } from 'react-icons/ri';
 import { useLogEvent } from '@/hooks';
 import type { NextPageWithLayout } from '..';
 import { SettingsDialog } from '@/components/Dialog';
+import { Layout, Create, ImageFill } from '@/components';
 import { Recent, Seen, Sent } from '@/components/InboxTabs';
-import { Layout, Create, ImageFill, Info } from '@/components';
 import { InboxProvider, useInbox } from '@/contexts/InboxContext';
 
 function classNames(...classes: any[]) {
@@ -98,7 +98,6 @@ const Inbox: NextPageWithLayout = () => {
           </div>
 
           <div className='w-full pb-16'>
-            <Info message='Tap a card to reveal an anonymous message.' />
             <Tab.Group>
               <Tab.List className='bg-secondary-200 mt-1 mb-4 flex space-x-1 rounded-xl p-1'>
                 {categories.map(({ title }) => (

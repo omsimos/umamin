@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
-import Image from 'next/image';
-import { useQuery } from 'react-query';
+import { useMutation, useQuery } from 'react-query';
+import { HiTrash, HiDownload } from 'react-icons/hi';
 import { RiSendPlaneFill } from 'react-icons/ri';
+import { toPng } from 'html-to-image';
+import toast from 'react-hot-toast';
+import download from 'downloadjs';
 
-import { getSeenMessages } from '@/api';
+import { ImageFill } from '../ImageFill';
 import { ChatBubble } from '../ChatBubble';
 import { InboxTabContainer } from './Container';
-import { ReplyData, ReplyDialog } from '../Dialog';
 import { useInbox } from '@/contexts/InboxContext';
+import { deleteMessage, getSeenMessages } from '@/api';
+import { ConfirmDialog, ReplyData, ReplyDialog } from '../Dialog';
 
 export const Seen = () => {
   const [pageNo, setPageNo] = useState(1);
   const [cursorId, setCursorId] = useState('');
   const [openReply, setOpenReply] = useState(false);
-  const [replyData, setMsgData] = useState({} as ReplyData);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [msgData, setMsgData] = useState({} as ReplyData);
 
   const { user } = useInbox();
   const queryArgs = { userId: user?.id ?? '', cursorId };
@@ -25,6 +30,26 @@ export const Seen = () => {
   } = useQuery(['seen_messages', queryArgs], () => getSeenMessages(queryArgs), {
     select: (data) => data.getMessages,
   });
+
+  const { mutate } = useMutation(deleteMessage);
+
+  const handleDelete = () => {
+    mutate(
+      { id: msgData.id },
+      {
+        onSuccess: () => {
+          refetch();
+          setDeleteModal(false);
+          toast.success('Message deleted');
+        },
+      }
+    );
+  };
+
+  const saveImage = async () => {
+    const imgUrl = await toPng(document.getElementById(msgData.id)!);
+    download(imgUrl, `${user?.username}_${msgData.id}.png`);
+  };
 
   return (
     <InboxTabContainer
@@ -38,19 +63,54 @@ export const Seen = () => {
       <ReplyDialog
         refetch={refetch}
         isOpen={openReply}
-        replyData={replyData}
+        replyData={msgData}
         setIsOpen={setOpenReply}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteModal}
+        setIsOpen={setDeleteModal}
+        content={<p>Are you sure you want to delete this message?</p>}
+        handleConfirm={handleDelete}
       />
 
       {messages?.map((m) => (
         <div
+          id={m.id}
           key={m.id}
           className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2'
         >
-          <div className='border-secondary-100 flex items-center justify-between border-b-2 bg-[#171819] py-1'>
-            <div className='relative mx-auto h-[40px] w-[120px]'>
-              <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
-            </div>
+          <div className='border-secondary-100 relative flex items-center justify-between border-b-2 bg-[#171819] py-1'>
+            <button
+              onClick={() => {
+                setMsgData(m);
+                setDeleteModal(true);
+              }}
+              type='button'
+              className='absolute left-2 p-2 text-lg text-gray-400'
+            >
+              <HiTrash />
+            </button>
+
+            <ImageFill
+              src='/assets/logo.svg'
+              objectFit='contain'
+              className='mx-auto h-[40px] w-[120px]'
+            />
+
+            <button
+              onClick={() => {
+                setMsgData(m);
+
+                setTimeout(() => {
+                  saveImage();
+                });
+              }}
+              type='button'
+              className='absolute right-2 p-2 text-lg text-gray-400'
+            >
+              <HiDownload />
+            </button>
           </div>
 
           {/* Message */}
