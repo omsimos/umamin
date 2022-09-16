@@ -1,27 +1,23 @@
 import React, { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useQuery } from 'react-query';
 import Image from 'next/image';
 
-import { useUser } from '@/hooks';
 import { getSentMessages } from '@/api';
 import { ChatBubble } from '../ChatBubble';
 import { InboxTabContainer } from './Container';
+import { useInbox } from '@/contexts/InboxContext';
 
 export const Sent = () => {
   const [pageNo, setPageNo] = useState(1);
   const [cursorId, setCursorId] = useState('');
 
-  const { data } = useSession();
-  const { email } = data?.user ?? {};
-
-  const { data: userData } = useUser(email ?? '', 'email');
-  const queryArgs = { userId: userData?.id ?? '', cursorId };
+  const { user } = useInbox();
+  const queryArgs = { userId: user?.id ?? '', cursorId };
 
   const { data: messages, isLoading } = useQuery(
-    ['messages', queryArgs],
+    ['sent_messages', queryArgs],
     () => getSentMessages(queryArgs),
-    { select: (data) => data.getMessages, enabled: !!userData?.id }
+    { select: (data) => data.getMessages, enabled: !!user?.id }
   );
 
   return (
@@ -33,8 +29,6 @@ export const Sent = () => {
       setPageNo={setPageNo}
       setCursorId={setCursorId}
     >
-      {!messages?.length && <p className='font-medium'>No messages to show</p>}
-
       {messages?.map((m) => (
         <div
           key={m.id}

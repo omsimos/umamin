@@ -39,7 +39,7 @@ export const InboxTabContainer = ({
       )}
 
       {!messages?.length && cursorId && !isLoading && (
-        <div className='mt-24 flex justify-center'>
+        <div className='pt-24 flex justify-center'>
           <button
             onClick={() => {
               setPageNo(1);

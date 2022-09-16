@@ -6,28 +6,27 @@ import { IoIosCopy } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import { RiSettings3Fill } from 'react-icons/ri';
 
-import { Create, ImageFill, Info } from '@/components';
-import { useLogEvent, useUser } from '@/hooks';
+import { useLogEvent } from '@/hooks';
+import type { NextPageWithLayout } from '..';
 import { SettingsDialog } from '@/components/Dialog';
 import { Recent, Seen, Sent } from '@/components/InboxTabs';
+import { Layout, Create, ImageFill, Info } from '@/components';
+import { InboxProvider, useInbox } from '@/contexts/InboxContext';
 
 function classNames(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-const Inbox = () => {
+const Inbox: NextPageWithLayout = () => {
   const { push } = useRouter();
   const [settingsModal, setSettingsModal] = useState(false);
 
+  const { user, isUserLoading } = useInbox();
   const { data, status } = useSession();
   const triggerEvent = useLogEvent();
-  const { image, email } = data?.user ?? {};
-
-  const { data: userData, isLoading, refetch } = useUser(email ?? '', 'email');
-  const { username } = userData ?? {};
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`https://umamin.link/to/${username}`);
+    navigator.clipboard.writeText(`https://umamin.link/to/${user?.username}`);
     toast.success('Copied to clipboard');
 
     triggerEvent('copy_link');
@@ -52,7 +51,7 @@ const Inbox = () => {
     push('/login');
   }
 
-  if (isLoading) {
+  if (isUserLoading) {
     return (
       <div className='flex justify-center'>
         <span className='loader-2' />
@@ -62,26 +61,21 @@ const Inbox = () => {
 
   return (
     <section className='mx-auto max-w-lg'>
-      {!username && !isLoading ? (
-        <Create refetch={refetch} />
+      {!user?.username && !isUserLoading ? (
+        <Create />
       ) : (
         <>
-          <SettingsDialog
-            user={userData}
-            refetch={refetch}
-            isOpen={settingsModal}
-            setIsOpen={setSettingsModal}
-          />
+          <SettingsDialog isOpen={settingsModal} setIsOpen={setSettingsModal} />
 
           <div className='mb-5 flex w-full items-center justify-between px-4'>
             <ImageFill
-              src={image}
+              src={data?.user?.image}
               objectFit='cover'
-              className='h-[80px] w-[80px] rounded-full sm:h-[120px] sm:w-[120px]'
+              className='border-secondary-100 h-[80px] w-[80px] rounded-full border-2 sm:h-[120px] sm:w-[120px]'
             />
             <div className='flex flex-col items-end gap-2'>
               <div className='flex items-center gap-4'>
-                <p className='text-lg md:text-xl'>{username}</p>
+                <p className='text-lg md:text-xl'>{user?.username}</p>
                 <button
                   onClick={() => setSettingsModal(true)}
                   type='button'
@@ -97,7 +91,7 @@ const Inbox = () => {
                 onClick={copyLink}
                 className='border-secondary-100 flex items-center justify-center gap-3 truncate rounded-lg border-2 px-4 py-2'
               >
-                <p>umamin.link/to/{username}</p>
+                <p>umamin.link/to/{user?.username}</p>
                 <IoIosCopy className='text-primary-100 flex-none' />
               </button>
             </div>
@@ -136,6 +130,14 @@ const Inbox = () => {
         </>
       )}
     </section>
+  );
+};
+
+Inbox.getLayout = (page: React.ReactElement) => {
+  return (
+    <InboxProvider>
+      <Layout>{page}</Layout>
+    </InboxProvider>
   );
 };
 

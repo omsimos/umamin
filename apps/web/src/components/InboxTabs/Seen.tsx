@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useQuery } from 'react-query';
-import { useSession } from 'next-auth/react';
 import { RiSendPlaneFill } from 'react-icons/ri';
 
-import { useUser } from '@/hooks';
 import { getSeenMessages } from '@/api';
 import { ChatBubble } from '../ChatBubble';
 import { InboxTabContainer } from './Container';
 import { ReplyData, ReplyDialog } from '../Dialog';
+import { useInbox } from '@/contexts/InboxContext';
 
 export const Seen = () => {
   const [pageNo, setPageNo] = useState(1);
@@ -16,17 +15,14 @@ export const Seen = () => {
   const [openReply, setOpenReply] = useState(false);
   const [replyData, setMsgData] = useState({} as ReplyData);
 
-  const { data } = useSession();
-  const { email } = data?.user ?? {};
-
-  const { data: userData } = useUser(email ?? '', 'email');
-  const queryArgs = { userId: userData?.id ?? '', cursorId };
+  const { user } = useInbox();
+  const queryArgs = { userId: user?.id ?? '', cursorId };
 
   const {
     data: messages,
     isLoading,
     refetch,
-  } = useQuery(['messages', queryArgs], () => getSeenMessages(queryArgs), {
+  } = useQuery(['seen_messages', queryArgs], () => getSeenMessages(queryArgs), {
     select: (data) => data.getMessages,
   });
 

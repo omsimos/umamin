@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { GetUserQuery } from '@umamin/generated';
 import { signOut } from 'next-auth/react';
 import { useMutation } from 'react-query';
 import { useRouter } from 'next/router';
@@ -7,19 +6,13 @@ import toast from 'react-hot-toast';
 
 import { editUserMessage, deleteUser, editUsername } from '@/api';
 import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
+import { useInbox } from '@/contexts/InboxContext';
 
-interface Props extends DialogContainerProps {
-  user: GetUserQuery['user'];
-  refetch: () => void;
-}
+interface Props extends DialogContainerProps {}
 
-export const SettingsDialog = ({
-  user,
-  refetch,
-  setIsOpen,
-  ...rest
-}: Props) => {
+export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const { push } = useRouter();
+  const { user, refetchUser } = useInbox();
   const [deleteModal, setDeleteModal] = useState(false);
   const [message, setMessage] = useState(user?.message ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
@@ -74,7 +67,7 @@ export const SettingsDialog = ({
       }
 
       if (username !== user.username || message !== user.message) {
-        refetch();
+        refetchUser();
       }
     }
   };

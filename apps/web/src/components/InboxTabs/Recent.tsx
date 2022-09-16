@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation } from 'react-query';
 import type { Message } from '@umamin/generated';
 import { formatDistanceToNow } from 'date-fns';
-import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 
-import { useLogEvent, useUser } from '@/hooks';
-import { editMessage, getRecentMessages } from '@/api';
-import { MessageDialog } from '@/components/Dialog';
+import { useLogEvent } from '@/hooks';
 import { InboxTabContainer } from './Container';
+import { useInbox } from '@/contexts/InboxContext';
+import { MessageDialog } from '@/components/Dialog';
+import { editMessage, getRecentMessages } from '@/api';
 
 export const Recent = () => {
   const triggerEvent = useLogEvent();
@@ -18,22 +18,21 @@ export const Recent = () => {
   const [msgModal, setMsgModal] = useState(false);
   const [messageData, setMessageData] = useState({} as Partial<Message>);
 
-  const { data } = useSession();
-  const queryClient = useQueryClient();
-
-  const { email } = data?.user ?? {};
-  const { data: userData } = useUser(email ?? '', 'email');
-  const { username } = userData ?? {};
-  const queryArgs = { userId: userData?.id ?? '', cursorId };
+  const { user } = useInbox();
+  const queryArgs = { userId: user?.id ?? '', cursorId };
 
   const {
     data: messages,
     refetch,
     isLoading,
-  } = useQuery(['messages', queryArgs], () => getRecentMessages(queryArgs), {
-    select: (data) => data.getMessages,
-    enabled: !!userData?.id,
-  });
+  } = useQuery(
+    ['recent_messages', queryArgs],
+    () => getRecentMessages(queryArgs),
+    {
+      select: (data) => data.getMessages,
+      enabled: !!user?.id,
+    }
+  );
 
   const { mutate } = useMutation(editMessage);
 
@@ -49,11 +48,6 @@ export const Recent = () => {
         {
           onSuccess: () => {
             refetch();
-            queryClient.invalidateQueries([
-              'messages',
-              { userId: userData?.id ?? '', cursorId: '', type: 'seen' },
-            ]);
-
             triggerEvent('open_message');
           },
         }
@@ -72,7 +66,7 @@ export const Recent = () => {
       setCursorId={setCursorId}
     >
       <MessageDialog
-        username={username ?? ''}
+        username={user?.username ?? ''}
         data={messageData}
         isOpen={msgModal}
         setIsOpen={setMsgModal}
