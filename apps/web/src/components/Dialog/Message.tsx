@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Message } from '@umamin/generated';
+import type { RecentMessage } from '@umamin/generated';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
 import { nanoid } from 'nanoid';
@@ -9,7 +9,7 @@ import { DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
   username: string;
-  data: Partial<Message>;
+  data: RecentMessage;
 }
 
 export const MessageDialog = ({

@@ -17,7 +17,7 @@ export const Sent = () => {
   const { data: messages, isLoading } = useQuery(
     ['sent_messages', queryArgs],
     () => getSentMessages(queryArgs),
-    { select: (data) => data.getMessages, enabled: !!user?.id }
+    { select: (data) => data.getSentMessages, enabled: !!user?.id }
   );
 
   return (

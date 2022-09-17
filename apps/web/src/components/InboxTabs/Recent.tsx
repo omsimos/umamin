@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import type { RecentMessage } from '@umamin/generated';
 import { useQuery, useMutation } from 'react-query';
-import type { Message } from '@umamin/generated';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 
@@ -16,7 +16,7 @@ export const Recent = () => {
   const [pageNo, setPageNo] = useState(1);
   const [cursorId, setCursorId] = useState('');
   const [msgModal, setMsgModal] = useState(false);
-  const [messageData, setMessageData] = useState({} as Partial<Message>);
+  const [messageData, setMessageData] = useState({} as RecentMessage);
 
   const { user } = useInbox();
   const queryArgs = { userId: user?.id ?? '', cursorId };
@@ -29,14 +29,14 @@ export const Recent = () => {
     ['recent_messages', queryArgs],
     () => getRecentMessages(queryArgs),
     {
-      select: (data) => data.getMessages,
+      select: (data) => data.getRecentMessages,
       enabled: !!user?.id,
     }
   );
 
   const { mutate } = useMutation(editMessage);
 
-  const handleOpen = (data: Partial<Message>) => {
+  const handleOpen = (data: RecentMessage) => {
     if (data.id) {
       setMessageData(data);
 

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useMutation } from 'react-query';
-import { Message } from '@umamin/generated';
 import { RiSendPlaneFill } from 'react-icons/ri';
+import type { SeenMessage } from '@umamin/generated';
 
 import { addReply } from '@/api';
 import { useLogEvent } from '@/hooks';
@@ -10,21 +10,19 @@ import { ImageFill } from '../ImageFill';
 import { ChatBubble } from '../ChatBubble';
 import { DialogContainer, DialogContainerProps } from '.';
 
-export type ReplyData = Pick<Message, 'id' | 'content' | 'receiverMsg'>;
-
 interface Props extends DialogContainerProps {
-  replyData: ReplyData;
   refetch: () => void;
+  message: SeenMessage;
 }
 
 export const ReplyDialog = ({
-  replyData,
   refetch,
+  message,
   onClose,
   setIsOpen,
   ...rest
 }: Props) => {
-  const [message, setMessage] = useState('');
+  const [reply, setReply] = useState('');
   const triggerEvent = useLogEvent();
 
   const { mutate } = useMutation(addReply);
@@ -34,8 +32,8 @@ export const ReplyDialog = ({
 
     mutate(
       {
-        id: replyData.id,
-        content: message,
+        id: message.id,
+        content: reply,
       },
       {
         onSuccess: () => {
@@ -43,7 +41,7 @@ export const ReplyDialog = ({
           setIsOpen(false);
 
           setTimeout(() => {
-            setMessage('');
+            setReply('');
           }, 500);
 
           toast.success('Reply sent');
@@ -60,7 +58,7 @@ export const ReplyDialog = ({
       setIsOpen={setIsOpen}
       onClose={() => {
         setTimeout(() => {
-          setMessage('');
+          setReply('');
         }, 500);
       }}
       className='grid h-full place-items-center'
@@ -76,8 +74,8 @@ export const ReplyDialog = ({
 
         {/* Message */}
         <div className='flex min-h-[170px] flex-col justify-between gap-4 px-5 pt-10 pb-3 sm:px-7 sm:pt-7 md:gap-3'>
-          <ChatBubble type='sender' content={replyData.receiverMsg} />
-          <ChatBubble type='receiver' content={replyData.content} />
+          <ChatBubble type='sender' content={message.receiverMsg} />
+          <ChatBubble type='receiver' content={message.content} />
         </div>
 
         {/* Send Message */}
@@ -87,8 +85,8 @@ export const ReplyDialog = ({
         >
           <input
             required
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
             minLength={3}
             maxLength={200}
             type='text'
