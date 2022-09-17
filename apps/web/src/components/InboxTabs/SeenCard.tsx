@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { HiDownload, HiTrash } from 'react-icons/hi';
+import { HiDotsHorizontal, HiDownload, HiReply, HiTrash } from 'react-icons/hi';
 import type { SeenMessage } from '@umamin/generated';
-import { RiSendPlaneFill } from 'react-icons/ri';
 import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
 import download from 'downloadjs';
 
+import { Menu } from '../Menu';
 import { deleteMessage } from '@/api';
-import { ImageFill } from '../ImageFill';
 import { ChatBubble } from '../ChatBubble';
 import { useInbox } from '@/contexts/InboxContext';
 import { ConfirmDialog, ReplyDialog } from '../Dialog';
@@ -65,28 +64,49 @@ export const SeenCard = ({ message, refetch }: Props) => {
         id={id}
         className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2'
       >
-        <div className='border-secondary-100 relative flex items-center justify-between border-b-2 bg-[#171819] py-1'>
-          <button
-            type='button'
-            onClick={() => setDeleteModal(true)}
-            className='absolute left-2 p-2 text-lg text-gray-400'
-          >
-            <HiTrash />
-          </button>
-
-          <ImageFill
-            src='/assets/logo.svg'
-            objectFit='contain'
-            className='mx-auto h-[40px] w-[120px]'
-          />
-
+        <div className='border-secondary-100 relative flex items-center border-b-2 bg-[#171819] py-3'>
           <button
             type='button'
             onClick={saveImage}
-            className='absolute right-2 p-2 text-lg text-gray-400'
+            className='absolute left-4 p-2 text-base text-gray-300'
           >
             <HiDownload />
           </button>
+
+          <p className='font-syneExtrabold text-primary-200 mx-auto text-base'>
+            umamin
+          </p>
+
+          <Menu
+            className='z-10'
+            panelStyles='top-11 right-2'
+            button={
+              <HiDotsHorizontal className='absolute right-4 top-0 text-gray-300' />
+            }
+            panel={
+              <>
+                {!reply && (
+                  <button
+                    type='button'
+                    onClick={() => setReplyModal(true)}
+                    className='menu-item'
+                  >
+                    <HiReply />
+                    <p>Reply</p>
+                  </button>
+                )}
+
+                <button
+                  type='button'
+                  onClick={() => setDeleteModal(true)}
+                  className='menu-item'
+                >
+                  <HiTrash />
+                  <p>Delete</p>
+                </button>
+              </>
+            }
+          />
         </div>
 
         {/* Message */}
@@ -95,19 +115,6 @@ export const SeenCard = ({ message, refetch }: Props) => {
           <ChatBubble type='receiver' content={content ?? ''} />
           {reply && <ChatBubble type='sender' content={reply} />}
         </div>
-
-        {/* Send Message */}
-        {reply && (
-          <div className='py-5 px-4 md:px-5'>
-            <button
-              type='button'
-              className='bg-secondary-100 flex w-full cursor-text items-center justify-between rounded-full py-3 px-5 md:py-2'
-            >
-              <p className='text-gray-400'>Reply...</p>
-              <RiSendPlaneFill className='text-primary-100 cursor-pointer text-2xl lg:text-[1.35rem]' />
-            </button>
-          </div>
-        )}
       </div>
     </>
   );
