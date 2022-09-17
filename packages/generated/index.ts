@@ -16,19 +16,6 @@ export type Scalars = {
   DateTime: any;
 };
 
-export type Message = {
-  __typename?: 'Message';
-  content: Scalars['String'];
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
-  isOpened: Scalars['Boolean'];
-  receiverId: Scalars['String'];
-  receiverMsg: Scalars['String'];
-  reply?: Maybe<Scalars['String']>;
-  senderId?: Maybe<Scalars['String']>;
-  username: Scalars['String'];
-};
-
 export type Mutation = {
   __typename?: 'Mutation';
   addReply: Scalars['String'];
@@ -81,14 +68,27 @@ export type MutationSendMessageArgs = {
 
 export type Query = {
   __typename?: 'Query';
-  getMessages?: Maybe<Array<Message>>;
+  getRecentMessages?: Maybe<Array<RecentMessage>>;
+  getSeenMessages?: Maybe<Array<SeenMessage>>;
+  getSentMessages?: Maybe<Array<SentMessage>>;
   user?: Maybe<User>;
 };
 
 
-export type QueryGetMessagesArgs = {
+export type QueryGetRecentMessagesArgs = {
   cursorId?: InputMaybe<Scalars['ID']>;
-  type: Scalars['String'];
+  userId: Scalars['ID'];
+};
+
+
+export type QueryGetSeenMessagesArgs = {
+  cursorId?: InputMaybe<Scalars['ID']>;
+  userId: Scalars['ID'];
+};
+
+
+export type QueryGetSentMessagesArgs = {
+  cursorId?: InputMaybe<Scalars['ID']>;
   userId: Scalars['ID'];
 };
 
@@ -98,11 +98,38 @@ export type QueryUserArgs = {
   user: Scalars['String'];
 };
 
+export type RecentMessage = {
+  __typename?: 'RecentMessage';
+  content: Scalars['String'];
+  createdAt: Scalars['DateTime'];
+  id: Scalars['ID'];
+  receiverMsg: Scalars['String'];
+};
+
+export type SeenMessage = {
+  __typename?: 'SeenMessage';
+  content: Scalars['String'];
+  createdAt: Scalars['DateTime'];
+  id: Scalars['ID'];
+  receiverMsg: Scalars['String'];
+  reply?: Maybe<Scalars['String']>;
+};
+
 export type SendMessageInput = {
   content: Scalars['String'];
   receiverMsg: Scalars['String'];
   receiverUsername: Scalars['String'];
   senderEmail?: InputMaybe<Scalars['String']>;
+};
+
+export type SentMessage = {
+  __typename?: 'SentMessage';
+  content: Scalars['String'];
+  createdAt: Scalars['DateTime'];
+  id: Scalars['ID'];
+  receiverMsg: Scalars['String'];
+  reply?: Maybe<Scalars['String']>;
+  username: Scalars['String'];
 };
 
 export type User = {
@@ -115,15 +142,13 @@ export type User = {
   username?: Maybe<Scalars['String']>;
 };
 
-export type MessageFieldsFragment = { __typename?: 'Message', id: string, content: string, createdAt: any, receiverMsg: string };
-
 export type GetRecentMessagesQueryVariables = Exact<{
   userId: Scalars['ID'];
   cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type GetRecentMessagesQuery = { __typename?: 'Query', getMessages?: Array<{ __typename?: 'Message', id: string, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, content: string, createdAt: any, receiverMsg: string }> | null };
 
 export type GetSeenMessagesQueryVariables = Exact<{
   userId: Scalars['ID'];
@@ -131,7 +156,7 @@ export type GetSeenMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetSeenMessagesQuery = { __typename?: 'Query', getMessages?: Array<{ __typename?: 'Message', reply?: string | null, id: string, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
 
 export type GetSentMessagesQueryVariables = Exact<{
   userId: Scalars['ID'];
@@ -139,7 +164,7 @@ export type GetSentMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetSentMessagesQuery = { __typename?: 'Query', getMessages?: Array<{ __typename?: 'Message', reply?: string | null, username: string, id: string, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: Array<{ __typename?: 'SentMessage', id: string, reply?: string | null, content: string, username: string, createdAt: any, receiverMsg: string }> | null };
 
 export type EditMessageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -202,38 +227,40 @@ export type DeleteUserMutationVariables = Exact<{
 
 export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: string };
 
-export const MessageFieldsFragmentDoc = gql`
-    fragment MessageFields on Message {
-  id
-  content
-  createdAt
-  receiverMsg
-}
-    `;
+
 export const GetRecentMessagesDocument = gql`
     query getRecentMessages($userId: ID!, $cursorId: ID) {
-  getMessages(userId: $userId, cursorId: $cursorId, type: "recent") {
-    ...MessageFields
+  getRecentMessages(userId: $userId, cursorId: $cursorId) {
+    id
+    content
+    createdAt
+    receiverMsg
   }
 }
-    ${MessageFieldsFragmentDoc}`;
+    `;
 export const GetSeenMessagesDocument = gql`
     query getSeenMessages($userId: ID!, $cursorId: ID) {
-  getMessages(userId: $userId, cursorId: $cursorId, type: "seen") {
+  getSeenMessages(userId: $userId, cursorId: $cursorId) {
+    id
     reply
-    ...MessageFields
+    content
+    createdAt
+    receiverMsg
   }
 }
-    ${MessageFieldsFragmentDoc}`;
+    `;
 export const GetSentMessagesDocument = gql`
     query getSentMessages($userId: ID!, $cursorId: ID) {
-  getMessages(userId: $userId, cursorId: $cursorId, type: "sent") {
+  getSentMessages(userId: $userId, cursorId: $cursorId) {
+    id
     reply
+    content
     username
-    ...MessageFields
+    createdAt
+    receiverMsg
   }
 }
-    ${MessageFieldsFragmentDoc}`;
+    `;
 export const EditMessageDocument = gql`
     mutation editMessage($id: ID!, $isOpened: Boolean!) {
   editMessage(id: $id, isOpened: $isOpened)

@@ -1,28 +1,30 @@
-fragment MessageFields on Message {
-  id
-  content
-  createdAt
-  receiverMsg
-}
-
 query getRecentMessages($userId: ID!, $cursorId: ID) {
-  getMessages(userId: $userId, cursorId: $cursorId, type: "recent") {
-    ...MessageFields
+  getRecentMessages(userId: $userId, cursorId: $cursorId) {
+    id
+    content
+    createdAt
+    receiverMsg
   }
 }
 
 query getSeenMessages($userId: ID!, $cursorId: ID) {
-  getMessages(userId: $userId, cursorId: $cursorId, type: "seen") {
+  getSeenMessages(userId: $userId, cursorId: $cursorId) {
+    id
     reply
-    ...MessageFields
+    content
+    createdAt
+    receiverMsg
   }
 }
 
 query getSentMessages($userId: ID!, $cursorId: ID) {
-  getMessages(userId: $userId, cursorId: $cursorId, type: "sent") {
+  getSentMessages(userId: $userId, cursorId: $cursorId) {
+    id
     reply
+    content
     username
-    ...MessageFields
+    createdAt
+    receiverMsg
   }
 }
 

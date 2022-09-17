@@ -2,7 +2,7 @@ import { ObjectType, Field, ID, InputType } from 'type-graphql';
 import { MaxLength, MinLength, IsNotEmpty } from 'class-validator';
 
 @ObjectType()
-export class Message {
+export class BaseMessage {
   @Field(() => ID)
   id: string;
 
@@ -10,25 +10,28 @@ export class Message {
   content: string;
 
   @Field(() => String)
+  receiverMsg: string;
+
+  @Field(() => Date)
+  createdAt: Date;
+}
+
+@ObjectType()
+export class RecentMessage extends BaseMessage {}
+
+@ObjectType()
+export class SeenMessage extends BaseMessage {
+  @Field(() => String, { nullable: true })
+  reply: string | null;
+}
+
+@ObjectType()
+export class SentMessage extends BaseMessage {
+  @Field(() => String)
   username: string;
 
   @Field(() => String, { nullable: true })
   reply: string | null;
-
-  @Field(() => String)
-  receiverMsg: string;
-
-  @Field(() => String, { nullable: true })
-  senderId: string | null;
-
-  @Field(() => String)
-  receiverId: string;
-
-  @Field(() => Boolean)
-  isOpened: boolean;
-
-  @Field(() => Date)
-  createdAt: Date;
 }
 
 @InputType()

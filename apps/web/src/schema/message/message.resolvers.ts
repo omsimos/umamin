@@ -1,37 +1,126 @@
 /* eslint-disable no-console */
 import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
-import { Message, SendMessageInput } from './message.types';
+import { Prisma } from '@umamin/db';
+
 import type { TContext } from '@/pages/api/graphql';
+import {
+  RecentMessage,
+  SeenMessage,
+  SendMessageInput,
+  SentMessage,
+} from './message.types';
 
 @Resolver()
 export class MessageResolver {
-  @Query(() => [Message], { nullable: true })
-  async getMessages(
+  @Query(() => [RecentMessage], { nullable: true })
+  async getRecentMessages(
     @Arg('userId', () => ID) id: string,
-    @Arg('type', () => String) type: 'recent' | 'seen' | 'sent',
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    /* @Arg('goPrev', () => Boolean) goPrev: boolean, */
     @Ctx() { prisma }: TContext
-  ): Promise<Message[] | null> {
+  ): Promise<RecentMessage[] | null> {
     try {
-      let messages: Message[];
+      let messages: RecentMessage[];
 
-      const where =
-        type === 'sent'
-          ? { senderId: id }
-          : { receiverId: id, isOpened: type === 'seen' };
+      const fields: Prisma.MessageFindManyArgs = {
+        where: { receiverId: id, isOpened: false },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          receiverMsg: true,
+        },
+      };
 
       if (!cursorId) {
-        messages = await prisma.message.findMany({
-          where,
-          orderBy: { createdAt: 'desc' },
-          take: 3,
-        });
+        messages = await prisma.message.findMany(fields);
       } else {
         messages = await prisma.message.findMany({
-          where,
-          orderBy: { createdAt: 'desc' },
-          take: 3,
+          ...fields,
+          skip: 1,
+          cursor: {
+            id: cursorId,
+          },
+        });
+      }
+
+      return messages;
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Query(() => [SeenMessage], { nullable: true })
+  async getSeenMessages(
+    @Arg('userId', () => ID) id: string,
+    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<SeenMessage[] | null> {
+    try {
+      let messages: SeenMessage[];
+
+      const fields: Prisma.MessageFindManyArgs = {
+        where: { receiverId: id, isOpened: true },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+        select: {
+          id: true,
+          reply: true,
+          content: true,
+          createdAt: true,
+          receiverMsg: true,
+        },
+      };
+
+      if (!cursorId) {
+        messages = await prisma.message.findMany(fields);
+      } else {
+        messages = await prisma.message.findMany({
+          ...fields,
+          skip: 1,
+          cursor: {
+            id: cursorId,
+          },
+        });
+      }
+
+      return messages;
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Query(() => [SentMessage], { nullable: true })
+  async getSentMessages(
+    @Arg('userId', () => ID) id: string,
+    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<SentMessage[] | null> {
+    try {
+      let messages: SentMessage[];
+
+      const fields: Prisma.MessageFindManyArgs = {
+        where: { senderId: id },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+        select: {
+          id: true,
+          reply: true,
+          content: true,
+          username: true,
+          createdAt: true,
+          receiverMsg: true,
+        },
+      };
+
+      if (!cursorId) {
+        messages = await prisma.message.findMany(fields);
+      } else {
+        messages = await prisma.message.findMany({
+          ...fields,
           skip: 1,
           cursor: {
             id: cursorId,
