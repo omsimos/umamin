@@ -18,7 +18,7 @@ export const Recent = () => {
   const [msgModal, setMsgModal] = useState(false);
   const [messageData, setMessageData] = useState({} as RecentMessage);
 
-  const { user } = useInbox();
+  const { user, refetchSeen } = useInbox();
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
   const {
@@ -48,6 +48,7 @@ export const Recent = () => {
         {
           onSuccess: () => {
             refetch();
+            refetchSeen();
             triggerEvent('open_message');
           },
         }

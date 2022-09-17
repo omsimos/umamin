@@ -151,7 +151,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                     <button
                       type='button'
                       className='hover:text-primary-100 transition-colors'
-                      onClick={() => router.push('/register')}
+                      onClick={() => router.push('/login')}
                     >
                       Create your link
                     </button>
