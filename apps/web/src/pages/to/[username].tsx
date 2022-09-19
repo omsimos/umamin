@@ -21,7 +21,7 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   const router = useRouter();
   const triggerEvent = useLogEvent();
-  const { data: user } = useUser(username, 'username');
+  const { data: user } = useUser('to_user', username, 'username');
   const { data: session } = useSession();
 
   const [message, setMessage] = useState('');

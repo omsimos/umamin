@@ -83,7 +83,7 @@
   }
 
   .settings-label {
-    @apply text-secondary-400 mb-2 text-sm font-medium;
+    @apply text-secondary-400 mb-2 flex items-center space-x-1 text-sm font-medium;
   }
 
   .settings-input {

@@ -5,13 +5,13 @@ import Image from 'next/image';
 import { getSentMessages } from '@/api';
 import { ChatBubble } from '../ChatBubble';
 import { InboxTabContainer } from './Container';
-import { useInbox } from '@/contexts/InboxContext';
+import { useInboxContext } from '@/contexts/InboxContext';
 
 export const Sent = () => {
   const [pageNo, setPageNo] = useState(1);
   const [cursorId, setCursorId] = useState('');
 
-  const { user } = useInbox();
+  const { user } = useInboxContext();
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
   const { data: messages, isLoading } = useQuery(

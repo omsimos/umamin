@@ -2,6 +2,7 @@ import React, { useContext, createContext, useMemo, useState } from 'react';
 import { GetUserQuery, SeenMessage } from '@umamin/generated';
 import { useSession } from 'next-auth/react';
 import { useQuery } from 'react-query';
+
 import { useUser } from '@/hooks';
 import { getSeenMessages } from '@/api';
 
@@ -18,13 +19,14 @@ interface Values {
 
 const InboxContext = createContext({} as Values);
 
-export const useInbox = () => {
+export const useInboxContext = () => {
   return useContext(InboxContext);
 };
 
 export const InboxProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
   const { data, isLoading, refetch } = useUser(
+    'inbox_user',
     session?.user?.email ?? '',
     'email'
   );

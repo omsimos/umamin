@@ -6,9 +6,9 @@ import Image from 'next/image';
 
 import { useLogEvent } from '@/hooks';
 import { InboxTabContainer } from './Container';
-import { useInbox } from '@/contexts/InboxContext';
 import { MessageDialog } from '@/components/Dialog';
 import { editMessage, getRecentMessages } from '@/api';
+import { useInboxContext } from '@/contexts/InboxContext';
 
 export const Recent = () => {
   const triggerEvent = useLogEvent();
@@ -18,7 +18,7 @@ export const Recent = () => {
   const [msgModal, setMsgModal] = useState(false);
   const [messageData, setMessageData] = useState({} as RecentMessage);
 
-  const { user, refetchSeen } = useInbox();
+  const { user, refetchSeen } = useInboxContext();
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
   const {

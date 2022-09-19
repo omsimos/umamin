@@ -1,57 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { MdArrowDropDown } from 'react-icons/md';
 import { signOut } from 'next-auth/react';
 import { useMutation } from 'react-query';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
-import { editUserMessage, deleteUser, editUsername } from '@/api';
+import { useInboxContext } from '@/contexts/InboxContext';
 import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
-import { useInbox } from '@/contexts/InboxContext';
+import { editUserMessage, deleteUser, editUsername } from '@/api';
 
 interface Props extends DialogContainerProps {}
 
 export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const { push } = useRouter();
-  const { user, refetchUser } = useInbox();
+  const { user, refetchUser } = useInboxContext();
   const [deleteModal, setDeleteModal] = useState(false);
+  const [changeUsername, setChangeUsername] = useState(false);
   const [message, setMessage] = useState(user?.message ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
 
-  const { mutate: editUsernameMutate } = useMutation(editUsername);
   const { mutate: deleteUserMutate } = useMutation(deleteUser);
+  const { mutate: editUsernameMutate } = useMutation(editUsername);
   const { mutate: editUserMessageMutate } = useMutation(editUserMessage);
 
   const handleClose = () => {
-    setIsOpen(false);
     setTimeout(() => {
+      setChangeUsername(false);
       setMessage(user?.message ?? '');
+      setUsername(user?.username ?? '');
     }, 500);
   };
 
-  useEffect(() => {
-    if (user?.message) {
-      setMessage(user?.message);
-    }
-  }, [user?.message]);
-
   const handleEdit = () => {
     if (user?.email) {
-      if (message !== user.message) {
-        editUserMessageMutate(
-          {
-            email: user?.email,
-            message,
-          },
-          {
-            onSuccess: () => {
-              toast.success('Message updated');
-              setIsOpen(false);
-            },
-          }
-        );
-      }
-
-      if (username !== user.username) {
+      if (changeUsername && username !== user.username) {
         editUsernameMutate(
           {
             email: user?.email,
@@ -59,15 +41,28 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
           },
           {
             onSuccess: () => {
-              toast.success('Username updated');
               setIsOpen(false);
+              refetchUser();
+              toast.success('Username updated');
             },
           }
         );
       }
 
-      if (username !== user.username || message !== user.message) {
-        refetchUser();
+      if (!changeUsername && message !== user.message) {
+        editUserMessageMutate(
+          {
+            email: user?.email,
+            message,
+          },
+          {
+            onSuccess: () => {
+              setIsOpen(false);
+              refetchUser();
+              toast.success('Username updated');
+            },
+          }
+        );
       }
     }
   };
@@ -90,6 +85,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   return (
     <>
       <ConfirmDialog
+        onClose={handleClose}
         isOpen={deleteModal}
         setIsOpen={setDeleteModal}
         content={
@@ -109,27 +105,48 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       >
         <div className='msg-card flex flex-col space-y-4 p-6'>
           <div>
-            <p className='settings-label'>Change Username</p>
-            <input
-              minLength={3}
-              maxLength={12}
-              className='settings-input'
-              value={username}
-              placeholder='Enter a your username'
-              onChange={(e) => setUsername(e.target.value)}
-            />
+            <button
+              type='button'
+              onClick={() => setChangeUsername(false)}
+              className='settings-label'
+            >
+              <p>Custom Message</p>
+              {changeUsername && <MdArrowDropDown className='text-xl' />}
+            </button>
+
+            {!changeUsername && (
+              <textarea
+                minLength={1}
+                maxLength={100}
+                className='settings-input min-h-[100px] resize-none'
+                value={message}
+                placeholder='Enter a custom message'
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            )}
           </div>
 
+          <span className='line' />
+
           <div>
-            <p className='settings-label'>Custom Message</p>
-            <textarea
-              minLength={1}
-              maxLength={100}
-              className='settings-input min-h-[100px] resize-none'
-              value={message}
-              placeholder='Enter a custom message'
-              onChange={(e) => setMessage(e.target.value)}
-            />
+            <button
+              type='button'
+              onClick={() => setChangeUsername(true)}
+              className='settings-label'
+            >
+              <p>Change Username</p>
+              {!changeUsername && <MdArrowDropDown className='text-xl' />}
+            </button>
+            {changeUsername && (
+              <input
+                minLength={3}
+                maxLength={12}
+                className='settings-input'
+                value={username}
+                placeholder='Enter a your username'
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            )}
           </div>
 
           <div className='flex items-center justify-between'>
@@ -148,7 +165,13 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
             </button>
 
             <div className='flex items-center space-x-4'>
-              <button onClick={handleClose} type='button'>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  handleClose();
+                }}
+                type='button'
+              >
                 Close
               </button>
 

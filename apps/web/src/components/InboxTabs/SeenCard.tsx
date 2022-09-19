@@ -9,8 +9,8 @@ import download from 'downloadjs';
 import { Menu } from '../Menu';
 import { deleteMessage } from '@/api';
 import { ChatBubble } from '../ChatBubble';
-import { useInbox } from '@/contexts/InboxContext';
 import { ConfirmDialog, ReplyDialog } from '../Dialog';
+import { useInboxContext } from '@/contexts/InboxContext';
 
 interface Props {
   refetch: () => void;
@@ -19,7 +19,7 @@ interface Props {
 
 export const SeenCard = ({ message, refetch }: Props) => {
   const { id, content, receiverMsg, reply } = message;
-  const { user } = useInbox();
+  const { user } = useInboxContext();
 
   const [deleteModal, setDeleteModal] = useState(false);
   const [replyModal, setReplyModal] = useState(false);

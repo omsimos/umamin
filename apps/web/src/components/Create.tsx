@@ -4,11 +4,11 @@ import { useSession } from 'next-auth/react';
 
 import { Info } from '@/components';
 import { editUsername } from '@/api';
-import { useInbox } from '@/contexts/InboxContext';
+import { useInboxContext } from '@/contexts/InboxContext';
 
 export const Create = () => {
   const { data } = useSession();
-  const { refetchUser } = useInbox();
+  const { refetchUser } = useInboxContext();
   const { mutate } = useMutation(editUsername);
   const [username, setUsername] = useState('');
 

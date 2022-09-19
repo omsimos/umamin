@@ -11,7 +11,7 @@ import type { NextPageWithLayout } from '..';
 import { SettingsDialog } from '@/components/Dialog';
 import { Layout, Create, ImageFill } from '@/components';
 import { Recent, Seen, Sent } from '@/components/InboxTabs';
-import { InboxProvider, useInbox } from '@/contexts/InboxContext';
+import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
 
 function classNames(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
@@ -21,7 +21,7 @@ const Inbox: NextPageWithLayout = () => {
   const { push } = useRouter();
   const [settingsModal, setSettingsModal] = useState(false);
 
-  const { user, isUserLoading } = useInbox();
+  const { user, isUserLoading } = useInboxContext();
   const { data, status } = useSession();
   const triggerEvent = useLogEvent();
 

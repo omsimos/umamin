@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { SeenCard } from '.';
 import { InboxTabContainer } from './Container';
-import { useInbox } from '@/contexts/InboxContext';
+import { useInboxContext } from '@/contexts/InboxContext';
 
 export const Seen = () => {
   const [pageNo, setPageNo] = useState(1);
 
   const { seenData, isSeenLoading, refetchSeen, cursorId, setCursorId } =
-    useInbox();
+    useInboxContext();
 
   return (
     <InboxTabContainer

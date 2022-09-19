@@ -10,11 +10,13 @@ export const ConfirmDialog = ({
   content,
   handleConfirm,
   setIsOpen,
+  onClose,
   ...rest
 }: Props) => {
   return (
     <DialogContainer
       transparent
+      onClose={onClose}
       setIsOpen={setIsOpen}
       {...rest}
       className='grid h-full place-items-center'
