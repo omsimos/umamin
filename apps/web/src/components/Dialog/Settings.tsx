@@ -93,7 +93,6 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   return (
     <>
       <ConfirmDialog
-        onClose={handleClose}
         isOpen={deleteModal}
         setIsOpen={setDeleteModal}
         content={
@@ -107,7 +106,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       <DialogContainer
         transparent
         setIsOpen={setIsOpen}
-        onClose={() => setMessage(user?.message ?? '')}
+        onClose={handleClose}
         className='grid h-full place-items-center'
         {...rest}
       >
