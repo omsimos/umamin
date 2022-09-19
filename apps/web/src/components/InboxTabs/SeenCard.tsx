@@ -8,6 +8,7 @@ import download from 'downloadjs';
 
 import { Menu } from '../Menu';
 import { deleteMessage } from '@/api';
+import { useLogEvent } from '@/hooks';
 import { ChatBubble } from '../ChatBubble';
 import { ConfirmDialog, ReplyDialog } from '../Dialog';
 import { useInboxContext } from '@/contexts/InboxContext';
@@ -20,6 +21,7 @@ interface Props {
 export const SeenCard = ({ message, refetch }: Props) => {
   const { id, content, receiverMsg, reply } = message;
   const { user } = useInboxContext();
+  const triggerEvent = useLogEvent();
 
   const [deleteModal, setDeleteModal] = useState(false);
   const [replyModal, setReplyModal] = useState(false);
@@ -37,6 +39,8 @@ export const SeenCard = ({ message, refetch }: Props) => {
         },
       }
     );
+
+    triggerEvent('delete_message');
   };
 
   const saveImage = async () => {

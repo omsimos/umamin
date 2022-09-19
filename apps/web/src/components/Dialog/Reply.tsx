@@ -45,7 +45,7 @@ export const ReplyDialog = ({
           }, 500);
 
           toast.success('Reply sent');
-          triggerEvent('open_message');
+          triggerEvent('reply');
         },
       }
     );

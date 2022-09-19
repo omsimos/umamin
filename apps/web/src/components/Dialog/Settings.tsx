@@ -5,6 +5,7 @@ import { useMutation } from 'react-query';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
+import { useLogEvent } from '@/hooks';
 import { useInboxContext } from '@/contexts/InboxContext';
 import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
 import { editUserMessage, deleteUser, editUsername } from '@/api';
@@ -13,6 +14,7 @@ interface Props extends DialogContainerProps {}
 
 export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const { push } = useRouter();
+  const triggerEvent = useLogEvent();
   const { user, refetchUser } = useInboxContext();
   const [deleteModal, setDeleteModal] = useState(false);
   const [changeUsername, setChangeUsername] = useState(false);
@@ -44,6 +46,8 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
               setIsOpen(false);
               refetchUser();
               toast.success('Username updated');
+
+              triggerEvent('edit_username');
             },
           }
         );
@@ -60,6 +64,8 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
               setIsOpen(false);
               refetchUser();
               toast.success('Username updated');
+
+              triggerEvent('edit_user_message');
             },
           }
         );
@@ -76,6 +82,8 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
             toast.success('User deleted');
             await signOut({ redirect: false });
             push('/login');
+
+            triggerEvent('delete_account');
           },
         }
       );
