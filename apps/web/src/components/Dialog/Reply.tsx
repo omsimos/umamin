@@ -61,7 +61,6 @@ export const ReplyDialog = ({
           setReply('');
         }, 500);
       }}
-      className='grid h-full place-items-center'
     >
       <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2'>
         <div className='border-secondary-100 flex items-center justify-between border-b-2 bg-[#171819] py-1'>

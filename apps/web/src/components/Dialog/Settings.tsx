@@ -107,7 +107,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
         transparent
         setIsOpen={setIsOpen}
         onClose={handleClose}
-        className='grid h-full place-items-center'
+        className='grid place-items-center'
         {...rest}
       >
         <div className='msg-card flex flex-col space-y-4 p-6'>

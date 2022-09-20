@@ -53,7 +53,7 @@ const Inbox: NextPageWithLayout = () => {
 
   if (isUserLoading) {
     return (
-      <div className='flex justify-center'>
+      <div className='mt-52 flex justify-center'>
         <span className='loader-2' />
       </div>
     );

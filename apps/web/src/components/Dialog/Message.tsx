@@ -9,16 +9,12 @@ import { useInboxContext } from '@/contexts/InboxContext';
 
 interface Props extends DialogContainerProps {
   data: {
-    receiverMsg: string,
-    content: string
+    receiverMsg: string;
+    content: string;
   };
 }
 
-export const MessageDialog = ({
-  data,
-  setIsOpen,
-  ...rest
-}: Props) => {
+export const MessageDialog = ({ data, setIsOpen, ...rest }: Props) => {
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
 
@@ -28,7 +24,7 @@ export const MessageDialog = ({
   };
 
   return (
-    <DialogContainer setIsOpen={setIsOpen} className='mt-12 lg:mt-32' {...rest}>
+    <DialogContainer setIsOpen={setIsOpen} {...rest}>
       <div id='card-img' className='bg-secondary-300 flex flex-col p-4'>
         <p className='font-syneExtrabold mb-2 self-center text-xl'>
           <span className='text-primary-200'>umamin</span>.link
