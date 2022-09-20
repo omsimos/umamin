@@ -289,7 +289,7 @@ This privacy policy was created using Termly's [Privacy Policy Generator](https:
 # HELP CENTER
 
 ## 1. DOWNLOADING IMAGE
-You can download a message as an image by opening a card and clicking *Download* or *Share to Story*.
+You can download a message as an image by opening a card and clicking *Download*.
 - If the *Download* button is not working, you might need to take a screenshot and crop the image instead. (esp. for iOS)
 `,
 };

@@ -61,7 +61,7 @@ const Inbox: NextPageWithLayout = () => {
 
   return (
     <section className='mx-auto max-w-lg'>
-      {!user?.username && !isUserLoading ? (
+      {!user?.username ? (
         <Create />
       ) : (
         <>

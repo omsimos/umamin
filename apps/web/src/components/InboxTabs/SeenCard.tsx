@@ -96,7 +96,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
 
           <Menu
             className='z-10'
-            panelStyles='top-11 right-2'
+            panelStyles='top-11 right-2 shadow-lg'
             button={
               <HiDotsHorizontal className='absolute right-4 top-0 text-gray-300' />
             }

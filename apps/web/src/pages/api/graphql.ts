@@ -72,7 +72,7 @@ export default async function handler(
   try {
     await limiter.check(res, 20, 'CACHE_TOKEN'); // 20 requests per minute
   } catch {
-    res.status(429);
+    res.status(429).json({ error: 'Too Many Requests' });
   }
 
   await startServer;

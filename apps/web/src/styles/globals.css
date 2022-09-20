@@ -67,7 +67,7 @@
   }
 
   .menu-item {
-    @apply hover:bg-secondary-100 flex cursor-pointer items-center space-x-2 rounded p-3 transition-colors;
+    @apply hover:bg-secondary-100 flex cursor-pointer items-center text-sm space-x-2 rounded p-3 transition-colors;
   }
 
   .reply {
