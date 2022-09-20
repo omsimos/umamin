@@ -67,7 +67,6 @@ export const Recent = () => {
       setCursorId={setCursorId}
     >
       <MessageDialog
-        username={user?.username ?? ''}
         data={messageData}
         isOpen={msgModal}
         setIsOpen={setMsgModal}

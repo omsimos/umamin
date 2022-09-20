@@ -1,28 +1,30 @@
 import React from 'react';
-import type { RecentMessage } from '@umamin/generated';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
 import { nanoid } from 'nanoid';
 
 import { useLogEvent } from '../../hooks';
 import { DialogContainer, DialogContainerProps } from '.';
+import { useInboxContext } from '@/contexts/InboxContext';
 
 interface Props extends DialogContainerProps {
-  username: string;
-  data: RecentMessage;
+  data: {
+    receiverMsg: string,
+    content: string
+  };
 }
 
 export const MessageDialog = ({
-  username,
   data,
   setIsOpen,
   ...rest
 }: Props) => {
+  const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
 
   const saveImage = async () => {
     const imgUrl = await toPng(document.getElementById('card-img')!);
-    download(imgUrl, `${username}_${nanoid(5)}.png`);
+    download(imgUrl, `${user?.username}_${nanoid(5)}.png`);
   };
 
   return (
@@ -40,7 +42,7 @@ export const MessageDialog = ({
         </div>
       </div>
 
-      <div className='flex justify-between px-8 lg:w-full'>
+      <div className='flex justify-between px-4 lg:w-full'>
         <button
           onClick={() => setIsOpen(false)}
           type='button'
@@ -50,7 +52,7 @@ export const MessageDialog = ({
         </button>
 
         <button
-          className='hover:underline'
+          className='primary-btn'
           type='button'
           onClick={() => {
             saveImage();

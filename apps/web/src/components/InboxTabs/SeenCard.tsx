@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
-import { HiDotsHorizontal, HiDownload, HiReply, HiTrash } from 'react-icons/hi';
 import type { SeenMessage } from '@umamin/generated';
 import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
 import download from 'downloadjs';
+import {
+  HiAnnotation,
+  HiDotsHorizontal,
+  HiDownload,
+  HiReply,
+  HiTrash,
+} from 'react-icons/hi';
 
 import { Menu } from '../Menu';
 import { deleteMessage } from '@/api';
 import { useLogEvent } from '@/hooks';
 import { ChatBubble } from '../ChatBubble';
-import { ConfirmDialog, ReplyDialog } from '../Dialog';
 import { useInboxContext } from '@/contexts/InboxContext';
+import { ConfirmDialog, MessageDialog, ReplyDialog } from '../Dialog';
 
 interface Props {
   refetch: () => void;
@@ -25,6 +31,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
 
   const [deleteModal, setDeleteModal] = useState(false);
   const [replyModal, setReplyModal] = useState(false);
+  const [cardModal, setCardModal] = useState(false);
 
   const { mutate } = useMutation(deleteMessage);
 
@@ -64,6 +71,12 @@ export const SeenCard = ({ message, refetch }: Props) => {
         handleConfirm={handleDelete}
       />
 
+      <MessageDialog
+        data={message}
+        isOpen={cardModal}
+        setIsOpen={setCardModal}
+      />
+
       <div
         id={id}
         className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2'
@@ -99,6 +112,15 @@ export const SeenCard = ({ message, refetch }: Props) => {
                     <p>Reply</p>
                   </button>
                 )}
+
+                <button
+                  type='button'
+                  onClick={() => setCardModal(true)}
+                  className='menu-item'
+                >
+                  <HiAnnotation />
+                  <p>Card</p>
+                </button>
 
                 <button
                   type='button'
