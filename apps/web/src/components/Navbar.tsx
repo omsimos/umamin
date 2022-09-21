@@ -1,11 +1,14 @@
 /* eslint-disable no-nested-ternary */
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
+import { BiLogOutCircle, BiUserCircle } from 'react-icons/bi';
 import { signOut, useSession } from 'next-auth/react';
+import { FaDiscord, FaFacebook } from 'react-icons/fa';
+import { HiMenuAlt3 } from 'react-icons/hi';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
 
-import { ImageFill, Menu } from '@/components';
 import { queryClient } from '@/api';
+import { ImageFill, Menu } from '@/components';
 
 export const Navbar = () => {
   const [loading, setLoading] = useState(false);
@@ -56,7 +59,56 @@ export const Navbar = () => {
         )}
       </div>
 
-      <Menu handleLogout={handleLogout} loading={loading} />
+      <Menu
+        className='sm:hidden'
+        panelStyles='top-8 right-0'
+        button={
+          status === 'loading' || loading ? (
+            <span className='loader' />
+          ) : (
+            <HiMenuAlt3 className='transition-colors hover:text-gray-300' />
+          )
+        }
+        panel={
+          <>
+            {status === 'authenticated' ? (
+              <button
+                onClick={handleLogout}
+                type='button'
+                className='menu-item'
+              >
+                <BiLogOutCircle className='text-base' />
+                <p>Logout</p>
+              </button>
+            ) : (
+              <Link href='/login'>
+                <div className='menu-item'>
+                  <BiUserCircle className='text-base' />
+                  <p>Get started</p>
+                </div>
+              </Link>
+            )}
+            <a
+              href='https://www.facebook.com/umamin.official'
+              target='_blank'
+              rel='noreferrer noopener'
+              className='menu-item'
+            >
+              <FaFacebook />
+              <p>Facebook</p>
+            </a>
+            <a
+              href='https://discord.gg/bQKG7axhcF'
+              target='_blank'
+              rel='noreferrer noopener'
+              className='menu-item'
+            >
+              <FaDiscord className='text-base' />
+              <p>Discord</p>
+            </a>
+          </>
+        }
+      />
     </nav>
   );
 };

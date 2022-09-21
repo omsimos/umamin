@@ -63,11 +63,14 @@ model Message {
   content     String   @db.VarChar(255)
   receiverMsg String   @db.VarChar(100)
   isOpened    Boolean  @default(false)
+  reply       String?  @db.VarChar(255)
+  username    String
 
-  senderId   String?
-  sender     User?   @relation(name: "sentMessages", fields: [senderId], references: [id])
-  receiverId String
-  receiver   User    @relation(name: "receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  senderId         String?
+  sender           User?   @relation(name: "sentMessages", fields: [senderId], references: [id])
+  receiverUsername String?
+  receiverId       String
+  receiver         User    @relation(name: "receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
-  @@index([receiverId, createdAt(sort: Desc)])
+  @@index([receiverId, senderId, createdAt(sort: Desc)])
 }

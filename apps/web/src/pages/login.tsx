@@ -7,12 +7,14 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import { useLogEvent } from '@/hooks';
+import { Layout } from '@/components';
+import type { NextPageWithLayout } from '..';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const Login = () => {
+const Login: NextPageWithLayout = () => {
   const { status } = useSession();
   const { push, query } = useRouter();
   const triggerEvent = useLogEvent();
@@ -22,7 +24,9 @@ const Login = () => {
   }
 
   return (
-    <section className='min-h-screen space-y-8'>
+    <>
+      <AdContainer slotId='7390490260' className='mb-12' />
+
       <div className='flex flex-col items-center space-y-12'>
         <div className='card z-[1] flex w-full flex-col space-y-10 rounded-md px-5 py-10 text-center sm:w-[500px] sm:px-10'>
           <span className='font-syne text-primary-200 text-5xl font-extrabold'>
@@ -69,9 +73,12 @@ const Login = () => {
           />
         </div>
       </div>
-      <AdContainer slot='7063833038' />
-    </section>
+      <AdContainer slotId='3174608770' className='mt-12' />
+      <AdContainer slotId='5422840469' className='mt-4' />
+    </>
   );
 };
+
+Login.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
 export default Login;

@@ -4,9 +4,11 @@ import { useSession } from 'next-auth/react';
 
 import { Info } from '@/components';
 import { editUsername } from '@/api';
+import { useInboxContext } from '@/contexts/InboxContext';
 
-export const Create = ({ refetch }: { refetch: () => void }) => {
+export const Create = () => {
   const { data } = useSession();
+  const { refetchUser } = useInboxContext();
   const { mutate } = useMutation(editUsername);
   const [username, setUsername] = useState('');
 
@@ -16,7 +18,7 @@ export const Create = ({ refetch }: { refetch: () => void }) => {
     if (data?.user?.email) {
       mutate(
         { email: data.user.email ?? '', username },
-        { onSuccess: () =>  refetch()}
+        { onSuccess: () => refetchUser() }
       );
       setUsername('');
     }

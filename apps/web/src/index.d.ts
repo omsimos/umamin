@@ -1,8 +1,12 @@
+/* eslint-disable no-unused-vars */
 export {};
 
 declare global {
-  // eslint-disable-next-line no-unused-vars
   interface Window {
     adsbygoogle: any;
   }
 }
+
+export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
+  getLayout?: (page: ReactElement) => ReactNode;
+};

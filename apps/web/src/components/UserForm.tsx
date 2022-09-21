@@ -223,9 +223,9 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
         </div>
       </div>
       {isLogin ? (
-        <AdContainer slot='3174608770' />
+        <AdContainer slotId='3174608770' />
       ) : (
-        <AdContainer slot='5734157654' />
+        <AdContainer slotId='5734157654' />
       )}
     </section>
   );

@@ -1,23 +1,28 @@
 import React, { useState } from 'react';
 import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
+import { Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
-import { getUser, queryClient, sendMessage } from '@/api';
+import type { NextPageWithLayout } from '@/index';
 import { ChatBubble } from '@/components/ChatBubble';
+import { getUser, queryClient, sendMessage } from '@/api';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const SendTo = ({ username }: { username: string }) => {
+const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   const router = useRouter();
-  const { data: user } = useUser(username, 'username');
   const triggerEvent = useLogEvent();
+  const { data: user } = useUser('to_user', username, 'username');
+  const { data: session } = useSession();
 
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
@@ -26,11 +31,15 @@ const SendTo = ({ username }: { username: string }) => {
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
-    if (user) {
+    if (user?.email === session?.user?.email) {
+      setMessage('');
+      toast.error("You can't send a message to yourself");
+    } else if (user) {
       mutate(
         {
           input: {
             receiverUsername: username,
+            senderEmail: session?.user?.email,
             content: message,
             receiverMsg: user.message,
           },
@@ -59,7 +68,9 @@ const SendTo = ({ username }: { username: string }) => {
             'Create your own link to start receiving anonymous confessions and messages!',
         }}
       />
-      <section className='mb-8 flex flex-col items-center space-y-12'>
+      <AdContainer slotId='4180346918' className='mb-12' />
+
+      <section className='flex flex-col items-center space-y-12'>
         {!user ? (
           <h1 className='h1-text'>Are you lost?</h1>
         ) : (
@@ -81,10 +92,14 @@ const SendTo = ({ username }: { username: string }) => {
 
             {/* Message */}
             <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 pt-10 sm:space-y-0 sm:px-7 md:mb-4'>
-              <ChatBubble state='receive' content={user.message} senderInfo />
+              <ChatBubble
+                type='receiver'
+                content={user.message}
+                userData={{ username, image: user.image }}
+              />
 
               {data?.sendMessage && (
-                <ChatBubble state='send' content={data.sendMessage} />
+                <ChatBubble type='sender' content={data.sendMessage} />
               )}
             </div>
 
@@ -102,7 +117,7 @@ const SendTo = ({ username }: { username: string }) => {
                     minLength={3}
                     maxLength={200}
                     type='text'
-                    placeholder='Send an anonymous message..'
+                    placeholder='Send an anonymous message...'
                     className='bg-secondary-100 w-full rounded-full py-3 px-5 pr-12 outline-none transition-all'
                   />
 
@@ -138,7 +153,7 @@ const SendTo = ({ username }: { username: string }) => {
                     <button
                       type='button'
                       className='hover:text-primary-100 transition-colors'
-                      onClick={() => router.push('/register')}
+                      onClick={() => router.push('/login')}
                     >
                       Create your link
                     </button>
@@ -149,10 +164,13 @@ const SendTo = ({ username }: { username: string }) => {
           </div>
         )}
       </section>
-      <AdContainer slot='9345002123' />
+      <AdContainer slotId='9345002123' className='mt-12' />
+      <AdContainer slotId='2330569429' className='mt-4' />
     </>
   );
 };
+
+SendTo.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
 export async function getServerSideProps({
   params,

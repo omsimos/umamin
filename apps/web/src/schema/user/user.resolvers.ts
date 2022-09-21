@@ -64,6 +64,12 @@ export class UserResolver {
         throw new Error('Username must be alphanumeric');
       }
 
+      const user = await prisma.user.findUnique({ where: { username } });
+
+      if (user) {
+        throw new Error('Username already taken');
+      }
+
       await prisma.user.update({
         where: { email },
         data: { username },
