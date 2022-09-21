@@ -31,7 +31,7 @@ export const Create = () => {
           required
           type='text'
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(e) => setUsername(e.target.value.toLowerCase())}
           placeholder='Enter new username'
           minLength={3}
           maxLength={12}
