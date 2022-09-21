@@ -68,7 +68,9 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
             'Create your own link to start receiving anonymous confessions and messages!',
         }}
       />
-      <section className='mb-8 flex flex-col items-center space-y-12'>
+      <AdContainer slotId='4180346918' className='mb-12' />
+
+      <section className='flex flex-col items-center space-y-12'>
         {!user ? (
           <h1 className='h1-text'>Are you lost?</h1>
         ) : (
@@ -162,7 +164,8 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
           </div>
         )}
       </section>
-      <AdContainer slot='9345002123' />
+      <AdContainer slotId='9345002123' className='mt-12' />
+      <AdContainer slotId='2330569429' className='mt-4' />
     </>
   );
 };

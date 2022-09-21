@@ -112,7 +112,7 @@ const Home: NextPageWithLayout = () => {
         ))}
       </div>
 
-      <AdContainer slot='7063833038' />
+      <AdContainer slotId='7063833038' />
     </section>
   );
 };

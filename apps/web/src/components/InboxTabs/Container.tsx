@@ -30,8 +30,10 @@ export const InboxTabContainer = ({
         <p className='font-medium'>No messages to show</p>
       )}
 
+      <AdContainer slotId='7607907295' />
+
       {isLoading ? (
-        <div className='mt-20 flex justify-center min-h-screen'>
+        <div className='mt-20 flex min-h-screen justify-center'>
           <span className='loader-2' />
         </div>
       ) : (
@@ -39,7 +41,7 @@ export const InboxTabContainer = ({
       )}
 
       {!messages?.length && cursorId && !isLoading && (
-        <div className='pt-24 flex justify-center'>
+        <div className='flex justify-center pt-24'>
           <button
             onClick={() => {
               setPageNo(1);
@@ -85,7 +87,8 @@ export const InboxTabContainer = ({
         </div>
       )}
 
-      <AdContainer slot='7293553855' />
+      <AdContainer slotId='7293553855' />
+      <AdContainer slotId='4956732763' />
     </section>
   );
 };

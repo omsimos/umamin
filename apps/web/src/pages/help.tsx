@@ -10,10 +10,11 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 
 const Help: NextPageWithLayout = () => {
   return (
-    <section className='space-y-8'>
-      <AdContainer slot='2204878701' />
+    <section>
+      <AdContainer slotId='2204878701' className='mb-12' />
       <Markdown content={markdown.help} />
-      <AdContainer slot='2013307015' />
+      <AdContainer slotId='2013307015' className='mt-12' />
+      <AdContainer slotId='5695099369' className='mt-4' />
     </section>
   );
 };
