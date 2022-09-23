@@ -1,5 +1,6 @@
 export * from './Info';
 export * from './Menu';
+export * from './Error';
 export * from './Navbar';
 export * from './Footer';
 export * from './Layout';

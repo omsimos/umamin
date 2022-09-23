@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 
 interface Props {
-  slotId: string
-  className?: string
+  slotId: string;
+  className?: string;
 }
 
 const AdContainer = ({ slotId, className }: Props) => {
@@ -17,7 +17,7 @@ const AdContainer = ({ slotId, className }: Props) => {
   return (
     <div className={className}>
       <ins
-        className='block adsbygoogle'
+        className='adsbygoogle block'
         data-ad-client='ca-pub-4274133898976040'
         data-ad-slot={slotId}
         data-ad-format='auto'

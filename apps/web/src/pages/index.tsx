@@ -6,9 +6,9 @@ import { useSession } from 'next-auth/react';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
 
+import { Layout } from '@/components';
 import type { NextPageWithLayout } from '..';
 import { indexItems } from '@/utils/constants';
-import { Layout } from '@/components';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,

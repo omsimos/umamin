@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { Tab } from '@headlessui/react';
 import { useRouter } from 'next/router';
@@ -12,6 +13,10 @@ import { SettingsDialog } from '@/components/Dialog';
 import { Layout, Create, ImageFill } from '@/components';
 import { Recent, Seen, Sent } from '@/components/InboxTabs';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
+
+const AdContainer = dynamic(() => import('@/components/AdContainer'), {
+  ssr: false,
+});
 
 function classNames(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
@@ -118,11 +123,16 @@ const Inbox: NextPageWithLayout = () => {
                 ))}
               </Tab.List>
               <Tab.Panels className='mt-2'>
+                <AdContainer slotId='7607907295' className='mb-8' />
+
                 {categories.map(({ title, Component }) => (
                   <Tab.Panel key={title}>
                     <Component />
                   </Tab.Panel>
                 ))}
+
+                <AdContainer slotId='7293553855' className='mt-12' />
+                <AdContainer slotId='4956732763' className='mt-4' />
               </Tab.Panels>
             </Tab.Group>
           </div>
