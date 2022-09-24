@@ -16,7 +16,7 @@ export const ChatBubble = ({ type, content, userData }: ChatBubbleProps) => {
         type === 'sender'
           ? 'chat-send chat-p send'
           : 'chat-receive chat-p receive'
-      } inline-block max-w-[255px] px-5 py-4 text-white`}
+      } chat-content`}
     >
       {content}
     </p>
@@ -39,7 +39,7 @@ export const ChatBubble = ({ type, content, userData }: ChatBubbleProps) => {
             type === 'sender'
               ? 'chat-send chat-p send'
               : 'chat-receive chat-p receive'
-          } inline-block max-w-[255px] px-5 py-4 text-white`}
+          } chat-content`}
         >
           {content}
         </p>

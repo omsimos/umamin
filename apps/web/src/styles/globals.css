@@ -67,7 +67,7 @@
   }
 
   .menu-item {
-    @apply hover:bg-secondary-100 flex cursor-pointer items-center text-sm space-x-2 rounded p-3 transition-colors;
+    @apply hover:bg-secondary-100 flex cursor-pointer items-center space-x-2 rounded p-3 text-sm transition-colors;
   }
 
   .reply {
@@ -96,5 +96,9 @@
 
   .chat-receive {
     @apply after:bg-secondary-200 bg-secondary-100 before:bg-secondary-100 self-start;
+  }
+
+  .chat-content {
+    @apply inline-block max-w-[255px] px-5 py-4 text-base text-white;
   }
 }

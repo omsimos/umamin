@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { SeenMessage } from '@umamin/generated';
+import { formatDistanceToNow } from 'date-fns';
 import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
@@ -25,7 +26,7 @@ interface Props {
 }
 
 export const SeenCard = ({ message, refetch }: Props) => {
-  const { id, content, receiverMsg, reply } = message;
+  const { id, content, receiverMsg, reply, createdAt } = message;
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
 
@@ -141,6 +142,12 @@ export const SeenCard = ({ message, refetch }: Props) => {
           <ChatBubble type='receiver' content={content ?? ''} />
           {reply && <ChatBubble type='sender' content={reply} />}
         </div>
+
+        <p className='text-secondary-400 text-sm font-medium italic text-center pb-4'>
+          {formatDistanceToNow(new Date(createdAt), {
+            addSuffix: true,
+          })}
+        </p>
       </div>
     </>
   );
