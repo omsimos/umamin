@@ -1,13 +1,17 @@
 import 'reflect-metadata';
-import { NextApiRequest, NextApiResponse } from 'next';
 import { ApolloServer } from 'apollo-server-micro';
 import { buildSchema } from 'type-graphql';
 import { PrismaClient } from '@umamin/db';
-import { getToken } from 'next-auth/jwt';
+import Cors from 'micro-cors';
 
 import rateLimit from '@/utils/rate-limit';
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
+
+const cors = Cors({
+  origin:
+    process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL : '*',
+});
 
 const prisma = new PrismaClient();
 
@@ -26,6 +30,7 @@ const schema = await buildSchema({
 
 const server = new ApolloServer({
   schema,
+  cache: 'bounded',
   context: { prisma },
   csrfPrevention: true,
 });
@@ -38,43 +43,20 @@ export const config = {
 
 const startServer = server.start();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default cors(async (req, res) => {
   res.setHeader('Cache-Control', ['s-maxage=1', 'stale-while-revalidate']);
 
-  if (process.env.NODE_ENV === 'development') {
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader(
-      'Access-Control-Allow-Origin',
-      'https://studio.apollographql.com'
-    );
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Methods, Access-Control-Allow-Origin, Access-Control-Allow-Credentials, Access-Control-Allow-Headers'
-    );
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'POST, GET, PUT, PATCH, DELETE, OPTIONS, HEAD'
-    );
-    if (req.method === 'OPTIONS') {
-      res.end();
-      return false;
-    }
-  } else {
-    const token = await getToken({ req });
-    if (!token) {
-      return res.status(401).json({ error: 'Not authorized' });
-    }
+  if (req.method === 'OPTIONS') {
+    res.end();
+    return false;
   }
 
   try {
     await limiter.check(res, 20, 'CACHE_TOKEN'); // 20 requests per minute
   } catch {
-    res.status(429).json({ error: 'Too Many Requests' });
+    res.writeHead(429);
   }
 
   await startServer;
   return server.createHandler({ path: '/api/graphql' })(req, res);
-}
+});
