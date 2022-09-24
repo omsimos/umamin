@@ -6,9 +6,9 @@ import { useSession } from 'next-auth/react';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
 
+import { Layout } from '@/components';
 import type { NextPageWithLayout } from '..';
 import { indexItems } from '@/utils/constants';
-import { Layout } from '@/components';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -29,17 +29,8 @@ const Home: NextPageWithLayout = () => {
           </h1>
 
           <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
-            An open-source platform for sending and receiving anonymous{' '}
-            <br className='hidden sm:block' />
-            messages.{' '}
-            <a
-              href='https://discord.gg/bQKG7axhcF'
-              target='_blank'
-              rel='noreferrer noopener'
-              className='text-primary-100'
-            >
-              Join our Discord Server!
-            </a>
+            An open-source platform for sending and receiving anonymous
+            messages.
           </p>
 
           <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>

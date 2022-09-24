@@ -1,9 +1,4 @@
 import React, { Dispatch, SetStateAction } from 'react';
-import dynamic from 'next/dynamic';
-
-const AdContainer = dynamic(() => import('@/components/AdContainer'), {
-  ssr: false,
-});
 
 interface Props {
   pageNo: number;
@@ -29,8 +24,6 @@ export const InboxTabContainer = ({
       {!messages?.length && !isLoading && (
         <p className='font-medium'>No messages to show</p>
       )}
-
-      <AdContainer slotId='7607907295' />
 
       {isLoading ? (
         <div className='mt-20 flex min-h-screen justify-center'>
@@ -86,9 +79,6 @@ export const InboxTabContainer = ({
           )}
         </div>
       )}
-
-      <AdContainer slotId='7293553855' />
-      <AdContainer slotId='4956732763' />
     </section>
   );
 };

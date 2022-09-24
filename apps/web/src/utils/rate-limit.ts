@@ -1,5 +1,5 @@
-import type { NextApiResponse } from 'next';
 import LRU from 'lru-cache';
+import { ServerResponse } from 'http';
 
 type Options = {
   uniqueTokenPerInterval?: number;
@@ -13,7 +13,7 @@ export default function rateLimit(options?: Options) {
   });
 
   return {
-    check: (res: NextApiResponse, limit: number, token: string) =>
+    check: (res: ServerResponse, limit: number, token: string) =>
       new Promise<void>((resolve, reject) => {
         const tokenCount = (tokenCache.get(token) as number[]) || [0];
         if (tokenCount[0] === 0) {

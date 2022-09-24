@@ -25,7 +25,6 @@ const Login: NextPageWithLayout = () => {
 
   return (
     <>
-      <AdContainer slotId='7390490260' className='mb-12' />
 
       <div className='flex flex-col items-center space-y-12'>
         <div className='card z-[1] flex w-full flex-col space-y-10 rounded-md px-5 py-10 text-center sm:w-[500px] sm:px-10'>
@@ -73,7 +72,9 @@ const Login: NextPageWithLayout = () => {
           />
         </div>
       </div>
-      <AdContainer slotId='3174608770' className='mt-12' />
+
+      <AdContainer slotId='7390490260' className='mt-12' />
+      <AdContainer slotId='3174608770' className='mt-4' />
       <AdContainer slotId='5422840469' className='mt-4' />
     </>
   );

@@ -151,7 +151,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
                 className='settings-input'
                 value={username}
                 placeholder='Enter a your username'
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value.toLowerCase())}
               />
             )}
           </div>
