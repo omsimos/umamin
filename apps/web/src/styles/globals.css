@@ -31,7 +31,7 @@
   }
 
   .btn {
-    @apply rounded px-6 py-3 text-sm font-medium transition-colors md:text-base;
+    @apply rounded-md px-6 py-3 text-sm font-medium transition-colors md:text-base;
   }
 
   .primary-btn {
@@ -39,19 +39,19 @@
   }
 
   .secondary-btn {
-    @apply bg-secondary-100 hover:bg-secondary-100/80 btn border-2 border-gray-400;
+    @apply bg-secondary-100 hover:bg-secondary-100/80 btn border-2 border-[#505059];
   }
 
   .red-btn {
-    @apply bg-red-500 hover:bg-red-500/80 btn;
+    @apply btn bg-red-500 hover:bg-red-500/80;
   }
 
   .h1-text {
-    @apply text-[6vw] font-extrabold leading-8 sm:text-4xl md:text-5xl 2xl:text-6xl;
+    @apply text-[clamp(1.4rem,7vw,2.3rem)] font-extrabold  leading-[2rem] sm:text-4xl md:text-5xl 2xl:text-6xl;
   }
 
   .card {
-    @apply border-primary-100 bg-secondary-200 rounded border-2;
+    @apply border-secondary-100 bg-secondary-200 rounded-lg border-2;
   }
 
   .input-field {
@@ -67,7 +67,7 @@
   }
 
   .menu-item {
-    @apply hover:bg-secondary-100 flex cursor-pointer items-center space-x-2 rounded p-3 transition-colors;
+    @apply hover:bg-secondary-100 flex cursor-pointer items-center space-x-2 rounded p-3 text-sm transition-colors;
   }
 
   .reply {
@@ -83,10 +83,22 @@
   }
 
   .settings-label {
-    @apply text-secondary-400 mb-2 text-sm font-medium;
+    @apply text-secondary-400 mb-2 flex items-center space-x-1 text-sm font-medium;
   }
 
   .settings-input {
     @apply bg-secondary-100 w-full rounded-md px-5 py-3 outline-none;
+  }
+
+  .chat-send {
+    @apply after:bg-secondary-200 self-end bg-[#CF49A3] before:bg-[#CF49A3];
+  }
+
+  .chat-receive {
+    @apply after:bg-secondary-200 bg-secondary-100 before:bg-secondary-100 self-start;
+  }
+
+  .chat-content {
+    @apply inline-block max-w-[255px] px-5 py-4 text-base text-white;
   }
 }

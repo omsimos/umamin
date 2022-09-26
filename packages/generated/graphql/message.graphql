@@ -1,0 +1,45 @@
+query getRecentMessages($userId: ID!, $cursorId: ID) {
+  getRecentMessages(userId: $userId, cursorId: $cursorId) {
+    id
+    content
+    createdAt
+    receiverMsg
+  }
+}
+
+query getSeenMessages($userId: ID!, $cursorId: ID) {
+  getSeenMessages(userId: $userId, cursorId: $cursorId) {
+    id
+    reply
+    content
+    createdAt
+    receiverMsg
+  }
+}
+
+query getSentMessages($userId: ID!, $cursorId: ID) {
+  getSentMessages(userId: $userId, cursorId: $cursorId) {
+    id
+    reply
+    content
+    username
+    createdAt
+    receiverMsg
+  }
+}
+
+mutation editMessage($id: ID!, $isOpened: Boolean!) {
+  editMessage(id: $id, isOpened: $isOpened)
+}
+
+mutation deleteMessage($id: ID!) {
+  deleteMessage(id: $id)
+}
+
+mutation sendMessage($input: SendMessageInput!) {
+  sendMessage(input: $input)
+}
+
+mutation addReply($id: ID!, $content: String!) {
+  addReply(id: $id, content: $content)
+}

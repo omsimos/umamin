@@ -1,15 +1,20 @@
 import { logEvent } from 'firebase/analytics';
-import { analytics } from '@/firebase';
+import { analytics } from '@/utils/firebase';
 
 type EventType =
   | 'login'
+  | 'reply'
   | 'register'
-  | 'open_message'
+  | 'copy_link'
+  | 'send_again'
   | 'save_image'
   | 'share_image'
-  | 'copy_link'
   | 'send_message'
-  | 'send_again';
+  | 'open_message'
+  | 'edit_username'
+  | 'delete_message'
+  | 'delete_account'
+  | 'edit_user_message';
 
 export const useLogEvent = () => {
   const triggerEvent = <T>(event: EventType, eventParams?: T) => {

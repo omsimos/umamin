@@ -1,226 +1,152 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from 'react-query';
-import type { Message } from '@umamin/generated';
-import { formatDistanceToNow } from 'date-fns';
-import { useSession } from 'next-auth/react';
-import { IoIosCopy } from 'react-icons/io';
-import { BsCheck2 } from 'react-icons/bs';
-import { useRouter } from 'next/router';
-import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
+import toast from 'react-hot-toast';
+import { Tab } from '@headlessui/react';
+import { useRouter } from 'next/router';
+import { IoIosCopy } from 'react-icons/io';
+import { useSession } from 'next-auth/react';
+import { RiSettings3Fill } from 'react-icons/ri';
 
-import { Info } from '../components';
-import { useLogEvent } from '../hooks';
-import { editMessage, getMessages } from '../api';
-import { MessageDialog, SettingsDialog } from '../components/Dialog';
+import { useLogEvent } from '@/hooks';
+import type { NextPageWithLayout } from '..';
+import { SettingsDialog } from '@/components/Dialog';
+import { Layout, Create, ImageFill } from '@/components';
+import { Recent, Seen, Sent } from '@/components/InboxTabs';
+import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const Inbox = () => {
+function classNames(...classes: any[]) {
+  return classes.filter(Boolean).join(' ');
+}
+
+const Inbox: NextPageWithLayout = () => {
   const { push } = useRouter();
+  const [settingsModal, setSettingsModal] = useState(false);
+
+  const { user, isUserLoading } = useInboxContext();
+  const { data, status } = useSession();
   const triggerEvent = useLogEvent();
 
-  const [pageNo, setPageNo] = useState(1);
-  const [cursorId, setCursorId] = useState('');
-  const [msgModal, setMsgModal] = useState(false);
-  const [settingsModal, setSettingsModal] = useState(false);
-  const [messageData, setMessageData] = useState({} as Partial<Message>);
-
-  const { data, status } = useSession();
-  const { id, username } = data?.user ?? {};
-
-  const {
-    data: messages,
-    refetch,
-    isLoading,
-  } = useQuery(
-    ['messages', { userId: id ?? '', cursorId }],
-    () => getMessages({ userId: id ?? '', cursorId }),
-    { select: (data) => data.messages, enabled: !!id }
-  );
-
-  const { mutate } = useMutation(editMessage);
-
-  const handleOpen = (data: Partial<Message>) => {
-    setMessageData(data);
-
-    if (data.id && !data.isOpened) {
-      mutate(
-        {
-          id: data.id,
-          isOpened: true,
-        },
-        {
-          onSuccess: () => {
-            refetch();
-          },
-        }
-      );
-    }
-    setMsgModal(true);
-    triggerEvent('open_message');
-  };
-
   const copyLink = () => {
-    navigator.clipboard.writeText(`https://umamin.link/to/${username}`);
+    navigator.clipboard.writeText(`https://umamin.link/to/${user?.username}`);
     toast.success('Copied to clipboard');
 
     triggerEvent('copy_link');
   };
 
+  const categories = [
+    {
+      title: 'Recent',
+      Component: Recent,
+    },
+    {
+      title: 'Seen',
+      Component: Seen,
+    },
+    {
+      title: 'Sent',
+      Component: Sent,
+    },
+  ];
+
   if (status === 'unauthenticated') {
     push('/login');
   }
 
-  return (
-    <section className='space-y-8'>
-      <AdContainer slot='7607907295' />
-
-      <div className='mx-auto flex max-w-[500px] flex-col items-center'>
-        <MessageDialog
-          username={username ?? ''}
-          data={messageData}
-          isOpen={msgModal}
-          setIsOpen={setMsgModal}
-        />
-
-        <SettingsDialog
-          username={username ?? ''}
-          isOpen={settingsModal}
-          setIsOpen={setSettingsModal}
-        />
-
-        <div className='flex w-full gap-3'>
-          <button
-            type='button'
-            onClick={copyLink}
-            className='card flex w-full items-center gap-3 truncate px-4 py-3'
-          >
-            <IoIosCopy className='text-primary-100 flex-none' />
-            <p>umamin.link/to/{username}</p>
-          </button>
-
-          <button
-            onClick={() => setSettingsModal(true)}
-            type='button'
-            className='secondary-btn flex-none'
-          >
-            Settings
-          </button>
-        </div>
-
-        <div className='my-10 w-full text-left'>
-          <div className='mb-5 flex flex-col'>
-            <p className='font-medium'>
-              {messages?.length || isLoading
-                ? 'Latest messages'
-                : 'No messages to show'}
-            </p>
-            <Info message='Tap a card to reveal an anonymous message.' />
-          </div>
-
-          <div className='space-y-6'>
-            {isLoading ? (
-              <div className='mt-24 flex justify-center'>
-                <span className='loader-2' />
-              </div>
-            ) : (
-              messages?.map((m) => (
-                <button
-                  type='button'
-                  key={m.id}
-                  onClick={() => handleOpen(m)}
-                  className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
-                >
-                  <div className='relative mb-3 h-[40px]'>
-                    <Image
-                      src='/assets/logo.svg'
-                      layout='fill'
-                      objectFit='contain'
-                    />
-                  </div>
-
-                  <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
-                    <p className='reply text-secondary-400'>{m.receiverMsg}</p>
-                  </div>
-                  <div className='text-secondary-400 flex items-center justify-between text-sm font-medium italic'>
-                    <p>
-                      {formatDistanceToNow(new Date(m.createdAt), {
-                        addSuffix: true,
-                      })}
-                    </p>
-                    <div
-                      className={
-                        m.isOpened ? 'flex items-center space-x-1' : 'hidden'
-                      }
-                    >
-                      <p>Seen</p>
-                      <BsCheck2 className='text-base' />
-                    </div>
-                  </div>
-                </button>
-              ))
-            )}
-
-            {!messages?.length && cursorId && !isLoading && (
-              <div className='mt-24 flex justify-center'>
-                <button
-                  onClick={() => {
-                    setPageNo(1);
-                    setCursorId('');
-                  }}
-                  className='hover:underline'
-                  type='button'
-                >
-                  &larr; Go back to latest messages
-                </button>
-              </div>
-            )}
-
-            {!isLoading && messages && messages?.length > 0 && (
-              <div
-                className={`flex ${
-                  cursorId ? 'justify-between' : 'justify-end'
-                }`}
-              >
-                {cursorId && (
-                  <button
-                    className='hover:underline'
-                    onClick={() => {
-                      setPageNo(1);
-                      setCursorId('');
-                    }}
-                    type='button'
-                  >
-                    &larr; Latest
-                  </button>
-                )}
-
-                {cursorId && <p>{pageNo}</p>}
-
-                {messages.length === 3 && (
-                  <button
-                    className='hover:underline'
-                    onClick={() => {
-                      setPageNo(cursorId ? pageNo + 1 : 2);
-                      setCursorId(messages?.length ? messages[2]?.id : '');
-                    }}
-                    type='button'
-                  >
-                    More &rarr;
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+  if (isUserLoading) {
+    return (
+      <div className='mt-52 flex justify-center'>
+        <span className='loader-2' />
       </div>
+    );
+  }
 
-      <AdContainer slot='7293553855' />
+  return (
+    <section className='mx-auto max-w-lg'>
+      {!user?.username ? (
+        <Create />
+      ) : (
+        <>
+          <SettingsDialog isOpen={settingsModal} setIsOpen={setSettingsModal} />
+
+          <div className='mb-5 flex w-full items-center justify-between px-4'>
+            <ImageFill
+              src={data?.user?.image}
+              objectFit='cover'
+              className='border-secondary-100 h-[80px] w-[80px] rounded-full border-2 sm:h-[120px] sm:w-[120px]'
+            />
+            <div className='flex flex-col items-end gap-2'>
+              <div className='flex items-center gap-4'>
+                <p className='text-lg md:text-xl'>{user?.username}</p>
+                <button
+                  onClick={() => setSettingsModal(true)}
+                  type='button'
+                  className='border-secondary-100 flex items-center gap-3 rounded-lg border-2 px-4 py-2'
+                >
+                  <p>Settings</p>
+                  <RiSettings3Fill className='text-primary-100 flex-none' />
+                </button>
+              </div>
+
+              <button
+                type='button'
+                onClick={copyLink}
+                className='border-secondary-100 flex items-center justify-center gap-3 truncate rounded-lg border-2 px-4 py-2'
+              >
+                <p>umamin.link/to/{user?.username}</p>
+                <IoIosCopy className='text-primary-100 flex-none' />
+              </button>
+            </div>
+          </div>
+
+          <div className='w-full pb-16'>
+            <Tab.Group>
+              <Tab.List className='bg-secondary-200 mt-1 mb-4 flex space-x-1 rounded-xl p-1'>
+                {categories.map(({ title }) => (
+                  <Tab
+                    key={title}
+                    className={({ selected }) =>
+                      classNames(
+                        'w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-white',
+                        'ring-offset-primary-300 ring-transparent ring-opacity-60 ring-offset-2 focus:outline-none focus:ring-2',
+                        selected
+                          ? 'text-secondary-200 bg-[#EB9DDC] shadow'
+                          : 'text-white hover:bg-white/[0.12] hover:text-white'
+                      )
+                    }
+                  >
+                    {title}
+                  </Tab>
+                ))}
+              </Tab.List>
+              <Tab.Panels className='mt-2'>
+                <AdContainer slotId='7607907295' className='mb-8' />
+
+                {categories.map(({ title, Component }) => (
+                  <Tab.Panel key={title}>
+                    <Component />
+                  </Tab.Panel>
+                ))}
+
+                <AdContainer slotId='7293553855' className='mt-12' />
+                <AdContainer slotId='4956732763' className='mt-4' />
+              </Tab.Panels>
+            </Tab.Group>
+          </div>
+        </>
+      )}
     </section>
+  );
+};
+
+Inbox.getLayout = (page: React.ReactElement) => {
+  return (
+    <InboxProvider>
+      <Layout>{page}</Layout>
+    </InboxProvider>
   );
 };
 

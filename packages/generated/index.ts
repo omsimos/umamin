@@ -16,38 +16,21 @@ export type Scalars = {
   DateTime: any;
 };
 
-export type Message = {
-  __typename?: 'Message';
-  content: Scalars['String'];
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
-  isOpened: Scalars['Boolean'];
-  receiverId: Scalars['String'];
-  receiverMsg: Scalars['String'];
-  senderId?: Maybe<Scalars['String']>;
-};
-
 export type Mutation = {
   __typename?: 'Mutation';
-  changePassword: Scalars['String'];
-  createUser: Scalars['String'];
+  addReply: Scalars['String'];
   deleteMessage: Scalars['String'];
   deleteUser: Scalars['String'];
   editMessage: Scalars['String'];
-  editUser: Scalars['String'];
+  editUserMessage: Scalars['String'];
+  editUsername: Scalars['String'];
   sendMessage: Scalars['String'];
 };
 
 
-export type MutationChangePasswordArgs = {
-  newPassword: Scalars['String'];
-  username: Scalars['String'];
-};
-
-
-export type MutationCreateUserArgs = {
-  password: Scalars['String'];
-  username: Scalars['String'];
+export type MutationAddReplyArgs = {
+  content: Scalars['String'];
+  id: Scalars['ID'];
 };
 
 
@@ -57,7 +40,7 @@ export type MutationDeleteMessageArgs = {
 
 
 export type MutationDeleteUserArgs = {
-  username: Scalars['String'];
+  email: Scalars['String'];
 };
 
 
@@ -67,8 +50,14 @@ export type MutationEditMessageArgs = {
 };
 
 
-export type MutationEditUserArgs = {
+export type MutationEditUserMessageArgs = {
+  email: Scalars['String'];
   message: Scalars['String'];
+};
+
+
+export type MutationEditUsernameArgs = {
+  email: Scalars['String'];
   username: Scalars['String'];
 };
 
@@ -79,70 +68,103 @@ export type MutationSendMessageArgs = {
 
 export type Query = {
   __typename?: 'Query';
-  message: Message;
-  messages?: Maybe<Array<Message>>;
+  getRecentMessages?: Maybe<Array<RecentMessage>>;
+  getSeenMessages?: Maybe<Array<SeenMessage>>;
+  getSentMessages?: Maybe<Array<SentMessage>>;
   user?: Maybe<User>;
 };
 
 
-export type QueryMessageArgs = {
-  id: Scalars['ID'];
+export type QueryGetRecentMessagesArgs = {
+  cursorId?: InputMaybe<Scalars['ID']>;
+  userId: Scalars['ID'];
 };
 
 
-export type QueryMessagesArgs = {
+export type QueryGetSeenMessagesArgs = {
+  cursorId?: InputMaybe<Scalars['ID']>;
+  userId: Scalars['ID'];
+};
+
+
+export type QueryGetSentMessagesArgs = {
   cursorId?: InputMaybe<Scalars['ID']>;
   userId: Scalars['ID'];
 };
 
 
 export type QueryUserArgs = {
-  username: Scalars['String'];
+  type: Scalars['String'];
+  user: Scalars['String'];
+};
+
+export type RecentMessage = {
+  __typename?: 'RecentMessage';
+  content: Scalars['String'];
+  createdAt: Scalars['DateTime'];
+  id: Scalars['ID'];
+  receiverMsg: Scalars['String'];
+};
+
+export type SeenMessage = {
+  __typename?: 'SeenMessage';
+  content: Scalars['String'];
+  createdAt: Scalars['DateTime'];
+  id: Scalars['ID'];
+  receiverMsg: Scalars['String'];
+  reply?: Maybe<Scalars['String']>;
 };
 
 export type SendMessageInput = {
   content: Scalars['String'];
   receiverMsg: Scalars['String'];
   receiverUsername: Scalars['String'];
-  senderUsername?: InputMaybe<Scalars['String']>;
+  senderEmail?: InputMaybe<Scalars['String']>;
+};
+
+export type SentMessage = {
+  __typename?: 'SentMessage';
+  content: Scalars['String'];
+  createdAt: Scalars['DateTime'];
+  id: Scalars['ID'];
+  receiverMsg: Scalars['String'];
+  reply?: Maybe<Scalars['String']>;
+  username: Scalars['String'];
 };
 
 export type User = {
   __typename?: 'User';
+  email?: Maybe<Scalars['String']>;
+  id: Scalars['ID'];
+  image?: Maybe<Scalars['String']>;
   message: Scalars['String'];
-  password: Scalars['String'];
-  username: Scalars['String'];
+  name?: Maybe<Scalars['String']>;
+  username?: Maybe<Scalars['String']>;
 };
 
-export type ChangePasswordMutationVariables = Exact<{
-  username: Scalars['String'];
-  newPassword: Scalars['String'];
+export type GetRecentMessagesQueryVariables = Exact<{
+  userId: Scalars['ID'];
+  cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type ChangePasswordMutation = { __typename?: 'Mutation', changePassword: string };
+export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, content: string, createdAt: any, receiverMsg: string }> | null };
 
-export type CreateUserMutationVariables = Exact<{
-  username: Scalars['String'];
-  password: Scalars['String'];
+export type GetSeenMessagesQueryVariables = Exact<{
+  userId: Scalars['ID'];
+  cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type CreateUserMutation = { __typename?: 'Mutation', createUser: string };
+export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
 
-export type DeleteMessageMutationVariables = Exact<{
-  id: Scalars['ID'];
+export type GetSentMessagesQueryVariables = Exact<{
+  userId: Scalars['ID'];
+  cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type DeleteMessageMutation = { __typename?: 'Mutation', deleteMessage: string };
-
-export type DeleteUserMutationVariables = Exact<{
-  username: Scalars['String'];
-}>;
-
-
-export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: string };
+export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: Array<{ __typename?: 'SentMessage', id: string, reply?: string | null, content: string, username: string, createdAt: any, receiverMsg: string }> | null };
 
 export type EditMessageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -152,35 +174,12 @@ export type EditMessageMutationVariables = Exact<{
 
 export type EditMessageMutation = { __typename?: 'Mutation', editMessage: string };
 
-export type EditUserMutationVariables = Exact<{
-  username: Scalars['String'];
-  message: Scalars['String'];
-}>;
-
-
-export type EditUserMutation = { __typename?: 'Mutation', editUser: string };
-
-export type GetMessageByIdQueryVariables = Exact<{
+export type DeleteMessageMutationVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type GetMessageByIdQuery = { __typename?: 'Query', message: { __typename?: 'Message', id: string, content: string, senderId?: string | null, receiverId: string, receiverMsg: string } };
-
-export type GetMessagesQueryVariables = Exact<{
-  userId: Scalars['ID'];
-  cursorId?: InputMaybe<Scalars['ID']>;
-}>;
-
-
-export type GetMessagesQuery = { __typename?: 'Query', messages?: Array<{ __typename?: 'Message', id: string, content: string, isOpened: boolean, createdAt: any, receiverMsg: string }> | null };
-
-export type GetUserQueryVariables = Exact<{
-  username: Scalars['String'];
-}>;
-
-
-export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', username: string, password: string, message: string } | null };
+export type DeleteMessageMutation = { __typename?: 'Mutation', deleteMessage: string };
 
 export type SendMessageMutationVariables = Exact<{
   input: SendMessageInput;
@@ -189,25 +188,77 @@ export type SendMessageMutationVariables = Exact<{
 
 export type SendMessageMutation = { __typename?: 'Mutation', sendMessage: string };
 
+export type AddReplyMutationVariables = Exact<{
+  id: Scalars['ID'];
+  content: Scalars['String'];
+}>;
 
-export const ChangePasswordDocument = gql`
-    mutation changePassword($username: String!, $newPassword: String!) {
-  changePassword(username: $username, newPassword: $newPassword)
+
+export type AddReplyMutation = { __typename?: 'Mutation', addReply: string };
+
+export type GetUserQueryVariables = Exact<{
+  user: Scalars['String'];
+  type: Scalars['String'];
+}>;
+
+
+export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, username?: string | null, message: string, email?: string | null, image?: string | null } | null };
+
+export type EditUsernameMutationVariables = Exact<{
+  email: Scalars['String'];
+  username: Scalars['String'];
+}>;
+
+
+export type EditUsernameMutation = { __typename?: 'Mutation', editUsername: string };
+
+export type EditUserMessageMutationVariables = Exact<{
+  email: Scalars['String'];
+  message: Scalars['String'];
+}>;
+
+
+export type EditUserMessageMutation = { __typename?: 'Mutation', editUserMessage: string };
+
+export type DeleteUserMutationVariables = Exact<{
+  email: Scalars['String'];
+}>;
+
+
+export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: string };
+
+
+export const GetRecentMessagesDocument = gql`
+    query getRecentMessages($userId: ID!, $cursorId: ID) {
+  getRecentMessages(userId: $userId, cursorId: $cursorId) {
+    id
+    content
+    createdAt
+    receiverMsg
+  }
 }
     `;
-export const CreateUserDocument = gql`
-    mutation createUser($username: String!, $password: String!) {
-  createUser(username: $username, password: $password)
+export const GetSeenMessagesDocument = gql`
+    query getSeenMessages($userId: ID!, $cursorId: ID) {
+  getSeenMessages(userId: $userId, cursorId: $cursorId) {
+    id
+    reply
+    content
+    createdAt
+    receiverMsg
+  }
 }
     `;
-export const DeleteMessageDocument = gql`
-    mutation deleteMessage($id: ID!) {
-  deleteMessage(id: $id)
-}
-    `;
-export const DeleteUserDocument = gql`
-    mutation deleteUser($username: String!) {
-  deleteUser(username: $username)
+export const GetSentMessagesDocument = gql`
+    query getSentMessages($userId: ID!, $cursorId: ID) {
+  getSentMessages(userId: $userId, cursorId: $cursorId) {
+    id
+    reply
+    content
+    username
+    createdAt
+    receiverMsg
+  }
 }
     `;
 export const EditMessageDocument = gql`
@@ -215,45 +266,45 @@ export const EditMessageDocument = gql`
   editMessage(id: $id, isOpened: $isOpened)
 }
     `;
-export const EditUserDocument = gql`
-    mutation editUser($username: String!, $message: String!) {
-  editUser(username: $username, message: $message)
-}
-    `;
-export const GetMessageByIdDocument = gql`
-    query getMessageById($id: ID!) {
-  message(id: $id) {
-    id
-    content
-    senderId
-    receiverId
-    receiverMsg
-  }
-}
-    `;
-export const GetMessagesDocument = gql`
-    query getMessages($userId: ID!, $cursorId: ID) {
-  messages(userId: $userId, cursorId: $cursorId) {
-    id
-    content
-    isOpened
-    createdAt
-    receiverMsg
-  }
-}
-    `;
-export const GetUserDocument = gql`
-    query getUser($username: String!) {
-  user(username: $username) {
-    username
-    password
-    message
-  }
+export const DeleteMessageDocument = gql`
+    mutation deleteMessage($id: ID!) {
+  deleteMessage(id: $id)
 }
     `;
 export const SendMessageDocument = gql`
     mutation sendMessage($input: SendMessageInput!) {
   sendMessage(input: $input)
+}
+    `;
+export const AddReplyDocument = gql`
+    mutation addReply($id: ID!, $content: String!) {
+  addReply(id: $id, content: $content)
+}
+    `;
+export const GetUserDocument = gql`
+    query getUser($user: String!, $type: String!) {
+  user(user: $user, type: $type) {
+    id
+    username
+    message
+    email
+    image
+  }
+}
+    `;
+export const EditUsernameDocument = gql`
+    mutation editUsername($email: String!, $username: String!) {
+  editUsername(email: $email, username: $username)
+}
+    `;
+export const EditUserMessageDocument = gql`
+    mutation editUserMessage($email: String!, $message: String!) {
+  editUserMessage(email: $email, message: $message)
+}
+    `;
+export const DeleteUserDocument = gql`
+    mutation deleteUser($email: String!) {
+  deleteUser(email: $email)
 }
     `;
 
@@ -264,35 +315,38 @@ const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationTy
 
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
-    changePassword(variables: ChangePasswordMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<ChangePasswordMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<ChangePasswordMutation>(ChangePasswordDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'changePassword', 'mutation');
+    getRecentMessages(variables: GetRecentMessagesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetRecentMessagesQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetRecentMessagesQuery>(GetRecentMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRecentMessages', 'query');
     },
-    createUser(variables: CreateUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<CreateUserMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<CreateUserMutation>(CreateUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'createUser', 'mutation');
+    getSeenMessages(variables: GetSeenMessagesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetSeenMessagesQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetSeenMessagesQuery>(GetSeenMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getSeenMessages', 'query');
     },
-    deleteMessage(variables: DeleteMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<DeleteMessageMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<DeleteMessageMutation>(DeleteMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteMessage', 'mutation');
-    },
-    deleteUser(variables: DeleteUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<DeleteUserMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<DeleteUserMutation>(DeleteUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteUser', 'mutation');
+    getSentMessages(variables: GetSentMessagesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetSentMessagesQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetSentMessagesQuery>(GetSentMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getSentMessages', 'query');
     },
     editMessage(variables: EditMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditMessageMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<EditMessageMutation>(EditMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editMessage', 'mutation');
     },
-    editUser(variables: EditUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditUserMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<EditUserMutation>(EditUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editUser', 'mutation');
+    deleteMessage(variables: DeleteMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<DeleteMessageMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DeleteMessageMutation>(DeleteMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteMessage', 'mutation');
     },
-    getMessageById(variables: GetMessageByIdQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetMessageByIdQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetMessageByIdQuery>(GetMessageByIdDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMessageById', 'query');
+    sendMessage(variables: SendMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<SendMessageMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<SendMessageMutation>(SendMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'sendMessage', 'mutation');
     },
-    getMessages(variables: GetMessagesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetMessagesQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetMessagesQuery>(GetMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMessages', 'query');
+    addReply(variables: AddReplyMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<AddReplyMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AddReplyMutation>(AddReplyDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'addReply', 'mutation');
     },
     getUser(variables: GetUserQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetUserQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetUserQuery>(GetUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getUser', 'query');
     },
-    sendMessage(variables: SendMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<SendMessageMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<SendMessageMutation>(SendMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'sendMessage', 'mutation');
+    editUsername(variables: EditUsernameMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditUsernameMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<EditUsernameMutation>(EditUsernameDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editUsername', 'mutation');
+    },
+    editUserMessage(variables: EditUserMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditUserMessageMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<EditUserMessageMutation>(EditUserMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editUserMessage', 'mutation');
+    },
+    deleteUser(variables: DeleteUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<DeleteUserMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DeleteUserMutation>(DeleteUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteUser', 'mutation');
     }
   };
 }

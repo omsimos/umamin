@@ -1,22 +1,28 @@
 import React, { useState } from 'react';
 import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
+import { Error, Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
+import type { NextPageWithLayout } from '@/index';
+import { ChatBubble } from '@/components/ChatBubble';
 import { getUser, queryClient, sendMessage } from '@/api';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const SendTo = ({ username }: { username: string }) => {
-  const router = useRouter();
-  const { data: user } = useUser(username);
+const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
+  const { push } = useRouter();
   const triggerEvent = useLogEvent();
+  const { data: user } = useUser('to_user', username, 'username');
+  const { data: session } = useSession();
 
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
@@ -25,11 +31,15 @@ const SendTo = ({ username }: { username: string }) => {
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
-    if (user) {
+    if (user?.email === session?.user?.email) {
+      setMessage('');
+      toast.error("You can't send a message to yourself");
+    } else if (user) {
       mutate(
         {
           input: {
             receiverUsername: username,
+            senderEmail: session?.user?.email,
             content: message,
             receiverMsg: user.message,
           },
@@ -46,6 +56,10 @@ const SendTo = ({ username }: { username: string }) => {
     }
   };
 
+  if (!user) {
+    return <Error message='Are you lost?' />;
+  }
+
   return (
     <>
       <NextSeo
@@ -58,114 +72,111 @@ const SendTo = ({ username }: { username: string }) => {
             'Create your own link to start receiving anonymous confessions and messages!',
         }}
       />
-      <AdContainer slot='4180346918' />
-      <section className='flex flex-col items-center space-y-12 mb-8 mt-4'>
-        {!user ? (
-          <h1 className='h1-text'>Are you lost?</h1>
-        ) : (
-          <>
-            {/* Top */}
-            <div className='border-secondary-100 bg-secondary-100 w-full overflow-hidden rounded-md border-2 md:w-[720px]'>
-              <div className='border-primary-100 bg-secondary-200 flex items-center justify-between border-b-2 px-7 py-2'>
-                <p className='font-medium capitalize text-white'>
-                  <span className='font-light text-gray-400'>To&#58;</span>{' '}
-                  {username}
-                </p>
-                <div className='relative h-[40px] w-[110px] md:h-[50px] md:w-[130px]'>
-                  <Image
-                    src='/assets/logo.svg'
-                    layout='fill'
-                    objectFit='contain'
-                  />
-                </div>
-              </div>
 
-              {/* Message */}
-              <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 py-10 sm:space-y-0 sm:px-10 sm:py-7 [&>*]:px-[20px] [&>*]:py-[10px]'>
-                <div className='chat-p receive  after:bg-secondary-100 inline-block max-w-[255px] self-start bg-[#e5e5ea]  font-medium text-black before:bg-[#e5e5ea]'>
-                  {user.message}
-                </div>
-                {data?.sendMessage && (
-                  <div className='chat-p send bg-primary-200 before:bg-primary-200 after:bg-secondary-100 inline-block max-w-[255px]  self-end text-white'>
-                    {data.sendMessage}
-                  </div>
-                )}
-              </div>
-
-              {/* Send Message */}
-              <form
-                onSubmit={handleSend}
-                className='bg-secondary-200 relative flex h-[100px] items-center justify-between py-5 px-4 md:h-[85px] md:px-7'
-              >
-                {!msgSent ? (
-                  <>
-                    <input
-                      required
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      minLength={3}
-                      maxLength={200}
-                      type='text'
-                      placeholder='Send an anonymous message..'
-                      className='border-primary-100 bg-secondary-100 w-full rounded-full border-2 py-3 px-5 pr-12 outline-none transition-all md:py-2'
-                    />
-
-                    {isLoading ? (
-                      <span className='loader absolute right-10' />
-                    ) : (
-                      <button
-                        type='submit'
-                        className='text-primary-100 absolute right-9 cursor-pointer text-2xl transition-all md:right-12'
-                      >
-                        <RiSendPlaneFill />
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <div className='w-full'>
-                    <p className='text-center font-medium text-[#DAB5D3]'>
-                      Anonymous message sent!
-                    </p>
-                    <div className='text-primary-100 flex justify-center space-x-2 font-normal'>
-                      <button
-                        type='button'
-                        className='hover:text-primary-100/80 transition-colors'
-                        onClick={() => {
-                          setMsgSent(false);
-                          reset();
-                          triggerEvent('send_again');
-                        }}
-                      >
-                        Send again
-                      </button>
-                      <span className='text-[#DAB5D3]'>•</span>
-                      <button
-                        type='button'
-                        className='hover:text-primary-100/80 transition-colors'
-                        onClick={() => router.push('/register')}
-                      >
-                        Create your link
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </form>
+      <section className='flex flex-col items-center space-y-12'>
+        <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 md:w-[720px]'>
+          {/* Top */}
+          <div className='bg-secondary-300 border-secondary-100 flex items-center justify-between border-b-2 px-7 py-2'>
+            <p className='font-medium capitalize text-white'>
+              <span className='font-light text-gray-400'>To&#58;</span>{' '}
+              {username}
+            </p>
+            <div className='relative h-[40px] w-[110px] md:h-[50px] md:w-[130px]'>
+              <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
             </div>
-          </>
-        )}
+          </div>
+
+          {/* Message */}
+          <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 pt-10 sm:space-y-0 sm:px-7 md:mb-4'>
+            <ChatBubble
+              type='receiver'
+              content={user?.message ?? ''}
+              userData={{ username, image: user?.image }}
+            />
+
+            {data?.sendMessage && (
+              <ChatBubble type='sender' content={data.sendMessage} />
+            )}
+          </div>
+
+          {/* Send Message */}
+          <form
+            onSubmit={handleSend}
+            className='bg-secondary-200 relative flex h-[100px] items-center justify-between py-5 px-4 md:h-[85px] md:px-7'
+          >
+            {!msgSent ? (
+              <>
+                <input
+                  required
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  minLength={3}
+                  maxLength={200}
+                  type='text'
+                  placeholder='Send an anonymous message...'
+                  className='bg-secondary-100 w-full rounded-full py-3 px-5 pr-12 outline-none transition-all'
+                />
+
+                {isLoading ? (
+                  <span className='loader absolute right-10' />
+                ) : (
+                  <button
+                    type='submit'
+                    className='text-primary-100 absolute right-9 cursor-pointer text-2xl transition-all md:right-12'
+                  >
+                    <RiSendPlaneFill />
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className='w-full'>
+                <p className='text-secondary-400 text-center font-medium'>
+                  Anonymous message sent!
+                </p>
+                <div className='text-primary-100/80 flex justify-center space-x-2 font-normal'>
+                  <button
+                    type='button'
+                    className='hover:text-primary-100 transition-colors'
+                    onClick={() => {
+                      setMsgSent(false);
+                      reset();
+                      triggerEvent('send_again');
+                    }}
+                  >
+                    Send again
+                  </button>
+                  <span className='text-secondary-400'>•</span>
+                  <button
+                    type='button'
+                    className='hover:text-primary-100 transition-colors'
+                    onClick={() => push('/login')}
+                  >
+                    Create your link
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
       </section>
-      <AdContainer slot='9345002123' />
+
+      <AdContainer slotId='4180346918' className='mt-12' />
+      <AdContainer slotId='9345002123' className='mt-4' />
+      <AdContainer slotId='2330569429' className='mt-4' />
     </>
   );
 };
+
+SendTo.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
 export async function getServerSideProps({
   params,
 }: {
   params: { username: string };
 }) {
-  await queryClient.prefetchQuery(['user', { username: params.username }], () =>
-    getUser({ username: params.username })
+  await queryClient.prefetchQuery(
+    ['user', { user: params.username, type: 'username' }],
+    () => getUser({ user: params.username, type: 'username' })
   );
 
   return {

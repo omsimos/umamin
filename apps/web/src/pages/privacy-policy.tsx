@@ -1,20 +1,23 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { markdown } from '@/constants';
-import { Markdown } from '@/components';
+import { markdown } from '@/utils/constants';
+import type { NextPageWithLayout } from '..';
+import { Layout, Markdown } from '@/components';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const PrivacyPolicy = () => {
+const PrivacyPolicy: NextPageWithLayout = () => {
   return (
-    <section className='space-y-8'>
-      <AdContainer slot='3709532062' />
+    <section className='space-y-12'>
+      <AdContainer slotId='3709532062' />
       <Markdown content={markdown.privacy} />
-      <AdContainer slot='5214185424' />
+      <AdContainer slotId='5214185424' />
     </section>
   );
 };
+
+PrivacyPolicy.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
 export default PrivacyPolicy;

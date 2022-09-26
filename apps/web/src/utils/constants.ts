@@ -1,3 +1,5 @@
+import { BsDiscord, BsFacebook, BsGithub } from 'react-icons/bs';
+
 /* eslint-disable no-irregular-whitespace */
 export const footerItems = {
   withRoute: [
@@ -29,20 +31,57 @@ export const footerItems = {
       children: [
         {
           name: 'Contribute',
-          href: 'https://github.com/joshxfi/umamin#contributing',
+          href: 'https://github.com/omsimos/umamin#contributing',
         },
         {
           name: 'Bug Report',
-          href: 'https://github.com/joshxfi/umamin/issues/new?assignees=&labels=&template=bug_report.md',
+          href: 'https://github.com/omsimos/umamin/issues/new?assignees=&labels=&template=bug_report.md',
         },
         {
           name: 'Feature Request',
-          href: 'https://github.com/joshxfi/umamin/issues/new?assignees=&labels=&template=feature_request.md',
+          href: 'https://github.com/omsimos/umamin/issues/new?assignees=&labels=&template=feature_request.md',
         },
       ],
     },
   ],
 };
+
+export const indexItems = [
+  {
+    title: 'Join the Community',
+    description:
+      'Hang out with other members and share your Umamin link!',
+    Icon: BsDiscord,
+    link: {
+      title: 'Discord Server',
+      url: 'https://umamin.link/discord',
+    },
+    className: 'md:justify-self-end sm:justify-self-start',
+  },
+  {
+    title: 'Follow for Updates',
+    description:
+      'Like and follow our Facebook page to keep up with the latest updates!',
+    Icon: BsFacebook,
+    link: {
+      title: 'Facebook Page',
+      url: 'https://www.facebook.com/umamin.official',
+    },
+    className: 'md:justify-self-start sm:justify-self-end',
+  },
+  {
+    title: 'Open Source',
+    description:
+      'Contribute, report bugs, and request features! ',
+    Icon: BsGithub,
+    link: {
+      title: 'GitHub Repo',
+      url: 'https://github.com/omsimos/umamin',
+    },
+    className:
+      'md:col-span-2 xl:col-span-1 sm:justify-self-start md:justify-self-auto',
+  },
+];
 
 export const markdown = {
   privacy: `
@@ -250,8 +289,7 @@ This privacy policy was created using Termly's [Privacy Policy Generator](https:
 # HELP CENTER
 
 ## 1. DOWNLOADING IMAGE
-You can download a message as an image by opening a card and clicking *Download* or *Share to Story*.
+You can download a message as an image by opening a card and clicking *Download*.
 - If the *Download* button is not working, you might need to take a screenshot and crop the image instead. (esp. for iOS)
-- If *Share to Story* doesn't automatically download the image, click *Download* first.
 `,
 };

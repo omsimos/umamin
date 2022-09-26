@@ -1,23 +1,27 @@
 import 'reflect-metadata';
 import { ApolloServer } from 'apollo-server-micro';
-import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
+import { PrismaClient } from '@umamin/db';
 import Cors from 'micro-cors';
 
-import { prisma } from '@/db';
+import rateLimit from '@/utils/rate-limit';
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
-
-export interface TContext {
-  prisma: typeof prisma;
-  username?: string;
-  id?: string;
-  password?: string;
-}
 
 const cors = Cors({
   origin:
     process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL : '*',
+});
+
+const prisma = new PrismaClient();
+
+export interface TContext {
+  prisma: typeof prisma;
+}
+
+const limiter = rateLimit({
+  interval: 60 * 1000, // 60 seconds
+  uniqueTokenPerInterval: 500, // Max 500 users per second
 });
 
 const schema = await buildSchema({
@@ -26,12 +30,8 @@ const schema = await buildSchema({
 
 const server = new ApolloServer({
   schema,
-  context: async ({ req }) => {
-    const session = await getSession({ req });
-    const username = session?.user?.username;
-    const id = session?.user?.id;
-    return { prisma, username, id };
-  },
+  cache: 'bounded',
+  context: { prisma },
   csrfPrevention: true,
 });
 
@@ -49,6 +49,12 @@ export default cors(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.end();
     return false;
+  }
+
+  try {
+    await limiter.check(res, 20, 'CACHE_TOKEN'); // 20 requests per minute
+  } catch {
+    res.writeHead(429);
   }
 
   await startServer;
