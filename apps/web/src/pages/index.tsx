@@ -88,7 +88,7 @@ const Home: NextPageWithLayout = () => {
               <h3 className='text-lg font-medium'>{title}</h3>
               <p className='text-secondary-400'>{description}</p>
             </div>
-            <div className='text-primary-100 flex items-center gap-2'>
+            <div className='text-primary-100 mt-7 flex items-center gap-2'>
               <a
                 href={link.url}
                 target='_blank'

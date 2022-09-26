@@ -50,7 +50,7 @@ export const indexItems = [
   {
     title: 'Join the Community',
     description:
-      'Where just you and a handful of friends can spend time together. A place that makes it easy to talk every day and hang out more often.',
+      'Hang out with other members and share your Umamin link!',
     Icon: BsDiscord,
     link: {
       title: 'Discord Server',
@@ -61,7 +61,7 @@ export const indexItems = [
   {
     title: 'Follow for Updates',
     description:
-      'Meta helps people, communities, and businesses do more together through our technologies and immersive experiences.',
+      'Like and follow our Facebook page to keep up with the latest updates!',
     Icon: BsFacebook,
     link: {
       title: 'Facebook Page',
@@ -72,7 +72,7 @@ export const indexItems = [
   {
     title: 'Open Source',
     description:
-      'The complete developer platform to build, scale, and deliver secure software.',
+      'Contribute, report bugs, and request features! ',
     Icon: BsGithub,
     link: {
       title: 'GitHub Repo',
