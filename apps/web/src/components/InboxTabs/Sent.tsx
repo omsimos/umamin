@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 import { useQuery } from 'react-query';
 import Image from 'next/image';
 
@@ -65,6 +66,12 @@ export const Sent = () => {
               />
             )}
           </div>
+
+          <p className='text-secondary-400 pb-4 text-center text-sm font-medium italic'>
+            {formatDistanceToNow(new Date(m.createdAt), {
+              addSuffix: true,
+            })}
+          </p>
         </div>
       ))}
     </InboxTabContainer>
