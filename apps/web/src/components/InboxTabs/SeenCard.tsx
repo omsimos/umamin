@@ -80,7 +80,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
 
       <div
         id={id}
-        className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2'
+        className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2 mb-6'
       >
         <div className='border-secondary-100 relative flex items-center border-b-2 bg-[#171819] py-3'>
           <button

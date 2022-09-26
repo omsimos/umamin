@@ -18,9 +18,11 @@ export const Seen = () => {
       setPageNo={setPageNo}
       setCursorId={setCursorId}
     >
-      {seenData?.map((m) => (
-        <SeenCard key={m.id} refetch={refetchSeen} message={m} />
-      ))}
+      <div>
+        {seenData?.map((m) => (
+          <SeenCard key={m.id} refetch={refetchSeen} message={m} />
+        ))}
+      </div>
     </InboxTabContainer>
   );
 };
