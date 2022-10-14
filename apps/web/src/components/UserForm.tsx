@@ -5,6 +5,7 @@ import { BsFillPersonFill } from 'react-icons/bs';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { HiLockClosed } from 'react-icons/hi';
 import { FaDiscord } from 'react-icons/fa';
+import { FcGoogle } from 'react-icons/fc';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
@@ -24,7 +25,7 @@ interface Props {
 
 export const UserForm = ({ type, onRegister, loading }: Props) => {
   const isLogin = type === 'login';
-  const { push } = useRouter();
+  const { push, query } = useRouter();
   const { status } = useSession();
   const triggerEvent = useLogEvent();
 
@@ -184,26 +185,12 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             <button
               disabled={isLoading}
               type='submit'
-              className='primary-btn mb-2 w-full'
+              className='primary-btn w-full'
             >
               {buttonText()}
             </button>
 
-            {isLogin && (
-              <button
-                type='button'
-                className='bg-dcblue hover:bg-dcblue/80 btn mb-2 flex w-full items-center justify-center space-x-2'
-                onClick={() => {
-                  signIn('discord', { redirect: false });
-                  triggerEvent('login', { provider: 'discord' });
-                }}
-              >
-                <FaDiscord className='text-lg' />
-                <p>Sign in with Discord</p>
-              </button>
-            )}
-
-            <p className='text-sm'>
+            <p className='text-sm mt-2'>
               {isLogin ? "Don't" : 'Already'} have an account?{' '}
               <Link href={`${isLogin ? '/register' : 'login'}`}>
                 <a className='text-primary-100'>
@@ -211,6 +198,39 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
                 </a>
               </Link>
             </p>
+
+            <div className='line mt-8' />
+            <p className='my-4'>Or continue with</p>
+            <div className='flex space-x-2'>
+              <button
+                type='button'
+                className='bg-dcblue hover:bg-dcblue/80 btn mb-2 flex w-full items-center justify-center space-x-2'
+                onClick={() => {
+                  signIn('discord');
+                  triggerEvent('login', { provider: 'discord' });
+                }}
+              >
+                <FaDiscord className='text-lg' />
+                <p>Discord</p>
+              </button>
+              <button
+                type='button'
+                className='btn mb-2 flex w-full items-center justify-center space-x-2 bg-white font-semibold text-black hover:bg-white/80'
+                onClick={() => {
+                  signIn('google');
+                  triggerEvent('login', { provider: 'google' });
+                }}
+              >
+                <FcGoogle className='text-xl' />
+                <p>Google</p>
+              </button>
+            </div>
+
+            {query.error === 'OAuthAccountNotLinked' && (
+              <p className='mt-4'>
+                Email is already linked to a different provider
+              </p>
+            )}
           </div>
         </form>
         <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] md:bottom-0'>
@@ -222,11 +242,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
           />
         </div>
       </div>
-      {isLogin ? (
-        <AdContainer slotId='3174608770' />
-      ) : (
-        <AdContainer slotId='5734157654' />
-      )}
+      <AdContainer slotId='3174608770' />
     </section>
   );
 };
