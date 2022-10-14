@@ -161,8 +161,6 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
       </section>
 
       <AdContainer slotId='4180346918' className='mt-12' />
-      <AdContainer slotId='9345002123' className='mt-4' />
-      <AdContainer slotId='2330569429' className='mt-4' />
     </>
   );
 };

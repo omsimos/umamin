@@ -74,8 +74,6 @@ const Login: NextPageWithLayout = () => {
       </div>
 
       <AdContainer slotId='7390490260' className='mt-12' />
-      <AdContainer slotId='3174608770' className='mt-4' />
-      <AdContainer slotId='5422840469' className='mt-4' />
     </>
   );
 };

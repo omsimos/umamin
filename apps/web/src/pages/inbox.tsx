@@ -130,9 +130,6 @@ const Inbox: NextPageWithLayout = () => {
                     <Component />
                   </Tab.Panel>
                 ))}
-
-                <AdContainer slotId='7293553855' className='mt-12' />
-                <AdContainer slotId='4956732763' className='mt-4' />
               </Tab.Panels>
             </Tab.Group>
           </div>

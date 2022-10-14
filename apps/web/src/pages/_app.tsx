@@ -48,7 +48,7 @@ function MyApp({
           ) : (
             <>{getLayout(<Component {...pageProps} />)}</>
           )}
-          <Toaster position='bottom-center' />
+          <Toaster />
         </Hydrate>
       </QueryClientProvider>
     </SessionProvider>
