@@ -14,7 +14,6 @@ const Help: NextPageWithLayout = () => {
       <AdContainer slotId='2204878701' className='mb-12' />
       <Markdown content={markdown.help} />
       <AdContainer slotId='2013307015' className='mt-12' />
-      <AdContainer slotId='5695099369' className='mt-4' />
     </section>
   );
 };
