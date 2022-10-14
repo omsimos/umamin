@@ -50,26 +50,14 @@ export const Footer = () => {
         <div className='relative mb-4 h-6 w-32 md:hidden'>
           <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
         </div>
-        <p className='text-xs font-medium text-gray-500 sm:text-sm md:text-base'>
-          Created by{' '}
-          <a
-            href='https://github.com/joshxfi'
-            target='_blank'
-            rel='noreferrer noopener'
-            className='hover:underline'
-          >
-            Josh Daniel Bañares
-          </a>{' '}
-          &{' '}
-          <a
-            href='https://github.com/joshxfi/umamin/graphs/contributors'
-            target='_blank'
-            rel='noreferrer noopener'
-            className='hover:underline'
-          >
-            Contributors
-          </a>
-        </p>
+        <a
+          href='https://github.com/omsimos'
+          target='_blank'
+          rel='noreferrer noopener'
+          className='text-xs font-medium text-gray-500 hover:underline sm:text-sm md:text-base'
+        >
+          Ⓒ 2022 Omsimos Collective
+        </a>
       </div>
     </footer>
   );

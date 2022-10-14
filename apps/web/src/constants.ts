@@ -29,15 +29,15 @@ export const footerItems = {
       children: [
         {
           name: 'Contribute',
-          href: 'https://github.com/joshxfi/umamin#contributing',
+          href: 'https://github.com/omsimos/umamin#contributing',
         },
         {
           name: 'Bug Report',
-          href: 'https://github.com/joshxfi/umamin/issues/new?assignees=&labels=&template=bug_report.md',
+          href: 'https://github.com/omsimos/umamin/issues/new?assignees=&labels=&template=bug_report.md',
         },
         {
           name: 'Feature Request',
-          href: 'https://github.com/joshxfi/umamin/issues/new?assignees=&labels=&template=feature_request.md',
+          href: 'https://github.com/omsimos/umamin/issues/new?assignees=&labels=&template=feature_request.md',
         },
       ],
     },
