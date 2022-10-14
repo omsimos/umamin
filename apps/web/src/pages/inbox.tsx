@@ -65,7 +65,7 @@ const Inbox = () => {
   };
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`https://umamin.link/to/${username}`);
+    navigator.clipboard.writeText(`https://legacy.umamin.link/to/${username}`);
     toast.success('Copied to clipboard');
 
     triggerEvent('copy_link');
@@ -98,7 +98,7 @@ const Inbox = () => {
             className='card flex w-full items-center gap-3 truncate px-4 py-3'
           >
             <IoIosCopy className='text-primary-100 flex-none' />
-            <p>umamin.link/to/{username}</p>
+            <p>legacy.umamin.link/to/{username}</p>
           </button>
 
           <button
