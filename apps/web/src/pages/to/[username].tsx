@@ -58,7 +58,6 @@ const SendTo = ({ username }: { username: string }) => {
             'Create your own link to start receiving anonymous confessions and messages!',
         }}
       />
-      <AdContainer slot='4180346918' />
       <section className='flex flex-col items-center space-y-12 mb-8'>
         {!user ? (
           <h1 className='h1-text'>Are you lost?</h1>
