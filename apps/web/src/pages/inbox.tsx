@@ -72,6 +72,7 @@ const Inbox: NextPageWithLayout = () => {
         <>
           <SettingsDialog isOpen={settingsModal} setIsOpen={setSettingsModal} />
 
+          <AdContainer slotId='7607907295' className='mb-8 h-[100px] bg-secondary-100' />
           <div className='mb-5 flex w-full items-center justify-between px-4'>
             <ImageFill
               src={data?.user?.image}
@@ -123,8 +124,6 @@ const Inbox: NextPageWithLayout = () => {
                 ))}
               </Tab.List>
               <Tab.Panels className='mt-2'>
-                <AdContainer slotId='7607907295' className='mb-8' />
-
                 {categories.map(({ title, Component }) => (
                   <Tab.Panel key={title}>
                     <Component />
