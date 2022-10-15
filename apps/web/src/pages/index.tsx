@@ -35,7 +35,7 @@ const Home: NextPageWithLayout = () => {
 
           <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
             <button
-              onClick={() => push(isAuthenticated ? '/inbox' : '/login')}
+              onClick={() => push(isAuthenticated ? '/inbox' : '/register')}
               type='button'
               className='primary-btn'
             >

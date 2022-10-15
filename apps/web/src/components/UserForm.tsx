@@ -36,6 +36,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loginAttempts, setLoginAttempts] = useState(0);
   const [confirmPassword, setConfirmPassword] = useState('');
 
   if (status === 'authenticated') {
@@ -81,9 +82,8 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
     handleLogin();
   };
 
-  const handleSubmit: React.FormEventHandler = (e) => {
-    e.preventDefault();
-    if (process.env.NODE_ENV === 'development') {
+  const handleSubmit = () => {
+    if (loginAttempts <= 5 || process.env.NODE_ENV === 'development') {
       handleAuth();
     } else {
       captchaRef.current?.execute();
@@ -108,7 +108,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
       if (res.ok) {
         handleAuth();
       } else {
-        toast.error('Something went wrong');
+        toast.error('CAPTCHA Failed');
       }
     } catch (e: any) {
       toast.error('Something went wrong');
@@ -127,7 +127,14 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
     <section className='min-h-screen space-y-8'>
       <div className='flex flex-col items-center space-y-12'>
         <form
-          onSubmit={handleSubmit}
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+
+            if (isLogin) {
+              setLoginAttempts((prev) => prev + 1);
+            }
+          }}
           className='card z-[1] flex w-full flex-col space-y-10 rounded-md px-5 py-10 text-center sm:w-[500px] sm:px-10'
         >
           <span className='font-syne text-primary-200 text-5xl font-extrabold'>
@@ -194,7 +201,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
               {isLogin ? "Don't" : 'Already'} have an account?{' '}
               <Link href={`${isLogin ? '/register' : 'login'}`}>
                 <a className='text-primary-100'>
-                  {isLogin ? 'Get started' : 'Login'}
+                  {isLogin ? 'Get started' : 'Log in'}
                 </a>
               </Link>
             </p>
@@ -204,7 +211,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             <div className='flex space-x-2'>
               <button
                 type='button'
-                className='bg-dcblue hover:bg-dcblue/80 btn mb-2 flex w-full items-center justify-center space-x-2'
+                className='bg-dcblue hover:bg-dcblue/80 btn flex w-full items-center justify-center space-x-2'
                 onClick={() => {
                   signIn('discord');
                   triggerEvent('login', { provider: 'discord' });
@@ -215,7 +222,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
               </button>
               <button
                 type='button'
-                className='btn mb-2 flex w-full items-center justify-center space-x-2 bg-white font-semibold text-black hover:bg-white/80'
+                className='btn flex w-full items-center justify-center space-x-2 bg-white font-semibold text-black hover:bg-white/80'
                 onClick={() => {
                   signIn('google');
                   triggerEvent('login', { provider: 'google' });
