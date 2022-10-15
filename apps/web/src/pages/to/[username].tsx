@@ -89,7 +89,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 md:w-[720px]'>
           {/* Top */}
           <div className='bg-secondary-300 border-secondary-100 flex items-center justify-between border-b-2 px-7 py-2'>
-            <p className='font-medium capitalize text-white'>
+            <p className='font-medium text-white'>
               <span className='font-light text-gray-400'>To&#58;</span>{' '}
               {username}
             </p>

@@ -124,7 +124,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
   };
 
   return (
-    <section className='min-h-screen space-y-8'>
+    <section className='min-h-screen xl:-mt-12'>
       <div className='flex flex-col items-center space-y-12'>
         <form
           onSubmit={(e) => {
@@ -249,7 +249,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
           />
         </div>
       </div>
-      <AdContainer slotId='3174608770' />
+      <AdContainer slotId='3174608770' className='mt-8' />
     </section>
   );
 };
