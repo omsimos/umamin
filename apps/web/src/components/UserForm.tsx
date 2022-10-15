@@ -200,7 +200,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             </p>
 
             <div className='line mt-8' />
-            <p className='my-4'>Or continue with</p>
+            <p className='my-4 text-sm'>Or continue with</p>
             <div className='flex space-x-2'>
               <button
                 type='button'

@@ -3,8 +3,11 @@ import { NextApiHandler } from 'next';
 import { PrismaClient } from '@umamin/db';
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import DiscordProvider from 'next-auth/providers/discord';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import DiscordProvider from 'next-auth/providers/discord';
+import CredentialsProvider from 'next-auth/providers/credentials';
+
+import { AuthedUser } from '../authorize';
 
 const prisma = new PrismaClient();
 
@@ -25,6 +28,33 @@ const options: NextAuthOptions = {
           access_type: 'offline',
           response_type: 'code',
         },
+      },
+    }),
+    CredentialsProvider({
+      id: 'credentials',
+      name: 'credentials',
+      credentials: {
+        username: {
+          label: 'Username',
+          type: 'text',
+        },
+        password: { label: 'Password', type: 'password' },
+      },
+      authorize: async (credentials) => {
+        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/authorize`, {
+          method: 'POST',
+          body: JSON.stringify({
+            username: credentials?.username,
+            password: credentials?.password,
+          }),
+        });
+
+        if (res.ok) {
+          const user = (await res.json()) as AuthedUser;
+          return user;
+        }
+
+        return Promise.reject(new Error('Invalid credentials'));
       },
     }),
   ],
