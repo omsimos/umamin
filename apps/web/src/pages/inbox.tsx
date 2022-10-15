@@ -103,8 +103,8 @@ const Inbox: NextPageWithLayout = () => {
           </div>
 
           <div className='w-full pb-16'>
+            <AdContainer slotId='7607907295' className='mb-4' />
             <Tab.Group>
-              <AdContainer fixed slotId='7607907295' className='mb-6' />
               <Tab.List className='bg-secondary-200 mt-1 mb-4 flex space-x-1 rounded-xl p-1'>
                 {categories.map(({ title }) => (
                   <Tab

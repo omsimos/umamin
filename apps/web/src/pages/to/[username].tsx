@@ -21,7 +21,11 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   const { push } = useRouter();
   const triggerEvent = useLogEvent();
-  const { data: user } = useUser('to_user', username, 'username');
+  const { data: user, isLoading: isUserLoading } = useUser(
+    'to_user',
+    username,
+    'username'
+  );
   const { data: session } = useSession();
 
   const [message, setMessage] = useState('');
@@ -55,6 +59,14 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
       triggerEvent('send_message');
     }
   };
+
+  if (isUserLoading) {
+    return (
+      <div className='mt-52 flex justify-center'>
+        <span className='loader-2' />
+      </div>
+    );
+  }
 
   if (!user) {
     return <Error message='Are you lost?' />;
