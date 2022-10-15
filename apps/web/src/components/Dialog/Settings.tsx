@@ -34,11 +34,11 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   };
 
   const handleEdit = () => {
-    if (user?.email) {
+    if (user?.id) {
       if (changeUsername && username !== user.username) {
         editUsernameMutate(
           {
-            email: user?.email,
+            id: user?.id,
             username,
           },
           {
@@ -56,7 +56,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       if (!changeUsername && message !== user.message) {
         editUserMessageMutate(
           {
-            email: user?.email,
+            id: user?.id,
             message,
           },
           {
@@ -74,9 +74,9 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   };
 
   const handleDeleteUser = () => {
-    if (user?.email) {
+    if (user?.id) {
       deleteUserMutate(
-        { email: user.email },
+        { id: user.id },
         {
           onSuccess: async () => {
             toast.success('User deleted');

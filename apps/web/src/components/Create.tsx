@@ -20,13 +20,11 @@ export const Create = () => {
   const handleSubmit: React.FormEventHandler = (e) => {
     e.preventDefault();
 
-    if (data?.user?.email) {
-      mutate(
-        { email: data.user.email ?? '', username },
-        { onSuccess: () => refetchUser() }
-      );
-      setUsername('');
-    }
+    mutate(
+      { id: data?.user?.id ?? '', username },
+      { onSuccess: () => refetchUser() }
+    );
+    setUsername('');
   };
 
   return (
