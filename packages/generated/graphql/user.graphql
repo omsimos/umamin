@@ -1,10 +1,11 @@
 query getUser($user: String!, $type: String!) {
   getUser(user: $user, type: $type) {
     id
-    username
-    message
-    id
     image
+    email
+    message
+    username
+    password
   }
 }
 
@@ -18,6 +19,10 @@ mutation editUsername($id: String!, $username: String!) {
 
 mutation editUserMessage($id: String!, $message: String!) {
   editUserMessage(id: $id, message: $message)
+}
+
+mutation changePassword($id: String!, $newPassword: String!) {
+  changePassword(id: $id, newPassword: $newPassword)
 }
 
 mutation deleteUser($id: String!) {

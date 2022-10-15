@@ -49,9 +49,7 @@ export const Create = () => {
         <Info message='You can still change your username later.' />
       </section>
 
-      <AdContainer slotId='3864332312' className='mt-12' />
-      <AdContainer slotId='2894865577' className='mt-4' />
-      <AdContainer slotId='3696262618' className='mt-4' />
+      <AdContainer slotId='3864332312' className='mt-8' />
     </>
   );
 };

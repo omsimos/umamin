@@ -120,6 +120,33 @@ export class UserResolver {
   }
 
   @Mutation(() => String)
+  async changePassword(
+    @Arg('id', () => String) id: string,
+    @Arg('newPassword', () => String) newPassword: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<String> {
+    const hashedPassword = hashPassword(newPassword);
+
+    try {
+      await prisma.user.findUnique({
+        where: { id },
+      });
+
+      await prisma.user.update({
+        where: { id },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      return 'Password changed';
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Mutation(() => String)
   async deleteUser(
     @Arg('id', () => String) id: string,
     @Ctx() { prisma }: TContext

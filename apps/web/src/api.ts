@@ -14,6 +14,7 @@ export const {
   editMessage,
   editUsername,
   deleteMessage,
+  changePassword,
   editUserMessage,
   getSeenMessages,
   getSentMessages,

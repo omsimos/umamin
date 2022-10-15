@@ -19,6 +19,7 @@ export type Scalars = {
 export type Mutation = {
   __typename?: 'Mutation';
   addReply: Scalars['String'];
+  changePassword: Scalars['String'];
   createUser: Scalars['String'];
   deleteMessage: Scalars['String'];
   deleteUser: Scalars['String'];
@@ -32,6 +33,12 @@ export type Mutation = {
 export type MutationAddReplyArgs = {
   content: Scalars['String'];
   id: Scalars['ID'];
+};
+
+
+export type MutationChangePasswordArgs = {
+  id: Scalars['String'];
+  newPassword: Scalars['String'];
 };
 
 
@@ -146,6 +153,7 @@ export type User = {
   image?: Maybe<Scalars['String']>;
   message: Scalars['String'];
   name?: Maybe<Scalars['String']>;
+  password?: Maybe<Scalars['String']>;
   username?: Maybe<Scalars['String']>;
 };
 
@@ -209,7 +217,7 @@ export type GetUserQueryVariables = Exact<{
 }>;
 
 
-export type GetUserQuery = { __typename?: 'Query', getUser?: { __typename?: 'User', id: string, username?: string | null, message: string, image?: string | null } | null };
+export type GetUserQuery = { __typename?: 'Query', getUser?: { __typename?: 'User', id: string, image?: string | null, email?: string | null, message: string, username?: string | null, password?: string | null } | null };
 
 export type CreateUserMutationVariables = Exact<{
   username: Scalars['String'];
@@ -234,6 +242,14 @@ export type EditUserMessageMutationVariables = Exact<{
 
 
 export type EditUserMessageMutation = { __typename?: 'Mutation', editUserMessage: string };
+
+export type ChangePasswordMutationVariables = Exact<{
+  id: Scalars['String'];
+  newPassword: Scalars['String'];
+}>;
+
+
+export type ChangePasswordMutation = { __typename?: 'Mutation', changePassword: string };
 
 export type DeleteUserMutationVariables = Exact<{
   id: Scalars['String'];
@@ -300,10 +316,11 @@ export const GetUserDocument = gql`
     query getUser($user: String!, $type: String!) {
   getUser(user: $user, type: $type) {
     id
-    username
-    message
-    id
     image
+    email
+    message
+    username
+    password
   }
 }
     `;
@@ -320,6 +337,11 @@ export const EditUsernameDocument = gql`
 export const EditUserMessageDocument = gql`
     mutation editUserMessage($id: String!, $message: String!) {
   editUserMessage(id: $id, message: $message)
+}
+    `;
+export const ChangePasswordDocument = gql`
+    mutation changePassword($id: String!, $newPassword: String!) {
+  changePassword(id: $id, newPassword: $newPassword)
 }
     `;
 export const DeleteUserDocument = gql`
@@ -367,6 +389,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     editUserMessage(variables: EditUserMessageMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditUserMessageMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<EditUserMessageMutation>(EditUserMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editUserMessage', 'mutation');
+    },
+    changePassword(variables: ChangePasswordMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<ChangePasswordMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ChangePasswordMutation>(ChangePasswordDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'changePassword', 'mutation');
     },
     deleteUser(variables: DeleteUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<DeleteUserMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteUserMutation>(DeleteUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteUser', 'mutation');
