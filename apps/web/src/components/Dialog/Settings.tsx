@@ -21,9 +21,12 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const [message, setMessage] = useState(user?.message ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
 
-  const { mutate: deleteUserMutate } = useMutation(deleteUser);
-  const { mutate: editUsernameMutate } = useMutation(editUsername);
-  const { mutate: editUserMessageMutate } = useMutation(editUserMessage);
+  const { mutate: deleteUserMutate, isLoading: delUserL } =
+    useMutation(deleteUser);
+  const { mutate: editUsernameMutate, isLoading: editUserL } =
+    useMutation(editUsername);
+  const { mutate: editUserMessageMutate, isLoading: editUserMsgL } =
+    useMutation(editUserMessage);
 
   const handleClose = () => {
     setTimeout(() => {
@@ -90,6 +93,8 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
     }
   };
 
+  const isLoading = delUserL || editUserL || editUserMsgL;
+
   return (
     <>
       <ConfirmDialog
@@ -112,14 +117,17 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       >
         <div className='msg-card flex flex-col space-y-4 p-6'>
           <div>
-            <button
-              type='button'
-              onClick={() => setChangeUsername(false)}
-              className='settings-label'
-            >
-              <p>Custom Message</p>
-              {changeUsername && <MdArrowDropDown className='text-xl' />}
-            </button>
+            <div className='flex justify-between'>
+              <button
+                type='button'
+                onClick={() => setChangeUsername(false)}
+                className='settings-label'
+              >
+                <p>Custom Message</p>
+                {changeUsername && <MdArrowDropDown className='text-xl' />}
+              </button>
+              {isLoading && <span className='loader' />}
+            </div>
 
             {!changeUsername && (
               <textarea
@@ -183,11 +191,12 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
               </button>
 
               <button
+                disabled={isLoading}
                 onClick={handleEdit}
                 className='primary-btn'
                 type='button'
               >
-                Save
+                <p>Save</p>
               </button>
             </div>
           </div>
