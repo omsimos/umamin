@@ -1,21 +1,25 @@
 query getUser($user: String!, $type: String!) {
-  user(user: $user, type: $type) {
+  getUser(user: $user, type: $type) {
     id
     username
     message
-    email
+    id
     image
   }
 }
 
-mutation editUsername($email: String!, $username: String!) {
-  editUsername(email: $email, username: $username)
+mutation createUser($username: String!, $password: String!) {
+  createUser(username: $username, password: $password)
 }
 
-mutation editUserMessage($email: String!, $message: String!) {
-  editUserMessage(email: $email, message: $message)
+mutation editUsername($id: String!, $username: String!) {
+  editUsername(id: $id, username: $username)
 }
 
-mutation deleteUser($email: String!) {
-  deleteUser(email: $email)
+mutation editUserMessage($id: String!, $message: String!) {
+  editUserMessage(id: $id, message: $message)
+}
+
+mutation deleteUser($id: String!) {
+  deleteUser(id: $id)
 }

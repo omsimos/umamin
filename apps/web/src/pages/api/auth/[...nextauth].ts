@@ -65,6 +65,22 @@ const options: NextAuthOptions = {
   pages: {
     signIn: '/login',
   },
+  callbacks: {
+    jwt({ token, user }) {
+      if (user) {
+        token.username = user.username;
+        return token;
+      }
+      return token;
+    },
+    session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.sub;
+        session.user.username = token.username as string;
+      }
+      return session;
+    },
+  },
 };
 
 const authHandler: NextApiHandler = (req, res) => NextAuth(req, res, options);

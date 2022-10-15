@@ -7,7 +7,7 @@ import { useUser } from '@/hooks';
 import { getSeenMessages } from '@/api';
 
 interface Values {
-  user: GetUserQuery['user'];
+  user: GetUserQuery['getUser'];
   isUserLoading: boolean;
   refetchUser: () => void;
   seenData?: SeenMessage[] | null;
@@ -27,8 +27,8 @@ export const InboxProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
   const { data, isLoading, refetch } = useUser(
     'inbox_user',
-    session?.user?.email ?? '',
-    'email'
+    session?.user?.id ?? '',
+    'id'
   );
 
   const [cursorId, setCursorId] = useState('');

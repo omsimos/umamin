@@ -19,6 +19,7 @@ export type Scalars = {
 export type Mutation = {
   __typename?: 'Mutation';
   addReply: Scalars['String'];
+  createUser: Scalars['String'];
   deleteMessage: Scalars['String'];
   deleteUser: Scalars['String'];
   editMessage: Scalars['String'];
@@ -34,13 +35,19 @@ export type MutationAddReplyArgs = {
 };
 
 
+export type MutationCreateUserArgs = {
+  password: Scalars['String'];
+  username: Scalars['String'];
+};
+
+
 export type MutationDeleteMessageArgs = {
   id: Scalars['ID'];
 };
 
 
 export type MutationDeleteUserArgs = {
-  email: Scalars['String'];
+  id: Scalars['String'];
 };
 
 
@@ -51,13 +58,13 @@ export type MutationEditMessageArgs = {
 
 
 export type MutationEditUserMessageArgs = {
-  email: Scalars['String'];
+  id: Scalars['String'];
   message: Scalars['String'];
 };
 
 
 export type MutationEditUsernameArgs = {
-  email: Scalars['String'];
+  id: Scalars['String'];
   username: Scalars['String'];
 };
 
@@ -71,7 +78,7 @@ export type Query = {
   getRecentMessages?: Maybe<Array<RecentMessage>>;
   getSeenMessages?: Maybe<Array<SeenMessage>>;
   getSentMessages?: Maybe<Array<SentMessage>>;
-  user?: Maybe<User>;
+  getUser?: Maybe<User>;
 };
 
 
@@ -93,7 +100,7 @@ export type QueryGetSentMessagesArgs = {
 };
 
 
-export type QueryUserArgs = {
+export type QueryGetUserArgs = {
   type: Scalars['String'];
   user: Scalars['String'];
 };
@@ -119,7 +126,7 @@ export type SendMessageInput = {
   content: Scalars['String'];
   receiverMsg: Scalars['String'];
   receiverUsername: Scalars['String'];
-  senderEmail?: InputMaybe<Scalars['String']>;
+  senderId?: InputMaybe<Scalars['String']>;
 };
 
 export type SentMessage = {
@@ -202,10 +209,18 @@ export type GetUserQueryVariables = Exact<{
 }>;
 
 
-export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, username?: string | null, message: string, email?: string | null, image?: string | null } | null };
+export type GetUserQuery = { __typename?: 'Query', getUser?: { __typename?: 'User', id: string, username?: string | null, message: string, image?: string | null } | null };
+
+export type CreateUserMutationVariables = Exact<{
+  username: Scalars['String'];
+  password: Scalars['String'];
+}>;
+
+
+export type CreateUserMutation = { __typename?: 'Mutation', createUser: string };
 
 export type EditUsernameMutationVariables = Exact<{
-  email: Scalars['String'];
+  id: Scalars['String'];
   username: Scalars['String'];
 }>;
 
@@ -213,7 +228,7 @@ export type EditUsernameMutationVariables = Exact<{
 export type EditUsernameMutation = { __typename?: 'Mutation', editUsername: string };
 
 export type EditUserMessageMutationVariables = Exact<{
-  email: Scalars['String'];
+  id: Scalars['String'];
   message: Scalars['String'];
 }>;
 
@@ -221,7 +236,7 @@ export type EditUserMessageMutationVariables = Exact<{
 export type EditUserMessageMutation = { __typename?: 'Mutation', editUserMessage: string };
 
 export type DeleteUserMutationVariables = Exact<{
-  email: Scalars['String'];
+  id: Scalars['String'];
 }>;
 
 
@@ -283,28 +298,33 @@ export const AddReplyDocument = gql`
     `;
 export const GetUserDocument = gql`
     query getUser($user: String!, $type: String!) {
-  user(user: $user, type: $type) {
+  getUser(user: $user, type: $type) {
     id
     username
     message
-    email
+    id
     image
   }
 }
     `;
+export const CreateUserDocument = gql`
+    mutation createUser($username: String!, $password: String!) {
+  createUser(username: $username, password: $password)
+}
+    `;
 export const EditUsernameDocument = gql`
-    mutation editUsername($email: String!, $username: String!) {
-  editUsername(email: $email, username: $username)
+    mutation editUsername($id: String!, $username: String!) {
+  editUsername(id: $id, username: $username)
 }
     `;
 export const EditUserMessageDocument = gql`
-    mutation editUserMessage($email: String!, $message: String!) {
-  editUserMessage(email: $email, message: $message)
+    mutation editUserMessage($id: String!, $message: String!) {
+  editUserMessage(id: $id, message: $message)
 }
     `;
 export const DeleteUserDocument = gql`
-    mutation deleteUser($email: String!) {
-  deleteUser(email: $email)
+    mutation deleteUser($id: String!) {
+  deleteUser(id: $id)
 }
     `;
 
@@ -338,6 +358,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     getUser(variables: GetUserQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetUserQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetUserQuery>(GetUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getUser', 'query');
+    },
+    createUser(variables: CreateUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<CreateUserMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateUserMutation>(CreateUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'createUser', 'mutation');
     },
     editUsername(variables: EditUsernameMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<EditUsernameMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<EditUsernameMutation>(EditUsernameDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'editUsername', 'mutation');

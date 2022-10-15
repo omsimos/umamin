@@ -31,7 +31,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
-    if (user?.email === session?.user?.email) {
+    if (user?.id === session?.user?.id) {
       setMessage('');
       toast.error("You can't send a message to yourself");
     } else if (user) {
@@ -39,7 +39,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         {
           input: {
             receiverUsername: username,
-            senderEmail: session?.user?.email,
+            senderId: session?.user?.id,
             content: message,
             receiverMsg: user.message,
           },
