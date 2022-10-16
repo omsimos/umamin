@@ -2,21 +2,22 @@
 import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
 
 import { User } from '.';
+import { hashPassword } from '@/utils/helpers';
 import type { TContext } from '@/pages/api/graphql';
 
 @Resolver()
 export class UserResolver {
   @Query(() => User, { nullable: true })
-  async user(
+  async getUser(
     @Arg('user', () => String) user: string,
-    @Arg('type', () => String) type: 'email' | 'username',
+    @Arg('type', () => String) type: 'id' | 'username',
     @Ctx() { prisma }: TContext
   ): Promise<User> {
     try {
       let data: User | null;
 
-      if (type === 'email') {
-        data = await prisma.user.findUnique({ where: { email: user } });
+      if (type === 'id') {
+        data = await prisma.user.findUnique({ where: { id: user } });
       } else {
         data = await prisma.user.findUnique({ where: { username: user } });
       }
@@ -33,14 +34,50 @@ export class UserResolver {
   }
 
   @Mutation(() => String)
+  async createUser(
+    @Arg('username', () => String) username: string,
+    @Arg('password', () => String) password: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<String> {
+    const usernameRegex = /^[a-zA-Z0-9]+$/;
+    const hashedPassword = hashPassword(password);
+
+    try {
+      if (!usernameRegex.test(username)) {
+        throw new Error('Username must be alphanumeric');
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { username },
+      });
+
+      if (user) {
+        throw new Error('Username already taken');
+      }
+
+      await prisma.user.create({
+        data: {
+          username,
+          password: hashedPassword,
+        },
+      });
+
+      return 'User created';
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Mutation(() => String)
   async editUserMessage(
-    @Arg('email', () => String) email: string,
+    @Arg('id', () => String) id: string,
     @Arg('message', () => String) message: string,
     @Ctx() { prisma }: TContext
   ): Promise<String> {
     try {
       await prisma.user.update({
-        where: { email },
+        where: { id },
         data: { message },
       });
 
@@ -53,7 +90,7 @@ export class UserResolver {
 
   @Mutation(() => String)
   async editUsername(
-    @Arg('email', () => String) email: string,
+    @Arg('id', () => String) id: string,
     @Arg('username', () => String) username: string,
     @Ctx() { prisma }: TContext
   ): Promise<String> {
@@ -71,7 +108,7 @@ export class UserResolver {
       }
 
       await prisma.user.update({
-        where: { email },
+        where: { id },
         data: { username },
       });
 
@@ -83,13 +120,40 @@ export class UserResolver {
   }
 
   @Mutation(() => String)
+  async changePassword(
+    @Arg('id', () => String) id: string,
+    @Arg('newPassword', () => String) newPassword: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<String> {
+    const hashedPassword = hashPassword(newPassword);
+
+    try {
+      await prisma.user.findUnique({
+        where: { id },
+      });
+
+      await prisma.user.update({
+        where: { id },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      return 'Password changed';
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  @Mutation(() => String)
   async deleteUser(
-    @Arg('email', () => String) email: string,
+    @Arg('id', () => String) id: string,
     @Ctx() { prisma }: TContext
   ): Promise<String> {
     try {
       await prisma.user.delete({
-        where: { email },
+        where: { id },
       });
 
       return 'User deleted';

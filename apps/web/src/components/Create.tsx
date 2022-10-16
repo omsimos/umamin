@@ -20,13 +20,11 @@ export const Create = () => {
   const handleSubmit: React.FormEventHandler = (e) => {
     e.preventDefault();
 
-    if (data?.user?.email) {
-      mutate(
-        { email: data.user.email ?? '', username },
-        { onSuccess: () => refetchUser() }
-      );
-      setUsername('');
-    }
+    mutate(
+      { id: data?.user?.id ?? '', username },
+      { onSuccess: () => refetchUser() }
+    );
+    setUsername('');
   };
 
   return (
@@ -51,9 +49,7 @@ export const Create = () => {
         <Info message='You can still change your username later.' />
       </section>
 
-      <AdContainer slotId='3864332312' className='mt-12' />
-      <AdContainer slotId='2894865577' className='mt-4' />
-      <AdContainer slotId='3696262618' className='mt-4' />
+      <AdContainer slotId='3864332312' className='mt-8' />
     </>
   );
 };

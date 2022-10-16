@@ -138,7 +138,7 @@ export class MessageResolver {
   @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
-    { senderEmail, receiverUsername, content, receiverMsg }: SendMessageInput,
+    { senderId, receiverUsername, content, receiverMsg }: SendMessageInput,
     @Ctx() { prisma }: TContext
   ): Promise<String> {
     try {
@@ -146,7 +146,7 @@ export class MessageResolver {
         data: {
           content,
           receiverMsg,
-          sender: senderEmail ? { connect: { email: senderEmail } } : undefined,
+          sender: senderId ? { connect: { id: senderId } } : undefined,
           receiver: { connect: { username: receiverUsername } },
           username: receiverUsername,
         },

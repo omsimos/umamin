@@ -1,12 +1,8 @@
 import React from 'react';
-import { Layout } from '@/components';
+import { Error, Layout } from '@/components';
 
 const Error404 = () => {
-  return (
-    <section>
-      <h1 className='h1-text text-center'>Are you lost?</h1>
-    </section>
-  );
+  return <Error message='Are you lost?' />;
 };
 
 Error404.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;

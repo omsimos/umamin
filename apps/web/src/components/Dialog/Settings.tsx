@@ -4,11 +4,17 @@ import { signOut } from 'next-auth/react';
 import { useMutation } from 'react-query';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
+import bcrypt from 'bcryptjs';
 
 import { useLogEvent } from '@/hooks';
 import { useInboxContext } from '@/contexts/InboxContext';
 import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
-import { editUserMessage, deleteUser, editUsername } from '@/api';
+import {
+  editUserMessage,
+  deleteUser,
+  editUsername,
+  changePassword,
+} from '@/api';
 
 interface Props extends DialogContainerProps {}
 
@@ -17,28 +23,64 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const triggerEvent = useLogEvent();
   const { user, refetchUser } = useInboxContext();
   const [deleteModal, setDeleteModal] = useState(false);
-  const [changeUsername, setChangeUsername] = useState(false);
   const [message, setMessage] = useState(user?.message ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
 
-  const { mutate: deleteUserMutate } = useMutation(deleteUser);
-  const { mutate: editUsernameMutate } = useMutation(editUsername);
-  const { mutate: editUserMessageMutate } = useMutation(editUserMessage);
+  const [currentOption, setCurrentOption] = useState<
+    'message' | 'username' | 'password'
+  >('message');
+
+  const [currentPass, setCurrentPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmNewPass, setConfirmNewPass] = useState('');
+
+  const { mutate: deleteUserMutate, isLoading: delUserL } =
+    useMutation(deleteUser);
+  const { mutate: editUsernameMutate, isLoading: editUserL } =
+    useMutation(editUsername);
+  const { mutate: editUserMessageMutate, isLoading: editUserMsgL } =
+    useMutation(editUserMessage);
+  const { mutate: changePasswordMutate, isLoading: changePassL } =
+    useMutation(changePassword);
 
   const handleClose = () => {
     setTimeout(() => {
-      setChangeUsername(false);
+      setCurrentOption('message');
       setMessage(user?.message ?? '');
       setUsername(user?.username ?? '');
+
+      setNewPass('');
+      setCurrentPass('');
+      setConfirmNewPass('');
     }, 500);
   };
 
-  const handleEdit = () => {
-    if (user?.email) {
-      if (changeUsername && username !== user.username) {
+  const handleEdit: React.FormEventHandler = (e) => {
+    e.preventDefault();
+
+    if (user?.id) {
+      if (currentOption === 'message' && message !== user.message) {
+        editUserMessageMutate(
+          {
+            id: user?.id,
+            message,
+          },
+          {
+            onSuccess: () => {
+              setIsOpen(false);
+              refetchUser();
+              toast.success('Message updated');
+
+              triggerEvent('edit_user_message');
+            },
+          }
+        );
+      }
+
+      if (currentOption === 'username' && username !== user.username) {
         editUsernameMutate(
           {
-            email: user?.email,
+            id: user?.id,
             username,
           },
           {
@@ -53,30 +95,37 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
         );
       }
 
-      if (!changeUsername && message !== user.message) {
-        editUserMessageMutate(
-          {
-            email: user?.email,
-            message,
-          },
-          {
-            onSuccess: () => {
-              setIsOpen(false);
-              refetchUser();
-              toast.success('Username updated');
+      if (currentOption === 'password' && user.password) {
+        const correctPassword = bcrypt.compareSync(currentPass, user.password);
 
-              triggerEvent('edit_user_message');
+        if (!correctPassword) {
+          toast.error('Current password is incorrect');
+        } else if (currentPass === newPass) {
+          toast.error('New password is the same as current password');
+        } else if (newPass !== confirmNewPass) {
+          toast.error('New passwords do not match');
+        } else {
+          changePasswordMutate(
+            {
+              id: user.id,
+              newPassword: newPass,
             },
-          }
-        );
+            {
+              onSuccess: () => {
+                toast.success('Password updated');
+                setIsOpen(false);
+              },
+            }
+          );
+        }
       }
     }
   };
 
   const handleDeleteUser = () => {
-    if (user?.email) {
+    if (user?.id) {
       deleteUserMutate(
-        { email: user.email },
+        { id: user.id },
         {
           onSuccess: async () => {
             toast.success('User deleted');
@@ -89,6 +138,8 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       );
     }
   };
+
+  const isLoading = delUserL || editUserL || editUserMsgL || changePassL;
 
   return (
     <>
@@ -110,19 +161,28 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
         className='grid place-items-center'
         {...rest}
       >
-        <div className='msg-card flex flex-col space-y-4 p-6'>
+        <form
+          onSubmit={handleEdit}
+          className='msg-card flex flex-col space-y-4 p-6'
+        >
           <div>
-            <button
-              type='button'
-              onClick={() => setChangeUsername(false)}
-              className='settings-label'
-            >
-              <p>Custom Message</p>
-              {changeUsername && <MdArrowDropDown className='text-xl' />}
-            </button>
+            <div className='flex justify-between'>
+              <button
+                type='button'
+                onClick={() => setCurrentOption('message')}
+                className='settings-label'
+              >
+                <p>Custom Message</p>
+                {currentOption !== 'message' && (
+                  <MdArrowDropDown className='text-xl' />
+                )}
+              </button>
+              {isLoading && <span className='loader' />}
+            </div>
 
-            {!changeUsername && (
+            {currentOption === 'message' && (
               <textarea
+                required
                 minLength={1}
                 maxLength={100}
                 className='settings-input min-h-[100px] resize-none'
@@ -138,14 +198,17 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
           <div>
             <button
               type='button'
-              onClick={() => setChangeUsername(true)}
+              onClick={() => setCurrentOption('username')}
               className='settings-label'
             >
               <p>Change Username</p>
-              {!changeUsername && <MdArrowDropDown className='text-xl' />}
+              {currentOption !== 'username' && (
+                <MdArrowDropDown className='text-xl' />
+              )}
             </button>
-            {changeUsername && (
+            {currentOption === 'username' && (
               <input
+                required
                 minLength={3}
                 maxLength={12}
                 className='settings-input'
@@ -155,6 +218,49 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
               />
             )}
           </div>
+
+          {user?.password && (
+            <div>
+              <button
+                type='button'
+                onClick={() => setCurrentOption('password')}
+                className='settings-label'
+              >
+                <p>Change Password</p>
+                {currentOption !== 'password' && (
+                  <MdArrowDropDown className='text-xl' />
+                )}
+              </button>
+              {currentOption === 'password' && (
+                <div className='space-y-3'>
+                  <input
+                    required
+                    value={currentPass}
+                    onChange={(e) => setCurrentPass(e.target.value)}
+                    type='password'
+                    placeholder='Current password'
+                    className='settings-input'
+                  />
+                  <input
+                    required
+                    value={newPass}
+                    onChange={(e) => setNewPass(e.target.value)}
+                    type='password'
+                    placeholder='New password'
+                    className='settings-input'
+                  />
+                  <input
+                    required
+                    value={confirmNewPass}
+                    onChange={(e) => setConfirmNewPass(e.target.value)}
+                    type='password'
+                    placeholder='Confirm new password'
+                    className='settings-input'
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className='flex items-center justify-between'>
             <button
@@ -183,15 +289,15 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
               </button>
 
               <button
-                onClick={handleEdit}
+                disabled={isLoading}
                 className='primary-btn'
-                type='button'
+                type='submit'
               >
-                Save
+                <p>Save</p>
               </button>
             </div>
           </div>
-        </div>
+        </form>
       </DialogContainer>
     </>
   );

@@ -6,5 +6,6 @@ export * from './Footer';
 export * from './Layout';
 export * from './Create';
 export * from './Markdown';
+export * from './UserForm';
 export * from './ImageFill';
 export * from './Maintenance';

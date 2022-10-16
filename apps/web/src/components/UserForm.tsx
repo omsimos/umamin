@@ -5,6 +5,7 @@ import { BsFillPersonFill } from 'react-icons/bs';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { HiLockClosed } from 'react-icons/hi';
 import { FaDiscord } from 'react-icons/fa';
+import { FcGoogle } from 'react-icons/fc';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
@@ -24,7 +25,7 @@ interface Props {
 
 export const UserForm = ({ type, onRegister, loading }: Props) => {
   const isLogin = type === 'login';
-  const { push } = useRouter();
+  const { push, query } = useRouter();
   const { status } = useSession();
   const triggerEvent = useLogEvent();
 
@@ -35,6 +36,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loginAttempts, setLoginAttempts] = useState(0);
   const [confirmPassword, setConfirmPassword] = useState('');
 
   if (status === 'authenticated') {
@@ -80,9 +82,8 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
     handleLogin();
   };
 
-  const handleSubmit: React.FormEventHandler = (e) => {
-    e.preventDefault();
-    if (process.env.NODE_ENV === 'development') {
+  const handleSubmit = () => {
+    if (loginAttempts <= 5 || process.env.NODE_ENV === 'development') {
       handleAuth();
     } else {
       captchaRef.current?.execute();
@@ -107,7 +108,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
       if (res.ok) {
         handleAuth();
       } else {
-        toast.error('Something went wrong');
+        toast.error('CAPTCHA Failed');
       }
     } catch (e: any) {
       toast.error('Something went wrong');
@@ -123,10 +124,17 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
   };
 
   return (
-    <section className='min-h-screen space-y-8'>
+    <section className='min-h-screen xl:-mt-12'>
       <div className='flex flex-col items-center space-y-12'>
         <form
-          onSubmit={handleSubmit}
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+
+            if (isLogin) {
+              setLoginAttempts((prev) => prev + 1);
+            }
+          }}
           className='card z-[1] flex w-full flex-col space-y-10 rounded-md px-5 py-10 text-center sm:w-[500px] sm:px-10'
         >
           <span className='font-syne text-primary-200 text-5xl font-extrabold'>
@@ -184,33 +192,52 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             <button
               disabled={isLoading}
               type='submit'
-              className='primary-btn mb-2 w-full'
+              className='primary-btn w-full'
             >
               {buttonText()}
             </button>
 
-            {isLogin && (
+            <p className='text-sm mt-2'>
+              {isLogin ? "Don't" : 'Already'} have an account?{' '}
+              <Link href={`${isLogin ? '/register' : 'login'}`}>
+                <a className='text-primary-100'>
+                  {isLogin ? 'Get started' : 'Log in'}
+                </a>
+              </Link>
+            </p>
+
+            <div className='line mt-8' />
+            <p className='my-4 text-sm'>Or continue with</p>
+            <div className='flex space-x-2'>
               <button
                 type='button'
-                className='bg-dcblue hover:bg-dcblue/80 btn mb-2 flex w-full items-center justify-center space-x-2'
+                className='bg-dcblue hover:bg-dcblue/80 btn flex w-full items-center justify-center space-x-2'
                 onClick={() => {
-                  signIn('discord', { redirect: false });
+                  signIn('discord');
                   triggerEvent('login', { provider: 'discord' });
                 }}
               >
                 <FaDiscord className='text-lg' />
-                <p>Sign in with Discord</p>
+                <p>Discord</p>
               </button>
-            )}
+              <button
+                type='button'
+                className='btn flex w-full items-center justify-center space-x-2 bg-white font-semibold text-black hover:bg-white/80'
+                onClick={() => {
+                  signIn('google');
+                  triggerEvent('login', { provider: 'google' });
+                }}
+              >
+                <FcGoogle className='text-xl' />
+                <p>Google</p>
+              </button>
+            </div>
 
-            <p className='text-sm'>
-              {isLogin ? "Don't" : 'Already'} have an account?{' '}
-              <Link href={`${isLogin ? '/register' : 'login'}`}>
-                <a className='text-primary-100'>
-                  {isLogin ? 'Get started' : 'Login'}
-                </a>
-              </Link>
-            </p>
+            {query.error === 'OAuthAccountNotLinked' && (
+              <p className='mt-4'>
+                Email is already linked to a different provider
+              </p>
+            )}
           </div>
         </form>
         <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] md:bottom-0'>
@@ -222,11 +249,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
           />
         </div>
       </div>
-      {isLogin ? (
-        <AdContainer slotId='3174608770' />
-      ) : (
-        <AdContainer slotId='5734157654' />
-      )}
+      <AdContainer slotId='3174608770' className='mt-8' />
     </section>
   );
 };

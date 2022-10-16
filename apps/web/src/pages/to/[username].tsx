@@ -21,7 +21,11 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   const { push } = useRouter();
   const triggerEvent = useLogEvent();
-  const { data: user } = useUser('to_user', username, 'username');
+  const { data: user, isLoading: isUserLoading } = useUser(
+    'to_user',
+    username,
+    'username'
+  );
   const { data: session } = useSession();
 
   const [message, setMessage] = useState('');
@@ -31,7 +35,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
-    if (user?.email === session?.user?.email) {
+    if (user?.id === session?.user?.id) {
       setMessage('');
       toast.error("You can't send a message to yourself");
     } else if (user) {
@@ -39,7 +43,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         {
           input: {
             receiverUsername: username,
-            senderEmail: session?.user?.email,
+            senderId: session?.user?.id,
             content: message,
             receiverMsg: user.message,
           },
@@ -55,6 +59,14 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
       triggerEvent('send_message');
     }
   };
+
+  if (isUserLoading) {
+    return (
+      <div className='mt-52 flex justify-center'>
+        <span className='loader-2' />
+      </div>
+    );
+  }
 
   if (!user) {
     return <Error message='Are you lost?' />;
@@ -77,7 +89,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 md:w-[720px]'>
           {/* Top */}
           <div className='bg-secondary-300 border-secondary-100 flex items-center justify-between border-b-2 px-7 py-2'>
-            <p className='font-medium capitalize text-white'>
+            <p className='font-medium text-white'>
               <span className='font-light text-gray-400'>To&#58;</span>{' '}
               {username}
             </p>

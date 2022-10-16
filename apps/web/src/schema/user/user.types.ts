@@ -19,4 +19,7 @@ export class User {
 
   @Field(() => String, { nullable: true })
   image: string | null;
+
+  @Field(() => String, { nullable: true })
+  password: string | null;
 }
