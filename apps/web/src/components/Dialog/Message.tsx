@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { toPng } from 'html-to-image';
-import download from 'downloadjs';
+import toast from 'react-hot-toast';
 import { nanoid } from 'nanoid';
 
 import { useLogEvent } from '../../hooks';
@@ -15,17 +15,30 @@ interface Props extends DialogContainerProps {
 }
 
 export const MessageDialog = ({ data, setIsOpen, ...rest }: Props) => {
+  const cardRef = useRef<HTMLDivElement>(null);
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
 
-  const saveImage = async () => {
-    const imgUrl = await toPng(document.getElementById('card-img')!);
-    download(imgUrl, `${user?.username}_${nanoid(5)}.png`);
-  };
+  const saveImage = useCallback(() => {
+    if (cardRef.current === null) {
+      return;
+    }
+
+    toPng(cardRef.current, { cacheBust: true })
+      .then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = `${user?.username}_${nanoid(5)}.png`;
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch((err) => {
+        toast.error(err);
+      });
+  }, [cardRef]);
 
   return (
     <DialogContainer setIsOpen={setIsOpen} {...rest}>
-      <div id='card-img' className='bg-secondary-300 flex flex-col p-4'>
+      <div ref={cardRef} className='bg-secondary-300 flex flex-col p-4'>
         <p className='font-syneExtrabold mb-2 self-center text-xl'>
           <span className='text-primary-200'>umamin</span>.link
         </p>

@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import type { SeenMessage } from '@umamin/generated';
 import { formatDistanceToNow } from 'date-fns';
 import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
-import download from 'downloadjs';
 import {
   HiAnnotation,
   HiDotsHorizontal,
@@ -26,6 +25,7 @@ interface Props {
 }
 
 export const SeenCard = ({ message, refetch }: Props) => {
+  const cardRef = useRef<HTMLDivElement>(null);
   const { id, content, receiverMsg, reply, createdAt } = message;
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
@@ -51,10 +51,22 @@ export const SeenCard = ({ message, refetch }: Props) => {
     triggerEvent('delete_message');
   };
 
-  const saveImage = async () => {
-    const imgUrl = await toPng(document.getElementById(id)!);
-    download(imgUrl, `${user?.username}_${id}.png`);
-  };
+  const saveImage = useCallback(() => {
+    if (cardRef.current === null) {
+      return;
+    }
+
+    toPng(cardRef.current, { cacheBust: true })
+      .then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = `${user?.username}_${id}.png`;
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch((err) => {
+        toast.error(err);
+      });
+  }, [cardRef]);
 
   return (
     <>
@@ -79,7 +91,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
       />
 
       <div
-        id={id}
+        ref={cardRef}
         className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2 mb-6'
       >
         <div className='border-secondary-100 relative flex items-center border-b-2 bg-[#171819] py-3'>
