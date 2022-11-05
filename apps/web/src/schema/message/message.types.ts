@@ -36,9 +36,6 @@ export class SentMessage extends BaseMessage {
 
 @InputType()
 export class SendMessageInput {
-  @Field(() => String, { nullable: true })
-  senderId: string;
-
   @IsNotEmpty()
   @Field(() => String)
   receiverUsername: string;

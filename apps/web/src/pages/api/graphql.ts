@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { ApolloServer } from 'apollo-server-micro';
+import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
 import { PrismaClient } from '@umamin/db';
 import Cors from 'micro-cors';
@@ -17,6 +18,7 @@ const prisma = new PrismaClient();
 
 export interface TContext {
   prisma: typeof prisma;
+  id?: string;
 }
 
 const limiter = rateLimit({
@@ -31,7 +33,11 @@ const schema = await buildSchema({
 const server = new ApolloServer({
   schema,
   cache: 'bounded',
-  context: { prisma },
+  context: async ({ req }) => {
+    const session = await getSession({ req });
+    const id = session?.user?.id;
+    return { prisma, id };
+  },
   csrfPrevention: true,
 });
 

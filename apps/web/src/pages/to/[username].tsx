@@ -43,7 +43,6 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         {
           input: {
             receiverUsername: username,
-            senderId: session?.user?.id,
             content: message,
             receiverMsg: user.message,
           },
