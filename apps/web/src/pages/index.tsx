@@ -69,6 +69,7 @@ const Home: NextPageWithLayout = () => {
 
         <div className='absolute top-44 right-0 -z-10 h-[450px] w-[450px] sm:top-40 md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
           <Image
+            alt='hearts background'
             priority
             src='/assets/hearts.svg'
             layout='fill'

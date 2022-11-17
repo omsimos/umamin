@@ -27,6 +27,7 @@ export const Navbar = () => {
     <nav className='relative z-10 mb-12 flex items-center justify-between xl:mb-24'>
       <Link href='/'>
         <ImageFill
+          alt='logo'
           src='/assets/logo.svg'
           objectFit='contain'
           className='hide-tap-highlight h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'

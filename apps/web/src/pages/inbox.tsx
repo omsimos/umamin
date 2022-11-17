@@ -74,6 +74,7 @@ const Inbox: NextPageWithLayout = () => {
 
           <div className='mb-5 flex w-full items-center justify-between px-4'>
             <ImageFill
+              alt='profile picture'
               src={data?.user?.image}
               objectFit='cover'
               className='border-secondary-100 h-[80px] w-[80px] rounded-full border-2 sm:h-[120px] sm:w-[120px]'

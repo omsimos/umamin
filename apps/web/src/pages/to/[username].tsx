@@ -93,7 +93,12 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
               {username}
             </p>
             <div className='relative h-[40px] w-[110px] md:h-[50px] md:w-[130px]'>
-              <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
+              <Image
+                alt='logo'
+                src='/assets/logo.svg'
+                layout='fill'
+                objectFit='contain'
+              />
             </div>
           </div>
 

@@ -9,11 +9,6 @@
   "description": "An ad-free and open-source platform for sending and receiving anonymous confessions.",
   "icons": [
     {
-      "src": "/icons/icon-36x36.png",
-      "type": "image/png",
-      "sizes": "36x36"
-    },
-    {
       "src": "/icons/icon-48x48.png",
       "type": "image/png",
       "sizes": "48x48"

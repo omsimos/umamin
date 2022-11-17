@@ -10,6 +10,7 @@ export const Maintenance = () => {
       <section className='contain text-base min-h-screen'>
         <div className='relative h-[75px] w-[150px] md:h-[100px] md:w-[200px]'>
           <Image
+            alt='logo'
             priority
             src='/assets/logo.svg'
             layout='fill'
