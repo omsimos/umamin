@@ -41,7 +41,12 @@ export const Sent = () => {
               {m.username}
             </p>
             <div className='relative h-[40px] w-[110px]'>
-              <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
+              <Image
+                alt='logo'
+                src='/assets/logo.svg'
+                layout='fill'
+                objectFit='contain'
+              />
             </div>
           </div>
 

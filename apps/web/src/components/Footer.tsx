@@ -42,6 +42,7 @@ export const Footer = () => {
         ))}
 
         <ImageFill
+          alt='logo'
           src='/assets/logo.svg'
           objectFit='contain'
           className='hidden h-6 w-32 md:block'
@@ -50,6 +51,7 @@ export const Footer = () => {
 
       <div className='mt-20 flex flex-col items-center md:items-start'>
         <ImageFill
+          alt='logo'
           src='/assets/logo.svg'
           objectFit='contain'
           className='relative mb-4 h-6 w-32 md:hidden'

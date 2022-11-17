@@ -65,6 +65,7 @@ export const ReplyDialog = ({
       <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2'>
         <div className='border-secondary-100 flex items-center justify-between border-b-2 bg-[#171819] py-1'>
           <ImageFill
+            alt="profile's avatar"
             src='/assets/logo.svg'
             objectFit='contain'
             className='relative mx-auto h-[40px] w-[120px]'
