@@ -1,9 +1,9 @@
 /* eslint-disable no-console */
 import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
 
-import { User } from '.';
 import { hashPassword } from '@/utils/helpers';
 import type { TContext } from '@/pages/api/graphql';
+import { User } from '.';
 
 @Resolver()
 export class UserResolver {

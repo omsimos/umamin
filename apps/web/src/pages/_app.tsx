@@ -11,8 +11,9 @@ import Script from 'next/script';
 
 import '../styles/globals.css';
 import { queryClient } from '@/api';
-import SEO from '../../next-seo-config';
 import { Maintenance } from '@/components';
+
+import SEO from '../../next-seo-config';
 import type { NextPageWithLayout } from '..';
 
 Router.events.on('routeChangeStart', () => {

@@ -4,9 +4,10 @@ import { useQuery } from 'react-query';
 import Image from 'next/image';
 
 import { getSentMessages } from '@/api';
+import { useInboxContext } from '@/contexts/InboxContext';
+
 import { ChatBubble } from '../ChatBubble';
 import { InboxTabContainer } from './Container';
-import { useInboxContext } from '@/contexts/InboxContext';
 
 export const Sent = () => {
   const [pageNo, setPageNo] = useState(1);

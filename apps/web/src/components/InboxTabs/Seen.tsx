@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { SeenCard } from '.';
-import { InboxTabContainer } from './Container';
 import { useInboxContext } from '@/contexts/InboxContext';
+import { InboxTabContainer } from './Container';
+import { SeenCard } from '.';
 
 export const Seen = () => {
   const [pageNo, setPageNo] = useState(1);

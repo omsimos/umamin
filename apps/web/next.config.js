@@ -8,7 +8,8 @@ module.exports = withPWA({
   pwa: {
     dest: 'public',
     runtimeCaching,
-    disable: process.env.NODE_ENV === 'development',
+    register: true,
+    skipWaiting: true,
   },
   images: {
     domains: ['cdn.discordapp.com', 'lh3.googleusercontent.com'],

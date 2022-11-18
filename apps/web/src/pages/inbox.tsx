@@ -8,11 +8,11 @@ import { useSession } from 'next-auth/react';
 import { RiSettings3Fill } from 'react-icons/ri';
 
 import { useLogEvent } from '@/hooks';
-import type { NextPageWithLayout } from '..';
 import { SettingsDialog } from '@/components/Dialog';
 import { Layout, Create, ImageFill } from '@/components';
 import { Recent, Seen, Sent } from '@/components/InboxTabs';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
+import type { NextPageWithLayout } from '..';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,

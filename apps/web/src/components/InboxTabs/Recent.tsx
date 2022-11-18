@@ -5,10 +5,11 @@ import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 
 import { useLogEvent } from '@/hooks';
-import { InboxTabContainer } from './Container';
 import { MessageDialog } from '@/components/Dialog';
 import { editMessage, getRecentMessages } from '@/api';
 import { useInboxContext } from '@/contexts/InboxContext';
+
+import { InboxTabContainer } from './Container';
 
 export const Recent = () => {
   const triggerEvent = useLogEvent();

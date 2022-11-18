@@ -1,8 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 
-import { ImageFill } from './ImageFill';
 import { footerItems } from '@/utils/constants';
+import { ImageFill } from './ImageFill';
 
 export const Footer = () => {
   return (

@@ -1,8 +1,8 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { markdown } from '@/utils/constants';
-import type { NextPageWithLayout } from '..';
 import { Layout, Markdown } from '@/components';
+import type { NextPageWithLayout } from '..';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,

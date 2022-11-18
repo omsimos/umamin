@@ -6,15 +6,15 @@ import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import bcrypt from 'bcryptjs';
 
-import { useLogEvent } from '@/hooks';
-import { useInboxContext } from '@/contexts/InboxContext';
-import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
 import {
   editUserMessage,
   deleteUser,
   editUsername,
   changePassword,
 } from '@/api';
+import { useLogEvent } from '@/hooks';
+import { useInboxContext } from '@/contexts/InboxContext';
+import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {}
 

@@ -7,8 +7,8 @@ import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
 
 import { Layout } from '@/components';
-import type { NextPageWithLayout } from '..';
 import { indexItems } from '@/utils/constants';
+import type { NextPageWithLayout } from '..';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,

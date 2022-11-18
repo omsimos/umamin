@@ -1,11 +1,11 @@
 import React, { useRef, useCallback } from 'react';
+import { useInboxContext } from '@/contexts/InboxContext';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
 import { nanoid } from 'nanoid';
 
-import { useLogEvent } from '../../hooks';
+import { useLogEvent } from '@/hooks';
 import { DialogContainer, DialogContainerProps } from '.';
-import { useInboxContext } from '@/contexts/InboxContext';
 
 interface Props extends DialogContainerProps {
   data: {
@@ -34,6 +34,7 @@ export const MessageDialog = ({ data, setIsOpen, ...rest }: Props) => {
       .catch((err) => {
         toast.error(err);
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardRef]);
 
   return (
