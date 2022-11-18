@@ -199,10 +199,10 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
 
             <p className='text-sm mt-2'>
               {isLogin ? "Don't" : 'Already'} have an account?{' '}
-              <Link href={`${isLogin ? '/register' : 'login'}`}>
-                <a className='text-primary-100'>
-                  {isLogin ? 'Get started' : 'Log in'}
-                </a>
+              <Link href={`${isLogin ? '/register' : 'login'}`} className='text-primary-100'>
+
+                {isLogin ? 'Get started' : 'Log in'}
+
               </Link>
             </p>
 

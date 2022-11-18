@@ -14,10 +14,12 @@ export const Footer = () => {
           <li className='font-medium'>Resources</li>
           {footerItems.withRoute.map((item) => (
             <li key={item.name}>
-              <Link href={item.href}>
-                <a className='text-gray-400 transition-colors hover:text-gray-500'>
-                  {item.name}
-                </a>
+              <Link
+                href={item.href}
+                className='text-gray-400 transition-colors hover:text-gray-500'>
+
+                {item.name}
+
               </Link>
             </li>
           ))}
