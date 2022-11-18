@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { useQuery } from 'react-query';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 
 import { getSentMessages } from '@/api';
 import { useInboxContext } from '@/contexts/InboxContext';

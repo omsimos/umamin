@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { RecentMessage } from '@umamin/generated';
 import { useQuery, useMutation } from 'react-query';
 import { formatDistanceToNow } from 'date-fns';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 
 import { useLogEvent } from '@/hooks';
 import { MessageDialog } from '@/components/Dialog';
