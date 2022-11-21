@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
@@ -7,8 +7,8 @@ import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
 
 import { Layout } from '@/components';
-import type { NextPageWithLayout } from '..';
 import { indexItems } from '@/utils/constants';
+import type { NextPageWithLayout } from '..';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -69,6 +69,7 @@ const Home: NextPageWithLayout = () => {
 
         <div className='absolute top-44 right-0 -z-10 h-[450px] w-[450px] sm:top-40 md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
           <Image
+            alt='hearts background'
             priority
             src='/assets/hearts.svg'
             layout='fill'

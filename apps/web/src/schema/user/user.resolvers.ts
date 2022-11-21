@@ -1,9 +1,9 @@
 /* eslint-disable no-console */
 import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
 
-import { User } from '.';
 import { hashPassword } from '@/utils/helpers';
 import type { TContext } from '@/pages/api/graphql';
+import { User } from '.';
 
 @Resolver()
 export class UserResolver {
@@ -71,9 +71,8 @@ export class UserResolver {
 
   @Mutation(() => String)
   async editUserMessage(
-    @Arg('id', () => String) id: string,
     @Arg('message', () => String) message: string,
-    @Ctx() { prisma }: TContext
+    @Ctx() { prisma, id }: TContext
   ): Promise<String> {
     try {
       await prisma.user.update({
@@ -90,9 +89,8 @@ export class UserResolver {
 
   @Mutation(() => String)
   async editUsername(
-    @Arg('id', () => String) id: string,
     @Arg('username', () => String) username: string,
-    @Ctx() { prisma }: TContext
+    @Ctx() { prisma, id }: TContext
   ): Promise<String> {
     const usernameRegex = /^[a-zA-Z0-9]+$/;
 
@@ -121,9 +119,8 @@ export class UserResolver {
 
   @Mutation(() => String)
   async changePassword(
-    @Arg('id', () => String) id: string,
     @Arg('newPassword', () => String) newPassword: string,
-    @Ctx() { prisma }: TContext
+    @Ctx() { prisma,id }: TContext
   ): Promise<String> {
     const hashedPassword = hashPassword(newPassword);
 
@@ -148,8 +145,7 @@ export class UserResolver {
 
   @Mutation(() => String)
   async deleteUser(
-    @Arg('id', () => String) id: string,
-    @Ctx() { prisma }: TContext
+    @Ctx() { prisma, id }: TContext
   ): Promise<String> {
     try {
       await prisma.user.delete({

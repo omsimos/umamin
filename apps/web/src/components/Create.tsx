@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useMutation } from 'react-query';
 import dynamic from 'next/dynamic';
 
@@ -12,7 +11,6 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 });
 
 export const Create = () => {
-  const { data } = useSession();
   const { refetchUser } = useInboxContext();
   const { mutate } = useMutation(editUsername);
   const [username, setUsername] = useState('');
@@ -20,10 +18,7 @@ export const Create = () => {
   const handleSubmit: React.FormEventHandler = (e) => {
     e.preventDefault();
 
-    mutate(
-      { id: data?.user?.id ?? '', username },
-      { onSuccess: () => refetchUser() }
-    );
+    mutate({ username }, { onSuccess: () => refetchUser() });
     setUsername('');
   };
 

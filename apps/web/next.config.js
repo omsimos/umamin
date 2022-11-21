@@ -1,9 +1,16 @@
 /* eslint-disable no-param-reassign */
 /** @type {import('next').NextConfig} */
 const withPWA = require('next-pwa');
+const runtimeCaching = require('next-pwa/cache');
 
-const nextConfig = {
+module.exports = withPWA({
   reactStrictMode: true,
+  pwa: {
+    dest: 'public',
+    runtimeCaching,
+    register: true,
+    skipWaiting: true,
+  },
   images: {
     domains: ['cdn.discordapp.com', 'lh3.googleusercontent.com'],
   },
@@ -23,13 +30,4 @@ const nextConfig = {
       },
     ];
   },
-};
-
-module.exports = withPWA({
-  pwa: {
-    dest: 'public',
-    disable: process.env.NODE_ENV === 'development',
-  },
 });
-
-module.exports = nextConfig;

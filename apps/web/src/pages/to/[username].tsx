@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 
 import { Error, Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
@@ -43,7 +43,6 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         {
           input: {
             receiverUsername: username,
-            senderId: session?.user?.id,
             content: message,
             receiverMsg: user.message,
           },
@@ -94,7 +93,12 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
               {username}
             </p>
             <div className='relative h-[40px] w-[110px] md:h-[50px] md:w-[130px]'>
-              <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
+              <Image
+                alt='logo'
+                src='/assets/logo.svg'
+                layout='fill'
+                objectFit='contain'
+              />
             </div>
           </div>
 

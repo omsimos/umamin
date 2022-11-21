@@ -13,18 +13,18 @@ mutation createUser($username: String!, $password: String!) {
   createUser(username: $username, password: $password)
 }
 
-mutation editUsername($id: String!, $username: String!) {
-  editUsername(id: $id, username: $username)
+mutation editUsername($username: String!) {
+  editUsername(username: $username)
 }
 
-mutation editUserMessage($id: String!, $message: String!) {
-  editUserMessage(id: $id, message: $message)
+mutation editUserMessage($message: String!) {
+  editUserMessage(message: $message)
 }
 
-mutation changePassword($id: String!, $newPassword: String!) {
-  changePassword(id: $id, newPassword: $newPassword)
+mutation changePassword($newPassword: String!) {
+  changePassword(newPassword: $newPassword)
 }
 
-mutation deleteUser($id: String!) {
-  deleteUser(id: $id)
+mutation deleteUser {
+  deleteUser
 }

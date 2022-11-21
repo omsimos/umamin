@@ -12,11 +12,12 @@ import {
   HiTrash,
 } from 'react-icons/hi';
 
-import { Menu } from '../Menu';
 import { deleteMessage } from '@/api';
 import { useLogEvent } from '@/hooks';
-import { ChatBubble } from '../ChatBubble';
 import { useInboxContext } from '@/contexts/InboxContext';
+
+import { Menu } from '../Menu';
+import { ChatBubble } from '../ChatBubble';
 import { ConfirmDialog, MessageDialog, ReplyDialog } from '../Dialog';
 
 interface Props {
@@ -66,6 +67,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
       .catch((err) => {
         toast.error(err);
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardRef]);
 
   return (

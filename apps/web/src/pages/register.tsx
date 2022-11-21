@@ -4,8 +4,8 @@ import { useMutation } from 'react-query';
 
 import { createUser } from '@/api';
 import { useLogEvent } from '@/hooks';
-import { NextPageWithLayout } from '..';
 import { Layout, UserForm } from '@/components';
+import { NextPageWithLayout } from '..';
 
 const Register: NextPageWithLayout = () => {
   const triggerEvent = useLogEvent();

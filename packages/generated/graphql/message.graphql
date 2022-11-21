@@ -1,5 +1,5 @@
-query getRecentMessages($userId: ID!, $cursorId: ID) {
-  getRecentMessages(userId: $userId, cursorId: $cursorId) {
+query getRecentMessages($cursorId: ID) {
+  getRecentMessages(cursorId: $cursorId) {
     id
     content
     createdAt
@@ -7,8 +7,8 @@ query getRecentMessages($userId: ID!, $cursorId: ID) {
   }
 }
 
-query getSeenMessages($userId: ID!, $cursorId: ID) {
-  getSeenMessages(userId: $userId, cursorId: $cursorId) {
+query getSeenMessages($cursorId: ID) {
+  getSeenMessages(cursorId: $cursorId) {
     id
     reply
     content
@@ -17,8 +17,8 @@ query getSeenMessages($userId: ID!, $cursorId: ID) {
   }
 }
 
-query getSentMessages($userId: ID!, $cursorId: ID) {
-  getSentMessages(userId: $userId, cursorId: $cursorId) {
+query getSentMessages($cursorId: ID) {
+  getSentMessages(cursorId: $cursorId) {
     id
     reply
     content

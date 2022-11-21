@@ -14,9 +14,8 @@ import {
 export class MessageResolver {
   @Query(() => [RecentMessage], { nullable: true })
   async getRecentMessages(
-    @Arg('userId', () => ID) id: string,
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    @Ctx() { prisma }: TContext
+    @Ctx() { prisma, id }: TContext
   ): Promise<RecentMessage[] | null> {
     try {
       let messages: RecentMessage[];
@@ -54,9 +53,8 @@ export class MessageResolver {
 
   @Query(() => [SeenMessage], { nullable: true })
   async getSeenMessages(
-    @Arg('userId', () => ID) id: string,
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    @Ctx() { prisma }: TContext
+    @Ctx() { prisma, id }: TContext
   ): Promise<SeenMessage[] | null> {
     try {
       let messages: SeenMessage[];
@@ -95,9 +93,8 @@ export class MessageResolver {
 
   @Query(() => [SentMessage], { nullable: true })
   async getSentMessages(
-    @Arg('userId', () => ID) id: string,
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    @Ctx() { prisma }: TContext
+    @Ctx() { prisma, id }: TContext
   ): Promise<SentMessage[] | null> {
     try {
       let messages: SentMessage[];
@@ -138,15 +135,15 @@ export class MessageResolver {
   @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
-    { senderId, receiverUsername, content, receiverMsg }: SendMessageInput,
-    @Ctx() { prisma }: TContext
+    { receiverUsername, content, receiverMsg }: SendMessageInput,
+    @Ctx() { prisma, id }: TContext
   ): Promise<String> {
     try {
       const message = await prisma.message.create({
         data: {
           content,
           receiverMsg,
-          sender: senderId ? { connect: { id: senderId } } : undefined,
+          sender: id ? { connect: { id } } : undefined,
           receiver: { connect: { username: receiverUsername } },
           username: receiverUsername,
         },

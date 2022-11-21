@@ -1,5 +1,10 @@
 {
-  "extends": ["plugin:react/recommended", "airbnb", "prettier"],
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:react/recommended",
+    "airbnb",
+    "prettier"
+  ],
   "parser": "@typescript-eslint/parser",
   "plugins": ["react"],
   "parserOptions": {
@@ -12,6 +17,7 @@
   "rules": {
     "react/jsx-props-no-spreading": "off",
     "import/prefer-default-export": "off",
+    "import/no-cycle": "off",
     "arrow-body-style": "off",
     "no-use-before-define": "off",
     "no-undef": "off",

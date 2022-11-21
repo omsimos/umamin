@@ -7,12 +7,12 @@ import { DefaultSeo } from 'next-seo';
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
 import Router from 'next/router';
-import Script from 'next/script';
 
 import '../styles/globals.css';
 import { queryClient } from '@/api';
-import SEO from '../../next-seo-config';
 import { Maintenance } from '@/components';
+
+import SEO from '../../next-seo-config';
 import type { NextPageWithLayout } from '..';
 
 Router.events.on('routeChangeStart', () => {
@@ -36,12 +36,6 @@ function MyApp({
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
         <Hydrate state={pageProps.dehydratedState}>
-          <Script
-            async
-            strategy='beforeInteractive'
-            src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4274133898976040'
-            crossOrigin='anonymous'
-          />
           <DefaultSeo {...SEO} />
           {process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ? (
             <Maintenance />

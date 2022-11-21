@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import type { RecentMessage } from '@umamin/generated';
 import { useQuery, useMutation } from 'react-query';
 import { formatDistanceToNow } from 'date-fns';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 
 import { useLogEvent } from '@/hooks';
-import { InboxTabContainer } from './Container';
 import { MessageDialog } from '@/components/Dialog';
 import { editMessage, getRecentMessages } from '@/api';
 import { useInboxContext } from '@/contexts/InboxContext';
+
+import { InboxTabContainer } from './Container';
 
 export const Recent = () => {
   const triggerEvent = useLogEvent();
@@ -80,7 +81,12 @@ export const Recent = () => {
           className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
         >
           <div className='relative mb-3 h-[40px]'>
-            <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
+            <Image
+              alt='logo'
+              src='/assets/logo.svg'
+              layout='fill'
+              objectFit='contain'
+            />
           </div>
 
           <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>

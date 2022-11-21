@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { useQuery } from 'react-query';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 
 import { getSentMessages } from '@/api';
+import { useInboxContext } from '@/contexts/InboxContext';
+
 import { ChatBubble } from '../ChatBubble';
 import { InboxTabContainer } from './Container';
-import { useInboxContext } from '@/contexts/InboxContext';
 
 export const Sent = () => {
   const [pageNo, setPageNo] = useState(1);
@@ -41,7 +42,12 @@ export const Sent = () => {
               {m.username}
             </p>
             <div className='relative h-[40px] w-[110px]'>
-              <Image src='/assets/logo.svg' layout='fill' objectFit='contain' />
+              <Image
+                alt='logo'
+                src='/assets/logo.svg'
+                layout='fill'
+                objectFit='contain'
+              />
             </div>
           </div>
 

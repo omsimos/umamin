@@ -1,8 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 
-import { ImageFill } from './ImageFill';
 import { footerItems } from '@/utils/constants';
+import { ImageFill } from './ImageFill';
 
 export const Footer = () => {
   return (
@@ -14,10 +14,12 @@ export const Footer = () => {
           <li className='font-medium'>Resources</li>
           {footerItems.withRoute.map((item) => (
             <li key={item.name}>
-              <Link href={item.href}>
-                <a className='text-gray-400 transition-colors hover:text-gray-500'>
-                  {item.name}
-                </a>
+              <Link
+                href={item.href}
+                className='text-gray-400 transition-colors hover:text-gray-500'>
+
+                {item.name}
+
               </Link>
             </li>
           ))}
@@ -42,6 +44,7 @@ export const Footer = () => {
         ))}
 
         <ImageFill
+          alt='logo'
           src='/assets/logo.svg'
           objectFit='contain'
           className='hidden h-6 w-32 md:block'
@@ -50,6 +53,7 @@ export const Footer = () => {
 
       <div className='mt-20 flex flex-col items-center md:items-start'>
         <ImageFill
+          alt='logo'
           src='/assets/logo.svg'
           objectFit='contain'
           className='relative mb-4 h-6 w-32 md:hidden'

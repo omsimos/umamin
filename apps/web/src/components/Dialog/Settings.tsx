@@ -6,15 +6,15 @@ import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import bcrypt from 'bcryptjs';
 
-import { useLogEvent } from '@/hooks';
-import { useInboxContext } from '@/contexts/InboxContext';
-import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
 import {
   editUserMessage,
   deleteUser,
   editUsername,
   changePassword,
 } from '@/api';
+import { useLogEvent } from '@/hooks';
+import { useInboxContext } from '@/contexts/InboxContext';
+import { ConfirmDialog, DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {}
 
@@ -62,7 +62,6 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       if (currentOption === 'message' && message !== user.message) {
         editUserMessageMutate(
           {
-            id: user?.id,
             message,
           },
           {
@@ -80,7 +79,6 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       if (currentOption === 'username' && username !== user.username) {
         editUsernameMutate(
           {
-            id: user?.id,
             username,
           },
           {
@@ -107,7 +105,6 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
         } else {
           changePasswordMutate(
             {
-              id: user.id,
               newPassword: newPass,
             },
             {
@@ -125,7 +122,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const handleDeleteUser = () => {
     if (user?.id) {
       deleteUserMutate(
-        { id: user.id },
+        {},
         {
           onSuccess: async () => {
             toast.success('User deleted');
