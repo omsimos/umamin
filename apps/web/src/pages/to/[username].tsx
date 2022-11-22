@@ -26,7 +26,8 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
     username,
     'username'
   );
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === 'authenticated';
 
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
@@ -162,13 +163,23 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                     Send again
                   </button>
                   <span className='text-secondary-400'>•</span>
-                  <button
-                    type='button'
-                    className='hover:text-primary-100 transition-colors'
-                    onClick={() => push('/login')}
-                  >
-                    Create your link
-                  </button>
+                  {!isAuthenticated ? (
+                    <button
+                      type='button'
+                      className='hover:text-primary-100 transition-colors'
+                      onClick={() => push('/login')}
+                    >
+                      Create your link
+                    </button>
+                  ) : (
+                    <button
+                      type='button'
+                      className='hover:text-primary-100 transition-colors'
+                      onClick={() => push('/inbox')}
+                    >
+                      Visit inbox
+                    </button>
+                  )}
                 </div>
               </div>
             )}
