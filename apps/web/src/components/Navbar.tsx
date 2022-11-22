@@ -25,7 +25,7 @@ export const Navbar = () => {
 
   return (
     <nav className='relative z-10 mb-12 flex items-center justify-between xl:mb-24'>
-      <Link href='/' legacyBehavior>
+      <Link href='/'>
         <ImageFill
           alt='logo'
           src='/assets/logo.svg'
@@ -43,10 +43,11 @@ export const Navbar = () => {
           </button>
         ) : (
           <>
-            <Link href='/login' legacyBehavior>
-              <p className='cursor-pointer text-sm font-medium text-gray-200 transition-colors hover:text-gray-400 md:text-base'>
-                Login
-              </p>
+            <Link
+              href='/login'
+              className='cursor-pointer text-sm font-medium text-gray-200 transition-colors hover:text-gray-400 md:text-base'
+            >
+              Login
             </Link>
 
             <button
@@ -82,11 +83,9 @@ export const Navbar = () => {
                 <p>Logout</p>
               </button>
             ) : (
-              <Link href='/login' legacyBehavior>
-                <div className='menu-item'>
-                  <BiUserCircle className='text-base' />
-                  <p>Get started</p>
-                </div>
+              <Link href='/login' className='menu-item'>
+                <BiUserCircle className='text-base' />
+                <p>Get started</p>
               </Link>
             )}
             <a
