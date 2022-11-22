@@ -46,7 +46,7 @@ export const Sent = () => {
                 alt='logo'
                 src='/assets/logo.svg'
                 fill
-                className='object-cover'
+                className='object-contain'
               />
             </div>
           </div>

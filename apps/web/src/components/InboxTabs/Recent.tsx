@@ -85,7 +85,7 @@ export const Recent = () => {
               alt='logo'
               src='/assets/logo.svg'
               fill
-              className='object-cover'
+              className='object-contain'
             />
           </div>
 
