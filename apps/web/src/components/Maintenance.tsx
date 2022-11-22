@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from "next/legacy/image";
+import Image from 'next/image';
 import { FaDiscord, FaFacebook } from 'react-icons/fa';
 
 import { Footer } from '.';
@@ -13,8 +13,8 @@ export const Maintenance = () => {
             alt='logo'
             priority
             src='/assets/logo.svg'
-            layout='fill'
-            objectFit='contain'
+            fill
+            className='object-contain'
           />
         </div>
 

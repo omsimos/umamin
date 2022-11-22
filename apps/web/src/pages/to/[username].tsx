@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
-import Image from 'next/legacy/image';
+import Image from 'next/image';
 
 import { Error, Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
@@ -97,8 +97,8 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
               <Image
                 alt='logo'
                 src='/assets/logo.svg'
-                layout='fill'
-                objectFit='contain'
+                fill
+                className='object-contain'
               />
             </div>
           </div>
