@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { RecentMessage } from '@umamin/generated';
 import { useQuery, useMutation } from 'react-query';
 import { formatDistanceToNow } from 'date-fns';
-import Image from "next/legacy/image";
+import Image from 'next/image';
 
 import { useLogEvent } from '@/hooks';
 import { MessageDialog } from '@/components/Dialog';
@@ -84,8 +84,8 @@ export const Recent = () => {
             <Image
               alt='logo'
               src='/assets/logo.svg'
-              layout='fill'
-              objectFit='contain'
+              fill
+              className='object-cover'
             />
           </div>
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { useQuery } from 'react-query';
-import Image from "next/legacy/image";
+import Image from 'next/image';
 
 import { getSentMessages } from '@/api';
 import { useInboxContext } from '@/contexts/InboxContext';
@@ -45,8 +45,8 @@ export const Sent = () => {
               <Image
                 alt='logo'
                 src='/assets/logo.svg'
-                layout='fill'
-                objectFit='contain'
+                fill
+                className='object-cover'
               />
             </div>
           </div>
