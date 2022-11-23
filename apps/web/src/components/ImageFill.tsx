@@ -1,5 +1,5 @@
 import React from 'react';
-import Image, { ImageProps } from "next/legacy/image";
+import Image, { ImageProps } from "next/image";
 
 interface ImageFillProps
   extends Omit<ImageProps, 'src' | 'className' | 'layout'> {
@@ -16,7 +16,7 @@ export const ImageFill = ({
 }: ImageFillProps) => {
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      <Image src={src || '/icons/icon-128x128.png'} layout='fill' {...rest} />
+      <Image src={src || '/icons/icon-128x128.png'} fill {...rest} />
     </div>
   );
 };

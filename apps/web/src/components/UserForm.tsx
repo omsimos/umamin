@@ -9,7 +9,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import Image from "next/legacy/image";
+import Image from 'next/image';
 import Link from 'next/link';
 import { useLogEvent } from '@/hooks';
 
@@ -199,10 +199,11 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
 
             <p className='text-sm mt-2'>
               {isLogin ? "Don't" : 'Already'} have an account?{' '}
-              <Link href={`${isLogin ? '/register' : 'login'}`} className='text-primary-100'>
-
+              <Link
+                href={`${isLogin ? '/register' : 'login'}`}
+                className='text-primary-100'
+              >
                 {isLogin ? 'Get started' : 'Log in'}
-
               </Link>
             </p>
 
@@ -245,8 +246,8 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             alt='hearts background'
             priority
             src='/assets/hearts.svg'
-            layout='fill'
-            objectFit='contain'
+            fill
+            className='object-contain'
           />
         </div>
       </div>
