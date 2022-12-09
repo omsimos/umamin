@@ -10,6 +10,7 @@ module.exports = withPWA({
     runtimeCaching,
     register: true,
     skipWaiting: true,
+    disable: process.env.NODE_ENV === 'development',
   },
   images: {
     domains: ['cdn.discordapp.com', 'lh3.googleusercontent.com'],

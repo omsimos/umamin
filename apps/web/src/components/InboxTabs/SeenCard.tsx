@@ -67,7 +67,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
       .catch((err) => {
         toast.error(err);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardRef]);
 
   return (
@@ -80,6 +80,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
       />
 
       <ConfirmDialog
+        confirmText='Delete'
         isOpen={deleteModal}
         setIsOpen={setDeleteModal}
         content={<p>Are you sure you want to delete this message?</p>}

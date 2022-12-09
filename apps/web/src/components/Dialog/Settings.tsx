@@ -143,6 +143,8 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       <ConfirmDialog
         isOpen={deleteModal}
         setIsOpen={setDeleteModal}
+        confirmText='Delete'
+        danger
         content={
           <p>
             ⚠️ Are you sure you want to delete your account along with your
