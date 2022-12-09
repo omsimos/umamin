@@ -4,12 +4,18 @@ import { DialogContainer, DialogContainerProps } from '.';
 interface Props extends DialogContainerProps {
   content: React.ReactNode;
   handleConfirm: () => void;
+  confirmText: string;
+  cancelText?: string;
+  danger?: boolean;
 }
 
 export const ConfirmDialog = ({
   content,
   handleConfirm,
+  confirmText,
+  cancelText = 'Cancel',
   setIsOpen,
+  danger = false,
   ...rest
 }: Props) => {
   return (
@@ -23,11 +29,15 @@ export const ConfirmDialog = ({
         {content}
         <div className='mt-8 flex items-center space-x-4 self-end'>
           <button type='button' onClick={() => setIsOpen(false)}>
-            Cancel
+            {cancelText}
           </button>
 
-          <button className='red-btn' type='button' onClick={handleConfirm}>
-            Delete
+          <button
+            className={danger ? 'red-btn' : 'primary-btn'}
+            type='button'
+            onClick={handleConfirm}
+          >
+            {confirmText}
           </button>
         </div>
       </div>

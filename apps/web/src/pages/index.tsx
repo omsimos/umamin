@@ -19,6 +19,7 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 const Home: NextPageWithLayout = () => {
   const { push } = useRouter();
   const { status } = useSession();
+  const isLoading = status === 'loading';
   const isAuthenticated = status === 'authenticated';
 
   const { canInstallprompt, showInstallPrompt } = usePwa();
@@ -48,6 +49,7 @@ const Home: NextPageWithLayout = () => {
 
           <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
             <button
+              disabled={isLoading}
               onClick={() => push(isAuthenticated ? '/inbox' : '/register')}
               type='button'
               className='primary-btn'
@@ -56,6 +58,7 @@ const Home: NextPageWithLayout = () => {
             </button>
 
             <button
+              disabled={isLoading}
               type='button'
               onClick={handleInstall}
               className='secondary-btn'

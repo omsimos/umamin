@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { useSession } from 'next-auth/react';
@@ -13,6 +13,7 @@ import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
 import { ChatBubble } from '@/components/ChatBubble';
 import { getUser, queryClient, sendMessage } from '@/api';
+import { ConfirmDialog } from '@/components/Dialog';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -31,8 +32,15 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
+  const [warningDialog, setWarningDialog] = useState<boolean>(false);
 
   const { mutate, data, isLoading, reset } = useMutation(sendMessage);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      setWarningDialog(true);
+    }
+  }, [status]);
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
@@ -83,6 +91,20 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
           description:
             'Create your own link to start receiving anonymous confessions and messages!',
         }}
+      />
+
+      <ConfirmDialog
+        isOpen={warningDialog}
+        setIsOpen={setWarningDialog}
+        confirmText='Sign in'
+        cancelText='Continue'
+        handleConfirm={() => push('/login')}
+        content={
+          <p>
+            ⚠️ You are currently not logged in. Your message will not be saved
+            in your inbox.
+          </p>
+        }
       />
 
       <section className='flex flex-col items-center space-y-12'>
