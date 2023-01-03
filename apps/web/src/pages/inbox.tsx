@@ -31,7 +31,9 @@ const Inbox: NextPageWithLayout = () => {
   const triggerEvent = useLogEvent();
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`https://umamin.link/to/${user?.username}`);
+    navigator.clipboard.writeText(
+      `${window.location.origin}/to/${user?.username}`
+    );
     toast.success('Copied to clipboard');
 
     triggerEvent('copy_link');
@@ -97,7 +99,7 @@ const Inbox: NextPageWithLayout = () => {
                 onClick={copyLink}
                 className='border-secondary-100 flex items-center justify-center gap-3 truncate rounded-lg border-2 px-4 py-2'
               >
-                <p>umamin.link/to/{user?.username}</p>
+                <p>{window.location.host}/to/{user?.username}</p>
                 <IoIosCopy className='text-primary-100 flex-none' />
               </button>
             </div>
