@@ -16,10 +16,9 @@ export const Footer = () => {
             <li key={item.name}>
               <Link
                 href={item.href}
-                className='text-gray-400 transition-colors hover:text-gray-500'>
-
+                className='text-gray-400 transition-colors hover:text-gray-500'
+              >
                 {item.name}
-
               </Link>
             </li>
           ))}
@@ -46,8 +45,7 @@ export const Footer = () => {
         <ImageFill
           alt='logo'
           src='/assets/logo.svg'
-          objectFit='contain'
-          className='hidden h-6 w-32 md:block'
+          className='hidden object-contain h-6 w-32 md:block'
         />
       </div>
 
@@ -56,7 +54,7 @@ export const Footer = () => {
           alt='logo'
           src='/assets/logo.svg'
           objectFit='contain'
-          className='relative mb-4 h-6 w-32 md:hidden'
+          className='relative object-contain mb-4 h-6 w-32 md:hidden'
         />
         <a
           href='https://github.com/omsimos'
