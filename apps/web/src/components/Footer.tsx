@@ -53,7 +53,6 @@ export const Footer = () => {
         <ImageFill
           alt='logo'
           src='/assets/logo.svg'
-          objectFit='contain'
           className='relative object-contain mb-4 h-6 w-32 md:hidden'
         />
         <a
