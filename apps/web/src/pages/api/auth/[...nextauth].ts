@@ -66,11 +66,7 @@ const options: NextAuthOptions = {
     signIn: '/login',
   },
   callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.username = user.username;
-        return token;
-      }
+    jwt({ token }) {
       return token;
     },
     session({ session, token }) {

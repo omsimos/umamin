@@ -13,7 +13,7 @@
   "dependencies": {
     "@hcaptcha/react-hcaptcha": "^1.4.4",
     "@headlessui/react": "^1.7.2",
-    "@next-auth/prisma-adapter": "^1.0.4",
+    "@next-auth/prisma-adapter": "^1.0.5",
     "@umamin/db": "*",
     "@umamin/generated": "*",
     "apollo-server-micro": "^3.9.0",
