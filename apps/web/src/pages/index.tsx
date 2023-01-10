@@ -1,8 +1,8 @@
 import React from 'react';
 import usePwa from 'use-pwa';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { IoChatboxEllipses } from 'react-icons/io5';

@@ -29,8 +29,7 @@ export const Navbar = () => {
         <ImageFill
           alt='logo'
           src='/assets/logo.svg'
-          objectFit='contain'
-          className='hide-tap-highlight h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'
+          className='hide-tap-highlight object-contain h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'
         />
       </Link>
 
