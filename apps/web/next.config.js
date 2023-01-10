@@ -11,9 +11,11 @@ const withPWA = require('next-pwa')({
 
 module.exports = withPWA({
   reactStrictMode: true,
+  transpilePackages: ['@umamin/db', '@umamin/generated'],
   modularizeImports: {
-    'react-icons': {
-      transform: 'react-icons/{{member}}',
+    'date-fns': {
+      transform: 'date-fns/{{member}}',
+      preventFullImport: true,
     },
   },
   images: {
