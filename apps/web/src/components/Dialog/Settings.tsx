@@ -43,6 +43,14 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const { mutate: changePasswordMutate, isLoading: changePassL } =
     useMutation(changePassword);
 
+  const revalidate = async (username: string) => {
+    await fetch(
+      `/api/revalidate?${new URLSearchParams({
+        username,
+      })}`
+    );
+  };
+
   const handleClose = () => {
     setTimeout(() => {
       setCurrentOption('message');
@@ -69,6 +77,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
               setIsOpen(false);
               refetchUser();
               toast.success('Message updated');
+              revalidate(user.username ?? '');
 
               triggerEvent('edit_user_message');
             },
@@ -85,6 +94,8 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
             onSuccess: () => {
               setIsOpen(false);
               refetchUser();
+              revalidate(username);
+
               toast.success('Username updated');
 
               triggerEvent('edit_username');

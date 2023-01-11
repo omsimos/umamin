@@ -235,7 +235,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             </div>
 
             {query.error === 'OAuthAccountNotLinked' && (
-              <p className='mt-4'>
+              <p className='mt-4 text-red-500'>
                 Email is already linked to a different provider
               </p>
             )}

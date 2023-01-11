@@ -3,13 +3,12 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["referentialIntegrity"]
 }
 
 datasource db {
   provider             = "mysql"
   url                  = env("DATABASE_URL")
-  referentialIntegrity = "prisma"
+  relationMode         = "prisma"
 }
 
 model Account {
@@ -29,6 +28,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model User {
@@ -73,5 +73,5 @@ model Message {
   receiverId       String
   receiver         User    @relation(name: "receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
-  @@index([receiverId, senderId, createdAt(sort: Desc)])
+  @@index([senderId, receiverId, createdAt(sort: Desc)])
 }
