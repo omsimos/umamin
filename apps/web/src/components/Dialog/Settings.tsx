@@ -46,7 +46,6 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const revalidate = async () => {
     await fetch(
       `/api/revalidate?${new URLSearchParams({
-        secret: process.env.REVALIDATION_TOKEN ?? '',
         username: user?.username ?? '',
       })}`
     );

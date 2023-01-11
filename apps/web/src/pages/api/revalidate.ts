@@ -1,11 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { getToken } from 'next-auth/jwt';
+
+const secret = process.env.NEXTAUTH_SECRET;
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.query.secret !== process.env.REVALIDATION_TOKEN) {
-    return res.status(401).json({ message: 'Invalid token' });
+  const user = await getToken({ req, secret });
+  if (!user) {
+    return res.status(401).json({ message: 'Revalidation not authorized' });
   }
 
   try {
