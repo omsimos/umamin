@@ -40,6 +40,14 @@ const SendTo: NextPageWithLayout = ({
 
   const { mutate, data, isLoading, reset } = useMutation(sendMessage);
 
+  const revalidate = async () => {
+    await fetch(
+      `/api/revalidate?${new URLSearchParams({
+        username,
+      })}`
+    );
+  };
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       setWarningDialog(true);
@@ -64,6 +72,10 @@ const SendTo: NextPageWithLayout = ({
           onSuccess: () => {
             setMessage('');
             setMsgSent(true);
+          },
+          onError() {
+            toast.error('User may no longer exist');
+            revalidate();
           },
         }
       );
