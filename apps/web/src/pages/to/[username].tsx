@@ -1,36 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { useSession } from 'next-auth/react';
-import { useMutation } from 'react-query';
+import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
-import { prisma } from '@/utils/db';
-import { sendMessage } from '@/api';
-import { useLogEvent } from '@/hooks';
-import { GetStaticProps } from 'next/types';
 import { Error, Layout } from '@/components';
-import type { User } from '@umamin/generated';
+import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
 import { ChatBubble } from '@/components/ChatBubble';
 import { ConfirmDialog } from '@/components/Dialog';
+import { getUser, queryClient, sendMessage } from '@/api';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const SendTo: NextPageWithLayout = ({
-  username,
-  userData,
-}: {
-  username: string;
-  userData: User;
-}) => {
+const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   const { push } = useRouter();
   const triggerEvent = useLogEvent();
+  const { data: user, isLoading: isUserLoading } = useUser(
+    'to_user',
+    username,
+    'username'
+  );
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated';
 
@@ -40,14 +37,6 @@ const SendTo: NextPageWithLayout = ({
 
   const { mutate, data, isLoading, reset } = useMutation(sendMessage);
 
-  const revalidate = async () => {
-    await fetch(
-      `/api/revalidate?${new URLSearchParams({
-        username,
-      })}`
-    );
-  };
-
   useEffect(() => {
     if (status === 'unauthenticated') {
       setWarningDialog(true);
@@ -56,26 +45,22 @@ const SendTo: NextPageWithLayout = ({
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
-    if (userData?.id === session?.user?.id) {
+    if (user?.id === session?.user?.id) {
       setMessage('');
       toast.error("You can't send a message to yourself");
-    } else if (userData) {
+    } else if (user) {
       mutate(
         {
           input: {
             receiverUsername: username,
             content: message,
-            receiverMsg: userData.message,
+            receiverMsg: user.message,
           },
         },
         {
           onSuccess: () => {
             setMessage('');
             setMsgSent(true);
-          },
-          onError() {
-            toast.error('User may no longer exist');
-            revalidate();
           },
         }
       );
@@ -84,7 +69,15 @@ const SendTo: NextPageWithLayout = ({
     }
   };
 
-  if (!userData) {
+  if (isUserLoading) {
+    return (
+      <div className='mt-52 flex justify-center'>
+        <span className='loader-2' />
+      </div>
+    );
+  }
+
+  if (!user) {
     return <Error message='Are you lost?' />;
   }
 
@@ -93,8 +86,8 @@ const SendTo: NextPageWithLayout = ({
       <NextSeo
         title='umamin - Send Anonymous Messages'
         openGraph={{
-          title: userData
-            ? `👀 Send anonymous messages to ${userData.username}!`
+          title: user
+            ? `👀 Send anonymous messages to ${user.username}!`
             : '404 - user not found',
           description:
             'Create your own link to start receiving anonymous confessions and messages!',
@@ -137,8 +130,8 @@ const SendTo: NextPageWithLayout = ({
           <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 pt-10 sm:space-y-0 sm:px-7 md:mb-4'>
             <ChatBubble
               type='receiver'
-              content={userData?.message ?? ''}
-              userData={{ username, image: userData?.image }}
+              content={user?.message ?? ''}
+              userData={{ username, image: user?.image }}
             />
 
             {data?.sendMessage && (
@@ -224,31 +217,24 @@ const SendTo: NextPageWithLayout = ({
 
 SendTo.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
-export const getStaticProps: GetStaticProps = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps = async ({
+  res,
+  params,
+}) => {
   const username = params?.username as string;
 
-  const userData = await prisma.user.findUnique({
-    where: { username },
-  });
+  await queryClient.prefetchQuery(
+    ['to_user', { user: params?.username, type: 'username' }],
+    () => getUser({ user: username, type: 'username' })
+  );
 
-  if (!userData) {
-    return {
-      notFound: true,
-    };
-  }
+  res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=30');
 
   return {
     props: {
       username,
-      userData: JSON.parse(JSON.stringify(userData)),
+      dehydratedState: dehydrate(queryClient),
     },
-  };
-};
-
-export const getStaticPaths = async () => {
-  return {
-    paths: [],
-    fallback: 'blocking',
   };
 };
 
