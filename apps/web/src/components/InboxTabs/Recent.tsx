@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import type { RecentMessage } from '@umamin/generated';
-import { useQuery, useMutation } from 'react-query';
 import { formatDistanceToNow } from 'date-fns';
-import Image from 'next/image';
+import { useQuery, useMutation } from 'react-query';
+import type { RecentMessage } from '@umamin/generated';
 
 import { useLogEvent } from '@/hooks';
 import { MessageDialog } from '@/components/Dialog';
@@ -80,14 +79,9 @@ export const Recent = () => {
           onClick={() => handleOpen(m)}
           className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
         >
-          <div className='relative mb-3 h-[40px]'>
-            <Image
-              alt='logo'
-              src='/assets/logo.svg'
-              fill
-              className='object-contain'
-            />
-          </div>
+          <p className='font-syneExtrabold mb-4 text-primary-200 text-center text-3xl'>
+            umamin
+          </p>
 
           <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
             <p className='reply text-secondary-400'>{m.receiverMsg}</p>

@@ -61,7 +61,7 @@ export const Footer = () => {
           rel='noreferrer noopener'
           className='text-xs font-medium text-gray-500 hover:underline sm:text-sm md:text-base'
         >
-          Ⓒ 2022 Omsimos Collective
+          Ⓒ 2023 Omsimos Collective
         </a>
       </div>
     </footer>
