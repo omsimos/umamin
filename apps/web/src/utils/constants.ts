@@ -49,8 +49,7 @@ export const footerItems = {
 export const indexItems = [
   {
     title: 'Join the Community',
-    description:
-      'Hang out with other members and share your Umamin link!',
+    description: 'Hang out with other members and share your Umamin link!',
     Icon: BsDiscord,
     link: {
       title: 'Discord Server',
@@ -71,8 +70,7 @@ export const indexItems = [
   },
   {
     title: 'Open Source',
-    description:
-      'Contribute, report bugs, and request features! ',
+    description: 'Contribute, report bugs, and request features! ',
     Icon: BsGithub,
     link: {
       title: 'GitHub Repo',
@@ -95,7 +93,7 @@ This privacy notice for umamin ("**Company**," "**we**," "**us**," or "**our**")
 
 -   Engage with us in other related ways, including any sales, marketing, or events
 
-**Questions or concerns?** Reading this privacy notice will help you understand your privacy rights and choices. If you do not agree with our policies and practices, please do not use our Services. If you still have any questions or concerns, please contact us at contact@joshxfi.tech.
+**Questions or concerns?** Reading this privacy notice will help you understand your privacy rights and choices. If you do not agree with our policies and practices, please do not use our Services. If you still have any questions or concerns, please contact us at umamin.link@gmail.com.
 
 **SUMMARY OF KEY POINTS**
 
@@ -277,11 +275,11 @@ We may update this privacy notice from time to time. The updated version will be
 
 ## 11. HOW CAN YOU CONTACT US ABOUT THIS NOTICE?
 
-If you have questions or comments about this notice, you may email us at contact@joshxfi.tech.
+If you have questions or comments about this notice, you may email us at umamin.link@gmail.com.
 
 ## 12. HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM YOU?
 
-Based on the applicable laws of your country, you may have the right to request access to the personal information we collect from you, change that information, or delete it. To request to review, update, or delete your personal information, please contact: joshxfi.dev@gmail.com.
+Based on the applicable laws of your country, you may have the right to request access to the personal information we collect from you, change that information, or delete it. To request to review, update, or delete your personal information, please contact: umamin.link@gmail.com.
 
 This privacy policy was created using Termly's [Privacy Policy Generator](https://termly.io/products/privacy-policy-generator).
 `,

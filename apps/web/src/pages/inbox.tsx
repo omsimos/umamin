@@ -79,6 +79,7 @@ const Inbox: NextPageWithLayout = () => {
               alt='profile picture'
               src={data?.user?.image}
               objectFit='cover'
+              unoptimized
               className='border-secondary-100 h-[80px] w-[80px] rounded-full border-2 sm:h-[120px] sm:w-[120px]'
             />
             <div className='flex flex-col items-end gap-2'>
@@ -99,7 +100,9 @@ const Inbox: NextPageWithLayout = () => {
                 onClick={copyLink}
                 className='border-secondary-100 flex items-center justify-center gap-3 truncate rounded-lg border-2 px-4 py-2'
               >
-                <p>{window.location.host}/to/{user?.username}</p>
+                <p>
+                  {window.location.host}/to/{user?.username}
+                </p>
                 <IoIosCopy className='text-primary-100 flex-none' />
               </button>
             </div>
