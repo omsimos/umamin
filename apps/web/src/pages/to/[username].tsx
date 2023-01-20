@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
+import { HiOutlinePuzzle } from 'react-icons/hi';
 import { useSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
@@ -142,10 +143,17 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
           {/* Send Message */}
           <form
             onSubmit={handleSend}
-            className='bg-secondary-200 relative flex h-[100px] items-center justify-between py-5 px-4 md:h-[85px] md:px-7'
+            className='bg-secondary-200 h-[100px] items-center  py-5 px-4 md:h-[85px] md:px-7'
           >
             {!msgSent ? (
-              <>
+              <div className='flex rounded-full items-center bg-secondary-100 p-2 pr-4'>
+                <button
+                  type='button'
+                  className='bg-primary-300 rounded-full p-2 mr-4'
+                >
+                  <HiOutlinePuzzle className='text-lg' />
+                </button>
+
                 <input
                   required
                   value={message}
@@ -154,7 +162,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                   maxLength={200}
                   type='text'
                   placeholder='Send an anonymous message...'
-                  className='bg-secondary-100 w-full rounded-full py-3 px-5 pr-12 outline-none transition-all'
+                  className='bg-secondary-100 w-full outline-none'
                 />
 
                 {isLoading ? (
@@ -162,12 +170,12 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                 ) : (
                   <button
                     type='submit'
-                    className='text-primary-100 absolute right-9 cursor-pointer text-2xl transition-all md:right-12'
+                    className='text-primary-100 cursor-pointer text-2xl'
                   >
                     <RiSendPlaneFill />
                   </button>
                 )}
-              </>
+              </div>
             ) : (
               <div className='w-full'>
                 <p className='text-secondary-400 text-center font-medium'>
