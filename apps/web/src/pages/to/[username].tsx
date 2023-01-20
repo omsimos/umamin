@@ -13,8 +13,8 @@ import Image from 'next/image';
 import { Error, Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
-import { ChatBubble } from '@/components/ChatBubble';
 import { ConfirmDialog } from '@/components/Dialog';
+import { ChatBubble } from '@/components/ChatBubble';
 import { getUser, queryClient, sendMessage } from '@/api';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
@@ -32,8 +32,10 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated';
 
+  const [clue, setClue] = useState('');
   const [message, setMessage] = useState('');
   const [msgSent, setMsgSent] = useState<boolean>(false);
+  const [clueDialog, setClueDialog] = useState<boolean>(false);
   const [warningDialog, setWarningDialog] = useState<boolean>(false);
 
   const { mutate, data, isLoading, reset } = useMutation(sendMessage);
@@ -109,6 +111,31 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         }
       />
 
+      <ConfirmDialog
+        confirmText='Save'
+        handleConfirm={() => setClueDialog(false)}
+        isOpen={clueDialog}
+        setIsOpen={setClueDialog}
+        content={
+          <div>
+            <h2 className='font-semibold'>
+              🧩 Write a clue about your identity
+            </h2>
+            <div className='line my-3' />
+
+            <textarea
+              required
+              value={clue}
+              onChange={(e) => setClue(e.target.value)}
+              minLength={3}
+              maxLength={100}
+              placeholder='Enter here...'
+              className='bg-secondary-100 w-full h-[120px] outline-none p-3 rounded resize-none'
+            />
+          </div>
+        }
+      />
+
       <section className='flex flex-col items-center space-y-12'>
         <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 md:w-[720px]'>
           {/* Top */}
@@ -143,13 +170,14 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
           {/* Send Message */}
           <form
             onSubmit={handleSend}
-            className='bg-secondary-200 h-[100px] items-center  py-5 px-4 md:h-[85px] md:px-7'
+            className='bg-secondary-200 items-center py-5 px-4 h-[85px] md:px-7'
           >
             {!msgSent ? (
               <div className='flex rounded-full items-center bg-secondary-100 p-2 pr-4'>
                 <button
                   type='button'
-                  className='bg-primary-300 rounded-full p-2 mr-4'
+                  onClick={() => setClueDialog(true)}
+                  className='bg-primary-300 rounded-full p-2 mr-4 flex-none'
                 >
                   <HiOutlinePuzzle className='text-lg' />
                 </button>
@@ -166,11 +194,11 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                 />
 
                 {isLoading ? (
-                  <span className='loader absolute right-10' />
+                  <span className='loader flex-none' />
                 ) : (
                   <button
                     type='submit'
-                    className='text-primary-100 cursor-pointer text-2xl'
+                    className='text-primary-100 cursor-pointer flex-none text-2xl'
                   >
                     <RiSendPlaneFill />
                   </button>
