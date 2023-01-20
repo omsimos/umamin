@@ -62,9 +62,10 @@ model Message {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   content     String   @db.VarChar(255)
-  receiverMsg String   @db.VarChar(100)
+  receiverMsg String   @db.VarChar(255)
   isOpened    Boolean  @default(false)
   reply       String?  @db.VarChar(255)
+  clue        String?  @db.VarChar(255)
   username    String
 
   senderId         String?
