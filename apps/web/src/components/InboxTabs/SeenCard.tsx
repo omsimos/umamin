@@ -106,9 +106,9 @@ export const SeenCard = ({ message, refetch }: Props) => {
             <HiDownload />
           </button>
 
-          <p className='font-syneExtrabold text-primary-200 mx-auto text-base'>
+          <h3 className='font-syneExtrabold text-primary-200 mx-auto text-base'>
             umamin
-          </p>
+          </h3>
 
           <Menu
             className='z-10'

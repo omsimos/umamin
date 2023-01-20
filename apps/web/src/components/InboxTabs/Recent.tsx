@@ -79,9 +79,9 @@ export const Recent = () => {
           onClick={() => handleOpen(m)}
           className='msg-card hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
         >
-          <p className='font-syneExtrabold mb-4 text-primary-200 text-center text-3xl'>
+          <h3 className='font-syneExtrabold mb-4 text-primary-200 text-center text-3xl'>
             umamin
-          </p>
+          </h3>
 
           <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
             <p className='reply text-secondary-400'>{m.receiverMsg}</p>

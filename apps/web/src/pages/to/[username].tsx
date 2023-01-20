@@ -8,7 +8,6 @@ import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 
 import { Error, Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
@@ -130,7 +129,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
               minLength={3}
               maxLength={100}
               placeholder='Enter here...'
-              className='bg-secondary-100 w-full h-[120px] outline-none p-3 rounded resize-none'
+              className='bg-secondary-100 w-full h-[120px] outline-none p-3 rounded-md resize-none'
             />
           </div>
         }
@@ -139,19 +138,16 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
       <section className='flex flex-col items-center space-y-12'>
         <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 md:w-[720px]'>
           {/* Top */}
-          <div className='bg-secondary-300 border-secondary-100 flex items-center justify-between border-b-2 px-7 py-2'>
+          <div className='bg-secondary-300 border-secondary-100 flex items-center justify-between border-b-2 px-7 py-4'>
             <p className='font-medium text-white'>
               <span className='font-light text-gray-400'>To&#58;</span>{' '}
               {username}
             </p>
-            <div className='relative h-[40px] w-[110px] md:h-[50px] md:w-[130px]'>
-              <Image
-                alt='logo'
-                src='/assets/logo.svg'
-                fill
-                className='object-contain'
-              />
-            </div>
+
+            <h3 className='font-syneExtrabold text-primary-200 text-center text-lg'>
+              umamin
+            </h3>
+
           </div>
 
           {/* Message */}
