@@ -15,12 +15,14 @@ export const ConfirmDialog = ({
   confirmText,
   cancelText = 'Cancel',
   setIsOpen,
+  onClose,
   danger = false,
   ...rest
 }: Props) => {
   return (
     <DialogContainer
       transparent
+      onClose={onClose}
       setIsOpen={setIsOpen}
       {...rest}
       className='grid h-full place-items-center'
@@ -28,7 +30,15 @@ export const ConfirmDialog = ({
       <div className='msg-card flex flex-col p-6'>
         {content}
         <div className='mt-8 flex items-center space-x-4 self-end'>
-          <button type='button' onClick={() => setIsOpen(false)}>
+          <button
+            type='button'
+            onClick={() => {
+              if (onClose) {
+                onClose();
+              }
+              setIsOpen(false);
+            }}
+          >
             {cancelText}
           </button>
 

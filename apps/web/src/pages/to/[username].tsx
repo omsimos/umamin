@@ -33,6 +33,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
   const [clue, setClue] = useState('');
   const [message, setMessage] = useState('');
+  const [isClueSaved, setIsClueSaved] = useState(false);
   const [msgSent, setMsgSent] = useState<boolean>(false);
   const [clueDialog, setClueDialog] = useState<boolean>(false);
   const [warningDialog, setWarningDialog] = useState<boolean>(false);
@@ -57,6 +58,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
             receiverUsername: username,
             content: message,
             receiverMsg: user.message,
+            clue,
           },
         },
         {
@@ -112,11 +114,25 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
       <ConfirmDialog
         confirmText='Save'
-        handleConfirm={() => setClueDialog(false)}
+        handleConfirm={() => {
+          setClueDialog(false);
+          if (clue) {
+            setIsClueSaved(true);
+            toast.success('Clue saved');
+          } else {
+            setIsClueSaved(false);
+            toast.success('Removed clue');
+          }
+        }}
+        onClose={() => {
+          if (!isClueSaved) {
+            setClue('');
+          }
+        }}
         isOpen={clueDialog}
         setIsOpen={setClueDialog}
         content={
-          <div>
+          <form>
             <h2 className='font-semibold'>
               🧩 Write a clue about your identity
             </h2>
@@ -126,12 +142,11 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
               required
               value={clue}
               onChange={(e) => setClue(e.target.value)}
-              minLength={3}
               maxLength={100}
               placeholder='Enter here...'
               className='bg-secondary-100 w-full h-[120px] outline-none p-3 rounded-md resize-none'
             />
-          </div>
+          </form>
         }
       />
 
@@ -147,7 +162,6 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
             <h3 className='font-syneExtrabold text-primary-200 text-center text-lg'>
               umamin
             </h3>
-
           </div>
 
           {/* Message */}
