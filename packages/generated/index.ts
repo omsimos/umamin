@@ -103,6 +103,7 @@ export type QueryGetUserArgs = {
 
 export type RecentMessage = {
   __typename?: 'RecentMessage';
+  clue?: Maybe<Scalars['String']>;
   content: Scalars['String'];
   createdAt: Scalars['DateTime'];
   id: Scalars['ID'];
@@ -111,6 +112,7 @@ export type RecentMessage = {
 
 export type SeenMessage = {
   __typename?: 'SeenMessage';
+  clue?: Maybe<Scalars['String']>;
   content: Scalars['String'];
   createdAt: Scalars['DateTime'];
   id: Scalars['ID'];
@@ -119,6 +121,7 @@ export type SeenMessage = {
 };
 
 export type SendMessageInput = {
+  clue?: InputMaybe<Scalars['String']>;
   content: Scalars['String'];
   receiverMsg: Scalars['String'];
   receiverUsername: Scalars['String'];
@@ -150,14 +153,14 @@ export type GetRecentMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, clue?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
 
 export type GetSeenMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
 
 export type GetSentMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']>;
@@ -243,6 +246,7 @@ export const GetRecentMessagesDocument = gql`
     query getRecentMessages($cursorId: ID) {
   getRecentMessages(cursorId: $cursorId) {
     id
+    clue
     content
     createdAt
     receiverMsg
@@ -253,6 +257,7 @@ export const GetSeenMessagesDocument = gql`
     query getSeenMessages($cursorId: ID) {
   getSeenMessages(cursorId: $cursorId) {
     id
+    clue
     reply
     content
     createdAt

@@ -26,6 +26,7 @@ export class MessageResolver {
         take: 3,
         select: {
           id: true,
+          clue: true,
           content: true,
           createdAt: true,
           receiverMsg: true,
@@ -65,6 +66,7 @@ export class MessageResolver {
         take: 3,
         select: {
           id: true,
+          clue: true,
           reply: true,
           content: true,
           createdAt: true,
@@ -135,12 +137,13 @@ export class MessageResolver {
   @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
-    { receiverUsername, content, receiverMsg }: SendMessageInput,
+    { receiverUsername, content, receiverMsg, clue }: SendMessageInput,
     @Ctx() { prisma, id }: TContext
   ): Promise<String> {
     try {
       const message = await prisma.message.create({
         data: {
+          clue,
           content,
           receiverMsg,
           sender: id ? { connect: { id } } : undefined,

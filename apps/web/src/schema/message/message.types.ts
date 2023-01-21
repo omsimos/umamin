@@ -17,12 +17,18 @@ export class BaseMessage {
 }
 
 @ObjectType()
-export class RecentMessage extends BaseMessage {}
+export class RecentMessage extends BaseMessage {
+  @Field(() => String, { nullable: true })
+  clue: string | null;
+}
 
 @ObjectType()
 export class SeenMessage extends BaseMessage {
   @Field(() => String, { nullable: true })
   reply: string | null;
+
+  @Field(() => String, { nullable: true })
+  clue: string | null;
 }
 
 @ObjectType()
@@ -51,4 +57,8 @@ export class SendMessageInput {
   @MaxLength(100)
   @Field(() => String)
   receiverMsg: string;
+
+  @MaxLength(100)
+  @Field(() => String, { nullable: true })
+  clue: string | null;
 }
