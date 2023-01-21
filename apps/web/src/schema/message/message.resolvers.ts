@@ -26,6 +26,7 @@ export class MessageResolver {
         take: 3,
         select: {
           id: true,
+          clue: true,
           content: true,
           createdAt: true,
           receiverMsg: true,
@@ -65,6 +66,7 @@ export class MessageResolver {
         take: 3,
         select: {
           id: true,
+          clue: true,
           reply: true,
           content: true,
           createdAt: true,

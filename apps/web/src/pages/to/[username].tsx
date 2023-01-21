@@ -144,7 +144,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
               onChange={(e) => setClue(e.target.value)}
               maxLength={100}
               placeholder='Enter here...'
-              className='bg-secondary-100 w-full h-[120px] outline-none p-3 rounded-md resize-none'
+              className='bg-secondary-100 w-full h-[120px] outline-none py-3 px-4 rounded-md resize-none'
             />
           </form>
         }

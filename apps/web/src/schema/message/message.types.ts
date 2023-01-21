@@ -17,7 +17,10 @@ export class BaseMessage {
 }
 
 @ObjectType()
-export class RecentMessage extends BaseMessage {}
+export class RecentMessage extends BaseMessage {
+  @Field(() => String, { nullable: true })
+  clue: string | null;
+}
 
 @ObjectType()
 export class SeenMessage extends BaseMessage {

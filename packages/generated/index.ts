@@ -103,6 +103,7 @@ export type QueryGetUserArgs = {
 
 export type RecentMessage = {
   __typename?: 'RecentMessage';
+  clue?: Maybe<Scalars['String']>;
   content: Scalars['String'];
   createdAt: Scalars['DateTime'];
   id: Scalars['ID'];
@@ -152,7 +153,7 @@ export type GetRecentMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, clue?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
 
 export type GetSeenMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']>;
@@ -245,6 +246,7 @@ export const GetRecentMessagesDocument = gql`
     query getRecentMessages($cursorId: ID) {
   getRecentMessages(cursorId: $cursorId) {
     id
+    clue
     content
     createdAt
     receiverMsg

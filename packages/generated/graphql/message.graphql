@@ -1,6 +1,7 @@
 query getRecentMessages($cursorId: ID) {
   getRecentMessages(cursorId: $cursorId) {
     id
+    clue
     content
     createdAt
     receiverMsg
