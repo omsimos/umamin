@@ -24,6 +24,7 @@ export const ChatBubble = ({ type, content, userData }: ChatBubbleProps) => {
     <div className='flex items-end space-x-2'>
       {userData.image && (
         <ImageFill
+          unoptimized
           src={userData.image as string}
           alt='user image'
           className='bottom-3 z-10 h-[35px] w-[35px] rounded-full'

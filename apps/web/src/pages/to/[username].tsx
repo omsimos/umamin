@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { dehydrate, useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
+import { HiOutlinePuzzle } from 'react-icons/hi';
 import { useSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 
 import { Error, Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
-import { ChatBubble } from '@/components/ChatBubble';
 import { ConfirmDialog } from '@/components/Dialog';
+import { ChatBubble } from '@/components/ChatBubble';
 import { getUser, queryClient, sendMessage } from '@/api';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
@@ -31,8 +31,11 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated';
 
+  const [clue, setClue] = useState('');
   const [message, setMessage] = useState('');
+  const [isClueSaved, setIsClueSaved] = useState(false);
   const [msgSent, setMsgSent] = useState<boolean>(false);
+  const [clueDialog, setClueDialog] = useState<boolean>(false);
   const [warningDialog, setWarningDialog] = useState<boolean>(false);
 
   const { mutate, data, isLoading, reset } = useMutation(sendMessage);
@@ -55,6 +58,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
             receiverUsername: username,
             content: message,
             receiverMsg: user.message,
+            clue,
           },
         },
         {
@@ -108,22 +112,56 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         }
       />
 
+      <ConfirmDialog
+        confirmText='Save'
+        handleConfirm={() => {
+          setClueDialog(false);
+          if (clue) {
+            setIsClueSaved(true);
+            toast.success('Clue saved');
+          } else {
+            setIsClueSaved(false);
+            toast.success('Removed clue');
+          }
+        }}
+        onClose={() => {
+          if (!isClueSaved) {
+            setClue('');
+          }
+        }}
+        isOpen={clueDialog}
+        setIsOpen={setClueDialog}
+        content={
+          <form>
+            <h2 className='font-semibold'>
+              🧩 Write a clue about your identity
+            </h2>
+            <div className='line my-3' />
+
+            <textarea
+              required
+              value={clue}
+              onChange={(e) => setClue(e.target.value)}
+              maxLength={100}
+              placeholder='Enter here...'
+              className='bg-secondary-100 w-full h-[120px] outline-none py-3 px-4 rounded-md resize-none'
+            />
+          </form>
+        }
+      />
+
       <section className='flex flex-col items-center space-y-12'>
         <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 md:w-[720px]'>
           {/* Top */}
-          <div className='bg-secondary-300 border-secondary-100 flex items-center justify-between border-b-2 px-7 py-2'>
+          <div className='bg-secondary-300 border-secondary-100 flex items-center justify-between border-b-2 px-7 py-4'>
             <p className='font-medium text-white'>
               <span className='font-light text-gray-400'>To&#58;</span>{' '}
               {username}
             </p>
-            <div className='relative h-[40px] w-[110px] md:h-[50px] md:w-[130px]'>
-              <Image
-                alt='logo'
-                src='/assets/logo.svg'
-                fill
-                className='object-contain'
-              />
-            </div>
+
+            <h3 className='font-syneExtrabold text-primary-200 text-center text-lg'>
+              umamin
+            </h3>
           </div>
 
           {/* Message */}
@@ -142,10 +180,18 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
           {/* Send Message */}
           <form
             onSubmit={handleSend}
-            className='bg-secondary-200 relative flex h-[100px] items-center justify-between py-5 px-4 md:h-[85px] md:px-7'
+            className='bg-secondary-200 items-center py-5 px-4 h-[85px] md:px-7'
           >
             {!msgSent ? (
-              <>
+              <div className='flex rounded-full items-center bg-secondary-100 p-2 pr-4'>
+                <button
+                  type='button'
+                  onClick={() => setClueDialog(true)}
+                  className='bg-primary-300 rounded-full p-2 mr-4 flex-none'
+                >
+                  <HiOutlinePuzzle className='text-lg' />
+                </button>
+
                 <input
                   required
                   value={message}
@@ -154,20 +200,20 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                   maxLength={200}
                   type='text'
                   placeholder='Send an anonymous message...'
-                  className='bg-secondary-100 w-full rounded-full py-3 px-5 pr-12 outline-none transition-all'
+                  className='bg-secondary-100 w-full outline-none'
                 />
 
                 {isLoading ? (
-                  <span className='loader absolute right-10' />
+                  <span className='loader flex-none' />
                 ) : (
                   <button
                     type='submit'
-                    className='text-primary-100 absolute right-9 cursor-pointer text-2xl transition-all md:right-12'
+                    className='text-primary-100 cursor-pointer flex-none text-2xl'
                   >
                     <RiSendPlaneFill />
                   </button>
                 )}
-              </>
+              </div>
             ) : (
               <div className='w-full'>
                 <p className='text-secondary-400 text-center font-medium'>
