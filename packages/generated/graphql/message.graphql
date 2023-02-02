@@ -5,6 +5,7 @@ query getRecentMessages($cursorId: ID) {
     content
     createdAt
     receiverMsg
+    attachSender
   }
 }
 
@@ -16,6 +17,7 @@ query getSeenMessages($cursorId: ID) {
     content
     createdAt
     receiverMsg
+    attachSender
   }
 }
 

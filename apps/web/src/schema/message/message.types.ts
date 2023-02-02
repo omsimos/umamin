@@ -20,6 +20,9 @@ export class BaseMessage {
 export class RecentMessage extends BaseMessage {
   @Field(() => String, { nullable: true })
   clue: string | null;
+
+  @Field(() => Boolean)
+  attachSender: boolean;
 }
 
 @ObjectType()
@@ -29,6 +32,9 @@ export class SeenMessage extends BaseMessage {
 
   @Field(() => String, { nullable: true })
   clue: string | null;
+
+  @Field(() => Boolean)
+  attachSender: boolean;
 }
 
 @ObjectType()
@@ -57,6 +63,10 @@ export class SendMessageInput {
   @MaxLength(100)
   @Field(() => String)
   receiverMsg: string;
+
+  @IsNotEmpty()
+  @Field(() => Boolean)
+  attachSender: boolean;
 
   @MaxLength(100)
   @Field(() => String, { nullable: true })

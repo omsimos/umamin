@@ -137,7 +137,13 @@ export class MessageResolver {
   @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
-    { receiverUsername, content, receiverMsg, clue }: SendMessageInput,
+    {
+      receiverUsername,
+      content,
+      receiverMsg,
+      attachSender,
+      clue,
+    }: SendMessageInput,
     @Ctx() { prisma, id }: TContext
   ): Promise<String> {
     try {
@@ -146,6 +152,7 @@ export class MessageResolver {
           clue,
           content,
           receiverMsg,
+          attachSender,
           sender: id ? { connect: { id } } : undefined,
           receiver: { connect: { username: receiverUsername } },
           username: receiverUsername,

@@ -103,6 +103,7 @@ export type QueryGetUserArgs = {
 
 export type RecentMessage = {
   __typename?: 'RecentMessage';
+  attachSender: Scalars['Boolean'];
   clue?: Maybe<Scalars['String']>;
   content: Scalars['String'];
   createdAt: Scalars['DateTime'];
@@ -112,6 +113,7 @@ export type RecentMessage = {
 
 export type SeenMessage = {
   __typename?: 'SeenMessage';
+  attachSender: Scalars['Boolean'];
   clue?: Maybe<Scalars['String']>;
   content: Scalars['String'];
   createdAt: Scalars['DateTime'];
@@ -121,6 +123,7 @@ export type SeenMessage = {
 };
 
 export type SendMessageInput = {
+  attachSender: Scalars['Boolean'];
   clue?: InputMaybe<Scalars['String']>;
   content: Scalars['String'];
   receiverMsg: Scalars['String'];
@@ -153,14 +156,14 @@ export type GetRecentMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, clue?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, clue?: string | null, content: string, createdAt: any, receiverMsg: string, attachSender: boolean }> | null };
 
 export type GetSeenMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string, attachSender: boolean }> | null };
 
 export type GetSentMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']>;
@@ -250,6 +253,7 @@ export const GetRecentMessagesDocument = gql`
     content
     createdAt
     receiverMsg
+    attachSender
   }
 }
     `;
@@ -262,6 +266,7 @@ export const GetSeenMessagesDocument = gql`
     content
     createdAt
     receiverMsg
+    attachSender
   }
 }
     `;
