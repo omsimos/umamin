@@ -3,8 +3,8 @@ import { DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
   content: React.ReactNode;
-  handleConfirm: () => void;
-  confirmText: string;
+  handleConfirm?: () => void;
+  confirmText?: string;
   cancelText?: string;
   danger?: boolean;
 }
@@ -42,13 +42,15 @@ export const ConfirmDialog = ({
             {cancelText}
           </button>
 
-          <button
-            className={danger ? 'red-btn' : 'primary-btn'}
-            type='button'
-            onClick={handleConfirm}
-          >
-            {confirmText}
-          </button>
+          {confirmText && (
+            <button
+              className={danger ? 'red-btn' : 'primary-btn'}
+              type='button'
+              onClick={handleConfirm}
+            >
+              {confirmText}
+            </button>
+          )}
         </div>
       </div>
     </DialogContainer>
