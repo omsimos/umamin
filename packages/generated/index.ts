@@ -103,7 +103,6 @@ export type QueryGetUserArgs = {
 
 export type RecentMessage = {
   __typename?: 'RecentMessage';
-  attachSender: Scalars['Boolean'];
   clue?: Maybe<Scalars['String']>;
   content: Scalars['String'];
   createdAt: Scalars['DateTime'];
@@ -113,7 +112,6 @@ export type RecentMessage = {
 
 export type SeenMessage = {
   __typename?: 'SeenMessage';
-  attachSender: Scalars['Boolean'];
   clue?: Maybe<Scalars['String']>;
   content: Scalars['String'];
   createdAt: Scalars['DateTime'];
@@ -123,7 +121,6 @@ export type SeenMessage = {
 };
 
 export type SendMessageInput = {
-  attachSender: Scalars['Boolean'];
   clue?: InputMaybe<Scalars['String']>;
   content: Scalars['String'];
   receiverMsg: Scalars['String'];
@@ -136,8 +133,8 @@ export type SentMessage = {
   createdAt: Scalars['DateTime'];
   id: Scalars['ID'];
   receiverMsg: Scalars['String'];
+  receiverUsername?: Maybe<Scalars['String']>;
   reply?: Maybe<Scalars['String']>;
-  username: Scalars['String'];
 };
 
 export type User = {
@@ -156,21 +153,21 @@ export type GetRecentMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, clue?: string | null, content: string, createdAt: any, receiverMsg: string, attachSender: boolean }> | null };
+export type GetRecentMessagesQuery = { __typename?: 'Query', getRecentMessages?: Array<{ __typename?: 'RecentMessage', id: string, clue?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
 
 export type GetSeenMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string, attachSender: boolean }> | null };
+export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
 
 export type GetSentMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: Array<{ __typename?: 'SentMessage', id: string, reply?: string | null, content: string, username: string, createdAt: any, receiverMsg: string }> | null };
+export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: Array<{ __typename?: 'SentMessage', id: string, reply?: string | null, content: string, createdAt: any, receiverMsg: string, receiverUsername?: string | null }> | null };
 
 export type EditMessageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -253,7 +250,6 @@ export const GetRecentMessagesDocument = gql`
     content
     createdAt
     receiverMsg
-    attachSender
   }
 }
     `;
@@ -266,7 +262,6 @@ export const GetSeenMessagesDocument = gql`
     content
     createdAt
     receiverMsg
-    attachSender
   }
 }
     `;
@@ -276,9 +271,9 @@ export const GetSentMessagesDocument = gql`
     id
     reply
     content
-    username
     createdAt
     receiverMsg
+    receiverUsername
   }
 }
     `;

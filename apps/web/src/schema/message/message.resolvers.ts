@@ -109,9 +109,9 @@ export class MessageResolver {
           id: true,
           reply: true,
           content: true,
-          username: true,
           createdAt: true,
           receiverMsg: true,
+          receiverUsername: true,
         },
       };
 
@@ -138,11 +138,10 @@ export class MessageResolver {
   async sendMessage(
     @Arg('input', () => SendMessageInput)
     {
-      receiverUsername,
+      clue,
       content,
       receiverMsg,
-      attachSender,
-      clue,
+      receiverUsername,
     }: SendMessageInput,
     @Ctx() { prisma, id }: TContext
   ): Promise<String> {
@@ -152,10 +151,9 @@ export class MessageResolver {
           clue,
           content,
           receiverMsg,
-          attachSender,
           sender: id ? { connect: { id } } : undefined,
           receiver: { connect: { username: receiverUsername } },
-          username: receiverUsername,
+          receiverUsername,
         },
       });
 
