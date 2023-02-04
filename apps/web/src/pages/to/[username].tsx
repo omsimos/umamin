@@ -12,9 +12,9 @@ import dynamic from 'next/dynamic';
 import { Error, Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
-import { ConfirmDialog } from '@/components/Dialog';
 import { ChatBubble } from '@/components/ChatBubble';
 import { getUser, queryClient, sendMessage } from '@/api';
+import { AddClueDialog, ConfirmDialog } from '@/components/Dialog';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -33,11 +33,8 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
   const [clue, setClue] = useState('');
   const [message, setMessage] = useState('');
-  const [isClueSaved, setIsClueSaved] = useState(false);
   const [msgSent, setMsgSent] = useState(false);
   const [clueDialog, setClueDialog] = useState(false);
-  const [attachSender, setAttachSender] = useState(false);
-  const [msgClueDialog, setMsgClueDialog] = useState(false);
   const [warningDialog, setWarningDialog] = useState(false);
 
   const { mutate, data, isLoading, reset } = useMutation(sendMessage);
@@ -60,7 +57,6 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
             receiverUsername: username,
             content: message,
             receiverMsg: user.message,
-            attachSender,
             clue,
           },
         },
@@ -115,83 +111,11 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         }
       />
 
-      <ConfirmDialog
+      <AddClueDialog
         isOpen={clueDialog}
         setIsOpen={setClueDialog}
-        content={
-          <form>
-            <h2 className='font-semibold'>
-              🧩 Select a clue to attach to your message
-            </h2>
-            <div className='line my-3' />
-
-            <div className='space-y-3 [&>*]:clue-btn'>
-              <button
-                type='button'
-                onClick={() => {
-                  setClueDialog(false);
-                  setTimeout(() => {
-                    setMsgClueDialog(true);
-                  }, 500);
-                }}
-              >
-                Write a clue about your identity
-              </button>
-              <button
-                type='button'
-                onClick={() => {
-                  setAttachSender((p) => !p);
-                  toast.success(
-                    attachSender
-                      ? 'Detached current username'
-                      : 'Attached current username'
-                  );
-                  setClueDialog(false);
-                }}
-              >
-                {attachSender ? 'Detach' : 'Attach'} your current username
-              </button>
-            </div>
-          </form>
-        }
-      />
-
-      <ConfirmDialog
-        confirmText='Save'
-        handleConfirm={() => {
-          setClueDialog(false);
-          if (clue) {
-            setIsClueSaved(true);
-            toast.success('Clue saved');
-          } else {
-            setIsClueSaved(false);
-            toast.success('Removed clue');
-          }
-        }}
-        onClose={() => {
-          if (!isClueSaved) {
-            setClue('');
-          }
-        }}
-        isOpen={msgClueDialog}
-        setIsOpen={setMsgClueDialog}
-        content={
-          <form>
-            <h2 className='font-semibold'>
-              🧩 Write a clue about your identity
-            </h2>
-            <div className='line my-3' />
-
-            <textarea
-              required
-              value={clue}
-              onChange={(e) => setClue(e.target.value)}
-              maxLength={100}
-              placeholder='Enter here...'
-              className='bg-secondary-100 w-full h-[120px] outline-none py-3 px-4 rounded-md resize-none'
-            />
-          </form>
-        }
+        clue={clue}
+        setClue={setClue}
       />
 
       <section className='flex flex-col items-center space-y-12'>

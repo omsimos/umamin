@@ -103,6 +103,6 @@
   }
 
   .clue-btn {
-    @apply bg-secondary-100 border-2 border-gray-400 hover:bg-secondary-100/80 px-4 py-2 rounded-full font-medium w-full;
+    @apply bg-secondary-100 border-2 hover:bg-secondary-100/80 p-4 rounded-full font-medium w-full;
   }
 }
