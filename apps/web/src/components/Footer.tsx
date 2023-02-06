@@ -53,15 +53,23 @@ export const Footer = () => {
         <ImageFill
           alt='logo'
           src='/assets/logo.svg'
-          className='relative object-contain mb-4 h-6 w-32 md:hidden'
+          className='relative object-contain mb-2 h-6 w-32 md:hidden'
         />
         <a
           href='https://github.com/omsimos'
           target='_blank'
           rel='noreferrer noopener'
-          className='text-xs font-medium text-gray-500 hover:underline sm:text-sm md:text-base'
+          className='font-medium text-gray-500 hover:underline text-sm md:text-base'
         >
-          Ⓒ 2023 Omsimos Collective
+          Omsimos Collective
+        </a>
+        <a
+          href='https://github.com/joshxfi'
+          target='_blank'
+          rel='noreferrer noopener'
+          className='mt-2 font-medium text-gray-500 hover:underline text-sm md:text-base'
+        >
+          Ⓒ 2023 Josh Daniel Bañares
         </a>
       </div>
     </footer>
