@@ -69,6 +69,11 @@ export const AddClueDialog = ({ clue, setClue, setIsOpen, ...rest }: Props) => {
               <button
                 type='button'
                 onClick={() => {
+                  if (!session?.user?.username) {
+                    toast.error('Could not scramble username: try relogging');
+                    return;
+                  }
+
                   setCurrentOption('username');
                   setRandomUsername(scrambleUsername());
                 }}
@@ -120,7 +125,7 @@ export const AddClueDialog = ({ clue, setClue, setIsOpen, ...rest }: Props) => {
                 type='button'
                 className='primary-btn'
                 onClick={() => {
-                  if (clue.length > 0) {
+                  if (msgClue.length > 0) {
                     setAttachedClue('message');
                     setClue(msgClue);
                   } else {
@@ -129,7 +134,7 @@ export const AddClueDialog = ({ clue, setClue, setIsOpen, ...rest }: Props) => {
                   }
 
                   toast.success(
-                    clue.length > 0 ? 'Clue added' : 'Clue removed'
+                    msgClue.length > 0 ? 'Clue added' : 'Clue removed'
                   );
                   closeDialog();
                 }}

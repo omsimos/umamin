@@ -161,7 +161,9 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                 <button
                   type='button'
                   onClick={() => setClueDialog(true)}
-                  className='bg-primary-300 rounded-full p-2 mr-4 flex-none'
+                  className={`${
+                    clue ? 'bg-green-500' : 'bg-primary-300'
+                  }  rounded-full p-2 mr-4 flex-none`}
                 >
                   <HiOutlinePuzzle className='text-lg' />
                 </button>
