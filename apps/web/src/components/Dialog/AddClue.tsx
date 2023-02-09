@@ -60,7 +60,7 @@ export const AddClueDialog = ({ clue, setClue, setIsOpen, ...rest }: Props) => {
                 onClick={() => setCurrentOption('message')}
                 className={
                   attachedClue === 'message'
-                    ? 'border-primary-300'
+                    ? 'border-green-500'
                     : 'border-gray-500'
                 }
               >
@@ -79,7 +79,7 @@ export const AddClueDialog = ({ clue, setClue, setIsOpen, ...rest }: Props) => {
                 }}
                 className={
                   attachedClue === 'username'
-                    ? 'border-primary-300'
+                    ? 'border-green-500'
                     : 'border-gray-500'
                 }
               >
