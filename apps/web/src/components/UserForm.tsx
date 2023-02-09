@@ -125,6 +125,12 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
 
   return (
     <section className='min-h-screen xl:-mt-12'>
+      <AdContainer
+        slotId='7390490260'
+        className='mb-4 mx-auto'
+        adClassName='h-28 w-[512px] mx-auto'
+      />
+
       <div className='flex flex-col items-center space-y-12'>
         <form
           onSubmit={(e) => {
@@ -237,6 +243,16 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             {query.error === 'OAuthAccountNotLinked' && (
               <p className='mt-4 text-red-500'>
                 Email is already linked to a different provider
+              </p>
+            )}
+
+            {!isLogin && (
+              <p className=' mt-6 text-sm self-center text-center'>
+                By creating an account, you agree to our
+                <Link href='privacy-policy' className='text-primary-100'>
+                  {' '}
+                  Privacy Policy
+                </Link>
               </p>
             )}
           </div>

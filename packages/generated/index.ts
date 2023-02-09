@@ -133,8 +133,8 @@ export type SentMessage = {
   createdAt: Scalars['DateTime'];
   id: Scalars['ID'];
   receiverMsg: Scalars['String'];
+  receiverUsername?: Maybe<Scalars['String']>;
   reply?: Maybe<Scalars['String']>;
-  username: Scalars['String'];
 };
 
 export type User = {
@@ -167,7 +167,7 @@ export type GetSentMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: Array<{ __typename?: 'SentMessage', id: string, reply?: string | null, content: string, username: string, createdAt: any, receiverMsg: string }> | null };
+export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: Array<{ __typename?: 'SentMessage', id: string, reply?: string | null, content: string, createdAt: any, receiverMsg: string, receiverUsername?: string | null }> | null };
 
 export type EditMessageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -271,9 +271,9 @@ export const GetSentMessagesDocument = gql`
     id
     reply
     content
-    username
     createdAt
     receiverMsg
+    receiverUsername
   }
 }
     `;

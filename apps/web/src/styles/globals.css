@@ -101,4 +101,8 @@
   .chat-content {
     @apply inline-block max-w-[255px] px-5 py-4 text-base text-white;
   }
+
+  .clue-btn {
+    @apply bg-secondary-100 border-2 hover:bg-secondary-100/80 p-4 rounded-full font-medium w-full;
+  }
 }

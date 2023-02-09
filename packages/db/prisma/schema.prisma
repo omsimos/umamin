@@ -2,13 +2,13 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider             = "mysql"
-  url                  = env("DATABASE_URL")
-  relationMode         = "prisma"
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 model Account {
@@ -66,7 +66,6 @@ model Message {
   isOpened    Boolean  @default(false)
   reply       String?  @db.VarChar(255)
   clue        String?  @db.VarChar(255)
-  username    String
 
   senderId         String?
   sender           User?   @relation(name: "sentMessages", fields: [senderId], references: [id])

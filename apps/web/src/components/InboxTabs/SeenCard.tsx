@@ -32,12 +32,13 @@ interface Props {
 
 export const SeenCard = ({ message, refetch }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const { id, content, clue, receiverMsg, reply, createdAt } = message;
+  const { id, content, clue, receiverMsg, reply, createdAt } =
+    message;
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
 
-  const [deleteModal, setDeleteModal] = useState(false);
   const [clueDialog, setClueDialog] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
   const [replyModal, setReplyModal] = useState(false);
   const [cardModal, setCardModal] = useState(false);
 
@@ -174,15 +175,13 @@ export const SeenCard = ({ message, refetch }: Props) => {
           })}
         </p>
 
-        {clue && (
-          <button
-            type='button'
-            onClick={() => setClueDialog(true)}
-            className='absolute text-lg right-3 bottom-3'
-          >
-            🧩
-          </button>
-        )}
+        <div className='absolute text-lg right-3 bottom-3 space-x-4'>
+          {clue && (
+            <button type='button' onClick={() => setClueDialog(true)}>
+              🧩
+            </button>
+          )}
+        </div>
       </div>
     </>
   );
