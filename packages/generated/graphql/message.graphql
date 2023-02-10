@@ -24,9 +24,9 @@ query getSentMessages($cursorId: ID) {
     id
     reply
     content
-    username
     createdAt
     receiverMsg
+    receiverUsername
   }
 }
 

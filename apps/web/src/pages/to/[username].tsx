@@ -12,9 +12,9 @@ import dynamic from 'next/dynamic';
 import { Error, Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
-import { ConfirmDialog } from '@/components/Dialog';
 import { ChatBubble } from '@/components/ChatBubble';
 import { getUser, queryClient, sendMessage } from '@/api';
+import { AddClueDialog, ConfirmDialog } from '@/components/Dialog';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
@@ -33,10 +33,9 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
   const [clue, setClue] = useState('');
   const [message, setMessage] = useState('');
-  const [isClueSaved, setIsClueSaved] = useState(false);
-  const [msgSent, setMsgSent] = useState<boolean>(false);
-  const [clueDialog, setClueDialog] = useState<boolean>(false);
-  const [warningDialog, setWarningDialog] = useState<boolean>(false);
+  const [msgSent, setMsgSent] = useState(false);
+  const [clueDialog, setClueDialog] = useState(false);
+  const [warningDialog, setWarningDialog] = useState(false);
 
   const { mutate, data, isLoading, reset } = useMutation(sendMessage);
 
@@ -112,42 +111,11 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         }
       />
 
-      <ConfirmDialog
-        confirmText='Save'
-        handleConfirm={() => {
-          setClueDialog(false);
-          if (clue) {
-            setIsClueSaved(true);
-            toast.success('Clue saved');
-          } else {
-            setIsClueSaved(false);
-            toast.success('Removed clue');
-          }
-        }}
-        onClose={() => {
-          if (!isClueSaved) {
-            setClue('');
-          }
-        }}
+      <AddClueDialog
         isOpen={clueDialog}
         setIsOpen={setClueDialog}
-        content={
-          <form>
-            <h2 className='font-semibold'>
-              🧩 Write a clue about your identity
-            </h2>
-            <div className='line my-3' />
-
-            <textarea
-              required
-              value={clue}
-              onChange={(e) => setClue(e.target.value)}
-              maxLength={100}
-              placeholder='Enter here...'
-              className='bg-secondary-100 w-full h-[120px] outline-none py-3 px-4 rounded-md resize-none'
-            />
-          </form>
-        }
+        clue={clue}
+        setClue={setClue}
       />
 
       <section className='flex flex-col items-center space-y-12'>
@@ -187,7 +155,9 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                 <button
                   type='button'
                   onClick={() => setClueDialog(true)}
-                  className='bg-primary-300 rounded-full p-2 mr-4 flex-none'
+                  className={`${
+                    clue ? 'bg-green-500' : 'bg-primary-300'
+                  }  rounded-full p-2 mr-4 flex-none`}
                 >
                   <HiOutlinePuzzle className='text-lg' />
                 </button>

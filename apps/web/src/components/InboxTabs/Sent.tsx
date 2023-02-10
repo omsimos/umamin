@@ -38,7 +38,7 @@ export const Sent = () => {
           <div className='border-secondary-100 flex items-center justify-between border-b-2 bg-[#171819] px-7 py-3'>
             <p className='font-medium text-gray-100'>
               <span className='font-light text-gray-400'>To&#58;</span>{' '}
-              {m.username}
+              {m.receiverUsername}
             </p>
             <h3 className='font-syneExtrabold text-primary-200 text-center text-base'>
               umamin
@@ -51,7 +51,7 @@ export const Sent = () => {
               type='receiver'
               content={m.receiverMsg}
               userData={{
-                username: m?.username,
+                username: m?.receiverUsername,
               }}
             />
             <ChatBubble type='sender' content={m.content} />
@@ -61,7 +61,7 @@ export const Sent = () => {
                 type='receiver'
                 content={m.reply}
                 userData={{
-                  username: m.username,
+                  username: m.receiverUsername,
                 }}
               />
             )}

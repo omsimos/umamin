@@ -239,6 +239,16 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
                 Email is already linked to a different provider
               </p>
             )}
+
+            {!isLogin && (
+              <p className=' mt-6 text-sm self-center text-center'>
+                By creating an account, you agree to our
+                <Link href='privacy-policy' className='text-primary-100'>
+                  {' '}
+                  Privacy Policy
+                </Link>
+              </p>
+            )}
           </div>
         </form>
         <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] md:bottom-0'>
