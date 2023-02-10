@@ -16,7 +16,7 @@ const AdContainer = ({ slotId, className, adClassName }: Props) => {
   }, []);
 
   return (
-    <div className={className}>
+    <div className={`${className} ${adClassName}`}>
       <ins
         className={`adsbygoogle block ${adClassName}`}
         data-ad-client='ca-pub-4274133898976040'
