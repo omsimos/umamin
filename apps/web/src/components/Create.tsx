@@ -24,12 +24,6 @@ export const Create = () => {
 
   return (
     <>
-      <AdContainer
-        slotId='2894865577'
-        className='mb-8'
-        adClassName='h-[120px]'
-      />
-
       <section className='mx-auto max-w-screen-sm'>
         <form onSubmit={handleSubmit} className='mb-2 flex space-x-2'>
           <input

@@ -3,10 +3,9 @@ import React, { useEffect } from 'react';
 interface Props {
   slotId: string;
   className?: string;
-  adClassName?: string;
 }
 
-const AdContainer = ({ slotId, className, adClassName }: Props) => {
+const AdContainer = ({ slotId, className }: Props) => {
   useEffect(() => {
     if (process.env.NODE_ENV === 'production') {
       if (typeof window !== 'undefined') {
@@ -16,9 +15,9 @@ const AdContainer = ({ slotId, className, adClassName }: Props) => {
   }, []);
 
   return (
-    <div className={`${className} ${adClassName}`}>
+    <div className={className}>
       <ins
-        className={`adsbygoogle block ${adClassName}`}
+        className='adsbygoogle block'
         data-ad-client='ca-pub-4274133898976040'
         data-ad-slot={slotId}
         data-ad-format='auto'

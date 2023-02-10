@@ -125,12 +125,6 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
 
   return (
     <section className='min-h-screen xl:-mt-12'>
-      <AdContainer
-        slotId='7390490260'
-        className='mb-8'
-        adClassName='h-[120px]'
-      />
-
       <div className='flex flex-col items-center space-y-12'>
         <form
           onSubmit={(e) => {

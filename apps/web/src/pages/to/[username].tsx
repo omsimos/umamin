@@ -118,12 +118,6 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         setClue={setClue}
       />
 
-      <AdContainer
-        slotId='9345002123'
-        className='mb-8'
-        adClassName='h-[120px]'
-      />
-
       <section className='flex flex-col items-center space-y-12'>
         <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 md:w-[720px]'>
           {/* Top */}
