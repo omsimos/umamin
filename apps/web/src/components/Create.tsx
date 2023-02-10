@@ -24,13 +24,13 @@ export const Create = () => {
 
   return (
     <>
-      <section className='mx-auto max-w-screen-sm'>
-        <AdContainer
-          slotId='2894865577'
-          className='mb-4 mx-auto'
-          adClassName='h-28 w-[512px] mx-auto'
-        />
+      <AdContainer
+        slotId='2894865577'
+        className='mb-8'
+        adClassName='h-[120px]'
+      />
 
+      <section className='mx-auto max-w-screen-sm'>
         <form onSubmit={handleSubmit} className='mb-2 flex space-x-2'>
           <input
             required

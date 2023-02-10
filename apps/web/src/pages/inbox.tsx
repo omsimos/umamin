@@ -74,7 +74,12 @@ const Inbox: NextPageWithLayout = () => {
         <>
           <SettingsDialog isOpen={settingsModal} setIsOpen={setSettingsModal} />
 
-          <AdContainer slotId='4956732763' className='mb-4 mx-auto' adClassName='h-28 w-[512px] mx-auto' />
+          <AdContainer
+            slotId='4956732763'
+            className='mb-8'
+            adClassName='h-[120px]'
+          />
+
           <div className='mb-5 flex w-full items-center justify-between px-4'>
             <ImageFill
               alt='profile picture'

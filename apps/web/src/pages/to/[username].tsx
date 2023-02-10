@@ -120,8 +120,8 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
       <AdContainer
         slotId='9345002123'
-        className='mb-4 mx-auto'
-        adClassName='h-28 w-[512px] mx-auto'
+        className='mb-8'
+        adClassName='h-[120px]'
       />
 
       <section className='flex flex-col items-center space-y-12'>
