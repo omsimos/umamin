@@ -1,54 +1,46 @@
 {
-  "theme_color": "#da49bf",
-  "background_color": "#161719",
+  "theme_color": "#ff00a9",
+  "background_color": "#151618",
   "display": "standalone",
   "scope": "/",
-  "start_url": "/",
-  "name": "umamin",
-  "short_name": "umamin",
-  "description": "An ad-free and open-source platform for sending and receiving anonymous confessions.",
+  "start_url": "/register",
+  "name": "Umamin",
+  "short_name": "Umamin",
+  "description": "The ultimate platform for anonymous messages!",
   "icons": [
     {
-      "src": "/icons/icon-48x48.png",
+      "src": "/icons/icon-48.png",
       "type": "image/png",
       "sizes": "48x48"
     },
     {
-      "src": "/icons/icon-72x72.png",
+      "src": "/icons/icon-72.png",
       "type": "image/png",
       "sizes": "72x72"
     },
     {
-      "src": "/icons/icon-96x96.png",
+      "src": "/icons/icon-96.png",
       "type": "image/png",
       "sizes": "96x96"
     },
     {
-      "src": "/icons/icon-144x144.png",
+      "src": "/icons/icon-144.png",
       "type": "image/png",
       "sizes": "144x144"
     },
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/icon-192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/icons/icon-512x512.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    },
-    {
-      "src": "/icons/maskable-192x192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icons/maskable-512x512.png",
+      "src": "/icons/icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "maskable"
+      "purpose": "any"
     }
-  ]
+  ],
+  "lang": "en",
+  "orientation": "portrait",
+  "categories": ["entertainment", "personalization", "social"]
 }

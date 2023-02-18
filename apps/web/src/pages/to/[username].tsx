@@ -87,7 +87,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   return (
     <>
       <NextSeo
-        title='umamin - Send Anonymous Messages'
+        title='Umamin - Send Anonymous Messages'
         openGraph={{
           title: user
             ? `👀 Send anonymous messages to ${user.username}!`

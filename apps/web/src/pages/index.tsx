@@ -33,18 +33,21 @@ const Home: NextPageWithLayout = () => {
     showInstallPrompt();
   };
 
+  if (status === 'authenticated') {
+    push('/inbox');
+  }
+
   return (
     <section className='space-y-12'>
       <div className='relative flex flex-col justify-between text-center sm:text-left xl:flex-row'>
         <div>
           <h1 className='h1-text'>
             Receive confessions &<br />
-            messages <span className='text-primary-100'>anonymously!</span>
+            messages <span className='text-gradient'>anonymously!</span>
           </h1>
 
           <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
-            An open-source platform for sending and receiving anonymous
-            messages.
+            The ultimate platform for sending and receiving anonymous messages!
           </p>
 
           <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>

@@ -81,7 +81,7 @@ export const Recent = () => {
         >
           {m.clue && <p className='absolute text-lg right-3 top-3'>🧩</p>}
 
-          <h3 className='font-syneExtrabold mb-4 text-primary-200 text-center text-3xl'>
+          <h3 className='font-syneExtrabold mb-4 text-gradient text-center text-3xl'>
             umamin
           </h3>
 
