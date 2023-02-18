@@ -117,10 +117,9 @@ const Inbox: NextPageWithLayout = () => {
                     key={title}
                     className={({ selected }) =>
                       classNames(
-                        'w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-white',
-                        'ring-offset-primary-300 ring-transparent ring-opacity-60 ring-offset-2 focus:outline-none focus:ring-2',
+                        'outline-none w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-white',
                         selected
-                          ? 'text-secondary-200 bg-[#EB9DDC] shadow'
+                          ? 'bg-gradient shadow'
                           : 'text-white hover:bg-white/[0.12] hover:text-white'
                       )
                     }

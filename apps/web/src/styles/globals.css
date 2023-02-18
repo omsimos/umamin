@@ -35,7 +35,7 @@
   }
 
   .primary-btn {
-    @apply bg-primary-200 hover:bg-primary-200/80 btn;
+    @apply bg-gradient-to-b from-primary-100 to-primary-200 btn hover:bg-gradient-to-br;
   }
 
   .secondary-btn {
@@ -91,7 +91,7 @@
   }
 
   .chat-send {
-    @apply after:bg-secondary-200 self-end bg-[#CF49A3] before:bg-[#CF49A3];
+    @apply after:bg-secondary-200 self-end bg-primary-200 before:bg-primary-200;
   }
 
   .chat-receive {
@@ -104,5 +104,13 @@
 
   .clue-btn {
     @apply bg-secondary-100 border-2 hover:bg-secondary-100/80 p-4 rounded-full font-medium w-full;
+  }
+
+  .text-gradient {
+    @apply text-transparent bg-clip-text bg-gradient-to-b from-primary-100 to-primary-200;
+  }
+
+  .bg-gradient {
+    @apply bg-gradient-to-b from-primary-100 to-primary-200;
   }
 }

@@ -40,7 +40,7 @@ export const Sent = () => {
               <span className='font-light text-gray-400'>To&#58;</span>{' '}
               {m.receiverUsername}
             </p>
-            <h3 className='font-syneExtrabold text-primary-200 text-center text-base'>
+            <h3 className='font-syneExtrabold text-gradient text-center text-base'>
               umamin
             </h3>
           </div>

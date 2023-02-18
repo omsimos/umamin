@@ -39,7 +39,7 @@ const Home: NextPageWithLayout = () => {
         <div>
           <h1 className='h1-text'>
             Receive confessions &<br />
-            messages <span className='text-primary-100'>anonymously!</span>
+            messages <span className='text-gradient'>anonymously!</span>
           </h1>
 
           <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
