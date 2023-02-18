@@ -34,8 +34,8 @@ export default {
     },
     {
       rel: 'apple-touch-icon',
-      href: '/icons/apple-touch-icon.png',
-      sizes: '180x180',
+      href: '/icons/icon-144.png',
+      sizes: '144x144',
     },
     {
       rel: 'manifest',
