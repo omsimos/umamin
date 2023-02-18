@@ -1,12 +1,12 @@
 {
-  "theme_color": "#da49bf",
-  "background_color": "#161719",
+  "theme_color": "#ff00a9",
+  "background_color": "#151618",
   "display": "standalone",
   "scope": "/",
-  "start_url": "/",
-  "name": "umamin",
-  "short_name": "umamin",
-  "description": "An ad-free and open-source platform for sending and receiving anonymous confessions.",
+  "start_url": "/register",
+  "name": "Umamin",
+  "short_name": "Umamin",
+  "description": "The ultimate platform for anonymous messages!",
   "icons": [
     {
       "src": "/icons/icon-48.png",
@@ -36,7 +36,11 @@
     {
       "src": "/icons/icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
     }
-  ]
+  ],
+  "lang": "en",
+  "orientation": "portrait",
+  "categories": ["entertainment", "personalization", "social"]
 }
