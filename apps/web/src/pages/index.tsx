@@ -33,6 +33,10 @@ const Home: NextPageWithLayout = () => {
     showInstallPrompt();
   };
 
+  if (status === 'authenticated') {
+    push('/inbox');
+  }
+
   return (
     <section className='space-y-12'>
       <div className='relative flex flex-col justify-between text-center sm:text-left xl:flex-row'>
@@ -43,8 +47,7 @@ const Home: NextPageWithLayout = () => {
           </h1>
 
           <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
-            The ultimate platform for sending and receiving anonymous
-            messages!
+            The ultimate platform for sending and receiving anonymous messages!
           </p>
 
           <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
