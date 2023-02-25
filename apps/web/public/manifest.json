@@ -42,5 +42,6 @@
   ],
   "lang": "en",
   "orientation": "portrait",
-  "categories": ["entertainment", "personalization", "social"]
+  "categories": ["entertainment", "personalization", "social"],
+  "display_override": ["minimal-ui"]
 }
