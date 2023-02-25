@@ -1,23 +1,35 @@
-import React, { useRef, useCallback } from 'react';
-import { useInboxContext } from '@/contexts/InboxContext';
+import React, { useState, useRef, useCallback } from 'react';
+import { HiDownload, HiPuzzle, HiTrash } from 'react-icons/hi';
+import { useMutation } from 'react-query';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
 import { nanoid } from 'nanoid';
 
 import { useLogEvent } from '@/hooks';
-import { DialogContainer, DialogContainerProps } from '.';
+import { deleteMessage } from '@/api';
+import { useInboxContext } from '@/contexts/InboxContext';
+import type { RecentMessage, SeenMessage } from '@umamin/generated';
+import {
+  ClueDialog,
+  ConfirmDialog,
+  DialogContainer,
+  DialogContainerProps,
+} from '.';
 
 interface Props extends DialogContainerProps {
-  data: {
-    receiverMsg: string;
-    content: string;
-  };
+  refetch?: () => void;
+  data: RecentMessage | SeenMessage;
 }
 
-export const MessageDialog = ({ data, setIsOpen, ...rest }: Props) => {
+export const MessageDialog = ({ data, setIsOpen, refetch, ...rest }: Props) => {
+  const { id, content, clue, receiverMsg } = data;
   const cardRef = useRef<HTMLDivElement>(null);
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
+  const { mutate } = useMutation(deleteMessage);
+
+  const [clueDialog, setClueDialog] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
 
   const saveImage = useCallback(() => {
     if (cardRef.current === null) {
@@ -34,44 +46,93 @@ export const MessageDialog = ({ data, setIsOpen, ...rest }: Props) => {
       .catch((err) => {
         toast.error(err);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardRef]);
 
-  return (
-    <DialogContainer setIsOpen={setIsOpen} {...rest}>
-      <div ref={cardRef} className='bg-secondary-300 flex flex-col p-4'>
-        <p className='font-syneExtrabold mb-2 self-center text-xl'>
-          <span className='text-primary-200'>umamin</span>.link
-        </p>
+  const handleDelete = () => {
+    mutate(
+      { id },
+      {
+        onSuccess: () => {
+          if (refetch) {
+            refetch();
+          }
+          setDeleteModal(false);
+          toast.success('Message deleted');
+        },
+      }
+    );
 
-        <div className='msg-card overflow-hidden text-left'>
-          <div className='receive chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 max-w-full px-6 py-5 text-lg text-white'>
-            <p className='reply font-interMedium mb-3'>{data.receiverMsg}</p>
-            <p>{data.content}</p>
+    triggerEvent('delete_message');
+  };
+
+  return (
+    <>
+      <ConfirmDialog
+        danger
+        confirmText='Delete'
+        isOpen={deleteModal}
+        setIsOpen={setDeleteModal}
+        content={<p>Are you sure you want to delete this message?</p>}
+        handleConfirm={handleDelete}
+      />
+
+      {clue && (
+        <ClueDialog isOpen={clueDialog} setIsOpen={setClueDialog} clue={clue} />
+      )}
+
+      <DialogContainer setIsOpen={setIsOpen} {...rest}>
+        <section ref={cardRef} className='bg-secondary-300 p-4'>
+          <div className='relative border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2 flex flex-col justify-between gap-6 p-5'>
+            {/* Message */}
+            <p className='text-center text-lg font-bold'>{receiverMsg}</p>
+            <div>
+              <p className='chat-send font-bold text-lg chat-p pl-8 p-5 receive w-full'>
+                {content}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <div className='flex justify-between px-4 lg:w-full'>
+          <button
+            onClick={() => setIsOpen(false)}
+            type='button'
+            className='hover:underline'
+          >
+            &larr; Go Back
+          </button>
+
+          <div className='space-x-2 text-xl text-white'>
+            {clue && (
+              <button
+                type='button'
+                onClick={() => setClueDialog(true)}
+                className='bg-green-500 p-2 rounded'
+              >
+                <HiPuzzle />
+              </button>
+            )}
+            <button
+              type='button'
+              onClick={() => setDeleteModal(true)}
+              className='bg-red-500 p-2 rounded'
+            >
+              <HiTrash />
+            </button>
+            <button
+              className='bg-primary-200 p-2 rounded'
+              type='button'
+              onClick={() => {
+                saveImage();
+                triggerEvent('save_image');
+              }}
+            >
+              <HiDownload />
+            </button>
           </div>
         </div>
-      </div>
-
-      <div className='flex justify-between px-4 lg:w-full'>
-        <button
-          onClick={() => setIsOpen(false)}
-          type='button'
-          className='hover:underline'
-        >
-          &larr; Go Back
-        </button>
-
-        <button
-          className='primary-btn'
-          type='button'
-          onClick={() => {
-            saveImage();
-            triggerEvent('save_image');
-          }}
-        >
-          Download
-        </button>
-      </div>
-    </DialogContainer>
+      </DialogContainer>
+    </>
   );
 };
