@@ -12,7 +12,6 @@ query getSeenMessages($cursorId: ID) {
   getSeenMessages(cursorId: $cursorId) {
     id
     clue
-    reply
     content
     createdAt
     receiverMsg
