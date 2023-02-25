@@ -65,5 +65,19 @@
       "sizes": "1080x1920",
       "type": "image/png"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Login",
+      "url": "/login"
+    },
+    {
+      "name": "Register",
+      "url": "/register"
+    },
+    {
+      "name": "Inbox",
+      "url": "/inbox"
+    }
   ]
 }
