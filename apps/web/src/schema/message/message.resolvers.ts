@@ -67,7 +67,6 @@ export class MessageResolver {
         select: {
           id: true,
           clue: true,
-          reply: true,
           content: true,
           createdAt: true,
           receiverMsg: true,
@@ -137,12 +136,7 @@ export class MessageResolver {
   @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
-    {
-      clue,
-      content,
-      receiverMsg,
-      receiverUsername,
-    }: SendMessageInput,
+    { clue, content, receiverMsg, receiverUsername }: SendMessageInput,
     @Ctx() { prisma, id }: TContext
   ): Promise<String> {
     try {

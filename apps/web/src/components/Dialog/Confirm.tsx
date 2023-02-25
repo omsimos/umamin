@@ -32,6 +32,7 @@ export const ConfirmDialog = ({
         <div className='mt-8 flex items-center space-x-4 self-end'>
           <button
             type='button'
+            className='outline-none'
             onClick={() => {
               if (onClose) {
                 onClose();
