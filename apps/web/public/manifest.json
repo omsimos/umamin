@@ -43,5 +43,27 @@
   "lang": "en",
   "orientation": "portrait",
   "categories": ["entertainment", "personalization", "social"],
-  "display_override": ["minimal-ui"]
+  "display_override": ["minimal-ui"],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot-1.png",
+      "sizes": "1080x1920",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/screenshot-2.png",
+      "sizes": "1080x1920",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/screenshot-3.png",
+      "sizes": "1080x1920",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/screenshot-4.png",
+      "sizes": "1080x1920",
+      "type": "image/png"
+    }
+  ]
 }
