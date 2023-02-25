@@ -57,6 +57,7 @@ export const MessageDialog = ({ data, setIsOpen, refetch, ...rest }: Props) => {
           if (refetch) {
             refetch();
           }
+          setIsOpen(false);
           setDeleteModal(false);
           toast.success('Message deleted');
         },
@@ -87,7 +88,7 @@ export const MessageDialog = ({ data, setIsOpen, refetch, ...rest }: Props) => {
             {/* Message */}
             <p className='text-center text-lg font-bold'>{receiverMsg}</p>
             <div>
-              <p className='chat-send font-bold text-lg chat-p pl-8 p-5 receive w-full'>
+              <p className='chat-send font-bold text-lg chat-p px-8 py-5 receive w-full'>
                 {content}
               </p>
             </div>

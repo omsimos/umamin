@@ -11,7 +11,8 @@ export const Seen = () => {
   const [msgModal, setMsgModal] = useState(false);
   const [messageData, setMessageData] = useState({} as SeenMessage);
 
-  const { seenData, isSeenLoading, cursorId, setCursorId } = useInboxContext();
+  const { seenData, refetchSeen, isSeenLoading, cursorId, setCursorId } =
+    useInboxContext();
 
   return (
     <InboxTabContainer
@@ -23,6 +24,7 @@ export const Seen = () => {
       setCursorId={setCursorId}
     >
       <MessageDialog
+        refetch={refetchSeen}
         data={messageData}
         isOpen={msgModal}
         setIsOpen={setMsgModal}
