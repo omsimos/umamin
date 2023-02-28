@@ -67,6 +67,7 @@ export const Recent = () => {
       setCursorId={setCursorId}
     >
       <MessageDialog
+        refetch={refetchSeen}
         data={messageData}
         isOpen={msgModal}
         setIsOpen={setMsgModal}
