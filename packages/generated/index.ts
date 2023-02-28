@@ -129,6 +129,7 @@ export type SendMessageInput = {
 
 export type SentMessage = {
   __typename?: 'SentMessage';
+  clue?: Maybe<Scalars['String']>;
   content: Scalars['String'];
   createdAt: Scalars['DateTime'];
   id: Scalars['ID'];
@@ -167,7 +168,7 @@ export type GetSentMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: Array<{ __typename?: 'SentMessage', id: string, reply?: string | null, content: string, createdAt: any, receiverMsg: string, receiverUsername?: string | null }> | null };
+export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: Array<{ __typename?: 'SentMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string, receiverUsername?: string | null }> | null };
 
 export type EditMessageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -268,6 +269,7 @@ export const GetSentMessagesDocument = gql`
     query getSentMessages($cursorId: ID) {
   getSentMessages(cursorId: $cursorId) {
     id
+    clue
     reply
     content
     createdAt

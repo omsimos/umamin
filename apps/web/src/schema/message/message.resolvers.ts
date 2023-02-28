@@ -106,6 +106,7 @@ export class MessageResolver {
         take: 3,
         select: {
           id: true,
+          clue: true,
           reply: true,
           content: true,
           createdAt: true,
