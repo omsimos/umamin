@@ -45,7 +45,6 @@
     "remark-gfm": "^3.0.1",
     "sharp": "^0.31.3",
     "type-graphql": "^1.1.1",
-    "use-pwa": "^1.1.0",
     "zod": "^3.17.3"
   },
   "devDependencies": {

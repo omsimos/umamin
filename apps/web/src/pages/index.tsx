@@ -1,8 +1,6 @@
 import React from 'react';
-import usePwa from 'use-pwa';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { IoChatboxEllipses } from 'react-icons/io5';
@@ -21,17 +19,6 @@ const Home: NextPageWithLayout = () => {
   const { status } = useSession();
   const isLoading = status === 'loading';
   const isAuthenticated = status === 'authenticated';
-
-  const { canInstallprompt, showInstallPrompt } = usePwa();
-
-  const handleInstall = () => {
-    if (!canInstallprompt) {
-      toast.error('Browser not supported or app already installed');
-      return;
-    }
-
-    showInstallPrompt();
-  };
 
   if (status === 'authenticated') {
     push('/inbox');
@@ -60,14 +47,14 @@ const Home: NextPageWithLayout = () => {
               {isAuthenticated ? 'View messages' : 'Create your link'}
             </button>
 
-            <button
-              disabled={isLoading}
-              type='button'
-              onClick={handleInstall}
+            <a
+              href='https://github.com/omsimos/umamin'
               className='secondary-btn'
+              target='_blank'
+              rel='noreferrer noopener'
             >
-              Download App
-            </button>
+              Source Code
+            </a>
           </div>
         </div>
 
