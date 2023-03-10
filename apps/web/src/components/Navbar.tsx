@@ -25,7 +25,7 @@ export const Navbar = () => {
 
   return (
     <nav className='relative z-10 mb-12 flex items-center justify-between xl:mb-24'>
-      <Link href='/'>
+      <Link href={status === 'authenticated' ? '/inbox' : '/'}>
         <ImageFill
           alt='logo'
           src='/assets/logo.svg'

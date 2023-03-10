@@ -1,8 +1,6 @@
 import React from 'react';
-import usePwa from 'use-pwa';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { IoChatboxEllipses } from 'react-icons/io5';
@@ -22,16 +20,9 @@ const Home: NextPageWithLayout = () => {
   const isLoading = status === 'loading';
   const isAuthenticated = status === 'authenticated';
 
-  const { canInstallprompt, showInstallPrompt } = usePwa();
-
-  const handleInstall = () => {
-    if (!canInstallprompt) {
-      toast.error('Browser not supported or app already installed');
-      return;
-    }
-
-    showInstallPrompt();
-  };
+  if (status === 'authenticated') {
+    push('/inbox');
+  }
 
   return (
     <section className='space-y-12'>
@@ -39,12 +30,11 @@ const Home: NextPageWithLayout = () => {
         <div>
           <h1 className='h1-text'>
             Receive confessions &<br />
-            messages <span className='text-primary-100'>anonymously!</span>
+            messages <span className='text-gradient'>anonymously!</span>
           </h1>
 
           <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
-            An open-source platform for sending and receiving anonymous
-            messages.
+            The ultimate platform for sending and receiving anonymous messages!
           </p>
 
           <div className='mt-8 flex justify-center gap-3 sm:justify-start xl:mt-12'>
@@ -57,14 +47,14 @@ const Home: NextPageWithLayout = () => {
               {isAuthenticated ? 'View messages' : 'Create your link'}
             </button>
 
-            <button
-              disabled={isLoading}
-              type='button'
-              onClick={handleInstall}
+            <a
+              href='https://github.com/omsimos/umamin'
               className='secondary-btn'
+              target='_blank'
+              rel='noreferrer noopener'
             >
-              Download App
-            </button>
+              Source Code
+            </a>
           </div>
         </div>
 

@@ -38,6 +38,9 @@ export class SentMessage extends BaseMessage {
 
   @Field(() => String, { nullable: true })
   reply: string | null;
+
+  @Field(() => String, { nullable: true })
+  clue: string | null;
 }
 
 @InputType()

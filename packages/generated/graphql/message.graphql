@@ -12,7 +12,6 @@ query getSeenMessages($cursorId: ID) {
   getSeenMessages(cursorId: $cursorId) {
     id
     clue
-    reply
     content
     createdAt
     receiverMsg
@@ -22,6 +21,7 @@ query getSeenMessages($cursorId: ID) {
 query getSentMessages($cursorId: ID) {
   getSentMessages(cursorId: $cursorId) {
     id
+    clue
     reply
     content
     createdAt

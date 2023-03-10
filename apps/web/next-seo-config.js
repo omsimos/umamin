@@ -1,11 +1,8 @@
 const description =
-  'An open-source platform for sending and receiving anonymous confessions! Start receiving anonymous messages with umamin!';
-
-const imgUrl =
-  'https://user-images.githubusercontent.com/69457996/179454243-4ea5227b-2a10-4276-8ddb-bdc6da645463.png';
+  'The ultimate platform for sending and receiving anonymous messages!';
 
 export default {
-  title: 'umamin',
+  title: 'Umamin',
   description,
   openGraph: {
     type: 'website',
@@ -14,14 +11,14 @@ export default {
     description,
     images: [
       {
-        url: imgUrl,
+        url: '/assets/banner.jpg',
         width: 1400,
         height: 800,
         alt: 'umamin',
-        type: 'image/png',
+        type: 'image/jpg',
       },
     ],
-    site_name: 'umamin',
+    site_name: 'Umamin',
   },
   twitter: {
     cardType: 'summary_large_image',
@@ -34,8 +31,8 @@ export default {
     },
     {
       rel: 'apple-touch-icon',
-      href: '/icons/apple-touch-icon.png',
-      sizes: '180x180',
+      href: '/icons/icon-144.png',
+      sizes: '144x144',
     },
     {
       rel: 'manifest',

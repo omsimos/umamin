@@ -94,6 +94,10 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
         );
       }
 
+      if (message === user.message && username === user.username) {
+        toast.error('No changes detected');
+      }
+
       if (currentOption === 'password' && user.password) {
         const correctPassword = bcrypt.compareSync(currentPass, user.password);
 
