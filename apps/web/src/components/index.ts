@@ -9,3 +9,4 @@ export * from './Markdown';
 export * from './UserForm';
 export * from './ImageFill';
 export * from './Maintenance';
+export * from './ErrorBoundary';
