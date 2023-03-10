@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "link.umamin.app",
+      "sha256_cert_fingerprints": [
+        "14:B5:9D:7C:11:18:B1:83:04:FD:53:76:1E:BE:72:DE:6C:22:A5:E1:0F:C7:26:25:AE:23:EA:10:68:1B:2B:FE",
+        "75:15:FA:E1:35:FD:F3:B4:36:C9:C8:95:BF:83:2E:37:65:05:59:A5:E3:88:AD:7F:19:19:E6:BE:E4:25:56:E2"
+      ]
+    }
+  }
+]
