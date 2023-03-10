@@ -10,7 +10,7 @@ import Router from 'next/router';
 
 import '../styles/globals.css';
 import { queryClient } from '@/api';
-import { Maintenance } from '@/components';
+import { ErrorBoundary, Maintenance } from '@/components';
 
 import SEO from '../../next-seo-config';
 import type { NextPageWithLayout } from '..';
@@ -40,7 +40,9 @@ function MyApp({
           {process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ? (
             <Maintenance />
           ) : (
-            <>{getLayout(<Component {...pageProps} />)}</>
+            <ErrorBoundary>
+              {getLayout(<Component {...pageProps} />)}
+            </ErrorBoundary>
           )}
           <Toaster />
         </Hydrate>
