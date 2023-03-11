@@ -161,7 +161,7 @@ export type GetSeenMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, clue?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
 
 export type GetSentMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']>;
@@ -259,6 +259,7 @@ export const GetSeenMessagesDocument = gql`
   getSeenMessages(cursorId: $cursorId) {
     id
     clue
+    reply
     content
     createdAt
     receiverMsg
