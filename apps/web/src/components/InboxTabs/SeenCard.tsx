@@ -86,6 +86,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
       />
 
       <ConfirmDialog
+        danger
         confirmText='Delete'
         isOpen={deleteModal}
         setIsOpen={setDeleteModal}
