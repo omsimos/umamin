@@ -67,6 +67,7 @@ export class MessageResolver {
         select: {
           id: true,
           clue: true,
+          reply: true,
           content: true,
           createdAt: true,
           receiverMsg: true,

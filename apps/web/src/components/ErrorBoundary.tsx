@@ -31,8 +31,8 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <Layout>
           <h1 className='h1-text text-center'>An error occurred</h1>
-          <p className='text-center mt-2'>
-            It could be caused by an Ad Blocker
+          <p className='text-center mt-2 text-primary-100 font-medium'>
+            ⛔ It could be caused by an ad blocker ⛔
           </p>
         </Layout>
       );
