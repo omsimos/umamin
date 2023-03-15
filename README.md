@@ -1,5 +1,11 @@
 <div align="center">
-  <img align="center" src="https://user-images.githubusercontent.com/69457996/224477468-89cbc2a2-fa69-4a21-854a-75f75e3652fe.png" width="350" />
+  <img src="https://user-images.githubusercontent.com/69457996/224477468-89cbc2a2-fa69-4a21-854a-75f75e3652fe.png" width="350" />
+</div>
+
+<div align="center">
+  <a href="https://play.google.com/store/apps/details?id=link.umamin.app">
+    <img src="https://user-images.githubusercontent.com/69457996/225260328-aa63b9a8-27fa-49c1-a056-1e4102be475a.png" width="200" />
+  </a>
 </div>
 
 ## About
@@ -83,3 +89,7 @@ $ git push origin HEAD
 ## License
 
 Licensed under the [GPL-3.0 license](https://github.com/joshxfi/umamin/blob/main/LICENSE).
+
+---
+
+*Google Play and the Google Play logo are trademarks of Google LLC.*

@@ -35,11 +35,11 @@ export const footerItems = {
         },
         {
           name: 'Bug Report',
-          href: 'https://github.com/omsimos/umamin/issues/new?assignees=&labels=&template=bug_report.md',
+          href: 'mailto:umamin.link@gmail.com',
         },
         {
           name: 'Feature Request',
-          href: 'https://github.com/omsimos/umamin/issues/new?assignees=&labels=&template=feature_request.md',
+          href: 'mailto:umamin.link@gmail.com',
         },
       ],
     },

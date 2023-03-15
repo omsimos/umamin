@@ -3,6 +3,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
+import { AiFillAndroid } from 'react-icons/ai';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
 
@@ -48,12 +49,13 @@ const Home: NextPageWithLayout = () => {
             </button>
 
             <a
-              href='https://github.com/omsimos/umamin'
-              className='secondary-btn'
+              href='https://play.google.com/store/apps/details?id=link.umamin.app'
+              className='secondary-btn flex items-center space-x-2'
               target='_blank'
               rel='noreferrer noopener'
             >
-              Source Code
+              <p>Download</p>
+              <AiFillAndroid className='text-lg' />
             </a>
           </div>
         </div>
