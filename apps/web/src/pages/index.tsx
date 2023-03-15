@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
 
-import { Layout } from '@/components';
+import { ImageFill, Layout } from '@/components';
 import { indexItems } from '@/utils/constants';
 import type { NextPageWithLayout } from '..';
 
@@ -49,11 +49,10 @@ const Home: NextPageWithLayout = () => {
 
             <a
               href='https://github.com/omsimos/umamin'
-              className='secondary-btn'
               target='_blank'
               rel='noreferrer noopener'
             >
-              Source Code
+              <ImageFill src='/assets/google-play-badge.png' alt='google play' className='object-contain h-full w-[300px] bg-blue-200' />
             </a>
           </div>
         </div>
