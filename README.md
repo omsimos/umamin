@@ -1,18 +1,16 @@
-<div align='center'>
-
-![logo](https://user-images.githubusercontent.com/69457996/177703181-722ac9dc-57cf-4087-a7eb-f9104c876c25.svg)
-
+<div align="center">
+  <img align="center" src="https://user-images.githubusercontent.com/69457996/224477468-89cbc2a2-fa69-4a21-854a-75f75e3652fe.png" width="350" />
 </div>
 
 ## About
 
-[umamin](https://umamin.link) is an open-source platform for sending and receiving anonymous confessions! Each user can create a unique link to which others could send anonymous messages! [Start receiving confessions and messages &rarr;](https://umamin.link)
+[Umamin](https://umamin.link) is an open-source platform for sending and receiving anonymous confessions! Each user can create a unique link to which others could send anonymous messages! [Start receiving confessions and messages &rarr;](https://umamin.link)
 
 ## Contributing
 
 If you like this project, please consider giving it a star! Want to contribute? Make sure to review our [code of conduct](https://github.com/joshxfi/umamin/blob/main/CODE_OF_CONDUCT.md).
 
-<!-- [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L682N4R) -->
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L682N4R)
 
 ### Contributor List
 
