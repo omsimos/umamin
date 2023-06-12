@@ -17,12 +17,12 @@ export const SentCard = ({ data }: { data: SentMessage }) => {
         <ClueDialog isOpen={clueDialog} setIsOpen={setClueDialog} clue={clue} />
       )}
 
-      <div
-        className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2 relative'
-      >
-        <div className='border-secondary-100 flex items-center justify-between border-b-2 bg-[#171819] px-7 py-3'>
-          <p className='font-medium text-gray-100'>
-            <span className='font-light text-gray-400'>To&#58;</span>{' '}
+      <div className='dark:border-secondary-100 dark:bg-secondary-200 relative w-full overflow-hidden rounded-2xl border-2 border-gray-400 bg-gray-200'>
+        <div className='dark:border-secondary-100 flex items-center justify-between border-b-2 border-gray-400 bg-gray-300 px-7 py-3 dark:bg-[#171819]'>
+          <p className='text-secondary-300 font-medium dark:text-gray-100'>
+            <span className='font-light text-gray-500 dark:text-gray-400'>
+              To&#58;
+            </span>{' '}
             {receiverUsername}
           </p>
           <h3 className='font-syneExtrabold text-gradient text-center text-base'>
@@ -57,7 +57,7 @@ export const SentCard = ({ data }: { data: SentMessage }) => {
             addSuffix: true,
           })}
         </p>
-        <div className='absolute text-lg right-3 bottom-3 space-x-4'>
+        <div className='absolute right-3 bottom-3 space-x-4 text-lg'>
           {clue && (
             <button type='button' onClick={() => setClueDialog(true)}>
               🧩

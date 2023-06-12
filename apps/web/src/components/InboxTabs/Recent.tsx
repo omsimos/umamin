@@ -78,15 +78,15 @@ export const Recent = () => {
           type='button'
           key={m.id}
           onClick={() => handleOpen(m)}
-          className='msg-card relative hide-tap-highlight w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+          className='msg-card hide-tap-highlight relative w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
         >
-          {m.clue && <p className='absolute text-lg right-3 top-3'>🧩</p>}
+          {m.clue && <p className='absolute right-3 top-3 text-lg'>🧩</p>}
 
-          <h3 className='font-syneExtrabold mb-4 text-gradient text-center text-3xl'>
+          <h3 className='font-syneExtrabold text-gradient mb-4 text-center text-3xl'>
             umamin
           </h3>
 
-          <div className='send chat-p bg-secondary-100 before:bg-secondary-100 after:bg-secondary-200 flex max-w-full items-center space-x-3 px-6 py-4 font-medium'>
+          <div className='send chat-p dark:bg-secondary-100 dark:before:bg-secondary-100 dark:after:bg-secondary-200 flex max-w-full items-center space-x-3 bg-gray-200 px-6 py-4 font-medium before:bg-gray-200 after:bg-gray-300'>
             <p className='reply text-secondary-400'>{m.receiverMsg}</p>
           </div>
           <p className='text-secondary-400 text-sm font-medium italic'>

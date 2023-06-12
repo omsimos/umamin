@@ -18,6 +18,7 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 const Home: NextPageWithLayout = () => {
   const { push } = useRouter();
   const { status } = useSession();
+
   const isLoading = status === 'loading';
   const isAuthenticated = status === 'authenticated';
 
@@ -34,7 +35,7 @@ const Home: NextPageWithLayout = () => {
             messages <span className='text-gradient'>anonymously!</span>
           </h1>
 
-          <p className='mt-4 text-gray-200 md:text-lg xl:mt-6'>
+          <p className='mt-4 text-gray-600 dark:text-gray-200 md:text-lg xl:mt-6'>
             The ultimate platform for sending and receiving anonymous messages!
           </p>
 
@@ -74,11 +75,11 @@ const Home: NextPageWithLayout = () => {
           <IoChatboxEllipses className='text-primary-100 absolute right-3 -top-11 text-7xl lg:right-2 lg:-top-14 lg:text-8xl xl:-left-12 xl:top-32' />
         </div>
 
-        <div className='absolute top-44 right-0 -z-10 h-[450px] w-[450px] sm:top-40 md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
+        <div className='absolute top-44 right-0 -z-10 h-[450px] w-[450px] opacity-60 dark:opacity-10 sm:top-40 md:top-28 md:h-[550px] md:w-[550px] xl:-top-56 xl:-right-16 xl:mt-14 xl:w-[650px]'>
           <Image
             alt='hearts background'
             priority
-            src='/assets/hearts.svg'
+            src='/assets/hearts_full.svg'
             fill
             className='object-contain'
           />
@@ -89,12 +90,14 @@ const Home: NextPageWithLayout = () => {
         {indexItems.map(({ title, description, Icon, link, className }) => (
           <div
             key={link.url}
-            className={`${className} bg-secondary-200 border-secondary-100 flex max-w-[360px] flex-col justify-between gap-7 rounded-xl border-2 p-7 transition-all duration-300 hover:scale-105 xl:max-w-[390px] xl:justify-self-auto`}
+            className={`${className} dark:bg-secondary-200 dark:border-secondary-100 flex max-w-[360px] flex-col justify-between gap-7 rounded-xl border-2 border-gray-400 bg-gray-300 p-7 transition-all duration-300 hover:scale-105 xl:max-w-[390px] xl:justify-self-auto`}
           >
             <div className='space-y-4'>
               <Icon className='text-primary-100 text-4xl' />
               <h3 className='text-lg font-medium'>{title}</h3>
-              <p className='text-secondary-400'>{description}</p>
+              <p className='dark:text-secondary-400 text-gray-600'>
+                {description}
+              </p>
             </div>
             <div className='text-primary-100 mt-7 flex items-center gap-2'>
               <a

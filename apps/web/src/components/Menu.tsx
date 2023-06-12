@@ -25,7 +25,7 @@ export const Menu = ({ className, panelStyles, button, panel }: Props) => {
         leaveTo='opacity-0 translate-y-1'
       >
         <Popover.Panel
-          className={`${panelStyles} border-secondary-100 bg-secondary-200 absolute flex w-[150px] flex-col space-y-2 rounded border-2 p-2`}
+          className={`${panelStyles} dark:border-secondary-100 dark:bg-secondary-200 absolute flex w-[150px] flex-col space-y-2 rounded border-2 border-gray-400 bg-gray-300 p-2`}
         >
           {panel}
         </Popover.Panel>

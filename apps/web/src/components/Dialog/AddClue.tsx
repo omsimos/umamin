@@ -54,7 +54,7 @@ export const AddClueDialog = ({ clue, setClue, setIsOpen, ...rest }: Props) => {
               🧩 Select a clue to attach to your message
             </h2>
             <div className='line my-3' />
-            <div className='space-y-3 [&>*]:clue-btn'>
+            <div className='[&>*]:clue-btn space-y-3'>
               <button
                 type='button'
                 onClick={() => setCurrentOption('message')}
@@ -87,7 +87,7 @@ export const AddClueDialog = ({ clue, setClue, setIsOpen, ...rest }: Props) => {
               </button>
             </div>
 
-            <p className='mt-8 text-gray-400 italic text-sm'>
+            <p className='mt-8 text-sm italic text-gray-400'>
               You can only add 1 type of clue
             </p>
             <button
@@ -113,7 +113,7 @@ export const AddClueDialog = ({ clue, setClue, setIsOpen, ...rest }: Props) => {
               onChange={(e) => setMsgClue(e.target.value)}
               maxLength={100}
               placeholder='Enter here...'
-              className='bg-secondary-100 w-full h-[120px] outline-none py-3 px-4 rounded-md resize-none'
+              className='dark:bg-secondary-100 h-[120px] w-full resize-none rounded-md bg-gray-200 py-3 px-4 outline-none'
             />
 
             <div className='mt-8 flex items-center space-x-4 self-end'>
@@ -151,14 +151,14 @@ export const AddClueDialog = ({ clue, setClue, setIsOpen, ...rest }: Props) => {
             <div className='line my-3' />
 
             <div className='flex space-x-2'>
-              <p className='bg-secondary-100 w-full outline-none px-4 py-4 rounded-md'>
+              <p className='dark:bg-secondary-100 w-full rounded-md bg-gray-400 px-4 py-4 outline-none'>
                 {randomUsername}
               </p>
 
               <button
                 type='button'
                 onClick={() => setRandomUsername(scrambleUsername())}
-                className='rounded-md bg-secondary-300 border-2 border-secondary-100 px-4 text-xl flex-none'
+                className='dark:bg-secondary-300 dark:border-secondary-100 flex-none rounded-md border-2 border-gray-500 bg-gray-400 px-4 text-xl'
               >
                 <HiRefresh />
               </button>
