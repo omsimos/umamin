@@ -16,7 +16,7 @@ export const Footer = () => {
             <li key={item.name}>
               <Link
                 href={item.href}
-                className='text-gray-400 transition-colors hover:text-gray-500'
+                className='text-gray-500 transition-colors hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-500'
               >
                 {item.name}
               </Link>
@@ -33,7 +33,7 @@ export const Footer = () => {
                   href={c.href}
                   target='_blank'
                   rel='noopener noreferrer'
-                  className='text-gray-400 transition-colors hover:text-gray-500'
+                  className='text-gray-500 transition-colors hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-500'
                 >
                   {c.name}
                 </a>
@@ -45,7 +45,7 @@ export const Footer = () => {
         <ImageFill
           alt='logo'
           src='/assets/logo.svg'
-          className='hidden object-contain h-6 w-32 md:block'
+          className='hidden h-6 w-32 object-contain md:block'
         />
       </div>
 
@@ -53,13 +53,13 @@ export const Footer = () => {
         <ImageFill
           alt='logo'
           src='/assets/logo.svg'
-          className='relative object-contain mb-2 h-6 w-32 md:hidden'
+          className='relative mb-2 h-6 w-32 object-contain md:hidden'
         />
         <a
           href='https://github.com/omsimos'
           target='_blank'
           rel='noreferrer noopener'
-          className='font-medium text-gray-500 hover:underline text-sm md:text-base'
+          className='text-sm font-medium text-gray-500 hover:underline md:text-base'
         >
           Omsimos Collective
         </a>
@@ -67,7 +67,7 @@ export const Footer = () => {
           href='https://github.com/joshxfi'
           target='_blank'
           rel='noreferrer noopener'
-          className='mt-2 font-medium text-gray-500 hover:underline text-sm md:text-base'
+          className='mt-2 text-sm font-medium text-gray-500 hover:underline md:text-base'
         >
           Ⓒ 2023 Josh Daniel Bañares
         </a>

@@ -8,7 +8,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 
 import { queryClient } from '@/api';
-import { ImageFill, Menu } from '@/components';
+import { ImageFill, Menu, ThemeSwitcher } from '@/components';
 
 export const Navbar = () => {
   const [loading, setLoading] = useState(false);
@@ -29,85 +29,93 @@ export const Navbar = () => {
         <ImageFill
           alt='logo'
           src='/assets/logo.svg'
-          className='hide-tap-highlight object-contain h-[75px] w-[150px] cursor-pointer md:h-[100px] md:w-[200px]'
+          className='hide-tap-highlight h-[75px] w-[150px] cursor-pointer object-contain md:h-[100px] md:w-[200px]'
         />
       </Link>
 
-      <div className='hidden items-center space-x-6 sm:flex'>
-        {status === 'loading' || loading ? (
-          <span className='loader' />
-        ) : status === 'authenticated' ? (
-          <button onClick={handleLogout} type='button' className='primary-btn'>
-            Logout
-          </button>
-        ) : (
-          <>
-            <Link
-              href='/login'
-              className='cursor-pointer text-sm font-medium text-gray-200 transition-colors hover:text-gray-400 md:text-base'
-            >
-              Login
-            </Link>
+      <div className='flex items-center space-x-5 sm:space-x-6'>
+        <ThemeSwitcher className='mb-1 sm:mb-0' />
 
+        <div className='hidden items-center justify-center space-x-6 sm:flex'>
+          {status === 'loading' || loading ? (
+            <span className='loader' />
+          ) : status === 'authenticated' ? (
             <button
-              onClick={() => push('/login')}
+              onClick={handleLogout}
               type='button'
               className='primary-btn'
             >
-              Get started
+              Logout
             </button>
-          </>
-        )}
-      </div>
-
-      <Menu
-        className='sm:hidden'
-        panelStyles='top-8 right-0'
-        button={
-          status === 'loading' || loading ? (
-            <span className='loader' />
           ) : (
-            <HiMenuAlt3 className='transition-colors hover:text-gray-300' />
-          )
-        }
-        panel={
-          <>
-            {status === 'authenticated' ? (
+            <>
+              <Link
+                href='/login'
+                className='cursor-pointer text-sm font-medium text-gray-600 transition-colors hover:text-gray-700 dark:text-gray-200 hover:dark:text-gray-400 md:text-base'
+              >
+                Login
+              </Link>
+
               <button
-                onClick={handleLogout}
+                onClick={() => push('/login')}
                 type='button'
+                className='primary-btn'
+              >
+                Get started
+              </button>
+            </>
+          )}
+        </div>
+
+        <Menu
+          className='sm:hidden'
+          panelStyles='top-8 right-0'
+          button={
+            status === 'loading' || loading ? (
+              <span className='loader' />
+            ) : (
+              <HiMenuAlt3 className='transition-colors hover:text-gray-300' />
+            )
+          }
+          panel={
+            <>
+              {status === 'authenticated' ? (
+                <button
+                  onClick={handleLogout}
+                  type='button'
+                  className='menu-item'
+                >
+                  <BiLogOutCircle className='text-base' />
+                  <p>Logout</p>
+                </button>
+              ) : (
+                <Link href='/login' className='menu-item'>
+                  <BiUserCircle className='text-base' />
+                  <p>Get started</p>
+                </Link>
+              )}
+              <a
+                href='https://www.facebook.com/umamin.official'
+                target='_blank'
+                rel='noreferrer noopener'
                 className='menu-item'
               >
-                <BiLogOutCircle className='text-base' />
-                <p>Logout</p>
-              </button>
-            ) : (
-              <Link href='/login' className='menu-item'>
-                <BiUserCircle className='text-base' />
-                <p>Get started</p>
-              </Link>
-            )}
-            <a
-              href='https://www.facebook.com/umamin.official'
-              target='_blank'
-              rel='noreferrer noopener'
-              className='menu-item'
-            >
-              <FaFacebook />
-              <p>Facebook</p>
-            </a>
-            <a
-              href='https://discord.gg/bQKG7axhcF'
-              target='_blank'
-              rel='noreferrer noopener'
-              className='menu-item'
-            >
-              <FaDiscord className='text-base' />
-              <p>Discord</p>
-            </a>
-          </>
-        }
-      />
+                <FaFacebook />
+                <p>Facebook</p>
+              </a>
+              <a
+                href='https://discord.gg/bQKG7axhcF'
+                target='_blank'
+                rel='noreferrer noopener'
+                className='menu-item'
+              >
+                <FaDiscord className='text-base' />
+                <p>Discord</p>
+              </a>
+            </>
+          }
+        />
+      </div>
     </nav>
   );
 };

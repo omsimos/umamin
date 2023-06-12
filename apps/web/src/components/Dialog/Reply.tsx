@@ -61,8 +61,8 @@ export const ReplyDialog = ({
         }, 500);
       }}
     >
-      <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2'>
-        <div className='border-secondary-100 border-b-2 bg-[#171819] py-3'>
+      <div className='dark:border-secondary-100 dark:bg-secondary-200 w-full overflow-hidden rounded-2xl border-2 border-gray-400 bg-gray-200'>
+        <div className='dark:border-secondary-100 border-b-2 border-gray-400 bg-gray-300 py-3 dark:bg-[#171819]'>
           <h3 className='font-syneExtrabold text-primary-200 text-center text-base'>
             umamin
           </h3>
@@ -87,7 +87,7 @@ export const ReplyDialog = ({
             maxLength={200}
             type='text'
             placeholder='Reply...'
-            className='bg-secondary-100 w-full rounded-full py-3 px-5 pr-12 outline-none transition-all md:py-2'
+            className='dark:bg-secondary-100 w-full rounded-full bg-gray-300 py-3 px-5 pr-12 outline-none transition-all md:py-2'
           />
 
           <button
