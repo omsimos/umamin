@@ -150,7 +150,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
           {/* Send Message */}
           <form
             onSubmit={handleSend}
-            className='dark:bg-secondary-300 h-[85px] items-center bg-gray-300 py-5 px-4 md:px-7'
+            className='dark:bg-secondary-200 h-[85px] items-center bg-gray-300 py-5 px-4 md:px-7'
           >
             {!msgSent ? (
               <div className='dark:bg-secondary-100 flex items-center rounded-full bg-gray-200 p-2 pr-4'>

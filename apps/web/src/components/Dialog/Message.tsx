@@ -91,7 +91,7 @@ export const MessageDialog = ({ data, setIsOpen, refetch, ...rest }: Props) => {
             {/* Message */}
             <p className='text-center text-lg font-bold'>{receiverMsg}</p>
             <div>
-              <p className='chat-send chat-p receive w-full px-8 py-5 text-lg font-bold'>
+              <p className='chat-receive chat-p receive w-full px-8 py-5 text-lg'>
                 {content}
               </p>
             </div>
