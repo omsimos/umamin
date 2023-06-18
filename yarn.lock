@@ -52,6 +52,14 @@
     "@apollo/utils.keyvaluecache" "^2.1.0"
     "@apollo/utils.logger" "^2.0.0"
 
+"@apollo/server-plugin-response-cache@^4.1.2":
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/@apollo/server-plugin-response-cache/-/server-plugin-response-cache-4.1.2.tgz#98d32a37adae4ff11610e101a55f8a7aa955d4e9"
+  integrity sha512-HlKe5s/gjvHAebh4LKCfQNBEJod/W+bsEd7wAyc6DyV9I8MquMX6mV42bkU2m+AUdNIltOlLRqnBEKJezG342Q==
+  dependencies:
+    "@apollo/utils.createhash" "^2.0.0"
+    "@apollo/utils.keyvaluecache" "^2.1.0"
+
 "@apollo/server@^4.7.4":
   version "4.7.4"
   resolved "https://registry.yarnpkg.com/@apollo/server/-/server-4.7.4.tgz#b2a999b5a1f6bb909ec1749106b0c6704296a622"
@@ -5846,11 +5854,6 @@ lru-cache@^7.10.1:
   version "7.13.1"
   resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.13.1.tgz#267a81fbd0881327c46a81c5922606a2cfe336c4"
   integrity sha512-CHqbAq7NFlW3RSnoWXLJBxCWaZVBrfa9UEHId2M3AW8iEBurbqduNexEUCGc3SHc6iCYXNJCDi903LajSVAEPQ==
-
-lru-cache@^7.14.0:
-  version "7.14.0"
-  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.14.0.tgz#21be64954a4680e303a09e9468f880b98a0b3c7f"
-  integrity sha512-EIRtP1GrSJny0dqb50QXRUNBxHJhcpxHC++M5tD7RYbvLLn5KVWKsbyswSSqDuU15UFi3bgTQIY8nhDMeF6aDQ==
 
 lru-cache@^7.14.1:
   version "7.18.3"

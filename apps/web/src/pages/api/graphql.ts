@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
+import responseCachePlugin from '@apollo/server-plugin-response-cache';
 import { ApolloServer } from '@apollo/server';
 import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
@@ -21,8 +22,7 @@ const schema = await buildSchema({
 
 const server = new ApolloServer({
   schema,
-  cache: 'bounded',
-  csrfPrevention: true,
+  plugins: [responseCachePlugin()],
 });
 
 export default startServerAndCreateNextHandler(server, {

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@apollo/server": "^4.7.4",
+    "@apollo/server-plugin-response-cache": "^4.1.2",
     "@as-integrations/next": "^2.0.0",
     "@hcaptcha/react-hcaptcha": "^1.4.4",
     "@headlessui/react": "^1.7.2",
@@ -27,7 +28,6 @@
     "graphql-request": "^4.3.0",
     "html-to-image": "^1.10.8",
     "lodash": "^4.17.21",
-    "lru-cache": "^7.14.0",
     "nanoid": "^4.0.0",
     "next": "^13.2.1",
     "next-auth": "^4.18.8",
