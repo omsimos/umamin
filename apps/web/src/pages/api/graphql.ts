@@ -1,18 +1,15 @@
 import 'reflect-metadata';
-import { ApolloServer } from 'apollo-server-micro';
+import { startServerAndCreateNextHandler } from '@as-integrations/next';
+import responseCachePlugin from '@apollo/server-plugin-response-cache';
+import { NextApiRequest, NextApiResponse } from 'next/types';
+import { ApolloServer } from '@apollo/server';
 import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
 import { PrismaClient } from '@umamin/db';
-import Cors from 'micro-cors';
 
 import rateLimit from '@/utils/rate-limit';
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
-
-const cors = Cors({
-  origin:
-    process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL : '*',
-});
 
 const prisma = new PrismaClient();
 
@@ -32,37 +29,30 @@ const schema = await buildSchema({
 
 const server = new ApolloServer({
   schema,
-  cache: 'bounded',
-  context: async ({ req }) => {
+  plugins: [responseCachePlugin()],
+});
+
+const _handler = startServerAndCreateNextHandler(server, {
+  context: async (req) => {
     const session = await getSession({ req });
     const id = session?.user?.id;
     return { prisma, id };
   },
-  csrfPrevention: true,
 });
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-const startServer = server.start();
-
-export default cors(async (req, res) => {
-  res.setHeader('Cache-Control', ['max-age=0', 's-maxage=86400']);
-
-  if (req.method === 'OPTIONS') {
-    res.end();
-    return false;
-  }
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  res.setHeader('Access-Control-Allow-Origin', process.env.NEXTAUTH_URL as string);
+  res.setHeader('Cache-Control', 's-maxage=86400');
 
   try {
-    await limiter.check(res, 20, 'CACHE_TOKEN'); // 20 requests per minute
+    await limiter.check(res, 20, 'CACHE_TOKEN');
+    res.status(200);
   } catch {
-    res.writeHead(429);
+    res.status(429);
   }
 
-  await startServer;
-  return server.createHandler({ path: '/api/graphql' })(req, res);
-});
+  return _handler(req, res);
+}

@@ -1,5 +1,14 @@
 /* eslint-disable no-console */
-import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Ctx,
+  Arg,
+  ID,
+  Directive,
+  registerEnumType,
+} from 'type-graphql';
 import { Prisma } from '@umamin/db';
 
 import type { TContext } from '@/pages/api/graphql';
@@ -10,8 +19,23 @@ import {
   SentMessage,
 } from './message.types';
 
+export enum CacheControlScope {
+  PUBLIC = 'PUBLIC', // eslint-disable-line no-unused-vars
+  PRIVATE = 'PRIVATE', // eslint-disable-line no-unused-vars
+}
+
+registerEnumType(CacheControlScope, {
+  name: 'CacheControlScope',
+});
+
 @Resolver()
 export class MessageResolver {
+  @Query(() => String)
+  hello(): string {
+    return 'Hello World!';
+  }
+
+  @Directive('@cacheControl(maxAge: 3600)')
   @Query(() => [RecentMessage], { nullable: true })
   async getRecentMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
@@ -52,6 +76,7 @@ export class MessageResolver {
     }
   }
 
+  @Directive('@cacheControl(maxAge: 3600)')
   @Query(() => [SeenMessage], { nullable: true })
   async getSeenMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
@@ -93,6 +118,7 @@ export class MessageResolver {
     }
   }
 
+  @Directive('@cacheControl(maxAge: 86400)')
   @Query(() => [SentMessage], { nullable: true })
   async getSentMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
