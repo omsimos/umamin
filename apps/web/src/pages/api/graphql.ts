@@ -44,6 +44,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  res.setHeader('Cache-Control', 's-maxage=86400');
+
   try {
     await limiter.check(res, 20, 'CACHE_TOKEN');
     res.status(200);

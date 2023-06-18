@@ -30,6 +30,11 @@ registerEnumType(CacheControlScope, {
 
 @Resolver()
 export class MessageResolver {
+  @Query(() => String)
+  hello(): string {
+    return 'Hello World!';
+  }
+
   @Directive('@cacheControl(maxAge: 3600)')
   @Query(() => [RecentMessage], { nullable: true })
   async getRecentMessages(
