@@ -35,7 +35,7 @@ export class MessageResolver {
     return 'Hello World!';
   }
 
-  @Directive('@cacheControl(maxAge: 3600)')
+  @Directive('@cacheControl(maxAge: 60)')
   @Query(() => [RecentMessage], { nullable: true })
   async getRecentMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
@@ -76,7 +76,7 @@ export class MessageResolver {
     }
   }
 
-  @Directive('@cacheControl(maxAge: 3600)')
+  @Directive('@cacheControl(maxAge: 60)')
   @Query(() => [SeenMessage], { nullable: true })
   async getSeenMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
@@ -118,7 +118,7 @@ export class MessageResolver {
     }
   }
 
-  @Directive('@cacheControl(maxAge: 86400)')
+  @Directive('@cacheControl(maxAge: 120)')
   @Query(() => [SentMessage], { nullable: true })
   async getSentMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
