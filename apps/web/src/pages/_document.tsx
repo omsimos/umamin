@@ -4,9 +4,9 @@ import Script from 'next/script';
 
 export default function Document() {
   return (
-    <Html>
+    <Html className='dark scroll-smooth'>
       <Head />
-      <body>
+      <body className='dark:bg-secondary-300 font-inter text-secondary-300 bg-[#e2e2e2] dark:text-white'>
         <Main />
         <NextScript />
         <Script
