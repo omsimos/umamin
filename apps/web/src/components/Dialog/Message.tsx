@@ -19,9 +19,16 @@ import {
 interface Props extends DialogContainerProps {
   refetch?: () => void;
   data: RecentMessage | SeenMessage;
+  type: 'recent' | 'seen';
 }
 
-export const MessageDialog = ({ data, setIsOpen, refetch, ...rest }: Props) => {
+export const MessageDialog = ({
+  data,
+  type,
+  setIsOpen,
+  refetch,
+  ...rest
+}: Props) => {
   const { id, content, clue, receiverMsg } = data;
   const cardRef = useRef<HTMLDivElement>(null);
   const { user } = useInboxContext();
@@ -117,13 +124,15 @@ export const MessageDialog = ({ data, setIsOpen, refetch, ...rest }: Props) => {
                 <HiPuzzle />
               </button>
             )}
-            <button
-              type='button'
-              onClick={() => setDeleteModal(true)}
-              className='rounded bg-red-500 p-2'
-            >
-              <HiTrash />
-            </button>
+            {type === 'seen' && (
+              <button
+                type='button'
+                onClick={() => setDeleteModal(true)}
+                className='rounded bg-red-500 p-2'
+              >
+                <HiTrash />
+              </button>
+            )}
             <button
               className='bg-primary-200 rounded p-2'
               type='button'

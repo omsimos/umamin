@@ -76,7 +76,6 @@ export class MessageResolver {
     }
   }
 
-  @Directive('@cacheControl(maxAge: 60)')
   @Query(() => [SeenMessage], { nullable: true })
   async getSeenMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,

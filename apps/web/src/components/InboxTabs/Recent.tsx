@@ -18,14 +18,10 @@ export const Recent = () => {
   const [msgModal, setMsgModal] = useState(false);
   const [messageData, setMessageData] = useState({} as RecentMessage);
 
-  const { user, refetchSeen } = useInboxContext();
+  const { user } = useInboxContext();
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
-  const {
-    data: messages,
-    refetch,
-    isLoading,
-  } = useQuery(
+  const { data: messages, isLoading } = useQuery(
     ['recent_messages', queryArgs],
     () => getRecentMessages(queryArgs),
     {
@@ -47,8 +43,6 @@ export const Recent = () => {
         },
         {
           onSuccess: () => {
-            refetch();
-            refetchSeen();
             triggerEvent('open_message');
           },
         }
@@ -67,7 +61,7 @@ export const Recent = () => {
       setCursorId={setCursorId}
     >
       <MessageDialog
-        refetch={refetchSeen}
+        type='recent'
         data={messageData}
         isOpen={msgModal}
         setIsOpen={setMsgModal}
