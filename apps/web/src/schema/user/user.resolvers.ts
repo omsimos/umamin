@@ -1,9 +1,25 @@
 /* eslint-disable no-console */
-import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Arg,
+  Ctx,
+  registerEnumType,
+} from 'type-graphql';
 
 import { hashPassword } from '@/utils/helpers';
 import type { TContext } from '@/pages/api/graphql';
 import { User } from '.';
+
+export enum CacheControlScope {
+  PUBLIC = 'PUBLIC', // eslint-disable-line no-unused-vars
+  PRIVATE = 'PRIVATE', // eslint-disable-line no-unused-vars
+}
+
+registerEnumType(CacheControlScope, {
+  name: 'CacheControlScope',
+});
 
 @Resolver()
 export class UserResolver {
@@ -120,7 +136,7 @@ export class UserResolver {
   @Mutation(() => String)
   async changePassword(
     @Arg('newPassword', () => String) newPassword: string,
-    @Ctx() { prisma,id }: TContext
+    @Ctx() { prisma, id }: TContext
   ): Promise<String> {
     const hashedPassword = hashPassword(newPassword);
 
@@ -144,9 +160,7 @@ export class UserResolver {
   }
 
   @Mutation(() => String)
-  async deleteUser(
-    @Ctx() { prisma, id }: TContext
-  ): Promise<String> {
+  async deleteUser(@Ctx() { prisma, id }: TContext): Promise<String> {
     try {
       await prisma.user.delete({
         where: { id },

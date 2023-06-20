@@ -23,7 +23,9 @@ export const DialogContainer = ({
       <Dialog
         as='div'
         className={`fixed inset-0 z-20 ${
-          transparent ? 'bg-secondary-300/90' : 'bg-secondary-300'
+          transparent
+            ? 'bg-secondary-300/90 '
+            : 'dark:bg-secondary-300 bg-gray-300'
         }`}
         onClose={() => {
           setIsOpen(false);

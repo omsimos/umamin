@@ -45,7 +45,7 @@ const Inbox: NextPageWithLayout = () => {
       Component: Recent,
     },
     {
-      title: 'Seen',
+      title: 'Old',
       Component: Seen,
     },
     {
@@ -78,9 +78,8 @@ const Inbox: NextPageWithLayout = () => {
             <ImageFill
               alt='profile picture'
               src={data?.user?.image}
-              objectFit='cover'
               unoptimized
-              className='border-secondary-100 h-[80px] w-[80px] rounded-full border-2 sm:h-[120px] sm:w-[120px]'
+              className='dark:border-secondary-100 h-[80px] w-[80px] object-cover rounded-full border-2 border-gray-400 sm:h-[120px] sm:w-[120px]'
             />
             <div className='flex flex-col items-end gap-2'>
               <div className='flex items-center gap-4'>
@@ -88,7 +87,7 @@ const Inbox: NextPageWithLayout = () => {
                 <button
                   onClick={() => setSettingsModal(true)}
                   type='button'
-                  className='border-secondary-100 flex items-center gap-3 rounded-lg border-2 px-4 py-2'
+                  className='dark:border-secondary-100 flex items-center gap-3 rounded-lg border-2 border-gray-400 px-4 py-2'
                 >
                   <p>Settings</p>
                   <RiSettings3Fill className='text-primary-100 flex-none' />
@@ -98,7 +97,7 @@ const Inbox: NextPageWithLayout = () => {
               <button
                 type='button'
                 onClick={copyLink}
-                className='border-secondary-100 flex items-center justify-center gap-3 truncate rounded-lg border-2 px-4 py-2'
+                className='dark:border-secondary-100 flex items-center justify-center gap-3 truncate rounded-lg border-2 border-gray-400 px-4 py-2'
               >
                 <p>
                   {window.location.host}/to/{user?.username}
@@ -111,13 +110,13 @@ const Inbox: NextPageWithLayout = () => {
           <div className='w-full pb-16'>
             <AdContainer slotId='7607907295' className='mb-4' />
             <Tab.Group>
-              <Tab.List className='bg-secondary-200 mt-1 mb-4 flex space-x-1 rounded-xl p-1'>
+              <Tab.List className='dark:bg-secondary-200 mt-1 mb-4 flex space-x-1 rounded-xl bg-gray-400 p-1'>
                 {categories.map(({ title }) => (
                   <Tab
                     key={title}
                     className={({ selected }) =>
                       classNames(
-                        'outline-none w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-white',
+                        'w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-white outline-none',
                         selected
                           ? 'bg-gradient shadow'
                           : 'text-white hover:bg-white/[0.12] hover:text-white'

@@ -19,9 +19,16 @@ import {
 interface Props extends DialogContainerProps {
   refetch?: () => void;
   data: RecentMessage | SeenMessage;
+  type: 'recent' | 'seen';
 }
 
-export const MessageDialog = ({ data, setIsOpen, refetch, ...rest }: Props) => {
+export const MessageDialog = ({
+  data,
+  type,
+  setIsOpen,
+  refetch,
+  ...rest
+}: Props) => {
   const { id, content, clue, receiverMsg } = data;
   const cardRef = useRef<HTMLDivElement>(null);
   const { user } = useInboxContext();
@@ -83,12 +90,15 @@ export const MessageDialog = ({ data, setIsOpen, refetch, ...rest }: Props) => {
       )}
 
       <DialogContainer setIsOpen={setIsOpen} {...rest}>
-        <section ref={cardRef} className='bg-secondary-300 p-4'>
-          <div className='relative border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2 flex flex-col justify-between gap-6 p-5'>
+        <section
+          ref={cardRef}
+          className='dark:bg-secondary-300 bg-gray-300 p-4'
+        >
+          <div className='dark:border-secondary-100 dark:bg-secondary-200 relative flex w-full flex-col justify-between gap-6 overflow-hidden rounded-2xl border-2 border-gray-400 bg-gray-200 p-5'>
             {/* Message */}
             <p className='text-center text-lg font-bold'>{receiverMsg}</p>
             <div>
-              <p className='chat-send font-bold text-lg chat-p px-8 py-5 receive w-full'>
+              <p className='chat-receive chat-p receive w-full px-8 py-5 text-lg'>
                 {content}
               </p>
             </div>
@@ -109,20 +119,22 @@ export const MessageDialog = ({ data, setIsOpen, refetch, ...rest }: Props) => {
               <button
                 type='button'
                 onClick={() => setClueDialog(true)}
-                className='bg-green-500 p-2 rounded'
+                className='rounded bg-green-500 p-2'
               >
                 <HiPuzzle />
               </button>
             )}
+            {type === 'seen' && (
+              <button
+                type='button'
+                onClick={() => setDeleteModal(true)}
+                className='rounded bg-red-500 p-2'
+              >
+                <HiTrash />
+              </button>
+            )}
             <button
-              type='button'
-              onClick={() => setDeleteModal(true)}
-              className='bg-red-500 p-2 rounded'
-            >
-              <HiTrash />
-            </button>
-            <button
-              className='bg-primary-200 p-2 rounded'
+              className='bg-primary-200 rounded p-2'
               type='button'
               onClick={() => {
                 saveImage();

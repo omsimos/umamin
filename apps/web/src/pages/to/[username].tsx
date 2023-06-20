@@ -119,11 +119,13 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
       />
 
       <section className='flex flex-col items-center space-y-12'>
-        <div className='border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 md:w-[720px]'>
+        <div className='dark:border-secondary-100 dark:bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 border-gray-400 bg-gray-200 md:w-[720px]'>
           {/* Top */}
-          <div className='bg-secondary-300 border-secondary-100 flex items-center justify-between border-b-2 px-7 py-4'>
-            <p className='font-medium text-white'>
-              <span className='font-light text-gray-400'>To&#58;</span>{' '}
+          <div className='dark:bg-secondary-300 dark:border-secondary-100 flex items-center justify-between border-b-2 border-gray-400 bg-gray-300 px-7 py-4'>
+            <p className='text-secondary-300 font-medium dark:text-white'>
+              <span className='text-secondary-100 font-light dark:text-gray-400'>
+                To&#58;
+              </span>{' '}
               {username}
             </p>
 
@@ -148,18 +150,18 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
           {/* Send Message */}
           <form
             onSubmit={handleSend}
-            className='bg-secondary-200 items-center py-5 px-4 h-[85px] md:px-7'
+            className='dark:bg-secondary-200 h-[85px] items-center bg-gray-300 py-5 px-4 md:px-7'
           >
             {!msgSent ? (
-              <div className='flex rounded-full items-center bg-secondary-100 p-2 pr-4'>
+              <div className='dark:bg-secondary-100 flex items-center rounded-full bg-gray-200 p-2 pr-4'>
                 <button
                   type='button'
                   onClick={() => setClueDialog(true)}
                   className={`${
                     clue ? 'bg-green-500' : 'bg-primary-300'
-                  }  rounded-full p-2 mr-4 flex-none`}
+                  }  mr-4 flex-none rounded-full p-2`}
                 >
-                  <HiOutlinePuzzle className='text-lg' />
+                  <HiOutlinePuzzle className='text-lg text-white' />
                 </button>
 
                 <input
@@ -170,7 +172,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                   maxLength={200}
                   type='text'
                   placeholder='Send an anonymous message...'
-                  className='bg-secondary-100 w-full outline-none'
+                  className='dark:bg-secondary-100 w-full bg-gray-200 outline-none'
                 />
 
                 {isLoading ? (
@@ -178,7 +180,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                 ) : (
                   <button
                     type='submit'
-                    className='text-primary-100 cursor-pointer flex-none text-2xl'
+                    className='text-primary-100 flex-none cursor-pointer text-2xl'
                   >
                     <RiSendPlaneFill />
                   </button>
@@ -186,7 +188,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
               </div>
             ) : (
               <div className='w-full'>
-                <p className='text-secondary-400 text-center font-medium'>
+                <p className='dark:text-secondary-400 text-center font-medium text-gray-500'>
                   Anonymous message sent!
                 </p>
                 <div className='text-primary-100/80 flex justify-center space-x-2 font-normal'>

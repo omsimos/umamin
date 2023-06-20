@@ -16,12 +16,12 @@ export const ClueDialog = ({ clue, setIsOpen, ...rest }: Props) => {
       <div className='msg-card flex flex-col p-6'>
         <p className='font-semibold'>🧩 You found a clue!</p>
         <div className='line my-3 ' />
-        <div className='text-sm bg-secondary-100 py-3 px-4 rounded-md'>
+        <div className='dark:bg-secondary-100 rounded-md bg-red-300 py-3 px-4 text-sm '>
           <p>{clue}</p>
         </div>
 
         {clue.length <= 12 && (
-          <p className='mt-4 text-gray-400 italic text-sm'>
+          <p className='mt-4 text-sm italic text-gray-400'>
             It could be a scrambled username!
           </p>
         )}

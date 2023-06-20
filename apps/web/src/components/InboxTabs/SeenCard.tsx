@@ -95,7 +95,9 @@ export const SeenCard = ({ message, refetch }: Props) => {
       />
 
       <MessageDialog
+        type='seen'
         data={message}
+        refetch={refetch}
         isOpen={cardModal}
         setIsOpen={setCardModal}
       />
@@ -106,13 +108,13 @@ export const SeenCard = ({ message, refetch }: Props) => {
 
       <div
         ref={cardRef}
-        className='relative border-secondary-100 bg-secondary-200 w-full overflow-hidden rounded-2xl border-2 mb-6'
+        className='dark:border-secondary-100 dark:bg-secondary-200 relative mb-6 w-full overflow-hidden rounded-2xl border-2 border-gray-400 bg-gray-200'
       >
-        <div className='border-secondary-100 relative flex items-center border-b-2 bg-[#171819] py-3'>
+        <div className='dark:border-secondary-100 relative flex items-center border-b-2 border-gray-400 bg-gray-300 py-3  dark:bg-[#171819]'>
           <button
             type='button'
             onClick={saveImage}
-            className='absolute left-4 p-2 text-base text-gray-300'
+            className='text-secondary-200 absolute left-4 p-2 text-base dark:text-gray-300'
           >
             <HiDownload />
           </button>
@@ -125,7 +127,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
             className='z-10'
             panelStyles='top-11 right-2 shadow-lg'
             button={
-              <HiDotsHorizontal className='absolute right-4 top-0 text-gray-300' />
+              <HiDotsHorizontal className='text-secondary-200 absolute right-4 top-0 dark:text-gray-300' />
             }
             panel={
               <>
@@ -169,13 +171,13 @@ export const SeenCard = ({ message, refetch }: Props) => {
           {reply && <ChatBubble type='sender' content={reply} />}
         </div>
 
-        <p className='text-secondary-400 text-sm font-medium italic text-center pb-4'>
+        <p className='text-secondary-400 pb-4 text-center text-sm font-medium italic'>
           {formatDistanceToNow(new Date(createdAt), {
             addSuffix: true,
           })}
         </p>
 
-        <div className='absolute text-lg right-3 bottom-3 space-x-4'>
+        <div className='absolute right-3 bottom-3 space-x-4 text-lg'>
           {clue && (
             <button type='button' onClick={() => setClueDialog(true)}>
               🧩

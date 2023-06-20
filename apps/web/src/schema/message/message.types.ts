@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, InputType } from 'type-graphql';
+import { ObjectType, Field, ID, InputType, Directive } from 'type-graphql';
 import { MaxLength, MinLength, IsNotEmpty } from 'class-validator';
 
 @ObjectType()
@@ -24,9 +24,25 @@ export class RecentMessage extends BaseMessage {
 
 @ObjectType()
 export class SeenMessage extends BaseMessage {
+  @Field(() => ID)
+  id: string;
+
+  @Directive('@cacheControl(maxAge: 3600)')
+  @Field(() => String)
+  content: string;
+
+  @Directive('@cacheControl(maxAge: 3600)')
+  @Field(() => String)
+  receiverMsg: string;
+
+  @Directive('@cacheControl(maxAge: 3600)')
+  @Field(() => Date)
+  createdAt: Date;
+
   @Field(() => String, { nullable: true })
   reply: string | null;
 
+  @Directive('@cacheControl(maxAge: 3600)')
   @Field(() => String, { nullable: true })
   clue: string | null;
 }

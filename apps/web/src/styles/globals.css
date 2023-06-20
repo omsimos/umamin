@@ -15,16 +15,6 @@
   src: url('/fonts/Syne-ExtraBold.woff2') format('woff2');
 }
 
-@layer base {
-  html {
-    @apply scroll-smooth;
-  }
-
-  body {
-    @apply bg-secondary-300 font-inter text-white;
-  }
-}
-
 @layer components {
   .contain {
     @apply mx-auto w-[90%] max-w-screen-xl text-sm md:text-base 2xl:w-full;
@@ -35,11 +25,11 @@
   }
 
   .primary-btn {
-    @apply bg-gradient-to-b from-primary-100 to-primary-200 btn hover:bg-gradient-to-br;
+    @apply from-primary-100 to-primary-200 btn bg-gradient-to-b text-white hover:bg-gradient-to-br;
   }
 
   .secondary-btn {
-    @apply bg-secondary-100 hover:bg-secondary-100/80 btn border-2 border-[#505059];
+    @apply dark:bg-secondary-100 hover:dark:bg-secondary-100/80 btn border-2 border-[#b2b2b6] bg-gray-300 hover:bg-gray-400 dark:border-[#505059];
   }
 
   .red-btn {
@@ -51,23 +41,23 @@
   }
 
   .card {
-    @apply border-secondary-100 bg-secondary-200 rounded-lg border-2;
+    @apply dark:border-secondary-100 dark:bg-secondary-200 rounded-lg border-2 border-gray-400 bg-gray-300;
   }
 
   .input-field {
-    @apply bg-secondary-100 flex w-full items-center space-x-2 rounded-md px-5 py-3;
+    @apply dark:bg-secondary-100 flex w-full items-center space-x-2 rounded-md bg-gray-200 px-5 py-3;
   }
 
   .input-field input {
-    @apply bg-secondary-100 w-full outline-none;
+    @apply dark:bg-secondary-100 w-full bg-gray-200 outline-none;
   }
 
   .input-field svg {
-    @apply text-xl text-[#9CA3AF];
+    @apply text-xl text-gray-400 dark:text-[#9CA3AF];
   }
 
   .menu-item {
-    @apply hover:bg-secondary-100 flex cursor-pointer items-center space-x-2 rounded p-3 text-sm transition-colors;
+    @apply dark:hover:bg-secondary-100 flex cursor-pointer items-center space-x-2 rounded p-3 text-sm transition-colors hover:bg-gray-400;
   }
 
   .reply {
@@ -75,11 +65,11 @@
   }
 
   .line {
-    @apply bg-secondary-100 h-[2px];
+    @apply dark:bg-secondary-100 h-[2px] bg-gray-400;
   }
 
   .msg-card {
-    @apply border-secondary-100 bg-secondary-200 rounded-2xl border-2 px-7 py-5;
+    @apply dark:border-secondary-100 dark:bg-secondary-200 rounded-2xl  border-2 border-gray-400 bg-gray-300 py-5 px-7;
   }
 
   .settings-label {
@@ -87,15 +77,15 @@
   }
 
   .settings-input {
-    @apply bg-secondary-100 w-full rounded-md px-5 py-3 outline-none;
+    @apply dark:bg-secondary-100 w-full rounded-md bg-gray-200 px-5 py-3 outline-none;
   }
 
   .chat-send {
-    @apply after:bg-secondary-200 self-end bg-primary-200 before:bg-primary-200;
+    @apply after:dark:bg-secondary-200 bg-primary-200 before:bg-primary-200 self-end after:bg-gray-200;
   }
 
   .chat-receive {
-    @apply after:bg-secondary-200 bg-secondary-100 before:bg-secondary-100 self-start;
+    @apply after:dark:bg-secondary-200 dark:bg-secondary-100 before:dark:bg-secondary-100 self-start bg-gray-400 before:bg-gray-400 after:bg-gray-200;
   }
 
   .chat-content {
@@ -103,14 +93,14 @@
   }
 
   .clue-btn {
-    @apply bg-secondary-100 border-2 hover:bg-secondary-100/80 p-4 rounded-full font-medium w-full;
+    @apply dark:bg-secondary-100 dark:hover:bg-secondary-100/80 w-full rounded-full border-2 bg-gray-300 p-4 font-medium hover:bg-gray-400;
   }
 
   .text-gradient {
-    @apply text-transparent bg-clip-text bg-gradient-to-b from-primary-100 to-primary-200;
+    @apply from-primary-100 to-primary-200 bg-gradient-to-b bg-clip-text text-transparent;
   }
 
   .bg-gradient {
-    @apply bg-gradient-to-b from-primary-100 to-primary-200;
+    @apply from-primary-100 to-primary-200 bg-gradient-to-b;
   }
 }

@@ -197,7 +197,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
               {buttonText()}
             </button>
 
-            <p className='text-sm mt-2'>
+            <p className='mt-2 text-sm'>
               {isLogin ? "Don't" : 'Already'} have an account?{' '}
               <Link
                 href={`${isLogin ? '/register' : 'login'}`}
@@ -212,7 +212,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             <div className='flex space-x-2'>
               <button
                 type='button'
-                className='bg-dcblue hover:bg-dcblue/80 btn flex w-full items-center justify-center space-x-2'
+                className='bg-dcblue hover:bg-dcblue/80 btn flex w-full items-center justify-center space-x-2 text-white'
                 onClick={() => {
                   signIn('discord');
                   triggerEvent('login', { provider: 'discord' });
@@ -241,7 +241,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             )}
 
             {!isLogin && (
-              <p className=' mt-6 text-sm self-center text-center'>
+              <p className=' mt-6 self-center text-center text-sm'>
                 By creating an account, you agree to our
                 <Link href='privacy-policy' className='text-primary-100'>
                   {' '}
@@ -251,11 +251,11 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             )}
           </div>
         </form>
-        <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] md:bottom-0'>
+        <div className='absolute bottom-40 top-0 left-0 right-0 m-auto max-h-[650px] max-w-[650px] opacity-60 dark:opacity-10 md:bottom-0'>
           <Image
             alt='hearts background'
             priority
-            src='/assets/hearts.svg'
+            src='/assets/hearts_full.svg'
             fill
             className='object-contain'
           />

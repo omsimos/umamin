@@ -1,5 +1,5 @@
-import LRU from 'lru-cache';
-import { ServerResponse } from 'http';
+import type { NextApiResponse } from 'next';
+import { LRUCache } from 'lru-cache';
 
 type Options = {
   uniqueTokenPerInterval?: number;
@@ -7,13 +7,13 @@ type Options = {
 };
 
 export default function rateLimit(options?: Options) {
-  const tokenCache = new LRU({
+  const tokenCache = new LRUCache({
     max: options?.uniqueTokenPerInterval || 500,
     ttl: options?.interval || 60000,
   });
 
   return {
-    check: (res: ServerResponse, limit: number, token: string) =>
+    check: (res: NextApiResponse, limit: number, token: string) =>
       new Promise<void>((resolve, reject) => {
         const tokenCount = (tokenCache.get(token) as number[]) || [0];
         if (tokenCount[0] === 0) {
@@ -29,8 +29,11 @@ export default function rateLimit(options?: Options) {
           isRateLimited ? 0 : limit - currentUsage
         );
 
-        // eslint-disable-next-line no-promise-executor-return
-        return isRateLimited ? reject() : resolve();
+        if (isRateLimited) {
+          reject();
+        } else {
+          resolve();
+        }
       }),
   };
 }
