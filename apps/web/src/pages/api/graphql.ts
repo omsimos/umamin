@@ -5,13 +5,11 @@ import { NextApiRequest, NextApiResponse } from 'next/types';
 import { ApolloServer } from '@apollo/server';
 import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
-import { PrismaClient } from '@umamin/db';
+import { prisma } from '@/utils/db';
 
 import rateLimit from '@/utils/rate-limit';
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
-
-const prisma = new PrismaClient();
 
 export interface TContext {
   prisma: typeof prisma;

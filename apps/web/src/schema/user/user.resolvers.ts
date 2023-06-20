@@ -5,7 +5,6 @@ import {
   Mutation,
   Arg,
   Ctx,
-  Directive,
   registerEnumType,
 } from 'type-graphql';
 
@@ -24,7 +23,6 @@ registerEnumType(CacheControlScope, {
 
 @Resolver()
 export class UserResolver {
-  @Directive('@cacheControl(maxAge: 86400)')
   @Query(() => User, { nullable: true })
   async getUser(
     @Arg('user', () => String) user: string,

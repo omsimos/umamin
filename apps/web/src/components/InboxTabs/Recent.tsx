@@ -17,15 +17,12 @@ export const Recent = () => {
   const [cursorId, setCursorId] = useState('');
   const [msgModal, setMsgModal] = useState(false);
   const [messageData, setMessageData] = useState({} as RecentMessage);
+  const [openedMessages, setOpenedMessages] = useState<string[]>([]);
 
-  const { user, refetchSeen } = useInboxContext();
+  const { user } = useInboxContext();
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
-  const {
-    data: messages,
-    refetch,
-    isLoading,
-  } = useQuery(
+  const { data: messages, isLoading } = useQuery(
     ['recent_messages', queryArgs],
     () => getRecentMessages(queryArgs),
     {
@@ -37,8 +34,11 @@ export const Recent = () => {
   const { mutate } = useMutation(editMessage);
 
   const handleOpen = (data: RecentMessage) => {
-    if (data.id) {
-      setMessageData(data);
+    setMessageData(data);
+    const isOpened = openedMessages.includes(data.id);
+
+    if (!isOpened && data.id) {
+      setOpenedMessages((prev) => [...prev, data.id]);
 
       mutate(
         {
@@ -47,14 +47,13 @@ export const Recent = () => {
         },
         {
           onSuccess: () => {
-            refetch();
-            refetchSeen();
             triggerEvent('open_message');
           },
         }
       );
-      setMsgModal(true);
     }
+
+    setMsgModal(true);
   };
 
   return (
@@ -67,7 +66,7 @@ export const Recent = () => {
       setCursorId={setCursorId}
     >
       <MessageDialog
-        refetch={refetchSeen}
+        type='recent'
         data={messageData}
         isOpen={msgModal}
         setIsOpen={setMsgModal}

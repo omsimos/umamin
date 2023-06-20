@@ -95,7 +95,9 @@ export const SeenCard = ({ message, refetch }: Props) => {
       />
 
       <MessageDialog
+        type='seen'
         data={message}
+        refetch={refetch}
         isOpen={cardModal}
         setIsOpen={setCardModal}
       />

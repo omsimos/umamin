@@ -45,7 +45,7 @@ const Inbox: NextPageWithLayout = () => {
       Component: Recent,
     },
     {
-      title: 'Seen',
+      title: 'Old',
       Component: Seen,
     },
     {

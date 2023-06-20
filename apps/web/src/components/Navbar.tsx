@@ -1,14 +1,14 @@
 /* eslint-disable no-nested-ternary */
 import React, { useState } from 'react';
 import { BiLogOutCircle, BiUserCircle } from 'react-icons/bi';
-import { signOut, useSession } from 'next-auth/react';
 import { FaDiscord, FaFacebook } from 'react-icons/fa';
+import { signOut, useSession } from 'next-auth/react';
 import { HiMenuAlt3 } from 'react-icons/hi';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
 import { queryClient } from '@/api';
-import { ImageFill, Menu, ThemeSwitcher } from '@/components';
+import { ImageFill, Menu } from '@/components';
 
 export const Navbar = () => {
   const [loading, setLoading] = useState(false);
@@ -34,7 +34,7 @@ export const Navbar = () => {
       </Link>
 
       <div className='flex items-center space-x-5 sm:space-x-6'>
-        <ThemeSwitcher className='mb-1 sm:mb-0' />
+        {/* <ThemeSwitcher className='mb-1 sm:mb-0' /> */}
 
         <div className='hidden items-center justify-center space-x-6 sm:flex'>
           {status === 'loading' || loading ? (

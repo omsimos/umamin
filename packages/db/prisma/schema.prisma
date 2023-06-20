@@ -73,5 +73,6 @@ model Message {
   receiverId       String
   receiver         User    @relation(name: "receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
-  @@index([senderId, receiverId, createdAt(sort: Desc)])
+  @@index([senderId, createdAt(sort: Desc)])
+  @@index([receiverId])
 }

@@ -15,16 +15,6 @@
   src: url('/fonts/Syne-ExtraBold.woff2') format('woff2');
 }
 
-@layer base {
-  html {
-    @apply scroll-smooth;
-  }
-
-  body {
-    @apply dark:bg-secondary-300 font-inter text-secondary-300 bg-[#e2e2e2] dark:text-white;
-  }
-}
-
 @layer components {
   .contain {
     @apply mx-auto w-[90%] max-w-screen-xl text-sm md:text-base 2xl:w-full;
