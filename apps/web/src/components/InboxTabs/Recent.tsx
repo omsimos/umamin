@@ -17,6 +17,7 @@ export const Recent = () => {
   const [cursorId, setCursorId] = useState('');
   const [msgModal, setMsgModal] = useState(false);
   const [messageData, setMessageData] = useState({} as RecentMessage);
+  const [openedMessages, setOpenedMessages] = useState<string[]>([]);
 
   const { user } = useInboxContext();
   const queryArgs = { userId: user?.id ?? '', cursorId };
@@ -33,8 +34,11 @@ export const Recent = () => {
   const { mutate } = useMutation(editMessage);
 
   const handleOpen = (data: RecentMessage) => {
-    if (data.id) {
-      setMessageData(data);
+    setMessageData(data);
+    const isOpened = openedMessages.includes(data.id);
+
+    if (!isOpened && data.id) {
+      setOpenedMessages((prev) => [...prev, data.id]);
 
       mutate(
         {
@@ -47,8 +51,9 @@ export const Recent = () => {
           },
         }
       );
-      setMsgModal(true);
     }
+
+    setMsgModal(true);
   };
 
   return (
