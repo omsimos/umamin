@@ -1,5 +1,5 @@
 import React from 'react';
-import { QueryClientProvider, Hydrate } from 'react-query';
+import { QueryClientProvider, Hydrate } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import { Toaster } from 'react-hot-toast';
 import type { AppProps } from 'next/app';

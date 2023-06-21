@@ -1,7 +1,7 @@
 import React, { useContext, createContext, useMemo, useState } from 'react';
 import { GetUserQuery, SeenMessage } from '@umamin/generated';
 import { useSession } from 'next-auth/react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import { useUser } from '@/hooks';
 import { getSeenMessages } from '@/api';

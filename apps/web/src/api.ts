@@ -1,5 +1,5 @@
 import { GraphQLClient } from 'graphql-request';
-import { QueryClient } from 'react-query';
+import { QueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 import { getSdk } from '@umamin/generated';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
-import { useMutation } from 'react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
+import { useMutation } from '@tanstack/react-query';
 import type { SeenMessage } from '@umamin/generated';
 
 import { addReply } from '@/api';

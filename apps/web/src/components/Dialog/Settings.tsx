@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { MdArrowDropDown } from 'react-icons/md';
 import { signOut } from 'next-auth/react';
-import { useMutation } from 'react-query';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import bcrypt from 'bcryptjs';

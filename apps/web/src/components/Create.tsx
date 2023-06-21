@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMutation } from 'react-query';
+import { useMutation } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 
 import { Info } from '@/components';

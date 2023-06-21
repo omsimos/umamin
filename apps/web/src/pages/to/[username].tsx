@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { dehydrate, useMutation } from 'react-query';
+import { dehydrate, useMutation } from '@tanstack/react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { HiOutlinePuzzle } from 'react-icons/hi';
 import { useSession } from 'next-auth/react';
