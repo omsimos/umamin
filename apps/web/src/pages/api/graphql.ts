@@ -42,14 +42,16 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.NEXTAUTH_URL as string);
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    process.env.NEXTAUTH_URL as string
+  );
   res.setHeader('Cache-Control', 's-maxage=86400');
 
   try {
     await limiter.check(res, 20, 'CACHE_TOKEN');
-    res.status(200);
   } catch {
-    res.status(429);
+    return res.status(429);
   }
 
   return _handler(req, res);
