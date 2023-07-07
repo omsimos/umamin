@@ -2417,7 +2417,7 @@
     tslib "^2.4.0"
     webcrypto-core "^1.7.4"
 
-"@prisma/client@^4.15.0":
+"@prisma/client@^4.16.2":
   version "4.16.2"
   resolved "https://registry.yarnpkg.com/@prisma/client/-/client-4.16.2.tgz#3bb9ebd49b35c8236b3d468d0215192267016e2b"
   integrity sha512-qCoEyxv1ZrQ4bKy39GnylE8Zq31IRmm8bNhNbZx7bF2cU5aiCCnSa93J2imF88MBjn7J9eUQneNxUQVJdl/rPQ==
