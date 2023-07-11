@@ -16,6 +16,7 @@ export class BaseMessage {
   createdAt: Date;
 }
 
+@Directive('@cacheControl(maxAge: 60)')
 @ObjectType()
 export class RecentMessage extends BaseMessage {
   @Field(() => String, { nullable: true })
@@ -47,6 +48,7 @@ export class SeenMessage extends BaseMessage {
   clue: string | null;
 }
 
+@Directive('@cacheControl(maxAge: 120)')
 @ObjectType()
 export class SentMessage extends BaseMessage {
   @Field(() => String, { nullable: true })

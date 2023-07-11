@@ -10,21 +10,31 @@ query getUser($user: String!, $type: String!) {
 }
 
 mutation createUser($username: String!, $password: String!) {
-  createUser(username: $username, password: $password)
+  createUser(username: $username, password: $password) {
+    error
+  }
 }
 
 mutation editUsername($username: String!) {
-  editUsername(username: $username)
+  editUsername(username: $username) {
+    error
+  }
 }
 
 mutation editUserMessage($message: String!) {
-  editUserMessage(message: $message)
+  editUserMessage(message: $message) {
+    error
+  }
 }
 
 mutation changePassword($newPassword: String!) {
-  changePassword(newPassword: $newPassword)
+  changePassword(newPassword: $newPassword) {
+    error
+  }
 }
 
 mutation deleteUser {
-  deleteUser
+  deleteUser {
+    error
+  }
 }

@@ -7,7 +7,6 @@ import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
 import { prisma } from '@/utils/db';
 
-import rateLimit from '@/utils/rate-limit';
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
 
@@ -15,11 +14,6 @@ export interface TContext {
   prisma: typeof prisma;
   id?: string;
 }
-
-const limiter = rateLimit({
-  interval: 60 * 1000, // 60 seconds
-  uniqueTokenPerInterval: 500, // Max 500 users per second
-});
 
 const schema = await buildSchema({
   resolvers: [UserResolver, MessageResolver],
@@ -38,19 +32,13 @@ const _handler = startServerAndCreateNextHandler(server, {
   },
 });
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.NEXTAUTH_URL as string);
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    process.env.NEXT_PUBLIC_GQL_ENDPOINT as string
+  );
+  res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 's-maxage=86400');
-
-  try {
-    await limiter.check(res, 20, 'CACHE_TOKEN');
-    res.status(200);
-  } catch {
-    res.status(429);
-  }
 
   return _handler(req, res);
 }

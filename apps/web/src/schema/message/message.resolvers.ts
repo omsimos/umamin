@@ -1,14 +1,5 @@
 /* eslint-disable no-console */
-import {
-  Resolver,
-  Query,
-  Mutation,
-  Ctx,
-  Arg,
-  ID,
-  Directive,
-  registerEnumType,
-} from 'type-graphql';
+import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
 import { Prisma } from '@umamin/db';
 
 import type { TContext } from '@/pages/api/graphql';
@@ -18,24 +9,15 @@ import {
   SendMessageInput,
   SentMessage,
 } from './message.types';
-
-export enum CacheControlScope {
-  PUBLIC = 'PUBLIC', // eslint-disable-line no-unused-vars
-  PRIVATE = 'PRIVATE', // eslint-disable-line no-unused-vars
-}
-
-registerEnumType(CacheControlScope, {
-  name: 'CacheControlScope',
-});
+import { ErrorResponse } from '../types';
 
 @Resolver()
 export class MessageResolver {
-  @Query(() => String)
-  hello(): string {
-    return 'Hello World!';
+  @Query(() => ErrorResponse)
+  hello(): ErrorResponse {
+    return { error: 'hi' };
   }
 
-  @Directive('@cacheControl(maxAge: 60)')
   @Query(() => [RecentMessage], { nullable: true })
   async getRecentMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
@@ -70,9 +52,9 @@ export class MessageResolver {
       }
 
       return messages;
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -111,13 +93,12 @@ export class MessageResolver {
       }
 
       return messages;
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
-  @Directive('@cacheControl(maxAge: 120)')
   @Query(() => [SentMessage], { nullable: true })
   async getSentMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
@@ -154,9 +135,9 @@ export class MessageResolver {
       }
 
       return messages;
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -179,9 +160,9 @@ export class MessageResolver {
       });
 
       return message.content;
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -200,7 +181,7 @@ export class MessageResolver {
       return 'Message edited';
     } catch (err: any) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -211,9 +192,9 @@ export class MessageResolver {
   ): Promise<String> {
     try {
       await prisma.message.delete({ where: { id } });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
 
     return 'Message deleted';
@@ -230,9 +211,9 @@ export class MessageResolver {
         where: { id },
         data: { reply: content },
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
 
     return 'Reply added';

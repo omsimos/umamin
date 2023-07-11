@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useMutation } from 'react-query';
+import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 
 import { Info } from '@/components';
@@ -18,7 +19,19 @@ export const Create = () => {
   const handleSubmit: React.FormEventHandler = (e) => {
     e.preventDefault();
 
-    mutate({ username }, { onSuccess: () => refetchUser() });
+    mutate(
+      { username },
+      {
+        onSuccess: (data) => {
+          if (data.editUsername.error) {
+            toast.error(data.editUsername.error);
+            return;
+          }
+
+          refetchUser();
+        },
+      }
+    );
     setUsername('');
   };
 
