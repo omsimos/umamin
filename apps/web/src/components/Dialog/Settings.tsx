@@ -82,7 +82,12 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
             username,
           },
           {
-            onSuccess: () => {
+            onSuccess: (data) => {
+              if (data.editUsername.error) {
+                toast.error(data.editUsername.error);
+                return;
+              }
+
               setIsOpen(false);
               refetchUser();
 

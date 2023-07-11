@@ -19,7 +19,12 @@ const Register: NextPageWithLayout = () => {
     mutate(
       { username, password },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          if (data.createUser.error) {
+            toast.error(data.createUser.error);
+            return;
+          }
+
           login();
           toast.success('Link created!');
           triggerEvent('register');
