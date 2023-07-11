@@ -1,12 +1,5 @@
 /* eslint-disable no-console */
-import {
-  Resolver,
-  Query,
-  Mutation,
-  Ctx,
-  Arg,
-  ID,
-} from 'type-graphql';
+import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
 import { Prisma } from '@umamin/db';
 
 import type { TContext } from '@/pages/api/graphql';
@@ -16,16 +9,13 @@ import {
   SendMessageInput,
   SentMessage,
 } from './message.types';
+import { ErrorResponse } from '../types';
 
 @Resolver()
 export class MessageResolver {
-  @Query(() => String, { nullable: true })
-  hello(): string | null {
-    try {
-      throw new Error('hello');
-    } catch (err: any) {
-      throw err.message;
-    }
+  @Query(() => ErrorResponse)
+  hello(): ErrorResponse {
+    return { error: 'hi' };
   }
 
   @Query(() => [RecentMessage], { nullable: true })

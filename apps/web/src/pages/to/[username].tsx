@@ -47,16 +47,16 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
-    if (user?.id === session?.user?.id) {
+    if (user?.data?.id === session?.user?.id) {
       setMessage('');
       toast.error("You can't send a message to yourself");
-    } else if (user) {
+    } else if (user?.data) {
       mutate(
         {
           input: {
             receiverUsername: username,
             content: message,
-            receiverMsg: user.message,
+            receiverMsg: user?.data?.message,
             clue,
           },
         },
@@ -90,7 +90,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         title='Umamin - Send Anonymous Messages'
         openGraph={{
           title: user
-            ? `👀 Send anonymous messages to ${user.username}!`
+            ? `👀 Send anonymous messages to ${user?.data?.username}!`
             : '404 - user not found',
           description:
             'Create your own link to start receiving anonymous confessions and messages!',
@@ -138,8 +138,8 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
           <div className='flex min-h-[170px] flex-col justify-between space-y-5 px-5 pt-10 sm:space-y-0 sm:px-7 md:mb-4'>
             <ChatBubble
               type='receiver'
-              content={user?.message ?? ''}
-              userData={{ username, image: user?.image }}
+              content={user?.data?.message ?? ''}
+              userData={{ username, image: user?.data?.image }}
             />
 
             {data?.sendMessage && (

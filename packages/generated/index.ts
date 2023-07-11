@@ -18,16 +18,21 @@ export type Scalars = {
   DateTime: { input: any; output: any; }
 };
 
+export type ErrorResponse = {
+  __typename?: 'ErrorResponse';
+  error?: Maybe<Scalars['String']['output']>;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addReply: Scalars['String']['output'];
-  changePassword: Scalars['String']['output'];
-  createUser: Scalars['String']['output'];
+  changePassword: ErrorResponse;
+  createUser: ErrorResponse;
   deleteMessage: Scalars['String']['output'];
-  deleteUser: Scalars['String']['output'];
+  deleteUser: ErrorResponse;
   editMessage: Scalars['String']['output'];
-  editUserMessage: Scalars['String']['output'];
-  editUsername: Scalars['String']['output'];
+  editUserMessage: ErrorResponse;
+  editUsername: ErrorResponse;
   sendMessage: Scalars['String']['output'];
 };
 
@@ -80,7 +85,7 @@ export type Query = {
   getSeenMessages?: Maybe<Array<SeenMessage>>;
   getSentMessages?: Maybe<Array<SentMessage>>;
   getUser?: Maybe<User>;
-  hello: Scalars['String']['output'];
+  hello: ErrorResponse;
 };
 
 
@@ -217,33 +222,33 @@ export type CreateUserMutationVariables = Exact<{
 }>;
 
 
-export type CreateUserMutation = { __typename?: 'Mutation', createUser: string };
+export type CreateUserMutation = { __typename?: 'Mutation', createUser: { __typename?: 'ErrorResponse', error?: string | null } };
 
 export type EditUsernameMutationVariables = Exact<{
   username: Scalars['String']['input'];
 }>;
 
 
-export type EditUsernameMutation = { __typename?: 'Mutation', editUsername: string };
+export type EditUsernameMutation = { __typename?: 'Mutation', editUsername: { __typename?: 'ErrorResponse', error?: string | null } };
 
 export type EditUserMessageMutationVariables = Exact<{
   message: Scalars['String']['input'];
 }>;
 
 
-export type EditUserMessageMutation = { __typename?: 'Mutation', editUserMessage: string };
+export type EditUserMessageMutation = { __typename?: 'Mutation', editUserMessage: { __typename?: 'ErrorResponse', error?: string | null } };
 
 export type ChangePasswordMutationVariables = Exact<{
   newPassword: Scalars['String']['input'];
 }>;
 
 
-export type ChangePasswordMutation = { __typename?: 'Mutation', changePassword: string };
+export type ChangePasswordMutation = { __typename?: 'Mutation', changePassword: { __typename?: 'ErrorResponse', error?: string | null } };
 
 export type DeleteUserMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: string };
+export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: { __typename?: 'ErrorResponse', error?: string | null } };
 
 
 export const GetRecentMessagesDocument = gql`
@@ -316,27 +321,37 @@ export const GetUserDocument = gql`
     `;
 export const CreateUserDocument = gql`
     mutation createUser($username: String!, $password: String!) {
-  createUser(username: $username, password: $password)
+  createUser(username: $username, password: $password) {
+    error
+  }
 }
     `;
 export const EditUsernameDocument = gql`
     mutation editUsername($username: String!) {
-  editUsername(username: $username)
+  editUsername(username: $username) {
+    error
+  }
 }
     `;
 export const EditUserMessageDocument = gql`
     mutation editUserMessage($message: String!) {
-  editUserMessage(message: $message)
+  editUserMessage(message: $message) {
+    error
+  }
 }
     `;
 export const ChangePasswordDocument = gql`
     mutation changePassword($newPassword: String!) {
-  changePassword(newPassword: $newPassword)
+  changePassword(newPassword: $newPassword) {
+    error
+  }
 }
     `;
 export const DeleteUserDocument = gql`
     mutation deleteUser {
-  deleteUser
+  deleteUser {
+    error
+  }
 }
     `;
 

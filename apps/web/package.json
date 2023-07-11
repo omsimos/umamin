@@ -54,7 +54,6 @@
     "@types/bcryptjs": "^2.4.2",
     "@types/downloadjs": "^1.4.3",
     "@types/lodash": "^4.14.182",
-    "@types/micro-cors": "^0.1.2",
     "@types/node": "18.0.3",
     "@types/nprogress": "^0.2.0",
     "@types/react": "18.0.15",

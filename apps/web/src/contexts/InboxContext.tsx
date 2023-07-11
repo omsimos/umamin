@@ -1,13 +1,13 @@
 import React, { useContext, createContext, useMemo, useState } from 'react';
-import { GetUserQuery, SeenMessage } from '@umamin/generated';
-import { useSession } from 'next-auth/react';
+import { SeenMessage, User } from '@umamin/generated';
 import { useQuery } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 
 import { useUser } from '@/hooks';
 import { getSeenMessages } from '@/api';
 
 interface Values {
-  user: GetUserQuery['getUser'];
+  user?: User | null;
   isUserLoading: boolean;
   refetchUser: () => void;
   seenData?: SeenMessage[] | null;
@@ -25,21 +25,21 @@ export const useInboxContext = () => {
 
 export const InboxProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
-  const { data, isLoading, refetch } = useUser(
-    'inbox_user',
-    session?.user?.id ?? '',
-    'id'
-  );
+  const {
+    data: user,
+    isLoading,
+    refetch,
+  } = useUser('inbox_user', session?.user?.id ?? '', 'id');
 
   const [cursorId, setCursorId] = useState('');
-  const queryArgs = { userId: data?.id ?? '', cursorId };
+  const queryArgs = { userId: user?.id ?? '', cursorId };
 
   const {
     data: seenData,
     isLoading: isSeenLoading,
     refetch: refetchSeen,
   } = useQuery(
-    ['seen_messages', { userId: data?.id ?? '', cursorId }],
+    ['seen_messages', { userId: user?.id ?? '', cursorId }],
     () => getSeenMessages(queryArgs),
     {
       select: (data) => data.getSeenMessages,
@@ -48,7 +48,7 @@ export const InboxProvider = ({ children }: { children: React.ReactNode }) => {
 
   const values: Values = useMemo(
     () => ({
-      user: data,
+      user,
       isUserLoading: isLoading,
       refetchUser: refetch,
       seenData,
@@ -57,7 +57,7 @@ export const InboxProvider = ({ children }: { children: React.ReactNode }) => {
       cursorId,
       setCursorId,
     }),
-    [data, isLoading, refetch, seenData, isSeenLoading, refetchSeen, cursorId]
+    [user, isLoading, refetch, seenData, isSeenLoading, refetchSeen, cursorId]
   );
   return (
     <InboxContext.Provider value={values}>{children}</InboxContext.Provider>
