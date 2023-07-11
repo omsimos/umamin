@@ -5,21 +5,11 @@ import {
   Mutation,
   Arg,
   Ctx,
-  registerEnumType,
 } from 'type-graphql';
 
 import { hashPassword } from '@/utils/helpers';
 import type { TContext } from '@/pages/api/graphql';
 import { User } from '.';
-
-export enum CacheControlScope {
-  PUBLIC = 'PUBLIC', // eslint-disable-line no-unused-vars
-  PRIVATE = 'PRIVATE', // eslint-disable-line no-unused-vars
-}
-
-registerEnumType(CacheControlScope, {
-  name: 'CacheControlScope',
-});
 
 @Resolver()
 export class UserResolver {
@@ -43,9 +33,9 @@ export class UserResolver {
       }
 
       return data;
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -79,9 +69,9 @@ export class UserResolver {
       });
 
       return 'User created';
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -97,9 +87,9 @@ export class UserResolver {
       });
 
       return 'User message edited';
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -125,11 +115,10 @@ export class UserResolver {
         where: { id },
         data: { username },
       });
-
       return 'Username edited';
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -153,9 +142,9 @@ export class UserResolver {
       });
 
       return 'Password changed';
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -167,9 +156,9 @@ export class UserResolver {
       });
 
       return 'User deleted';
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 }
