@@ -22,7 +22,7 @@
     "@umamin/generated": "*",
     "bcrypt": "^5.1.0",
     "bcryptjs": "^2.4.3",
-    "class-validator": "^0.13.2",
+    "class-validator": "^0.14.0",
     "date-fns": "^2.29.1",
     "firebase": "^9.9.0",
     "graphql": "15.5.0",
