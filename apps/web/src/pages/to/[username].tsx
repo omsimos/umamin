@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { dehydrate, useMutation } from 'react-query';
+import { dehydrate, useMutation } from '@tanstack/react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { HiOutlinePuzzle } from 'react-icons/hi';
 import { useSession } from 'next-auth/react';
@@ -56,7 +56,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
           input: {
             receiverUsername: username,
             content: message,
-            receiverMsg: user.message,
+            receiverMsg: user?.message,
             clue,
           },
         },
@@ -90,7 +90,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         title='Umamin - Send Anonymous Messages'
         openGraph={{
           title: user
-            ? `👀 Send anonymous messages to ${user.username}!`
+            ? `👀 Send anonymous messages to ${user?.username}!`
             : '404 - user not found',
           description:
             'Create your own link to start receiving anonymous confessions and messages!',

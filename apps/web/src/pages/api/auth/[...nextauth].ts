@@ -1,6 +1,6 @@
 /* eslint-disable no-param-reassign */
 import { NextApiHandler } from 'next';
-import { PrismaClient } from '@umamin/db';
+import { prisma } from '@/utils/db';
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
@@ -8,8 +8,6 @@ import DiscordProvider from 'next-auth/providers/discord';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { AuthedUser } from '../authorize';
-
-const prisma = new PrismaClient();
 
 const options: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',

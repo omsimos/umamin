@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useQuery } from 'react-query';
 import { getSentMessages } from '@/api';
+import { useQuery } from '@tanstack/react-query';
 import { useInboxContext } from '@/contexts/InboxContext';
 
 import { SentCard } from './SentCard';

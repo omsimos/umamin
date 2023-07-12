@@ -4,7 +4,7 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
     "target": "es2018",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": ["es2018", "esnext.asynciterable"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,

@@ -1,6 +1,6 @@
 import React from 'react';
 import toast from 'react-hot-toast';
-import { useMutation } from 'react-query';
+import { useMutation } from '@tanstack/react-query';
 
 import { createUser } from '@/api';
 import { useLogEvent } from '@/hooks';
@@ -19,7 +19,12 @@ const Register: NextPageWithLayout = () => {
     mutate(
       { username, password },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          if (data.createUser.error) {
+            toast.error(data.createUser.error);
+            return;
+          }
+
           login();
           toast.success('Link created!');
           triggerEvent('register');

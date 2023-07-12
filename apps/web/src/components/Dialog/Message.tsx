@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { HiDownload, HiPuzzle, HiTrash } from 'react-icons/hi';
-import { useMutation } from 'react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
 import { nanoid } from 'nanoid';

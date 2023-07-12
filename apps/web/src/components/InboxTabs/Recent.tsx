@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { useQuery, useMutation } from 'react-query';
 import type { RecentMessage } from '@umamin/generated';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 import { useLogEvent } from '@/hooks';
 import { MessageDialog } from '@/components/Dialog';
