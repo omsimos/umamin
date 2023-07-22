@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import type { SeenMessage } from '@umamin/generated';
 import { useMutation } from '@tanstack/react-query';
+import { HiPuzzlePiece } from 'react-icons/hi2';
 import { formatDistanceToNow } from 'date-fns';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
@@ -179,8 +180,12 @@ export const SeenCard = ({ message, refetch }: Props) => {
 
         <div className='absolute right-3 bottom-3 space-x-4 text-lg'>
           {clue && (
-            <button type='button' onClick={() => setClueDialog(true)}>
-              🧩
+            <button
+              type='button'
+              onClick={() => setClueDialog(true)}
+              className='rounded-full bg-[#456D51] text-[#4DF000] p-2'
+            >
+              <HiPuzzlePiece />
             </button>
           )}
         </div>
