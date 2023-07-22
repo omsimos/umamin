@@ -6,7 +6,7 @@ import { ImageFill } from './ImageFill';
 
 export const Footer = () => {
   return (
-    <footer className='contain py-12'>
+    <footer className='contain py-12 hidden md:block'>
       <div className='line mb-12' />
 
       <div className='grid grid-cols-2 flex-wrap justify-between gap-y-16 sm:flex'>
