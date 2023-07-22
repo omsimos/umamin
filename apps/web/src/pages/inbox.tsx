@@ -180,7 +180,7 @@ const Inbox: NextPageWithLayout = () => {
                   </Tab>
                 ))}
               </Tab.List>
-              <Tab.Panels className='mt-2'>
+              <Tab.Panels className='mt-2 pb-24'>
                 {categories.map(({ title, Component }) => (
                   <Tab.Panel key={title}>
                     <Component />
@@ -190,7 +190,7 @@ const Inbox: NextPageWithLayout = () => {
             </Tab.Group>
           </div>
 
-          <div className='bg-secondary-200 border-2 border-secondary-100 fixed w-full py-4 z-50 left-0 bottom-0 md:hidden flex justify-evenly items-center'>
+          <div className='bg-secondary-200 border-t-2 border-secondary-100 fixed w-full py-4 z-50 left-0 bottom-0 md:hidden flex justify-evenly items-center'>
             <button type='button' onClick={() => setLinkModal(true)}>
               <BiLink className='text-2xl' />
             </button>
