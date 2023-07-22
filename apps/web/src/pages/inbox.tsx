@@ -110,16 +110,16 @@ const Inbox: NextPageWithLayout = () => {
           <div className='w-full pb-16'>
             <AdContainer slotId='7607907295' className='mb-4' />
             <Tab.Group>
-              <Tab.List className='dark:bg-secondary-200 mt-1 mb-4 flex space-x-1 rounded-xl bg-gray-400 p-1'>
+              <Tab.List className='mb-4 flex space-x-6'>
                 {categories.map(({ title }) => (
                   <Tab
                     key={title}
                     className={({ selected }) =>
                       classNames(
-                        'w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-white outline-none',
+                        'rounded-full py-2 px-8 font-semibold text-white outline-none',
                         selected
-                          ? 'bg-gradient shadow'
-                          : 'text-white hover:bg-white/[0.12] hover:text-white'
+                          ? 'bg-primary-200'
+                          : 'text-[#8B8B8B]'
                       )
                     }
                   >
