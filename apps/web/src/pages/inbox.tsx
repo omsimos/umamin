@@ -5,9 +5,10 @@ import { Tab } from '@headlessui/react';
 import { useRouter } from 'next/router';
 import { FaBell } from 'react-icons/fa';
 import { MdWindow } from 'react-icons/md';
+import { IoIosCopy } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
 import { RiSettings3Fill } from 'react-icons/ri';
-import { IoIosCopy, IoIosSend } from 'react-icons/io';
+import { HiOutlineGlobeAlt } from 'react-icons/hi';
 import { BiLink, BiSolidColorFill } from 'react-icons/bi';
 
 import { useLogEvent } from '@/hooks';
@@ -174,7 +175,17 @@ const Inbox: NextPageWithLayout = () => {
               <BiLink className='text-2xl' />
             </button>
 
-            <BiSolidColorFill className='text-2xl' />
+            <button
+              type='button'
+              onClick={() =>
+                toast('Coming soon!', {
+                  icon: '🚧',
+                })
+              }
+            >
+              <BiSolidColorFill className='text-2xl' />
+            </button>
+
             <button
               type='button'
               onClick={() => setSettingsModal(true)}
@@ -183,8 +194,27 @@ const Inbox: NextPageWithLayout = () => {
               <MdWindow className='text-3xl' />
             </button>
 
-            <FaBell className='text-xl' />
-            <IoIosSend className='text-2xl' />
+            <button
+              type='button'
+              onClick={() =>
+                toast('Coming soon!', {
+                  icon: '🚧',
+                })
+              }
+            >
+              <FaBell className='text-xl' />
+            </button>
+
+            <button
+              type='button'
+              onClick={() =>
+                toast('Coming soon!', {
+                  icon: '🚧',
+                })
+              }
+            >
+              <HiOutlineGlobeAlt className='text-2xl' />
+            </button>
           </div>
         </>
       )}
