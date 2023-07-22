@@ -39,7 +39,7 @@
     "react": "^18.2.0",
     "react-dom": "18.2.0",
     "react-hot-toast": "^2.2.0",
-    "react-icons": "^4.8.0",
+    "react-icons": "^4.10.1",
     "react-markdown": "^8.0.3",
     "react-toggle-dark-mode": "^1.1.1",
     "reflect-metadata": "^0.1.13",
