@@ -44,7 +44,17 @@ function MyApp({
               {getLayout(<Component {...pageProps} />)}
             </ErrorBoundary>
           )}
-          <Toaster />
+          <Toaster
+            position='bottom-center'
+            containerClassName='md:mb-auto mb-24'
+            toastOptions={{
+              className: 'bg-secondary-200 text-secondary-100',
+              style: {
+                background: '#2D2E34',
+                color: '#F5F5F5',
+              },
+            }}
+          />
         </Hydrate>
       </QueryClientProvider>
     </SessionProvider>
