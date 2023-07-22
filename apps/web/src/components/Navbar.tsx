@@ -12,7 +12,7 @@ import { ImageFill, Menu } from '@/components';
 
 export const Navbar = () => {
   const [loading, setLoading] = useState(false);
-  const { status } = useSession();
+  const { data, status } = useSession();
   const { push } = useRouter();
 
   const handleLogout = async () => {
@@ -33,7 +33,16 @@ export const Navbar = () => {
         />
       </Link>
 
-      <div className='flex items-center space-x-5 sm:space-x-6'>
+      <div className='md:hidden'>
+        <ImageFill
+          alt='profile picture'
+          src={data?.user?.image}
+          unoptimized
+          className='border-secondary-100 h-[50px] w-[50px] object-cover rounded-full border'
+        />
+      </div>
+
+      <div className='items-center space-x-5 sm:space-x-6 hidden md:flex'>
         {/* <ThemeSwitcher className='mb-1 sm:mb-0' /> */}
 
         <div className='hidden items-center justify-center space-x-6 sm:flex'>

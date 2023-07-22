@@ -3,9 +3,12 @@ import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { Tab } from '@headlessui/react';
 import { useRouter } from 'next/router';
-import { IoIosCopy } from 'react-icons/io';
+import { MdWindow } from 'react-icons/md';
 import { useSession } from 'next-auth/react';
 import { RiSettings3Fill } from 'react-icons/ri';
+import { BiSolidColorFill } from 'react-icons/bi';
+import { FaHouseUser, FaBell } from 'react-icons/fa';
+import { IoIosCopy, IoIosSend } from 'react-icons/io';
 
 import { useLogEvent } from '@/hooks';
 import { SettingsDialog } from '@/components/Dialog';
@@ -74,7 +77,12 @@ const Inbox: NextPageWithLayout = () => {
         <>
           <SettingsDialog isOpen={settingsModal} setIsOpen={setSettingsModal} />
 
-          <div className='mb-5 flex w-full items-center justify-between px-4'>
+          <div className='md:hidden flex flex-col mb-12'>
+            <p className='text-lg'>Hello,</p>
+            <h1 className='text-4xl font-semibold'>{user.username}</h1>
+          </div>
+
+          <div className='mb-5 w-full items-center justify-between px-4 hidden md:flex'>
             <ImageFill
               alt='profile picture'
               src={data?.user?.image}
@@ -117,9 +125,7 @@ const Inbox: NextPageWithLayout = () => {
                     className={({ selected }) =>
                       classNames(
                         'rounded-full py-2 px-8 font-semibold text-white outline-none',
-                        selected
-                          ? 'bg-primary-200'
-                          : 'text-[#8B8B8B]'
+                        selected ? 'bg-primary-200' : 'text-[#8B8B8B]'
                       )
                     }
                   >
@@ -135,6 +141,16 @@ const Inbox: NextPageWithLayout = () => {
                 ))}
               </Tab.Panels>
             </Tab.Group>
+          </div>
+
+          <div className='bg-secondary-200 border-2 border-secondary-100 fixed w-full py-4 z-50 left-0 bottom-0 md:hidden flex justify-evenly items-center'>
+            <FaHouseUser className='text-xl' />
+            <BiSolidColorFill className='text-2xl' />
+            <p className='p-3 rounded-full bg-primary-200'>
+              <MdWindow className='text-3xl' />
+            </p>
+            <FaBell className='text-xl' />
+            <IoIosSend className='text-2xl' />
           </div>
         </>
       )}
