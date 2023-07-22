@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
+import { queryClient } from '@/api';
 import { Tab } from '@headlessui/react';
 import { useRouter } from 'next/router';
-import { FaBell } from 'react-icons/fa';
 import { MdWindow } from 'react-icons/md';
+import { TbLogout } from 'react-icons/tb';
 import { IoIosCopy } from 'react-icons/io';
-import { useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { RiSettings3Fill } from 'react-icons/ri';
 import { HiOutlineGlobeAlt } from 'react-icons/hi';
 import { BiLink, BiSolidColorFill } from 'react-icons/bi';
@@ -28,7 +29,9 @@ function classNames(...classes: any[]) {
 
 const Inbox: NextPageWithLayout = () => {
   const { push } = useRouter();
+  const [loading, setLoading] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
+  const [logoutModal, setLogoutModal] = useState(false);
   const [linkModal, setLinkModal] = useState(false);
 
   const { user, isUserLoading } = useInboxContext();
@@ -42,6 +45,14 @@ const Inbox: NextPageWithLayout = () => {
     toast.success('Copied to clipboard');
 
     triggerEvent('copy_link');
+  };
+
+  const handleLogout = async () => {
+    setLoading(true);
+    await queryClient.invalidateQueries();
+    await signOut({ redirect: false });
+    push('/login');
+    setLoading(false);
   };
 
   const categories = [
@@ -102,6 +113,15 @@ const Inbox: NextPageWithLayout = () => {
                 </div>
               </div>
             }
+          />
+
+          <ConfirmDialog
+            isOpen={logoutModal}
+            setIsOpen={setLogoutModal}
+            confirmText='Logout'
+            danger
+            content={<p>Are you sure you want to logout?</p>}
+            handleConfirm={handleLogout}
           />
 
           <div className='md:hidden flex flex-col mb-12'>
@@ -202,19 +222,16 @@ const Inbox: NextPageWithLayout = () => {
                 })
               }
             >
-              <FaBell className='text-xl' />
-            </button>
-
-            <button
-              type='button'
-              onClick={() =>
-                toast('Coming soon!', {
-                  icon: '🚧',
-                })
-              }
-            >
               <HiOutlineGlobeAlt className='text-2xl' />
             </button>
+
+            {status === 'loading' || loading ? (
+              <span className='loader' />
+            ) : (
+              <button type='button' onClick={() => setLogoutModal(true)}>
+                <TbLogout className='text-xl' />
+              </button>
+            )}
           </div>
         </>
       )}
