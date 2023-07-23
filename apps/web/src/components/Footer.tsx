@@ -61,15 +61,7 @@ export const Footer = () => {
           rel='noreferrer noopener'
           className='text-sm font-medium text-gray-500 hover:underline md:text-base'
         >
-          Omsimos Collective
-        </a>
-        <a
-          href='https://github.com/joshxfi'
-          target='_blank'
-          rel='noreferrer noopener'
-          className='mt-2 text-sm font-medium text-gray-500 hover:underline md:text-base'
-        >
-          Ⓒ 2023 Josh Daniel Bañares
+          OMSIMOS© 2023
         </a>
       </div>
     </footer>
