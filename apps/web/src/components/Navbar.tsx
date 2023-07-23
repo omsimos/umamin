@@ -1,8 +1,8 @@
 /* eslint-disable no-nested-ternary */
 import React, { useState } from 'react';
-import { BiLogOutCircle, BiUserCircle } from 'react-icons/bi';
 import { FaDiscord, FaFacebook } from 'react-icons/fa';
 import { signOut, useSession } from 'next-auth/react';
+import { BiUserCircle } from 'react-icons/bi';
 import { HiMenuAlt3 } from 'react-icons/hi';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -33,19 +33,10 @@ export const Navbar = () => {
         />
       </Link>
 
-      <div className='md:hidden'>
-        <ImageFill
-          alt='profile picture'
-          src={data?.user?.image}
-          unoptimized
-          className='border-secondary-100 h-[50px] w-[50px] object-cover rounded-full border'
-        />
-      </div>
-
-      <div className='items-center space-x-5 sm:space-x-6 hidden md:flex'>
+      <div className='items-center space-x-5 md:space-x-6 flex'>
         {/* <ThemeSwitcher className='mb-1 sm:mb-0' /> */}
 
-        <div className='hidden items-center justify-center space-x-6 sm:flex'>
+        <div className='hidden items-center justify-center space-x-6 md:flex'>
           {status === 'loading' || loading ? (
             <span className='loader' />
           ) : status === 'authenticated' ? (
@@ -77,27 +68,25 @@ export const Navbar = () => {
         </div>
 
         <Menu
-          className='sm:hidden'
-          panelStyles='top-8 right-0'
+          className='md:hidden'
+          panelStyles='top-14 right-0'
           button={
             status === 'loading' || loading ? (
               <span className='loader' />
+            ) : status === 'authenticated' ? (
+              <ImageFill
+                alt='profile picture'
+                src={data?.user?.image}
+                unoptimized
+                className='border-secondary-100 h-[50px] w-[50px] object-cover rounded-full border'
+              />
             ) : (
               <HiMenuAlt3 className='transition-colors hover:text-gray-300' />
             )
           }
           panel={
             <>
-              {status === 'authenticated' ? (
-                <button
-                  onClick={handleLogout}
-                  type='button'
-                  className='menu-item'
-                >
-                  <BiLogOutCircle className='text-base' />
-                  <p>Logout</p>
-                </button>
-              ) : (
+              {status === 'unauthenticated' && (
                 <Link href='/login' className='menu-item'>
                   <BiUserCircle className='text-base' />
                   <p>Get started</p>
