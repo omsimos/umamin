@@ -6,7 +6,7 @@ import { ImageFill } from './ImageFill';
 
 export const Footer = () => {
   return (
-    <footer className='contain py-12'>
+    <footer className='contain py-12 hidden md:block'>
       <div className='line mb-12' />
 
       <div className='grid grid-cols-2 flex-wrap justify-between gap-y-16 sm:flex'>
@@ -61,15 +61,7 @@ export const Footer = () => {
           rel='noreferrer noopener'
           className='text-sm font-medium text-gray-500 hover:underline md:text-base'
         >
-          Omsimos Collective
-        </a>
-        <a
-          href='https://github.com/joshxfi'
-          target='_blank'
-          rel='noreferrer noopener'
-          className='mt-2 text-sm font-medium text-gray-500 hover:underline md:text-base'
-        >
-          Ⓒ 2023 Josh Daniel Bañares
+          OMSIMOS© 2023
         </a>
       </div>
     </footer>

@@ -21,6 +21,7 @@ export const Sent = () => {
 
   return (
     <InboxTabContainer
+      tab='sent'
       pageNo={pageNo}
       cursorId={cursorId}
       messages={messages}

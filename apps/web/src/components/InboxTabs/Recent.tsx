@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import { HiPuzzlePiece } from 'react-icons/hi2';
+import { BiSolidMessageDetail } from 'react-icons/bi';
 import type { RecentMessage } from '@umamin/generated';
 import { useQuery, useMutation } from '@tanstack/react-query';
 
@@ -79,20 +81,32 @@ export const Recent = () => {
           onClick={() => handleOpen(m)}
           className='msg-card hide-tap-highlight relative w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
         >
-          {m.clue && <p className='absolute right-3 top-3 text-lg'>🧩</p>}
-
           <h3 className='font-syneExtrabold text-gradient mb-4 text-center text-3xl'>
             umamin
           </h3>
 
           <div className='send chat-p dark:bg-secondary-100 dark:before:bg-secondary-100 dark:after:bg-secondary-200 flex max-w-full items-center space-x-3 bg-gray-200 px-6 py-4 font-medium before:bg-gray-200 after:bg-gray-300'>
-            <p className='reply text-secondary-400'>{m.receiverMsg}</p>
+            <p className='reply text-secondary-400 truncate'>{m.receiverMsg}</p>
           </div>
-          <p className='text-secondary-400 text-sm font-medium italic'>
-            {formatDistanceToNow(new Date(m.createdAt), {
-              addSuffix: true,
-            })}
-          </p>
+
+          <div className='flex justify-between items-center'>
+            <p className='text-secondary-400 text-sm font-medium italic'>
+              {formatDistanceToNow(new Date(m.createdAt), {
+                addSuffix: true,
+              })}
+            </p>
+
+            <div className='flex gap-x-2'>
+              <span className='rounded-full bg-[#6D4566] text-primary-200 p-2'>
+                <BiSolidMessageDetail />
+              </span>
+              {m.clue && (
+                <span className='rounded-full bg-[#456D51] text-[#4DF000] p-2'>
+                  <HiPuzzlePiece />
+                </span>
+              )}
+            </div>
+          </div>
         </button>
       ))}
     </InboxTabContainer>
