@@ -15,10 +15,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^4.16.2"
+    "@prisma/client": "5"
   },
   "devDependencies": {
-    "prisma": "^4.16.2",
+    "prisma": "5",
     "typescript": "^4.7.4"
   }
 }
