@@ -5,6 +5,7 @@ export interface DialogContainerProps {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   transparent?: boolean;
+  container?: boolean;
   onClose?: () => void;
   className?: string;
   children?: React.ReactNode;
@@ -14,6 +15,7 @@ export const DialogContainer = ({
   isOpen,
   setIsOpen,
   transparent,
+  container = true,
   onClose,
   className,
   children,
@@ -39,7 +41,9 @@ export const DialogContainer = ({
         <div className='fixed inset-0 overflow-y-auto'>
           <div className='flex min-h-full items-center justify-center'>
             <Dialog.Panel
-              className={`contain flex flex-col items-center ${className}`}
+              className={`${
+                container ? 'contain' : 'w-full'
+              }  flex flex-col items-center ${className}`}
             >
               <Transition.Child
                 enter='ease-out duration-300'
