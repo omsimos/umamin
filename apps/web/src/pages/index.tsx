@@ -7,7 +7,7 @@ import { AiFillAndroid } from 'react-icons/ai';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
 
-import { Layout } from '@/components';
+import { Container, Layout } from '@/components';
 import { indexItems } from '@/utils/constants';
 import type { NextPageWithLayout } from '..';
 
@@ -27,7 +27,7 @@ const Home: NextPageWithLayout = () => {
   }
 
   return (
-    <section className='space-y-12'>
+    <Container className='space-y-12'>
       <div className='relative flex flex-col justify-between text-center sm:text-left xl:flex-row'>
         <div>
           <h1 className='h1-text'>
@@ -115,7 +115,7 @@ const Home: NextPageWithLayout = () => {
       </div>
 
       <AdContainer slotId='7063833038' />
-    </section>
+    </Container>
   );
 };
 
