@@ -14,7 +14,7 @@ import { BiLink, BiSolidColorFill } from 'react-icons/bi';
 
 import { useLogEvent } from '@/hooks';
 import { ConfirmDialog, SettingsDialog } from '@/components/Dialog';
-import { Layout, Create, ImageFill } from '@/components';
+import { Layout, Create, ImageFill, Container } from '@/components';
 import { Recent, Seen, Sent } from '@/components/InboxTabs';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
 import type { NextPageWithLayout } from '..';
@@ -124,12 +124,12 @@ const Inbox: NextPageWithLayout = () => {
             handleConfirm={handleLogout}
           />
 
-          <div className='md:hidden flex flex-col mb-12'>
+          <Container className='md:hidden flex flex-col mb-12'>
             <p className='text-lg'>Hello,</p>
             <h1 className='text-4xl font-semibold'>{user.username}</h1>
-          </div>
+          </Container>
 
-          <div className='mb-5 w-full items-center justify-between px-4 hidden md:flex'>
+          <Container className='mb-5 w-full items-center justify-between px-4 hidden md:flex'>
             <ImageFill
               alt='profile picture'
               src={data?.user?.image}
@@ -160,25 +160,27 @@ const Inbox: NextPageWithLayout = () => {
                 <IoIosCopy className='text-primary-100 flex-none' />
               </button>
             </div>
-          </div>
+          </Container>
 
           <div className='w-full pb-16'>
             <AdContainer slotId='7607907295' className='mb-4' />
             <Tab.Group>
-              <Tab.List className='mb-4 flex space-x-6'>
-                {categories.map(({ title }) => (
-                  <Tab
-                    key={title}
-                    className={({ selected }) =>
-                      classNames(
-                        'rounded-full py-2 px-8 font-semibold text-white outline-none',
-                        selected ? 'bg-primary-200' : 'text-[#8B8B8B]'
-                      )
-                    }
-                  >
-                    {title}
-                  </Tab>
-                ))}
+              <Tab.List>
+                <Container className='mb-4 flex space-x-6'>
+                  {categories.map(({ title }) => (
+                    <Tab
+                      key={title}
+                      className={({ selected }) =>
+                        classNames(
+                          'rounded-full py-2 px-8 font-semibold text-white outline-none',
+                          selected ? 'bg-primary-200' : 'text-[#8B8B8B]'
+                        )
+                      }
+                    >
+                      {title}
+                    </Tab>
+                  ))}
+                </Container>
               </Tab.List>
               <Tab.Panels className='mt-2 pb-24'>
                 {categories.map(({ title, Component }) => (

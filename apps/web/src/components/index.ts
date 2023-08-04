@@ -7,6 +7,7 @@ export * from './Layout';
 export * from './Create';
 export * from './Markdown';
 export * from './UserForm';
+export * from './Container';
 export * from './ImageFill';
 export * from './Maintenance';
 export * from './ErrorBoundary';

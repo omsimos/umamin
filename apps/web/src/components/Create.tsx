@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 
-import { Info } from '@/components';
+import { Container, Info } from '@/components';
 import { editUsername } from '@/api';
 import { useInboxContext } from '@/contexts/InboxContext';
 
@@ -37,7 +37,7 @@ export const Create = () => {
 
   return (
     <>
-      <section className='mx-auto max-w-screen-sm'>
+      <Container className='mx-auto max-w-screen-sm'>
         <form onSubmit={handleSubmit} className='mb-2 flex space-x-2'>
           <input
             required
@@ -55,7 +55,7 @@ export const Create = () => {
         </form>
 
         <Info message='You can still change your username later.' />
-      </section>
+      </Container>
 
       <AdContainer slotId='3864332312' className='mt-8' />
     </>
