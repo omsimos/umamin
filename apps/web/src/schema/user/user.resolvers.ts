@@ -14,7 +14,7 @@ export class UserResolver {
     @Arg('user', () => String) user: string,
     @Arg('type', () => String) type: 'id' | 'username',
     @Ctx() { prisma }: TContext
-  ): Promise<User> {
+  ): Promise<User | null> {
     try {
       let data: User | null;
 
@@ -22,10 +22,6 @@ export class UserResolver {
         data = await prisma.user.findUnique({ where: { id: user } });
       } else {
         data = await prisma.user.findUnique({ where: { username: user } });
-      }
-
-      if (!data) {
-        throw new Error('User not found');
       }
 
       return data;

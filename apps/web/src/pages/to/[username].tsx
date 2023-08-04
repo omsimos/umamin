@@ -9,10 +9,10 @@ import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
 
-import { Error, Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
 import { ChatBubble } from '@/components/ChatBubble';
+import { Container, Error, Layout } from '@/components';
 import { getUser, queryClient, sendMessage } from '@/api';
 import { AddClueDialog, ConfirmDialog } from '@/components/Dialog';
 
@@ -118,7 +118,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
         setClue={setClue}
       />
 
-      <section className='flex flex-col items-center space-y-12'>
+      <Container className='flex flex-col items-center space-y-12'>
         <div className='dark:border-secondary-100 dark:bg-secondary-200 w-full overflow-hidden rounded-3xl border-2 border-gray-400 bg-gray-200 md:w-[720px]'>
           {/* Top */}
           <div className='dark:bg-secondary-300 dark:border-secondary-100 flex items-center justify-between border-b-2 border-gray-400 bg-gray-300 px-7 py-4'>
@@ -226,7 +226,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
             )}
           </form>
         </div>
-      </section>
+      </Container>
 
       <AdContainer slotId='4180346918' className='mt-12' />
     </>
