@@ -8,7 +8,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 
 import { queryClient } from '@/api';
-import { ImageFill, Menu } from '@/components';
+import { ImageFill, Menu, Container } from '@/components';
 
 export const Navbar = () => {
   const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className='relative z-10 mb-12 flex items-center justify-between xl:mb-24'>
+    <Container className='relative z-10 mb-12 flex items-center justify-between xl:mb-24'>
       <Link href={status === 'authenticated' ? '/inbox' : '/'}>
         <ImageFill
           alt='logo'
@@ -114,6 +114,6 @@ export const Navbar = () => {
           }
         />
       </div>
-    </nav>
+    </Container>
   );
 };

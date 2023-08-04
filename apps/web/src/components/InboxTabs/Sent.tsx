@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useInboxContext } from '@/contexts/InboxContext';
 
 import { SentCard } from './SentCard';
+import { Container } from '../Container';
 import { InboxTabContainer } from './Container';
 
 export const Sent = () => {
@@ -29,9 +30,11 @@ export const Sent = () => {
       setPageNo={setPageNo}
       setCursorId={setCursorId}
     >
-      {messages?.map((m) => (
-        <SentCard key={m.id} data={m} />
-      ))}
+      <Container>
+        {messages?.map((m) => (
+          <SentCard key={m.id} data={m} />
+        ))}
+      </Container>
     </InboxTabContainer>
   );
 };

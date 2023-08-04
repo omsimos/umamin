@@ -10,6 +10,7 @@ import { MessageDialog } from '@/components/Dialog';
 import { editMessage, getRecentMessages } from '@/api';
 import { useInboxContext } from '@/contexts/InboxContext';
 
+import { Container } from '../Container';
 import { InboxTabContainer } from './Container';
 
 export const Recent = () => {
@@ -74,41 +75,45 @@ export const Recent = () => {
         setIsOpen={setMsgModal}
       />
 
-      {messages?.map((m) => (
-        <button
-          type='button'
-          key={m.id}
-          onClick={() => handleOpen(m)}
-          className='msg-card hide-tap-highlight relative w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
-        >
-          <h3 className='font-syneExtrabold text-gradient mb-4 text-center text-3xl'>
-            umamin
-          </h3>
+      <Container>
+        {messages?.map((m) => (
+          <button
+            type='button'
+            key={m.id}
+            onClick={() => handleOpen(m)}
+            className='msg-card relative w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
+          >
+            <h3 className='font-syneExtrabold text-gradient mb-4 text-center text-3xl'>
+              umamin
+            </h3>
 
-          <div className='send chat-p dark:bg-secondary-100 dark:before:bg-secondary-100 dark:after:bg-secondary-200 flex max-w-full items-center space-x-3 bg-gray-200 px-6 py-4 font-medium before:bg-gray-200 after:bg-gray-300'>
-            <p className='reply text-secondary-400 truncate'>{m.receiverMsg}</p>
-          </div>
-
-          <div className='flex justify-between items-center'>
-            <p className='text-secondary-400 text-sm font-medium italic'>
-              {formatDistanceToNow(new Date(m.createdAt), {
-                addSuffix: true,
-              })}
-            </p>
-
-            <div className='flex gap-x-2'>
-              <span className='rounded-full bg-[#6D4566] text-primary-200 p-2'>
-                <BiSolidMessageDetail />
-              </span>
-              {m.clue && (
-                <span className='rounded-full bg-[#456D51] text-[#4DF000] p-2'>
-                  <HiPuzzlePiece />
-                </span>
-              )}
+            <div className='send chat-p dark:bg-secondary-100 dark:before:bg-secondary-100 dark:after:bg-secondary-200 flex max-w-full items-center space-x-3 bg-gray-200 px-6 py-4 font-medium before:bg-gray-200 after:bg-gray-300'>
+              <p className='reply text-secondary-400 truncate'>
+                {m.receiverMsg}
+              </p>
             </div>
-          </div>
-        </button>
-      ))}
+
+            <div className='flex justify-between items-center'>
+              <p className='text-secondary-400 text-sm font-medium italic'>
+                {formatDistanceToNow(new Date(m.createdAt), {
+                  addSuffix: true,
+                })}
+              </p>
+
+              <div className='flex gap-x-2'>
+                <span className='rounded-full bg-[#6D4566] text-primary-200 p-2'>
+                  <BiSolidMessageDetail />
+                </span>
+                {m.clue && (
+                  <span className='rounded-full bg-[#456D51] text-[#4DF000] p-2'>
+                    <HiPuzzlePiece />
+                  </span>
+                )}
+              </div>
+            </div>
+          </button>
+        ))}
+      </Container>
     </InboxTabContainer>
   );
 };

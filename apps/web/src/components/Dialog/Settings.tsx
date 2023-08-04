@@ -167,7 +167,6 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
         transparent
         setIsOpen={setIsOpen}
         onClose={handleClose}
-        className='grid place-items-center'
         {...rest}
       >
         <form

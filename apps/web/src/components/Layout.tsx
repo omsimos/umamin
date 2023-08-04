@@ -3,12 +3,13 @@ import { Navbar, Footer } from '.';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <>
-      <main className='contain min-h-screen'>
+    <main className='text-sm md:text-base 2xl:w-full'>
+      <div className='min-h-screen'>
         <Navbar />
         {children}
-      </main>
+      </div>
+
       <Footer />
-    </>
+    </main>
   );
 };

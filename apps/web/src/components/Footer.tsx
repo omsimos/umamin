@@ -2,11 +2,11 @@ import React from 'react';
 import Link from 'next/link';
 
 import { footerItems } from '@/utils/constants';
-import { ImageFill } from './ImageFill';
+import { ImageFill, Container } from '@/components';
 
 export const Footer = () => {
   return (
-    <footer className='contain py-12 hidden md:block'>
+    <Container className='py-12 hidden md:block'>
       <div className='line mb-12' />
 
       <div className='grid grid-cols-2 flex-wrap justify-between gap-y-16 sm:flex'>
@@ -64,6 +64,6 @@ export const Footer = () => {
           OMSIMOS© 2023
         </a>
       </div>
-    </footer>
+    </Container>
   );
 };
