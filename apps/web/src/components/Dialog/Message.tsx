@@ -89,10 +89,10 @@ export const MessageDialog = ({
         <ClueDialog isOpen={clueDialog} setIsOpen={setClueDialog} clue={clue} />
       )}
 
-      <DialogContainer setIsOpen={setIsOpen} {...rest}>
+      <DialogContainer setIsOpen={setIsOpen} container={false} {...rest}>
         <section
           ref={cardRef}
-          className='dark:bg-secondary-300 bg-gray-300 p-4'
+          className='bg-secondary-300 p-4'
         >
           <div className='dark:border-secondary-100 dark:bg-secondary-200 relative flex w-full flex-col justify-between gap-6 overflow-hidden rounded-2xl border-2 border-gray-400 bg-gray-200 p-5'>
             {/* Message */}

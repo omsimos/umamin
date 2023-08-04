@@ -107,87 +107,86 @@ export const SeenCard = ({ message, refetch }: Props) => {
         <ClueDialog isOpen={clueDialog} setIsOpen={setClueDialog} clue={clue} />
       )}
 
-      <div
-        ref={cardRef}
-        className='dark:border-secondary-100 dark:bg-secondary-200 relative mb-6 w-full overflow-hidden rounded-2xl border-2 border-gray-400 bg-gray-200'
-      >
-        <div className='dark:border-secondary-100 relative flex items-center border-b-2 border-gray-400 bg-gray-300 py-3  dark:bg-[#171819]'>
-          <button
-            type='button'
-            onClick={saveImage}
-            className='text-secondary-200 absolute left-4 p-2 text-base dark:text-gray-300'
-          >
-            <HiDownload />
-          </button>
-
-          <h3 className='font-syneExtrabold text-primary-200 mx-auto text-base'>
-            umamin
-          </h3>
-
-          <Menu
-            className='z-10'
-            panelStyles='top-11 right-2 shadow-lg'
-            button={
-              <HiDotsHorizontal className='text-secondary-200 absolute right-4 top-0 dark:text-gray-300' />
-            }
-            panel={
-              <>
-                {!reply && (
-                  <button
-                    type='button'
-                    onClick={() => setReplyModal(true)}
-                    className='menu-item'
-                  >
-                    <HiReply />
-                    <p>Reply</p>
-                  </button>
-                )}
-
-                <button
-                  type='button'
-                  onClick={() => setCardModal(true)}
-                  className='menu-item'
-                >
-                  <HiAnnotation />
-                  <p>View</p>
-                </button>
-
-                <button
-                  type='button'
-                  onClick={() => setDeleteModal(true)}
-                  className='menu-item'
-                >
-                  <HiTrash />
-                  <p>Delete</p>
-                </button>
-              </>
-            }
-          />
-        </div>
-
-        {/* Message */}
-        <div className='flex min-h-[170px] flex-col justify-between gap-4 px-5 pt-10 pb-3 sm:px-7 sm:pt-7 md:gap-3'>
-          <ChatBubble type='sender' content={receiverMsg ?? ''} />
-          <ChatBubble type='receiver' content={content ?? ''} />
-          {reply && <ChatBubble type='sender' content={reply} />}
-        </div>
-
-        <p className='text-secondary-400 pb-4 text-center text-sm font-medium italic'>
-          {formatDistanceToNow(new Date(createdAt), {
-            addSuffix: true,
-          })}
-        </p>
-
-        <div className='absolute right-3 bottom-3 space-x-4 text-lg'>
-          {clue && (
+      <div ref={cardRef} className='p-6 bg-secondary-300'>
+        <div className='border-secondary-100 bg-secondary-200 relative w-full overflow-hidden rounded-2xl border-2'>
+          <div className='border-secondary-100 relative flex items-center border-b-2 py-3 bg-[#171819]'>
             <button
               type='button'
-              onClick={() => setClueDialog(true)}
-              className='rounded-full bg-[#456D51] text-[#4DF000] p-2'
+              onClick={saveImage}
+              className='text-secondary-200 absolute left-4 p-2 text-base dark:text-gray-300'
             >
-              <HiPuzzlePiece />
+              <HiDownload />
             </button>
-          )}
+
+            <h3 className='font-syneExtrabold text-primary-200 mx-auto text-base'>
+              umamin
+            </h3>
+
+            <Menu
+              className='z-10'
+              panelStyles='top-11 right-2 shadow-lg'
+              button={
+                <HiDotsHorizontal className='text-secondary-200 absolute right-4 top-0 dark:text-gray-300' />
+              }
+              panel={
+                <>
+                  {!reply && (
+                    <button
+                      type='button'
+                      onClick={() => setReplyModal(true)}
+                      className='menu-item'
+                    >
+                      <HiReply />
+                      <p>Reply</p>
+                    </button>
+                  )}
+
+                  <button
+                    type='button'
+                    onClick={() => setCardModal(true)}
+                    className='menu-item'
+                  >
+                    <HiAnnotation />
+                    <p>View</p>
+                  </button>
+
+                  <button
+                    type='button'
+                    onClick={() => setDeleteModal(true)}
+                    className='menu-item'
+                  >
+                    <HiTrash />
+                    <p>Delete</p>
+                  </button>
+                </>
+              }
+            />
+          </div>
+
+          {/* Message */}
+          <div className='flex min-h-[170px] flex-col justify-between gap-4 px-5 pt-10 pb-3 sm:px-7 sm:pt-7 md:gap-3'>
+            <ChatBubble type='sender' content={receiverMsg ?? ''} />
+            <ChatBubble type='receiver' content={content ?? ''} />
+            {reply && <ChatBubble type='sender' content={reply} />}
+          </div>
+
+          <p className='text-secondary-400 pb-4 text-center text-sm font-medium italic'>
+            {formatDistanceToNow(new Date(createdAt), {
+              addSuffix: true,
+            })}
+          </p>
+
+          <div className='absolute right-3 bottom-3 space-x-4 text-lg'>
+            {clue && (
+              <button
+                type='button'
+                onClick={() => setClueDialog(true)}
+                className='rounded-full bg-[#456D51] text-[#4DF000] p-2'
+              >
+                <HiPuzzlePiece />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </>

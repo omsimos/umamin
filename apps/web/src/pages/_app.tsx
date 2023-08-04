@@ -35,8 +35,8 @@ function MyApp({
   return (
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
+        <DefaultSeo {...SEO} />
         <Hydrate state={pageProps.dehydratedState}>
-          <DefaultSeo {...SEO} />
           {process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ? (
             <Maintenance />
           ) : (
@@ -44,18 +44,18 @@ function MyApp({
               {getLayout(<Component {...pageProps} />)}
             </ErrorBoundary>
           )}
-          <Toaster
-            position='bottom-center'
-            containerClassName='md:mb-auto mb-24'
-            toastOptions={{
-              className: 'bg-secondary-200 text-secondary-100',
-              style: {
-                background: '#2D2E34',
-                color: '#F5F5F5',
-              },
-            }}
-          />
         </Hydrate>
+        <Toaster
+          position='bottom-center'
+          containerClassName='md:mb-auto mb-24'
+          toastOptions={{
+            className: 'bg-secondary-200 text-secondary-100',
+            style: {
+              background: '#2D2E34',
+              color: '#F5F5F5',
+            },
+          }}
+        />
       </QueryClientProvider>
     </SessionProvider>
   );

@@ -3,8 +3,8 @@ import toast from 'react-hot-toast';
 import { useLogEvent } from '@/hooks';
 import { IoIosCopy } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
+import { ImageFill, Container } from '@/components';
 import { useInboxContext } from '@/contexts/InboxContext';
-import { ImageFill } from '../ImageFill';
 
 interface Props {
   pageNo: number;
@@ -43,33 +43,35 @@ export const InboxTabContainer = ({
   return (
     <section className='flex flex-col space-y-6'>
       {!messages?.length && !isLoading && (
-        <div className='msg-card'>
-          <p className='mb-4 text-secondary-400'>
-            {tab === 'sent'
-              ? 'You have not sent any messages yet. Send anonymous messages to your friends!'
-              : 'You have 0 messages. Start receiving anonymous messages by sharing your link!'}
-          </p>
+        <Container>
+          <div className='msg-card'>
+            <p className='mb-4 text-secondary-400'>
+              {tab === 'sent'
+                ? 'You have not sent any messages yet. Send anonymous messages to your friends!'
+                : 'You have 0 messages. Start receiving anonymous messages by sharing your link!'}
+            </p>
 
-          <div className='flex gap-x-2 items-center'>
-            <ImageFill
-              alt='profile picture'
-              src={data?.user?.image}
-              unoptimized
-              className='border-secondary-100 h-[40px] w-[40px] object-cover rounded-full border'
-            />
+            <div className='flex gap-x-2 items-center'>
+              <ImageFill
+                alt='profile picture'
+                src={data?.user?.image}
+                unoptimized
+                className='border-secondary-100 h-[40px] w-[40px] object-cover rounded-full border'
+              />
 
-            <button
-              type='button'
-              onClick={copyLink}
-              className='border-secondary-100 flex items-center justify-center gap-3 truncate rounded-lg border px-4 py-2'
-            >
-              <p>
-                {window.location.host}/to/{user?.username}
-              </p>
-              <IoIosCopy className='text-primary-200 flex-none' />
-            </button>
+              <button
+                type='button'
+                onClick={copyLink}
+                className='border-secondary-100 flex items-center justify-center gap-3 truncate rounded-lg border px-4 py-2'
+              >
+                <p>
+                  {window.location.host}/to/{user?.username}
+                </p>
+                <IoIosCopy className='text-primary-200 flex-none' />
+              </button>
+            </div>
           </div>
-        </div>
+        </Container>
       )}
 
       {isLoading ? (
