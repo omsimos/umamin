@@ -7,7 +7,7 @@ type Props = {
 
 export const Container = ({ className, children }: Props) => {
   return (
-    <div className={`mx-auto md:w-[90%] px-6 md:px-0 max-w-screen-xl ${className}`}>
+    <div className={`mx-auto md:w-[90%] w-full px-6 md:px-0 max-w-screen-xl ${className}`}>
       {children}
     </div>
   );
