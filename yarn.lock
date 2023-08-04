@@ -2648,17 +2648,17 @@
     lodash.isplainobject "^4.0.6"
     lodash.merge "^4.6.2"
 
-"@tanstack/query-core@4.29.19":
-  version "4.29.19"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-4.29.19.tgz#49ccbd0606633d1e55baf3b91ab7cc7aef411b1d"
-  integrity sha512-uPe1DukeIpIHpQi6UzIgBcXsjjsDaLnc7hF+zLBKnaUlh7jFE/A+P8t4cU4VzKPMFB/C970n/9SxtpO5hmIRgw==
+"@tanstack/query-core@4.32.1":
+  version "4.32.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-4.32.1.tgz#6e364c33433b61f4dcef003725d4208e42b23860"
+  integrity sha512-VEAGHboOFWN/bvf/7cCoeLQfld0AA8n0V/kfc77W+FvxnnSwJufEh6gfjqpX5bRE/DEYfYDYdNtuL3KM+lIs8Q==
 
-"@tanstack/react-query@^4.29.19":
-  version "4.29.19"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-4.29.19.tgz#6ba187f2d0ea36ae83ff1f67068f53c88ce7b228"
-  integrity sha512-XiTIOHHQ5Cw1WUlHaD4fmVUMhoWjuNJlAeJGq7eM4BraI5z7y8WkZO+NR8PSuRnQGblpuVdjClQbDFtwxTtTUw==
+"@tanstack/react-query@^4.32.1":
+  version "4.32.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-4.32.1.tgz#8ba6ab4e0ee4513a0fe06f4452f1b400eb4f91fb"
+  integrity sha512-lPTfOq6bR6DorPaS018gTMd3zs8r06tlERiVY6BRP9SnDkkl4ckqeANava/jPLWrSZP+EA15loQUTmvZs6k2GA==
   dependencies:
-    "@tanstack/query-core" "4.29.19"
+    "@tanstack/query-core" "4.32.1"
     use-sync-external-store "^1.2.0"
 
 "@types/bcrypt@^5.0.0":
