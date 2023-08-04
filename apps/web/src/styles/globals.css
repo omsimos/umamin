@@ -5,6 +5,10 @@
 @tailwind utilities;
 @import './utils.css';
 
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
 @font-face {
   font-family: 'Inter-Medium';
   src: url('/fonts/Inter-Medium.woff2') format('woff2');
