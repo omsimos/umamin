@@ -23,6 +23,22 @@ export type ErrorResponse = {
   error?: Maybe<Scalars['String']['output']>;
 };
 
+export type GlobalMessage = {
+  __typename?: 'GlobalMessage';
+  content: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  isAnonymous: Scalars['Boolean']['output'];
+  user?: Maybe<GlobalMessageUser>;
+};
+
+export type GlobalMessageUser = {
+  __typename?: 'GlobalMessageUser';
+  id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
+  username?: Maybe<Scalars['String']['output']>;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addReply: Scalars['String']['output'];
@@ -33,6 +49,7 @@ export type Mutation = {
   editMessage: Scalars['String']['output'];
   editUserMessage: ErrorResponse;
   editUsername: ErrorResponse;
+  sendGlobalMessage: GlobalMessage;
   sendMessage: Scalars['String']['output'];
 };
 
@@ -75,17 +92,28 @@ export type MutationEditUsernameArgs = {
 };
 
 
+export type MutationSendGlobalMessageArgs = {
+  input: SendGlobalMessageInput;
+};
+
+
 export type MutationSendMessageArgs = {
   input: SendMessageInput;
 };
 
 export type Query = {
   __typename?: 'Query';
+  getGlobalMessages?: Maybe<Array<GlobalMessage>>;
   getRecentMessages?: Maybe<Array<RecentMessage>>;
   getSeenMessages?: Maybe<Array<SeenMessage>>;
   getSentMessages?: Maybe<Array<SentMessage>>;
   getUser?: Maybe<User>;
   hello: ErrorResponse;
+};
+
+
+export type QueryGetGlobalMessagesArgs = {
+  cursorId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -128,6 +156,11 @@ export type SeenMessage = {
   reply?: Maybe<Scalars['String']['output']>;
 };
 
+export type SendGlobalMessageInput = {
+  content: Scalars['String']['input'];
+  isAnonymous: Scalars['Boolean']['input'];
+};
+
 export type SendMessageInput = {
   clue?: InputMaybe<Scalars['String']['input']>;
   content: Scalars['String']['input'];
@@ -156,6 +189,13 @@ export type User = {
   password?: Maybe<Scalars['String']['output']>;
   username?: Maybe<Scalars['String']['output']>;
 };
+
+export type GetGlobalMessagesQueryVariables = Exact<{
+  cursorId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type GetGlobalMessagesQuery = { __typename?: 'Query', getGlobalMessages?: Array<{ __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null }> | null };
 
 export type GetRecentMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']['input']>;
@@ -199,6 +239,13 @@ export type SendMessageMutationVariables = Exact<{
 
 
 export type SendMessageMutation = { __typename?: 'Mutation', sendMessage: string };
+
+export type SendGlobalMessageMutationVariables = Exact<{
+  input: SendGlobalMessageInput;
+}>;
+
+
+export type SendGlobalMessageMutation = { __typename?: 'Mutation', sendGlobalMessage: { __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null } };
 
 export type AddReplyMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -251,6 +298,21 @@ export type DeleteUserMutationVariables = Exact<{ [key: string]: never; }>;
 export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: { __typename?: 'ErrorResponse', error?: string | null } };
 
 
+export const GetGlobalMessagesDocument = gql`
+    query getGlobalMessages($cursorId: ID) {
+  getGlobalMessages(cursorId: $cursorId) {
+    id
+    content
+    createdAt
+    isAnonymous
+    user {
+      id
+      username
+      image
+    }
+  }
+}
+    `;
 export const GetRecentMessagesDocument = gql`
     query getRecentMessages($cursorId: ID) {
   getRecentMessages(cursorId: $cursorId) {
@@ -300,6 +362,21 @@ export const DeleteMessageDocument = gql`
 export const SendMessageDocument = gql`
     mutation sendMessage($input: SendMessageInput!) {
   sendMessage(input: $input)
+}
+    `;
+export const SendGlobalMessageDocument = gql`
+    mutation sendGlobalMessage($input: SendGlobalMessageInput!) {
+  sendGlobalMessage(input: $input) {
+    id
+    content
+    createdAt
+    isAnonymous
+    user {
+      id
+      username
+      image
+    }
+  }
 }
     `;
 export const AddReplyDocument = gql`
@@ -362,6 +439,9 @@ const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationTy
 
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
+    getGlobalMessages(variables?: GetGlobalMessagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetGlobalMessagesQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetGlobalMessagesQuery>(GetGlobalMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getGlobalMessages', 'query');
+    },
     getRecentMessages(variables?: GetRecentMessagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetRecentMessagesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetRecentMessagesQuery>(GetRecentMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRecentMessages', 'query');
     },
@@ -379,6 +459,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     sendMessage(variables: SendMessageMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<SendMessageMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<SendMessageMutation>(SendMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'sendMessage', 'mutation');
+    },
+    sendGlobalMessage(variables: SendGlobalMessageMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<SendGlobalMessageMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<SendGlobalMessageMutation>(SendGlobalMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'sendGlobalMessage', 'mutation');
     },
     addReply(variables: AddReplyMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<AddReplyMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<AddReplyMutation>(AddReplyDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'addReply', 'mutation');

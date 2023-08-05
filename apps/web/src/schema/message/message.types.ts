@@ -16,6 +16,37 @@ export class BaseMessage {
   createdAt: Date;
 }
 
+@ObjectType()
+class GlobalMessageUser {
+  @Field(() => ID)
+  id: string;
+
+  @Field(() => String, { nullable: true })
+  username: string | null;
+
+  @Field(() => String, { nullable: true })
+  image: string | null;
+}
+
+@Directive('@cacheControl(maxAge: 60)')
+@ObjectType()
+export class GlobalMessage {
+  @Field(() => ID)
+  id: string;
+
+  @Field(() => String)
+  content: string;
+
+  @Field(() => Boolean)
+  isAnonymous: boolean;
+
+  @Field(() => Date)
+  createdAt: Date;
+
+  @Field(() => GlobalMessageUser, { nullable: true })
+  user: GlobalMessageUser | null;
+}
+
 @Directive('@cacheControl(maxAge: 60)')
 @ObjectType()
 export class RecentMessage extends BaseMessage {
@@ -82,4 +113,16 @@ export class SendMessageInput {
   @IsNotEmpty()
   @Field(() => String)
   receiverUsername: string;
+}
+
+@InputType()
+export class SendGlobalMessageInput {
+  @IsNotEmpty()
+  @MinLength(1)
+  @MaxLength(500)
+  @Field(() => String)
+  content: string;
+
+  @Field(() => Boolean)
+  isAnonymous: boolean;
 }

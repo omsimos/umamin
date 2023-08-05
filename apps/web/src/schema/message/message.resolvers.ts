@@ -4,8 +4,10 @@ import { Prisma } from '@umamin/db';
 
 import type { TContext } from '@/pages/api/graphql';
 import {
+  GlobalMessage,
   RecentMessage,
   SeenMessage,
+  SendGlobalMessageInput,
   SendMessageInput,
   SentMessage,
 } from './message.types';
@@ -16,6 +18,86 @@ export class MessageResolver {
   @Query(() => ErrorResponse)
   hello(): ErrorResponse {
     return { error: 'hi' };
+  }
+
+  @Query(() => [GlobalMessage], { nullable: true })
+  async getGlobalMessages(
+    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<GlobalMessage[] | null> {
+    try {
+      let messages: GlobalMessage[];
+
+      if (!cursorId) {
+        messages = await prisma.globalMessage.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+        });
+      } else {
+        messages = await prisma.globalMessage.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          skip: 1,
+          cursor: {
+            id: cursorId,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+        });
+      }
+
+      return messages;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
+  @Mutation(() => GlobalMessage)
+  async sendGlobalMessage(
+    @Arg('input', () => SendGlobalMessageInput)
+    { content, isAnonymous }: SendGlobalMessageInput,
+    @Ctx() { prisma, id }: TContext
+  ): Promise<GlobalMessage> {
+    try {
+      const message = await prisma.globalMessage.create({
+        data: {
+          content,
+          isAnonymous,
+          user: id ? { connect: { id } } : undefined,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              image: true,
+            },
+          },
+        },
+      });
+
+      return message;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   }
 
   @Query(() => [RecentMessage], { nullable: true })
