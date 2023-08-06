@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { queryClient } from '@/api';
@@ -7,15 +8,15 @@ import { useRouter } from 'next/router';
 import { MdWindow } from 'react-icons/md';
 import { TbLogout } from 'react-icons/tb';
 import { IoIosCopy } from 'react-icons/io';
-import { signOut, useSession } from 'next-auth/react';
 import { RiSettings3Fill } from 'react-icons/ri';
 import { HiOutlineGlobeAlt } from 'react-icons/hi';
+import { signOut, useSession } from 'next-auth/react';
 import { BiLink, BiSolidColorFill } from 'react-icons/bi';
 
 import { useLogEvent } from '@/hooks';
+import { Recent, Seen, Sent } from '@/components/InboxTabs';
 import { ConfirmDialog, SettingsDialog } from '@/components/Dialog';
 import { Layout, Create, ImageFill, Container } from '@/components';
-import { Recent, Seen, Sent } from '@/components/InboxTabs';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
 import type { NextPageWithLayout } from '..';
 
@@ -216,16 +217,9 @@ const Inbox: NextPageWithLayout = () => {
               <MdWindow className='text-3xl' />
             </button>
 
-            <button
-              type='button'
-              onClick={() =>
-                toast('Coming soon!', {
-                  icon: '🚧',
-                })
-              }
-            >
+            <Link href='/global'>
               <HiOutlineGlobeAlt className='text-2xl' />
-            </button>
+            </Link>
 
             {status === 'loading' || loading ? (
               <span className='loader' />

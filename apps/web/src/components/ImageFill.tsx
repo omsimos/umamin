@@ -3,7 +3,7 @@ import Image, { ImageProps } from 'next/image';
 
 interface ImageFillProps
   extends Omit<ImageProps, 'src' | 'className' | 'layout'> {
-  src?: string;
+  src?: string | null;
   className?: string;
 }
 

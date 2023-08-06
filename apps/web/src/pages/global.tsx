@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
-import { queryClient } from '@/api';
 import { useRouter } from 'next/router';
 import { MdWindow } from 'react-icons/md';
 import { TbLogout } from 'react-icons/tb';
+import { useQuery } from '@tanstack/react-query';
 import { HiOutlineGlobeAlt } from 'react-icons/hi';
 import { signOut, useSession } from 'next-auth/react';
 import { BiLink, BiSolidColorFill } from 'react-icons/bi';
 
 import { useLogEvent } from '@/hooks';
-import { Layout, ImageFill, Container } from '@/components';
+import { getGlobalMessages, queryClient } from '@/api';
 import { ConfirmDialog, SettingsDialog } from '@/components/Dialog';
+import { Layout, ImageFill, Container, GlobalPost } from '@/components';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
 import type { NextPageWithLayout } from '..';
 
@@ -26,9 +28,22 @@ const Inbox: NextPageWithLayout = () => {
   const [logoutModal, setLogoutModal] = useState(false);
   const [linkModal, setLinkModal] = useState(false);
 
+  const [pageNo, setPageNo] = useState(1);
+  const [cursorId, setCursorId] = useState('');
+
   const { user, isUserLoading } = useInboxContext();
   const { data, status } = useSession();
   const triggerEvent = useLogEvent();
+
+  const queryArgs = { userId: user?.id ?? '', cursorId };
+
+  const { data: messages, isLoading } = useQuery(
+    ['global_messages', queryArgs],
+    () => getGlobalMessages(queryArgs),
+    {
+      select: (data) => data.getGlobalMessages,
+    }
+  );
 
   const copyLink = () => {
     navigator.clipboard.writeText(
@@ -47,7 +62,7 @@ const Inbox: NextPageWithLayout = () => {
     setLoading(false);
   };
 
-  if (isUserLoading) {
+  if (isUserLoading || isLoading) {
     return (
       <div className='mt-52 flex justify-center'>
         <span className='loader-2' />
@@ -56,7 +71,7 @@ const Inbox: NextPageWithLayout = () => {
   }
 
   return (
-    <section className='mx-auto max-w-lg'>
+    <section className='mx-auto max-w-lg pb-52'>
       <SettingsDialog isOpen={settingsModal} setIsOpen={setSettingsModal} />
       <ConfirmDialog
         isOpen={linkModal}
@@ -122,6 +137,48 @@ const Inbox: NextPageWithLayout = () => {
 
       <AdContainer slotId='7607907295' className='mb-4' />
 
+      <div className='space-y-12 pt-12'>
+        {messages?.map((m) => (
+          <GlobalPost message={m} key={m.id} />
+        ))}
+      </div>
+
+      {!isLoading && messages && messages?.length > 0 && (
+        <Container
+          className={`flex mt-4 ${
+            cursorId ? 'justify-between' : 'justify-end'
+          }`}
+        >
+          {cursorId && (
+            <button
+              className='hover:underline'
+              onClick={() => {
+                setPageNo(1);
+                setCursorId('');
+              }}
+              type='button'
+            >
+              &larr; Latest
+            </button>
+          )}
+
+          {cursorId && <p>{pageNo}</p>}
+
+          {messages.length === 10 && (
+            <button
+              className='hover:underline'
+              onClick={() => {
+                setPageNo(cursorId ? pageNo + 1 : 2);
+                setCursorId(messages?.length ? messages[9]?.id! : '');
+              }}
+              type='button'
+            >
+              More &rarr;
+            </button>
+          )}
+        </Container>
+      )}
+
       <div className='bg-secondary-200 border-t-2 border-secondary-100 fixed w-full py-4 z-50 left-0 bottom-0 md:hidden flex justify-evenly items-center'>
         <button type='button' onClick={() => setLinkModal(true)}>
           <BiLink className='text-2xl' />
@@ -146,16 +203,9 @@ const Inbox: NextPageWithLayout = () => {
           <MdWindow className='text-3xl' />
         </button>
 
-        <button
-          type='button'
-          onClick={() =>
-            toast('Coming soon!', {
-              icon: '🚧',
-            })
-          }
-        >
+        <Link href='/global'>
           <HiOutlineGlobeAlt className='text-2xl' />
-        </button>
+        </Link>
 
         {status === 'loading' || loading ? (
           <span className='loader' />

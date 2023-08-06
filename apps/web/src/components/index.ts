@@ -9,6 +9,7 @@ export * from './Markdown';
 export * from './UserForm';
 export * from './Container';
 export * from './ImageFill';
+export * from './GlobalPost';
 export * from './Maintenance';
 export * from './ErrorBoundary';
 export * from './ThemeSwitcher';
