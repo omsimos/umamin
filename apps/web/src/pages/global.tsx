@@ -112,7 +112,7 @@ const Inbox: NextPageWithLayout = () => {
         <div className='bg-secondary-200 p-8 rounded-2xl'>
           <div className='relative inline-block'>
             <p className='mb-4 text-base text-secondary-400'>Global Messages</p>
-            <p className='absolute -top-2 -right-12 text-xs font-semibold bg-primary-200 rounded-full py-1 px-2'>
+            <p className='absolute -top-2 -right-12 text-[10px] font-bold bg-primary-200 rounded-full px-2 tracking-wide'>
               BETA
             </p>
           </div>
