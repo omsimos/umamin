@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useLogEvent } from '@/hooks';
 import { IoIosCopy } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
-import { ImageFill, Container } from '@/components';
+import { ImageFill, Container } from '@/components/Utils';
 import { useInboxContext } from '@/contexts/InboxContext';
 
 interface Props {

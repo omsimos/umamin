@@ -1,9 +1,7 @@
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { GlobalMessage } from '@umamin/generated';
-
-import { Container } from './Container';
-import { ImageFill } from './ImageFill';
+import { Container, ImageFill } from '@/components/Utils';
 
 export const GlobalPost = ({ message }: { message: GlobalMessage }) => {
   return (

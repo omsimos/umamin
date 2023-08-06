@@ -14,9 +14,10 @@ import { signOut, useSession } from 'next-auth/react';
 import { BiLink, BiSolidColorFill } from 'react-icons/bi';
 
 import { useLogEvent } from '@/hooks';
+import { Layout, Create } from '@/components';
+import { ImageFill, Container } from '@/components/Utils';
 import { Recent, Seen, Sent } from '@/components/InboxTabs';
 import { ConfirmDialog, SettingsDialog } from '@/components/Dialog';
-import { Layout, Create, ImageFill, Container } from '@/components';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
 import type { NextPageWithLayout } from '..';
 

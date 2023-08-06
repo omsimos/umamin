@@ -11,9 +11,10 @@ import { signOut, useSession } from 'next-auth/react';
 import { BiLink, BiSolidColorFill } from 'react-icons/bi';
 
 import { useLogEvent } from '@/hooks';
+import { Layout, GlobalPost } from '@/components';
 import { getGlobalMessages, queryClient } from '@/api';
+import { ImageFill, Container } from '@/components/Utils';
 import { ConfirmDialog, SettingsDialog } from '@/components/Dialog';
-import { Layout, ImageFill, Container, GlobalPost } from '@/components';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
 import type { NextPageWithLayout } from '..';
 
@@ -21,7 +22,7 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const Inbox: NextPageWithLayout = () => {
+const Global: NextPageWithLayout = () => {
   const { push } = useRouter();
   const [loading, setLoading] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
@@ -219,7 +220,7 @@ const Inbox: NextPageWithLayout = () => {
   );
 };
 
-Inbox.getLayout = (page: React.ReactElement) => {
+Global.getLayout = (page: React.ReactElement) => {
   return (
     <InboxProvider>
       <Layout>{page}</Layout>
@@ -227,4 +228,4 @@ Inbox.getLayout = (page: React.ReactElement) => {
   );
 };
 
-export default Inbox;
+export default Global;

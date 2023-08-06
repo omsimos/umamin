@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { getSentMessages } from '@/api';
 import { useQuery } from '@tanstack/react-query';
+
+import { Container } from '@/components/Utils';
 import { useInboxContext } from '@/contexts/InboxContext';
 
 import { SentCard } from './SentCard';
-import { Container } from '../Container';
 import { InboxTabContainer } from './Container';
 
 export const Sent = () => {
