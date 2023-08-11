@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
-import { BiLink, BiSolidColorFill } from 'react-icons/bi';
-import { HiOutlineGlobeAlt } from 'react-icons/hi';
 import { MdWindow } from 'react-icons/md';
 import { TbLogout } from 'react-icons/tb';
-import { useInboxContext } from '@/contexts/InboxContext';
-import toast from 'react-hot-toast';
-import { useLogEvent } from '@/hooks';
-import { queryClient } from '@/api';
+import { HiOutlineGlobeAlt } from 'react-icons/hi';
 import { signOut, useSession } from 'next-auth/react';
-import { ConfirmDialog, SettingsDialog } from './Dialog';
+import { BiLink, BiSolidColorFill } from 'react-icons/bi';
+
+import { queryClient } from '@/api';
+import { useLogEvent } from '@/hooks';
+import { useInboxContext } from '@/contexts/InboxContext';
+
 import { ImageFill } from './Utils';
+import { ConfirmDialog, SettingsDialog } from './Dialog';
 
 export const BottomNavbar = () => {
   const { push } = useRouter();
