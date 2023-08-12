@@ -5,3 +5,4 @@ export * from './Message';
 export * from './AddClue';
 export * from './Settings';
 export * from './Container';
+export * from './SendGlobal';

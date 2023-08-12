@@ -80,7 +80,7 @@ export const BottomNavbar = () => {
         content={<p>Are you sure you want to logout?</p>}
         handleConfirm={handleLogout}
       />
-      <div className='bg-secondary-200 border-t-2 border-secondary-100 fixed w-full max-w-[450px] left-[50%] translate-x-[-50%] py-4 z-50 bottom-0 flex justify-evenly items-center mx-auto rounded-t-3xl'>
+      <div className='bg-secondary-200 border-t-2 border-secondary-100 fixed w-full max-w-[470px] left-[50%] translate-x-[-50%] py-4 z-50 bottom-0 flex justify-evenly items-center mx-auto rounded-t-3xl'>
         <button type='button' onClick={() => setLinkModal(true)}>
           <BiLink className='text-2xl' />
         </button>
