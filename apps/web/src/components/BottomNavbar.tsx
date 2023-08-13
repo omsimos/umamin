@@ -97,8 +97,11 @@ export const BottomNavbar = () => {
           <MdWindow className='text-3xl' />
         </button>
 
-        <Link href='/global'>
+        <Link href='/global' className='relative'>
           <HiOutlineGlobeAlt className='text-2xl' />
+          <p className='absolute -top-3 -right-8 text-[10px] font-bold bg-red-500 rounded-full px-2 tracking-wide'>
+            NEW
+          </p>
         </Link>
 
         {status === 'loading' || loading ? (
