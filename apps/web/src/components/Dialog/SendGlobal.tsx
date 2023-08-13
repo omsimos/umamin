@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Switch } from '@headlessui/react';
+import { useMutation } from '@tanstack/react-query';
+
+import { sendGlobalMessage } from '@/api';
 import { useInboxContext } from '@/contexts/InboxContext';
 
 import { ImageFill } from '../Utils';
@@ -8,13 +12,36 @@ import { DialogContainer, DialogContainerProps } from '.';
 interface Props extends DialogContainerProps {}
 
 export const SendGlobalModal = ({ setIsOpen, ...rest }: Props) => {
+  const { user } = useInboxContext();
   const [message, setMessage] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
-  const { user } = useInboxContext();
+
+  const { mutate } = useMutation(sendGlobalMessage);
+
+  const handleSend: React.FormEventHandler = (e) => {
+    e.preventDefault();
+    mutate(
+      { input: { content: message, isAnonymous } },
+      {
+        onSuccess: () => {
+          toast.success('Message posted');
+
+          setTimeout(() => {
+            setMessage('');
+          }, 500);
+        },
+      }
+    );
+
+    setIsOpen(false);
+  };
 
   return (
     <DialogContainer transparent setIsOpen={setIsOpen} {...rest}>
-      <form className='msg-card flex flex-col space-y-4 p-6'>
+      <form
+        onSubmit={handleSend}
+        className='msg-card flex flex-col space-y-4 p-6'
+      >
         <div>
           <div className='flex gap-x-2 mb-4 items-center'>
             <ImageFill
@@ -23,25 +50,26 @@ export const SendGlobalModal = ({ setIsOpen, ...rest }: Props) => {
               unoptimized
               className='border-secondary-100 h-[40px] w-[40px] object-cover rounded-full border flex-none'
             />
-              <div>
-
-            <p>{user?.username}</p>
-            <p className='text-secondary-400 text-xs'>anyone can see your message</p>
+            <div>
+              <p>{user?.username}</p>
+              <p className='text-secondary-400 text-xs'>
+                anyone can see your message
+              </p>
             </div>
           </div>
 
           <textarea
             required
             minLength={1}
-            maxLength={100}
+            maxLength={500}
             className='settings-input min-h-[100px] resize-none'
             value={message}
-            placeholder="What's on your mind"
+            placeholder="What's on your mind?"
             onChange={(e) => setMessage(e.target.value)}
           />
         </div>
 
-        <button type='button' className='rounded py-2 bg-primary-200'>
+        <button type='submit' className='rounded py-2 bg-primary-200'>
           Post
         </button>
 
