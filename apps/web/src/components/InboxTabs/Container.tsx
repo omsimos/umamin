@@ -82,52 +82,56 @@ export const InboxTabContainer = ({
         children
       )}
 
-      {!messages?.length && cursorId && !isLoading && (
-        <div className='flex justify-center pt-24'>
-          <button
-            onClick={() => {
-              setPageNo(1);
-              setCursorId('');
-            }}
-            className='hover:underline'
-            type='button'
-          >
-            &larr; Go back to latest messages
-          </button>
-        </div>
-      )}
-
-      {!isLoading && messages && messages?.length > 0 && (
-        <div className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}>
-          {cursorId && (
+      <Container>
+        {!messages?.length && cursorId && !isLoading && (
+          <div className='flex justify-center pt-24'>
             <button
-              className='hover:underline'
               onClick={() => {
                 setPageNo(1);
                 setCursorId('');
               }}
-              type='button'
-            >
-              &larr; Latest
-            </button>
-          )}
-
-          {cursorId && <p>{pageNo}</p>}
-
-          {messages.length === 3 && (
-            <button
               className='hover:underline'
-              onClick={() => {
-                setPageNo(cursorId ? pageNo + 1 : 2);
-                setCursorId(messages?.length ? messages[2]?.id! : '');
-              }}
               type='button'
             >
-              More &rarr;
+              &larr; Go back to latest messages
             </button>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+
+        {!isLoading && messages && messages?.length > 0 && (
+          <div
+            className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}
+          >
+            {cursorId && (
+              <button
+                className='hover:underline'
+                onClick={() => {
+                  setPageNo(1);
+                  setCursorId('');
+                }}
+                type='button'
+              >
+                &larr; Latest
+              </button>
+            )}
+
+            {cursorId && <p>{pageNo}</p>}
+
+            {messages.length === 3 && (
+              <button
+                className='hover:underline'
+                onClick={() => {
+                  setPageNo(cursorId ? pageNo + 1 : 2);
+                  setCursorId(messages?.length ? messages[2]?.id! : '');
+                }}
+                type='button'
+              >
+                More &rarr;
+              </button>
+            )}
+          </div>
+        )}
+      </Container>
     </section>
   );
 };
