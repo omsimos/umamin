@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
 import { GlobalMessage } from '@umamin/generated';
@@ -23,8 +24,9 @@ const Global: NextPageWithLayout = () => {
     GlobalMessage | null | undefined
   >(null);
 
-  const { user, isUserLoading } = useInboxContext();
+  const { user } = useInboxContext();
   const { data } = useSession();
+  const { push } = useRouter();
 
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
@@ -36,7 +38,7 @@ const Global: NextPageWithLayout = () => {
     }
   );
 
-  if (isUserLoading || isLoading) {
+  if (isLoading) {
     return (
       <div className='mt-52 flex justify-center'>
         <span className='loader-2' />
@@ -74,7 +76,13 @@ const Global: NextPageWithLayout = () => {
 
               <button
                 type='button'
-                onClick={() => setSendGlobalModal(true)}
+                onClick={() => {
+                  if (!user) {
+                    push('/login');
+                  } else {
+                    setSendGlobalModal(true);
+                  }
+                }}
                 className='rounded-full w-full bg-secondary-100 px-6 py-3 text-secondary-400 text-left'
               >
                 Send a global message &rarr;
@@ -130,7 +138,7 @@ const Global: NextPageWithLayout = () => {
           </Container>
         )}
 
-        <BottomNavbar />
+        {user && <BottomNavbar />}
       </section>
     </>
   );
