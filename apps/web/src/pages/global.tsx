@@ -91,7 +91,7 @@ const Global: NextPageWithLayout = () => {
           </div>
         </Container>
 
-        <AdContainer slotId='7607907295' className='mb-4' />
+        <AdContainer slotId='7492157497' className='mb-4' />
 
         <div className='space-y-12 pt-12'>
           {messageData && (
@@ -101,6 +101,8 @@ const Global: NextPageWithLayout = () => {
             <GlobalPost message={m} key={m.id} />
           ))}
         </div>
+
+        <AdContainer slotId='2048259127' className='my-4' />
 
         {!isLoading && messages && messages?.length > 0 && (
           <Container
