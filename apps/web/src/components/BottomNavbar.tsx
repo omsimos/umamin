@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
+import { BiLink } from 'react-icons/bi';
 import { MdWindow } from 'react-icons/md';
 import { TbLogout } from 'react-icons/tb';
-import { HiOutlineGlobeAlt } from 'react-icons/hi';
 import { signOut, useSession } from 'next-auth/react';
-import { BiLink, BiSolidColorFill } from 'react-icons/bi';
+import { HiOutlineGlobeAlt, HiHome } from 'react-icons/hi';
 
 import { queryClient } from '@/api';
 import { useLogEvent } from '@/hooks';
@@ -81,19 +81,12 @@ export const BottomNavbar = () => {
         handleConfirm={handleLogout}
       />
       <div className='bg-secondary-200 border-t-2 border-secondary-100 fixed w-full max-w-[470px] left-[50%] translate-x-[-50%] py-4 z-50 bottom-0 flex justify-evenly items-center mx-auto rounded-t-3xl'>
+        <Link href='/inbox'>
+          <HiHome className='text-2xl' />
+        </Link>
+
         <button type='button' onClick={() => setLinkModal(true)}>
           <BiLink className='text-2xl' />
-        </button>
-
-        <button
-          type='button'
-          onClick={() =>
-            toast('Coming soon!', {
-              icon: '🚧',
-            })
-          }
-        >
-          <BiSolidColorFill className='text-2xl' />
         </button>
 
         <button
