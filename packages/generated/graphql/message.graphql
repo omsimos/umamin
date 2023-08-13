@@ -59,15 +59,18 @@ mutation sendMessage($input: SendMessageInput!) {
 
 mutation sendGlobalMessage($input: SendGlobalMessageInput!) {
   sendGlobalMessage(input: $input) {
-    id
-    content
-    createdAt
-    isAnonymous
-    user {
+    data {
       id
-      username
-      image
+      content
+      createdAt
+      isAnonymous
+      user {
+        id
+        username
+        image
+      }
     }
+    error
   }
 }
 

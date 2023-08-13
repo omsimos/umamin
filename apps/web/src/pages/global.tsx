@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
+import { GlobalMessage } from '@umamin/generated';
 
 import { getGlobalMessages } from '@/api';
 import { SendGlobalModal } from '@/components/Dialog';
@@ -18,6 +19,9 @@ const Global: NextPageWithLayout = () => {
   const [pageNo, setPageNo] = useState(1);
   const [cursorId, setCursorId] = useState('');
   const [sendGlobalModal, setSendGlobalModal] = useState(false);
+  const [messageData, setMessageData] = useState<
+    GlobalMessage | null | undefined
+  >(null);
 
   const { user, isUserLoading } = useInboxContext();
   const { data } = useSession();
@@ -43,6 +47,7 @@ const Global: NextPageWithLayout = () => {
   return (
     <>
       <SendGlobalModal
+        setMessageData={setMessageData}
         isOpen={sendGlobalModal}
         setIsOpen={setSendGlobalModal}
       />
@@ -81,6 +86,9 @@ const Global: NextPageWithLayout = () => {
         <AdContainer slotId='7607907295' className='mb-4' />
 
         <div className='space-y-12 pt-12'>
+          {messageData && (
+            <GlobalPost message={messageData} key={messageData.id} />
+          )}
           {messages?.map((m) => (
             <GlobalPost message={m} key={m.id} />
           ))}

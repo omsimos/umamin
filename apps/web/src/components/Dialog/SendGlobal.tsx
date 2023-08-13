@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Switch } from '@headlessui/react';
+import { GlobalMessage } from '@umamin/generated';
 import { useMutation } from '@tanstack/react-query';
 
 import { sendGlobalMessage } from '@/api';
@@ -9,9 +10,15 @@ import { useInboxContext } from '@/contexts/InboxContext';
 import { ImageFill } from '../Utils';
 import { DialogContainer, DialogContainerProps } from '.';
 
-interface Props extends DialogContainerProps {}
+interface Props extends DialogContainerProps {
+  setMessageData: React.Dispatch<React.SetStateAction<GlobalMessage | undefined | null>>;
+}
 
-export const SendGlobalModal = ({ setIsOpen, ...rest }: Props) => {
+export const SendGlobalModal = ({
+  setIsOpen,
+  setMessageData,
+  ...rest
+}: Props) => {
   const { user } = useInboxContext();
   const [message, setMessage] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -23,7 +30,13 @@ export const SendGlobalModal = ({ setIsOpen, ...rest }: Props) => {
     mutate(
       { input: { content: message, isAnonymous } },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          if (data.sendGlobalMessage.error) {
+            toast.error(data.sendGlobalMessage.error);
+            return;
+          }
+
+          setMessageData(data.sendGlobalMessage.data);
           toast.success('Message posted');
 
           setTimeout(() => {

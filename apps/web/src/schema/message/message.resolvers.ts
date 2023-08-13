@@ -1,5 +1,13 @@
 /* eslint-disable no-console */
-import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Ctx,
+  Arg,
+  ID,
+  Directive,
+} from 'type-graphql';
 import { Prisma } from '@umamin/db';
 
 import type { TContext } from '@/pages/api/graphql';
@@ -7,6 +15,7 @@ import {
   GlobalMessage,
   RecentMessage,
   SeenMessage,
+  SendGlobalMessage,
   SendGlobalMessageInput,
   SendMessageInput,
   SentMessage,
@@ -20,6 +29,7 @@ export class MessageResolver {
     return { error: 'hi' };
   }
 
+  @Directive('@cacheControl(maxAge: 240)')
   @Query(() => [GlobalMessage], { nullable: true })
   async getGlobalMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
@@ -69,12 +79,32 @@ export class MessageResolver {
     }
   }
 
-  @Mutation(() => GlobalMessage)
+  @Directive('@cacheControl(maxAge: 60)')
+  @Mutation(() => SendGlobalMessage)
   async sendGlobalMessage(
     @Arg('input', () => SendGlobalMessageInput)
     { content, isAnonymous }: SendGlobalMessageInput,
     @Ctx() { prisma, id }: TContext
-  ): Promise<GlobalMessage> {
+  ): Promise<SendGlobalMessage> {
+    try {
+      const latestMessage = await prisma.globalMessage.findFirst({
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (latestMessage?.createdAt) {
+        const diff = new Date().getTime() - latestMessage.createdAt.getTime();
+
+        if (diff < 1000 * 60 * 10) {
+          return {
+            error: 'You can only send a message once every 10 minutes.',
+          };
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+
     try {
       const message = await prisma.globalMessage.create({
         data: {
@@ -93,7 +123,7 @@ export class MessageResolver {
         },
       });
 
-      return message;
+      return { data: message };
     } catch (err) {
       console.error(err);
       throw err;

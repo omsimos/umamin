@@ -49,7 +49,7 @@ export type Mutation = {
   editMessage: Scalars['String']['output'];
   editUserMessage: ErrorResponse;
   editUsername: ErrorResponse;
-  sendGlobalMessage: GlobalMessage;
+  sendGlobalMessage: SendGlobalMessage;
   sendMessage: Scalars['String']['output'];
 };
 
@@ -156,6 +156,12 @@ export type SeenMessage = {
   reply?: Maybe<Scalars['String']['output']>;
 };
 
+export type SendGlobalMessage = {
+  __typename?: 'SendGlobalMessage';
+  data?: Maybe<GlobalMessage>;
+  error?: Maybe<Scalars['String']['output']>;
+};
+
 export type SendGlobalMessageInput = {
   content: Scalars['String']['input'];
   isAnonymous: Scalars['Boolean']['input'];
@@ -245,7 +251,7 @@ export type SendGlobalMessageMutationVariables = Exact<{
 }>;
 
 
-export type SendGlobalMessageMutation = { __typename?: 'Mutation', sendGlobalMessage: { __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null } };
+export type SendGlobalMessageMutation = { __typename?: 'Mutation', sendGlobalMessage: { __typename?: 'SendGlobalMessage', error?: string | null, data?: { __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null } | null } };
 
 export type AddReplyMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -367,15 +373,18 @@ export const SendMessageDocument = gql`
 export const SendGlobalMessageDocument = gql`
     mutation sendGlobalMessage($input: SendGlobalMessageInput!) {
   sendGlobalMessage(input: $input) {
-    id
-    content
-    createdAt
-    isAnonymous
-    user {
+    data {
       id
-      username
-      image
+      content
+      createdAt
+      isAnonymous
+      user {
+        id
+        username
+        image
+      }
     }
+    error
   }
 }
     `;

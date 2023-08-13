@@ -1,5 +1,6 @@
 import { ObjectType, Field, ID, InputType, Directive } from 'type-graphql';
 import { MaxLength, MinLength, IsNotEmpty } from 'class-validator';
+import { ErrorResponse } from '../types';
 
 @ObjectType()
 export class BaseMessage {
@@ -28,7 +29,7 @@ class GlobalMessageUser {
   image: string | null;
 }
 
-@Directive('@cacheControl(maxAge: 60)')
+@Directive('@cacheControl(maxAge: 86400)')
 @ObjectType()
 export class GlobalMessage {
   @Field(() => ID)
@@ -45,6 +46,12 @@ export class GlobalMessage {
 
   @Field(() => GlobalMessageUser, { nullable: true })
   user: GlobalMessageUser | null;
+}
+
+@ObjectType()
+export class SendGlobalMessage extends ErrorResponse {
+  @Field(() => GlobalMessage, { nullable: true })
+  data?: GlobalMessage | null;
 }
 
 @Directive('@cacheControl(maxAge: 60)')
