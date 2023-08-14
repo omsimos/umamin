@@ -50,7 +50,7 @@ export const GlobalMsg = ({ setIsOpen, message, ...rest }: Props) => {
             />
 
             <div>
-              <div className='flex gap-x-2'>
+              <div className='flex gap-x-2 items-center'>
                 <p className='font-medium'>
                   {(message.isAnonymous
                     ? 'anonymous'

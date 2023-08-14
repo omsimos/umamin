@@ -29,7 +29,7 @@ export const GlobalPost = ({ message }: { message: GlobalMessage }) => {
           />
 
           <div>
-            <div className='flex gap-x-2'>
+            <div className='flex gap-x-2 items-center'>
               <p className='font-medium'>
                 {(message.isAnonymous ? 'anonymous' : message.user?.username) ||
                   'anonymous'}
