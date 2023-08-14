@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 
 import { footerItems } from '@/utils/constants';
-import { ImageFill, Container } from '@/components';
+import { ImageFill, Container } from '@/components/Utils';
 
 export const Footer = () => {
   return (

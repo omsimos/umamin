@@ -3,8 +3,8 @@ import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 
-import { Container, Info } from '@/components';
 import { editUsername } from '@/api';
+import { Container, Info } from '@/components/Utils';
 import { useInboxContext } from '@/contexts/InboxContext';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {

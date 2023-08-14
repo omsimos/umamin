@@ -18,6 +18,8 @@ export const {
   getSeenMessages,
   getSentMessages,
   getRecentMessages,
+  getGlobalMessages,
+  sendGlobalMessage,
 } = getSdk(gqlClient);
 
 export const queryClient = new QueryClient({

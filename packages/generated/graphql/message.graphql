@@ -1,3 +1,17 @@
+query getGlobalMessages($cursorId: ID) {
+  getGlobalMessages(cursorId: $cursorId) {
+    id
+    content
+    createdAt
+    isAnonymous
+    user {
+      id
+      username
+      image
+    }
+  }
+}
+
 query getRecentMessages($cursorId: ID) {
   getRecentMessages(cursorId: $cursorId) {
     id
@@ -41,6 +55,23 @@ mutation deleteMessage($id: ID!) {
 
 mutation sendMessage($input: SendMessageInput!) {
   sendMessage(input: $input)
+}
+
+mutation sendGlobalMessage($input: SendGlobalMessageInput!) {
+  sendGlobalMessage(input: $input) {
+    data {
+      id
+      content
+      createdAt
+      isAnonymous
+      user {
+        id
+        username
+        image
+      }
+    }
+    error
+  }
 }
 
 mutation addReply($id: ID!, $content: String!) {

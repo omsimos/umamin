@@ -1,7 +1,6 @@
 import React from 'react';
 import { User } from '@umamin/generated';
-
-import { ImageFill } from './ImageFill';
+import { ImageFill } from '@/components/Utils';
 
 interface ChatBubbleProps {
   type: 'sender' | 'receiver';

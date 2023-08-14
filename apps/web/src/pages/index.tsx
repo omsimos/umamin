@@ -7,7 +7,8 @@ import { AiFillAndroid } from 'react-icons/ai';
 import { IoChatboxEllipses } from 'react-icons/io5';
 import { HiOutlineArrowNarrowRight } from 'react-icons/hi';
 
-import { Container, Layout } from '@/components';
+import { Layout } from '@/components';
+import { Container } from '@/components/Utils';
 import { indexItems } from '@/utils/constants';
 import type { NextPageWithLayout } from '..';
 

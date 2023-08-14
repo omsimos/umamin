@@ -9,10 +9,11 @@ import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
 
+import { Layout } from '@/components';
 import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
 import { ChatBubble } from '@/components/ChatBubble';
-import { Container, Error, Layout } from '@/components';
+import { Container, Error } from '@/components/Utils';
 import { getUser, queryClient, sendMessage } from '@/api';
 import { AddClueDialog, ConfirmDialog } from '@/components/Dialog';
 

@@ -1,7 +1,9 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
+
+import { Layout } from '@/components';
 import { markdown } from '@/utils/constants';
-import { Container, Layout, Markdown } from '@/components';
+import { Container, Markdown } from '@/components/Utils';
 import type { NextPageWithLayout } from '..';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
