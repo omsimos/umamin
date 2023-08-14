@@ -40,7 +40,7 @@ export const GlobalPost = ({ message }: { message: GlobalMessage }) => {
                 })}
               </p>
             </div>
-            <p className='font-light mt-1'>{message.content}</p>
+            <p className='font-light mt-1 break-all'>{message.content}</p>
           </div>
         </Container>
 

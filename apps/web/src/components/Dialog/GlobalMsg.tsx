@@ -63,7 +63,7 @@ export const GlobalMsg = ({ setIsOpen, message, ...rest }: Props) => {
                   })}
                 </p>
               </div>
-              <p className='font-light mt-1'>{message.content}</p>
+              <p className='font-light mt-1 break-all'>{message.content}</p>
               <p className='text-secondary-400 text-xs mt-4'>
                 umamin.link/global
               </p>
