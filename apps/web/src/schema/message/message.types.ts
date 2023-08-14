@@ -66,22 +66,22 @@ export class SeenMessage extends BaseMessage {
   @Field(() => ID)
   id: string;
 
-  @Directive('@cacheControl(maxAge: 3600)')
+  @Directive('@cacheControl(maxAge: 86400)')
   @Field(() => String)
   content: string;
 
-  @Directive('@cacheControl(maxAge: 3600)')
+  @Directive('@cacheControl(maxAge: 86400)')
   @Field(() => String)
   receiverMsg: string;
 
-  @Directive('@cacheControl(maxAge: 3600)')
+  @Directive('@cacheControl(maxAge: 86400)')
   @Field(() => Date)
   createdAt: Date;
 
   @Field(() => String, { nullable: true })
   reply: string | null;
 
-  @Directive('@cacheControl(maxAge: 3600)')
+  @Directive('@cacheControl(maxAge: 86400)')
   @Field(() => String, { nullable: true })
   clue: string | null;
 }
