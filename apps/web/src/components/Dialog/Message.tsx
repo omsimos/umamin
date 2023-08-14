@@ -118,9 +118,9 @@ export const MessageDialog = ({
           <div className='bg-secondary-200 text-2xl flex border-y border-secondary-100 rounded-full py-3 px-6'>
             {clue && (
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => setClueDialog(true)}
                 type='button'
-                className='border-l border-secondary-100 px-5 '
+                className='pr-5 '
               >
                 <HiPuzzle />
               </button>
@@ -129,7 +129,9 @@ export const MessageDialog = ({
             {type === 'seen' && (
               <button
                 onClick={() => toast('Coming soon', { icon: 'ℹ️' })}
-                className='pr-5'
+                className={`border-secondary-100 ${
+                  clue ? 'px-5 border-l' : 'pr-5'
+                } `}
                 type='button'
               >
                 <HiTrash />
