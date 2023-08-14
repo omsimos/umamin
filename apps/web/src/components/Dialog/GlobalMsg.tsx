@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { nanoid } from 'nanoid';
 import toast from 'react-hot-toast';
 import { toPng } from 'html-to-image';
+import { MdVerified } from 'react-icons/md';
 import { formatDistanceToNow } from 'date-fns';
 import { GlobalMessage } from '@umamin/generated';
 import { HiOutlineHeart, HiOutlineChat, HiOutlineSave } from 'react-icons/hi';
@@ -43,12 +44,23 @@ export const GlobalMsg = ({ setIsOpen, message, ...rest }: Props) => {
       <section ref={cardRef} className='bg-secondary-300 p-6'>
         <div className='border border-secondary-100 p-8 bg-secondary-200 rounded-2xl'>
           <div className='flex gap-x-4'>
-            <ImageFill
-              alt='profile picture'
-              src={message.isAnonymous ? '' : message.user?.image}
-              unoptimized
-              className='border-secondary-100 h-[45px] w-[45px] object-cover rounded-full border flex-none'
-            />
+            <div className='relative'>
+              <ImageFill
+                alt='profile picture'
+                src={message.isAnonymous ? '' : message.user?.image}
+                unoptimized
+                className='border-secondary-100 h-[45px] w-[45px] object-cover rounded-full border flex-none'
+              />
+
+              {!message.isAnonymous &&
+                message.user &&
+                message.user.username &&
+                process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(',').includes(
+                  message.user.username
+                ) && (
+                  <MdVerified className='text-sky-400 shadow-sm text-lg absolute right-0 top-7' />
+                )}
+            </div>
 
             <div>
               <div className='flex gap-x-2 items-center'>
