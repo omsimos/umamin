@@ -17,6 +17,8 @@ export const GlobalMsg = ({ setIsOpen, message, ...rest }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
   const saveImage = useCallback(() => {
+    toast('Downloading image', { icon: '📥' });
+
     if (cardRef.current === null) {
       return;
     }
@@ -27,6 +29,7 @@ export const GlobalMsg = ({ setIsOpen, message, ...rest }: Props) => {
         link.download = `${message?.user?.username}_${nanoid(5)}.png`;
         link.href = dataUrl;
         link.click();
+        toast.success('Image downloaded');
       })
       .catch((err) => {
         toast.error(err);
@@ -60,9 +63,7 @@ export const GlobalMsg = ({ setIsOpen, message, ...rest }: Props) => {
                 </p>
               </div>
               <p className='font-light mt-1'>{message.content}</p>
-              <p className='text-secondary-400 text-xs mt-4'>
-                umamin.link/global
-              </p>
+          <p className='text-secondary-400 text-xs mt-4'>umamin.link/global</p>
             </div>
           </div>
         </div>

@@ -39,6 +39,8 @@ export const MessageDialog = ({
   const [deleteModal, setDeleteModal] = useState(false);
 
   const saveImage = useCallback(() => {
+    toast('Downloading image', { icon: '📥' });
+
     if (cardRef.current === null) {
       return;
     }
@@ -49,6 +51,7 @@ export const MessageDialog = ({
         link.download = `${user?.username}_${nanoid(5)}.png`;
         link.href = dataUrl;
         link.click();
+        toast.success('Image downloaded');
       })
       .catch((err) => {
         toast.error(err);
