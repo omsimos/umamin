@@ -88,6 +88,7 @@ export class MessageResolver {
   ): Promise<SendGlobalMessage> {
     try {
       const latestMessage = await prisma.globalMessage.findFirst({
+        where: { userId: id },
         orderBy: { createdAt: 'desc' },
       });
 
