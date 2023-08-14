@@ -1,12 +1,13 @@
 import React, { useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { nanoid } from 'nanoid';
 import toast from 'react-hot-toast';
 import { toPng } from 'html-to-image';
-import { HiDownload } from 'react-icons/hi';
 import { formatDistanceToNow } from 'date-fns';
 import { GlobalMessage } from '@umamin/generated';
+import { HiOutlineHeart, HiOutlineChat, HiOutlineSave } from 'react-icons/hi';
 
-import { ImageFill } from '../Utils';
+import { Container, ImageFill } from '../Utils';
 import { DialogContainer, DialogContainerProps } from './Container';
 
 interface Props extends DialogContainerProps {
@@ -40,7 +41,7 @@ export const GlobalMsg = ({ setIsOpen, message, ...rest }: Props) => {
   return (
     <DialogContainer setIsOpen={setIsOpen} container={false} {...rest}>
       <section ref={cardRef} className='bg-secondary-300 p-6'>
-        <div className='border border-secondary-100 p-8 bg-secondary-200 rounded-lg'>
+        <div className='border border-secondary-100 p-8 bg-secondary-200 rounded-2xl'>
           <div className='flex gap-x-4'>
             <ImageFill
               alt='profile picture'
@@ -63,31 +64,50 @@ export const GlobalMsg = ({ setIsOpen, message, ...rest }: Props) => {
                 </p>
               </div>
               <p className='font-light mt-1'>{message.content}</p>
-          <p className='text-secondary-400 text-xs mt-4'>umamin.link/global</p>
+              <p className='text-secondary-400 text-xs mt-4'>
+                umamin.link/global
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <div className='flex justify-between px-4 lg:w-full'>
+      <Container className='flex justify-between'>
         <button
           onClick={() => setIsOpen(false)}
           type='button'
           className='hover:underline'
         >
-          &larr; Go Back
+          &larr; Back
         </button>
 
-        <div className='space-x-2 text-xl text-white'>
+        <div className='bg-secondary-200 text-2xl flex border-y border-secondary-100 rounded-full py-3 px-6'>
           <button
-            onClick={saveImage}
-            className='bg-primary-200 rounded p-2'
+            onClick={() => toast('Coming soon', { icon: 'ℹ️' })}
+            className='pr-5'
             type='button'
           >
-            <HiDownload />
+            <HiOutlineHeart />
+          </button>
+
+          {!message.isAnonymous && (
+            <Link
+              href={`/to/${message.user?.username}`}
+              className='border-l border-secondary-100 px-5 '
+            >
+              <HiOutlineChat />
+            </Link>
+          )}
+
+          <button
+            onClick={saveImage}
+            className='border-l border-secondary-100 pl-5'
+            type='button'
+          >
+            <HiOutlineSave />
           </button>
         </div>
-      </div>
+      </Container>
     </DialogContainer>
   );
 };
