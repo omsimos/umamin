@@ -95,9 +95,9 @@ export class MessageResolver {
       if (latestMessage?.createdAt) {
         const diff = new Date().getTime() - latestMessage.createdAt.getTime();
 
-        if (diff < 1000 * 60 * 10) {
+        if (diff < 1000 * 60 * 5) {
           return {
-            error: 'You can only send a message once every 10 minutes.',
+            error: 'You can only send a message once every 5 minutes.',
           };
         }
       }
