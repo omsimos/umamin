@@ -1,5 +1,6 @@
 import React from 'react';
-import { Error, Layout } from '@/components';
+import { Layout } from '@/components';
+import { Error } from '@/components/Utils';
 
 const Error404 = () => {
   return <Error message='Are you lost?' />;

@@ -1,11 +1,22 @@
 /* eslint-disable no-console */
-import { Resolver, Query, Mutation, Ctx, Arg, ID } from 'type-graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Ctx,
+  Arg,
+  ID,
+  Directive,
+} from 'type-graphql';
 import { Prisma } from '@umamin/db';
 
 import type { TContext } from '@/pages/api/graphql';
 import {
+  GlobalMessage,
   RecentMessage,
   SeenMessage,
+  SendGlobalMessage,
+  SendGlobalMessageInput,
   SendMessageInput,
   SentMessage,
 } from './message.types';
@@ -16,6 +27,108 @@ export class MessageResolver {
   @Query(() => ErrorResponse)
   hello(): ErrorResponse {
     return { error: 'hi' };
+  }
+
+  @Directive('@cacheControl(maxAge: 240)')
+  @Query(() => [GlobalMessage], { nullable: true })
+  async getGlobalMessages(
+    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<GlobalMessage[] | null> {
+    try {
+      let messages: GlobalMessage[];
+
+      if (!cursorId) {
+        messages = await prisma.globalMessage.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+        });
+      } else {
+        messages = await prisma.globalMessage.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          skip: 1,
+          cursor: {
+            id: cursorId,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+        });
+      }
+
+      return messages;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
+  @Directive('@cacheControl(maxAge: 60)')
+  @Mutation(() => SendGlobalMessage)
+  async sendGlobalMessage(
+    @Arg('input', () => SendGlobalMessageInput)
+    { content, isAnonymous }: SendGlobalMessageInput,
+    @Ctx() { prisma, id }: TContext
+  ): Promise<SendGlobalMessage> {
+    try {
+      const latestMessage = await prisma.globalMessage.findFirst({
+        where: { userId: id },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (latestMessage?.createdAt) {
+        const diff = new Date().getTime() - latestMessage.createdAt.getTime();
+
+        if (diff < 1000 * 60 * 5) {
+          return {
+            error: 'You can only send a message once every 5 minutes.',
+          };
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+
+    try {
+      const message = await prisma.globalMessage.create({
+        data: {
+          content,
+          isAnonymous,
+          user: id ? { connect: { id } } : undefined,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              image: true,
+            },
+          },
+        },
+      });
+
+      return { data: message };
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   }
 
   @Query(() => [RecentMessage], { nullable: true })

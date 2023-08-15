@@ -29,6 +29,11 @@ module.exports = withPWA({
       config.experiments = {};
     }
     config.experiments.topLevelAwait = true;
+    config.watchOptions = {
+      poll: 1000,
+      aggregateTimeout: 300,
+    };
+
     return config;
   },
   async redirects() {
@@ -36,6 +41,17 @@ module.exports = withPWA({
       {
         source: '/discord',
         destination: 'https://discord.gg/bQKG7axhcF',
+        permanent: true,
+      },
+      {
+        source: '/facebook',
+        destination: 'https://www.facebook.com/umamin.official',
+        permanent: true,
+      },
+      {
+        source: '/download',
+        destination:
+          'https://play.google.com/store/apps/details?id=link.umamin.app',
         permanent: true,
       },
     ];

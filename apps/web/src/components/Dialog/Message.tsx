@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { HiDownload, HiPuzzle, HiTrash } from 'react-icons/hi';
+import { HiOutlineSave, HiPuzzle, HiTrash } from 'react-icons/hi';
 import { useMutation } from '@tanstack/react-query';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
@@ -15,6 +15,7 @@ import {
   DialogContainer,
   DialogContainerProps,
 } from '.';
+import { Container } from '../Utils';
 
 interface Props extends DialogContainerProps {
   refetch?: () => void;
@@ -39,6 +40,8 @@ export const MessageDialog = ({
   const [deleteModal, setDeleteModal] = useState(false);
 
   const saveImage = useCallback(() => {
+    toast('Downloading image', { icon: '📥' });
+
     if (cardRef.current === null) {
       return;
     }
@@ -49,6 +52,7 @@ export const MessageDialog = ({
         link.download = `${user?.username}_${nanoid(5)}.png`;
         link.href = dataUrl;
         link.click();
+        toast.success('Image downloaded');
       })
       .catch((err) => {
         toast.error(err);
@@ -90,10 +94,7 @@ export const MessageDialog = ({
       )}
 
       <DialogContainer setIsOpen={setIsOpen} container={false} {...rest}>
-        <section
-          ref={cardRef}
-          className='bg-secondary-300 p-4'
-        >
+        <section ref={cardRef} className='bg-secondary-300 p-4'>
           <div className='dark:border-secondary-100 dark:bg-secondary-200 relative flex w-full flex-col justify-between gap-6 overflow-hidden rounded-2xl border-2 border-gray-400 bg-gray-200 p-5'>
             {/* Message */}
             <p className='text-center text-lg font-bold'>{receiverMsg}</p>
@@ -105,46 +106,47 @@ export const MessageDialog = ({
           </div>
         </section>
 
-        <div className='flex justify-between px-4 lg:w-full'>
+        <Container className='flex justify-between'>
           <button
             onClick={() => setIsOpen(false)}
             type='button'
             className='hover:underline'
           >
-            &larr; Go Back
+            &larr; Back
           </button>
 
-          <div className='space-x-2 text-xl text-white'>
+          <div className='bg-secondary-200 text-2xl flex border-y border-secondary-100 rounded-full py-3 px-6'>
             {clue && (
               <button
-                type='button'
                 onClick={() => setClueDialog(true)}
-                className='rounded bg-green-500 p-2'
+                type='button'
+                className='pr-5 '
               >
                 <HiPuzzle />
               </button>
             )}
+
             {type === 'seen' && (
               <button
+                onClick={() => toast('Coming soon', { icon: 'ℹ️' })}
+                className={`border-secondary-100 ${
+                  clue ? 'px-5 border-l' : 'pr-5'
+                } `}
                 type='button'
-                onClick={() => setDeleteModal(true)}
-                className='rounded bg-red-500 p-2'
               >
                 <HiTrash />
               </button>
             )}
+
             <button
-              className='bg-primary-200 rounded p-2'
+              onClick={saveImage}
+              className='border-l border-secondary-100 pl-5'
               type='button'
-              onClick={() => {
-                saveImage();
-                triggerEvent('save_image');
-              }}
             >
-              <HiDownload />
+              <HiOutlineSave />
             </button>
           </div>
-        </div>
+        </Container>
       </DialogContainer>
     </>
   );

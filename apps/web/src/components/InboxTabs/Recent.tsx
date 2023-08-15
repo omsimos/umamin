@@ -10,7 +10,7 @@ import { MessageDialog } from '@/components/Dialog';
 import { editMessage, getRecentMessages } from '@/api';
 import { useInboxContext } from '@/contexts/InboxContext';
 
-import { Container } from '../Container';
+import { Container } from '@/components/Utils';
 import { InboxTabContainer } from './Container';
 
 export const Recent = () => {

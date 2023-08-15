@@ -13,7 +13,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { useLogEvent } from '@/hooks';
-import { Container } from './Container';
+import { Container } from '@/components/Utils';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,

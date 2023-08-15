@@ -8,7 +8,8 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 
 import { queryClient } from '@/api';
-import { ImageFill, Menu, Container } from '@/components';
+import { Menu } from '@/components';
+import { ImageFill, Container } from '@/components/Utils';
 
 export const Navbar = () => {
   const [loading, setLoading] = useState(false);
