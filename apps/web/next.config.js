@@ -43,6 +43,17 @@ module.exports = withPWA({
         destination: 'https://discord.gg/bQKG7axhcF',
         permanent: true,
       },
+      {
+        source: '/facebook',
+        destination: 'https://www.facebook.com/umamin.official',
+        permanent: true,
+      },
+      {
+        source: '/download',
+        destination:
+          'https://play.google.com/store/apps/details?id=link.umamin.app',
+        permanent: true,
+      },
     ];
   },
 });
