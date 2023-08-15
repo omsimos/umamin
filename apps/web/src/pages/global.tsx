@@ -111,7 +111,7 @@ const Global: NextPageWithLayout = () => {
               ))}
             </div>
 
-            <AdContainer slotId='2048259127' className='my-4' />
+            {/* <AdContainer slotId='2048259127' className='my-4' /> */}
 
             {!isLoading && messages && messages?.length > 0 && (
               <Container
