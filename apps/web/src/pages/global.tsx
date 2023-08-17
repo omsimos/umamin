@@ -123,6 +123,7 @@ const Global: NextPageWithLayout = () => {
                   <button
                     className='hover:underline'
                     onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                       setPageNo(1);
                       setCursorId('');
                     }}
@@ -138,6 +139,7 @@ const Global: NextPageWithLayout = () => {
                   <button
                     className='hover:underline'
                     onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                       setPageNo(cursorId ? pageNo + 1 : 2);
                       setCursorId(messages?.length ? messages[9]?.id! : '');
                     }}
