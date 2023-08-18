@@ -44,6 +44,9 @@ export class GlobalMessage {
   @Field(() => Date)
   createdAt: Date;
 
+  @Field(() => Date)
+  updatedAt: Date;
+
   @Field(() => GlobalMessageUser, { nullable: true })
   user: GlobalMessageUser | null;
 }

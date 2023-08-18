@@ -29,6 +29,7 @@ export type GlobalMessage = {
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
   isAnonymous: Scalars['Boolean']['output'];
+  updatedAt: Scalars['DateTime']['output'];
   user?: Maybe<GlobalMessageUser>;
 };
 
@@ -201,7 +202,7 @@ export type GetGlobalMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetGlobalMessagesQuery = { __typename?: 'Query', getGlobalMessages?: Array<{ __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null }> | null };
+export type GetGlobalMessagesQuery = { __typename?: 'Query', getGlobalMessages?: Array<{ __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, updatedAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null }> | null };
 
 export type GetRecentMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']['input']>;
@@ -251,7 +252,7 @@ export type SendGlobalMessageMutationVariables = Exact<{
 }>;
 
 
-export type SendGlobalMessageMutation = { __typename?: 'Mutation', sendGlobalMessage: { __typename?: 'SendGlobalMessage', error?: string | null, data?: { __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null } | null } };
+export type SendGlobalMessageMutation = { __typename?: 'Mutation', sendGlobalMessage: { __typename?: 'SendGlobalMessage', error?: string | null, data?: { __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, updatedAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null } | null } };
 
 export type AddReplyMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -310,6 +311,7 @@ export const GetGlobalMessagesDocument = gql`
     id
     content
     createdAt
+    updatedAt
     isAnonymous
     user {
       id
@@ -377,6 +379,7 @@ export const SendGlobalMessageDocument = gql`
       id
       content
       createdAt
+      updatedAt
       isAnonymous
       user {
         id

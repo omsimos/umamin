@@ -47,7 +47,7 @@ export const GlobalPost = ({ message }: { message: GlobalMessage }) => {
                   'anonymous'}
               </p>
               <p className='text-secondary-400 text-center text-sm'>
-                {formatDistanceToNow(new Date(message.createdAt), {
+                {formatDistanceToNow(new Date(message.updatedAt), {
                   addSuffix: true,
                 })}
               </p>
