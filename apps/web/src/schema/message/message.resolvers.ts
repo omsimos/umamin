@@ -109,23 +109,44 @@ export class MessageResolver {
     }
 
     try {
-      const message = await prisma.globalMessage.update({
-        where: { id: latestMessage?.id },
-        data: {
-          content,
-          isAnonymous,
-          user: id ? { connect: { id } } : undefined,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              image: true,
+      let message: GlobalMessage;
+
+      if (!latestMessage) {
+        message = await prisma.globalMessage.create({
+          data: {
+            content,
+            isAnonymous,
+            user: id ? { connect: { id } } : undefined,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
             },
           },
-        },
-      });
+        });
+      } else {
+        message = await prisma.globalMessage.update({
+          where: { id: latestMessage?.id },
+          data: {
+            content,
+            isAnonymous,
+            user: id ? { connect: { id } } : undefined,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+        });
+      }
 
       return { data: message };
     } catch (err) {
