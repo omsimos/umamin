@@ -40,7 +40,7 @@ export class MessageResolver {
 
       if (!cursorId) {
         messages = await prisma.globalMessage.findMany({
-          orderBy: { createdAt: 'desc' },
+          orderBy: { updatedAt: 'desc' },
           take: 10,
           include: {
             user: {
@@ -54,7 +54,7 @@ export class MessageResolver {
         });
       } else {
         messages = await prisma.globalMessage.findMany({
-          orderBy: { createdAt: 'desc' },
+          orderBy: { updatedAt: 'desc' },
           take: 10,
           skip: 1,
           cursor: {
@@ -86,16 +86,18 @@ export class MessageResolver {
     { content, isAnonymous }: SendGlobalMessageInput,
     @Ctx() { prisma, id }: TContext
   ): Promise<SendGlobalMessage> {
+    let latestMessage: Omit<GlobalMessage, 'user'> | null;
+
     try {
-      const latestMessage = await prisma.globalMessage.findFirst({
+      latestMessage = await prisma.globalMessage.findFirst({
         where: { userId: id },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { updatedAt: 'desc' },
       });
 
-      if (latestMessage?.createdAt) {
-        const diff = new Date().getTime() - latestMessage.createdAt.getTime();
+      if (latestMessage?.updatedAt) {
+        const diff = new Date().getTime() - latestMessage.updatedAt.getTime();
 
-        if (diff < 1000 * 60 * 5) {
+        if (diff < 1000 * 60 * 5 && process.env.NODE_ENV !== 'development') {
           return {
             error: 'You can only send a message once every 5 minutes.',
           };
@@ -107,22 +109,44 @@ export class MessageResolver {
     }
 
     try {
-      const message = await prisma.globalMessage.create({
-        data: {
-          content,
-          isAnonymous,
-          user: id ? { connect: { id } } : undefined,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              image: true,
+      let message: GlobalMessage;
+
+      if (!latestMessage) {
+        message = await prisma.globalMessage.create({
+          data: {
+            content,
+            isAnonymous,
+            user: id ? { connect: { id } } : undefined,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
             },
           },
-        },
-      });
+        });
+      } else {
+        message = await prisma.globalMessage.update({
+          where: { id: latestMessage?.id },
+          data: {
+            content,
+            isAnonymous,
+            user: id ? { connect: { id } } : undefined,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+        });
+      }
 
       return { data: message };
     } catch (err) {
