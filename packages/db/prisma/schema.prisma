@@ -74,7 +74,8 @@ model Message {
   receiverId       String
   receiver         User    @relation(name: "receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
-  @@index([senderId, receiverId, isOpened, createdAt(sort: Desc)])
+  @@index([senderId, isOpened, createdAt(sort: Desc)])
+  @@index([receiverId, isOpened, createdAt(sort: Desc)])
 }
 
 model GlobalMessage {
@@ -87,5 +88,5 @@ model GlobalMessage {
   userId String?
   user   User?   @relation(name: "sentGlobalMessages", fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, updatedAt(sort: Desc)])
+  @@index([userId, isAnonymous, updatedAt(sort: Desc)])
 }
