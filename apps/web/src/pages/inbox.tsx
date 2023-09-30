@@ -72,7 +72,7 @@ const Inbox: NextPageWithLayout = () => {
                       className={({ selected }) =>
                         classNames(
                           'rounded-full py-2 px-8 font-semibold text-white outline-none',
-                          selected ? 'bg-primary-200' : 'text-[#8B8B8B]'
+                          selected ? 'bg-tigris' : 'text-[#8B8B8B]'
                         )
                       }
                     >

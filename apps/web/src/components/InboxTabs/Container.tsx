@@ -67,7 +67,7 @@ export const InboxTabContainer = ({
                 <p>
                   {window.location.host}/to/{user?.username}
                 </p>
-                <IoIosCopy className='text-primary-200 flex-none' />
+                <IoIosCopy className='text-tigris flex-none' />
               </button>
             </div>
           </div>

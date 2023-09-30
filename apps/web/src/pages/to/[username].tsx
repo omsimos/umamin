@@ -130,9 +130,11 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
               {username}
             </p>
 
-            <h3 className='font-syneExtrabold text-primary-200 text-center text-lg'>
-              umamin
-            </h3>
+            <div className='flex items-center justify-center'>
+              <h3 className='font-galyonBold text-tigris text-xl'>tigris</h3>
+              <p className='text-secondary-400 text-xl font-light'>✗</p>
+              <h3 className='text-primary-200 font-syneExtrabold'>umamin</h3>
+            </div>
           </div>
 
           {/* Message */}
@@ -159,7 +161,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                   type='button'
                   onClick={() => setClueDialog(true)}
                   className={`${
-                    clue ? 'bg-green-500' : 'bg-primary-300'
+                    clue ? 'bg-green-500' : 'bg-tigris'
                   }  mr-4 flex-none rounded-full p-2`}
                 >
                   <HiOutlinePuzzle className='text-lg text-white' />
@@ -181,7 +183,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                 ) : (
                   <button
                     type='submit'
-                    className='text-primary-100 flex-none cursor-pointer text-2xl'
+                    className='text-tigris flex-none cursor-pointer text-2xl'
                   >
                     <RiSendPlaneFill />
                   </button>
@@ -192,7 +194,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                 <p className='dark:text-secondary-400 text-center font-medium text-gray-500'>
                   Anonymous message sent!
                 </p>
-                <div className='text-primary-100/80 flex justify-center space-x-2 font-normal'>
+                <div className='text-tigris flex justify-center space-x-2 font-normal'>
                   <button
                     type='button'
                     className='hover:text-primary-100 transition-colors'

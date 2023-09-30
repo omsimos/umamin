@@ -10,6 +10,7 @@ module.exports = {
         syne: ['Syne', 'sans-serif'],
         interMedium: ['Inter-Medium', 'sans-serif'],
         syneExtrabold: ['Syne-Extrabold', 'sans-serif'],
+        galyonBold: ['Galyon-Bold', 'sans-serif'],
       },
       colors: {
         primary: {
@@ -24,6 +25,7 @@ module.exports = {
           400: '#8E8E93',
         },
         dcblue: '#5865f2',
+        tigris: '#FF6F07'
       },
     },
   },

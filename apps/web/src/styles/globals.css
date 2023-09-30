@@ -19,6 +19,11 @@ body {
   src: url('/fonts/Syne-ExtraBold.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'Galyon Bold';
+  src: url('/fonts/Galyon-Bold.woff2') format('woff2');
+}
+
 @layer components {
   .contain {
     @apply mx-auto w-[90%] max-w-screen-xl text-sm md:text-base 2xl:w-full;
@@ -85,7 +90,7 @@ body {
   }
 
   .chat-send {
-    @apply after:dark:bg-secondary-200 bg-primary-200 before:bg-primary-200 self-end after:bg-gray-200;
+    @apply after:dark:bg-secondary-200 bg-tigris before:bg-tigris self-end after:bg-gray-200;
   }
 
   .chat-receive {
