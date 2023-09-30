@@ -2,23 +2,23 @@ const description =
   'The ultimate platform for sending and receiving anonymous messages!';
 
 export default {
-  title: 'Umamin',
+  title: 'Tigris x Umamin',
   description,
   openGraph: {
     type: 'website',
-    url: 'https://umamin.link',
-    title: 'Send & Receive Anonymous Confessions',
+    url: 'https://tigris.umamin.link',
+    title: 'Tigris x Umamin: Send & Receive Anonymous Messages',
     description,
     images: [
       {
-        url: '/assets/banner.jpg',
+        url: '/assets/banner-tigris.jpg',
         width: 1400,
         height: 800,
         alt: 'umamin',
         type: 'image/jpg',
       },
     ],
-    site_name: 'Umamin',
+    site_name: 'Tigris x Umamin',
   },
   twitter: {
     cardType: 'summary_large_image',

@@ -6,7 +6,6 @@ import { useSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
-import { NextSeo } from 'next-seo';
 import dynamic from 'next/dynamic';
 
 import { Layout } from '@/components';
@@ -88,17 +87,6 @@ const SendTo: NextPageWithLayout = () => {
 
   return (
     <>
-      <NextSeo
-        title='Umamin - Send Anonymous Messages'
-        openGraph={{
-          title: user
-            ? `👀 Send anonymous messages to ${user?.username}!`
-            : '404 - user not found',
-          description:
-            'Create your own link to start receiving anonymous confessions and messages!',
-        }}
-      />
-
       <ConfirmDialog
         isOpen={warningDialog}
         setIsOpen={setWarningDialog}
