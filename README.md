@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/69457996/224477468-89cbc2a2-fa69-4a21-854a-75f75e3652fe.png" width="350" />
+  <img src="https://github.com/omsimos/umamin/assets/69457996/111a898f-2735-4664-bcd0-385f273ac51f" width="700" />
 </div>
 
 <div align="center">
@@ -9,6 +9,10 @@
 </div>
 
 ## About
+
+A collaboration between [Tigris](https://www.facebook.com/cet.tigris) 🤝 [Umamin](https://umamin.link)
+
+--
 
 [Umamin](https://umamin.link) is an open-source platform for sending and receiving anonymous confessions! Each user can create a unique link to which others could send anonymous messages! [Start receiving confessions and messages &rarr;](https://umamin.link)
 
@@ -93,3 +97,4 @@ Licensed under the [GPL-3.0 license](https://github.com/joshxfi/umamin/blob/main
 ---
 
 *Google Play and the Google Play logo are trademarks of Google LLC.*
+
