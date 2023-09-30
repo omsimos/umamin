@@ -3,7 +3,6 @@ import { useInboxContext } from '@/contexts/InboxContext';
 
 import { SeenCard } from '.';
 import { InboxTabContainer } from './Container';
-import { Container } from '../Utils';
 
 export const Seen = () => {
   const [pageNo, setPageNo] = useState(1);
@@ -20,11 +19,11 @@ export const Seen = () => {
       setPageNo={setPageNo}
       setCursorId={setCursorId}
     >
-      <Container className='space-y-4'>
+      <div>
         {seenData?.map((m) => (
           <SeenCard key={m.id} refetch={refetchSeen} message={m} />
         ))}
-      </Container>
+      </div>
     </InboxTabContainer>
   );
 };
