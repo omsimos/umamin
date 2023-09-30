@@ -31,7 +31,7 @@ export const Sent = () => {
       setPageNo={setPageNo}
       setCursorId={setCursorId}
     >
-      <Container>
+      <Container className='space-y-4'>
         {messages?.map((m) => (
           <SentCard key={m.id} data={m} />
         ))}
