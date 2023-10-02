@@ -97,9 +97,9 @@ export class MessageResolver {
       if (latestMessage?.updatedAt) {
         const diff = new Date().getTime() - latestMessage.updatedAt.getTime();
 
-        if (diff < 1000 * 60 * 5 && process.env.NODE_ENV !== 'development') {
+        if (diff < 1000 * 60 && process.env.NODE_ENV !== 'development') {
           return {
-            error: 'You can only send a message once every 5 minutes.',
+            error: 'You can only send a message once every 1 minute.',
           };
         }
       }
