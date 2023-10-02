@@ -75,7 +75,7 @@ export const Recent = () => {
         setIsOpen={setMsgModal}
       />
 
-      <Container>
+      <Container className='space-y-6'>
         {messages?.map((m) => (
           <button
             type='button'
