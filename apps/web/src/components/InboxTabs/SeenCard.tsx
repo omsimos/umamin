@@ -110,7 +110,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
         <ClueDialog isOpen={clueDialog} setIsOpen={setClueDialog} clue={clue} />
       )}
 
-      <div ref={cardRef} className='p-6 bg-secondary-300'>
+      <div id={id} ref={cardRef} className='p-6 bg-secondary-300'>
         <div className='border-secondary-100 bg-secondary-200 relative w-full overflow-hidden rounded-2xl border-2'>
           <div className='border-secondary-100 relative flex items-center border-b-2 py-3 bg-[#171819]'>
             <button
