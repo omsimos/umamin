@@ -105,6 +105,7 @@ export type MutationSendMessageArgs = {
 export type Query = {
   __typename?: 'Query';
   getGlobalMessages?: Maybe<Array<GlobalMessage>>;
+  getManyMessages?: Maybe<Array<SeenMessage>>;
   getRecentMessages?: Maybe<Array<RecentMessage>>;
   getSeenMessages?: Maybe<Array<SeenMessage>>;
   getSentMessages?: Maybe<Array<SentMessage>>;
@@ -114,6 +115,11 @@ export type Query = {
 
 
 export type QueryGetGlobalMessagesArgs = {
+  cursorId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryGetManyMessagesArgs = {
   cursorId?: InputMaybe<Scalars['ID']['input']>;
 };
 
@@ -217,6 +223,13 @@ export type GetSeenMessagesQueryVariables = Exact<{
 
 
 export type GetSeenMessagesQuery = { __typename?: 'Query', getSeenMessages?: Array<{ __typename?: 'SeenMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
+
+export type GetManyMessagesQueryVariables = Exact<{
+  cursorId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type GetManyMessagesQuery = { __typename?: 'Query', getManyMessages?: Array<{ __typename?: 'SeenMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
 
 export type GetSentMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']['input']>;
@@ -344,6 +357,18 @@ export const GetSeenMessagesDocument = gql`
   }
 }
     `;
+export const GetManyMessagesDocument = gql`
+    query getManyMessages($cursorId: ID) {
+  getManyMessages(cursorId: $cursorId) {
+    id
+    clue
+    reply
+    content
+    createdAt
+    receiverMsg
+  }
+}
+    `;
 export const GetSentMessagesDocument = gql`
     query getSentMessages($cursorId: ID) {
   getSentMessages(cursorId: $cursorId) {
@@ -459,6 +484,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     getSeenMessages(variables?: GetSeenMessagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetSeenMessagesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetSeenMessagesQuery>(GetSeenMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getSeenMessages', 'query');
+    },
+    getManyMessages(variables?: GetManyMessagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetManyMessagesQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetManyMessagesQuery>(GetManyMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getManyMessages', 'query');
     },
     getSentMessages(variables?: GetSentMessagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetSentMessagesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetSentMessagesQuery>(GetSentMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getSentMessages', 'query');

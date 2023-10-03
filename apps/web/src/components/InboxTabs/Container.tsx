@@ -14,6 +14,7 @@ interface Props {
   messages?: any;
   setPageNo: Dispatch<SetStateAction<number>>;
   setCursorId: Dispatch<SetStateAction<string>>;
+  isMany?: boolean;
   children: React.ReactNode;
 }
 
@@ -25,6 +26,7 @@ export const InboxTabContainer = ({
   isLoading,
   setCursorId,
   setPageNo,
+  isMany = false,
   children,
 }: Props) => {
   const { data } = useSession();
@@ -117,18 +119,31 @@ export const InboxTabContainer = ({
 
             {cursorId && <p>{pageNo}</p>}
 
-            {messages.length === 3 && (
-              <button
-                className='hover:underline'
-                onClick={() => {
-                  setPageNo(cursorId ? pageNo + 1 : 2);
-                  setCursorId(messages?.length ? messages[2]?.id! : '');
-                }}
-                type='button'
-              >
-                More &rarr;
-              </button>
-            )}
+            {isMany
+              ? messages.length === 15 && (
+                  <button
+                    className='hover:underline'
+                    onClick={() => {
+                      setPageNo(cursorId ? pageNo + 1 : 2);
+                      setCursorId(messages?.length ? messages[14]?.id! : '');
+                    }}
+                    type='button'
+                  >
+                    More &rarr;
+                  </button>
+                )
+              : messages.length === 3 && (
+                  <button
+                    className='hover:underline'
+                    onClick={() => {
+                      setPageNo(cursorId ? pageNo + 1 : 2);
+                      setCursorId(messages?.length ? messages[2]?.id! : '');
+                    }}
+                    type='button'
+                  >
+                    More &rarr;
+                  </button>
+                )}
           </div>
         )}
       </Container>

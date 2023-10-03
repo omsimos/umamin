@@ -34,6 +34,17 @@ query getSeenMessages($cursorId: ID) {
   }
 }
 
+query getManyMessages($cursorId: ID) {
+  getManyMessages(cursorId: $cursorId) {
+    id
+    clue
+    reply
+    content
+    createdAt
+    receiverMsg
+  }
+}
+
 query getSentMessages($cursorId: ID) {
   getSentMessages(cursorId: $cursorId) {
     id

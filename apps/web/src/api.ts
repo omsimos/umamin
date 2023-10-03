@@ -16,6 +16,7 @@ export const {
   changePassword,
   editUserMessage,
   getSeenMessages,
+  getManyMessages,
   getSentMessages,
   getRecentMessages,
   getGlobalMessages,

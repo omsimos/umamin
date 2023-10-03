@@ -278,6 +278,47 @@ export class MessageResolver {
     }
   }
 
+  @Query(() => [SeenMessage], { nullable: true })
+  async getManyMessages(
+    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
+    @Ctx() { prisma, id }: TContext
+  ): Promise<SeenMessage[] | null> {
+    try {
+      let messages: SeenMessage[];
+
+      const fields: Prisma.MessageFindManyArgs = {
+        where: { receiverId: id },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+        select: {
+          id: true,
+          clue: true,
+          reply: true,
+          content: true,
+          createdAt: true,
+          receiverMsg: true,
+        },
+      };
+
+      if (!cursorId) {
+        messages = await prisma.message.findMany(fields);
+      } else {
+        messages = await prisma.message.findMany({
+          ...fields,
+          skip: 1,
+          cursor: {
+            id: cursorId,
+          },
+        });
+      }
+
+      return messages;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
   @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
