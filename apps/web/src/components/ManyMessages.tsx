@@ -36,7 +36,7 @@ export const ManyMessages = () => {
       setPageNo={setPageNo}
       setCursorId={setCursorId}
     >
-      <div className='grid grid-cols-3'>
+      <div className='grid grid-cols-3 max-w-screen-2xl mx-auto w-full'>
         {seenData?.map((m) => (
           <SeenCard key={m.id} refetch={refetchSeen} message={m} />
         ))}
