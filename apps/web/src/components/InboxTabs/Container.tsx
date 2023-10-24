@@ -120,12 +120,12 @@ export const InboxTabContainer = ({
             {cursorId && <p>{pageNo}</p>}
 
             {isMany
-              ? messages.length === 15 && (
+              ? messages.length === 50 && (
                   <button
                     className='hover:underline'
                     onClick={() => {
                       setPageNo(cursorId ? pageNo + 1 : 2);
-                      setCursorId(messages?.length ? messages[14]?.id! : '');
+                      setCursorId(messages?.length ? messages[49]?.id! : '');
                     }}
                     type='button'
                   >
