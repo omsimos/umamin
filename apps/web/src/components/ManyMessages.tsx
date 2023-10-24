@@ -78,14 +78,16 @@ export const ManyMessages = () => {
       {loading ? (
         <p className='text-center'>Downloading...</p>
       ) : (
-        <button
-          type='button'
-          disabled={loading}
-          onClick={handleDownloadAll}
-          className='underline'
-        >
-          Save All
-        </button>
+        <div className='mx-auto'>
+          <button
+            type='button'
+            disabled={loading}
+            onClick={handleDownloadAll}
+            className='bg-secondary-100 text-white hover:bg-secondary-100/80 px-4 py-2 rounded-md'
+          >
+            Save All
+          </button>
+        </div>
       )}
       <div className='grid grid-cols-3 max-w-screen-2xl mx-auto w-full'>
         {seenData?.map((m) => {
