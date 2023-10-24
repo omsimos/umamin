@@ -9,7 +9,7 @@ import { NextPageWithLayout } from '..';
 
 const Register: NextPageWithLayout = () => {
   const triggerEvent = useLogEvent();
-  const { mutate, isLoading } = useMutation(createUser);
+  const { mutate, isPending } = useMutation({ mutationFn: createUser });
 
   const handleRegister = (
     username: string,
@@ -34,7 +34,7 @@ const Register: NextPageWithLayout = () => {
   };
 
   return (
-    <UserForm type='register' onRegister={handleRegister} loading={isLoading} />
+    <UserForm type='register' onRegister={handleRegister} loading={isPending} />
   );
 };
 

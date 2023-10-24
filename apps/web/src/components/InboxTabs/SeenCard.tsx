@@ -42,7 +42,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
   const [replyModal, setReplyModal] = useState(false);
   const [cardModal, setCardModal] = useState(false);
 
-  const { mutate } = useMutation(deleteMessage);
+  const { mutate } = useMutation({ mutationFn: deleteMessage });
 
   const handleDelete = () => {
     mutate(

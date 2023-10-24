@@ -25,16 +25,14 @@ export const Recent = () => {
   const { user } = useInboxContext();
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
-  const { data: messages, isLoading } = useQuery(
-    ['recent_messages', queryArgs],
-    () => getRecentMessages(queryArgs),
-    {
-      select: (data) => data.getRecentMessages,
-      enabled: !!user?.id,
-    }
-  );
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ['recent_messages', queryArgs],
+    queryFn: () => getRecentMessages(queryArgs),
+    select: (data) => data.getRecentMessages,
+    enabled: !!user?.id,
+  });
 
-  const { mutate } = useMutation(editMessage);
+  const { mutate } = useMutation({ mutationFn: editMessage });
 
   const handleOpen = (data: RecentMessage) => {
     setMessageData(data);
