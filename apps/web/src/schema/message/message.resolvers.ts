@@ -289,7 +289,7 @@ export class MessageResolver {
       const fields: Prisma.MessageFindManyArgs = {
         where: { receiverId: id },
         orderBy: { createdAt: 'desc' },
-        take: 15,
+        take: 50,
         select: {
           id: true,
           clue: true,
