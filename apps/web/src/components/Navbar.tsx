@@ -1,5 +1,6 @@
 /* eslint-disable no-nested-ternary */
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { FaDiscord, FaFacebook } from 'react-icons/fa';
 import { signOut, useSession } from 'next-auth/react';
 import { BiUserCircle } from 'react-icons/bi';
@@ -7,7 +8,6 @@ import { HiMenuAlt3 } from 'react-icons/hi';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
-import { queryClient } from '@/api';
 import { Menu } from '@/components';
 import { ImageFill, Container } from '@/components/Utils';
 
@@ -15,6 +15,8 @@ export const Navbar = () => {
   const [loading, setLoading] = useState(false);
   const { data, status } = useSession();
   const { push } = useRouter();
+
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     setLoading(true);

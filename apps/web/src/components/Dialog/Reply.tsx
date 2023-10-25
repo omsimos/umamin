@@ -24,7 +24,7 @@ export const ReplyDialog = ({
   const [reply, setReply] = useState('');
   const triggerEvent = useLogEvent();
 
-  const { mutate } = useMutation(addReply);
+  const { mutate } = useMutation({ mutationFn: addReply });
 
   const handleReply: React.FormEventHandler = (e) => {
     e.preventDefault();

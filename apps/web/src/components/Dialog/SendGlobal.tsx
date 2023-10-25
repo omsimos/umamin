@@ -11,7 +11,9 @@ import { ImageFill } from '../Utils';
 import { DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
-  setMessageData: React.Dispatch<React.SetStateAction<GlobalMessage | undefined | null>>;
+  setMessageData: React.Dispatch<
+    React.SetStateAction<GlobalMessage | undefined | null>
+  >;
 }
 
 export const SendGlobalModal = ({
@@ -23,7 +25,7 @@ export const SendGlobalModal = ({
   const [message, setMessage] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-  const { mutate } = useMutation(sendGlobalMessage);
+  const { mutate } = useMutation({ mutationFn: sendGlobalMessage });
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
