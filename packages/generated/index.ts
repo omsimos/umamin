@@ -15,7 +15,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
-  DateTime: { input: any; output: any; }
+  DateTimeISO: { input: any; output: any; }
 };
 
 export type ErrorResponse = {
@@ -26,10 +26,10 @@ export type ErrorResponse = {
 export type GlobalMessage = {
   __typename?: 'GlobalMessage';
   content: Scalars['String']['output'];
-  createdAt: Scalars['DateTime']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
   id: Scalars['ID']['output'];
   isAnonymous: Scalars['Boolean']['output'];
-  updatedAt: Scalars['DateTime']['output'];
+  updatedAt: Scalars['DateTimeISO']['output'];
   user?: Maybe<GlobalMessageUser>;
 };
 
@@ -142,7 +142,7 @@ export type RecentMessage = {
   __typename?: 'RecentMessage';
   clue?: Maybe<Scalars['String']['output']>;
   content: Scalars['String']['output'];
-  createdAt: Scalars['DateTime']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
   id: Scalars['ID']['output'];
   receiverMsg: Scalars['String']['output'];
 };
@@ -151,7 +151,7 @@ export type SeenMessage = {
   __typename?: 'SeenMessage';
   clue?: Maybe<Scalars['String']['output']>;
   content: Scalars['String']['output'];
-  createdAt: Scalars['DateTime']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
   id: Scalars['ID']['output'];
   receiverMsg: Scalars['String']['output'];
   reply?: Maybe<Scalars['String']['output']>;
@@ -179,7 +179,7 @@ export type SentMessage = {
   __typename?: 'SentMessage';
   clue?: Maybe<Scalars['String']['output']>;
   content: Scalars['String']['output'];
-  createdAt: Scalars['DateTime']['output'];
+  createdAt: Scalars['DateTimeISO']['output'];
   id: Scalars['ID']['output'];
   receiverMsg: Scalars['String']['output'];
   receiverUsername?: Maybe<Scalars['String']['output']>;

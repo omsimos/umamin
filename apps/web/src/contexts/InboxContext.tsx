@@ -38,13 +38,11 @@ export const InboxProvider = ({ children }: { children: React.ReactNode }) => {
     data: seenData,
     isLoading: isSeenLoading,
     refetch: refetchSeen,
-  } = useQuery(
-    ['seen_messages', { userId: user?.id ?? '', cursorId }],
-    () => getSeenMessages(queryArgs),
-    {
-      select: (data) => data.getSeenMessages,
-    }
-  );
+  } = useQuery({
+    queryKey: ['seen_messages', { userId: user?.id ?? '', cursorId }],
+    queryFn: () => getSeenMessages(queryArgs),
+    select: (data) => data.getSeenMessages,
+  });
 
   const values: Values = useMemo(
     () => ({
