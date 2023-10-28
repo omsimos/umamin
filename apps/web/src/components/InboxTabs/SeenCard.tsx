@@ -120,9 +120,13 @@ export const SeenCard = ({ message, refetch }: Props) => {
               </button>
 
               <div className='flex items-center mx-auto justify-center'>
-                <h3 className='font-galyonBold text-tigris text-xl'>tigris</h3>
+                <h3 className='font-galyonBold text-tigris text-xl'>
+                  🕷️tigris
+                </h3>
                 <p className='text-secondary-400 text-xl font-light'>✗</p>
-                <h3 className='text-primary-200 font-syneExtrabold'>umamin</h3>
+                <h3 className='text-primary-200 font-syneExtrabold'>
+                  umamin<span className='text-xl'>🕸️</span>
+                </h3>
               </div>
 
               <Menu
