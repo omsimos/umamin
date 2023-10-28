@@ -22,13 +22,11 @@ export const ManyMessages = () => {
     data: seenData,
     isLoading,
     refetch: refetchSeen,
-  } = useQuery(
-    ['many_messages', { userId: user?.id ?? '', cursorId }],
-    () => getManyMessages(queryArgs),
-    {
-      select: (data) => data.getManyMessages,
-    }
-  );
+  } = useQuery({
+    queryKey: ['many_messages', { userId: user?.id ?? '', cursorId }],
+    queryFn: () => getManyMessages(queryArgs),
+    select: (data) => data.getManyMessages,
+  });
 
   const saveImage = useCallback(
     (id: string) => {
