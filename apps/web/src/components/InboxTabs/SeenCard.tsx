@@ -42,7 +42,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
   const [replyModal, setReplyModal] = useState(false);
   const [cardModal, setCardModal] = useState(false);
 
-  const { mutate } = useMutation(deleteMessage);
+  const { mutate } = useMutation({ mutationFn: deleteMessage });
 
   const handleDelete = () => {
     mutate(
@@ -64,10 +64,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
       return;
     }
 
-    toPng(cardRef.current, {
-      cacheBust: true,
-      pixelRatio: 5,
-    })
+    toPng(cardRef.current, { cacheBust: true, pixelRatio: 5 })
       .then((dataUrl) => {
         const link = document.createElement('a');
         link.download = `${user?.username}_${id}.png`;

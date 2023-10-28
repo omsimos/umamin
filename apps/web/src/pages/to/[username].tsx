@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { dehydrate, useMutation } from '@tanstack/react-query';
+import { dehydrate, QueryClient, useMutation } from '@tanstack/react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { HiOutlinePuzzle } from 'react-icons/hi';
 import { useSession } from 'next-auth/react';
@@ -14,7 +14,7 @@ import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
 import { ChatBubble } from '@/components/ChatBubble';
 import { Container, Error } from '@/components/Utils';
-import { getUser, queryClient, sendMessage } from '@/api';
+import { getUser, sendMessage } from '@/api';
 import { AddClueDialog, ConfirmDialog } from '@/components/Dialog';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
@@ -38,7 +38,9 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
   const [clueDialog, setClueDialog] = useState(false);
   const [warningDialog, setWarningDialog] = useState(false);
 
-  const { mutate, data, isLoading, reset } = useMutation(sendMessage);
+  const { mutate, data, isPending, reset } = useMutation({
+    mutationFn: sendMessage,
+  });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -178,7 +180,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
                   className='dark:bg-secondary-100 w-full bg-gray-200 outline-none'
                 />
 
-                {isLoading ? (
+                {isPending ? (
                   <span className='loader flex-none' />
                 ) : (
                   <button
@@ -243,11 +245,12 @@ export const getServerSideProps: GetServerSideProps = async ({
   params,
 }) => {
   const username = params?.username as string;
+  const queryClient = new QueryClient();
 
-  await queryClient.prefetchQuery(
-    ['to_user', { user: params?.username, type: 'username' }],
-    () => getUser({ user: username, type: 'username' })
-  );
+  await queryClient.prefetchQuery({
+    queryKey: ['to_user', { user: params?.username, type: 'username' }],
+    queryFn: () => getUser({ user: username, type: 'username' }),
+  });
 
   res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=30');
 

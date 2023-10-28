@@ -25,16 +25,14 @@ export const Recent = () => {
   const { user } = useInboxContext();
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
-  const { data: messages, isLoading } = useQuery(
-    ['recent_messages', queryArgs],
-    () => getRecentMessages(queryArgs),
-    {
-      select: (data) => data.getRecentMessages,
-      enabled: !!user?.id,
-    }
-  );
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ['recent_messages', queryArgs],
+    queryFn: () => getRecentMessages(queryArgs),
+    select: (data) => data.getRecentMessages,
+    enabled: !!user?.id,
+  });
 
-  const { mutate } = useMutation(editMessage);
+  const { mutate } = useMutation({ mutationFn: editMessage });
 
   const handleOpen = (data: RecentMessage) => {
     setMessageData(data);
@@ -75,7 +73,7 @@ export const Recent = () => {
         setIsOpen={setMsgModal}
       />
 
-      <Container className='space-y-4'>
+      <Container className='space-y-6'>
         {messages?.map((m) => (
           <button
             type='button'
@@ -86,7 +84,9 @@ export const Recent = () => {
             <div className='flex items-center mb-4 justify-center'>
               <h3 className='font-galyonBold text-tigris text-3xl'>tigris</h3>
               <p className='text-secondary-400 text-xl font-light'>✗</p>
-              <h3 className='text-primary-200 font-syneExtrabold text-2xl'>umamin</h3>
+              <h3 className='text-primary-200 font-syneExtrabold text-2xl'>
+                umamin
+              </h3>
             </div>
 
             <div className='send chat-p dark:bg-secondary-100 dark:before:bg-secondary-100 dark:after:bg-secondary-200 flex max-w-full items-center space-x-3 bg-gray-200 px-6 py-4 font-medium before:bg-gray-200 after:bg-gray-300'>

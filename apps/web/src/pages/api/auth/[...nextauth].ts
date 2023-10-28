@@ -1,5 +1,4 @@
 /* eslint-disable no-param-reassign */
-import { NextApiHandler } from 'next';
 import { prisma } from '@/utils/db';
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
@@ -81,6 +80,7 @@ const options: NextAuthOptions = {
   },
 };
 
-const authHandler: NextApiHandler = (req, res) => NextAuth(req, res, options);
-
-export default authHandler;
+const authHandler = NextAuth(options);
+export default async function handler(...params: any[]) {
+  await authHandler(...params);
+}
