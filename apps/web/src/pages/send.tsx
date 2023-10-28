@@ -38,7 +38,9 @@ const SendTo: NextPageWithLayout = () => {
   const [clueDialog, setClueDialog] = useState(false);
   const [warningDialog, setWarningDialog] = useState(false);
 
-  const { mutate, data, isPending, reset } = useMutation({ mutationFn: sendMessage });
+  const { mutate, data, isPending, reset } = useMutation({
+    mutationFn: sendMessage,
+  });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -227,23 +229,19 @@ const SendTo: NextPageWithLayout = () => {
 
 SendTo.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
-export const getServerSideProps: GetServerSideProps = async ({
-  res,
-  params,
-}) => {
-  const username = params?.username as string;
+export const getServerSideProps: GetServerSideProps = async ({ res }) => {
+  const user = 'tigris';
   const queryClient = new QueryClient();
 
   await queryClient.prefetchQuery({
-    queryKey: ['to_user', { user: params?.username, type: 'username' }],
-    queryFn: () => getUser({ user: username, type: 'username' }),
+    queryKey: ['to_user', { user, type: 'username' }],
+    queryFn: () => getUser({ user, type: 'username' }),
   });
 
   res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=30');
 
   return {
     props: {
-      username,
       dehydratedState: dehydrate(queryClient),
     },
   };
