@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { dehydrate, useMutation } from '@tanstack/react-query';
+import { dehydrate, QueryClient, useMutation } from '@tanstack/react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { HiOutlinePuzzle } from 'react-icons/hi';
 import { useSession } from 'next-auth/react';
@@ -9,11 +9,11 @@ import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 
 import { Layout } from '@/components';
+import { getUser, sendMessage } from '@/api';
 import { useLogEvent, useUser } from '@/hooks';
 import type { NextPageWithLayout } from '@/index';
 import { ChatBubble } from '@/components/ChatBubble';
 import { Container, Error } from '@/components/Utils';
-import { getUser, queryClient, sendMessage } from '@/api';
 import { AddClueDialog, ConfirmDialog } from '@/components/Dialog';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
@@ -38,7 +38,9 @@ const SendTo: NextPageWithLayout = () => {
   const [clueDialog, setClueDialog] = useState(false);
   const [warningDialog, setWarningDialog] = useState(false);
 
-  const { mutate, data, isLoading, reset } = useMutation(sendMessage);
+  const { mutate, data, isPending, reset } = useMutation({
+    mutationFn: sendMessage,
+  });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -120,9 +122,11 @@ const SendTo: NextPageWithLayout = () => {
             </p>
 
             <div className='flex items-center justify-center'>
-              <h3 className='font-galyonBold text-tigris text-xl'>tigris</h3>
+              <h3 className='font-galyonBold text-tigris text-xl'>🕷️tigris</h3>
               <p className='text-secondary-400 text-xl font-light'>✗</p>
-              <h3 className='text-primary-200 font-syneExtrabold'>umamin</h3>
+              <h3 className='text-primary-200 font-syneExtrabold'>
+                umamin<span className='text-xl'>🕸️</span>
+              </h3>
             </div>
           </div>
 
@@ -167,7 +171,7 @@ const SendTo: NextPageWithLayout = () => {
                   className='dark:bg-secondary-100 w-full bg-gray-200 outline-none'
                 />
 
-                {isLoading ? (
+                {isPending ? (
                   <span className='loader flex-none' />
                 ) : (
                   <button
@@ -228,10 +232,13 @@ const SendTo: NextPageWithLayout = () => {
 SendTo.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  await queryClient.prefetchQuery(
-    ['to_user', { user: 'tigris', type: 'username' }],
-    () => getUser({ user: 'tigris', type: 'username' })
-  );
+  const user = 'tigris';
+  const queryClient = new QueryClient();
+
+  await queryClient.prefetchQuery({
+    queryKey: ['to_user', { user, type: 'username' }],
+    queryFn: () => getUser({ user, type: 'username' }),
+  });
 
   res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=30');
 

@@ -34,7 +34,7 @@ export const MessageDialog = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
-  const { mutate } = useMutation(deleteMessage);
+  const { mutate } = useMutation({ mutationFn: deleteMessage });
 
   const [clueDialog, setClueDialog] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);

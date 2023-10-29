@@ -42,7 +42,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
   const [replyModal, setReplyModal] = useState(false);
   const [cardModal, setCardModal] = useState(false);
 
-  const { mutate } = useMutation(deleteMessage);
+  const { mutate } = useMutation({ mutationFn: deleteMessage });
 
   const handleDelete = () => {
     mutate(
@@ -64,10 +64,7 @@ export const SeenCard = ({ message, refetch }: Props) => {
       return;
     }
 
-    toPng(cardRef.current, {
-      cacheBust: true,
-      pixelRatio: 5,
-    })
+    toPng(cardRef.current, { cacheBust: true, pixelRatio: 5 })
       .then((dataUrl) => {
         const link = document.createElement('a');
         link.download = `${user?.username}_${id}.png`;
@@ -123,9 +120,13 @@ export const SeenCard = ({ message, refetch }: Props) => {
               </button>
 
               <div className='flex items-center mx-auto justify-center'>
-                <h3 className='font-galyonBold text-tigris text-xl'>tigris</h3>
+                <h3 className='font-galyonBold text-tigris text-xl'>
+                  🕷️tigris
+                </h3>
                 <p className='text-secondary-400 text-xl font-light'>✗</p>
-                <h3 className='text-primary-200 font-syneExtrabold'>umamin</h3>
+                <h3 className='text-primary-200 font-syneExtrabold'>
+                  umamin<span className='text-xl'>🕸️</span>
+                </h3>
               </div>
 
               <Menu

@@ -6,9 +6,9 @@ import { BiLink } from 'react-icons/bi';
 import { MdWindow } from 'react-icons/md';
 import { TbLogout } from 'react-icons/tb';
 import { signOut, useSession } from 'next-auth/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { HiOutlineGlobeAlt, HiHome } from 'react-icons/hi';
 
-import { queryClient } from '@/api';
 import { useLogEvent } from '@/hooks';
 import { useInboxContext } from '@/contexts/InboxContext';
 
@@ -25,6 +25,8 @@ export const BottomNavbar = () => {
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
   const { data, status } = useSession();
+
+  const queryClient = useQueryClient();
 
   const copyLink = () => {
     navigator.clipboard.writeText(

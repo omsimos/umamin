@@ -34,14 +34,17 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const [newPass, setNewPass] = useState('');
   const [confirmNewPass, setConfirmNewPass] = useState('');
 
-  const { mutate: deleteUserMutate, isLoading: delUserL } =
-    useMutation(deleteUser);
-  const { mutate: editUsernameMutate, isLoading: editUserL } =
-    useMutation(editUsername);
-  const { mutate: editUserMessageMutate, isLoading: editUserMsgL } =
-    useMutation(editUserMessage);
-  const { mutate: changePasswordMutate, isLoading: changePassL } =
-    useMutation(changePassword);
+  const { mutate: deleteUserMutate, isPending: delUserL } = useMutation({
+    mutationFn: deleteUser,
+  });
+  const { mutate: editUsernameMutate, isPending: editUserL } = useMutation({
+    mutationFn: editUsername,
+  });
+  const { mutate: editUserMessageMutate, isPending: editUserMsgL } =
+    useMutation({ mutationFn: editUserMessage });
+  const { mutate: changePasswordMutate, isPending: changePassL } = useMutation({
+    mutationFn: changePassword,
+  });
 
   const handleClose = () => {
     setTimeout(() => {

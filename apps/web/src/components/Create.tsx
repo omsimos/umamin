@@ -13,7 +13,7 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 
 export const Create = () => {
   const { refetchUser } = useInboxContext();
-  const { mutate } = useMutation(editUsername);
+  const { mutate } = useMutation({ mutationFn: editUsername });
   const [username, setUsername] = useState('');
 
   const handleSubmit: React.FormEventHandler = (e) => {

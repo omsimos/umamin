@@ -30,13 +30,11 @@ const Global: NextPageWithLayout = () => {
 
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
-  const { data: messages, isLoading } = useQuery(
-    ['global_messages', queryArgs],
-    () => getGlobalMessages(queryArgs),
-    {
-      select: (data) => data.getGlobalMessages,
-    }
-  );
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ['global_messages', queryArgs],
+    queryFn: () => getGlobalMessages(queryArgs),
+    select: (data) => data.getGlobalMessages,
+  });
 
   if (isLoading) {
     return (

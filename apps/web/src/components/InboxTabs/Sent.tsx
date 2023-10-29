@@ -15,11 +15,12 @@ export const Sent = () => {
   const { user } = useInboxContext();
   const queryArgs = { userId: user?.id ?? '', cursorId };
 
-  const { data: messages, isLoading } = useQuery(
-    ['sent_messages', queryArgs],
-    () => getSentMessages(queryArgs),
-    { select: (data) => data.getSentMessages, enabled: !!user?.id }
-  );
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ['sent_messages', queryArgs],
+    queryFn: () => getSentMessages(queryArgs),
+    select: (data) => data.getSentMessages,
+    enabled: !!user?.id,
+  });
 
   return (
     <InboxTabContainer
@@ -31,7 +32,7 @@ export const Sent = () => {
       setPageNo={setPageNo}
       setCursorId={setCursorId}
     >
-      <Container className='space-y-4'>
+      <Container className='space-y-6'>
         {messages?.map((m) => (
           <SentCard key={m.id} data={m} />
         ))}
