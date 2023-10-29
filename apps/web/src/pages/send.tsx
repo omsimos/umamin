@@ -165,7 +165,7 @@ const SendTo: NextPageWithLayout = () => {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   minLength={3}
-                  maxLength={200}
+                  maxLength={255}
                   type='text'
                   placeholder='Send an anonymous message...'
                   className='dark:bg-secondary-100 w-full bg-gray-200 outline-none'
