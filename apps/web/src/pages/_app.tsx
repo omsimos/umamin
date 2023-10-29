@@ -8,15 +8,18 @@ import {
 } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import toast, { Toaster } from 'react-hot-toast';
-import type { AppProps } from 'next/app';
 import { DefaultSeo } from 'next-seo';
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
 import Router from 'next/router';
 
-import '../styles/globals.css';
+import type { AppProps } from 'next/app';
+import type { Session } from 'next-auth';
+import type { DehydratedState } from '@tanstack/react-query';
+
 import { ErrorBoundary, Maintenance } from '@/components';
 
+import '../styles/globals.css';
 import SEO from '../../next-seo-config';
 import type { NextPageWithLayout } from '..';
 
@@ -27,8 +30,11 @@ Router.events.on('routeChangeStart', () => {
 Router.events.on('routeChangeComplete', () => NProgress.done());
 Router.events.on('routeChangeError', () => NProgress.done());
 
-type AppPropsWithLayout = AppProps<{ session: any; dehydratedState: any }> & {
-  Component: NextPageWithLayout;
+type AppPropsWithLayout = AppProps<{
+  session: Session;
+  dehydratedState: DehydratedState;
+}> & {
+  Component: NextPageWithLayout<{ dehydratedState: DehydratedState }>;
 };
 
 function MyApp({
@@ -100,3 +106,4 @@ function MyApp({
 }
 
 export default MyApp;
+
