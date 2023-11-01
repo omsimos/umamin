@@ -214,6 +214,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
             <div className='flex space-x-2'>
               <button
                 type='button'
+                disabled={isLoading}
                 className='bg-dcblue hover:bg-dcblue/80 btn flex w-full items-center justify-center space-x-2 text-white'
                 onClick={() => {
                   signIn('discord');
@@ -225,6 +226,7 @@ export const UserForm = ({ type, onRegister, loading }: Props) => {
               </button>
               <button
                 type='button'
+                disabled={isLoading}
                 className='btn flex w-full items-center justify-center space-x-2 bg-white font-semibold text-black hover:bg-white/80'
                 onClick={() => {
                   signIn('google');
