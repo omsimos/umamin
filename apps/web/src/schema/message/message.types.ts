@@ -57,15 +57,8 @@ export class SendGlobalMessage extends ErrorResponse {
   data?: GlobalMessage | null;
 }
 
-@Directive('@cacheControl(maxAge: 60)')
 @ObjectType()
-export class RecentMessage extends BaseMessage {
-  @Field(() => String, { nullable: true })
-  clue: string | null;
-}
-
-@ObjectType()
-export class SeenMessage extends BaseMessage {
+export class Message extends BaseMessage {
   @Field(() => ID)
   id: string;
 

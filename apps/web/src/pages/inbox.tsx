@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 
 import { Container } from '@/components/Utils';
-import { Recent, Seen, Sent } from '@/components/InboxTabs';
+import { Recent, Sent } from '@/components/InboxTabs';
 import { Layout, Create, BottomNavbar } from '@/components';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
 import type { NextPageWithLayout } from '..';
@@ -27,10 +27,6 @@ const Inbox: NextPageWithLayout = () => {
     {
       title: 'Recent',
       Component: Recent,
-    },
-    {
-      title: 'Old',
-      Component: Seen,
     },
     {
       title: 'Sent',

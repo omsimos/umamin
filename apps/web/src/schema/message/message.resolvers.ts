@@ -11,9 +11,8 @@ import {
 
 import type { TContext } from '@/pages/api/graphql';
 import {
+  Message,
   GlobalMessage,
-  RecentMessage,
-  SeenMessage,
   SendGlobalMessage,
   SendGlobalMessageInput,
   SendMessageInput,
@@ -138,49 +137,16 @@ export class MessageResolver {
     }
   }
 
-  @Query(() => [RecentMessage], { nullable: true })
-  async getRecentMessages(
+  @Query(() => [Message], { nullable: true })
+  async getMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     @Ctx() { prisma, id }: TContext
-  ): Promise<RecentMessage[] | null> {
+  ): Promise<Message[] | null> {
     try {
       const messages = await prisma.message.findMany({
-        where: { receiverId: id, isOpened: false },
+        where: { receiverId: id },
         orderBy: { createdAt: 'desc' },
-        take: 3,
-        select: {
-          id: true,
-          clue: true,
-          content: true,
-          createdAt: true,
-          receiverMsg: true,
-        },
-
-        ...(cursorId && {
-          skip: 1,
-          cursor: {
-            id: cursorId,
-          },
-        }),
-      });
-
-      return messages ?? [];
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  }
-
-  @Query(() => [SeenMessage], { nullable: true })
-  async getSeenMessages(
-    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    @Ctx() { prisma, id }: TContext
-  ): Promise<SeenMessage[] | null> {
-    try {
-      const messages = await prisma.message.findMany({
-        where: { receiverId: id, isOpened: true },
-        orderBy: { createdAt: 'desc' },
-        take: 3,
+        take: 5,
         select: {
           id: true,
           clue: true,
@@ -260,25 +226,6 @@ export class MessageResolver {
 
       return message.content;
     } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  }
-
-  @Mutation(() => String)
-  async editMessage(
-    @Arg('id', () => ID) id: string,
-    @Arg('isOpened', () => Boolean) isOpened: boolean,
-    @Ctx() { prisma }: TContext
-  ): Promise<String> {
-    try {
-      await prisma.message.update({
-        where: { id },
-        data: { isOpened },
-      });
-
-      return 'Message edited';
-    } catch (err: any) {
       console.error(err);
       throw err;
     }

@@ -6,8 +6,8 @@ import toast from 'react-hot-toast';
 
 import { useLogEvent } from '@/hooks';
 import { deleteMessage } from '@/api';
+import type { Message } from '@umamin/generated';
 import { useInboxContext } from '@/contexts/InboxContext';
-import type { RecentMessage, SeenMessage } from '@umamin/generated';
 import {
   ClueDialog,
   ConfirmDialog,
@@ -18,7 +18,7 @@ import { Container } from '../Utils';
 
 interface Props extends DialogContainerProps {
   refetch?: () => void;
-  data: RecentMessage | SeenMessage;
+  data: Message;
   type: 'recent' | 'seen';
 }
 

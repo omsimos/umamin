@@ -64,7 +64,6 @@ model Message {
   updatedAt   DateTime @updatedAt
   content     String   @db.VarChar(255)
   receiverMsg String   @db.VarChar(255)
-  isOpened    Boolean  @default(false)
   reply       String?  @db.VarChar(255)
   clue        String?  @db.VarChar(255)
 
@@ -74,8 +73,8 @@ model Message {
   receiverId       String
   receiver         User    @relation(name: "receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
-  @@index([senderId, isOpened, createdAt(sort: Desc)])
-  @@index([receiverId, isOpened, createdAt(sort: Desc)])
+  @@index([senderId, createdAt(sort: Desc)])
+  @@index([receiverId, createdAt(sort: Desc)])
 }
 
 model GlobalMessage {

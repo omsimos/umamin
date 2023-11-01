@@ -1,20 +1,13 @@
-import React, { useContext, createContext, useMemo, useState } from 'react';
-import { SeenMessage, User } from '@umamin/generated';
-import { useQuery } from '@tanstack/react-query';
+import React, { useContext, createContext, useMemo } from 'react';
+import type { User } from '@umamin/generated';
 import { useSession } from 'next-auth/react';
 
 import { useUser } from '@/hooks';
-import { getSeenMessages } from '@/api';
 
 interface Values {
   user?: User | null;
   isUserLoading: boolean;
   refetchUser: () => void;
-  seenData?: SeenMessage[] | null;
-  isSeenLoading: boolean;
-  refetchSeen: () => void;
-  cursorId: string;
-  setCursorId: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const InboxContext = createContext({} as Values);
@@ -31,31 +24,13 @@ export const InboxProvider = ({ children }: { children: React.ReactNode }) => {
     refetch,
   } = useUser('inbox_user', session?.user?.id ?? '', 'id');
 
-  const [cursorId, setCursorId] = useState('');
-  const queryArgs = { userId: user?.id ?? '', cursorId };
-
-  const {
-    data: seenData,
-    isLoading: isSeenLoading,
-    refetch: refetchSeen,
-  } = useQuery({
-    queryKey: ['seen_messages', { userId: user?.id ?? '', cursorId }],
-    queryFn: () => getSeenMessages(queryArgs),
-    select: (data) => data.getSeenMessages,
-  });
-
   const values: Values = useMemo(
     () => ({
       user,
       isUserLoading: isLoading,
       refetchUser: refetch,
-      seenData,
-      isSeenLoading,
-      refetchSeen,
-      cursorId,
-      setCursorId,
     }),
-    [user, isLoading, refetch, seenData, isSeenLoading, refetchSeen, cursorId]
+    [user, isLoading, refetch]
   );
   return (
     <InboxContext.Provider value={values}>{children}</InboxContext.Provider>

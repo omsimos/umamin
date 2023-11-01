@@ -13,18 +13,8 @@ query getGlobalMessages($cursorId: ID) {
   }
 }
 
-query getRecentMessages($cursorId: ID) {
-  getRecentMessages(cursorId: $cursorId) {
-    id
-    clue
-    content
-    createdAt
-    receiverMsg
-  }
-}
-
-query getSeenMessages($cursorId: ID) {
-  getSeenMessages(cursorId: $cursorId) {
+query getMessages($cursorId: ID) {
+  getMessages(cursorId: $cursorId) {
     id
     clue
     reply
@@ -44,10 +34,6 @@ query getSentMessages($cursorId: ID) {
     receiverMsg
     receiverUsername
   }
-}
-
-mutation editMessage($id: ID!, $isOpened: Boolean!) {
-  editMessage(id: $id, isOpened: $isOpened)
 }
 
 mutation deleteMessage($id: ID!) {

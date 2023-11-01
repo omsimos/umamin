@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Container } from '@/components/Utils';
 import { useInboxContext } from '@/contexts/InboxContext';
 
-import { SentCard } from './SentCard';
 import { InboxTabContainer } from './Container';
+import { SentMessageCard } from './SentMessageCard';
 
 export const Sent = () => {
   const [pageNo, setPageNo] = useState(1);
@@ -34,7 +34,7 @@ export const Sent = () => {
     >
       <Container className='space-y-6'>
         {messages?.map((m) => (
-          <SentCard key={m.id} data={m} />
+          <SentMessageCard key={m.id} data={m} />
         ))}
       </Container>
     </InboxTabContainer>

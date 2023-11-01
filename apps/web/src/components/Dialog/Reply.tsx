@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { useMutation } from '@tanstack/react-query';
-import type { SeenMessage } from '@umamin/generated';
+import type { Message } from '@umamin/generated';
 
 import { addReply } from '@/api';
 import { useLogEvent } from '@/hooks';
@@ -11,7 +11,7 @@ import { DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
   refetch: () => void;
-  message: SeenMessage;
+  message: Message;
 }
 
 export const ReplyDialog = ({
