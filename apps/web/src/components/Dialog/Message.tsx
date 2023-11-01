@@ -46,7 +46,7 @@ export const MessageDialog = ({
       return;
     }
 
-    toPng(cardRef.current, { cacheBust: true, pixelRatio: 5 })
+    toPng(cardRef.current, { cacheBust: true, pixelRatio: 3 })
       .then((dataUrl) => {
         const link = document.createElement('a');
         link.download = `${user?.username}_${nanoid(5)}.png`;
