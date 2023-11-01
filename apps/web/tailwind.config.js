@@ -6,10 +6,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        inter: ['Inter', 'sans-serif'],
-        syne: ['Syne', 'sans-serif'],
-        interMedium: ['Inter-Medium', 'sans-serif'],
-        syneExtrabold: ['Syne-Extrabold', 'sans-serif'],
+        sans: ['var(--font-inter)'],
+        syne: ['var(--font-syne)'],
       },
       colors: {
         primary: {

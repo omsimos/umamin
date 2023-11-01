@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import toast, { Toaster } from 'react-hot-toast';
+import { Inter, Syne } from 'next/font/google';
 import { DefaultSeo } from 'next-seo';
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
@@ -36,6 +37,9 @@ type AppPropsWithLayout = AppProps<{
 }> & {
   Component: NextPageWithLayout<{ dehydratedState: DehydratedState }>;
 };
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const syne = Syne({ subsets: ['latin'], variable: '--font-syne' });
 
 function MyApp({
   Component,
@@ -85,7 +89,9 @@ function MyApp({
             <Maintenance />
           ) : (
             <ErrorBoundary>
-              {getLayout(<Component {...pageProps} />)}
+              <main className={`${inter.variable} ${syne.variable} font-sans`}>
+                {getLayout(<Component {...pageProps} />)}
+              </main>
             </ErrorBoundary>
           )}
           <Toaster
@@ -106,4 +112,3 @@ function MyApp({
 }
 
 export default MyApp;
-

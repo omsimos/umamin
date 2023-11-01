@@ -63,7 +63,7 @@ export const ReplyDialog = ({
     >
       <div className='dark:border-secondary-100 dark:bg-secondary-200 w-full overflow-hidden rounded-2xl border-2 border-gray-400 bg-gray-200'>
         <div className='dark:border-secondary-100 border-b-2 border-gray-400 bg-gray-300 py-3 dark:bg-[#171819]'>
-          <h3 className='font-syneExtrabold text-primary-200 text-center text-base'>
+          <h3 className='font-syne font-extrabold text-primary-200 text-center text-base'>
             umamin
           </h3>
         </div>

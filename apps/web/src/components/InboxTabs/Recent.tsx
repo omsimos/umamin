@@ -81,7 +81,7 @@ export const Recent = () => {
             onClick={() => handleOpen(m)}
             className='msg-card relative w-full cursor-pointer scroll-mt-6 overflow-hidden text-left'
           >
-            <h3 className='font-syneExtrabold text-gradient mb-4 text-center text-3xl'>
+            <h3 className='font-syne font-extrabold text-gradient mb-4 text-center text-3xl'>
               umamin
             </h3>
 

@@ -158,7 +158,7 @@ const SendTo: NextPageWithLayout<
               {username}
             </p>
 
-            <h3 className='font-syneExtrabold text-primary-200 text-center text-lg'>
+            <h3 className='font-syne font-extrabold text-primary-200 text-center text-lg'>
               umamin
             </h3>
           </div>
