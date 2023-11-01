@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
-import { prisma } from '@/utils/db';
+import prisma from '@/lib/db';
 import { isPassword } from '@/utils/helpers';
 
 export const userSchema = z.object({

@@ -5,8 +5,8 @@ import { NextApiRequest, NextApiResponse } from 'next/types';
 import { ApolloServer } from '@apollo/server';
 import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
-import { prisma } from '@/utils/db';
 
+import prisma from '@/lib/db';
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
 

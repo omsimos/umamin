@@ -1,5 +1,5 @@
 /* eslint-disable no-param-reassign */
-import { prisma } from '@/utils/db';
+import prisma from '@/lib/db';
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
