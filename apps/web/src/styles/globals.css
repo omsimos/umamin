@@ -3,8 +3,10 @@
 @tailwind utilities;
 @import './utils.css';
 
-body {
-  -webkit-tap-highlight-color: transparent;
+@layer base {
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 @layer components {

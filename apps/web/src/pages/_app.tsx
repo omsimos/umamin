@@ -38,7 +38,7 @@ type AppPropsWithLayout = AppProps<{
   Component: NextPageWithLayout<{ dehydratedState: DehydratedState }>;
 };
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const inter = Inter({ subsets: ['latin'] });
 const syne = Syne({ subsets: ['latin'], variable: '--font-syne' });
 
 function MyApp({
@@ -89,7 +89,12 @@ function MyApp({
             <Maintenance />
           ) : (
             <ErrorBoundary>
-              <main className={`${inter.variable} ${syne.variable} font-sans`}>
+              <style jsx global>{`
+                html {
+                  font-family: ${inter.style.fontFamily};
+                }
+              `}</style>
+              <main className={syne.variable}>
                 {getLayout(<Component {...pageProps} />)}
               </main>
             </ErrorBoundary>

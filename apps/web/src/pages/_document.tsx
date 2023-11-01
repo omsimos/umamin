@@ -6,7 +6,7 @@ export default function Document() {
   return (
     <Html className='dark scroll-smooth'>
       <Head />
-      <body className='dark:bg-secondary-300 font-inter text-secondary-300 bg-[#e2e2e2] dark:text-white'>
+      <body className='dark:bg-secondary-300 text-secondary-300 bg-[#e2e2e2] dark:text-white'>
         <Main />
         <NextScript />
         <Script
