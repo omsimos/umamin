@@ -15,24 +15,30 @@ query getGlobalMessages($cursorId: ID) {
 
 query getMessages($cursorId: ID) {
   getMessages(cursorId: $cursorId) {
-    id
-    clue
-    reply
-    content
-    createdAt
-    receiverMsg
+    data {
+      id
+      clue
+      reply
+      content
+      createdAt
+      receiverMsg
+    }
+    cursorId
   }
 }
 
 query getSentMessages($cursorId: ID) {
   getSentMessages(cursorId: $cursorId) {
-    id
-    clue
-    reply
-    content
-    createdAt
-    receiverMsg
-    receiverUsername
+    data {
+      id
+      clue
+      reply
+      content
+      createdAt
+      receiverMsg
+      receiverUsername
+    }
+    cursorId
   }
 }
 

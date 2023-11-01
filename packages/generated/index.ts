@@ -50,6 +50,12 @@ export type Message = {
   reply?: Maybe<Scalars['String']['output']>;
 };
 
+export type MessagesData = {
+  __typename?: 'MessagesData';
+  cursorId?: Maybe<Scalars['String']['output']>;
+  data: Array<Message>;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addReply: Scalars['String']['output'];
@@ -108,8 +114,8 @@ export type MutationSendMessageArgs = {
 export type Query = {
   __typename?: 'Query';
   getGlobalMessages?: Maybe<Array<GlobalMessage>>;
-  getMessages?: Maybe<Array<Message>>;
-  getSentMessages?: Maybe<Array<SentMessage>>;
+  getMessages?: Maybe<MessagesData>;
+  getSentMessages?: Maybe<SentMessagesData>;
   getUser?: Maybe<User>;
   hello: ErrorResponse;
 };
@@ -164,6 +170,12 @@ export type SentMessage = {
   reply?: Maybe<Scalars['String']['output']>;
 };
 
+export type SentMessagesData = {
+  __typename?: 'SentMessagesData';
+  cursorId?: Maybe<Scalars['String']['output']>;
+  data: Array<SentMessage>;
+};
+
 export type User = {
   __typename?: 'User';
   email?: Maybe<Scalars['String']['output']>;
@@ -187,14 +199,14 @@ export type GetMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetMessagesQuery = { __typename?: 'Query', getMessages?: Array<{ __typename?: 'Message', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> | null };
+export type GetMessagesQuery = { __typename?: 'Query', getMessages?: { __typename?: 'MessagesData', cursorId?: string | null, data: Array<{ __typename?: 'Message', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> } | null };
 
 export type GetSentMessagesQueryVariables = Exact<{
   cursorId?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
-export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: Array<{ __typename?: 'SentMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string, receiverUsername?: string | null }> | null };
+export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: { __typename?: 'SentMessagesData', cursorId?: string | null, data: Array<{ __typename?: 'SentMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string, receiverUsername?: string | null }> } | null };
 
 export type DeleteMessageMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -287,25 +299,31 @@ export const GetGlobalMessagesDocument = gql`
 export const GetMessagesDocument = gql`
     query getMessages($cursorId: ID) {
   getMessages(cursorId: $cursorId) {
-    id
-    clue
-    reply
-    content
-    createdAt
-    receiverMsg
+    data {
+      id
+      clue
+      reply
+      content
+      createdAt
+      receiverMsg
+    }
+    cursorId
   }
 }
     `;
 export const GetSentMessagesDocument = gql`
     query getSentMessages($cursorId: ID) {
   getSentMessages(cursorId: $cursorId) {
-    id
-    clue
-    reply
-    content
-    createdAt
-    receiverMsg
-    receiverUsername
+    data {
+      id
+      clue
+      reply
+      content
+      createdAt
+      receiverMsg
+      receiverUsername
+    }
+    cursorId
   }
 }
     `;

@@ -13,6 +13,7 @@ import { MessageResolver } from '@/schema/message';
 export interface TContext {
   prisma: typeof prisma;
   id?: string;
+  req: NextApiRequest;
 }
 
 const schema = await buildSchema({
@@ -28,7 +29,7 @@ const _handler = startServerAndCreateNextHandler(server, {
   context: async (req) => {
     const session = await getSession({ req });
     const id = session?.user?.id;
-    return { prisma, id };
+    return { prisma, id, req };
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction } from 'react';
+import React from 'react';
 import toast from 'react-hot-toast';
 import { useLogEvent } from '@/hooks';
 import { IoIosCopy } from 'react-icons/io';
@@ -7,24 +7,22 @@ import { ImageFill, Container } from '@/components/Utils';
 import { useInboxContext } from '@/contexts/InboxContext';
 
 interface Props {
-  pageNo: number;
   tab?: string;
-  cursorId: string;
   isLoading: boolean;
   messages?: any;
-  setPageNo: Dispatch<SetStateAction<number>>;
-  setCursorId: Dispatch<SetStateAction<string>>;
+  fetchNextPage?: () => void;
+  isFetchingNextPage?: boolean;
+  hasNextPage?: boolean;
   children: React.ReactNode;
 }
 
 export const InboxTabContainer = ({
   tab,
-  cursorId,
-  pageNo,
   messages,
+  fetchNextPage,
+  isFetchingNextPage,
   isLoading,
-  setCursorId,
-  setPageNo,
+  hasNextPage,
   children,
 }: Props) => {
   const { data } = useSession();
@@ -79,59 +77,27 @@ export const InboxTabContainer = ({
           <span className='loader-2' />
         </div>
       ) : (
-        children
+        <>
+          {children}
+          <Container className='grid place-items-center'>
+            {isFetchingNextPage ? (
+              <span className='loader' />
+            ) : (
+              hasNextPage && (
+                <button
+                  className='bg-secondary-200 border border-secondary-100 mx-auto text-white px-6 py-2 rounded-lg'
+                  onClick={() => {
+                    fetchNextPage?.();
+                  }}
+                  type='button'
+                >
+                  Load More
+                </button>
+              )
+            )}
+          </Container>
+        </>
       )}
-
-      <Container>
-        {!messages?.length && cursorId && !isLoading && (
-          <div className='flex justify-center pt-24'>
-            <button
-              onClick={() => {
-                setPageNo(1);
-                setCursorId('');
-              }}
-              className='hover:underline'
-              type='button'
-            >
-              &larr; Go back to latest messages
-            </button>
-          </div>
-        )}
-
-        {!isLoading && messages && messages?.length > 0 && (
-          <div
-            className={`flex ${cursorId ? 'justify-between' : 'justify-end'}`}
-          >
-            {cursorId && (
-              <button
-                className='hover:underline'
-                onClick={() => {
-                  setPageNo(1);
-                  setCursorId('');
-                }}
-                type='button'
-              >
-                &larr; Latest
-              </button>
-            )}
-
-            {cursorId && <p>{pageNo}</p>}
-
-            {messages.length === 3 && (
-              <button
-                className='hover:underline'
-                onClick={() => {
-                  setPageNo(cursorId ? pageNo + 1 : 2);
-                  setCursorId(messages?.length ? messages[2]?.id! : '');
-                }}
-                type='button'
-              >
-                More &rarr;
-              </button>
-            )}
-          </div>
-        )}
-      </Container>
     </section>
   );
 };

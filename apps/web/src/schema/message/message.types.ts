@@ -82,6 +82,15 @@ export class Message extends BaseMessage {
   clue: string | null;
 }
 
+@ObjectType()
+export class MessagesData {
+  @Field(() => [Message])
+  data: Message[];
+
+  @Field(() => String, { nullable: true })
+  cursorId: string | null;
+}
+
 @Directive('@cacheControl(maxAge: 120)')
 @ObjectType()
 export class SentMessage extends BaseMessage {
@@ -93,6 +102,15 @@ export class SentMessage extends BaseMessage {
 
   @Field(() => String, { nullable: true })
   clue: string | null;
+}
+
+@ObjectType()
+export class SentMessagesData {
+  @Field(() => [SentMessage])
+  data: SentMessage[];
+
+  @Field(() => String, { nullable: true })
+  cursorId: string | null;
 }
 
 @InputType()

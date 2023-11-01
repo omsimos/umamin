@@ -11,12 +11,12 @@ import {
 
 import type { TContext } from '@/pages/api/graphql';
 import {
-  Message,
   GlobalMessage,
   SendGlobalMessage,
   SendGlobalMessageInput,
   SendMessageInput,
-  SentMessage,
+  MessagesData,
+  SentMessagesData,
 } from './message.types';
 import { ErrorResponse } from '../types';
 
@@ -137,11 +137,11 @@ export class MessageResolver {
     }
   }
 
-  @Query(() => [Message], { nullable: true })
+  @Query(() => MessagesData, { nullable: true })
   async getMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     @Ctx() { prisma, id }: TContext
-  ): Promise<Message[] | null> {
+  ): Promise<MessagesData | null> {
     try {
       const messages = await prisma.message.findMany({
         where: { receiverId: id },
@@ -164,18 +164,28 @@ export class MessageResolver {
         }),
       });
 
-      return messages ?? [];
+      if (messages.length === 0) {
+        return {
+          data: [],
+          cursorId: null,
+        };
+      }
+
+      return {
+        data: messages,
+        cursorId: messages[messages.length - 1].id,
+      };
     } catch (err) {
       console.error(err);
       throw err;
     }
   }
 
-  @Query(() => [SentMessage], { nullable: true })
+  @Query(() => SentMessagesData, { nullable: true })
   async getSentMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     @Ctx() { prisma, id }: TContext
-  ): Promise<SentMessage[] | null> {
+  ): Promise<SentMessagesData | null> {
     try {
       const messages = await prisma.message.findMany({
         where: { senderId: id },
@@ -199,7 +209,17 @@ export class MessageResolver {
         }),
       });
 
-      return messages ?? [];
+      if (messages.length === 0) {
+        return {
+          data: [],
+          cursorId: null,
+        };
+      }
+
+      return {
+        data: messages,
+        cursorId: messages[messages.length - 1].id,
+      };
     } catch (err) {
       console.error(err);
       throw err;

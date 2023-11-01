@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { getMessages } from '@/api';
 import { useInboxContext } from '@/contexts/InboxContext';
@@ -9,29 +9,28 @@ import { InboxTabContainer } from './Container';
 
 export const Recent = () => {
   const { user } = useInboxContext();
-  const [pageNo, setPageNo] = useState(1);
-  const [cursorId, setCursorId] = useState('');
 
-  const queryArgs = { userId: user?.id ?? '', cursorId };
-
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['seen_messages', queryArgs],
-    queryFn: () => getMessages(queryArgs),
-    select: (_data) => _data.getMessages,
-  });
+  const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ['recent_messages'],
+      queryFn: ({ pageParam }) => getMessages({ cursorId: pageParam }),
+      initialPageParam: '',
+      getNextPageParam: (lastPage) => lastPage.getMessages?.cursorId,
+      select: (data) => data.pages.flatMap((page) => page.getMessages?.data),
+      enabled: !!user?.id,
+    });
 
   return (
     <InboxTabContainer
-      pageNo={pageNo}
-      cursorId={cursorId}
       messages={data}
       isLoading={isLoading}
-      setPageNo={setPageNo}
-      setCursorId={setCursorId}
+      fetchNextPage={fetchNextPage}
+      hasNextPage={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
     >
       <div>
         {data?.map((m) => (
-          <MessageCard key={m.id} refetch={refetch} message={m} />
+          <MessageCard key={m?.id} refetch={refetch} message={m!} />
         ))}
       </div>
     </InboxTabContainer>
