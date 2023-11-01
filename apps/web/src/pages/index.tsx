@@ -68,7 +68,7 @@ const Home: NextPageWithLayout = () => {
               <span className='mr-2 text-lg font-bold'>Umamin</span>
               <span>(verb) [/u&apos;m&#593;&#58;min/]</span>
             </p>
-            <p className='font-inter mt-4'>
+            <p className='mt-4'>
               Declare to be true or admit the existence or reality or truth of
             </p>
           </div>

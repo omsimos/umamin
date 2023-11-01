@@ -3,7 +3,6 @@ import { HiOutlineSave, HiPuzzle, HiTrash } from 'react-icons/hi';
 import { useMutation } from '@tanstack/react-query';
 import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
-import { nanoid } from 'nanoid';
 
 import { useLogEvent } from '@/hooks';
 import { deleteMessage } from '@/api';
@@ -40,23 +39,28 @@ export const MessageDialog = ({
   const [deleteModal, setDeleteModal] = useState(false);
 
   const saveImage = useCallback(() => {
-    toast('Downloading image', { icon: '📥' });
-
     if (cardRef.current === null) {
       return;
     }
 
-    toPng(cardRef.current, { cacheBust: true, pixelRatio: 5 })
-      .then((dataUrl) => {
-        const link = document.createElement('a');
-        link.download = `${user?.username}_${nanoid(5)}.png`;
-        link.href = dataUrl;
-        link.click();
-        toast.success('Image downloaded');
-      })
-      .catch((err) => {
-        toast.error(err);
-      });
+    toast.promise(
+      toPng(cardRef.current, { cacheBust: true, pixelRatio: 3 })
+        .then((dataUrl) => {
+          const link = document.createElement('a');
+          link.download = `${user?.username}_${id}.png`;
+          link.href = dataUrl;
+          link.click();
+        })
+        .catch((err) => {
+          toast.error(err);
+        }),
+      {
+        loading: 'Saving image...',
+        success: 'Image saved',
+        error: 'Failed to save image',
+      }
+    );
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardRef]);
 

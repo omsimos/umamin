@@ -8,7 +8,6 @@ import {
   ID,
   Directive,
 } from 'type-graphql';
-import { Prisma } from '@umamin/db';
 
 import type { TContext } from '@/pages/api/graphql';
 import {
@@ -36,41 +35,25 @@ export class MessageResolver {
     @Ctx() { prisma }: TContext
   ): Promise<GlobalMessage[] | null> {
     try {
-      let messages: GlobalMessage[];
-
-      if (!cursorId) {
-        messages = await prisma.globalMessage.findMany({
-          orderBy: { updatedAt: 'desc' },
-          take: 10,
-          include: {
-            user: {
-              select: {
-                id: true,
-                username: true,
-                image: true,
-              },
+      const messages = await prisma.globalMessage.findMany({
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              image: true,
             },
           },
-        });
-      } else {
-        messages = await prisma.globalMessage.findMany({
-          orderBy: { updatedAt: 'desc' },
-          take: 10,
+        },
+        ...(cursorId && {
           skip: 1,
           cursor: {
             id: cursorId,
           },
-          include: {
-            user: {
-              select: {
-                id: true,
-                username: true,
-                image: true,
-              },
-            },
-          },
-        });
-      }
+        }),
+      });
 
       return messages;
     } catch (err) {
@@ -161,9 +144,7 @@ export class MessageResolver {
     @Ctx() { prisma, id }: TContext
   ): Promise<RecentMessage[] | null> {
     try {
-      let messages: RecentMessage[];
-
-      const fields: Prisma.MessageFindManyArgs = {
+      const messages = await prisma.message.findMany({
         where: { receiverId: id, isOpened: false },
         orderBy: { createdAt: 'desc' },
         take: 3,
@@ -174,21 +155,16 @@ export class MessageResolver {
           createdAt: true,
           receiverMsg: true,
         },
-      };
 
-      if (!cursorId) {
-        messages = await prisma.message.findMany(fields);
-      } else {
-        messages = await prisma.message.findMany({
-          ...fields,
+        ...(cursorId && {
           skip: 1,
           cursor: {
             id: cursorId,
           },
-        });
-      }
+        }),
+      });
 
-      return messages;
+      return messages ?? [];
     } catch (err) {
       console.error(err);
       throw err;
@@ -201,9 +177,7 @@ export class MessageResolver {
     @Ctx() { prisma, id }: TContext
   ): Promise<SeenMessage[] | null> {
     try {
-      let messages: SeenMessage[];
-
-      const fields: Prisma.MessageFindManyArgs = {
+      const messages = await prisma.message.findMany({
         where: { receiverId: id, isOpened: true },
         orderBy: { createdAt: 'desc' },
         take: 3,
@@ -215,21 +189,16 @@ export class MessageResolver {
           createdAt: true,
           receiverMsg: true,
         },
-      };
 
-      if (!cursorId) {
-        messages = await prisma.message.findMany(fields);
-      } else {
-        messages = await prisma.message.findMany({
-          ...fields,
+        ...(cursorId && {
           skip: 1,
           cursor: {
             id: cursorId,
           },
-        });
-      }
+        }),
+      });
 
-      return messages;
+      return messages ?? [];
     } catch (err) {
       console.error(err);
       throw err;
@@ -242,9 +211,7 @@ export class MessageResolver {
     @Ctx() { prisma, id }: TContext
   ): Promise<SentMessage[] | null> {
     try {
-      let messages: SentMessage[];
-
-      const fields: Prisma.MessageFindManyArgs = {
+      const messages = await prisma.message.findMany({
         where: { senderId: id },
         orderBy: { createdAt: 'desc' },
         take: 3,
@@ -257,21 +224,16 @@ export class MessageResolver {
           receiverMsg: true,
           receiverUsername: true,
         },
-      };
 
-      if (!cursorId) {
-        messages = await prisma.message.findMany(fields);
-      } else {
-        messages = await prisma.message.findMany({
-          ...fields,
+        ...(cursorId && {
           skip: 1,
           cursor: {
             id: cursorId,
           },
-        });
-      }
+        }),
+      });
 
-      return messages;
+      return messages ?? [];
     } catch (err) {
       console.error(err);
       throw err;

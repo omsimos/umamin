@@ -25,7 +25,7 @@ export const SentCard = ({ data }: { data: SentMessage }) => {
             </span>{' '}
             {receiverUsername}
           </p>
-          <h3 className='font-syneExtrabold text-gradient text-center text-base'>
+          <h3 className='font-syne font-extrabold text-gradient text-center text-base'>
             umamin
           </h3>
         </div>

@@ -3,7 +3,7 @@ import { dehydrate, QueryClient, useMutation } from '@tanstack/react-query';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { HiOutlinePuzzle } from 'react-icons/hi';
 import { useSession } from 'next-auth/react';
-import { GetServerSideProps } from 'next';
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { NextSeo } from 'next-seo';
@@ -21,7 +21,9 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
 
-const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
+const SendTo: NextPageWithLayout<
+  InferGetServerSidePropsType<typeof getServerSideProps>
+> = ({ username, baseURL }) => {
   const { push } = useRouter();
   const triggerEvent = useLogEvent();
   const { data: user, isLoading: isUserLoading } = useUser(
@@ -87,6 +89,18 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
     return <Error message='Are you lost?' />;
   }
 
+  const ogImageURL = (() => {
+    const url = new URL(baseURL);
+    url.pathname = '/api/og-image/to';
+    url.searchParams.set('username', username);
+    url.searchParams.set(
+      'imageurl',
+      user?.image ?? `${baseURL}/icons/icon-144.png`
+    );
+
+    return url.toString();
+  })();
+
   return (
     <>
       <NextSeo
@@ -97,6 +111,18 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
             : '404 - user not found',
           description:
             'Create your own link to start receiving anonymous confessions and messages!',
+          images: [
+            {
+              url: ogImageURL,
+              alt: 'OG Image',
+              height: 400,
+              width: 800,
+              type: 'image/png',
+            },
+          ],
+        }}
+        twitter={{
+          cardType: 'summary_large_image',
         }}
       />
 
@@ -132,7 +158,7 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
               {username}
             </p>
 
-            <h3 className='font-syneExtrabold text-primary-200 text-center text-lg'>
+            <h3 className='font-syne font-extrabold text-primary-200 text-center text-lg'>
               umamin
             </h3>
           </div>
@@ -238,10 +264,10 @@ const SendTo: NextPageWithLayout = ({ username }: { username: string }) => {
 
 SendTo.getLayout = (page: React.ReactElement) => <Layout>{page}</Layout>;
 
-export const getServerSideProps: GetServerSideProps = async ({
+export const getServerSideProps = async ({
   res,
   params,
-}) => {
+}: GetServerSidePropsContext) => {
   const username = params?.username as string;
   const queryClient = new QueryClient();
 
@@ -256,6 +282,11 @@ export const getServerSideProps: GetServerSideProps = async ({
     props: {
       username,
       dehydratedState: dehydrate(queryClient),
+      /**
+       * Workaround for accessing baseURL for `new URL()` on client-side.
+       * Maybe export a NEXT_PUBLIC_BASEURL instead?
+       */
+      baseURL: process.env.NEXTAUTH_URL ?? '',
     },
   };
 };

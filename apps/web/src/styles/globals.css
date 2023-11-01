@@ -1,22 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 @import './utils.css';
 
-body {
-  -webkit-tap-highlight-color: transparent;
-}
-
-@font-face {
-  font-family: 'Inter-Medium';
-  src: url('/fonts/Inter-Medium.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Syne-Extrabold';
-  src: url('/fonts/Syne-ExtraBold.woff2') format('woff2');
+@layer base {
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 @layer components {
