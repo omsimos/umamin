@@ -120,7 +120,7 @@ const Global: NextPageWithLayout = () => {
                 <span className='loader' />
               ) : (
                 messages &&
-                messages?.length >= 5 &&
+                messages?.length >= 10 &&
                 hasNextPage && (
                   <button
                     className='bg-secondary-200 border border-secondary-100 mx-auto text-white px-6 py-2 rounded-lg'
