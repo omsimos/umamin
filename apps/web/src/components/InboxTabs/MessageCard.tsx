@@ -28,12 +28,12 @@ import {
 
 interface Props {
   refetch: () => void;
-  message: Message;
+  message?: Message;
 }
 
 export const MessageCard = ({ message, refetch }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const { id, content, clue, receiverMsg, reply, createdAt } = message;
+  const { id, content, clue, receiverMsg, reply, createdAt } = message ?? {};
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
 
@@ -45,18 +45,20 @@ export const MessageCard = ({ message, refetch }: Props) => {
   const { mutate } = useMutation({ mutationFn: deleteMessage });
 
   const handleDelete = () => {
-    mutate(
-      { id },
-      {
-        onSuccess: () => {
-          refetch();
-          setDeleteModal(false);
-          toast.success('Message deleted');
-        },
-      }
-    );
+    if (id) {
+      mutate(
+        { id },
+        {
+          onSuccess: () => {
+            refetch();
+            setDeleteModal(false);
+            toast.success('Message deleted');
+          },
+        }
+      );
 
-    triggerEvent('delete_message');
+      triggerEvent('delete_message');
+    }
   };
 
   const saveImage = useCallback(() => {

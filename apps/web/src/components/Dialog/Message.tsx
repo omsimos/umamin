@@ -18,7 +18,7 @@ import { Container } from '../Utils';
 
 interface Props extends DialogContainerProps {
   refetch?: () => void;
-  data: Message;
+  data?: Message;
   type: 'recent' | 'seen';
 }
 
@@ -29,7 +29,7 @@ export const MessageDialog = ({
   refetch,
   ...rest
 }: Props) => {
-  const { id, content, clue, receiverMsg } = data;
+  const { id, content, clue, receiverMsg } = data ?? {};
   const cardRef = useRef<HTMLDivElement>(null);
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
@@ -65,21 +65,23 @@ export const MessageDialog = ({
   }, [cardRef]);
 
   const handleDelete = () => {
-    mutate(
-      { id },
-      {
-        onSuccess: () => {
-          if (refetch) {
-            refetch();
-          }
-          setIsOpen(false);
-          setDeleteModal(false);
-          toast.success('Message deleted');
-        },
-      }
-    );
+    if (id) {
+      mutate(
+        { id },
+        {
+          onSuccess: () => {
+            if (refetch) {
+              refetch();
+            }
+            setIsOpen(false);
+            setDeleteModal(false);
+            toast.success('Message deleted');
+          },
+        }
+      );
 
-    triggerEvent('delete_message');
+      triggerEvent('delete_message');
+    }
   };
 
   return (

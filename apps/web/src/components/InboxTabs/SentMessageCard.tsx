@@ -5,9 +5,9 @@ import { Message } from '@umamin/generated';
 import { ClueDialog } from '../Dialog';
 import { ChatBubble } from '../ChatBubble';
 
-export const SentMessageCard = ({ data }: { data: Message }) => {
+export const SentMessageCard = ({ data }: { data?: Message }) => {
   const { createdAt, receiverUsername, receiverMsg, content, reply, clue } =
-    data;
+    data ?? {};
 
   const [clueDialog, setClueDialog] = useState(false);
 

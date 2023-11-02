@@ -2,34 +2,40 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import { IoIosCopy } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
+import { getMessages } from '@/api';
 import { useLogEvent } from '@/hooks';
-import type { Message } from '@umamin/generated';
 import { ImageFill, Container } from '@/components/Utils';
 import { useInboxContext } from '@/contexts/InboxContext';
 
+import { MessageCard } from './MessageCard';
+import { SentMessageCard } from './SentMessageCard';
+
 interface Props {
-  tab?: string;
-  isLoading: boolean;
-  messages?: (Message | undefined)[];
-  fetchNextPage?: () => void;
-  isFetchingNextPage?: boolean;
-  hasNextPage?: boolean;
-  children: React.ReactNode;
+  type: 'recent' | 'sent';
 }
 
-export const InboxTabContainer = ({
-  tab,
-  messages,
-  fetchNextPage,
-  isFetchingNextPage,
-  isLoading,
-  hasNextPage,
-  children,
-}: Props) => {
-  const { data } = useSession();
+export const InboxTab = ({ type }: Props) => {
+  const { data: session } = useSession();
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
+
+  const {
+    data: messages,
+    isLoading,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: [`${type}_messages`, { type }],
+    queryFn: ({ pageParam }) => getMessages({ cursorId: pageParam, type }),
+    initialPageParam: '',
+    getNextPageParam: (lastPage) => lastPage.getMessages?.cursorId,
+    select: (data) => data.pages.flatMap((page) => page.getMessages?.data),
+    enabled: !!user?.id,
+  });
 
   const copyLink = () => {
     navigator.clipboard.writeText(
@@ -40,13 +46,21 @@ export const InboxTabContainer = ({
     triggerEvent('copy_link');
   };
 
+  if (isLoading) {
+    return (
+      <div className='mt-20 flex min-h-screen justify-center'>
+        <span className='loader-2' />
+      </div>
+    );
+  }
+
   return (
     <section className='flex flex-col space-y-6'>
-      {!messages?.length && !isLoading && (
+      {!messages?.length ? (
         <Container>
           <div className='msg-card'>
             <p className='mb-4 text-secondary-400'>
-              {tab === 'sent'
+              {type === 'sent'
                 ? 'You have not sent any messages yet. Send anonymous messages to your friends!'
                 : 'You have 0 messages. Start receiving anonymous messages by sharing your link!'}
             </p>
@@ -54,7 +68,7 @@ export const InboxTabContainer = ({
             <div className='flex gap-x-2 items-center'>
               <ImageFill
                 alt='profile picture'
-                src={data?.user?.image}
+                src={session?.user?.image}
                 unoptimized
                 className='border-secondary-100 h-[40px] w-[40px] object-cover rounded-full border'
               />
@@ -72,15 +86,24 @@ export const InboxTabContainer = ({
             </div>
           </div>
         </Container>
-      )}
-
-      {isLoading ? (
-        <div className='mt-20 flex min-h-screen justify-center'>
-          <span className='loader-2' />
-        </div>
       ) : (
         <>
-          {children}
+          {type === 'recent' && (
+            <div>
+              {messages?.map((m) => (
+                <MessageCard key={m?.id} refetch={refetch} message={m} />
+              ))}
+            </div>
+          )}
+
+          {type === 'sent' && (
+            <Container className='space-y-6'>
+              {messages?.map((m) => (
+                <SentMessageCard key={m?.id} data={m} />
+              ))}
+            </Container>
+          )}
+
           <Container className='grid place-items-center'>
             {isFetchingNextPage ? (
               <span className='loader' />

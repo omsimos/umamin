@@ -11,7 +11,7 @@ import { DialogContainer, DialogContainerProps } from '.';
 
 interface Props extends DialogContainerProps {
   refetch: () => void;
-  message: Message;
+  message?: Message;
 }
 
 export const ReplyDialog = ({
@@ -29,25 +29,27 @@ export const ReplyDialog = ({
   const handleReply: React.FormEventHandler = (e) => {
     e.preventDefault();
 
-    mutate(
-      {
-        id: message.id,
-        content: reply,
-      },
-      {
-        onSuccess: () => {
-          refetch();
-          setIsOpen(false);
-
-          setTimeout(() => {
-            setReply('');
-          }, 500);
-
-          toast.success('Reply sent');
-          triggerEvent('reply');
+    if (message?.id) {
+      mutate(
+        {
+          id: message.id,
+          content: reply,
         },
-      }
-    );
+        {
+          onSuccess: () => {
+            refetch();
+            setIsOpen(false);
+
+            setTimeout(() => {
+              setReply('');
+            }, 500);
+
+            toast.success('Reply sent');
+            triggerEvent('reply');
+          },
+        }
+      );
+    }
   };
 
   return (
@@ -70,8 +72,8 @@ export const ReplyDialog = ({
 
         {/* Message */}
         <div className='flex min-h-[170px] flex-col justify-between gap-4 px-5 pt-10 pb-3 sm:px-7 sm:pt-7 md:gap-3'>
-          <ChatBubble type='sender' content={message.receiverMsg} />
-          <ChatBubble type='receiver' content={message.content} />
+          <ChatBubble type='sender' content={message?.receiverMsg} />
+          <ChatBubble type='receiver' content={message?.content} />
         </div>
 
         {/* Send Message */}
