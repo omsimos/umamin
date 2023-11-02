@@ -93,6 +93,10 @@ function MyApp({
                 html {
                   font-family: ${inter.style.fontFamily};
                 }
+
+                :root {
+                  --font-syne: ${syne.style.fontFamily};
+                }
               `}</style>
               <main className={syne.variable}>
                 {getLayout(<Component {...pageProps} />)}
