@@ -1,15 +1,17 @@
 import React from 'react';
 import toast from 'react-hot-toast';
-import { useLogEvent } from '@/hooks';
 import { IoIosCopy } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
+
+import { useLogEvent } from '@/hooks';
+import type { Message } from '@umamin/generated';
 import { ImageFill, Container } from '@/components/Utils';
 import { useInboxContext } from '@/contexts/InboxContext';
 
 interface Props {
   tab?: string;
   isLoading: boolean;
-  messages?: any;
+  messages?: (Message | undefined)[];
   fetchNextPage?: () => void;
   isFetchingNextPage?: boolean;
   hasNextPage?: boolean;
@@ -83,6 +85,8 @@ export const InboxTabContainer = ({
             {isFetchingNextPage ? (
               <span className='loader' />
             ) : (
+              messages &&
+              messages?.length >= 5 &&
               hasNextPage && (
                 <button
                   className='bg-secondary-200 border border-secondary-100 mx-auto text-white px-6 py-2 rounded-lg'
