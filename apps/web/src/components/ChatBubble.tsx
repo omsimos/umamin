@@ -4,7 +4,7 @@ import { ImageFill } from '@/components/Utils';
 
 interface ChatBubbleProps {
   type: 'sender' | 'receiver';
-  content: string;
+  content?: string;
   userData?: Pick<User, 'username' | 'image'>;
 }
 

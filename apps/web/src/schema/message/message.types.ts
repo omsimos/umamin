@@ -3,21 +3,6 @@ import { MaxLength, MinLength, IsNotEmpty } from 'class-validator';
 import { ErrorResponse } from '../types';
 
 @ObjectType()
-export class BaseMessage {
-  @Field(() => ID)
-  id: string;
-
-  @Field(() => String)
-  content: string;
-
-  @Field(() => String)
-  receiverMsg: string;
-
-  @Field(() => Date)
-  createdAt: Date;
-}
-
-@ObjectType()
 class GlobalMessageUser {
   @Field(() => ID)
   id: string;
@@ -52,54 +37,52 @@ export class GlobalMessage {
 }
 
 @ObjectType()
+export class GlobalMessagesData {
+  @Field(() => [GlobalMessage])
+  data: GlobalMessage[];
+
+  @Field(() => String, { nullable: true })
+  cursorId: string | null;
+}
+
+@ObjectType()
 export class SendGlobalMessage extends ErrorResponse {
   @Field(() => GlobalMessage, { nullable: true })
   data?: GlobalMessage | null;
 }
 
-@Directive('@cacheControl(maxAge: 60)')
+@Directive('@cacheControl(maxAge: 86400)')
 @ObjectType()
-export class RecentMessage extends BaseMessage {
-  @Field(() => String, { nullable: true })
-  clue: string | null;
-}
-
-@ObjectType()
-export class SeenMessage extends BaseMessage {
+class Message {
   @Field(() => ID)
   id: string;
 
-  @Directive('@cacheControl(maxAge: 86400)')
   @Field(() => String)
   content: string;
 
-  @Directive('@cacheControl(maxAge: 86400)')
   @Field(() => String)
   receiverMsg: string;
 
-  @Directive('@cacheControl(maxAge: 86400)')
   @Field(() => Date)
   createdAt: Date;
 
   @Field(() => String, { nullable: true })
   reply: string | null;
 
-  @Directive('@cacheControl(maxAge: 86400)')
   @Field(() => String, { nullable: true })
   clue: string | null;
-}
 
-@Directive('@cacheControl(maxAge: 120)')
-@ObjectType()
-export class SentMessage extends BaseMessage {
   @Field(() => String, { nullable: true })
   receiverUsername: string | null;
+}
+
+@ObjectType()
+export class MessagesData {
+  @Field(() => [Message])
+  data: Message[];
 
   @Field(() => String, { nullable: true })
-  reply: string | null;
-
-  @Field(() => String, { nullable: true })
-  clue: string | null;
+  cursorId: string | null;
 }
 
 @InputType()

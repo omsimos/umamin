@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { SentMessage } from '@umamin/generated';
+import { Message } from '@umamin/generated';
 
 import { ClueDialog } from '../Dialog';
 import { ChatBubble } from '../ChatBubble';
 
-export const SentCard = ({ data }: { data: SentMessage }) => {
+export const SentMessageCard = ({ data }: { data?: Message }) => {
   const { createdAt, receiverUsername, receiverMsg, content, reply, clue } =
-    data;
+    data ?? {};
 
   const [clueDialog, setClueDialog] = useState(false);
 

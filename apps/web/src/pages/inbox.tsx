@@ -5,9 +5,10 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 
 import { Container } from '@/components/Utils';
-import { Recent, Seen, Sent } from '@/components/InboxTabs';
+import { InboxTab } from '@/components/InboxTabs';
 import { Layout, Create, BottomNavbar } from '@/components';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
+
 import type { NextPageWithLayout } from '..';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
@@ -23,20 +24,7 @@ const Inbox: NextPageWithLayout = () => {
   const { status } = useSession();
   const { user, isUserLoading } = useInboxContext();
 
-  const categories = [
-    {
-      title: 'Recent',
-      Component: Recent,
-    },
-    {
-      title: 'Old',
-      Component: Seen,
-    },
-    {
-      title: 'Sent',
-      Component: Sent,
-    },
-  ];
+  const categories: ('recent' | 'sent')[] = ['recent', 'sent'];
 
   if (status === 'unauthenticated') {
     push('/login');
@@ -66,25 +54,25 @@ const Inbox: NextPageWithLayout = () => {
             <Tab.Group>
               <Tab.List>
                 <Container className='mb-4 flex space-x-6'>
-                  {categories.map(({ title }) => (
+                  {categories.map((c) => (
                     <Tab
-                      key={title}
+                      key={c}
                       className={({ selected }) =>
                         classNames(
-                          'rounded-full py-2 px-8 font-semibold text-white outline-none',
+                          'rounded-full py-2 px-8 font-semibold text-white outline-none capitalize',
                           selected ? 'bg-primary-200' : 'text-[#8B8B8B]'
                         )
                       }
                     >
-                      {title}
+                      {c}
                     </Tab>
                   ))}
                 </Container>
               </Tab.List>
               <Tab.Panels className='mt-2 pb-24'>
-                {categories.map(({ title, Component }) => (
-                  <Tab.Panel key={title}>
-                    <Component />
+                {categories.map((c) => (
+                  <Tab.Panel key={c}>
+                    <InboxTab type={c} />
                   </Tab.Panel>
                 ))}
               </Tab.Panels>

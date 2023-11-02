@@ -11,13 +11,12 @@ import {
 
 import type { TContext } from '@/pages/api/graphql';
 import {
-  GlobalMessage,
-  RecentMessage,
-  SeenMessage,
+  GlobalMessagesData,
   SendGlobalMessage,
   SendGlobalMessageInput,
   SendMessageInput,
-  SentMessage,
+  MessagesData,
+  GlobalMessage,
 } from './message.types';
 import { ErrorResponse } from '../types';
 
@@ -29,11 +28,11 @@ export class MessageResolver {
   }
 
   @Directive('@cacheControl(maxAge: 240)')
-  @Query(() => [GlobalMessage], { nullable: true })
+  @Query(() => GlobalMessagesData, { nullable: true })
   async getGlobalMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     @Ctx() { prisma }: TContext
-  ): Promise<GlobalMessage[] | null> {
+  ): Promise<GlobalMessagesData | null> {
     try {
       const messages = await prisma.globalMessage.findMany({
         orderBy: { updatedAt: 'desc' },
@@ -55,7 +54,17 @@ export class MessageResolver {
         }),
       });
 
-      return messages;
+      if (messages.length === 0) {
+        return {
+          data: [],
+          cursorId: null,
+        };
+      }
+
+      return {
+        data: messages,
+        cursorId: messages[messages.length - 1].id,
+      };
     } catch (err) {
       console.error(err);
       throw err;
@@ -138,49 +147,17 @@ export class MessageResolver {
     }
   }
 
-  @Query(() => [RecentMessage], { nullable: true })
-  async getRecentMessages(
+  @Query(() => MessagesData, { nullable: true })
+  async getMessages(
+    @Arg('type', () => String) type: 'recent' | 'sent',
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     @Ctx() { prisma, id }: TContext
-  ): Promise<RecentMessage[] | null> {
+  ): Promise<MessagesData | null> {
     try {
       const messages = await prisma.message.findMany({
-        where: { receiverId: id, isOpened: false },
+        where: type === 'recent' ? { receiverId: id } : { senderId: id },
         orderBy: { createdAt: 'desc' },
-        take: 3,
-        select: {
-          id: true,
-          clue: true,
-          content: true,
-          createdAt: true,
-          receiverMsg: true,
-        },
-
-        ...(cursorId && {
-          skip: 1,
-          cursor: {
-            id: cursorId,
-          },
-        }),
-      });
-
-      return messages ?? [];
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  }
-
-  @Query(() => [SeenMessage], { nullable: true })
-  async getSeenMessages(
-    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    @Ctx() { prisma, id }: TContext
-  ): Promise<SeenMessage[] | null> {
-    try {
-      const messages = await prisma.message.findMany({
-        where: { receiverId: id, isOpened: true },
-        orderBy: { createdAt: 'desc' },
-        take: 3,
+        take: 5,
         select: {
           id: true,
           clue: true,
@@ -188,6 +165,9 @@ export class MessageResolver {
           content: true,
           createdAt: true,
           receiverMsg: true,
+          ...(type === 'sent' && {
+            receiverUsername: true,
+          }),
         },
 
         ...(cursorId && {
@@ -198,42 +178,17 @@ export class MessageResolver {
         }),
       });
 
-      return messages ?? [];
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  }
+      if (messages.length === 0) {
+        return {
+          data: [],
+          cursorId: null,
+        };
+      }
 
-  @Query(() => [SentMessage], { nullable: true })
-  async getSentMessages(
-    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    @Ctx() { prisma, id }: TContext
-  ): Promise<SentMessage[] | null> {
-    try {
-      const messages = await prisma.message.findMany({
-        where: { senderId: id },
-        orderBy: { createdAt: 'desc' },
-        take: 3,
-        select: {
-          id: true,
-          clue: true,
-          reply: true,
-          content: true,
-          createdAt: true,
-          receiverMsg: true,
-          receiverUsername: true,
-        },
-
-        ...(cursorId && {
-          skip: 1,
-          cursor: {
-            id: cursorId,
-          },
-        }),
-      });
-
-      return messages ?? [];
+      return {
+        data: messages,
+        cursorId: messages[messages.length - 1].id,
+      };
     } catch (err) {
       console.error(err);
       throw err;
@@ -260,25 +215,6 @@ export class MessageResolver {
 
       return message.content;
     } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  }
-
-  @Mutation(() => String)
-  async editMessage(
-    @Arg('id', () => ID) id: string,
-    @Arg('isOpened', () => Boolean) isOpened: boolean,
-    @Ctx() { prisma }: TContext
-  ): Promise<String> {
-    try {
-      await prisma.message.update({
-        where: { id },
-        data: { isOpened },
-      });
-
-      return 'Message edited';
-    } catch (err: any) {
       console.error(err);
       throw err;
     }

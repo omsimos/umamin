@@ -1,53 +1,34 @@
 query getGlobalMessages($cursorId: ID) {
   getGlobalMessages(cursorId: $cursorId) {
-    id
-    content
-    createdAt
-    updatedAt
-    isAnonymous
-    user {
+    data {
       id
-      username
-      image
+      content
+      createdAt
+      updatedAt
+      isAnonymous
+      user {
+        id
+        username
+        image
+      }
     }
+    cursorId
   }
 }
 
-query getRecentMessages($cursorId: ID) {
-  getRecentMessages(cursorId: $cursorId) {
-    id
-    clue
-    content
-    createdAt
-    receiverMsg
+query getMessages($type: String!, $cursorId: ID) {
+  getMessages(type: $type, cursorId: $cursorId) {
+    data {
+      id
+      clue
+      reply
+      content
+      createdAt
+      receiverMsg
+      receiverUsername
+    }
+    cursorId
   }
-}
-
-query getSeenMessages($cursorId: ID) {
-  getSeenMessages(cursorId: $cursorId) {
-    id
-    clue
-    reply
-    content
-    createdAt
-    receiverMsg
-  }
-}
-
-query getSentMessages($cursorId: ID) {
-  getSentMessages(cursorId: $cursorId) {
-    id
-    clue
-    reply
-    content
-    createdAt
-    receiverMsg
-    receiverUsername
-  }
-}
-
-mutation editMessage($id: ID!, $isOpened: Boolean!) {
-  editMessage(id: $id, isOpened: $isOpened)
 }
 
 mutation deleteMessage($id: ID!) {

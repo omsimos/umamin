@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import type { SeenMessage } from '@umamin/generated';
+import type { Message } from '@umamin/generated';
 import { useMutation } from '@tanstack/react-query';
 import { HiPuzzlePiece } from 'react-icons/hi2';
 import { formatDistanceToNow } from 'date-fns';
@@ -28,12 +28,12 @@ import {
 
 interface Props {
   refetch: () => void;
-  message: SeenMessage;
+  message?: Message;
 }
 
-export const SeenCard = ({ message, refetch }: Props) => {
+export const MessageCard = ({ message, refetch }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const { id, content, clue, receiverMsg, reply, createdAt } = message;
+  const { id, content, clue, receiverMsg, reply, createdAt } = message ?? {};
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
 
@@ -45,18 +45,20 @@ export const SeenCard = ({ message, refetch }: Props) => {
   const { mutate } = useMutation({ mutationFn: deleteMessage });
 
   const handleDelete = () => {
-    mutate(
-      { id },
-      {
-        onSuccess: () => {
-          refetch();
-          setDeleteModal(false);
-          toast.success('Message deleted');
-        },
-      }
-    );
+    if (id) {
+      mutate(
+        { id },
+        {
+          onSuccess: () => {
+            refetch();
+            setDeleteModal(false);
+            toast.success('Message deleted');
+          },
+        }
+      );
 
-    triggerEvent('delete_message');
+      triggerEvent('delete_message');
+    }
   };
 
   const saveImage = useCallback(() => {
