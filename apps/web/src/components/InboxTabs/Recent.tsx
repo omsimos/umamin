@@ -10,15 +10,22 @@ import { InboxTabContainer } from './Container';
 export const Recent = () => {
   const { user } = useInboxContext();
 
-  const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      queryKey: ['recent_messages'],
-      queryFn: ({ pageParam }) => getMessages({ cursorId: pageParam }),
-      initialPageParam: '',
-      getNextPageParam: (lastPage) => lastPage.getMessages?.cursorId,
-      select: (data) => data.pages.flatMap((page) => page.getMessages?.data),
-      enabled: !!user?.id,
-    });
+  const {
+    data,
+    isLoading,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['recent_messages', { type: 'recent' }],
+    queryFn: ({ pageParam }) =>
+      getMessages({ cursorId: pageParam, type: 'recent' }),
+    initialPageParam: '',
+    getNextPageParam: (lastPage) => lastPage.getMessages?.cursorId,
+    select: (data) => data.pages.flatMap((page) => page.getMessages?.data),
+    enabled: !!user?.id,
+  });
 
   return (
     <InboxTabContainer

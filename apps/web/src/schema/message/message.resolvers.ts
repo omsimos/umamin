@@ -16,7 +16,6 @@ import {
   SendGlobalMessageInput,
   SendMessageInput,
   MessagesData,
-  SentMessagesData,
 } from './message.types';
 import { ErrorResponse } from '../types';
 
@@ -139,12 +138,13 @@ export class MessageResolver {
 
   @Query(() => MessagesData, { nullable: true })
   async getMessages(
+    @Arg('type', () => String) type: 'recent' | 'sent',
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     @Ctx() { prisma, id }: TContext
   ): Promise<MessagesData | null> {
     try {
       const messages = await prisma.message.findMany({
-        where: { receiverId: id },
+        where: type === 'recent' ? { receiverId: id } : { senderId: id },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {
@@ -154,51 +154,9 @@ export class MessageResolver {
           content: true,
           createdAt: true,
           receiverMsg: true,
-        },
-
-        ...(cursorId && {
-          skip: 1,
-          cursor: {
-            id: cursorId,
-          },
-        }),
-      });
-
-      if (messages.length === 0) {
-        return {
-          data: [],
-          cursorId: null,
-        };
-      }
-
-      return {
-        data: messages,
-        cursorId: messages[messages.length - 1].id,
-      };
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  }
-
-  @Query(() => SentMessagesData, { nullable: true })
-  async getSentMessages(
-    @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    @Ctx() { prisma, id }: TContext
-  ): Promise<SentMessagesData | null> {
-    try {
-      const messages = await prisma.message.findMany({
-        where: { senderId: id },
-        orderBy: { createdAt: 'desc' },
-        take: 3,
-        select: {
-          id: true,
-          clue: true,
-          reply: true,
-          content: true,
-          createdAt: true,
-          receiverMsg: true,
-          receiverUsername: true,
+          ...(type === 'sent' && {
+            receiverUsername: true,
+          }),
         },
 
         ...(cursorId && {

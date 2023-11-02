@@ -1,5 +1,5 @@
 import React from 'react';
-import { getSentMessages } from '@/api';
+import { getMessages } from '@/api';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { Container } from '@/components/Utils';
@@ -12,11 +12,12 @@ export const Sent = () => {
   const { user } = useInboxContext();
 
   const { data, isLoading, fetchNextPage, hasNextPage } = useInfiniteQuery({
-    queryKey: ['sent_messages'],
-    queryFn: ({ pageParam }) => getSentMessages({ cursorId: pageParam }),
+    queryKey: ['sent_messages', { type: 'sent' }],
+    queryFn: ({ pageParam }) =>
+      getMessages({ cursorId: pageParam, type: 'sent' }),
     initialPageParam: '',
-    getNextPageParam: (lastPage) => lastPage.getSentMessages?.cursorId,
-    select: (data) => data.pages.flatMap((page) => page.getSentMessages?.data),
+    getNextPageParam: (lastPage) => lastPage.getMessages?.cursorId,
+    select: (data) => data.pages.flatMap((page) => page.getMessages?.data),
     enabled: !!user?.id,
   });
 

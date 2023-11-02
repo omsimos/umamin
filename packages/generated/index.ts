@@ -47,6 +47,7 @@ export type Message = {
   createdAt: Scalars['DateTimeISO']['output'];
   id: Scalars['ID']['output'];
   receiverMsg: Scalars['String']['output'];
+  receiverUsername?: Maybe<Scalars['String']['output']>;
   reply?: Maybe<Scalars['String']['output']>;
 };
 
@@ -115,7 +116,6 @@ export type Query = {
   __typename?: 'Query';
   getGlobalMessages?: Maybe<Array<GlobalMessage>>;
   getMessages?: Maybe<MessagesData>;
-  getSentMessages?: Maybe<SentMessagesData>;
   getUser?: Maybe<User>;
   hello: ErrorResponse;
 };
@@ -128,11 +128,7 @@ export type QueryGetGlobalMessagesArgs = {
 
 export type QueryGetMessagesArgs = {
   cursorId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type QueryGetSentMessagesArgs = {
-  cursorId?: InputMaybe<Scalars['ID']['input']>;
+  type: Scalars['String']['input'];
 };
 
 
@@ -159,23 +155,6 @@ export type SendMessageInput = {
   receiverUsername: Scalars['String']['input'];
 };
 
-export type SentMessage = {
-  __typename?: 'SentMessage';
-  clue?: Maybe<Scalars['String']['output']>;
-  content: Scalars['String']['output'];
-  createdAt: Scalars['DateTimeISO']['output'];
-  id: Scalars['ID']['output'];
-  receiverMsg: Scalars['String']['output'];
-  receiverUsername?: Maybe<Scalars['String']['output']>;
-  reply?: Maybe<Scalars['String']['output']>;
-};
-
-export type SentMessagesData = {
-  __typename?: 'SentMessagesData';
-  cursorId?: Maybe<Scalars['String']['output']>;
-  data: Array<SentMessage>;
-};
-
 export type User = {
   __typename?: 'User';
   email?: Maybe<Scalars['String']['output']>;
@@ -195,18 +174,12 @@ export type GetGlobalMessagesQueryVariables = Exact<{
 export type GetGlobalMessagesQuery = { __typename?: 'Query', getGlobalMessages?: Array<{ __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, updatedAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null }> | null };
 
 export type GetMessagesQueryVariables = Exact<{
+  type: Scalars['String']['input'];
   cursorId?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
-export type GetMessagesQuery = { __typename?: 'Query', getMessages?: { __typename?: 'MessagesData', cursorId?: string | null, data: Array<{ __typename?: 'Message', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string }> } | null };
-
-export type GetSentMessagesQueryVariables = Exact<{
-  cursorId?: InputMaybe<Scalars['ID']['input']>;
-}>;
-
-
-export type GetSentMessagesQuery = { __typename?: 'Query', getSentMessages?: { __typename?: 'SentMessagesData', cursorId?: string | null, data: Array<{ __typename?: 'SentMessage', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string, receiverUsername?: string | null }> } | null };
+export type GetMessagesQuery = { __typename?: 'Query', getMessages?: { __typename?: 'MessagesData', cursorId?: string | null, data: Array<{ __typename?: 'Message', id: string, clue?: string | null, reply?: string | null, content: string, createdAt: any, receiverMsg: string, receiverUsername?: string | null }> } | null };
 
 export type DeleteMessageMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -297,23 +270,8 @@ export const GetGlobalMessagesDocument = gql`
 }
     `;
 export const GetMessagesDocument = gql`
-    query getMessages($cursorId: ID) {
-  getMessages(cursorId: $cursorId) {
-    data {
-      id
-      clue
-      reply
-      content
-      createdAt
-      receiverMsg
-    }
-    cursorId
-  }
-}
-    `;
-export const GetSentMessagesDocument = gql`
-    query getSentMessages($cursorId: ID) {
-  getSentMessages(cursorId: $cursorId) {
+    query getMessages($type: String!, $cursorId: ID) {
+  getMessages(type: $type, cursorId: $cursorId) {
     data {
       id
       clue
@@ -419,11 +377,8 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     getGlobalMessages(variables?: GetGlobalMessagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetGlobalMessagesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetGlobalMessagesQuery>(GetGlobalMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getGlobalMessages', 'query');
     },
-    getMessages(variables?: GetMessagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetMessagesQuery> {
+    getMessages(variables: GetMessagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetMessagesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMessagesQuery>(GetMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMessages', 'query');
-    },
-    getSentMessages(variables?: GetSentMessagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetSentMessagesQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetSentMessagesQuery>(GetSentMessagesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getSentMessages', 'query');
     },
     deleteMessage(variables: DeleteMessageMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<DeleteMessageMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteMessageMutation>(DeleteMessageDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteMessage', 'mutation');
