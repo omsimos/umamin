@@ -37,6 +37,15 @@ export class GlobalMessage {
 }
 
 @ObjectType()
+export class GlobalMessagesData {
+  @Field(() => [GlobalMessage])
+  data: GlobalMessage[];
+
+  @Field(() => String, { nullable: true })
+  cursorId: string | null;
+}
+
+@ObjectType()
 export class SendGlobalMessage extends ErrorResponse {
   @Field(() => GlobalMessage, { nullable: true })
   data?: GlobalMessage | null;
@@ -44,7 +53,7 @@ export class SendGlobalMessage extends ErrorResponse {
 
 @Directive('@cacheControl(maxAge: 86400)')
 @ObjectType()
-export class Message {
+class Message {
   @Field(() => ID)
   id: string;
 

@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
-import { useQuery } from '@tanstack/react-query';
 import { GlobalMessage } from '@umamin/generated';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { getGlobalMessages } from '@/api';
 import { SendGlobalModal } from '@/components/Dialog';
 import { ImageFill, Container } from '@/components/Utils';
 import { Layout, GlobalPost, BottomNavbar } from '@/components';
 import { InboxProvider, useInboxContext } from '@/contexts/InboxContext';
+
 import type { NextPageWithLayout } from '..';
 
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
@@ -17,8 +18,6 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 });
 
 const Global: NextPageWithLayout = () => {
-  const [pageNo, setPageNo] = useState(1);
-  const [cursorId, setCursorId] = useState('');
   const [sendGlobalModal, setSendGlobalModal] = useState(false);
   const [messageData, setMessageData] = useState<
     GlobalMessage | null | undefined
@@ -28,12 +27,19 @@ const Global: NextPageWithLayout = () => {
   const { data } = useSession();
   const { push } = useRouter();
 
-  const queryArgs = { userId: user?.id ?? '', cursorId };
-
-  const { data: messages, isLoading } = useQuery({
-    queryKey: ['global_messages', queryArgs],
-    queryFn: () => getGlobalMessages(queryArgs),
-    select: (data) => data.getGlobalMessages,
+  const {
+    data: messages,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['global_messages', { userId: user?.id }],
+    queryFn: ({ pageParam }) => getGlobalMessages({ cursorId: pageParam }),
+    initialPageParam: '',
+    getNextPageParam: (lastPage) => lastPage.getGlobalMessages?.cursorId,
+    select: (data) =>
+      data.pages.flatMap((page) => page.getGlobalMessages?.data),
   });
 
   if (isLoading) {
@@ -105,49 +111,31 @@ const Global: NextPageWithLayout = () => {
                 <GlobalPost message={messageData} key={messageData.id} />
               )}
               {messages?.map((m) => (
-                <GlobalPost message={m} key={m.id} />
+                <GlobalPost message={m} key={m?.id} />
               ))}
             </div>
 
-            {/* <AdContainer slotId='2048259127' className='my-4' /> */}
+            <AdContainer slotId='2048259127' className='my-4' />
 
-            {!isLoading && messages && messages?.length > 0 && (
-              <Container
-                className={`flex mt-4 ${
-                  cursorId ? 'justify-between' : 'justify-end'
-                }`}
-              >
-                {cursorId && (
+            <Container className='grid place-items-center mt-12'>
+              {isFetchingNextPage ? (
+                <span className='loader' />
+              ) : (
+                messages &&
+                messages?.length >= 5 &&
+                hasNextPage && (
                   <button
-                    className='hover:underline'
+                    className='bg-secondary-200 border border-secondary-100 mx-auto text-white px-6 py-2 rounded-lg'
                     onClick={() => {
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                      setPageNo(1);
-                      setCursorId('');
+                      fetchNextPage();
                     }}
                     type='button'
                   >
-                    &larr; Latest
+                    Load More
                   </button>
-                )}
-
-                {cursorId && <p>{pageNo}</p>}
-
-                {messages.length === 10 && (
-                  <button
-                    className='hover:underline'
-                    onClick={() => {
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                      setPageNo(cursorId ? pageNo + 1 : 2);
-                      setCursorId(messages?.length ? messages[9]?.id! : '');
-                    }}
-                    type='button'
-                  >
-                    More &rarr;
-                  </button>
-                )}
-              </Container>
-            )}
+                )
+              )}
+            </Container>
           </>
         )}
 

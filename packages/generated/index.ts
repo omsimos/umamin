@@ -40,6 +40,12 @@ export type GlobalMessageUser = {
   username?: Maybe<Scalars['String']['output']>;
 };
 
+export type GlobalMessagesData = {
+  __typename?: 'GlobalMessagesData';
+  cursorId?: Maybe<Scalars['String']['output']>;
+  data: Array<GlobalMessage>;
+};
+
 export type Message = {
   __typename?: 'Message';
   clue?: Maybe<Scalars['String']['output']>;
@@ -114,7 +120,7 @@ export type MutationSendMessageArgs = {
 
 export type Query = {
   __typename?: 'Query';
-  getGlobalMessages?: Maybe<Array<GlobalMessage>>;
+  getGlobalMessages?: Maybe<GlobalMessagesData>;
   getMessages?: Maybe<MessagesData>;
   getUser?: Maybe<User>;
   hello: ErrorResponse;
@@ -171,7 +177,7 @@ export type GetGlobalMessagesQueryVariables = Exact<{
 }>;
 
 
-export type GetGlobalMessagesQuery = { __typename?: 'Query', getGlobalMessages?: Array<{ __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, updatedAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null }> | null };
+export type GetGlobalMessagesQuery = { __typename?: 'Query', getGlobalMessages?: { __typename?: 'GlobalMessagesData', cursorId?: string | null, data: Array<{ __typename?: 'GlobalMessage', id: string, content: string, createdAt: any, updatedAt: any, isAnonymous: boolean, user?: { __typename?: 'GlobalMessageUser', id: string, username?: string | null, image?: string | null } | null }> } | null };
 
 export type GetMessagesQueryVariables = Exact<{
   type: Scalars['String']['input'];
@@ -256,16 +262,19 @@ export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: { __type
 export const GetGlobalMessagesDocument = gql`
     query getGlobalMessages($cursorId: ID) {
   getGlobalMessages(cursorId: $cursorId) {
-    id
-    content
-    createdAt
-    updatedAt
-    isAnonymous
-    user {
+    data {
       id
-      username
-      image
+      content
+      createdAt
+      updatedAt
+      isAnonymous
+      user {
+        id
+        username
+        image
+      }
     }
+    cursorId
   }
 }
     `;

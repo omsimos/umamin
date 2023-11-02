@@ -11,11 +11,12 @@ import {
 
 import type { TContext } from '@/pages/api/graphql';
 import {
-  GlobalMessage,
+  GlobalMessagesData,
   SendGlobalMessage,
   SendGlobalMessageInput,
   SendMessageInput,
   MessagesData,
+  GlobalMessage,
 } from './message.types';
 import { ErrorResponse } from '../types';
 
@@ -27,11 +28,11 @@ export class MessageResolver {
   }
 
   @Directive('@cacheControl(maxAge: 240)')
-  @Query(() => [GlobalMessage], { nullable: true })
+  @Query(() => GlobalMessagesData, { nullable: true })
   async getGlobalMessages(
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
     @Ctx() { prisma }: TContext
-  ): Promise<GlobalMessage[] | null> {
+  ): Promise<GlobalMessagesData | null> {
     try {
       const messages = await prisma.globalMessage.findMany({
         orderBy: { updatedAt: 'desc' },
@@ -53,7 +54,17 @@ export class MessageResolver {
         }),
       });
 
-      return messages;
+      if (messages.length === 0) {
+        return {
+          data: [],
+          cursorId: null,
+        };
+      }
+
+      return {
+        data: messages,
+        cursorId: messages[messages.length - 1].id,
+      };
     } catch (err) {
       console.error(err);
       throw err;

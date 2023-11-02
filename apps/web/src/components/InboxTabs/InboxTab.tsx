@@ -1,4 +1,5 @@
 import React from 'react';
+import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { IoIosCopy } from 'react-icons/io';
 import { useSession } from 'next-auth/react';
@@ -11,6 +12,10 @@ import { useInboxContext } from '@/contexts/InboxContext';
 
 import { MessageCard } from './MessageCard';
 import { SentMessageCard } from './SentMessageCard';
+
+const AdContainer = dynamic(() => import('@/components/AdContainer'), {
+  ssr: false,
+});
 
 interface Props {
   type: 'recent' | 'sent';
@@ -29,7 +34,7 @@ export const InboxTab = ({ type }: Props) => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: [`${type}_messages`, { type }],
+    queryKey: [`${type}_messages`, { type, userId: user?.id }],
     queryFn: ({ pageParam }) => getMessages({ cursorId: pageParam, type }),
     initialPageParam: '',
     getNextPageParam: (lastPage) => lastPage.getMessages?.cursorId,
@@ -103,6 +108,8 @@ export const InboxTab = ({ type }: Props) => {
               ))}
             </Container>
           )}
+
+          <AdContainer slotId='7293553855' className='my-4' />
 
           <Container className='grid place-items-center'>
             {isFetchingNextPage ? (

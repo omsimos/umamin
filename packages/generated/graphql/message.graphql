@@ -1,15 +1,18 @@
 query getGlobalMessages($cursorId: ID) {
   getGlobalMessages(cursorId: $cursorId) {
-    id
-    content
-    createdAt
-    updatedAt
-    isAnonymous
-    user {
+    data {
       id
-      username
-      image
+      content
+      createdAt
+      updatedAt
+      isAnonymous
+      user {
+        id
+        username
+        image
+      }
     }
+    cursorId
   }
 }
 
