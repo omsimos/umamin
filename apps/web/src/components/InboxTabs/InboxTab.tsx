@@ -109,8 +109,6 @@ export const InboxTab = ({ type }: Props) => {
             </Container>
           )}
 
-          <AdContainer slotId='7293553855' className='my-4' />
-
           <Container className='grid place-items-center'>
             {isFetchingNextPage ? (
               <span className='loader' />
@@ -130,6 +128,8 @@ export const InboxTab = ({ type }: Props) => {
               )
             )}
           </Container>
+
+          <AdContainer slotId='7293553855' className='my-4' />
         </>
       )}
     </section>

@@ -115,8 +115,6 @@ const Global: NextPageWithLayout = () => {
               ))}
             </div>
 
-            <AdContainer slotId='2048259127' className='my-4' />
-
             <Container className='grid place-items-center mt-12'>
               {isFetchingNextPage ? (
                 <span className='loader' />
@@ -136,6 +134,8 @@ const Global: NextPageWithLayout = () => {
                 )
               )}
             </Container>
+
+            <AdContainer slotId='2048259127' className='my-4' />
           </>
         )}
 
