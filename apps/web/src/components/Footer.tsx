@@ -61,7 +61,7 @@ export const Footer = () => {
           rel='noreferrer noopener'
           className='text-sm font-medium text-gray-500 hover:underline md:text-base'
         >
-          OMSIMOS© 2023
+          OMSIMOS© 2024
         </a>
       </div>
     </Container>
