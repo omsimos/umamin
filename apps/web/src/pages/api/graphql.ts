@@ -9,6 +9,7 @@ import { buildSchema } from 'type-graphql';
 import prisma from '@/lib/db';
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
+import { GlobalMessageResolver } from '@/schema/global-message';
 
 export interface TContext {
   prisma: typeof prisma;
@@ -17,7 +18,7 @@ export interface TContext {
 }
 
 const schema = await buildSchema({
-  resolvers: [UserResolver, MessageResolver],
+  resolvers: [UserResolver, MessageResolver, GlobalMessageResolver],
 });
 
 const server = new ApolloServer({

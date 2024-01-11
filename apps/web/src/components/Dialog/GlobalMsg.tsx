@@ -75,7 +75,7 @@ export const GlobalMsg = ({ setIsOpen, message, ...rest }: Props) => {
                   })}
                 </p>
               </div>
-              <p className='font-light mt-1 break-words max-w-[300px]'>
+              <p className='font-light mt-1 break-words whitespace-pre-wrap max-w-[300px]'>
                 {message?.content}
               </p>
               <p className='text-secondary-400 text-sm mt-4'>

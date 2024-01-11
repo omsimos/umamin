@@ -53,7 +53,7 @@ export const GlobalPost = ({ message }: { message?: GlobalMessage }) => {
                 })}
               </p>
             </div>
-            <p className='font-light mt-1 break-words max-w-[350px]'>
+            <p className='font-light mt-1 break-words whitespace-pre-wrap max-w-[350px]'>
               {message?.content}
             </p>
           </div>

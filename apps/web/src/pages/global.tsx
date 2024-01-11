@@ -16,6 +16,9 @@ import type { NextPageWithLayout } from '..';
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
+const FeedAdContainer = dynamic(() => import('@/components/FeedAdContainer'), {
+  ssr: false,
+});
 
 const Global: NextPageWithLayout = () => {
   const [sendGlobalModal, setSendGlobalModal] = useState(false);
@@ -113,6 +116,8 @@ const Global: NextPageWithLayout = () => {
               {messages?.map((m) => (
                 <GlobalPost message={m} key={m?.id} />
               ))}
+
+              <FeedAdContainer slotId='1966757556' className='my-4' />
             </div>
 
             <Container className='grid place-items-center mt-12'>
@@ -134,8 +139,6 @@ const Global: NextPageWithLayout = () => {
                 )
               )}
             </Container>
-
-            <AdContainer slotId='2048259127' className='my-4' />
           </>
         )}
 
