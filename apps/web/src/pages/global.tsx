@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { GlobalMessage } from '@umamin/generated';
+import { BsFacebook, BsInstagram } from 'react-icons/bs';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { getGlobalMessages } from '@/api';
@@ -71,23 +73,53 @@ const Global: NextPageWithLayout = () => {
           </Container>
         ) : (
           <>
-            <Container className='flex flex-col mb-12'>
-              <div className='bg-secondary-200 p-8 rounded-2xl'>
+            <Container className='mb-12 flex flex-col'>
+              <div className='bg-secondary-200 mb-4 rounded-2xl p-8'>
+                <p className='bg-primary-200 inline-block rounded-full px-2 text-[10px] font-bold tracking-wide'>
+                  ANNOUNCEMENT
+                </p>
+
+                <p className='mt-4'>
+                  🎉 Huge update coming to <strong>Umamin Global</strong>!
+                </p>
+                <p className='text-secondary-400 mt-5 border-t border-secondary-100 pt-5'>
+                  Follow us for updates:
+                </p>
+
+                <div className='mt-2 flex space-x-4'>
+                  <Link
+                    className='flex items-center space-x-2 leading-none'
+                    href='https://www.instagram.com/umamin.app/'
+                    target="_blank"
+                  >
+                    <BsInstagram className='text-primary-300' />
+                    <p>@umamin.app</p>
+                  </Link>
+
+                  <Link
+                    className='flex items-center space-x-2 leading-none'
+                    href='https://www.facebook.com/umamin.official/'
+                    target="_blank"
+                  >
+                    <BsFacebook className='text-primary-300' />
+                    <p>@umamin.official</p>
+                  </Link>
+                </div>
+              </div>
+
+              <div className='bg-secondary-200 rounded-2xl p-8'>
                 <div className='relative inline-block'>
-                  <p className='mb-4 text-base text-secondary-400'>
+                  <p className='text-secondary-400 mb-4 text-base'>
                     Global Messages
-                  </p>
-                  <p className='absolute -top-2 -right-12 text-[10px] font-bold bg-primary-200 rounded-full px-2 tracking-wide'>
-                    BETA
                   </p>
                 </div>
 
-                <div className='flex gap-x-2 items-center'>
+                <div className='flex items-center gap-x-2'>
                   <ImageFill
                     alt='profile picture'
                     src={data?.user?.image}
                     unoptimized
-                    className='border-secondary-100 h-[45px] w-[45px] object-cover rounded-full border flex-none'
+                    className='border-secondary-100 h-[45px] w-[45px] flex-none rounded-full border object-cover'
                   />
 
                   <button
@@ -99,9 +131,9 @@ const Global: NextPageWithLayout = () => {
                         setSendGlobalModal(true);
                       }
                     }}
-                    className='rounded-full w-full bg-secondary-100 px-6 py-3 text-secondary-400 text-left'
+                    className='bg-secondary-100 text-secondary-400 w-full rounded-full px-6 py-3 text-left'
                   >
-                    Send a global message &rarr;
+                    Send a global message
                   </button>
                 </div>
               </div>
@@ -120,7 +152,7 @@ const Global: NextPageWithLayout = () => {
               <FeedAdContainer slotId='1966757556' className='my-4' />
             </div>
 
-            <Container className='grid place-items-center mt-12'>
+            <Container className='mt-12 grid place-items-center'>
               {isFetchingNextPage ? (
                 <span className='loader' />
               ) : (
@@ -128,7 +160,7 @@ const Global: NextPageWithLayout = () => {
                 messages?.length >= 10 &&
                 hasNextPage && (
                   <button
-                    className='bg-secondary-200 border border-secondary-100 mx-auto text-white px-6 py-2 rounded-lg'
+                    className='bg-secondary-200 border-secondary-100 mx-auto rounded-lg border px-6 py-2 text-white'
                     onClick={() => {
                       fetchNextPage();
                     }}
