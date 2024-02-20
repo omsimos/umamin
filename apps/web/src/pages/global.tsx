@@ -18,9 +18,6 @@ import type { NextPageWithLayout } from '..';
 const AdContainer = dynamic(() => import('@/components/AdContainer'), {
   ssr: false,
 });
-const FeedAdContainer = dynamic(() => import('@/components/FeedAdContainer'), {
-  ssr: false,
-});
 
 const Global: NextPageWithLayout = () => {
   const [sendGlobalModal, setSendGlobalModal] = useState(false);
@@ -82,7 +79,7 @@ const Global: NextPageWithLayout = () => {
                 <p className='mt-4'>
                   🎉 Huge update coming to <strong>Umamin Global</strong>!
                 </p>
-                <p className='text-secondary-400 mt-5 border-t border-secondary-100 pt-5'>
+                <p className='text-secondary-400 border-secondary-100 mt-5 border-t pt-5'>
                   Follow us for updates:
                 </p>
 
@@ -90,7 +87,7 @@ const Global: NextPageWithLayout = () => {
                   <Link
                     className='flex items-center space-x-2 leading-none'
                     href='https://www.instagram.com/umamin.app/'
-                    target="_blank"
+                    target='_blank'
                   >
                     <BsInstagram className='text-primary-300' />
                     <p>@umamin.app</p>
@@ -99,7 +96,7 @@ const Global: NextPageWithLayout = () => {
                   <Link
                     className='flex items-center space-x-2 leading-none'
                     href='https://www.facebook.com/umamin.official/'
-                    target="_blank"
+                    target='_blank'
                   >
                     <BsFacebook className='text-primary-300' />
                     <p>@umamin.official</p>
@@ -145,11 +142,15 @@ const Global: NextPageWithLayout = () => {
               {messageData && (
                 <GlobalPost message={messageData} key={messageData.id} />
               )}
-              {messages?.map((m) => (
-                <GlobalPost message={m} key={m?.id} />
-              ))}
+              {messages?.map((m, i) => (
+                <div key={m?.id}>
+                  {(i + 1) % 5 === 0 && (
+                    <AdContainer slotId='1966757556' className='mb-12' />
+                  )}
 
-              <FeedAdContainer slotId='1966757556' className='my-4' />
+                  <GlobalPost message={m} />
+                </div>
+              ))}
             </div>
 
             <Container className='mt-12 grid place-items-center'>
