@@ -145,7 +145,7 @@ const Global: NextPageWithLayout = () => {
               {messages?.map((m, i) => (
                 <div key={m?.id}>
                   {(i + 1) % 5 === 0 && (
-                    <AdContainer slotId='1966757556' test className='mb-12' />
+                    <AdContainer slotId='1966757556' className='mb-12' />
                   )}
 
                   <GlobalPost message={m} />
