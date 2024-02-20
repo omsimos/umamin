@@ -25,7 +25,7 @@ const AdContainer = ({ slotId, className, test, type = 'display' }: Props) => {
           data-ad-client='ca-pub-4274133898976040'
           data-ad-slot={slotId}
           data-ad-format='fluid'
-          data-ad-layout-key='-fb+5w+4e-db+86'
+          data-ad-layout-key='-il+e-1e-2w+ap'
         />
       ) : (
         <ins
