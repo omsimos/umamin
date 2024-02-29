@@ -64,18 +64,18 @@ export const InboxTab = ({ type }: Props) => {
       {!messages?.length ? (
         <Container>
           <div className='msg-card'>
-            <p className='mb-4 text-secondary-400'>
+            <p className='text-secondary-400 mb-4'>
               {type === 'sent'
                 ? 'You have not sent any messages yet. Send anonymous messages to your friends!'
                 : 'You have 0 messages. Start receiving anonymous messages by sharing your link!'}
             </p>
 
-            <div className='flex gap-x-2 items-center'>
+            <div className='flex items-center gap-x-2'>
               <ImageFill
                 alt='profile picture'
                 src={session?.user?.image}
                 unoptimized
-                className='border-secondary-100 h-[40px] w-[40px] object-cover rounded-full border'
+                className='border-secondary-100 h-[40px] w-[40px] rounded-full border object-cover'
               />
 
               <button
@@ -95,18 +95,28 @@ export const InboxTab = ({ type }: Props) => {
         <>
           {type === 'recent' && (
             <div>
-              {messages?.map((m) => (
-                <MessageCard key={m?.id} refetch={refetch} message={m} />
+              {messages?.map((m, i) => (
+                <div key={m?.id}>
+                  {(i + 1) % 3 === 0 && <AdContainer slotId='5900805117' />}
+
+                  <MessageCard key={m?.id} refetch={refetch} message={m} />
+                </div>
               ))}
             </div>
           )}
 
           {type === 'sent' && (
-            <Container className='space-y-6'>
-              {messages?.map((m) => (
-                <SentMessageCard key={m?.id} data={m} />
+            <div className='space-y-6'>
+              {messages?.map((m, i) => (
+                <div key={m?.id}>
+                  {(i + 1) % 3 === 0 && <AdContainer slotId='5900805117' className='mb-6' />}
+
+                  <Container className='space-y-6'>
+                    <SentMessageCard key={m?.id} data={m} />
+                  </Container>
+                </div>
               ))}
-            </Container>
+            </div>
           )}
 
           <Container className='grid place-items-center'>
@@ -117,7 +127,7 @@ export const InboxTab = ({ type }: Props) => {
               messages?.length >= 5 &&
               hasNextPage && (
                 <button
-                  className='bg-secondary-200 border border-secondary-100 mx-auto text-white px-6 py-2 rounded-lg'
+                  className='bg-secondary-200 border-secondary-100 mx-auto rounded-lg border px-6 py-2 text-white'
                   onClick={() => {
                     fetchNextPage?.();
                   }}
