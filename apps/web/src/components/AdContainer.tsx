@@ -7,7 +7,7 @@ interface Props {
   test?: boolean;
 }
 
-const AdContainer = ({ slotId, className, test = true }: Props) => {
+const AdContainer = ({ slotId, className, test }: Props) => {
   useEffect(() => {
     if (process.env.NODE_ENV === 'production' && typeof window === 'object') {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
