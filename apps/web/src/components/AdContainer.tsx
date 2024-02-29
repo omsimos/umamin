@@ -15,14 +15,16 @@ const AdContainer = ({ slotId, className, test }: Props) => {
   }, []);
 
   return (
-    <ins
-      className={twMerge('adsbygoogle', className, test && 'h-24 bg-blue-200')}
-      style={{ display: 'block' }}
-      data-ad-client='ca-pub-4274133898976040'
-      data-ad-slot={slotId}
-      data-ad-format='auto'
-      data-full-width-responsive='true'
-    />
+    <div className={twMerge(className, test && 'h-24 bg-blue-200')}>
+      <ins
+        className='adsbygoogle'
+        style={{ display: 'block' }}
+        data-ad-client='ca-pub-4274133898976040'
+        data-ad-slot={slotId}
+        data-ad-format='auto'
+        data-full-width-responsive='true'
+      />
+    </div>
   );
 };
 
