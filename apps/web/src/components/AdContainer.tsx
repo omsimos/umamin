@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { twMerge } from 'tailwind-merge';
+import { useRouter } from 'next/router';
 
 interface Props {
   slotId: string;
@@ -8,11 +9,13 @@ interface Props {
 }
 
 const AdContainer = ({ slotId, className, test }: Props) => {
+  const router = useRouter();
+
   useEffect(() => {
     if (process.env.NODE_ENV === 'production' && typeof window === 'object') {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     }
-  }, []);
+  }, [router.pathname]);
 
   return (
     <div className={twMerge(className, test && 'h-24 bg-blue-200')}>
