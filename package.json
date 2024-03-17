@@ -1,33 +1,20 @@
 {
   "name": "umamin",
-  "version": "0.0.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "build": "turbo run build",
-    "clean": "turbo run clean --parallel && rimraf node_modules",
-    "clean:cache": "turbo run clean:cache && rimraf node_modules/.cache",
-    "dev": "turbo run dev --parallel",
-    "generate": "turbo run generate --parallel",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
-    "lint": "turbo run lint",
-    "start": "turbo run start --parallel",
-    "prepare": "husky install",
-    "docker:down": "docker-compose down",
-    "docker:up": "docker-compose up -d"
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
-    "husky": "^8.0.1",
-    "prettier": "latest",
-    "rimraf": "^3.0.2",
+    "@umamin/eslint-config": "workspace:*",
+    "@umamin/typescript-config": "workspace:*",
+    "prettier": "^3.2.5",
     "turbo": "latest"
   },
+  "packageManager": "pnpm@8.9.0",
   "engines": {
-    "npm": ">=7.0.0",
-    "node": ">=14.0.0"
-  },
-  "packageManager": "yarn@1.22.19"
+    "node": ">=18"
+  }
 }
