@@ -1,7 +1,7 @@
 import { Button } from "@umamin/ui/components/button";
 import Link from "next/link";
 
-export default function Home() {
+export default function NotFound() {
   return (
     <main className="h-screen grid place-items-center">
       <div className="text-center">
