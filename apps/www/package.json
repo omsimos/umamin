@@ -17,6 +17,7 @@
     "nextjs-toploader": "^1.6.6",
     "react": "^18",
     "react-dom": "^18",
+    "sonner": "^1.4.3",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7"
   },
