@@ -15,15 +15,18 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import { ScanFace } from "lucide-react";
+import { ScanFace, Settings, Link } from "lucide-react";
+import { Card, CardHeader } from "@ui/components/ui/card";
 
 export default function UserProfile() {
   return (
-    <main className='container max-w-2xl pt-28'>
-      <section>
-        <div className='flex justify-between py-5'>
-          <Avatar className='h-20 w-20'>
-            {/* <AvatarImage
+    <main className='container max-w-2xl pt-28 space-y-3'>
+      <Card className='border-2'>
+        <CardHeader className='rounded-2xl'>
+          <div className='flex justify-between py-5'>
+            <div className='flex gap-6 items-center'>
+              <Avatar className='h-28 w-28'>
+                {/* <AvatarImage
               className="rounded-full"
               src={_user?.image as string | undefined}
               alt={`${_user?.username}'s avatar`}
@@ -31,69 +34,72 @@ export default function UserProfile() {
             <AvatarFallback className="text-xs">
               {_user?.username?.split(" ").at(0)}
             </AvatarFallback> */}
-            <AvatarFallback>
-              <ScanFace />
-            </AvatarFallback>
-          </Avatar>
-
-          {/* {isCurrentUser ? (
-            <div className='flex flex-col gap-2'>
-              <ProfileDropdownMenu />
-            </div>
-          ) : ( */}
-          <div className='flex gap-2'>
-            <Button
-              title='Follow'
-              type='button'
-              variant='outline'
-              onClick={() =>
-                toast.message("Follow User", {
-                  description: "Feature coming soon!",
-                })
-              }
-              className=' w-full'
-            >
-              Follow
-            </Button>
-          </div>
-          {/* )} */}
-        </div>
-
-        <div className='flex gap-3 min-w-0'>
-          <div>
-            <span className='font-semibold text-xl'>@johndoe</span>
-            {/* <p className='text-muted-foreground text-sm mt-1'>
+                <AvatarFallback>
+                  <ScanFace />
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <span className='font-semibold text-xl'>@johndoe</span>
+                {/* <p className='text-muted-foreground text-sm mt-1'>
                 Joined{" "}
                 {formatDistanceToNow(new Date(_user?.createdAt), {
                   addSuffix: true,
                 })}
               </p> */}
-            {/* <p className='text-muted-foreground text-sm mt-1'>
-              Joined at March 19, 2024
-            </p> */}
+                <p className='text-muted-foreground text-sm mt-1'>
+                  Joined at March 19, 2024
+                </p>
 
-            {/* <p
+                {/* <p
               className={cn("mt-3 text-sm break-words", {
                 "break-all": _user?.bio?.split(" ").length === 1,
               })}
             >
               {_user?.bio}
             </p> */}
-            <p className='mt-3 text-sm break-words'></p>
+                <p className='mt-3 break-words text-muted-foreground'>
+                  Hello! I'm the qiuck brown fox who jumped on the lazy dog near
+                  the bank of the river. 🦊
+                </p>
+              </div>
+            </div>
+
+            {/* Update button if user is not currentUser */}
+            <Button
+              title='Settings'
+              type='button'
+              variant='outline'
+              onClick={() =>
+                toast.message("Copy Link", {
+                  description: "Feature coming soon!",
+                })
+              }
+            >
+              <Link className='h-5' />
+            </Button>
           </div>
-        </div>
-      </section>
+        </CardHeader>
+      </Card>
 
       <Tabs defaultValue='recent' className='w-full'>
-        <TabsList className='w-full border-b bg-transparent'>
-          <TabsTrigger value='recent' className='w-full'>
-            Recent
+        <TabsList className='w-full bg-transparent px-0'>
+          <TabsTrigger
+            value='recent'
+            className='w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none'
+          >
+            📥 Recent
           </TabsTrigger>
-          <TabsTrigger value='sent' className='w-full'>
-            Sent
+          <TabsTrigger
+            value='sent'
+            className='w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none'
+          >
+            📩 Sent
           </TabsTrigger>
-          <TabsTrigger value='feed' className='w-full'>
-            Feed
+          <TabsTrigger
+            value='status'
+            className='w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none'
+          >
+            📲 Status
           </TabsTrigger>
         </TabsList>
 
@@ -111,9 +117,9 @@ export default function UserProfile() {
           </p>
         </TabsContent>
 
-        <TabsContent value='feed'>
+        <TabsContent value='status'>
           <p className='text-center mt-8 text-muted-foreground text-sm'>
-            Feed Coming soon
+            Status Coming soon
           </p>
         </TabsContent>
       </Tabs>
