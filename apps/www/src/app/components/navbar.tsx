@@ -1,15 +1,7 @@
 "use client";
 
 import Link from "next/link";
-
-import {
-  HomeIcon,
-  LinkIcon,
-  SquarePenIcon,
-  GlobeIcon,
-  LogOutIcon,
-  MenuIcon,
-} from "lucide-react";
+import { Icons } from "./icons";
 
 import {
   Sheet,
@@ -19,13 +11,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@umamin/ui/components/sheet";
-
 import { Button } from "@umamin/ui/components/button";
-import { useRouter } from "next/navigation";
 
 export function Navbar() {
-  const router = useRouter();
-
   return (
     <nav>
       <div className='fixed left-0 right-0 top-0 z-50 w-full  bg-zinc-950 bg-opacity-40 bg-clip-padding py-7 backdrop-blur-xl backdrop-filter md:z-40'>
@@ -45,23 +33,23 @@ export function Navbar() {
 
       <div className='fixed bottom-0 left-0 right-0 z-40 mx-auto flex max-w-screen-sm items-center justify-center gap-3 bg-zinc-950 bg-opacity-40 bg-clip-padding p-2 text-3xl backdrop-blur-xl backdrop-filter sm:px-10 md:bottom-auto md:top-0 md:z-50 md:bg-transparent md:px-14 md:text-[1.75rem] md:backdrop-blur-none [&>*:hover]:bg-zinc-800 [&>*]:flex [&>*]:w-full [&>*]:justify-center [&>*]:rounded-lg [&>*]:py-5 [&>*]:text-center [&>*]:text-muted-foreground [&>*]:transition-colors [&>*]:duration-300'>
         <Link href='/user/johndoe' aria-label='home button'>
-          <HomeIcon />
+          <Icons.home />
         </Link>
 
         <Link href='/to/doe' type='button'>
-          <LinkIcon />
+          <Icons.link />
         </Link>
 
         <button type='button'>
-          <SquarePenIcon />
+          <Icons.squares />
         </button>
 
-        <button type='button' title='notifications'>
-          <GlobeIcon />
+        <button type='button'>
+          <Icons.globe />
         </button>
 
-        <button title='profile'>
-          <LogOutIcon />
+        <button type='button'>
+          <Icons.exit />
         </button>
       </div>
     </nav>
@@ -75,7 +63,7 @@ const BurgerMenu = () => {
         title='menu'
         className='col-start-3 mr-7 place-self-end self-center text-3xl text-muted-foreground md:text-[1.75rem]'
       >
-        <MenuIcon />
+        <Icons.bars />
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>

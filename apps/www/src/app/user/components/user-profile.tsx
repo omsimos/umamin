@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { toast } from "sonner";
 // import { formatDistanceToNow } from "date-fns";
 import { Button } from "@umamin/ui/components/button";
@@ -9,16 +10,48 @@ import {
   AvatarFallback,
   // AvatarImage,
 } from "@umamin/ui/components/avatar";
+
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import { ScanFace, Settings, Link } from "lucide-react";
+
+import { ScanFace, Link } from "lucide-react";
 import { Card, CardHeader } from "@ui/components/ui/card";
 
 export default function UserProfile() {
+  const tabsData = [
+    {
+      name: "📥 Recent",
+      value: "recent",
+      content: () => (
+        <p className='text-center mt-8 text-muted-foreground text-sm'>
+          Recent Coming Soon
+        </p>
+      ),
+    },
+    {
+      name: "📩 Sent",
+      value: "sent",
+      content: () => (
+        <p className='text-center mt-8 text-muted-foreground text-sm'>
+          Sent Coming Soon
+        </p>
+      ),
+    },
+    {
+      name: "📲 Status",
+      value: "status",
+      content: () => (
+        <p className='text-center mt-8 text-muted-foreground text-sm'>
+          Status Coming Soon
+        </p>
+      ),
+    },
+  ];
+
   return (
     <main className='container max-w-2xl pt-28 space-y-3'>
       <Card className='border-2'>
@@ -82,46 +115,20 @@ export default function UserProfile() {
       </Card>
 
       <Tabs defaultValue='recent' className='w-full'>
-        <TabsList className='w-full bg-transparent px-0'>
-          <TabsTrigger
-            value='recent'
-            className='w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none'
-          >
-            📥 Recent
-          </TabsTrigger>
-          <TabsTrigger
-            value='sent'
-            className='w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none'
-          >
-            📩 Sent
-          </TabsTrigger>
-          <TabsTrigger
-            value='status'
-            className='w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none'
-          >
-            📲 Status
-          </TabsTrigger>
+        <TabsList className='w-full bg-transparent px-0 flex'>
+          {tabsData.map((tab) => (
+            <TabsTrigger
+              value={tab.value}
+              className='w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none'
+            >
+              {tab.name}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value='recent'>
-          {/* {_user?.id && <UserPosts authorId={_user.id} />} */}
-          <p className='text-center mt-8 text-muted-foreground text-sm'>
-            Recent Coming Soon
-          </p>
-        </TabsContent>
-
-        <TabsContent value='sent'>
-          {/* {_user?.id && <UserPosts isComment={true} authorId={_user.id} />} */}
-          <p className='text-center mt-8 text-muted-foreground text-sm'>
-            Sent Coming soon
-          </p>
-        </TabsContent>
-
-        <TabsContent value='status'>
-          <p className='text-center mt-8 text-muted-foreground text-sm'>
-            Status Coming soon
-          </p>
-        </TabsContent>
+        {tabsData.map((tab) => (
+          <TabsContent value={tab.value}>{tab.content()}</TabsContent>
+        ))}
       </Tabs>
     </main>
   );
