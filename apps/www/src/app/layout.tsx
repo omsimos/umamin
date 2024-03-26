@@ -21,7 +21,10 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body
-        className={cn(inter.className, "bg-background text-foreground dark")}
+        className={cn(
+          inter.className,
+          "bg-background text-foreground dark py-36"
+        )}
       >
         <NextTopLoader />
         <Toaster />

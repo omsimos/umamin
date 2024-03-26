@@ -53,7 +53,7 @@ export default function UserProfile() {
   ];
 
   return (
-    <main className='container max-w-2xl pt-28 space-y-3'>
+    <main className='container max-w-2xl space-y-3'>
       <Card className='border-2'>
         <CardHeader className='rounded-2xl'>
           <div className='flex justify-between py-5'>
