@@ -36,8 +36,8 @@ export function ChatBox() {
   };
 
   return (
-    <Card className='flex flex-col justify-between min-w-80 w-full max-w-2xl h-[70vh] min-h-[350px] max-h-[450px] relative'>
-      <CardHeader className='bg-background border-b w-full item-center rounded-t-2xl flex justify-between flex-row'>
+    <Card className='border-2 flex flex-col justify-between min-w-80 w-full max-w-2xl h-[70vh] min-h-[350px] max-h-[450px] relative'>
+      <CardHeader className='bg-background border-b-2 w-full item-center rounded-t-2xl flex justify-between flex-row'>
         <div className='flex items-center space-x-2'>
           <span className='text-muted-foreground'>To:</span>
           <ProfileHoverCard user={_recipient} sessionId='456'>
