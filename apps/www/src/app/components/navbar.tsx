@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Icons } from "./icons";
+import { ToggleTheme } from "./toggle-theme";
 
 import {
   Sheet,
@@ -27,7 +28,10 @@ export function Navbar() {
             <span className='text-muted-foreground font-medium'>.link</span>
           </Link>
 
-          <BurgerMenu />
+          <div className='col-start-3 mr-7 place-self-end self-center flex items-center'>
+            <ToggleTheme />
+            <BurgerMenu />
+          </div>
         </div>
       </div>
 
@@ -61,9 +65,11 @@ const BurgerMenu = () => {
     <Sheet>
       <SheetTrigger
         title='menu'
-        className='col-start-3 mr-7 place-self-end self-center text-3xl text-muted-foreground md:text-[1.75rem]'
+        className='text-3xl text-muted-foreground md:text-[1.75rem]'
       >
-        <Icons.bars />
+        <Button variant='ghost' size='icon'>
+          <Icons.bars />
+        </Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
