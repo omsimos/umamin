@@ -21,14 +21,14 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body className={inter.className}>
-        <NextTopLoader />
-        <Toaster />
         <ThemeProvider
           attribute='class'
           defaultTheme='dark'
           enableSystem
           disableTransitionOnChange
         >
+          <NextTopLoader />
+          <Toaster />
           <Navbar />
           {children}
         </ThemeProvider>

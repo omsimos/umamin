@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from "@umamin/ui/components/sheet";
 import { Button } from "@umamin/ui/components/button";
+import { DialogShareLink } from "./share-link";
 
 export function Navbar() {
   return (
@@ -35,22 +36,20 @@ export function Navbar() {
         </div>
       </div>
 
-      <div className='fixed bottom-0 left-0 right-0 z-40 mx-auto flex max-w-screen-sm items-center justify-center gap-3 bg-zinc-950 bg-opacity-40 bg-clip-padding p-2 text-3xl backdrop-blur-xl backdrop-filter sm:px-10 md:bottom-auto md:top-0 md:z-50 md:bg-transparent md:px-14 md:text-[1.75rem] md:backdrop-blur-none [&>*:hover]:bg-zinc-800 [&>*]:flex [&>*]:w-full [&>*]:justify-center [&>*]:rounded-lg [&>*]:py-5 [&>*]:text-center [&>*]:text-muted-foreground [&>*]:transition-colors [&>*]:duration-300'>
+      <div className='fixed bottom-0 left-0 right-0 z-40 mx-auto flex max-w-screen-sm items-center justify-center gap-3 bg-bg bg-opacity-40 bg-clip-padding p-2 text-3xl backdrop-blur-xl backdrop-filter sm:px-10 md:bottom-auto md:top-0 md:z-50 md:bg-transparent md:px-14 md:text-[1.75rem] md:backdrop-blur-none [&>*:hover]:bg-muted [&>*]:flex [&>*]:w-full [&>*]:justify-center [&>*]:rounded-lg [&>*]:py-5 [&>*]:text-center [&>*]:text-muted-foreground [&>*]:transition-colors [&>*]:duration-300'>
         <Link href='/user/johndoe' aria-label='home button'>
           <Icons.home />
         </Link>
 
-        <Link href='/to/doe' type='button'>
-          <Icons.link className='h-6' />
-        </Link>
+        <DialogShareLink />
 
         <button type='button'>
           <Icons.squares />
         </button>
 
-        <button type='button'>
+        <Link href='/to/doe'>
           <Icons.globe />
-        </button>
+        </Link>
 
         <button type='button'>
           <Icons.exit />
@@ -64,6 +63,7 @@ const BurgerMenu = () => {
   return (
     <Sheet>
       <SheetTrigger
+        asChild
         title='menu'
         className='text-3xl text-muted-foreground md:text-[1.75rem]'
       >

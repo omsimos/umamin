@@ -25,6 +25,7 @@
     --ring: 305 100% 78%;
     --radius: 1rem;
   }
+
   .dark {
     --background: 220, 7%, 7%;
     --foreground: 330 5% 90%;
