@@ -16,7 +16,7 @@ import { Button } from "@umamin/ui/components/button";
 export function Navbar() {
   return (
     <nav>
-      <div className='fixed left-0 right-0 top-0 z-50 w-full  bg-zinc-950 bg-opacity-40 bg-clip-padding py-7 backdrop-blur-xl backdrop-filter md:z-40'>
+      <div className='fixed left-0 right-0 top-0 z-50 w-full  bg-background bg-opacity-40 bg-clip-padding py-7 backdrop-blur-xl backdrop-filter md:z-40'>
         <div className='mx-auto grid w-full max-w-screen-xl grid-cols-3 items-center'>
           <Link
             href='/'
@@ -37,7 +37,7 @@ export function Navbar() {
         </Link>
 
         <Link href='/to/doe' type='button'>
-          <Icons.link />
+          <Icons.link className='h-6' />
         </Link>
 
         <button type='button'>
