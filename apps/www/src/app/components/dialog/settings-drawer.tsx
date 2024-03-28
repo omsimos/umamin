@@ -1,24 +1,19 @@
-import { Button } from "@ui/components/ui/button";
 import {
   Drawer,
   DrawerContent,
   DrawerTrigger,
 } from "@umamin/ui/components/drawer";
 
-import { Check, MessageCircleOff } from "lucide-react";
-
 import { cn } from "@umamin/ui/lib/utils";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@umamin/ui/components/card";
-import { Switch } from "@umamin/ui/components/switch";
 import { Icons } from "../utilities/icons";
-import { BioUpdateForm } from "../bio-update";
+import { SettingsForm } from "../settings-form";
 
 export function SettingsDrawer() {
   return (
@@ -49,18 +44,7 @@ export function SettingsContent({ className, ...props }: CardProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className='grid gap-4'>
-        <div className=' flex items-center space-x-4 rounded-md border p-4'>
-          <MessageCircleOff />
-          <div className='flex-1 space-y-1'>
-            <p className='text-sm font-medium leading-none'>Pause Link</p>
-            <p className='text-sm text-muted-foreground'>
-              Temporarily disable receiving anonymous messages.
-            </p>
-          </div>
-          <Switch />
-        </div>
-
-        <BioUpdateForm />
+        <SettingsForm />
       </CardContent>
     </Card>
   );

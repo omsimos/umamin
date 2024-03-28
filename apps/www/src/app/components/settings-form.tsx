@@ -1,10 +1,15 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@umamin/ui/components/button";
+import { Switch } from "@umamin/ui/components/switch";
+import { Check, MessageCircleOff } from "lucide-react";
+import { Textarea } from "@umamin/ui/components/textarea";
+
 import {
   Form,
   FormControl,
@@ -14,9 +19,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@umamin/ui/components/form";
-import { Textarea } from "@umamin/ui/components/textarea";
-import { toast } from "sonner";
-import { Check } from "lucide-react";
 
 const FormSchema = z.object({
   bio: z
@@ -27,11 +29,18 @@ const FormSchema = z.object({
     .max(160, {
       message: "Bio must not be longer than 30 characters.",
     }),
+  pause_link: z.boolean(),
 });
 
-export function BioUpdateForm() {
+export function SettingsForm() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
+    defaultValues: {
+      /**
+       * !! Match value in DB !!
+       */
+      pause_link: false,
+    },
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
@@ -46,7 +55,32 @@ export function BioUpdateForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className=' space-y-6'>
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+        <FormField
+          control={form.control}
+          name='pause_link'
+          render={({ field }) => (
+            <FormItem>
+              <div className=' flex items-center space-x-4 rounded-md border p-4'>
+                <MessageCircleOff />
+                <div className='flex-1 space-y-1'>
+                  <p className='text-sm font-medium leading-none'>Pause Link</p>
+                  <p className='text-sm text-muted-foreground'>
+                    Temporarily disable receiving anonymous messages.
+                  </p>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name='bio'
@@ -67,6 +101,7 @@ export function BioUpdateForm() {
             </FormItem>
           )}
         />
+
         <Button type='submit' className='w-full'>
           <Check className='mr-2 h-4 w-4' />
           Update Profile
