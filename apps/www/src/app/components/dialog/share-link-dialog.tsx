@@ -16,9 +16,9 @@ import {
 import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
 import React from "react";
-import { Icons } from "./icons";
+import { Icons } from "../icons";
 
-export function DialogShareLink() {
+export function ShareLinkDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>

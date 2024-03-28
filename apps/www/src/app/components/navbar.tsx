@@ -13,7 +13,8 @@ import {
   SheetTrigger,
 } from "@umamin/ui/components/sheet";
 import { Button } from "@umamin/ui/components/button";
-import { DialogShareLink } from "./share-link";
+import { ShareLinkDialog } from "./dialog/share-link-dialog";
+import { SignOutDialog } from "./dialog/sign-out-dialog";
 
 export function Navbar() {
   return (
@@ -41,7 +42,7 @@ export function Navbar() {
           <Icons.home />
         </Link>
 
-        <DialogShareLink />
+        <ShareLinkDialog />
 
         <button type='button'>
           <Icons.squares />
@@ -51,9 +52,7 @@ export function Navbar() {
           <Icons.globe />
         </Link>
 
-        <button type='button'>
-          <Icons.exit />
-        </button>
+        <SignOutDialog />
       </div>
     </nav>
   );
