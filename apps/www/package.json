@@ -23,7 +23,7 @@
     "sonner": "^1.4.3",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "link:@hookform/resolvers/zod"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20",
