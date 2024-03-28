@@ -28,6 +28,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
@@ -42,9 +43,11 @@
     "clsx": "^2.1.0",
     "lucide-react": "^0.358.0",
     "next-themes": "^0.3.0",
+    "react-hook-form": "^7.51.2",
     "sonner": "^1.4.3",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^0.9.0"
+    "vaul": "^0.9.0",
+    "zod": "^3.22.4"
   }
 }
