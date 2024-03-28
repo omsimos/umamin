@@ -9,6 +9,7 @@ import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
 import { Check, MessageCircleOff } from "lucide-react";
 import { Textarea } from "@umamin/ui/components/textarea";
+import { Input } from "@umamin/ui/components/input";
 
 import {
   Form,
@@ -16,9 +17,15 @@ import {
   FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@umamin/ui/components/form";
+
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@umamin/ui/components/accordion";
 
 const FormSchema = z.object({
   bio: z
@@ -29,6 +36,9 @@ const FormSchema = z.object({
     .max(160, {
       message: "Bio must not be longer than 30 characters.",
     }),
+  username: z.string().min(3, {
+    message: "Username must be at least 3 characters.",
+  }),
   pause_link: z.boolean(),
 });
 
@@ -81,26 +91,59 @@ export function SettingsForm() {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name='bio'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bio</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder='Tell us a little bit about yourself'
-                  className='resize-none'
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                This will be publicly displayed in your profile.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <Accordion type='single' collapsible>
+          <AccordionItem value='item-1'>
+            <AccordionTrigger className='text-sm'>
+              Update Username
+            </AccordionTrigger>
+            <AccordionContent>
+              <FormField
+                control={form.control}
+                name='username'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        className='focus-visible:ring-transparent'
+                        placeholder='omsimos'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      This is your public display name.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value='item-2'>
+            <AccordionTrigger className='text-sm'>Update Bio</AccordionTrigger>
+            <AccordionContent>
+              <FormField
+                control={form.control}
+                name='bio'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Textarea
+                        placeholder='Tell us a little bit about yourself'
+                        className='focus-visible:ring-transparent resize-none'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      This will be publicly displayed in your profile.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <Button type='submit' className='w-full'>
           <Check className='mr-2 h-4 w-4' />

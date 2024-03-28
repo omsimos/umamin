@@ -52,7 +52,7 @@ export default function UserProfile() {
 
   return (
     <main className='container max-w-2xl space-y-3 mt-36'>
-      <Card className='border'>
+      <Card className='border-x-0 border-b-0 border-t-[1.5px]'>
         <CardHeader className='rounded-2xl'>
           <div className='flex justify-between py-5'>
             <div className='flex gap-6 items-center'>
