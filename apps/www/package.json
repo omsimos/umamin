@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
     "@umamin/ui": "workspace:*",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
@@ -18,9 +19,11 @@
     "nextjs-toploader": "^1.6.6",
     "react": "^18",
     "react-dom": "^18",
+    "react-hook-form": "^7.51.2",
     "sonner": "^1.4.3",
     "tailwind-merge": "^2.2.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "link:@hookform/resolvers/zod"
   },
   "devDependencies": {
     "@types/node": "^20",
