@@ -3,7 +3,6 @@
 import React from "react";
 import { toast } from "sonner";
 // import { formatDistanceToNow } from "date-fns";
-import { Button } from "@umamin/ui/components/button";
 // import { ProfileDropdownMenu } from "./profile-dropdown-menu";
 import {
   Avatar,
@@ -26,8 +25,8 @@ import {
 } from "@umamin/ui/components/tooltip";
 
 import { ScanFace } from "lucide-react";
-import { Card, CardHeader } from "@ui/components/ui/card";
-import { Icons } from "@/app/components/icons";
+import { Card, CardHeader } from "@umamin/ui/components/card";
+import { Icons } from "../../components/utilities/icons";
 
 export default function UserProfile() {
   const tabsData = [

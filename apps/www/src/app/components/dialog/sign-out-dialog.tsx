@@ -9,7 +9,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@umamin/ui/components/alert-dialog";
-import { Icons } from "../icons";
+import { Icons } from "../utilities/icons";
 
 export function SignOutDialog() {
   return (

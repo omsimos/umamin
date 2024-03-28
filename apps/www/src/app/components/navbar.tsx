@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Icons } from "./icons";
-import { ToggleTheme } from "./toggle-theme";
+import { Icons } from "./utilities/icons";
+import { ToggleTheme } from "./utilities/toggle-theme";
 
 import {
   Sheet,

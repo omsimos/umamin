@@ -4,7 +4,7 @@ import { Inter } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import { Navbar } from "./components/navbar";
 import { Toaster } from "@umamin/ui/components/sonner";
-import { ThemeProvider } from "./components/theme-provider";
+import { ThemeProvider } from "./components/utilities/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
