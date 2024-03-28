@@ -25,18 +25,40 @@ import {
 } from "@umamin/ui/components/tooltip";
 
 import { ScanFace } from "lucide-react";
-import { Card, CardHeader } from "@umamin/ui/components/card";
+import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { Icons } from "../../components/utilities/icons";
+import { ChatList } from "@/app/components/chat-list";
 
 export default function UserProfile() {
+  const _messages = [
+    {
+      role: "user",
+      content: "Near the bank of the river, the fox really did it!!",
+    },
+    {
+      role: "recipient",
+      content:
+        "The quick brown fox jumps over the lazy dog near the bank of the river?",
+    },
+    {
+      role: "user",
+      content: "I'm just speechless",
+    },
+  ];
+
   const tabsData = [
     {
       name: "📥 Recent",
       value: "recent",
       content: () => (
-        <p className='text-center mt-8 text-muted-foreground text-sm'>
-          Recent Coming Soon
-        </p>
+        // <p className='text-center mt-8 text-muted-foreground text-sm'>
+        //   Recent Coming Soon
+        // </p>
+        <Card className='bg-bg'>
+          <CardContent className='p-0'>
+            <ChatList messages={_messages} />
+          </CardContent>
+        </Card>
       ),
     },
     {
@@ -51,7 +73,7 @@ export default function UserProfile() {
   ];
 
   return (
-    <main className='container max-w-2xl space-y-3 mt-36'>
+    <main className='container max-w-2xl space-y-3 lg:mt-36 mt-28'>
       <Card className='border-x-0 border-b-0 border-t-[1.5px]'>
         <CardHeader className='rounded-2xl'>
           <div className='flex justify-between py-5'>
@@ -120,7 +142,7 @@ export default function UserProfile() {
       </Card>
 
       <Tabs defaultValue='recent' className='w-full'>
-        <TabsList className='w-full bg-transparent px-0 flex'>
+        <TabsList className='w-full bg-transparent px-0 flex mb-5'>
           {tabsData.map((tab) => (
             <TabsTrigger
               key={tab.value}

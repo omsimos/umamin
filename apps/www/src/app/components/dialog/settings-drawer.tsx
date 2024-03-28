@@ -24,7 +24,7 @@ export function SettingsDrawer() {
         </button>
       </DrawerTrigger>
       <DrawerContent className='grid place-items-center'>
-        <div className='max-w-xl my-10 px-5'>
+        <div className='max-w-xl my-10'>
           <SettingsContent />
         </div>
       </DrawerContent>
