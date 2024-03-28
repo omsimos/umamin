@@ -60,7 +60,7 @@ export function ChatBox() {
           <Input
             id='message'
             placeholder='Type your message...'
-            className='flex-1 text-base'
+            className='focus-visible:ring-transparent flex-1 text-base'
             autoComplete='off'
             value={input}
             onChange={(e) => setInput(e.target.value)}
