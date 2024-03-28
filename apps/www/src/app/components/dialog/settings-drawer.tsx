@@ -20,7 +20,7 @@ export function SettingsDrawer() {
     <Drawer>
       <DrawerTrigger asChild>
         <button type='button'>
-          <Icons.squares />
+          <Icons.settings />
         </button>
       </DrawerTrigger>
       <DrawerContent className='grid place-items-center'>

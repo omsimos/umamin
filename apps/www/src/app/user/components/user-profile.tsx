@@ -48,15 +48,6 @@ export default function UserProfile() {
         </p>
       ),
     },
-    {
-      name: "📲 Status",
-      value: "status",
-      content: () => (
-        <p className='text-center mt-8 text-muted-foreground text-sm'>
-          Status Coming Soon
-        </p>
-      ),
-    },
   ];
 
   return (
