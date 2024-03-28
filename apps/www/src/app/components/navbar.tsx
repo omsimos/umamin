@@ -15,6 +15,7 @@ import {
 import { Button } from "@umamin/ui/components/button";
 import { ShareLinkDialog } from "./dialog/share-link-dialog";
 import { SignOutDialog } from "./dialog/sign-out-dialog";
+import { SettingsDrawer } from "./dialog/settings-drawer";
 
 export function Navbar() {
   return (
@@ -44,9 +45,7 @@ export function Navbar() {
 
         <ShareLinkDialog />
 
-        <button type='button'>
-          <Icons.squares />
-        </button>
+        <SettingsDrawer />
 
         <Link href='/to/doe'>
           <Icons.globe />
