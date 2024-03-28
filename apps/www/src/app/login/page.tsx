@@ -1,6 +1,5 @@
 "use client";
 
-import { Icons } from "../components/utilities/icons";
 import { Button } from "@umamin/ui/components/button";
 import {
   Card,

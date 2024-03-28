@@ -17,7 +17,8 @@ import {
   CardTitle,
 } from "@umamin/ui/components/card";
 import { Switch } from "@umamin/ui/components/switch";
-import { Icons } from "../icons";
+import { Icons } from "../utilities/icons";
+import { BioUpdateForm } from "../bio-update";
 
 export function SettingsDrawer() {
   return (
@@ -58,13 +59,9 @@ export function SettingsContent({ className, ...props }: CardProps) {
           </div>
           <Switch />
         </div>
+
+        <BioUpdateForm />
       </CardContent>
-      <CardFooter>
-        <Button className='w-full'>
-          <Check className='mr-2 h-4 w-4' />
-          Update Profile
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
