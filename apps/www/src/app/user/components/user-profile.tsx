@@ -24,6 +24,14 @@ import {
   TooltipTrigger,
 } from "@umamin/ui/components/tooltip";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@umamin/ui/components/dropdown-menu";
+
 import { ScanFace } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { Icons } from "../../components/utilities/icons";
@@ -46,6 +54,28 @@ export default function UserProfile() {
     },
   ];
 
+  const menu = [
+    {
+      title: "View",
+      onClick: () => {
+        toast.error("Not implemented yet");
+      },
+    },
+    {
+      title: "Download",
+      onClick: () => {
+        toast.error("Not implemented yet");
+      },
+    },
+    {
+      title: "Delete",
+      onClick: () => {
+        toast.error("Not implemented yet");
+      },
+      className: "text-red-500",
+    },
+  ];
+
   const tabsData = [
     {
       name: "📥 Recent",
@@ -55,6 +85,48 @@ export default function UserProfile() {
         //   Recent Coming Soon
         // </p>
         <Card className='bg-bg'>
+          <CardHeader>
+            <div className='flex justify-between items-center text-muted-foreground'>
+              {/* <button
+                type='button'
+                onClick={() => toast.info("Download Button")}
+              >
+                <Icons.download />
+              </button> */}
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type='button' className='h-4 w-4'>
+                      <Icons.info />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>I'm the 🦊</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <span className='font-semibold'>umamin</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger title='post menu' className='outline-none'>
+                  <Icons.elipsis />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className='font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0'>
+                  {menu.map((item, i) => (
+                    <React.Fragment key={item.title}>
+                      <DropdownMenuItem
+                        onClick={item.onClick}
+                        className={item.className}
+                      >
+                        {item.title}
+                      </DropdownMenuItem>
+                      {i + 1 !== menu.length && <DropdownMenuSeparator />}
+                    </React.Fragment>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </CardHeader>
           <CardContent className='p-0'>
             <ChatList messages={_messages} />
           </CardContent>

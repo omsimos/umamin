@@ -48,6 +48,8 @@ export function ChatBox() {
             </div>
           </ProfileHoverCard>
         </div>
+
+        <span className='font-semibold'>umamin</span>
       </CardHeader>
 
       <ChatList messages={_messages} />
