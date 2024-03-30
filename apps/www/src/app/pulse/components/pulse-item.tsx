@@ -1,6 +1,8 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
+import { ScanFace } from "lucide-react";
 import { Avatar, AvatarFallback } from "@umamin/ui/components/avatar";
 
 import {
@@ -9,18 +11,8 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@umamin/ui/components/tooltip";
-import { ScanFace } from "lucide-react";
-import { toast } from "sonner";
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@umamin/ui/components/dropdown-menu";
-import React from "react";
-import { Icons } from "@/app/components/utilities/icons";
+import { PulseDropDownMenu } from "./dropdown-menu";
+import { SendMessageDrawer } from "./send-message-drawer";
 
 export default function PulseItem() {
   return (
@@ -57,7 +49,11 @@ export default function PulseItem() {
             {/* 
              DropDownMenu
             */}
-            <DropDownMenu />
+
+            <div className='flex gap-1 text-muted-foreground items-center'>
+              <SendMessageDrawer />
+              <PulseDropDownMenu />
+            </div>
           </div>
 
           <TooltipProvider>
@@ -91,48 +87,3 @@ export default function PulseItem() {
     </div>
   );
 }
-
-const DropDownMenu = () => {
-  const menu = [
-    {
-      title: "View",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
-    },
-    {
-      title: "Message",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
-    },
-    {
-      title: "Report",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
-      className: "text-red-500",
-    },
-  ];
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        title='post menu'
-        className='outline-none text-muted-foreground'
-      >
-        <Icons.elipsis />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className='font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0'>
-        {menu.map((item, i) => (
-          <React.Fragment key={item.title}>
-            <DropdownMenuItem onClick={item.onClick} className={item.className}>
-              {item.title}
-            </DropdownMenuItem>
-            {i + 1 !== menu.length && <DropdownMenuSeparator />}
-          </React.Fragment>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
