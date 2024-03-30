@@ -2,7 +2,7 @@ import { ChatBox } from "@/app/components/chatbox";
 
 export default function SendMessage() {
   return (
-    <main className='grid place-items-center container'>
+    <main className='mt-36 grid place-items-center container'>
       <ChatBox />
     </main>
   );

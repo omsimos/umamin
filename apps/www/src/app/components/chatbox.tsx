@@ -36,7 +36,7 @@ export function ChatBox() {
   };
 
   return (
-    <Card className='border mt-36 flex flex-col justify-between min-w-80 w-full max-w-2xl h-[70vh] min-h-[350px] max-h-[450px] relative'>
+    <Card className='border flex flex-col justify-between min-w-80 w-full max-w-2xl h-[70vh] min-h-[350px] max-h-[450px] relative'>
       <CardHeader className='bg-background border-b w-full item-center rounded-t-2xl flex justify-between flex-row'>
         <div className='flex items-center space-x-2'>
           <span className='text-muted-foreground'>To:</span>
@@ -49,7 +49,7 @@ export function ChatBox() {
           </ProfileHoverCard>
         </div>
 
-        <span className='font-semibold'>umamin</span>
+        <span className='font-semibold text-muted-foreground'>umamin</span>
       </CardHeader>
 
       <ChatList messages={_messages} />
