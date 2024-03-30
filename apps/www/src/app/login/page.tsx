@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@umamin/ui/components/button";
 import {
   Card,
@@ -11,7 +9,7 @@ import {
 
 export default function Login() {
   return (
-    <section className='max-w-lg container'>
+    <section className='max-w-lg container mt-36'>
       <Card className='space-y-5'>
         <CardHeader className='space-y-1'>
           <CardTitle className='text-2xl flex justify-between items-center'>

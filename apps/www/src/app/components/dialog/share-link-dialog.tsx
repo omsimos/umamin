@@ -26,7 +26,7 @@ export function ShareLinkDialog() {
           <Icons.link className='h-6' />
         </button>
       </DialogTrigger>
-      <DialogContent className='sm:max-w-md'>
+      <DialogContent className='sm:max-w-md max-w-[90%] rounded-md'>
         <DialogHeader>
           <DialogTitle>Share link</DialogTitle>
           <DialogDescription>
