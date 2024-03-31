@@ -28,6 +28,7 @@ import { ScanFace } from "lucide-react";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 import { Icons } from "../../components/utilities/icons";
 import { RecentMessages } from "./recent-messages";
+import { SentMessages } from "./sent-messages";
 
 export default function UserProfile() {
   const tabsData = [
@@ -39,17 +40,13 @@ export default function UserProfile() {
     {
       name: "📩 Sent",
       value: "sent",
-      content: () => (
-        <p className='text-center mt-8 text-muted-foreground text-sm'>
-          Sent Coming Soon
-        </p>
-      ),
+      content: () => <SentMessages />,
     },
   ];
 
   return (
-    <main className='container max-w-2xl space-y-3 lg:mt-36 mt-28'>
-      <Card className='border-x-0 border-b-0 border-t-[1.5px]'>
+    <main className='container max-w-xl space-y-3 lg:mt-36 mt-28'>
+      <Card className='bg-bg'>
         <CardHeader className='rounded-2xl'>
           <div className='flex justify-between py-5'>
             <div className='flex gap-6 items-center'>
