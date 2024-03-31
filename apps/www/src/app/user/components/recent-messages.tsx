@@ -30,19 +30,16 @@ import { Icons } from "../../components/utilities/icons";
 import { ChatList } from "@/app/components/chat-list";
 
 export function RecentMessages() {
-  const _messages = [
+  const msgList = [
     {
-      role: "user",
-      content: "Near the bank of the river, the fox really did it!!",
+      message: "Send me an anonymous message!",
+      reply:
+        "Thinking of hitting the hiking trails if the weather holds up. Need some fresh air after being cooped up indoors. Although, I'm not ready to face the cold yet. 😅",
     },
     {
-      role: "recipient",
-      content:
-        "The quick brown fox jumps over the lazy dog near the bank of the river?",
-    },
-    {
-      role: "user",
-      content: "I'm just speechless",
+      message: "Send me an anonymous message!",
+      reply:
+        "Have you every wondered what it would be like to live in a different country? I've been thinking about it a lot lately.",
     },
   ];
 
@@ -69,55 +66,53 @@ export function RecentMessages() {
   ];
 
   return (
-    <Card className='bg-bg'>
-      <CardHeader>
-        <div className='flex justify-between items-center text-muted-foreground'>
-          <TooltipProvider delayDuration={0}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button type='button' className='h-4 w-4'>
-                  <Icons.info />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>I'm the 🦊</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+    <div className='flex flex-col items-center gap-5 pb-20'>
+      {msgList.map((msg) => (
+        <div className='w-full'>
+          <Card className='w-full group relative'>
+            <div className='absolute top-4 right-4'>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  title='post menu'
+                  className='opacity-0 outline-none text-muted-foreground group-hover:opacity-100 transition-opacity focus:opacity-100'
+                >
+                  <Icons.elipsis />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align='start'
+                  className='font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0'
+                >
+                  {menu.map((item, i) => (
+                    <React.Fragment key={item.title}>
+                      <DropdownMenuItem
+                        onClick={item.onClick}
+                        className={item.className}
+                      >
+                        {item.title}
+                      </DropdownMenuItem>
+                      {i + 1 !== menu.length && <DropdownMenuSeparator />}
+                    </React.Fragment>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-          <span className='font-semibold'>umamin</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger title='post menu' className='outline-none'>
-              <Icons.elipsis />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className='font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0'>
-              {menu.map((item, i) => (
-                <React.Fragment key={item.title}>
-                  <DropdownMenuItem
-                    onClick={item.onClick}
-                    className={item.className}
-                  >
-                    {item.title}
-                  </DropdownMenuItem>
-                  {i + 1 !== menu.length && <DropdownMenuSeparator />}
-                </React.Fragment>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <CardHeader className='flex'>
+              <p className='font-bold text-center  text-lg'>{msg.message}</p>
+            </CardHeader>
+            <CardContent>
+              <div className='flex w-max max-w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted'>
+                {msg.reply}
+              </div>
+            </CardContent>
+            <CardFooter className='flex justify-center'>
+              <p className='text-muted-foreground text-sm mt-1 italic'>
+                4h · umamin
+              </p>
+            </CardFooter>
+          </Card>
         </div>
-      </CardHeader>
-      <CardContent className='p-0'>
-        <ChatList messages={_messages} />
-      </CardContent>
-      <CardFooter className='flex justify-center'>
-        {/* <p className='text-muted-foreground text-sm mt-1'>
-                Joined{" "}
-                {formatDistanceToNow(new Date(_user?.createdAt), {
-                  addSuffix: true,
-                })}
-              </p> */}
-        <p className='text-muted-foreground text-sm mt-1 italic'>3 hours ago</p>
-      </CardFooter>
-    </Card>
+      ))}
+    </div>
   );
 }
