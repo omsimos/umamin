@@ -30,7 +30,7 @@ type User = {
 type ProfileHoverCardProps = {
   children: React.ReactNode;
   user: User;
-  sessionId: string | undefined;
+  sessionId?: string | undefined;
 };
 
 export function ProfileHoverCard({
@@ -90,11 +90,11 @@ export function ProfileHoverCard({
         </p>
         {user.id !== sessionId && (
           <Button
-            title='follow'
+            title='Visit Profile'
             onClick={() => toast.info("Feature coming soon!")}
             className='mt-4 w-full'
           >
-            Follow
+            Visit Profile
           </Button>
         )}
       </HoverCardContent>

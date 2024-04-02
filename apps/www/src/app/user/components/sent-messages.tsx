@@ -28,6 +28,7 @@ import {
 } from "@umamin/ui/components/card";
 import { Icons } from "../../components/utilities/icons";
 import { ChatList } from "@/app/components/chat-list";
+import { ProfileHoverCard } from "@/app/components/profile-hover-card";
 
 export function SentMessages() {
   const _messages = [
@@ -70,10 +71,17 @@ export function SentMessages() {
     },
   ];
 
+  const _recipient = {
+    name: "John Doe",
+    slug: "johndoe",
+    id: "123",
+    createdAt: "2021-08-01",
+  };
+
   return (
     <div className='flex w-full flex-col items-center gap-5 pb-20'>
-      {messageList.map((message) => (
-        <Card className='w-full'>
+      {messageList.map((message, i) => (
+        <Card key={message[i].content} className='w-full'>
           <CardHeader>
             <div className='flex justify-between items-center text-muted-foreground'>
               <TooltipProvider delayDuration={0}>
@@ -120,9 +128,15 @@ export function SentMessages() {
                 addSuffix: true,
               })}
             </p> */}
-            <p className='text-muted-foreground text-sm mt-1 italic'>
-              3 hours ago
-            </p>
+            <div className='text-muted-foreground text-sm mt-1 flex gap-1'>
+              <p className='italic'>3h · Sent to</p>
+
+              <ProfileHoverCard user={_recipient}>
+                <p className='cursor-pointer hover:underline italic'>
+                  @johndoe
+                </p>
+              </ProfileHoverCard>
+            </div>
           </CardFooter>
         </Card>
       ))}

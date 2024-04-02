@@ -6,13 +6,6 @@ import { toast } from "sonner";
 // import { ProfileDropdownMenu } from "./profile-dropdown-menu";
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@umamin/ui/components/tooltip";
-
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -27,7 +20,6 @@ import {
   CardHeader,
 } from "@umamin/ui/components/card";
 import { Icons } from "../../components/utilities/icons";
-import { ChatList } from "@/app/components/chat-list";
 
 export function RecentMessages() {
   const msgList = [
@@ -74,7 +66,7 @@ export function RecentMessages() {
               <DropdownMenu>
                 <DropdownMenuTrigger
                   title='post menu'
-                  className='opacity-0 outline-none text-muted-foreground group-hover:opacity-100 transition-opacity focus:opacity-100'
+                  className='opacity-0 outline-none text-muted-foreground group-hover:opacity-100 transition-opacity'
                 >
                   <Icons.elipsis />
                 </DropdownMenuTrigger>
