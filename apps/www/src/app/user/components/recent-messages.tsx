@@ -1,9 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { toast } from "sonner";
 // import { formatDistanceToNow } from "date-fns";
 // import { ProfileDropdownMenu } from "./profile-dropdown-menu";
+
+import { Menu } from "@/app/components/menu";
+import { MenuItems } from "@/app/components/menu";
 
 import {
   Card,
@@ -11,8 +14,8 @@ import {
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
-import { Menu } from "@/app/components/menu";
-import { MenuItems } from "@/app/components/menu";
+
+import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
 
 type Message = {
   message: string;
@@ -20,6 +23,8 @@ type Message = {
 };
 
 export function RecentMessages() {
+  const [openMsgCard, setOpenMsgCard] = useState(false);
+
   const msgList: Message[] = [
     {
       message: "Send me an anonymous message!",
@@ -33,11 +38,16 @@ export function RecentMessages() {
     },
   ];
 
+  {
+    /**
+Insert in component to handle fn via ID
+*/
+  }
   const menuItems: MenuItems = [
     {
       title: "View",
       onClick: () => {
-        toast.error("Not implemented yet");
+        setOpenMsgCard(!openMsgCard);
       },
     },
     {
@@ -57,6 +67,12 @@ export function RecentMessages() {
 
   return (
     <div className='flex flex-col items-center gap-5 pb-20'>
+      <Dialog onOpenChange={setOpenMsgCard} open={openMsgCard}>
+        <DialogContent className='p-10'>
+          <ReceivedMessageCard msg={msgList[0]} menuItems={menuItems} />
+        </DialogContent>
+      </Dialog>
+
       {msgList.map((msg) => (
         <ReceivedMessageCard key={msg.reply} msg={msg} menuItems={menuItems} />
       ))}
@@ -72,9 +88,9 @@ const ReceivedMessageCard = ({
   menuItems: MenuItems;
 }) => {
   return (
-    <div className='w-full'>
+    <div className='w-full min-w-2'>
       <Card className='w-full group relative'>
-        <div className='absolute top-4 right-4'>
+        <div className='absolute group-hover:opacity-100 opacity-0 transition-opacity top-4 right-4 text-muted-foreground'>
           <Menu menuItems={menuItems} />
         </div>
 
