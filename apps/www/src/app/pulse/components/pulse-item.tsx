@@ -2,8 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { ScanFace } from "lucide-react";
-import { Avatar, AvatarFallback } from "@umamin/ui/components/avatar";
 
 import {
   Tooltip,
@@ -11,11 +11,35 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@umamin/ui/components/tooltip";
-import { PulseDropDownMenu } from "./dropdown-menu";
+
 import { SendMessageDrawer } from "./send-message-drawer";
+import { Menu } from "@/app/components/menu";
+import { Avatar, AvatarFallback } from "@umamin/ui/components/avatar";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 
 export default function PulseItem() {
+  const menuItems = [
+    {
+      title: "View",
+      onClick: () => {
+        toast.error("Not implemented yet");
+      },
+    },
+    {
+      title: "Message",
+      onClick: () => {
+        toast.error("Not implemented yet");
+      },
+    },
+    {
+      title: "Report",
+      onClick: () => {
+        toast.error("Not implemented yet");
+      },
+      className: "text-red-500",
+    },
+  ];
+
   return (
     <Card className='flex flex-col items-start justify-between'>
       <CardHeader className='w-full'>
@@ -72,7 +96,7 @@ export default function PulseItem() {
 
           <div className='flex gap-1 text-muted-foreground items-center'>
             <SendMessageDrawer />
-            <PulseDropDownMenu />
+            <Menu menuItems={menuItems} />
           </div>
         </div>
       </CardHeader>

@@ -6,23 +6,21 @@ import { toast } from "sonner";
 // import { ProfileDropdownMenu } from "./profile-dropdown-menu";
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@umamin/ui/components/dropdown-menu";
-
-import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
-import { Icons } from "../../components/utilities/icons";
+import { Menu } from "@/app/components/menu";
+import { MenuItems } from "@/app/components/menu";
+
+type Message = {
+  message: string;
+  reply: string;
+};
 
 export function RecentMessages() {
-  const msgList = [
+  const msgList: Message[] = [
     {
       message: "Send me an anonymous message!",
       reply:
@@ -35,7 +33,7 @@ export function RecentMessages() {
     },
   ];
 
-  const menu = [
+  const menuItems: MenuItems = [
     {
       title: "View",
       onClick: () => {
@@ -60,51 +58,40 @@ export function RecentMessages() {
   return (
     <div className='flex flex-col items-center gap-5 pb-20'>
       {msgList.map((msg) => (
-        <div className='w-full'>
-          <Card className='w-full group relative'>
-            <div className='absolute top-4 right-4'>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  title='post menu'
-                  className='opacity-0 outline-none text-muted-foreground group-hover:opacity-100 transition-opacity'
-                >
-                  <Icons.elipsis />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align='start'
-                  className='font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0'
-                >
-                  {menu.map((item, i) => (
-                    <React.Fragment key={item.title}>
-                      <DropdownMenuItem
-                        onClick={item.onClick}
-                        className={item.className}
-                      >
-                        {item.title}
-                      </DropdownMenuItem>
-                      {i + 1 !== menu.length && <DropdownMenuSeparator />}
-                    </React.Fragment>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <CardHeader className='flex'>
-              <p className='font-bold text-center  text-lg'>{msg.message}</p>
-            </CardHeader>
-            <CardContent>
-              <div className='flex w-max max-w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted'>
-                {msg.reply}
-              </div>
-            </CardContent>
-            <CardFooter className='flex justify-center'>
-              <p className='text-muted-foreground text-sm mt-1 italic'>
-                4h · umamin
-              </p>
-            </CardFooter>
-          </Card>
-        </div>
+        <ReceivedMessageCard key={msg.reply} msg={msg} menuItems={menuItems} />
       ))}
     </div>
   );
 }
+
+const ReceivedMessageCard = ({
+  msg,
+  menuItems,
+}: {
+  msg: Message;
+  menuItems: MenuItems;
+}) => {
+  return (
+    <div className='w-full'>
+      <Card className='w-full group relative'>
+        <div className='absolute top-4 right-4'>
+          <Menu menuItems={menuItems} />
+        </div>
+
+        <CardHeader className='flex'>
+          <p className='font-bold text-center  text-lg'>{msg.message}</p>
+        </CardHeader>
+        <CardContent>
+          <div className='flex w-max max-w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted'>
+            {msg.reply}
+          </div>
+        </CardContent>
+        <CardFooter className='flex justify-center'>
+          <p className='text-muted-foreground text-sm mt-1 italic'>
+            4h · umamin
+          </p>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+};

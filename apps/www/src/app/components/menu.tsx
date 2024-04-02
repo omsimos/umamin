@@ -1,5 +1,4 @@
 import React from "react";
-import { toast } from "sonner";
 
 import {
   DropdownMenu,
@@ -11,41 +10,25 @@ import {
 
 import { Icons } from "@/app/components/utilities/icons";
 
-export const PulseDropDownMenu = () => {
-  const menu = [
-    {
-      title: "View",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
-    },
-    {
-      title: "Message",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
-    },
-    {
-      title: "Report",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
-      className: "text-red-500",
-    },
-  ];
+export type MenuItems = {
+  title: string;
+  onClick: () => void;
+  className?: string;
+}[];
 
+export const Menu = ({ menuItems }: { menuItems: MenuItems }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger title='post menu'>
         <Icons.elipsisVertical />
       </DropdownMenuTrigger>
       <DropdownMenuContent className='font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0'>
-        {menu.map((item, i) => (
+        {menuItems.map((item, i) => (
           <React.Fragment key={item.title}>
             <DropdownMenuItem onClick={item.onClick} className={item.className}>
               {item.title}
             </DropdownMenuItem>
-            {i + 1 !== menu.length && <DropdownMenuSeparator />}
+            {i + 1 !== menuItems.length && <DropdownMenuSeparator />}
           </React.Fragment>
         ))}
       </DropdownMenuContent>

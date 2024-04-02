@@ -5,6 +5,9 @@ import { toast } from "sonner";
 // import { formatDistanceToNow } from "date-fns";
 // import { ProfileDropdownMenu } from "./profile-dropdown-menu";
 
+import { Menu } from "@/app/components/menu";
+import { ChatList } from "@/app/components/chat-list";
+
 import {
   Tooltip,
   TooltipContent,
@@ -13,21 +16,13 @@ import {
 } from "@umamin/ui/components/tooltip";
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@umamin/ui/components/dropdown-menu";
-
-import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
+
 import { Icons } from "../../components/utilities/icons";
-import { ChatList } from "@/app/components/chat-list";
 import { ProfileHoverCard } from "@/app/components/profile-hover-card";
 
 export function SentMessages() {
@@ -49,7 +44,7 @@ export function SentMessages() {
 
   const messageList = [_messages, _messages];
 
-  const menu = [
+  const menuItems = [
     {
       title: "View",
       onClick: () => {
@@ -98,24 +93,7 @@ export function SentMessages() {
               </TooltipProvider>
 
               <span className='font-semibold'>umamin</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger title='post menu' className='outline-none'>
-                  <Icons.elipsis />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className='font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0'>
-                  {menu.map((item, i) => (
-                    <React.Fragment key={item.title}>
-                      <DropdownMenuItem
-                        onClick={item.onClick}
-                        className={item.className}
-                      >
-                        {item.title}
-                      </DropdownMenuItem>
-                      {i + 1 !== menu.length && <DropdownMenuSeparator />}
-                    </React.Fragment>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Menu menuItems={menuItems} />
             </div>
           </CardHeader>
           <CardContent className='p-0'>
