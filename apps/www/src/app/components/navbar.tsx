@@ -21,7 +21,7 @@ import { ActivityIcon } from "lucide-react";
 export function Navbar() {
   return (
     <nav>
-      <div className='fixed left-0 right-0 top-0 z-50 w-full  bg-background bg-opacity-40 bg-clip-padding py-7 backdrop-blur-xl backdrop-filter md:z-40'>
+      <div className='fixed left-0 right-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter md:z-40'>
         <div className='mx-auto grid w-full max-w-screen-xl grid-cols-3 items-center'>
           <Link
             href='/'
