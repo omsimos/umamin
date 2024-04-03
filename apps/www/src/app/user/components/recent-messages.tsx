@@ -69,7 +69,11 @@ Insert in component to handle fn via ID
     <div className='flex flex-col items-center gap-5 pb-20'>
       <Dialog onOpenChange={setOpenMsgCard} open={openMsgCard}>
         <DialogContent className='p-10'>
-          <ReceivedMessageCard msg={msgList[0]} menuItems={menuItems} />
+          <ReceivedMessageCard
+            msg={msgList[0]}
+            menuItems={menuItems}
+            openMsgCard={openMsgCard}
+          />
         </DialogContent>
       </Dialog>
 
@@ -83,14 +87,18 @@ Insert in component to handle fn via ID
 const ReceivedMessageCard = ({
   msg,
   menuItems,
+  openMsgCard,
 }: {
   msg: Message;
   menuItems: MenuItems;
+  openMsgCard?: boolean;
 }) => {
   return (
     <div className='w-full min-w-2'>
       <Card className='w-full group relative'>
-        <div className='absolute group-hover:opacity-100 opacity-0 transition-opacity top-4 right-4 text-muted-foreground'>
+        <div
+          className={`absolute group-hover:opacity-100 opacity-0 transition-opacity top-4 right-4 text-muted-foreground ${openMsgCard ? "hidden" : ""}`}
+        >
           <Menu menuItems={menuItems} />
         </div>
 
