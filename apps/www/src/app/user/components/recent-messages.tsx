@@ -68,7 +68,7 @@ Insert in component to handle fn via ID
   return (
     <div className='flex flex-col items-center gap-5 pb-20'>
       <Dialog onOpenChange={setOpenMsgCard} open={openMsgCard}>
-        <DialogContent className='p-10'>
+        <DialogContent className='p-0 rounded-md max-w-[95%] sm:max-w-lg'>
           <ReceivedMessageCard
             msg={msgList[0]}
             menuItems={menuItems}
@@ -94,28 +94,24 @@ const ReceivedMessageCard = ({
   openMsgCard?: boolean;
 }) => {
   return (
-    <div className='w-full min-w-2'>
-      <Card className='w-full group relative'>
-        <div
-          className={`absolute group-hover:opacity-100 opacity-0 transition-opacity top-4 right-4 text-muted-foreground ${openMsgCard ? "hidden" : ""}`}
-        >
-          <Menu menuItems={menuItems} />
-        </div>
+    <Card className='min-w-2 w-full group relative'>
+      <div
+        className={`absolute group-hover:opacity-100 opacity-0 transition-opacity top-4 right-4 text-muted-foreground ${openMsgCard ? "hidden" : ""}`}
+      >
+        <Menu menuItems={menuItems} />
+      </div>
 
-        <CardHeader className='flex'>
-          <p className='font-bold text-center  text-lg'>{msg.message}</p>
-        </CardHeader>
-        <CardContent>
-          <div className='flex w-max max-w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted'>
-            {msg.reply}
-          </div>
-        </CardContent>
-        <CardFooter className='flex justify-center'>
-          <p className='text-muted-foreground text-sm mt-1 italic'>
-            4h · umamin
-          </p>
-        </CardFooter>
-      </Card>
-    </div>
+      <CardHeader className='flex'>
+        <p className='font-bold text-center  text-lg'>{msg.message}</p>
+      </CardHeader>
+      <CardContent>
+        <div className='flex w-max max-w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted'>
+          {msg.reply}
+        </div>
+      </CardContent>
+      <CardFooter className='flex justify-center'>
+        <p className='text-muted-foreground text-sm mt-1 italic'>4h · umamin</p>
+      </CardFooter>
+    </Card>
   );
 };
