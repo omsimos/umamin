@@ -2,7 +2,11 @@
 
 import { z } from "zod";
 import { toast } from "sonner";
-import { useForm } from "react-hook-form";
+import {
+  type ControllerRenderProps,
+  useForm,
+  type FieldValues,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@umamin/ui/components/button";
@@ -28,6 +32,15 @@ import {
 } from "@umamin/ui/components/accordion";
 
 const FormSchema = z.object({
+  pauseLink: z.boolean(),
+  customMessage: z
+    .string()
+    .min(10, {
+      message: "Custom message must be at least 10 characters.",
+    })
+    .max(160, {
+      message: "Custom message must not be longer than 30 characters.",
+    }),
   bio: z
     .string()
     .min(10, {
@@ -39,7 +52,6 @@ const FormSchema = z.object({
   username: z.string().min(3, {
     message: "Username must be at least 3 characters.",
   }),
-  pause_link: z.boolean(),
 });
 
 export function SettingsForm() {
@@ -49,26 +61,78 @@ export function SettingsForm() {
       /**
        * !! Match value in DB !!
        */
-      pause_link: false,
+      pauseLink: false,
+      customMessage: "Send me an anonymous message!",
     },
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     toast("You submitted the following values:", {
       description: (
-        <pre className='mt-2 w-[340px] rounded-md bg-slate-950 p-4'>
+        <pre className='mt-2 w-[340px] rounded-md border-0 bg-slate-950 p-4'>
           <code className='text-white'>{JSON.stringify(data, null, 2)}</code>
         </pre>
       ),
     });
   }
 
+  type settingsData = {
+    title: string;
+    name: "pauseLink" | "customMessage" | "bio" | "username";
+    content: (
+      field: ControllerRenderProps<z.infer<typeof FormSchema>>
+    ) => JSX.Element;
+    description: string;
+  };
+
+  const settingsData: settingsData[] = [
+    {
+      title: "Update Custom Message",
+      name: "customMessage",
+      content: (field) => (
+        <Textarea
+          placeholder='Send me an anonymous message!'
+          className='focus-visible:ring-transparent resize-none'
+          {...field}
+          value={field.value as string}
+        />
+      ),
+      description: "This will update your anonymous message title.",
+    },
+    {
+      title: "Update Username",
+      name: "username",
+      content: (field) => (
+        <Input
+          className='focus-visible:ring-transparent'
+          placeholder='omsimos'
+          {...field}
+          value={field.value as string}
+        />
+      ),
+      description: "This is your public display name.",
+    },
+    {
+      title: "Update Bio",
+      name: "bio",
+      content: (field) => (
+        <Textarea
+          placeholder='Tell us a little bit about yourself'
+          className='focus-visible:ring-transparent resize-none'
+          {...field}
+          value={field.value as string}
+        />
+      ),
+      description: "This will be publicly displayed in your profile.",
+    },
+  ];
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
         <FormField
           control={form.control}
-          name='pause_link'
+          name='pauseLink'
           render={({ field }) => (
             <FormItem>
               <div className=' flex items-center space-x-4 rounded-md border p-4'>
@@ -92,57 +156,28 @@ export function SettingsForm() {
         />
 
         <Accordion type='single' collapsible>
-          <AccordionItem value='item-1'>
-            <AccordionTrigger className='text-sm'>
-              Update Username
-            </AccordionTrigger>
-            <AccordionContent>
-              <FormField
-                control={form.control}
-                name='username'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        className='focus-visible:ring-transparent'
-                        placeholder='omsimos'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      This is your public display name.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </AccordionContent>
-          </AccordionItem>
+          {settingsData.map((data) => {
+            const { title, name, content, description } = data;
 
-          <AccordionItem value='item-2'>
-            <AccordionTrigger className='text-sm'>Update Bio</AccordionTrigger>
-            <AccordionContent>
-              <FormField
-                control={form.control}
-                name='bio'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea
-                        placeholder='Tell us a little bit about yourself'
-                        className='focus-visible:ring-transparent resize-none'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      This will be publicly displayed in your profile.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </AccordionContent>
-          </AccordionItem>
+            return (
+              <AccordionItem value={name}>
+                <AccordionTrigger className='text-sm'>{title}</AccordionTrigger>
+                <AccordionContent>
+                  <FormField
+                    control={form.control}
+                    name={name}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>{content(field)}</FormControl>
+                        <FormDescription>{description}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
         </Accordion>
 
         <Button type='submit' className='w-full'>
