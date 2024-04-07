@@ -56,7 +56,7 @@ export class MessageResolver {
         cursorId: messages[messages.length - 1].id,
       };
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -81,7 +81,7 @@ export class MessageResolver {
 
       return message.content;
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -94,7 +94,7 @@ export class MessageResolver {
     try {
       await prisma.message.delete({ where: { id } });
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
 
@@ -113,7 +113,7 @@ export class MessageResolver {
         data: { reply: content },
       });
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
 

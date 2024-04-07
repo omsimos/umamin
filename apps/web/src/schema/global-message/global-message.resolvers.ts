@@ -57,7 +57,7 @@ export class GlobalMessageResolver {
         cursorId: messages[messages.length - 1].id,
       };
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -87,7 +87,7 @@ export class GlobalMessageResolver {
         }
       }
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
 
@@ -133,7 +133,7 @@ export class GlobalMessageResolver {
 
       return { data: message };
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }

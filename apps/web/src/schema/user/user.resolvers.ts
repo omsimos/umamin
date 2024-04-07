@@ -26,7 +26,7 @@ export class UserResolver {
 
       return data;
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -62,7 +62,7 @@ export class UserResolver {
 
       return { error: null };
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -80,7 +80,7 @@ export class UserResolver {
 
       return { error: null };
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -110,7 +110,7 @@ export class UserResolver {
 
       return { error: null };
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -136,7 +136,7 @@ export class UserResolver {
 
       return { error: null };
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -150,7 +150,7 @@ export class UserResolver {
 
       return { error: null };
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
