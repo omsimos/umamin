@@ -1,8 +1,8 @@
- /* eslint-disable */
+/* eslint-disable */
 
 import { PrismaClient } from '@umamin/db';
 import { PrismaLibSQL } from '@prisma/adapter-libsql';
-import { createClient } from '@libsql/client';
+import { createClient } from '@libsql/client/web';
 
 const libsql = createClient({
   url: process.env.TURSO_DATABASE_URL!,
@@ -11,9 +11,9 @@ const libsql = createClient({
 
 const prismaClientSingleton = () => {
   const adapter = new PrismaLibSQL(libsql);
-  return new PrismaClient({ adapter });
+  const prisma = new PrismaClient({ adapter });
+  return prisma;
 };
-
 
 declare global {
   var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>;
