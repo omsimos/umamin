@@ -37,8 +37,9 @@ const _handler = startServerAndCreateNextHandler(server, {
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader(
     'Access-Control-Allow-Origin',
-    process.env.NEXT_PUBLIC_GQL_ENDPOINT ?? 'http://localhost:3000' 
+    process.env.NEXT_PUBLIC_GQL_ENDPOINT ?? 'http://localhost:3000'
   );
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 's-maxage=86400');
 
