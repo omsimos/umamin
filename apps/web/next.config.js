@@ -11,9 +11,9 @@ const withPWA = require('next-pwa')({
 
 module.exports = withPWA({
   reactStrictMode: true,
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
+  // compiler: {
+  //   removeConsole: process.env.NODE_ENV === 'production',
+  // },
   transpilePackages: ['@umamin/db', '@umamin/generated'],
   modularizeImports: {
     'date-fns': {
