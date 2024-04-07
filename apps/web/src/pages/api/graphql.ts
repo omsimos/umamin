@@ -35,12 +35,12 @@ const _handler = startServerAndCreateNextHandler(server, {
 });
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  res.setHeader(
-    'Access-Control-Allow-Origin',
-    process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
-  );
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Content-Type', 'application/json');
+  // res.setHeader(
+  //   'Access-Control-Allow-Origin',
+  //   process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+  // );
+  // res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  // res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 's-maxage=86400');
 
   return _handler(req, res);
