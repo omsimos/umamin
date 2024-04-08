@@ -135,6 +135,7 @@ export type QueryGetGlobalMessagesArgs = {
 export type QueryGetMessagesArgs = {
   cursorId?: InputMaybe<Scalars['ID']['input']>;
   type: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -181,6 +182,7 @@ export type GetGlobalMessagesQuery = { __typename?: 'Query', getGlobalMessages?:
 
 export type GetMessagesQueryVariables = Exact<{
   type: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
   cursorId?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
@@ -279,8 +281,8 @@ export const GetGlobalMessagesDocument = gql`
 }
     `;
 export const GetMessagesDocument = gql`
-    query getMessages($type: String!, $cursorId: ID) {
-  getMessages(type: $type, cursorId: $cursorId) {
+    query getMessages($type: String!, $userId: ID!, $cursorId: ID) {
+  getMessages(type: $type, userId: $userId, cursorId: $cursorId) {
     data {
       id
       clue

@@ -16,12 +16,13 @@ export class MessageResolver {
   @Query(() => MessagesData, { nullable: true })
   async getMessages(
     @Arg('type', () => String) type: 'recent' | 'sent',
+    @Arg('userId', () => ID) userId: string,
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    @Ctx() { prisma, id }: TContext
+    @Ctx() { prisma }: TContext
   ): Promise<MessagesData | null> {
     try {
       const messages = await prisma.message.findMany({
-        where: type === 'recent' ? { receiverId: id } : { senderId: id },
+        where: type === 'recent' ? { receiverId: userId } : { senderId: userId },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {

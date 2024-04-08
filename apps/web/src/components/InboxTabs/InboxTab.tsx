@@ -2,7 +2,6 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { IoIosCopy } from 'react-icons/io';
-import { useSession } from 'next-auth/react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { getMessages } from '@/api';
@@ -22,7 +21,6 @@ interface Props {
 }
 
 export const InboxTab = ({ type }: Props) => {
-  const { data: session } = useSession();
   const { user } = useInboxContext();
   const triggerEvent = useLogEvent();
 
@@ -35,7 +33,8 @@ export const InboxTab = ({ type }: Props) => {
     isFetchingNextPage,
   } = useInfiniteQuery({
     queryKey: [`${type}_messages`, { type, userId: user?.id }],
-    queryFn: ({ pageParam }) => getMessages({ cursorId: pageParam, type }),
+    queryFn: ({ pageParam }) =>
+      getMessages({ cursorId: pageParam, userId: user?.id!, type }),
     initialPageParam: '',
     getNextPageParam: (lastPage) => lastPage.getMessages?.cursorId,
     select: (data) => data.pages.flatMap((page) => page.getMessages?.data),
@@ -73,7 +72,7 @@ export const InboxTab = ({ type }: Props) => {
             <div className='flex items-center gap-x-2'>
               <ImageFill
                 alt='profile picture'
-                src={session?.user?.image}
+                src={user?.image}
                 unoptimized
                 className='border-secondary-100 h-[40px] w-[40px] rounded-full border object-cover'
               />
@@ -109,7 +108,9 @@ export const InboxTab = ({ type }: Props) => {
             <div className='space-y-6'>
               {messages?.map((m, i) => (
                 <div key={m?.id}>
-                  {(i + 1) % 3 === 0 && <AdContainer slotId='5900805117' className='mb-6' />}
+                  {(i + 1) % 3 === 0 && (
+                    <AdContainer slotId='5900805117' className='mb-6' />
+                  )}
 
                   <Container className='space-y-6'>
                     <SentMessageCard key={m?.id} data={m} />
