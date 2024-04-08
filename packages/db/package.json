@@ -5,9 +5,6 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "prisma generate && tsc",
-    "build": "prisma generate && tsc",
-    "generate": "prisma generate && tsc",
     "clean": "rimraf dist/ .turbo/ node_modules/",
     "clean:cache": "rimraf dist/ .turbo/"
   },
