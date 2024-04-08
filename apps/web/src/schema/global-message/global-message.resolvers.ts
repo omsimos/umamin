@@ -54,7 +54,7 @@ export class GlobalMessageResolver {
 
       return {
         data: messages,
-        cursorId: messages[messages.length - 1].userId,
+        cursorId: messages[messages.length - 1].id,
       };
     } catch (err) {
       console.log(err);
