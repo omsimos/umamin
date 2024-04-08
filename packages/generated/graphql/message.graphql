@@ -16,8 +16,8 @@ query getGlobalMessages($cursorId: ID) {
   }
 }
 
-query getMessages($type: String!, $cursorId: ID) {
-  getMessages(type: $type, cursorId: $cursorId) {
+query getMessages($type: String!, $userId: ID!, $cursorId: ID) {
+  getMessages(type: $type, userId: $userId, cursorId: $cursorId) {
     data {
       id
       clue

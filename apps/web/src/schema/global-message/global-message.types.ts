@@ -53,6 +53,9 @@ export class SendGlobalMessage extends ErrorResponse {
 
 @InputType()
 export class SendGlobalMessageInput {
+  @Field(() => ID)
+  userId: string;
+
   @IsNotEmpty()
   @MinLength(1)
   @MaxLength(500)

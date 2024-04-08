@@ -65,6 +65,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       if (currentOption === 'message' && message !== user.message) {
         editUserMessageMutate(
           {
+            userId: user.id,
             message,
           },
           {
@@ -82,6 +83,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
       if (currentOption === 'username' && username !== user.username) {
         editUsernameMutate(
           {
+            userId: user.id,
             username,
           },
           {
@@ -118,6 +120,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
         } else {
           changePasswordMutate(
             {
+              userId: user.id,
               newPassword: newPass,
             },
             {
@@ -135,7 +138,7 @@ export const SettingsDialog = ({ setIsOpen, ...rest }: Props) => {
   const handleDeleteUser = () => {
     if (user?.id) {
       deleteUserMutate(
-        {},
+        { userId: user.id },
         {
           onSuccess: async () => {
             toast.success('User deleted');

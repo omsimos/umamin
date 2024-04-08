@@ -16,12 +16,14 @@ export class MessageResolver {
   @Query(() => MessagesData, { nullable: true })
   async getMessages(
     @Arg('type', () => String) type: 'recent' | 'sent',
+    @Arg('userId', () => ID) userId: string,
     @Arg('cursorId', () => ID, { nullable: true }) cursorId: string,
-    @Ctx() { prisma, id }: TContext
+    @Ctx() { prisma }: TContext
   ): Promise<MessagesData | null> {
     try {
       const messages = await prisma.message.findMany({
-        where: type === 'recent' ? { receiverId: id } : { senderId: id },
+        where:
+          type === 'recent' ? { receiverId: userId } : { senderId: userId },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {
@@ -56,7 +58,7 @@ export class MessageResolver {
         cursorId: messages[messages.length - 1].id,
       };
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -64,8 +66,8 @@ export class MessageResolver {
   @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
-    { clue, content, receiverMsg, receiverUsername }: SendMessageInput,
-    @Ctx() { prisma, id }: TContext
+    { userId, clue, content, receiverMsg, receiverUsername }: SendMessageInput,
+    @Ctx() { prisma }: TContext
   ): Promise<String> {
     try {
       const message = await prisma.message.create({
@@ -73,7 +75,7 @@ export class MessageResolver {
           clue,
           content,
           receiverMsg,
-          sender: id ? { connect: { id } } : undefined,
+          sender: userId ? { connect: { id: userId } } : undefined,
           receiver: { connect: { username: receiverUsername } },
           receiverUsername,
         },
@@ -81,7 +83,7 @@ export class MessageResolver {
 
       return message.content;
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
   }
@@ -94,7 +96,7 @@ export class MessageResolver {
     try {
       await prisma.message.delete({ where: { id } });
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
 
@@ -113,7 +115,7 @@ export class MessageResolver {
         data: { reply: content },
       });
     } catch (err) {
-      console.error(err);
+      console.log(err);
       throw err;
     }
 

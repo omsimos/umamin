@@ -12,26 +12,28 @@ const AdContainer = dynamic(() => import('@/components/AdContainer'), {
 });
 
 export const Create = () => {
-  const { refetchUser } = useInboxContext();
+  const { user, refetchUser } = useInboxContext();
   const { mutate } = useMutation({ mutationFn: editUsername });
   const [username, setUsername] = useState('');
 
   const handleSubmit: React.FormEventHandler = (e) => {
     e.preventDefault();
 
-    mutate(
-      { username },
-      {
-        onSuccess: (data) => {
-          if (data.editUsername.error) {
-            toast.error(data.editUsername.error);
-            return;
-          }
+    if (user?.id) {
+      mutate(
+        { userId: user.id, username },
+        {
+          onSuccess: (data) => {
+            if (data.editUsername.error) {
+              toast.error(data.editUsername.error);
+              return;
+            }
 
-          refetchUser();
-        },
-      }
-    );
+            refetchUser();
+          },
+        }
+      );
+    }
     setUsername('');
   };
 

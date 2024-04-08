@@ -15,26 +15,26 @@ mutation createUser($username: String!, $password: String!) {
   }
 }
 
-mutation editUsername($username: String!) {
-  editUsername(username: $username) {
+mutation editUsername($userId: ID!, $username: String!) {
+  editUsername(userId: $userId, username: $username) {
     error
   }
 }
 
-mutation editUserMessage($message: String!) {
-  editUserMessage(message: $message) {
+mutation editUserMessage($userId: ID!, $message: String!) {
+  editUserMessage(userId: $userId, message: $message) {
+    error 
+  }
+}
+
+mutation changePassword($userId: ID!, $newPassword: String!) {
+  changePassword(userId: $userId, newPassword: $newPassword) {
     error
   }
 }
 
-mutation changePassword($newPassword: String!) {
-  changePassword(newPassword: $newPassword) {
-    error
-  }
-}
-
-mutation deleteUser {
-  deleteUser {
+mutation deleteUser($userId: ID!) {
+  deleteUser(userId: $userId) {
     error
   }
 }

@@ -53,8 +53,10 @@ function MyApp({
         queryCache: new QueryCache({
           onError: (err: any) => {
             if (err.response?.errors?.length) {
+              console.log(err);
               toast.error(err.response.errors[0].message);
             } else {
+              console.log(err);
               toast.error(err.message);
             }
           },
@@ -63,8 +65,10 @@ function MyApp({
         mutationCache: new MutationCache({
           onError: (err: any) => {
             if (err.response?.errors?.length) {
+              console.log(err);
               toast.error(err.response.errors[0].message);
             } else {
+              console.log(err);
               toast.error(err.message);
             }
           },

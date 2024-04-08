@@ -59,6 +59,7 @@ const SendTo: NextPageWithLayout<
       mutate(
         {
           input: {
+            userId: user.id,
             receiverUsername: username,
             content: message,
             receiverMsg: user?.message,
@@ -158,7 +159,7 @@ const SendTo: NextPageWithLayout<
               {username}
             </p>
 
-            <h3 className='font-syne font-extrabold text-primary-200 text-center text-lg'>
+            <h3 className='font-syne text-primary-200 text-center text-lg font-extrabold'>
               umamin
             </h3>
           </div>
