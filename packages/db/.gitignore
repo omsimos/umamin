@@ -1,6 +1,0 @@
-dist/
-.turbo/
-node_modules/
-prisma/dev.*
-
-.env

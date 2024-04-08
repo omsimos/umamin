@@ -14,7 +14,7 @@ module.exports = withPWA({
   // compiler: {
   //   removeConsole: process.env.NODE_ENV === 'production',
   // },
-  transpilePackages: ['@umamin/db', '@umamin/generated'],
+  transpilePackages: ['@umamin/generated'],
   modularizeImports: {
     'date-fns': {
       transform: 'date-fns/{{member}}',
