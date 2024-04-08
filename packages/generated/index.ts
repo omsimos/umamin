@@ -85,6 +85,7 @@ export type MutationAddReplyArgs = {
 
 export type MutationChangePasswordArgs = {
   newPassword: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -99,12 +100,19 @@ export type MutationDeleteMessageArgs = {
 };
 
 
+export type MutationDeleteUserArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationEditUserMessageArgs = {
   message: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
 export type MutationEditUsernameArgs = {
+  userId: Scalars['ID']['input'];
   username: Scalars['String']['input'];
 };
 
@@ -153,6 +161,7 @@ export type SendGlobalMessage = {
 export type SendGlobalMessageInput = {
   content: Scalars['String']['input'];
   isAnonymous: Scalars['Boolean']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type SendMessageInput = {
@@ -160,6 +169,7 @@ export type SendMessageInput = {
   content: Scalars['String']['input'];
   receiverMsg: Scalars['String']['input'];
   receiverUsername: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type User = {
@@ -235,6 +245,7 @@ export type CreateUserMutationVariables = Exact<{
 export type CreateUserMutation = { __typename?: 'Mutation', createUser: { __typename?: 'ErrorResponse', error?: string | null } };
 
 export type EditUsernameMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
   username: Scalars['String']['input'];
 }>;
 
@@ -242,6 +253,7 @@ export type EditUsernameMutationVariables = Exact<{
 export type EditUsernameMutation = { __typename?: 'Mutation', editUsername: { __typename?: 'ErrorResponse', error?: string | null } };
 
 export type EditUserMessageMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
   message: Scalars['String']['input'];
 }>;
 
@@ -249,13 +261,16 @@ export type EditUserMessageMutationVariables = Exact<{
 export type EditUserMessageMutation = { __typename?: 'Mutation', editUserMessage: { __typename?: 'ErrorResponse', error?: string | null } };
 
 export type ChangePasswordMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
   newPassword: Scalars['String']['input'];
 }>;
 
 
 export type ChangePasswordMutation = { __typename?: 'Mutation', changePassword: { __typename?: 'ErrorResponse', error?: string | null } };
 
-export type DeleteUserMutationVariables = Exact<{ [key: string]: never; }>;
+export type DeleteUserMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+}>;
 
 
 export type DeleteUserMutation = { __typename?: 'Mutation', deleteUser: { __typename?: 'ErrorResponse', error?: string | null } };
@@ -350,29 +365,29 @@ export const CreateUserDocument = gql`
 }
     `;
 export const EditUsernameDocument = gql`
-    mutation editUsername($username: String!) {
-  editUsername(username: $username) {
+    mutation editUsername($userId: ID!, $username: String!) {
+  editUsername(userId: $userId, username: $username) {
     error
   }
 }
     `;
 export const EditUserMessageDocument = gql`
-    mutation editUserMessage($message: String!) {
-  editUserMessage(message: $message) {
+    mutation editUserMessage($userId: ID!, $message: String!) {
+  editUserMessage(userId: $userId, message: $message) {
     error
   }
 }
     `;
 export const ChangePasswordDocument = gql`
-    mutation changePassword($newPassword: String!) {
-  changePassword(newPassword: $newPassword) {
+    mutation changePassword($userId: ID!, $newPassword: String!) {
+  changePassword(userId: $userId, newPassword: $newPassword) {
     error
   }
 }
     `;
 export const DeleteUserDocument = gql`
-    mutation deleteUser {
-  deleteUser {
+    mutation deleteUser($userId: ID!) {
+  deleteUser(userId: $userId) {
     error
   }
 }
@@ -418,7 +433,7 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     changePassword(variables: ChangePasswordMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<ChangePasswordMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<ChangePasswordMutation>(ChangePasswordDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'changePassword', 'mutation');
     },
-    deleteUser(variables?: DeleteUserMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<DeleteUserMutation> {
+    deleteUser(variables: DeleteUserMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<DeleteUserMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteUserMutation>(DeleteUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'deleteUser', 'mutation');
     }
   };

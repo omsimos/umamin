@@ -37,6 +37,9 @@ export class MessagesData {
 
 @InputType()
 export class SendMessageInput {
+  @Field(() => ID)
+  userId: string;
+
   @IsNotEmpty()
   @MinLength(1)
   @MaxLength(200)

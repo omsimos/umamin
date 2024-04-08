@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Ctx, ID } from 'type-graphql';
 
 import { hashPassword } from '@/utils/helpers';
 import type { TContext } from '@/pages/api/graphql';
@@ -69,12 +69,13 @@ export class UserResolver {
 
   @Mutation(() => ErrorResponse)
   async editUserMessage(
+    @Arg('userId', () => ID) userId: string,
     @Arg('message', () => String) message: string,
-    @Ctx() { prisma, id }: TContext
+    @Ctx() { prisma }: TContext
   ): Promise<ErrorResponse> {
     try {
       await prisma.user.update({
-        where: { id },
+        where: { id: userId },
         data: { message },
       });
 
@@ -87,8 +88,9 @@ export class UserResolver {
 
   @Mutation(() => ErrorResponse)
   async editUsername(
+    @Arg('userId', () => ID) userId: string,
     @Arg('username', () => String) username: string,
-    @Ctx() { prisma, id }: TContext
+    @Ctx() { prisma }: TContext
   ): Promise<ErrorResponse> {
     const usernameRegex = /^[a-zA-Z0-9]+$/;
 
@@ -104,7 +106,7 @@ export class UserResolver {
       }
 
       await prisma.user.update({
-        where: { id },
+        where: { id: userId },
         data: { username },
       });
 
@@ -117,18 +119,19 @@ export class UserResolver {
 
   @Mutation(() => ErrorResponse)
   async changePassword(
+    @Arg('userId', () => ID) userId: string,
     @Arg('newPassword', () => String) newPassword: string,
-    @Ctx() { prisma, id }: TContext
+    @Ctx() { prisma }: TContext
   ): Promise<ErrorResponse> {
     const hashedPassword = hashPassword(newPassword);
 
     try {
       await prisma.user.findUnique({
-        where: { id },
+        where: { id: userId },
       });
 
       await prisma.user.update({
-        where: { id },
+        where: { id: userId },
         data: {
           password: hashedPassword,
         },
@@ -142,10 +145,13 @@ export class UserResolver {
   }
 
   @Mutation(() => ErrorResponse)
-  async deleteUser(@Ctx() { prisma, id }: TContext): Promise<ErrorResponse> {
+  async deleteUser(
+    @Arg('userId', () => ID) userId: string,
+    @Ctx() { prisma }: TContext
+  ): Promise<ErrorResponse> {
     try {
       await prisma.user.delete({
-        where: { id },
+        where: { id: userId },
       });
 
       return { error: null };

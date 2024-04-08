@@ -3,7 +3,6 @@ import { startServerAndCreateNextHandler } from '@as-integrations/next';
 import responseCachePlugin from '@apollo/server-plugin-response-cache';
 import { NextApiRequest, NextApiResponse } from 'next/types';
 import { ApolloServer } from '@apollo/server';
-import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
 
 import prisma from '@/lib/db';
@@ -13,7 +12,6 @@ import { GlobalMessageResolver } from '@/schema/global-message';
 
 export interface TContext {
   prisma: typeof prisma;
-  id?: string;
   req: NextApiRequest;
 }
 
@@ -28,9 +26,7 @@ const server = new ApolloServer({
 
 const _handler = startServerAndCreateNextHandler(server, {
   context: async (req) => {
-    const session = await getSession({ req });
-    const id = session?.user?.id;
-    return { prisma, id, req };
+    return { prisma, req };
   },
 });
 

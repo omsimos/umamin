@@ -54,7 +54,7 @@ export class GlobalMessageResolver {
 
       return {
         data: messages,
-        cursorId: messages[messages.length - 1].id,
+        cursorId: messages[messages.length - 1].userId,
       };
     } catch (err) {
       console.log(err);
@@ -66,14 +66,14 @@ export class GlobalMessageResolver {
   @Mutation(() => SendGlobalMessage)
   async sendGlobalMessage(
     @Arg('input', () => SendGlobalMessageInput)
-    { content, isAnonymous }: SendGlobalMessageInput,
-    @Ctx() { prisma, id }: TContext
+    { userId, content, isAnonymous }: SendGlobalMessageInput,
+    @Ctx() { prisma }: TContext
   ): Promise<SendGlobalMessage> {
     let latestMessage: Omit<GlobalMessage, 'user'> | null;
 
     try {
       latestMessage = await prisma.globalMessage.findFirst({
-        where: { userId: id },
+        where: { userId },
         orderBy: { updatedAt: 'desc' },
       });
 
@@ -99,7 +99,7 @@ export class GlobalMessageResolver {
           data: {
             content,
             isAnonymous,
-            user: id ? { connect: { id } } : undefined,
+            user: userId ? { connect: { id: userId } } : undefined,
           },
           include: {
             user: {
@@ -117,7 +117,7 @@ export class GlobalMessageResolver {
           data: {
             content,
             isAnonymous,
-            user: id ? { connect: { id } } : undefined,
+            user: userId ? { connect: { id: userId } } : undefined,
           },
           include: {
             user: {

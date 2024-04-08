@@ -29,24 +29,27 @@ export const SendGlobalModal = ({
 
   const handleSend: React.FormEventHandler = (e) => {
     e.preventDefault();
-    mutate(
-      { input: { content: message, isAnonymous } },
-      {
-        onSuccess: (data) => {
-          if (data.sendGlobalMessage.error) {
-            toast.error(data.sendGlobalMessage.error);
-            return;
-          }
 
-          setMessageData(data.sendGlobalMessage.data);
-          toast.success('Message posted');
+    if (user?.id) {
+      mutate(
+        { input: { userId: user.id, content: message, isAnonymous } },
+        {
+          onSuccess: (data) => {
+            if (data.sendGlobalMessage.error) {
+              toast.error(data.sendGlobalMessage.error);
+              return;
+            }
 
-          setTimeout(() => {
-            setMessage('');
-          }, 500);
-        },
-      }
-    );
+            setMessageData(data.sendGlobalMessage.data);
+            toast.success('Message posted');
+
+            setTimeout(() => {
+              setMessage('');
+            }, 500);
+          },
+        }
+      );
+    }
 
     setIsOpen(false);
   };
@@ -58,12 +61,12 @@ export const SendGlobalModal = ({
         className='msg-card flex flex-col space-y-4 p-6'
       >
         <div>
-          <div className='flex gap-x-2 mb-4 items-center'>
+          <div className='mb-4 flex items-center gap-x-2'>
             <ImageFill
               alt='profile picture'
               src={user?.image}
               unoptimized
-              className='border-secondary-100 h-[40px] w-[40px] object-cover rounded-full border flex-none'
+              className='border-secondary-100 h-[40px] w-[40px] flex-none rounded-full border object-cover'
             />
             <div>
               <p>{user?.username}</p>
@@ -84,7 +87,7 @@ export const SendGlobalModal = ({
           />
         </div>
 
-        <button type='submit' className='rounded py-2 bg-primary-200'>
+        <button type='submit' className='bg-primary-200 rounded py-2'>
           Post
         </button>
 

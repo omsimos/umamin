@@ -22,7 +22,8 @@ export class MessageResolver {
   ): Promise<MessagesData | null> {
     try {
       const messages = await prisma.message.findMany({
-        where: type === 'recent' ? { receiverId: userId } : { senderId: userId },
+        where:
+          type === 'recent' ? { receiverId: userId } : { senderId: userId },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {
@@ -65,8 +66,8 @@ export class MessageResolver {
   @Mutation(() => String)
   async sendMessage(
     @Arg('input', () => SendMessageInput)
-    { clue, content, receiverMsg, receiverUsername }: SendMessageInput,
-    @Ctx() { prisma, id }: TContext
+    { userId, clue, content, receiverMsg, receiverUsername }: SendMessageInput,
+    @Ctx() { prisma }: TContext
   ): Promise<String> {
     try {
       const message = await prisma.message.create({
@@ -74,7 +75,7 @@ export class MessageResolver {
           clue,
           content,
           receiverMsg,
-          sender: id ? { connect: { id } } : undefined,
+          sender: userId ? { connect: { id: userId } } : undefined,
           receiver: { connect: { username: receiverUsername } },
           receiverUsername,
         },
