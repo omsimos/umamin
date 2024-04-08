@@ -1,13 +1,13 @@
 import React from 'react';
 import Image from 'next/image';
-import { FaDiscord, FaFacebook } from 'react-icons/fa';
+import { FaFacebook, FaInstagram } from 'react-icons/fa';
 
 import { Footer } from '.';
 
 export const Maintenance = () => {
   return (
     <>
-      <section className='contain text-base min-h-screen'>
+      <section className='contain min-h-screen text-base'>
         <div className='relative h-[75px] w-[150px] md:h-[100px] md:w-[200px]'>
           <Image
             alt='logo'
@@ -18,7 +18,7 @@ export const Maintenance = () => {
           />
         </div>
 
-        <h1 className='mt-24 mb-2 text-5xl font-bold'>
+        <h1 className='mt-24 mb-2 text-3xl font-bold'>
           {process.env.NEXT_PUBLIC_MAINTENANCE_TITLE}
         </h1>
         <p className='mb-4 font-medium'>
@@ -27,13 +27,13 @@ export const Maintenance = () => {
 
         <div className='mt-12 inline-flex flex-col space-y-4'>
           <a
-            href='https://discord.gg/bQKG7axhcF'
+            href='https://www.instagram.com/umamin.app/'
             target='_blank'
             rel='noreferrer noopener'
-            className='btn flex items-center space-x-2 rounded bg-[#5865f2] hover:bg-[#5865f2]/80'
+            className='btn flex items-center space-x-2 rounded bg-pink-600 hover:bg-pink-700'
           >
-            <FaDiscord className='text-lg' />
-            <p>Join Discord Server</p>
+            <FaInstagram className='text-lg' />
+            <p>Instagram</p>
           </a>
 
           <a
@@ -43,7 +43,7 @@ export const Maintenance = () => {
             className='btn flex items-center space-x-2 rounded bg-[#2374e1] hover:bg-[#2374e1]/80'
           >
             <FaFacebook className='text-lg' />
-            <p>Like Facebook Page</p>
+            <p>Facebook</p>
           </a>
 
           {process.env.NEXT_PUBLIC_MAINTENANCE_URL && (
