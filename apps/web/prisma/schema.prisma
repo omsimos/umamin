@@ -89,5 +89,6 @@ model GlobalMessage {
     userId String?
     user   User?   @relation(name: "sentGlobalMessages", fields: [userId], references: [id], onDelete: Cascade)
 
-    @@index([userId, updatedAt(sort: Desc)])
+    @@index([userId])
+    @@index([updatedAt(sort: Desc)])
 }
