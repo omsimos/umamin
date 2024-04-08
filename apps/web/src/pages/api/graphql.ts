@@ -6,7 +6,10 @@ import { ApolloServer } from '@apollo/server';
 import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
 
-import prisma from '@/lib/db';
+import { PrismaClient } from '@umamin/db';
+import { createClient } from '@libsql/client';
+import { PrismaLibSQL } from '@prisma/adapter-libsql';
+
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
 import { GlobalMessageResolver } from '@/schema/global-message';
@@ -26,6 +29,14 @@ const server = new ApolloServer({
   plugins: [responseCachePlugin()],
 });
 
+const libsql = createClient({
+  url: `${process.env.TURSO_DATABASE_URL}`,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
+
+const adapter = new PrismaLibSQL(libsql);
+const prisma = new PrismaClient({ adapter });
+
 const _handler = startServerAndCreateNextHandler(server, {
   context: async (req) => {
     const session = await getSession({ req });
@@ -35,12 +46,12 @@ const _handler = startServerAndCreateNextHandler(server, {
 });
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  // res.setHeader(
-  //   'Access-Control-Allow-Origin',
-  //   process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
-  // );
-  // res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  // res.setHeader('Content-Type', 'application/json');
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+  );
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 's-maxage=86400');
 
   return _handler(req, res);
