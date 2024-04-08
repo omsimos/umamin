@@ -6,10 +6,6 @@ import { ApolloServer } from '@apollo/server';
 import { getSession } from 'next-auth/react';
 import { buildSchema } from 'type-graphql';
 
-import { PrismaClient } from '@prisma/client';
-import { PrismaLibSQL } from '@prisma/adapter-libsql';
-import { createClient } from '@libsql/client';
-
 import prisma from '@/lib/db';
 import { UserResolver } from '@/schema/user';
 import { MessageResolver } from '@/schema/message';
@@ -32,16 +28,7 @@ const server = new ApolloServer({
 
 const _handler = startServerAndCreateNextHandler(server, {
   context: async (req) => {
-    const libsql = createClient({
-      url: process.env.TURSO_DATABASE_URL!,
-      authToken: process.env.TURSO_AUTH_TOKEN,
-    });
-
-    const adapter = new PrismaLibSQL(libsql);
-    const prisma = new PrismaClient({ adapter });
-
     const session = await getSession({ req });
-
     const id = session?.user?.id;
     return { prisma, id, req };
   },

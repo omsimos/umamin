@@ -10,7 +10,8 @@ const libsql = createClient({
 
 const prismaClientSingleton = () => {
   const adapter = new PrismaLibSQL(libsql);
-  return new PrismaClient({ adapter });
+  const prisma = new PrismaClient({ adapter });
+  return prisma;
 };
 
 declare global {
