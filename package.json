@@ -6,7 +6,8 @@
     "dev": "turbo run dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "ui:add": "pnpm --filter @umamin/ui ui:add"
+    "ui:add": "pnpm --filter @umamin/ui ui:add",
+    "db:push": "pnpm --filter @umamin/db db:push"
   },
   "devDependencies": {
     "@umamin/eslint-config": "workspace:*",

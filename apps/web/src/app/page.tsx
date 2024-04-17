@@ -1,5 +1,5 @@
-import { Button } from "@umamin/ui/components/button";
 import Link from "next/link";
+import { Button } from "@umamin/ui/components/button";
 
 export default function Home() {
   return (
