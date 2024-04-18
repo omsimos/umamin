@@ -4,10 +4,10 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo lint",
+    "lint": "turbo run lint",
+    "generate": "pnpm --filter @umamin/db generate",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "ui:add": "pnpm --filter @umamin/ui ui:add",
-    "db:push": "pnpm --filter @umamin/db db:push"
+    "ui:add": "pnpm --filter @umamin/ui ui:add"
   },
   "devDependencies": {
     "@umamin/eslint-config": "workspace:*",
