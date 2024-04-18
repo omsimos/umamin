@@ -6,7 +6,8 @@
   "scripts": {
     "build": "prisma generate",
     "clean": "rimraf ./dist ./tsconfig.tsbuildinfo ./node_modules/.cache",
-    "generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "db:migrate": "npx prisma migrate dev --name"
   },
   "devDependencies": {
     "@umamin/typescript-config": "workspace:*",
@@ -14,8 +15,6 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@libsql/client": "^0.6.0",
-    "@prisma/adapter-libsql": "^5.12.1",
     "@prisma/client": "^5.12.1"
   }
 }

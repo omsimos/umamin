@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
+    "@libsql/client": "^0.6.0",
+    "@prisma/adapter-libsql": "^5.12.1",
     "@umamin/db": "workspace:*",
     "@umamin/ui": "workspace:*",
     "class-variance-authority": "^0.7.0",

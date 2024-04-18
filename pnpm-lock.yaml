@@ -26,6 +26,12 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.3.4
         version: 3.3.4(react-hook-form@7.51.2)
+      '@libsql/client':
+        specifier: ^0.6.0
+        version: 0.6.0
+      '@prisma/adapter-libsql':
+        specifier: ^5.12.1
+        version: 5.12.1(@libsql/client@0.6.0)
       '@umamin/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -84,6 +90,9 @@ importers:
       '@types/react-dom':
         specifier: ^18
         version: 18.2.22
+      '@umamin/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
       autoprefixer:
         specifier: ^10.0.1
         version: 10.4.18(postcss@8.4.35)
@@ -105,12 +114,6 @@ importers:
 
   packages/db:
     dependencies:
-      '@libsql/client':
-        specifier: ^0.6.0
-        version: 0.6.0
-      '@prisma/adapter-libsql':
-        specifier: ^5.12.1
-        version: 5.12.1(@libsql/client@0.6.0)
       '@prisma/client':
         specifier: ^5.12.1
         version: 5.12.1(prisma@5.12.1)
