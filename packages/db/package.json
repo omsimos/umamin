@@ -4,17 +4,15 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "prisma generate",
-    "clean": "rimraf ./dist ./tsconfig.tsbuildinfo ./node_modules/.cache",
-    "db:generate": "prisma generate",
-    "db:migrate": "npx prisma migrate dev --name"
+    "db:migrate": "npx drizzle-kit generate:sqlite",
+    "db:push": "npx drizzle-kit push:sqlite"
   },
   "devDependencies": {
     "@umamin/typescript-config": "workspace:*",
-    "prisma": "^5.12.1",
+    "drizzle-kit": "^0.20.14",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@prisma/client": "^5.12.1"
+    "drizzle-orm": "^0.30.8"
   }
 }
