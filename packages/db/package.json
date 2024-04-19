@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "clean": "rm -rf ./node_modules/.cache",
     "db:migrate": "npx drizzle-kit generate:sqlite",
     "db:push": "npx drizzle-kit push:sqlite"
   },

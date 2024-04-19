@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "ui:add": "pnpm dlx shadcn-ui@latest add",
+    "clean": "rm -rf ./node_modules/.cache",
     "lint": "eslint . --max-warnings 0"
   },
   "exports": {

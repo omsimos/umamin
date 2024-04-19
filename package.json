@@ -5,6 +5,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
+    "clean": "turbo run clean",
     "db:push": "pnpm --filter @umamin/db db:push",
     "db:migrate": "pnpm --filter @umamin/db db:migrate",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
