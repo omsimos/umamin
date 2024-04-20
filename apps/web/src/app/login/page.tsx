@@ -1,4 +1,7 @@
-import { Button } from "@umamin/ui/components/button";
+import Link from "next/link";
+import { cn } from "@ui/lib/utils";
+import { getSession } from "@/lib/auth";
+import { buttonVariants } from "@umamin/ui/components/button";
 import {
   Card,
   CardTitle,
@@ -7,12 +10,14 @@ import {
   CardDescription,
 } from "@umamin/ui/components/card";
 
-export default function Login() {
+export default async function Login() {
+  const { user } = await getSession();
+
   return (
-    <section className='max-w-lg container mt-36'>
-      <Card className='space-y-5'>
-        <CardHeader className='space-y-1'>
-          <CardTitle className='text-2xl flex justify-between items-center'>
+    <section className="max-w-lg container mt-36">
+      <Card className="space-y-5">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl flex justify-between items-center">
             <p>Login to proceed</p>
           </CardTitle>
           <CardDescription>
@@ -20,8 +25,21 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
 
-        <CardFooter className='flex flex-col items-start'>
-          <Button className='w-full font-medium'>Login with Google</Button>
+        <CardFooter className="flex flex-col items-start">
+          {JSON.stringify(user)}
+
+          <Link
+            href="/login/google"
+            className={cn(
+              buttonVariants({
+                variant: "default",
+              }),
+              "w-full",
+            )}
+            type="button"
+          >
+            Sign in with Google
+          </Link>
         </CardFooter>
       </Card>
     </section>
