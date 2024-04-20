@@ -41,5 +41,5 @@ jobs:
 
       - name: Build project
         env:
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
         run: pnpm build
