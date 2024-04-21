@@ -1,3 +1,4 @@
+import { logout } from "@/actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +16,7 @@ export function SignOutDialog() {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <button type='button'>
+        <button type="button">
           <Icons.exit />
         </button>
       </AlertDialogTrigger>
@@ -28,7 +29,9 @@ export function SignOutDialog() {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction>Sign out</AlertDialogAction>
+          <form action={logout}>
+            <AlertDialogAction type="submit">Sign out</AlertDialogAction>
+          </form>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

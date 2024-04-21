@@ -9,9 +9,14 @@ import {
   CardHeader,
   CardDescription,
 } from "@umamin/ui/components/card";
+import { redirect } from "next/navigation";
 
 export default async function Login() {
   const { user } = await getSession();
+
+  if (user) {
+    redirect("/user");
+  }
 
   return (
     <section className="max-w-lg container mt-36">
@@ -26,8 +31,6 @@ export default async function Login() {
         </CardHeader>
 
         <CardFooter className="flex flex-col items-start">
-          {JSON.stringify(user)}
-
           <Link
             href="/login/google"
             className={cn(
