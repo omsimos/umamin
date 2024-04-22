@@ -27,7 +27,8 @@ export const lucia = new Lucia(adapter, {
       googleId: attributes.googleId,
       username: attributes.username,
       email: attributes.email,
-      image: attributes.image,
+      imageUrl: attributes.imageUrl,
+      createdAt: attributes.createdAt,
     };
   },
 });
@@ -78,5 +79,6 @@ interface DatabaseUserAttributes {
   googleId: string;
   username: string;
   email: string;
-  image: string;
+  imageUrl: string;
+  createdAt: Date;
 }
