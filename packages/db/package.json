@@ -10,10 +10,12 @@
   },
   "devDependencies": {
     "@umamin/typescript-config": "workspace:*",
-    "drizzle-kit": "^0.20.14",
+    "drizzle-kit": "^0.20.17",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "drizzle-orm": "^0.30.8"
+    "@pothos/core": "^3.41.1",
+    "drizzle-orm": "^0.30.8",
+    "graphql-scalars": "^1.23.0"
   }
 }
