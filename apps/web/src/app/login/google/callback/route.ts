@@ -1,12 +1,10 @@
+import { nanoid } from "nanoid";
 import { generateId } from "lucia";
 import { cookies } from "next/headers";
 import { OAuth2RequestError } from "arctic";
 
-import db from "@/lib/db";
-import { eq, schema } from "@umamin/db";
 import { google, lucia } from "@/lib/auth";
-import { user } from "@umamin/db/schema";
-import { nanoid } from "nanoid";
+import { db, eq, schema } from "@umamin/server";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -46,7 +44,7 @@ export async function GET(request: Request): Promise<Response> {
     const googleUser: GoogleUser = await googleUserResponse.json();
 
     const existingUser = await db.query.user.findFirst({
-      where: eq(user.googleId, googleUser.sub),
+      where: eq(schema.user.googleId, googleUser.sub),
     });
 
     if (existingUser) {

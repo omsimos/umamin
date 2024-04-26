@@ -1,12 +1,13 @@
 {
-  "name": "@umamin/db",
+  "name": "@umamin/server",
   "main": "./index.ts",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "clean": "rm -rf ./node_modules/.cache",
-    "db:migrate": "npx drizzle-kit generate:sqlite",
-    "db:push": "npx drizzle-kit push:sqlite"
+    "db:migrate": "pnpm drizzle-kit generate:sqlite",
+    "db:push": "pnpm drizzle-kit push:sqlite",
+    "db:studio": "pnpm drizzle-kit studio"
   },
   "devDependencies": {
     "@umamin/typescript-config": "workspace:*",
@@ -14,6 +15,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@libsql/client": "^0.6.0",
     "@pothos/core": "^3.41.1",
     "drizzle-orm": "^0.30.8",
     "graphql-scalars": "^1.23.0"

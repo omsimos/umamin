@@ -1,9 +1,8 @@
+import { gqlSchema } from "@umamin/server";
 import { createYoga } from "graphql-yoga";
-import builder from "@umamin/db";
 
 const { handleRequest } = createYoga({
-  schema: builder.toSchema(),
-
+  schema: gqlSchema,
   graphqlEndpoint: "/api/graphql",
   fetchAPI: { Response },
 });

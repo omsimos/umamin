@@ -1,10 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,25 +15,19 @@
     "plugins": [
       {
         "name": "next"
+      },
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "http://localhost:3000/api/graphql",
+        "tadaOutputLocation": "./src/graphql-env.d.ts"
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@ui/*": [
-        "../../packages/ui/src/*"
-      ]
+      "@/*": ["./src/*"],
+      "@ui/*": ["../../packages/ui/src/*"]
     },
     "forceConsistentCasingInFileNames": true
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

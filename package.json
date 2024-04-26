@@ -6,8 +6,9 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
-    "db:push": "pnpm --filter @umamin/db db:push",
-    "db:migrate": "pnpm --filter @umamin/db db:migrate",
+    "db:push": "pnpm --filter @umamin/server db:push",
+    "db:migrate": "pnpm --filter @umamin/server db:migrate",
+    "db:studio": "pnpm --filter @umamin/server db:studio",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "ui:add": "pnpm --filter @umamin/ui ui:add"
   },

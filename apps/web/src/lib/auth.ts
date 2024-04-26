@@ -4,8 +4,7 @@ import { cookies } from "next/headers";
 import { Lucia, Session, User } from "lucia";
 import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle";
 
-import db from "@/lib/db";
-import { schema } from "@umamin/db";
+import { db, schema } from "@umamin/server";
 
 export const google = new Google(
   process.env.GOOGLE_CLIENT_ID!,
