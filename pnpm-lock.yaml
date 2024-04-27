@@ -35,6 +35,9 @@ importers:
       '@umamin/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@urql/core':
+        specifier: ^5.0.2
+        version: 5.0.2(graphql@16.8.1)
       '@urql/next':
         specifier: ^1.1.1
         version: 1.1.1(next@14.2.3(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)(urql@4.0.7(graphql@16.8.1)(react@18.2.0))
@@ -51,8 +54,8 @@ importers:
         specifier: ^3.6.0
         version: 3.6.0
       gql.tada:
-        specifier: ^1.5.8
-        version: 1.5.8(graphql@16.8.1)(svelte@4.2.15)(typescript@5.4.2)
+        specifier: ^1.6.2
+        version: 1.6.2(graphql@16.8.1)(svelte@4.2.15)(typescript@5.4.5)
       graphql:
         specifier: ^16.8.1
         version: 16.8.1
@@ -106,8 +109,8 @@ importers:
         version: 3.22.4
     devDependencies:
       '@0no-co/graphqlsp':
-        specifier: ^1.11.0
-        version: 1.11.0(typescript@5.4.2)
+        specifier: ^1.12.1
+        version: 1.12.1(typescript@5.4.5)
       '@types/node':
         specifier: ^20
         version: 20.11.28
@@ -125,7 +128,7 @@ importers:
         version: 8.57.0
       eslint-config-next:
         specifier: 14.1.3
-        version: 14.1.3(eslint@8.57.0)(typescript@5.4.2)
+        version: 14.1.3(eslint@8.57.0)(typescript@5.4.5)
       postcss:
         specifier: ^8
         version: 8.4.35
@@ -133,8 +136,8 @@ importers:
         specifier: ^3.3.0
         version: 3.4.1
       typescript:
-        specifier: ^5
-        version: 5.4.2
+        specifier: ^5.4.5
+        version: 5.4.5
 
   packages/eslint-config:
     devDependencies:
@@ -182,8 +185,8 @@ importers:
         specifier: ^0.20.17
         version: 0.20.17
       typescript:
-        specifier: ^5.3.3
-        version: 5.4.2
+        specifier: ^5.4.5
+        version: 5.4.5
 
   packages/typescript-config: {}
 
@@ -290,8 +293,8 @@ importers:
         specifier: ^3.3.0
         version: 3.4.1
       typescript:
-        specifier: ^5.3.3
-        version: 5.4.2
+        specifier: ^5.4.5
+        version: 5.4.5
 
 packages:
 
@@ -303,8 +306,8 @@ packages:
       graphql:
         optional: true
 
-  '@0no-co/graphqlsp@1.11.0':
-    resolution: {integrity: sha512-P8DRsT+pRgXXZ+8szO1ISUXLxtaL9ukKddjLqSh+oBvWVCzUDyUM4Une0Co0Y7XC017wI4pdcrR/3hWqw9uuDg==}
+  '@0no-co/graphqlsp@1.12.1':
+    resolution: {integrity: sha512-KHMs1a9qXoiwA4aUKGgcsyM38SXH6ddQFwu4Hf2p8XjUOkRKHy38pd4qYM0hgA1vpkUf8WSj5GyDAbezhApfpw==}
     peerDependencies:
       typescript: ^5.0.0
 
@@ -752,19 +755,13 @@ packages:
   '@floating-ui/utils@0.2.1':
     resolution: {integrity: sha512-9TANp6GPoMtYzQdt54kfAyMmz1+osLlXdg2ENroU7zzrtflTLrrC/lgrIfaSe+Wu0b89GKccT7vxXA0MoAIO+Q==}
 
-  '@gql.tada/cli-utils@1.2.2':
-    resolution: {integrity: sha512-NxAIYodK7E0utELE+c+qtV4Mkp0gvJqPdA7V5FrQYD8Uy+ItZhHA5mCYCtp2iNqlBqAw7cqYLTsovWZEag5AvA==}
+  '@gql.tada/cli-utils@1.3.2':
+    resolution: {integrity: sha512-4NahxeLXMCIrXu8JJZWddnyZAMHEUVMLSbrAaEf4p79q59AdOE3jNPgURDl3NZTyiSMkCEjDSRpKztP2QpknSg==}
     peerDependencies:
       typescript: ^5.0.0
 
-  '@gql.tada/internal@0.1.3':
-    resolution: {integrity: sha512-wIvykBId7O0gaizmSl5n5AhbQsgJVLTUsFBm3RsfQ9dVfpmT+Fhy2yHX+yNgiVECg2EimXMhs4ltcE4EuZ2WOA==}
-    peerDependencies:
-      graphql: ^16.8.1
-      typescript: ^5.0.0
-
-  '@gql.tada/internal@0.2.4':
-    resolution: {integrity: sha512-mZlw4TWKnYrRgtzywkMN0jAExXO5UQDE7F/BQFPnSL8YqS8QI6KkeMCZDWaKOukJPoXr/f2Rt1maL+3kETHREg==}
+  '@gql.tada/internal@0.3.3':
+    resolution: {integrity: sha512-lBOiN0c/Fx5eY5KGwkzB5+6asUv9IAoD6f5rZjN8r9h4hvSk4V5Kuuu6EfKixF6h5/o/xDRgA/BU3355udnK3g==}
     peerDependencies:
       graphql: ^16.8.1
       typescript: ^5.0.0
@@ -2966,8 +2963,8 @@ packages:
   gopd@1.0.1:
     resolution: {integrity: sha512-d65bNlIadxvpb/A2abVdlqKqV563juRnZ1Wtk6s1sIR8uNsXR70xqIzVqxVf1eTqDunwT2MkczEeaezCKTZhwA==}
 
-  gql.tada@1.5.8:
-    resolution: {integrity: sha512-vmYoI0hstQbhz9Wx5sg6QuRgNgSt9F0SoygLyn6RvNIfSxrYR+/fkFGBmAwfraXRW4ddsOglrdo72ZD8ZnSESg==}
+  gql.tada@1.6.2:
+    resolution: {integrity: sha512-UKSAWeWV446B7T7QbcfspcVzKrNpiRgyqqo9U+F2MgOQbtS7ANYp3DPnNflWhEptqM1LTztAiRebiTjTcdgZ+A==}
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -4144,6 +4141,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  typescript@5.4.5:
+    resolution: {integrity: sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
 
@@ -4289,12 +4291,12 @@ snapshots:
     optionalDependencies:
       graphql: 16.8.1
 
-  '@0no-co/graphqlsp@1.11.0(typescript@5.4.2)':
+  '@0no-co/graphqlsp@1.12.1(typescript@5.4.5)':
     dependencies:
-      '@gql.tada/internal': 0.1.3(graphql@16.8.1)(typescript@5.4.2)
+      '@gql.tada/internal': 0.3.3(graphql@16.8.1)(typescript@5.4.5)
       graphql: 16.8.1
       node-fetch: 2.7.0
-      typescript: 5.4.2
+      typescript: 5.4.5
     transitivePeerDependencies:
       - encoding
 
@@ -4662,30 +4664,24 @@ snapshots:
 
   '@floating-ui/utils@0.2.1': {}
 
-  '@gql.tada/cli-utils@1.2.2(svelte@4.2.15)(typescript@5.4.2)':
+  '@gql.tada/cli-utils@1.3.2(svelte@4.2.15)(typescript@5.4.5)':
     dependencies:
-      '@0no-co/graphqlsp': 1.11.0(typescript@5.4.2)
-      '@gql.tada/internal': 0.2.4(graphql@16.8.1)(typescript@5.4.2)
+      '@0no-co/graphqlsp': 1.12.1(typescript@5.4.5)
+      '@gql.tada/internal': 0.3.3(graphql@16.8.1)(typescript@5.4.5)
       '@vue/compiler-dom': 3.4.25
-      '@vue/language-core': 2.0.14(typescript@5.4.2)
+      '@vue/language-core': 2.0.14(typescript@5.4.5)
       graphql: 16.8.1
-      svelte2tsx: 0.7.7(svelte@4.2.15)(typescript@5.4.2)
-      typescript: 5.4.2
+      svelte2tsx: 0.7.7(svelte@4.2.15)(typescript@5.4.5)
+      typescript: 5.4.5
     transitivePeerDependencies:
       - encoding
       - svelte
 
-  '@gql.tada/internal@0.1.3(graphql@16.8.1)(typescript@5.4.2)':
+  '@gql.tada/internal@0.3.3(graphql@16.8.1)(typescript@5.4.5)':
     dependencies:
       '@0no-co/graphql.web': 1.0.7(graphql@16.8.1)
       graphql: 16.8.1
-      typescript: 5.4.2
-
-  '@gql.tada/internal@0.2.4(graphql@16.8.1)(typescript@5.4.2)':
-    dependencies:
-      '@0no-co/graphql.web': 1.0.7(graphql@16.8.1)
-      graphql: 16.8.1
-      typescript: 5.4.2
+      typescript: 5.4.5
 
   '@graphql-tools/executor@1.2.6(graphql@16.8.1)':
     dependencies:
@@ -5725,6 +5721,19 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.5)':
+    dependencies:
+      '@typescript-eslint/scope-manager': 6.21.0
+      '@typescript-eslint/types': 6.21.0
+      '@typescript-eslint/typescript-estree': 6.21.0(typescript@5.4.5)
+      '@typescript-eslint/visitor-keys': 6.21.0
+      debug: 4.3.4
+      eslint: 8.57.0
+    optionalDependencies:
+      typescript: 5.4.5
+    transitivePeerDependencies:
+      - supports-color
+
   '@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.2)':
     dependencies:
       '@typescript-eslint/scope-manager': 7.2.0
@@ -5809,6 +5818,21 @@ snapshots:
       ts-api-utils: 1.3.0(typescript@5.4.2)
     optionalDependencies:
       typescript: 5.4.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/typescript-estree@6.21.0(typescript@5.4.5)':
+    dependencies:
+      '@typescript-eslint/types': 6.21.0
+      '@typescript-eslint/visitor-keys': 6.21.0
+      debug: 4.3.4
+      globby: 11.1.0
+      is-glob: 4.0.3
+      minimatch: 9.0.3
+      semver: 7.6.0
+      ts-api-utils: 1.3.0(typescript@5.4.5)
+    optionalDependencies:
+      typescript: 5.4.5
     transitivePeerDependencies:
       - supports-color
 
@@ -5953,7 +5977,7 @@ snapshots:
       '@vue/compiler-core': 3.4.25
       '@vue/shared': 3.4.25
 
-  '@vue/language-core@2.0.14(typescript@5.4.2)':
+  '@vue/language-core@2.0.14(typescript@5.4.5)':
     dependencies:
       '@volar/language-core': 2.2.0-alpha.10
       '@vue/compiler-dom': 3.4.25
@@ -5963,7 +5987,7 @@ snapshots:
       path-browserify: 1.0.1
       vue-template-compiler: 2.7.16
     optionalDependencies:
-      typescript: 5.4.2
+      typescript: 5.4.5
 
   '@vue/shared@3.4.25': {}
 
@@ -6661,20 +6685,20 @@ snapshots:
 
   escape-string-regexp@4.0.0: {}
 
-  eslint-config-next@14.1.3(eslint@8.57.0)(typescript@5.4.2):
+  eslint-config-next@14.1.3(eslint@8.57.0)(typescript@5.4.5):
     dependencies:
       '@next/eslint-plugin-next': 14.1.3
       '@rushstack/eslint-patch': 1.7.2
-      '@typescript-eslint/parser': 6.21.0(eslint@8.57.0)(typescript@5.4.2)
+      '@typescript-eslint/parser': 6.21.0(eslint@8.57.0)(typescript@5.4.5)
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0)
+      eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0)
       eslint-plugin-import: 2.29.1(eslint@8.57.0)
       eslint-plugin-jsx-a11y: 6.8.0(eslint@8.57.0)
       eslint-plugin-react: 7.34.1(eslint@8.57.0)
       eslint-plugin-react-hooks: 4.6.0(eslint@8.57.0)
     optionalDependencies:
-      typescript: 5.4.2
+      typescript: 5.4.5
     transitivePeerDependencies:
       - eslint-import-resolver-webpack
       - supports-color
@@ -6700,23 +6724,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0):
-    dependencies:
-      debug: 4.3.4
-      enhanced-resolve: 5.16.0
-      eslint: 8.57.0
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(eslint@8.57.0)
-      fast-glob: 3.3.2
-      get-tsconfig: 4.7.3
-      is-core-module: 2.13.1
-      is-glob: 4.0.3
-    transitivePeerDependencies:
-      - '@typescript-eslint/parser'
-      - eslint-import-resolver-node
-      - eslint-import-resolver-webpack
-      - supports-color
-
   eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-plugin-import@2.29.1)(eslint@8.57.0):
     dependencies:
       debug: 4.3.4
@@ -6734,15 +6741,21 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-module-utils@2.8.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0):
+  eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0):
     dependencies:
-      debug: 3.2.7
-    optionalDependencies:
-      '@typescript-eslint/parser': 6.21.0(eslint@8.57.0)(typescript@5.4.2)
+      debug: 4.3.4
+      enhanced-resolve: 5.16.0
       eslint: 8.57.0
-      eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(eslint@8.57.0)
+      fast-glob: 3.3.2
+      get-tsconfig: 4.7.3
+      is-core-module: 2.13.1
+      is-glob: 4.0.3
     transitivePeerDependencies:
+      - '@typescript-eslint/parser'
+      - eslint-import-resolver-node
+      - eslint-import-resolver-webpack
       - supports-color
 
   eslint-module-utils@2.8.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0):
@@ -6763,6 +6776,17 @@ snapshots:
       '@typescript-eslint/parser': 6.21.0(eslint@8.57.0)(typescript@5.4.2)
       eslint: 8.57.0
       eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.2))(eslint-plugin-import@2.29.1)(eslint@8.57.0)
+    transitivePeerDependencies:
+      - supports-color
+
+  eslint-module-utils@2.8.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0):
+    dependencies:
+      debug: 3.2.7
+    optionalDependencies:
+      '@typescript-eslint/parser': 6.21.0(eslint@8.57.0)(typescript@5.4.5)
+      eslint: 8.57.0
+      eslint-import-resolver-node: 0.3.9
+      eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1)(eslint@8.57.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -7212,12 +7236,12 @@ snapshots:
     dependencies:
       get-intrinsic: 1.2.4
 
-  gql.tada@1.5.8(graphql@16.8.1)(svelte@4.2.15)(typescript@5.4.2):
+  gql.tada@1.6.2(graphql@16.8.1)(svelte@4.2.15)(typescript@5.4.5):
     dependencies:
       '@0no-co/graphql.web': 1.0.7(graphql@16.8.1)
-      '@gql.tada/cli-utils': 1.2.2(svelte@4.2.15)(typescript@5.4.2)
-      '@gql.tada/internal': 0.2.4(graphql@16.8.1)(typescript@5.4.2)
-      typescript: 5.4.2
+      '@gql.tada/cli-utils': 1.3.2(svelte@4.2.15)(typescript@5.4.5)
+      '@gql.tada/internal': 0.3.3(graphql@16.8.1)(typescript@5.4.5)
+      typescript: 5.4.5
     transitivePeerDependencies:
       - encoding
       - graphql
@@ -8233,12 +8257,12 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svelte2tsx@0.7.7(svelte@4.2.15)(typescript@5.4.2):
+  svelte2tsx@0.7.7(svelte@4.2.15)(typescript@5.4.5):
     dependencies:
       dedent-js: 1.0.1
       pascal-case: 3.1.2
       svelte: 4.2.15
-      typescript: 5.4.2
+      typescript: 5.4.5
 
   svelte@4.2.15:
     dependencies:
@@ -8325,6 +8349,10 @@ snapshots:
   ts-api-utils@1.3.0(typescript@5.4.2):
     dependencies:
       typescript: 5.4.2
+
+  ts-api-utils@1.3.0(typescript@5.4.5):
+    dependencies:
+      typescript: 5.4.5
 
   ts-interface-checker@0.1.13: {}
 
@@ -8416,6 +8444,8 @@ snapshots:
       possible-typed-array-names: 1.0.0
 
   typescript@5.4.2: {}
+
+  typescript@5.4.5: {}
 
   unbox-primitive@1.0.2:
     dependencies:

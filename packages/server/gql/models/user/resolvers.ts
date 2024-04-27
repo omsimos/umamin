@@ -1,4 +1,8 @@
+import { eq } from "drizzle-orm";
+
+import { db } from "../../../db";
 import builder from "../../builder";
+import { user } from "../../../db/schema";
 
 builder.queryFields((t) => ({
   hello: t.field({
@@ -8,6 +12,26 @@ builder.queryFields((t) => ({
     },
     resolve: async (_root, { name }) => {
       return `Hello, ${name || "World"}!`;
+    },
+  }),
+
+  getUserByUsername: t.field({
+    type: "User",
+    nullable: true,
+    args: {
+      username: t.arg.string({ required: true }),
+    },
+    resolve: async (_root, { username }) => {
+      try {
+        const result = await db.query.user.findFirst({
+          where: eq(user.username, username),
+        });
+
+        return result;
+      } catch (err: any) {
+        console.log(err);
+        throw err;
+      }
     },
   }),
 }));

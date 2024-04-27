@@ -7,7 +7,11 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "outDir": "dist",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@/db/*": ["./db/*"],
+      "@/gql/*": ["./gql/*"]
+    }
   },
   "include": ["."],
   "exclude": ["node_modules", "dist"]
