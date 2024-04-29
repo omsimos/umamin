@@ -5,6 +5,7 @@ const makeClient = () => {
   return createClient({
     url: process.env.NEXT_PUBLIC_GQL_URL!,
     exchanges: [cacheExchange, fetchExchange],
+    fetchOptions: { cache: "no-store" },
   });
 };
 
