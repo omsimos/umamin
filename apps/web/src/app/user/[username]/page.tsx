@@ -1,9 +1,8 @@
 import { graphql } from "gql.tada";
-import { registerUrql } from "@urql/next/rsc";
-import { cacheExchange, createClient, fetchExchange } from "urql/core";
-
-import { UserCard } from "../components/user-card";
 import { redirect } from "next/navigation";
+
+import { getClient } from "@/lib/gql-client";
+import { UserCard } from "../components/user-card";
 
 export async function generateMetadata({
   params,
@@ -22,15 +21,6 @@ export async function generateMetadata({
     title: title,
   };
 }
-
-const makeClient = () => {
-  return createClient({
-    url: process.env.NEXT_PUBLIC_GQL_URL!,
-    exchanges: [cacheExchange, fetchExchange],
-  });
-};
-
-const { getClient } = registerUrql(makeClient);
 
 const GetUserByUsernameQuery = graphql(`
   query GetUserByUsername($username: String!) {
