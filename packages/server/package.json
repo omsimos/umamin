@@ -18,6 +18,7 @@
     "@libsql/client": "^0.6.0",
     "@pothos/core": "^3.41.1",
     "drizzle-orm": "^0.30.8",
-    "graphql-scalars": "^1.23.0"
+    "graphql-scalars": "^1.23.0",
+    "nanoid": "^5.0.7"
   }
 }

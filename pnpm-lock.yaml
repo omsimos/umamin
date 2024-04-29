@@ -38,6 +38,9 @@ importers:
       '@urql/core':
         specifier: ^5.0.2
         version: 5.0.2(graphql@16.8.1)
+      '@urql/exchange-graphcache':
+        specifier: ^7.0.2
+        version: 7.0.2(graphql@16.8.1)
       '@urql/next':
         specifier: ^1.1.1
         version: 1.1.1(next@14.2.3(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)(urql@4.0.7(graphql@16.8.1)(react@18.2.0))
@@ -177,6 +180,9 @@ importers:
       graphql-scalars:
         specifier: ^1.23.0
         version: 1.23.0(graphql@16.8.1)
+      nanoid:
+        specifier: ^5.0.7
+        version: 5.0.7
     devDependencies:
       '@umamin/typescript-config':
         specifier: workspace:*
@@ -1972,6 +1978,9 @@ packages:
 
   '@urql/core@5.0.2':
     resolution: {integrity: sha512-gxMYkhbZg43cPftRv9K/A8lLjbZm2aam+K5AfPyQyADQVKkQ0V5hC/XtH++Zdi3swhBvgjbvVG/YjdkZTh8PVg==}
+
+  '@urql/exchange-graphcache@7.0.2':
+    resolution: {integrity: sha512-6hA4ZDQbG73IVz/GtNsLD7AqPSIof8tvFiEdm10J8dpPd+Ijw9d7RsEbs57sGqpbSzJG+l6UNZ0A53EEYClYxw==}
 
   '@urql/next@1.1.1':
     resolution: {integrity: sha512-dLk4npLZeWDCevua3gM5f8WS1IyyJUsjOvUU9tnFRSjTSn2fQcgYAYZbLfpneLTg+1rYNCLgSMJMuBr95PofTQ==}
@@ -5914,6 +5923,14 @@ snapshots:
   '@urql/core@5.0.2(graphql@16.8.1)':
     dependencies:
       '@0no-co/graphql.web': 1.0.7(graphql@16.8.1)
+      wonka: 6.3.4
+    transitivePeerDependencies:
+      - graphql
+
+  '@urql/exchange-graphcache@7.0.2(graphql@16.8.1)':
+    dependencies:
+      '@0no-co/graphql.web': 1.0.7(graphql@16.8.1)
+      '@urql/core': 5.0.2(graphql@16.8.1)
       wonka: 6.3.4
     transitivePeerDependencies:
       - graphql

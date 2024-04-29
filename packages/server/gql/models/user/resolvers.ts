@@ -5,16 +5,6 @@ import builder from "../../builder";
 import { user } from "../../../db/schema";
 
 builder.queryFields((t) => ({
-  hello: t.field({
-    type: "String",
-    args: {
-      name: t.arg.string(),
-    },
-    resolve: async (_root, { name }) => {
-      return `Hello, ${name || "World"}!`;
-    },
-  }),
-
   getUserByUsername: t.field({
     type: "User",
     nullable: true,
@@ -28,7 +18,7 @@ builder.queryFields((t) => ({
         });
 
         return result;
-      } catch (err: any) {
+      } catch (err) {
         console.log(err);
         throw err;
       }

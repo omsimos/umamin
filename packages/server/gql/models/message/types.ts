@@ -1,0 +1,19 @@
+import builder from "../../builder";
+
+builder.objectType("Message", {
+  fields: (t) => ({
+    id: t.exposeID("id"),
+    question: t.exposeString("question"),
+    content: t.exposeString("content"),
+    createdAt: t.exposeString("createdAt"),
+  }),
+});
+
+export const CreateMessageInput = builder.inputType("CreateMessageInput", {
+  fields: (t) => ({
+    question: t.string({ required: true }),
+    content: t.string({ required: true }),
+    senderId: t.string({ required: true }),
+    userId: t.string({ required: true }),
+  }),
+});

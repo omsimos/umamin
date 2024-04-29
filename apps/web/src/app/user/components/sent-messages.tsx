@@ -6,7 +6,6 @@ import { toast } from "sonner";
 // import { ProfileDropdownMenu } from "./profile-dropdown-menu";
 
 import { Menu } from "@/app/components/menu";
-import { ChatList } from "@/app/components/chat-list";
 
 import {
   Tooltip,
@@ -21,9 +20,8 @@ import {
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
-
+import { ChatList } from "@/app/components/chat-list";
 import { Icons } from "../../components/utilities/icons";
-import { ProfileHoverCard } from "@/app/components/profile-hover-card";
 
 export function SentMessages() {
   const _messages = [
@@ -66,23 +64,16 @@ export function SentMessages() {
     },
   ];
 
-  const _recipient = {
-    name: "John Doe",
-    slug: "johndoe",
-    id: "123",
-    createdAt: "2021-08-01",
-  };
-
   return (
-    <div className='flex w-full flex-col items-center gap-5 pb-20'>
+    <div className="flex w-full flex-col items-center gap-5 pb-20">
       {messageList.map((message, i) => (
-        <Card key={message[i].content} className='w-full'>
+        <Card key={message[i].content} className="w-full">
           <CardHeader>
-            <div className='flex justify-between items-center text-muted-foreground'>
+            <div className="flex justify-between items-center text-muted-foreground">
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type='button' className='h-4 w-4'>
+                    <button type="button" className="h-4 w-4">
                       <Icons.info />
                     </button>
                   </TooltipTrigger>
@@ -92,28 +83,29 @@ export function SentMessages() {
                 </Tooltip>
               </TooltipProvider>
 
-              <span className='font-semibold'>umamin</span>
+              <span className="font-semibold">umamin</span>
               <Menu menuItems={menuItems} />
             </div>
           </CardHeader>
-          <CardContent className='p-0'>
-            <ChatList messages={message} />
+          <CardContent className="p-0">
+            <ChatList imageUrl="" />
           </CardContent>
-          <CardFooter className='flex justify-center'>
+          <CardFooter className="flex justify-center">
             {/* <p className='text-muted-foreground text-sm mt-1'>
               Joined{" "}
               {formatDistanceToNow(new Date(_user?.createdAt), {
                 addSuffix: true,
               })}
             </p> */}
-            <div className='text-muted-foreground text-sm mt-1 flex gap-1'>
-              <p className='italic'>3h · Sent to</p>
+            <div className="text-muted-foreground text-sm mt-1 flex gap-1">
+              <p className="italic">3h · Sent to</p>
 
-              <ProfileHoverCard user={_recipient}>
-                <p className='cursor-pointer hover:underline italic'>
+              {/* <ProfileHoverCard user={_recipient}>
+                <p className="cursor-pointer hover:underline italic">
                   @johndoe
-                </p>
+                </p> 
               </ProfileHoverCard>
+                */}
             </div>
           </CardFooter>
         </Card>

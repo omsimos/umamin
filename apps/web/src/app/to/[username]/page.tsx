@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import { graphql } from "gql.tada";
-
 import { redirect } from "next/navigation";
+
 import { getClient } from "@/lib/gql-client";
 import { ChatBox } from "@/app/components/chatbox";
 
@@ -32,11 +33,15 @@ export default async function SendMessage({
 
   return (
     <main className="mt-36 grid place-items-center container">
-      <ChatBox
-        username={user.username}
-        imageUrl={user.imageUrl}
-        createdAt={user.createdAt}
-      />
+      <Suspense fallback={<div>Loading...</div>}>
+        {user && (
+          <ChatBox
+            username={user.username}
+            imageUrl={user.imageUrl}
+            createdAt={user.createdAt}
+          />
+        )}
+      </Suspense>
     </main>
   );
 }

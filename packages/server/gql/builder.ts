@@ -1,10 +1,11 @@
 import SchemaBuilder from "@pothos/core";
-import { SelectUser } from "../db/schema";
+import { SelectMessage, SelectUser } from "../db/schema";
 import { DateResolver, JSONResolver } from "graphql-scalars";
 
 const builder = new SchemaBuilder<{
   Objects: {
     User: SelectUser;
+    Message: SelectMessage;
   };
   Scalars: {
     JSON: {
