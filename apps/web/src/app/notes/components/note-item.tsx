@@ -17,7 +17,7 @@ import { Menu } from "@/app/components/menu";
 import { Avatar, AvatarFallback } from "@umamin/ui/components/avatar";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 
-export default function PulseItem() {
+export function NoteItem() {
   const menuItems = [
     {
       title: "View",
@@ -41,11 +41,11 @@ export default function PulseItem() {
   ];
 
   return (
-    <Card className='flex flex-col items-start justify-between'>
-      <CardHeader className='w-full'>
-        <div className='flex justify-between'>
-          <div className='flex gap-4'>
-            <Link href={`/user/johndoe`} className='font-semibold'>
+    <Card className="flex flex-col items-start justify-between">
+      <CardHeader className="w-full">
+        <div className="flex justify-between">
+          <div className="flex gap-4">
+            <Link href={`/user/johndoe`} className="font-semibold">
               {/* <Avatar className="relative top-1">
             <AvatarImage
             className="rounded-full"
@@ -63,17 +63,17 @@ export default function PulseItem() {
               </Avatar>
             </Link>
 
-            <div className='flex flex-col'>
+            <div className="flex flex-col">
               <Link
                 href={`/user/$johndoe`}
-                className='font-semibold hover:underline'
+                className="font-semibold hover:underline"
               >
                 {/* {post.author.name} */}
                 johndoe
               </Link>
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger className='text-sm text-muted-foreground'>
+                  <TooltipTrigger className="text-sm text-muted-foreground">
                     {/* <span className="select-none text-muted-foreground">
                       {formatDistanceToNowStrict(post.createdAt, {
                         addSuffix: false,
@@ -94,15 +94,15 @@ export default function PulseItem() {
             </div>
           </div>
 
-          <div className='flex gap-1 text-muted-foreground items-center'>
+          <div className="flex gap-1 text-muted-foreground items-center">
             <SendMessageDrawer />
             <Menu menuItems={menuItems} />
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className='flex w-full gap-3'>
-        <p className='whitespace-pre-wrap'>
+      <CardContent className="flex w-full gap-3">
+        <p className="whitespace-pre-wrap">
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Corrupti sd
           omnis quam dicta provident reiciendis itaque eum veniam non dolorum
           aperiam?
