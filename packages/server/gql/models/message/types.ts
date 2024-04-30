@@ -13,7 +13,7 @@ export const CreateMessageInput = builder.inputType("CreateMessageInput", {
   fields: (t) => ({
     question: t.string({ required: true }),
     content: t.string({ required: true }),
-    senderId: t.string({ required: true }),
+    senderId: t.string(),
     userId: t.string({ required: true }),
   }),
 });

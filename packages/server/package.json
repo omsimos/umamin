@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "clean": "rm -rf ./node_modules",
-    "db:migrate": "cd db && pnpm drizzle-kit generate:sqlite",
-    "db:push": "cd db && pnpm drizzle-kit push:sqlite",
-    "db:studio": "cd db && pnpm drizzle-kit studio"
+    "db:migrate": "pnpm drizzle-kit generate:sqlite",
+    "db:push": "pnpm drizzle-kit push:sqlite",
+    "db:studio": "pnpm drizzle-kit studio"
   },
   "devDependencies": {
     "@umamin/typescript-config": "workspace:*",

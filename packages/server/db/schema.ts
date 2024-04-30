@@ -8,7 +8,7 @@ export const user = sqliteTable("user", {
   email: text("email").notNull().unique(),
   note: text("note"),
   bio: text("bio"),
-  question: text("question").default("Send me an anonymous message!"),
+  question: text("question").default("Send me an anonymous message!").notNull(),
   googleId: text("google_id").notNull(),
   imageUrl: text("image_url").notNull(),
   createdAt: text("created_at")
