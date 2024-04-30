@@ -22,7 +22,7 @@ export type introspection = {
     'Int': unknown;
     'JSON': unknown;
     'Mutation': { kind: 'OBJECT'; name: 'Mutation'; fields: { 'hello': { name: 'hello'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; }; };
-    'Query': { kind: 'OBJECT'; name: 'Query'; fields: { 'getUserByUsername': { name: 'getUserByUsername'; type: { kind: 'OBJECT'; name: 'User'; ofType: null; } }; 'hello': { name: 'hello'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; }; };
+    'Query': { kind: 'OBJECT'; name: 'Query'; fields: { 'getUserByUsername': { name: 'getUserByUsername'; type: { kind: 'OBJECT'; name: 'User'; ofType: null; } }; }; };
     'String': unknown;
     'User': { kind: 'OBJECT'; name: 'User'; fields: { 'createdAt': { name: 'createdAt'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'email': { name: 'email'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'googleId': { name: 'googleId'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'id': { name: 'id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'ID'; ofType: null; }; } }; 'imageUrl': { name: 'imageUrl'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'note': { name: 'note'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'username': { name: 'username'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; }; };
   };

@@ -1,8 +1,7 @@
-import { graphql } from "gql.tada";
 import { redirect } from "next/navigation";
 
-import { getClient } from "@/lib/gql-client";
 import { UserCard } from "../components/user-card";
+import { GetUserByUsernameQuery, getClient } from "@/lib/gql";
 
 export async function generateMetadata({
   params,
@@ -21,20 +20,6 @@ export async function generateMetadata({
     title: title,
   };
 }
-
-const GetUserByUsernameQuery = graphql(`
-  query GetUserByUsername($username: String!) {
-    getUserByUsername(username: $username) {
-      id
-      username
-      googleId
-      note
-      email
-      imageUrl
-      createdAt
-    }
-  }
-`);
 
 export default async function Page({
   params,

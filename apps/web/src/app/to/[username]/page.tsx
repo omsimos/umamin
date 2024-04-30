@@ -1,20 +1,8 @@
 import { Suspense } from "react";
-import { graphql } from "gql.tada";
 import { redirect } from "next/navigation";
 
-import { getClient } from "@/lib/gql-client";
 import { ChatBox } from "@/app/components/chatbox";
-
-const GetUserByUsernameQuery = graphql(`
-  query GetUserByUsername($username: String!) {
-    getUserByUsername(username: $username) {
-      id
-      username
-      imageUrl
-      createdAt
-    }
-  }
-`);
+import { GetUserByUsernameQuery, getClient } from "@/lib/gql";
 
 export default async function SendMessage({
   params,
@@ -34,13 +22,7 @@ export default async function SendMessage({
   return (
     <main className="mt-36 grid place-items-center container">
       <Suspense fallback={<div>Loading...</div>}>
-        {user && (
-          <ChatBox
-            username={user.username}
-            imageUrl={user.imageUrl}
-            createdAt={user.createdAt}
-          />
-        )}
+        {user && <ChatBox {...user} />}
       </Suspense>
     </main>
   );

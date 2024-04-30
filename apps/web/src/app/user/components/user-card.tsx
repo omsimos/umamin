@@ -11,12 +11,12 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import type { GetUserByUsernameResult } from "@/lib/gql";
 
 import { Icons } from "../../components/utilities/icons";
-import type { SelectUser } from "@umamin/server/db/schema";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
-export function UserCard({ ...user }: SelectUser) {
+export function UserCard({ ...user }: GetUserByUsernameResult) {
   return (
     <Card className="bg-background">
       <CardHeader className="rounded-2xl">
