@@ -23,7 +23,7 @@ export const usersRelations = relations(user, ({ many }) => ({
 }));
 
 export const session = sqliteTable("session", {
-  id: text("id").notNull().primaryKey().default(nanoid()),
+  id: text("id").notNull().primaryKey(),
   userId: text("user_id")
     .references(() => user.id)
     .notNull(),
