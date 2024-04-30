@@ -1,11 +1,14 @@
+import { nanoid } from "nanoid";
 import { sql, relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().default(nanoid()),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   note: text("note"),
+  bio: text("bio"),
+  question: text("question").default("Send me an anonymous message!"),
   googleId: text("google_id").notNull(),
   imageUrl: text("image_url").notNull(),
   createdAt: text("created_at")
@@ -20,7 +23,7 @@ export const usersRelations = relations(user, ({ many }) => ({
 }));
 
 export const session = sqliteTable("session", {
-  id: text("id").notNull().primaryKey(),
+  id: text("id").notNull().primaryKey().default(nanoid()),
   userId: text("user_id")
     .references(() => user.id)
     .notNull(),
@@ -28,7 +31,7 @@ export const session = sqliteTable("session", {
 });
 
 export const message = sqliteTable("message", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().default(nanoid()),
   question: text("content").notNull(),
   content: text("content").notNull(),
   userId: text("user_id")
@@ -36,11 +39,9 @@ export const message = sqliteTable("message", {
       onDelete: "cascade",
     })
     .notNull(),
-  senderId: text("user_id")
-    .references(() => user.id, {
-      onDelete: "cascade",
-    })
-    .notNull(),
+  senderId: text("user_id").references(() => user.id, {
+    onDelete: "cascade",
+  }),
   createdAt: text("created_at")
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -58,7 +59,7 @@ export const messagesRelations = relations(message, ({ one }) => ({
 }));
 
 export const post = sqliteTable("post", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().default(nanoid()),
   title: text("title").notNull(),
   content: text("content").notNull(),
   authorId: text("author_id"),
@@ -77,7 +78,7 @@ export const postsRelations = relations(post, ({ one, many }) => ({
 }));
 
 export const comment = sqliteTable("post", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().default(nanoid()),
   title: text("title").notNull(),
   content: text("content").notNull(),
   authorId: text("author_id"),
@@ -96,7 +97,7 @@ export const commentsRelations = relations(comment, ({ one, many }) => ({
 }));
 
 export const upvote = sqliteTable("upvote", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().default(nanoid()),
   userId: text("user_id")
     .references(() => user.id)
     .notNull(),

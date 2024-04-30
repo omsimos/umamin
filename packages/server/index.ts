@@ -5,6 +5,7 @@ builder.queryType({});
 builder.mutationType({});
 
 import "./gql/models/user";
+import "./gql/models/message";
 
 export * from "./db";
 export * from "drizzle-orm";

@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import { generateId } from "lucia";
 import { cookies } from "next/headers";
 import { OAuth2RequestError } from "arctic";
@@ -66,17 +65,18 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     const usernameId = generateId(5);
-    const userId = nanoid();
 
-    await db.insert(schema.user).values({
-      id: userId,
-      googleId: googleUser.sub,
-      username: `${googleUser.given_name.split(" ").join("").toLowerCase()}_${usernameId}`,
-      imageUrl: googleUser.picture,
-      email: googleUser.email,
-    });
+    const user = await db
+      .insert(schema.user)
+      .values({
+        googleId: googleUser.sub,
+        username: `${googleUser.given_name.split(" ").join("").toLowerCase()}_${usernameId}`,
+        imageUrl: googleUser.picture,
+        email: googleUser.email,
+      })
+      .returning({ userId: schema.user.id });
 
-    const session = await lucia.createSession(userId, {});
+    const session = await lucia.createSession(user[0].userId, {});
     const sessionCookie = lucia.createSessionCookie(session.id);
 
     cookies().set(
