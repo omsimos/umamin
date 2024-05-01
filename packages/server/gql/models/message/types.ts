@@ -5,6 +5,8 @@ builder.objectType("Message", {
     id: t.exposeID("id"),
     question: t.exposeString("question"),
     content: t.exposeString("content"),
+    userId: t.exposeString("userId"),
+    senderId: t.exposeString("senderId", { nullable: true }),
     createdAt: t.exposeString("createdAt"),
   }),
 });

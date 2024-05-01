@@ -32,14 +32,14 @@ export const session = sqliteTable("session", {
 
 export const message = sqliteTable("message", {
   id: text("id").primaryKey().default(nanoid()),
-  question: text("content").notNull(),
+  question: text("question").notNull(),
   content: text("content").notNull(),
   userId: text("user_id")
     .references(() => user.id, {
       onDelete: "cascade",
     })
     .notNull(),
-  senderId: text("user_id").references(() => user.id, {
+  senderId: text("sender_id").references(() => user.id, {
     onDelete: "cascade",
   }),
   createdAt: text("created_at")
@@ -63,7 +63,6 @@ export const post = sqliteTable("post", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   authorId: text("author_id"),
-
   createdAt: text("created_at")
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -101,7 +100,7 @@ export const upvote = sqliteTable("upvote", {
   userId: text("user_id")
     .references(() => user.id)
     .notNull(),
-  postId: text("post_id"),
+  postId: text("post_id").notNull(),
   createdAt: text("created_at")
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
