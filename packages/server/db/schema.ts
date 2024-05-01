@@ -8,12 +8,15 @@ export const user = sqliteTable("user", {
   email: text("email").notNull().unique(),
   note: text("note"),
   bio: text("bio"),
+  quietMode: integer("quiet_mode", { mode: "boolean" })
+    .notNull()
+    .default(false),
   question: text("question").default("Send me an anonymous message!").notNull(),
   googleId: text("google_id").notNull(),
   imageUrl: text("image_url").notNull(),
   createdAt: text("created_at")
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
+    .notNull()
+    .default(sql`(current_timestamp)`),
 });
 
 export const usersRelations = relations(user, ({ many }) => ({
@@ -43,8 +46,8 @@ export const message = sqliteTable("message", {
     onDelete: "cascade",
   }),
   createdAt: text("created_at")
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
+    .notNull()
+    .default(sql`(current_timestamp)`),
 });
 
 export const messagesRelations = relations(message, ({ one }) => ({
@@ -64,8 +67,8 @@ export const post = sqliteTable("post", {
   content: text("content").notNull(),
   authorId: text("author_id"),
   createdAt: text("created_at")
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
+    .notNull()
+    .default(sql`(current_timestamp)`),
 });
 
 export const postsRelations = relations(post, ({ one, many }) => ({
@@ -83,8 +86,8 @@ export const comment = sqliteTable("post", {
   authorId: text("author_id"),
   postId: text("post_id"),
   createdAt: text("created_at")
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
+    .notNull()
+    .default(sql`(current_timestamp)`),
 });
 
 export const commentsRelations = relations(comment, ({ one, many }) => ({
@@ -102,8 +105,8 @@ export const upvote = sqliteTable("upvote", {
     .notNull(),
   postId: text("post_id").notNull(),
   createdAt: text("created_at")
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
+    .notNull()
+    .default(sql`(current_timestamp)`),
 });
 
 export const upvotesRelations = relations(upvote, ({ one }) => ({
