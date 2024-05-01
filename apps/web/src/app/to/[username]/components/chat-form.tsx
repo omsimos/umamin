@@ -3,12 +3,18 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
-import { Send } from "lucide-react";
+import { Send, ScanFace } from "lucide-react";
 
+import { cn } from "@ui/lib/utils";
 import { getClient } from "@/lib/gql";
 import { Input } from "@ui/components/ui/input";
 import { Button } from "@ui/components/ui/button";
-import { cn } from "@ui/lib/utils";
+
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@umamin/ui/components/avatar";
 
 const CreateMessageMutation = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {
@@ -22,10 +28,11 @@ const CreateMessageMutation = graphql(`
 type Props = {
   userId: string;
   sessionId?: string;
+  imageUrl: string;
   question: string;
 };
 
-export function ChatForm({ userId, sessionId, question }: Props) {
+export function ChatForm({ userId, sessionId, imageUrl, question }: Props) {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
 
@@ -57,25 +64,34 @@ export function ChatForm({ userId, sessionId, question }: Props) {
   }
 
   return (
-    <section
-      className={cn(
-        "flex flex-col h-full",
-        !!message ? "justify-between" : "justify-end",
-      )}
-    >
-      {message && (
-        <div
-          className={cn(
-            "flex w-max max-w-[75%] sm:max-w-[55%] flex-col gap-2 rounded-lg px-3 py-2 whitespace-pre-wrap ml-auto bg-primary text-primary-foreground",
-          )}
-        >
-          {message}
+    <div className="flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 min-h-[350px] h-full">
+      <div className="flex flex-col">
+        <div className="flex gap-2 items-center">
+          <Avatar>
+            <AvatarImage className="rounded-full" src={imageUrl} />
+            <AvatarFallback>
+              <ScanFace />
+            </AvatarFallback>
+          </Avatar>
+          <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted">
+            {question}
+          </div>
         </div>
-      )}
+
+        {message && (
+          <div
+            className={cn(
+              "max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 mb-12 self-end",
+            )}
+          >
+            {message}
+          </div>
+        )}
+      </div>
 
       <form
         onSubmit={handleSubmit}
-        className="flex w-full max-w-lg items-center space-x-2 self-center"
+        className="flex max-w-lg items-center space-x-2 w-full self-center"
       >
         <Input
           id="message"
@@ -96,6 +112,6 @@ export function ChatForm({ userId, sessionId, question }: Props) {
           <span className="sr-only">Send</span>
         </Button>
       </form>
-    </section>
+    </div>
   );
 }
