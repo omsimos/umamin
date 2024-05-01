@@ -20,19 +20,22 @@ builder.queryFields((t) => ({
           throw new Error("Invalid message type");
         }
 
-        const result = await db
-          .select()
-          .from(message)
-          .where(
-            and(
-              type === "recent"
-                ? eq(message.userId, userId)
-                : eq(message.senderId, userId),
-              cursorId ? gt(message.id, cursorId) : undefined,
-            ),
-          )
-          .limit(10)
-          .orderBy(desc(message.createdAt));
+        const result = await db.query.message.findMany({
+          where: and(
+            type === "recent"
+              ? eq(message.userId, userId)
+              : eq(message.senderId, userId),
+            cursorId ? gt(message.id, cursorId) : undefined,
+          ),
+          limit: 5,
+          orderBy: [desc(message.createdAt)],
+          with:
+            type === "sent"
+              ? {
+                  user: true,
+                }
+              : undefined,
+        });
         return result;
       } catch (err) {
         console.log(err);

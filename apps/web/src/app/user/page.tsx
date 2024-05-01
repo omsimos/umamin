@@ -26,7 +26,7 @@ export default async function UserProfile() {
     {
       name: "Sent",
       value: "sent",
-      content: () => <SentMessages />,
+      content: () => <SentMessages userId={user.id} />,
     },
   ];
 

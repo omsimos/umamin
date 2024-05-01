@@ -8,6 +8,10 @@ builder.objectType("Message", {
     userId: t.exposeString("userId"),
     senderId: t.exposeString("senderId", { nullable: true }),
     createdAt: t.exposeString("createdAt"),
+    user: t.expose("user", {
+      type: "User",
+      nullable: true,
+    }),
   }),
 });
 

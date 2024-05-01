@@ -5,7 +5,9 @@ import { DateResolver, JSONResolver } from "graphql-scalars";
 const builder = new SchemaBuilder<{
   Objects: {
     User: SelectUser;
-    Message: SelectMessage;
+    Message: SelectMessage & {
+      user?: SelectUser;
+    };
   };
   Scalars: {
     JSON: {
