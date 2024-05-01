@@ -33,7 +33,7 @@ export default async function Page({
   const user = result.data?.getUserByUsername;
 
   if (!user) {
-    redirect("/");
+    redirect("/404");
   }
 
   return (
