@@ -5,9 +5,9 @@ import { redirect } from "next/navigation";
 
 import { getClient } from "@/lib/gql";
 import { getSession } from "@/lib/auth";
-import { ProfileHoverCard } from "@/app/components/profile-hover-card";
-import { Card, CardHeader } from "@umamin/ui/components/card";
 import { ChatForm } from "./components/chat-form";
+import { Card, CardHeader } from "@umamin/ui/components/card";
+import { ProfileHoverCard } from "@/app/components/profile-hover-card";
 
 import {
   Avatar,

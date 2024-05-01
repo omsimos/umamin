@@ -1,34 +1,38 @@
 import { nanoid } from "nanoid";
-import builder from "../../builder";
+import { and, desc, eq, gt } from "drizzle-orm";
+
 import { db } from "../../../db";
+import builder from "../../builder";
 import { CreateMessageInput } from "./types";
-import { message, user } from "../../../db/schema";
-import { eq } from "drizzle-orm";
+import { message } from "../../../db/schema";
 
 builder.queryFields((t) => ({
   messages: t.field({
     type: ["Message"],
     args: {
       userId: t.arg.string({ required: true }),
+      type: t.arg.string({ required: true }), // "recent" || "sent"
+      cursorId: t.arg.string(),
     },
-    resolve: async (_root, { userId }) => {
+    resolve: async (_root, { userId, type, cursorId }) => {
       try {
-        const result = await db.query.message.findMany({
-          where: eq(user.id, userId),
-        });
-        return result;
-      } catch (err) {
-        console.log(err);
-        throw err;
-      }
-    },
-  }),
+        if (!["recent", "sent"].includes(type)) {
+          throw new Error("Invalid message type");
+        }
 
-  allMessages: t.field({
-    type: ["Message"],
-    resolve: async () => {
-      try {
-        const result = await db.query.message.findMany();
+        const result = await db
+          .select()
+          .from(message)
+          .where(
+            and(
+              type === "recent"
+                ? eq(message.userId, userId)
+                : eq(message.senderId, userId),
+              cursorId ? gt(message.id, cursorId) : undefined,
+            ),
+          )
+          .limit(10)
+          .orderBy(desc(message.createdAt));
         return result;
       } catch (err) {
         console.log(err);

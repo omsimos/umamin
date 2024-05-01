@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import {
   Tabs,
   TabsContent,
@@ -12,14 +13,18 @@ import { RecentMessages } from "./components/recent-messages";
 export default async function UserProfile() {
   const { user } = await getSession();
 
+  if (!user) {
+    redirect("/login");
+  }
+
   const tabsData = [
     {
-      name: "📥 Recent",
+      name: "Recent",
       value: "recent",
-      content: () => <RecentMessages />,
+      content: () => <RecentMessages userId={user.id} />,
     },
     {
-      name: "📩 Sent",
+      name: "Sent",
       value: "sent",
       content: () => <SentMessages />,
     },
