@@ -10,6 +10,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@graphql-yoga/plugin-apq": "^3.3.0",
+    "@graphql-yoga/plugin-csrf-prevention": "^3.3.0",
     "@hookform/resolvers": "^3.3.4",
     "@lucia-auth/adapter-drizzle": "^1.0.7",
     "@umamin/server": "workspace:*",
