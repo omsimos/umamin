@@ -177,6 +177,9 @@ importers:
       '@pothos/core':
         specifier: ^3.41.1
         version: 3.41.1(graphql@16.8.1)
+      '@pothos/plugin-scope-auth':
+        specifier: ^3.22.0
+        version: 3.22.0(@pothos/core@3.41.1(graphql@16.8.1))(graphql@16.8.1)
       drizzle-orm:
         specifier: ^0.30.10
         version: 0.30.10(@libsql/client@0.6.0)(@types/react@18.2.66)(react@18.2.0)
@@ -1381,6 +1384,12 @@ packages:
   '@pothos/core@3.41.1':
     resolution: {integrity: sha512-K+TGTK2Q7rmLU9WaC1cSDiGZaU9M+gHNbCYBom2W1vHuEYDUAiihVHz9tXYsrYjFMJSK+wLJ7Xp2374bQa9x/w==}
     peerDependencies:
+      graphql: '>=15.1.0'
+
+  '@pothos/plugin-scope-auth@3.22.0':
+    resolution: {integrity: sha512-iT+JT0uIvoVGuQeQ2Q/y+wwP27SQH+1Hs8Uz5rrtGOblsKGW0cRcJYuXMi5+XJFXOY3CPNMnv6aroetxZkEcEQ==}
+    peerDependencies:
+      '@pothos/core': '*'
       graphql: '>=15.1.0'
 
   '@radix-ui/primitive@1.0.1':
@@ -5199,6 +5208,11 @@ snapshots:
 
   '@pothos/core@3.41.1(graphql@16.8.1)':
     dependencies:
+      graphql: 16.8.1
+
+  '@pothos/plugin-scope-auth@3.22.0(@pothos/core@3.41.1(graphql@16.8.1))(graphql@16.8.1)':
+    dependencies:
+      '@pothos/core': 3.41.1(graphql@16.8.1)
       graphql: 16.8.1
 
   '@radix-ui/primitive@1.0.1':

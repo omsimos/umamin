@@ -17,6 +17,7 @@
   "dependencies": {
     "@libsql/client": "^0.6.0",
     "@pothos/core": "^3.41.1",
+    "@pothos/plugin-scope-auth": "^3.22.0",
     "drizzle-orm": "^0.30.10",
     "graphql-scalars": "^1.23.0",
     "nanoid": "^5.0.7"

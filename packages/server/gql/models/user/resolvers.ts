@@ -8,6 +8,7 @@ import { UpdateUserInput } from "./types";
 builder.queryFields((t) => ({
   currentUser: t.field({
     type: "User",
+    nullable: true,
     resolve: (_root, _args, ctx) => ctx.currentUser,
   }),
 
@@ -36,6 +37,9 @@ builder.mutationFields((t) => ({
   updateUser: t.field({
     type: "String",
     nullable: true,
+    authScopes: {
+      authenticated: true,
+    },
     args: {
       input: t.arg({ type: UpdateUserInput, required: true }),
     },

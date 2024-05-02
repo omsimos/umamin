@@ -59,7 +59,9 @@ export const getSession = cache(
           sessionCookie.attributes,
         );
       }
-    } catch {}
+    } catch (err) {
+      console.log(err);
+    }
     return result;
   },
 );
