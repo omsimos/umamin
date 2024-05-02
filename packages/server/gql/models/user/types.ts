@@ -13,3 +13,12 @@ builder.objectType("User", {
     createdAt: t.exposeString("createdAt"),
   }),
 });
+
+export const UpdateUserInput = builder.inputType("UpdateUserInput", {
+  fields: (t) => ({
+    username: t.string({ required: true }),
+    bio: t.string(),
+    question: t.string({ required: true }),
+    quietMode: t.boolean({ required: true }),
+  }),
+});

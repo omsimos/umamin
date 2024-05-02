@@ -4,7 +4,6 @@ import {
   DrawerTrigger,
 } from "@umamin/ui/components/drawer";
 
-import { cn } from "@umamin/ui/lib/utils";
 import {
   Card,
   CardContent,
@@ -14,38 +13,29 @@ import {
 } from "@umamin/ui/components/card";
 import { Icons } from "../utilities/icons";
 import { SettingsForm } from "../settings-form";
+import { SelectUser } from "@umamin/server/db/schema";
 
-export function SettingsDrawer() {
+export async function SettingsDrawer({ user }: { user: SelectUser }) {
   return (
     <Drawer>
       <DrawerTrigger asChild>
-        <button type='button'>
+        <button type="button">
           <Icons.settings />
         </button>
       </DrawerTrigger>
-      <DrawerContent className='grid place-items-center'>
-        <div className='max-w-xl my-10'>
-          <SettingsContent />
-        </div>
+      <DrawerContent className="my-10">
+        <Card className="w-full bg-bg border-none max-w-lg mx-auto">
+          <CardHeader>
+            <CardTitle>Settings</CardTitle>
+            <CardDescription>
+              Manage your account settings and set profile preferences.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <SettingsForm user={user} />
+          </CardContent>
+        </Card>
       </DrawerContent>
     </Drawer>
-  );
-}
-
-type CardProps = React.ComponentProps<typeof Card>;
-
-export function SettingsContent({ className, ...props }: CardProps) {
-  return (
-    <Card className={cn("w-full bg-bg border-none", className)} {...props}>
-      <CardHeader>
-        <CardTitle>Settings</CardTitle>
-        <CardDescription>
-          Manage your account settings and set profile preferences.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className='grid gap-4'>
-        <SettingsForm />
-      </CardContent>
-    </Card>
   );
 }

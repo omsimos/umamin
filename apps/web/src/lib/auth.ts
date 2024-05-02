@@ -5,6 +5,7 @@ import { Lucia, Session, User } from "lucia";
 import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle";
 
 import { db, schema } from "@umamin/server";
+import { SelectUser } from "@umamin/server/db/schema";
 
 export const google = new Google(
   process.env.GOOGLE_CLIENT_ID!,
@@ -70,11 +71,4 @@ declare module "lucia" {
   }
 }
 
-interface DatabaseUserAttributes {
-  googleId: string;
-  username: string;
-  note: string;
-  email: string;
-  imageUrl: string;
-  createdAt: string;
-}
+interface DatabaseUserAttributes extends SelectUser {}

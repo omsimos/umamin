@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { ActivityIcon } from "lucide-react";
+import { ActivityIcon, Globe, LogIn } from "lucide-react";
 
+import { getSession } from "@/lib/auth";
 import { Icons } from "./utilities/icons";
 import { BurgerMenu } from "./burger-menu";
 import { ToggleTheme } from "./utilities/toggle-theme";
-import { SignOutDialog } from "./dialog/sign-out-dialog";
 import { SettingsDrawer } from "./dialog/settings-drawer";
 import { ShareLinkDialog } from "./dialog/share-link-dialog";
 
-export function Navbar() {
+export async function Navbar() {
+  const { user } = await getSession();
+
   return (
     <nav>
       <div className="fixed left-0 right-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter md:z-40">
@@ -40,9 +42,17 @@ export function Navbar() {
           <Icons.squares />
         </Link>
 
-        <SettingsDrawer />
+        <Link href="/">
+          <Globe className="h-5 w-5" />
+        </Link>
 
-        <SignOutDialog />
+        {user ? (
+          <SettingsDrawer user={user} />
+        ) : (
+          <Link href="/login">
+            <LogIn className="h-4 w-4" />
+          </Link>
+        )}
       </div>
     </nav>
   );

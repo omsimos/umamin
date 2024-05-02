@@ -3,8 +3,14 @@ import { eq } from "drizzle-orm";
 import { db } from "../../../db";
 import builder from "../../builder";
 import { user } from "../../../db/schema";
+import { UpdateUserInput } from "./types";
 
 builder.queryFields((t) => ({
+  currentUser: t.field({
+    type: "User",
+    resolve: (_root, _args, ctx) => ctx.currentUser,
+  }),
+
   getUserByUsername: t.field({
     type: "User",
     nullable: true,
@@ -27,13 +33,24 @@ builder.queryFields((t) => ({
 }));
 
 builder.mutationFields((t) => ({
-  hello: t.field({
+  updateUser: t.field({
     type: "String",
+    nullable: true,
     args: {
-      name: t.arg.string(),
+      input: t.arg({ type: UpdateUserInput, required: true }),
     },
-    resolve: async (_root, { name }) => {
-      return `Hello, ${name || "World"}!`;
+    resolve: async (_root, args, ctx) => {
+      try {
+        await db
+          .update(user)
+          .set(args.input)
+          .where(eq(user.id, ctx.currentUser.id));
+
+        return "Success";
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
     },
   }),
 }));
