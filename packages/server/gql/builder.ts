@@ -9,6 +9,9 @@ const builder = new SchemaBuilder<{
       user?: SelectUser;
     };
   };
+  Context: {
+    currentUser: SelectUser;
+  };
   Scalars: {
     JSON: {
       Input: unknown;

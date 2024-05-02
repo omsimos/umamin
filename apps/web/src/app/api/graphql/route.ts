@@ -2,11 +2,19 @@ import { gqlSchema } from "@umamin/server";
 import { createYoga } from "graphql-yoga";
 import { useAPQ } from "@graphql-yoga/plugin-apq";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
+import { getSession } from "@/lib/auth";
 
 const origin = process.env.NEXT_PUBLIC_VERCEL_URL;
 
 const { handleRequest } = createYoga({
   schema: gqlSchema,
+  context: async () => {
+    const { user } = await getSession();
+
+    return {
+      currentUser: user,
+    };
+  },
   graphqlEndpoint: "/api/graphql",
   fetchAPI: { Response },
   cors: {
