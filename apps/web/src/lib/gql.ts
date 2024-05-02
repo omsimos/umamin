@@ -3,9 +3,13 @@ import { ResultOf } from "gql.tada";
 import { registerUrql } from "@urql/next/rsc";
 import { cacheExchange, createClient, fetchExchange } from "urql/core";
 
+const origin = process.env.NEXT_PUBLIC_VERCEL_URL;
+
 const makeClient = () => {
   return createClient({
-    url: process.env.NEXT_PUBLIC_GQL_URL!,
+    url: origin
+      ? `https://${origin}/api/graphql`
+      : "http://localhost:3000/api/graphql",
     exchanges: [cacheExchange, fetchExchange],
     fetchOptions: { cache: "no-store" },
   });
