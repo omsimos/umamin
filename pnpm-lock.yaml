@@ -29,6 +29,9 @@ importers:
       '@graphql-yoga/plugin-csrf-prevention':
         specifier: ^3.3.0
         version: 3.3.0(graphql-yoga@5.3.0(graphql@16.8.1))
+      '@graphql-yoga/plugin-disable-introspection':
+        specifier: ^2.3.0
+        version: 2.3.0(graphql-yoga@5.3.0(graphql@16.8.1))(graphql@16.8.1)
       '@hookform/resolvers':
         specifier: ^3.3.4
         version: 3.3.4(react-hook-form@7.51.2(react@18.2.0))
@@ -822,6 +825,13 @@ packages:
     resolution: {integrity: sha512-7f5uaU7zULlPz0MQQOC+wwhaaimsCcMAfsoiiWDvZeDHg5zmkMn7/rQNjnF9MRZdE5k08pPfEKXiRM7VYNmLow==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
+      graphql-yoga: ^5.3.0
+
+  '@graphql-yoga/plugin-disable-introspection@2.3.0':
+    resolution: {integrity: sha512-BtLYOOMxFqDrVGUVIiMb+5cwZrXngIC9lF79Il4IhR3WuNMZu497SKrhaz3Kgom65vhlmqmW4imzikxu8JIawQ==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      graphql: ^15.2.0 || ^16.0.0
       graphql-yoga: ^5.3.0
 
   '@graphql-yoga/subscription@5.0.0':
@@ -4760,6 +4770,11 @@ snapshots:
 
   '@graphql-yoga/plugin-csrf-prevention@3.3.0(graphql-yoga@5.3.0(graphql@16.8.1))':
     dependencies:
+      graphql-yoga: 5.3.0(graphql@16.8.1)
+
+  '@graphql-yoga/plugin-disable-introspection@2.3.0(graphql-yoga@5.3.0(graphql@16.8.1))(graphql@16.8.1)':
+    dependencies:
+      graphql: 16.8.1
       graphql-yoga: 5.3.0(graphql@16.8.1)
 
   '@graphql-yoga/subscription@5.0.0':
