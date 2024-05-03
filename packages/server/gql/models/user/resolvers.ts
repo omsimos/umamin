@@ -9,16 +9,36 @@ builder.queryFields((t) => ({
   currentUser: t.field({
     type: "User",
     nullable: true,
-    resolve: (_root, _args, ctx) => ctx.currentUser,
+    resolve: (_, _args, ctx) => ctx.currentUser,
   }),
 
-  getUserByUsername: t.field({
+  userById: t.field({
+    type: "User",
+    nullable: true,
+    args: {
+      id: t.arg.string({ required: true }),
+    },
+    resolve: async (_, args) => {
+      try {
+        const result = await db.query.user.findFirst({
+          where: eq(user.id, args.id),
+        });
+
+        return result;
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+  userByUsername: t.field({
     type: "User",
     nullable: true,
     args: {
       username: t.arg.string({ required: true }),
     },
-    resolve: async (_root, { username }) => {
+    resolve: async (_, { username }) => {
       try {
         const result = await db.query.user.findFirst({
           where: eq(user.username, username),
@@ -35,22 +55,22 @@ builder.queryFields((t) => ({
 
 builder.mutationFields((t) => ({
   updateUser: t.field({
-    type: "String",
-    nullable: true,
+    type: "User",
     authScopes: {
       authenticated: true,
     },
     args: {
       input: t.arg({ type: UpdateUserInput, required: true }),
     },
-    resolve: async (_root, args, ctx) => {
+    resolve: async (_, args, ctx) => {
       try {
-        await db
+        const result = await db
           .update(user)
           .set(args.input)
-          .where(eq(user.id, ctx.currentUser.id));
+          .where(eq(user.id, ctx.currentUser.id))
+          .returning();
 
-        return "Success";
+        return result[0];
       } catch (err) {
         console.log(err);
         throw err;

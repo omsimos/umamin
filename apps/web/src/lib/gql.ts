@@ -1,7 +1,7 @@
 import { graphql } from "gql.tada";
 import { ResultOf } from "gql.tada";
 import { registerUrql } from "@urql/next/rsc";
-import { cacheExchange, createClient, fetchExchange } from "urql/core";
+import { createClient, cacheExchange, fetchExchange } from "@urql/core";
 
 const origin = process.env.NEXT_PUBLIC_VERCEL_URL;
 
@@ -11,16 +11,17 @@ const makeClient = () => {
       ? `https://${origin}/api/graphql`
       : "http://localhost:3000/api/graphql",
     exchanges: [cacheExchange, fetchExchange],
-    fetchOptions: { cache: "no-store" },
   });
 };
 
 export const { getClient } = registerUrql(makeClient);
 
-export const GetUserByUsernameQuery = graphql(`
-  query GetUserByUsername($username: String!) {
-    getUserByUsername(username: $username) {
+export const UserByUsernameQuery = graphql(`
+  query UserByUsername($username: String!) {
+    userByUsername(username: $username) {
+      __typename
       id
+      bio
       username
       imageUrl
       createdAt
@@ -28,6 +29,7 @@ export const GetUserByUsernameQuery = graphql(`
   }
 `);
 
-export type GetUserByUsernameResult = ResultOf<
-  typeof GetUserByUsernameQuery
->["getUserByUsername"];
+export type UserByUsernameResult = Omit<
+  NonNullable<ResultOf<typeof UserByUsernameQuery>["userByUsername"]>,
+  "__typename"
+>;

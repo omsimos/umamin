@@ -11,12 +11,13 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import type { GetUserByUsernameResult } from "@/lib/gql";
+import type { UserByUsernameResult } from "@/lib/gql";
 
+import { cn } from "@ui/lib/utils";
 import { Icons } from "../../components/utilities/icons";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
-export function UserCard({ ...user }: GetUserByUsernameResult) {
+export function UserCard({ ...user }: UserByUsernameResult) {
   return (
     <Card className="bg-background">
       <CardHeader className="rounded-2xl">
@@ -56,16 +57,12 @@ export function UserCard({ ...user }: GetUserByUsernameResult) {
                 })}
               </p>
 
-              {/* <p
-              className={cn("mt-3 text-sm break-words", {
-                "break-all": user?.bio?.split(" ").length === 1,
-              })}
-            >
-              {user?.bio}
-            </p> */}
-              <p className="mt-3 break-words text-muted-foreground">
-                Hello! I'm the qiuck brown fox who jumped on the lazy dog near
-                the bank of the river. 🦊
+              <p
+                className={cn("mt-3 text-sm break-words text-muted-foreground", {
+                  "break-all": user?.bio?.split(" ").length === 1,
+                })}
+              >
+                {user?.bio}
               </p>
             </div>
           </div>

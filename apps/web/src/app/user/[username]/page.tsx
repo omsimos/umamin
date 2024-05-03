@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { UserCard } from "../components/user-card";
-import { GetUserByUsernameQuery, getClient } from "@/lib/gql";
+import { UserByUsernameQuery, getClient } from "@/lib/gql";
 
 export async function generateMetadata({
   params,
@@ -26,11 +26,11 @@ export default async function Page({
 }: {
   params: { username: string };
 }) {
-  const result = await getClient().query(GetUserByUsernameQuery, {
+  const result = await getClient().query(UserByUsernameQuery, {
     username: params.username,
   });
 
-  const user = result.data?.getUserByUsername;
+  const user = result.data?.userByUsername;
 
   if (!user) {
     redirect("/404");

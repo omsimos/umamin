@@ -14,7 +14,7 @@ builder.queryFields((t) => ({
       type: t.arg.string({ required: true }), // "recent" || "sent"
       cursorId: t.arg.string(),
     },
-    resolve: async (_root, { userId, type, cursorId }) => {
+    resolve: async (_, { userId, type, cursorId }) => {
       try {
         if (!["recent", "sent"].includes(type)) {
           throw new Error("Invalid message type");
@@ -51,7 +51,7 @@ builder.mutationFields((t) => ({
     args: {
       input: t.arg({ type: CreateMessageInput, required: true }),
     },
-    resolve: async (_root, { input }) => {
+    resolve: async (_, { input }) => {
       try {
         const result = await db
           .insert(message)

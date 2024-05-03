@@ -7,9 +7,9 @@ import { ChatForm } from "./components/chat-form";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 import { ProfileHoverCard } from "@/app/components/profile-hover-card";
 
-const GetUserByUsernameQuery = graphql(`
-  query GetUserByUsername($username: String!) {
-    getUserByUsername(username: $username) {
+const UserByUsernameQuery = graphql(`
+  query UserByUsername($username: String!) {
+    userByUsername(username: $username) {
       id
       username
       question
@@ -25,11 +25,12 @@ export default async function SendMessage({
   params: { username: string };
 }) {
   const { session } = await getSession();
-  const result = await getClient().query(GetUserByUsernameQuery, {
+
+  const result = await getClient().query(UserByUsernameQuery, {
     username: params.username,
   });
 
-  const user = result.data?.getUserByUsername;
+  const user = result.data?.userByUsername;
 
   if (!user) {
     redirect("/404");

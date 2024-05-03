@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
+import { useRouter } from "next/navigation";
 import { MessageCircleOff } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type ControllerRenderProps, useForm } from "react-hook-form";
@@ -32,7 +33,14 @@ import { SelectUser } from "@umamin/server/db/schema";
 
 const UpdateUserMutation = graphql(`
   mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input)
+    updateUser(input: $input) {
+      __typename
+      id
+      bio
+      username
+      imageUrl
+      createdAt
+    }
   }
 `);
 
@@ -55,6 +63,8 @@ const FormSchema = z.object({
 });
 
 export function SettingsForm({ user }: { user: SelectUser }) {
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -76,6 +86,7 @@ export function SettingsForm({ user }: { user: SelectUser }) {
     }
 
     toast.success("Details updated");
+    router.refresh();
   }
 
   type settingsData = {
