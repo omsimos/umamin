@@ -57,9 +57,17 @@ const FormSchema = z.object({
   bio: z.string().max(150, {
     message: "Bio must not be longer than 150 characters.",
   }),
-  username: z.string().min(3, {
-    message: "Username must be at least 3 characters.",
-  }),
+  username: z
+    .string()
+    .min(5, {
+      message: "Username must be at least 5 characters.",
+    })
+    .max(20, {
+      message: "Username must not exceed 20 characters.",
+    })
+    .refine((url) => /^[a-zA-Z0-9_-]+$/.test(url), {
+      message: "Username must be alphanumeric with no spaces.",
+    }),
 });
 
 export function SettingsForm({ user }: { user: SelectUser }) {

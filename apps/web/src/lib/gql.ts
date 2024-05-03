@@ -1,7 +1,8 @@
 import { graphql } from "gql.tada";
 import { ResultOf } from "gql.tada";
 import { registerUrql } from "@urql/next/rsc";
-import { createClient, cacheExchange, fetchExchange } from "@urql/core";
+import { cacheExchange } from "@urql/exchange-graphcache";
+import { createClient, fetchExchange } from "@urql/core";
 
 const origin = process.env.NEXT_PUBLIC_VERCEL_URL;
 
@@ -10,7 +11,7 @@ const makeClient = () => {
     url: origin
       ? `https://${origin}/api/graphql`
       : "http://localhost:3000/api/graphql",
-    exchanges: [cacheExchange, fetchExchange],
+    exchanges: [cacheExchange({}), fetchExchange],
   });
 };
 
