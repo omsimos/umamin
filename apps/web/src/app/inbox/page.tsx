@@ -33,7 +33,15 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <Skeleton className="w-full container max-w-xl lg:mt-36 mt-28 mx-auto h-[200px] rounded-2xl" />
+        <div className="container max-w-xl lg:mt-36 mt-28 mx-auto ">
+          <Skeleton className="w-full h-[200px] rounded-2xl" />
+
+          <div className="space-y-5 mt-24">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="w-full h-[200px] rounded-lg" />
+            ))}
+          </div>
+        </div>
       }
     >
       <UserProfile />
@@ -67,7 +75,6 @@ function UserProfile() {
 
   return (
     <main className="container max-w-xl space-y-3 lg:mt-36 mt-28">
-      {result.fetching && <Skeleton className="w-full h-[200px] rounded-2xl" />}
       {user && (
         <UserCard
           id={user.id}
