@@ -2,10 +2,11 @@
 
 import { z } from "zod";
 import { toast } from "sonner";
+import { useState } from "react";
 import { graphql } from "gql.tada";
 import { useRouter } from "next/navigation";
-import { MessageCircleOff } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, MessageCircleOff } from "lucide-react";
 import { type ControllerRenderProps, useForm } from "react-hook-form";
 
 import { getClient } from "@/lib/gql";
@@ -72,6 +73,7 @@ const FormSchema = z.object({
 
 export function SettingsForm({ user }: { user: SelectUser }) {
   const router = useRouter();
+  const [saving, setSaving] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -84,15 +86,19 @@ export function SettingsForm({ user }: { user: SelectUser }) {
   });
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
+    setSaving(true);
+
     const res = await getClient().mutation(UpdateUserMutation, {
       input: data,
     });
 
     if (res.error) {
+      setSaving(false);
       toast.error("An error occurred");
       return;
     }
 
+    setSaving(false);
     toast.success("Details updated");
     router.refresh();
   }
@@ -201,9 +207,12 @@ export function SettingsForm({ user }: { user: SelectUser }) {
           })}
         </Accordion>
 
-        <Button type="submit" className="w-full">
-          Update Profile
-        </Button>
+        <div className="flex gap-2">
+          <Button disabled={saving} type="submit" className="w-full">
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </div>
       </form>
     </Form>
   );

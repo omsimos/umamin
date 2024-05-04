@@ -1,3 +1,5 @@
+import { logout } from "@/actions";
+import { SignOutButton } from "../sign-out-button";
 import {
   Drawer,
   DrawerContent,
@@ -26,10 +28,14 @@ export async function SettingsDrawer({ user }: { user: SelectUser }) {
       <DrawerContent className="my-10">
         <Card className="w-full bg-bg border-none max-w-lg mx-auto">
           <CardHeader>
-            <CardTitle>Settings</CardTitle>
-            <CardDescription>
-              Manage your account settings and set profile preferences.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <CardTitle>Settings</CardTitle>
+              <form action={logout}>
+                <SignOutButton />
+              </form>
+            </div>
+
+            <CardDescription>Manage your account settings.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             <SettingsForm user={user} />

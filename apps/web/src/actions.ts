@@ -5,8 +5,6 @@ import { redirect } from "next/navigation";
 import { getSession, lucia } from "./lib/auth";
 
 export async function logout(): Promise<ActionResult> {
-  "use server";
-
   const { session } = await getSession();
 
   if (!session) {
