@@ -15,7 +15,7 @@ export default async function Login() {
   const { user } = await getSession();
 
   if (user) {
-    redirect("/user");
+    redirect("/inbox");
   }
 
   return (

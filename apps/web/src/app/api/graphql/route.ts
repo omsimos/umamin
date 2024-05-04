@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { createYoga } from "graphql-yoga";
-import { gqlSchema } from "@umamin/server";
 import { useAPQ } from "@graphql-yoga/plugin-apq";
+import { gqlSchema, initContextCache } from "@umamin/server";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
 import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspection";
 
@@ -11,6 +11,7 @@ const { handleRequest } = createYoga({
     const { user } = await getSession();
 
     return {
+      ...initContextCache(),
       currentUser: user,
     };
   },

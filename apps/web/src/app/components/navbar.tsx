@@ -38,7 +38,7 @@ export async function Navbar() {
           <ActivityIcon />
         </Link>
 
-        <Link href="/user" aria-label="home button">
+        <Link href="/inbox" aria-label="home button">
           <Icons.squares />
         </Link>
 

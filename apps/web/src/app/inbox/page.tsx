@@ -1,20 +1,24 @@
+"use client";
+
+import { Suspense } from "react";
 import { graphql } from "gql.tada";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
+
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import { getClient } from "@/lib/gql";
-import { getSession } from "@/lib/auth";
-import { UserCard } from "./components/user-card";
+import { useQuery } from "@urql/next";
+import { UserCard } from "../components/user-card";
+import { Skeleton } from "@umamin/ui/components/skeleton";
 import { SentMessages } from "./components/sent-messages";
 import { RecentMessages } from "./components/recent-messages";
 
-const UserByIdQuery = graphql(`
-  query UserById($id: String!) {
-    userById(id: $id) {
+const currentUserQuery = graphql(`
+  query CurrentUser {
+    currentUser {
       __typename
       id
       bio
@@ -25,18 +29,21 @@ const UserByIdQuery = graphql(`
   }
 `);
 
-export default async function UserProfile() {
-  const { session } = await getSession();
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <Skeleton className="w-full container max-w-xl lg:mt-36 mt-28 mx-auto h-[200px] rounded-2xl" />
+      }
+    >
+      <UserProfile />
+    </Suspense>
+  );
+}
 
-  if (!session) {
-    redirect("/login");
-  }
-
-  const result = await getClient().query(UserByIdQuery, {
-    id: session?.userId,
-  });
-
-  const user = result.data?.userById;
+function UserProfile() {
+  const [result] = useQuery({ query: currentUserQuery });
+  const router = useRouter();
 
   const tabsData = [
     {
@@ -51,8 +58,16 @@ export default async function UserProfile() {
     },
   ];
 
+  const user = result.data?.currentUser;
+
+  if (!user) {
+    router.push("/login");
+    return null;
+  }
+
   return (
     <main className="container max-w-xl space-y-3 lg:mt-36 mt-28">
+      {result.fetching && <Skeleton className="w-full h-[200px] rounded-2xl" />}
       {user && (
         <UserCard
           id={user.id}

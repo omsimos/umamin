@@ -10,4 +10,6 @@ import "./gql/models/message";
 export * from "./db";
 export * from "drizzle-orm";
 export * as schema from "./db/schema";
+export { initContextCache } from "@pothos/core";
+
 export const gqlSchema = builder.toSchema();

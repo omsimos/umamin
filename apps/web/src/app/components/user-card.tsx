@@ -14,7 +14,7 @@ import {
 import type { UserByUsernameResult } from "@/lib/gql";
 
 import { cn } from "@ui/lib/utils";
-import { Icons } from "../../components/utilities/icons";
+import { Icons } from "./utilities/icons";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
 export function UserCard({ ...user }: UserByUsernameResult) {

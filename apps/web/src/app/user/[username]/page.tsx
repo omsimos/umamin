@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { UserCard } from "../components/user-card";
+import { UserCard } from "@/app/components/user-card";
 import { UserByUsernameQuery, getClient } from "@/lib/gql";
 
 export async function generateMetadata({

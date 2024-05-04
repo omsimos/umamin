@@ -8,7 +8,9 @@ import { UpdateUserInput } from "./types";
 builder.queryFields((t) => ({
   currentUser: t.field({
     type: "User",
-    nullable: true,
+    authScopes: {
+      authenticated: true,
+    },
     resolve: (_, _args, ctx) => ctx.currentUser,
   }),
 
