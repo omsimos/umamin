@@ -5,8 +5,6 @@ import { useAPQ } from "@graphql-yoga/plugin-apq";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
 import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspection";
 
-const origin = process.env.NEXT_PUBLIC_VERCEL_URL;
-
 const { handleRequest } = createYoga({
   schema: gqlSchema,
   context: async () => {
@@ -20,9 +18,11 @@ const { handleRequest } = createYoga({
   graphiql: process.env.NODE_ENV === "development",
   fetchAPI: { Response },
   cors: {
-    origin: origin ? `https://${origin}` : "http://localhost:3000",
+    origin:
+      process.env.NODE_ENV === "production"
+        ? "https://v2.umamin.link"
+        : "http://localhost:3000",
     credentials: true,
-    allowedHeaders: ["Content-Type, Authorization"],
     methods: ["POST, GET"],
   },
   plugins: [

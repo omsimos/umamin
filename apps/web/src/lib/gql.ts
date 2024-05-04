@@ -4,13 +4,12 @@ import { registerUrql } from "@urql/next/rsc";
 import { cacheExchange } from "@urql/exchange-graphcache";
 import { createClient, fetchExchange } from "@urql/core";
 
-const origin = process.env.NEXT_PUBLIC_VERCEL_URL;
-
 const makeClient = () => {
   return createClient({
-    url: origin
-      ? `https://${origin}/api/graphql`
-      : "http://localhost:3000/api/graphql",
+    url:
+      process.env.NODE_ENV === "production"
+        ? "https://v2.umamin.link/api/graphql"
+        : "http://localhost:3000/api/graphql",
     exchanges: [cacheExchange({}), fetchExchange],
   });
 };
