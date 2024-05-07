@@ -24,7 +24,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.6.0",
-    "gql.tada": "^1.6.3",
+    "gql.tada": "^1.7.0",
     "graphql": "^16.8.1",
     "graphql-yoga": "^5.3.0",
     "lucia": "^3.1.1",
@@ -44,7 +44,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@0no-co/graphqlsp": "^1.12.1",
+    "@0no-co/graphqlsp": "^1.12.2",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

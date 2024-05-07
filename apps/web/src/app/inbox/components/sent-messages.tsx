@@ -25,8 +25,8 @@ export function SentMessages({ userId }: { userId: string }) {
 
 const SentMessagesQuery = graphql(
   `
-    query Messages($userId: String!, $type: String!, $cursorId: String) {
-      messages(userId: $userId, type: $type, cursorId: $cursorId) {
+    query Messages($userId: String!, $type: String!) {
+      messages(userId: $userId, type: $type) {
         id
         ...SentMessageFragment
       }

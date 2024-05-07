@@ -1,10 +1,10 @@
 import { nanoid } from "nanoid";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, lt, or } from "drizzle-orm";
 
 import { db } from "../../../db";
 import builder from "../../builder";
-import { CreateMessageInput } from "./types";
 import { message } from "../../../db/schema";
+import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 
 builder.queryFields((t) => ({
   messages: t.field({
@@ -12,21 +12,18 @@ builder.queryFields((t) => ({
     args: {
       userId: t.arg.string({ required: true }),
       type: t.arg.string({ required: true }), // "recent" || "sent"
-      cursorId: t.arg.string(),
     },
-    resolve: async (_, { userId, type, cursorId }) => {
+    resolve: async (_, { userId, type }) => {
       try {
         if (!["recent", "sent"].includes(type)) {
           throw new Error("Invalid message type");
         }
 
         const result = await db.query.message.findMany({
-          where: and(
+          where:
             type === "recent"
               ? eq(message.userId, userId)
               : eq(message.senderId, userId),
-            cursorId ? gt(message.id, cursorId) : undefined,
-          ),
           limit: 5,
           orderBy: [desc(message.createdAt)],
           with:
@@ -36,6 +33,7 @@ builder.queryFields((t) => ({
                 }
               : undefined,
         });
+
         return result;
       } catch (err) {
         console.log(err);
@@ -59,6 +57,60 @@ builder.mutationFields((t) => ({
           .returning();
 
         return result[0];
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+  messagesFromCursor: t.field({
+    type: "MessagesWithCursor",
+    args: {
+      input: t.arg({ type: MessagesFromCursorInput, required: true }),
+    },
+    resolve: async (_, { input }) => {
+      const { userId, type, cursor } = input;
+
+      try {
+        if (!["recent", "sent"].includes(type)) {
+          throw new Error("Invalid message type");
+        }
+
+        const result = await db.query.message.findMany({
+          where: and(
+            type === "recent"
+              ? eq(message.userId, userId)
+              : eq(message.senderId, userId),
+
+            cursor
+              ? or(
+                  lt(message.createdAt, cursor.createdAt),
+                  and(
+                    eq(message.createdAt, cursor.createdAt),
+                    lt(message.id, cursor.id),
+                  ),
+                )
+              : undefined,
+          ),
+          limit: 5,
+          orderBy: [desc(message.createdAt), desc(message.id)],
+          with:
+            type === "sent"
+              ? {
+                  user: true,
+                }
+              : undefined,
+        });
+
+        return {
+          data: result,
+          cursor: {
+            id: result[result.length - 1]?.id,
+            createdAt: result[result.length - 1]?.createdAt,
+            hasMore: result.length === 5,
+          },
+        };
       } catch (err) {
         console.log(err);
         throw err;

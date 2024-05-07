@@ -9,6 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 
 export const recentMessageFragment = graphql(`
   fragment MessageFragment on Message {
+    id
     question
     content
     createdAt

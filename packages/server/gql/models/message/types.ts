@@ -15,6 +15,21 @@ builder.objectType("Message", {
   }),
 });
 
+builder.objectType("Cursor", {
+  fields: (t) => ({
+    id: t.exposeString("id"),
+    createdAt: t.exposeString("createdAt"),
+    hasMore: t.exposeBoolean("hasMore"),
+  }),
+});
+
+builder.objectType("MessagesWithCursor", {
+  fields: (t) => ({
+    cursor: t.expose("cursor", { type: "Cursor" }),
+    data: t.expose("data", { type: ["Message"] }),
+  }),
+});
+
 export const CreateMessageInput = builder.inputType("CreateMessageInput", {
   fields: (t) => ({
     question: t.string({ required: true }),
@@ -23,3 +38,21 @@ export const CreateMessageInput = builder.inputType("CreateMessageInput", {
     userId: t.string({ required: true }),
   }),
 });
+
+const CursorInput = builder.inputType("CursorInput", {
+  fields: (t) => ({
+    id: t.string({ required: true }),
+    createdAt: t.string({ required: true }),
+  }),
+});
+
+export const MessagesFromCursorInput = builder.inputType(
+  "MessagesFromCursorInput",
+  {
+    fields: (t) => ({
+      userId: t.string({ required: true }),
+      type: t.string({ required: true }),
+      cursor: t.field({ type: CursorInput, required: true }),
+    }),
+  },
+);
