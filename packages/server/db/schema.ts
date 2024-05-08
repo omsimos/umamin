@@ -17,6 +17,7 @@ export const user = sqliteTable("user", {
   createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),
+  updatedAt: text("updated_at").$onUpdate(() => sql`(current_timestamp)`),
 });
 
 export const usersRelations = relations(user, ({ many }) => ({
