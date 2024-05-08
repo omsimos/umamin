@@ -114,12 +114,9 @@ function Recent({ userId }: { userId: string }) {
       )}
 
       {msgList?.map((msg) => <ReceivedMessageCard key={msg.id} data={msg} />)}
+      {res.fetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
 
-      {hasMore && (
-        <div ref={ref}>
-          {res.fetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
-        </div>
-      )}
+      {hasMore && <div ref={ref}></div>}
     </div>
   );
 }

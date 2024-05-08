@@ -1,9 +1,11 @@
 import { nanoid } from "nanoid";
 import { graphql } from "gql.tada";
-import { useQuery } from "@urql/next";
-import { Suspense, useMemo } from "react";
+import { useMutation, useQuery } from "@urql/next";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { SentMessagesCard, sentMessageFragment } from "./sent-messages-card";
+import { useInView } from "react-intersection-observer";
+import { toast } from "sonner";
 
 export function SentMessages({ userId }: { userId: string }) {
   const ids = useMemo(() => Array.from({ length: 3 }).map(() => nanoid()), []);
@@ -23,11 +25,13 @@ export function SentMessages({ userId }: { userId: string }) {
   );
 }
 
-const SentMessagesQuery = graphql(
+const sentMessagesQuery = graphql(
   `
     query Messages($userId: String!, $type: String!) {
       messages(userId: $userId, type: $type) {
+        __typename
         id
+        createdAt
         ...SentMessageFragment
       }
     }
@@ -35,22 +39,81 @@ const SentMessagesQuery = graphql(
   [sentMessageFragment],
 );
 
+const messagesFromCursorMutation = graphql(
+  `
+    mutation MessagesFromCursor($input: MessagesFromCursorInput!) {
+      messagesFromCursor(input: $input) {
+        __typename
+        data {
+          __typename
+          id
+          createdAt
+          ...SentMessageFragment
+        }
+        cursor {
+          __typename
+          id
+          hasMore
+          createdAt
+        }
+      }
+    }
+  `,
+  [sentMessageFragment],
+);
+
 function Sent({ userId }: { userId: string }) {
+  const { ref, inView } = useInView();
+
   const [result] = useQuery({
-    query: SentMessagesQuery,
-    variables: { userId, type: "sent" },
+    query: sentMessagesQuery,
+    variables: { userId, type: "recent" },
   });
 
+  const [res, loadMore] = useMutation(messagesFromCursorMutation);
+
   const messages = result.data?.messages;
+  const [msgList, setMsgList] = useState(messages);
+
+  const hasMore =
+    msgList?.length === 5 || res.data?.messagesFromCursor.cursor.hasMore;
+
+  useEffect(() => {
+    if (hasMore && msgList && inView) {
+      loadMore({
+        input: {
+          userId,
+          type: "recent",
+          cursor: {
+            id: msgList[msgList.length - 1]?.id,
+            createdAt: msgList[msgList.length - 1]?.createdAt,
+          },
+        },
+      }).then((res) => {
+        if (res.error) {
+          toast.error(res.error.message);
+          return;
+        }
+
+        if (res.data) {
+          setMsgList([...msgList, ...res.data.messagesFromCursor.data]);
+        }
+      });
+    }
+  }, [hasMore, inView, msgList]);
 
   return (
     <div className="flex w-full flex-col items-center gap-5 pb-20">
-      {!messages?.length && (
+      {!msgList?.length && (
         <p className="text-sm text-muted-foreground mt-4">
           No messages to show
         </p>
       )}
-      {messages?.map((msg) => <SentMessagesCard key={msg.id} data={msg} />)}
+
+      {msgList?.map((msg) => <SentMessagesCard key={msg.id} data={msg} />)}
+      {res.fetching && <Skeleton className="w-full h-[300px] rounded-lg" />}
+
+      {hasMore && <div ref={ref}></div>}
     </div>
   );
 }
