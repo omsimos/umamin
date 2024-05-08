@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 
 import { db } from "../../../db";
@@ -51,10 +50,7 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_, { input }) => {
       try {
-        const result = await db
-          .insert(message)
-          .values({ id: nanoid(), ...input })
-          .returning();
+        const result = await db.insert(message).values(input).returning();
 
         return result[0];
       } catch (err) {

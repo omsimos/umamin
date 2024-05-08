@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
-import { sql, relations } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql, relations, desc } from "drizzle-orm";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
   id: text("id").primaryKey().default(nanoid()),
@@ -33,22 +33,34 @@ export const session = sqliteTable("session", {
   expiresAt: integer("expires_at").notNull(),
 });
 
-export const message = sqliteTable("message", {
-  id: text("id").primaryKey().default(nanoid()),
-  question: text("question").notNull(),
-  content: text("content").notNull(),
-  userId: text("user_id")
-    .references(() => user.id, {
+export const message = sqliteTable(
+  "message",
+  {
+    id: text("id").primaryKey().default(nanoid()),
+    question: text("question").notNull(),
+    content: text("content").notNull(),
+    userId: text("user_id")
+      .references(() => user.id, {
+        onDelete: "cascade",
+      })
+      .notNull(),
+    senderId: text("sender_id").references(() => user.id, {
       onDelete: "cascade",
-    })
-    .notNull(),
-  senderId: text("sender_id").references(() => user.id, {
-    onDelete: "cascade",
-  }),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(current_timestamp)`),
-});
+    }),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (t) => {
+    return {
+      userIdDescIdx: index("user_id_desc_idx").on(t.userId, desc(t.createdAt)),
+      senderIdDescIdx: index("sender_id_desc_idx").on(
+        t.senderId,
+        desc(t.createdAt),
+      ),
+    };
+  },
+);
 
 export const messagesRelations = relations(message, ({ one }) => ({
   user: one(user, {
