@@ -1,15 +1,14 @@
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import { graphql } from "gql.tada";
-import { Loader2 } from "lucide-react";
 import { useMutation, useQuery } from "@urql/next";
-import { Suspense, useMemo, useState } from "react";
+import { useInView } from "react-intersection-observer";
 import { Skeleton } from "@umamin/ui/components/skeleton";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   ReceivedMessageCard,
   recentMessageFragment,
 } from "./recent-message-card";
-import { Button } from "@ui/components/ui/button";
 
 export function RecentMessages({ userId }: { userId: string }) {
   const ids = useMemo(() => Array.from({ length: 3 }).map(() => nanoid()), []);
@@ -67,6 +66,8 @@ const messagesFromCursorMutation = graphql(
 );
 
 function Recent({ userId }: { userId: string }) {
+  const { ref, inView } = useInView();
+
   const [result] = useQuery({
     query: recentMessagesQuery,
     variables: { userId, type: "recent" },
@@ -76,6 +77,33 @@ function Recent({ userId }: { userId: string }) {
 
   const messages = result.data?.messages;
   const [msgList, setMsgList] = useState(messages);
+
+  const hasMore =
+    msgList?.length === 5 || res.data?.messagesFromCursor.cursor.hasMore;
+
+  useEffect(() => {
+    if (hasMore && msgList && inView) {
+      loadMore({
+        input: {
+          userId,
+          type: "recent",
+          cursor: {
+            id: msgList[msgList.length - 1]?.id,
+            createdAt: msgList[msgList.length - 1]?.createdAt,
+          },
+        },
+      }).then((res) => {
+        if (res.error) {
+          toast.error(res.error.message);
+          return;
+        }
+
+        if (res.data) {
+          setMsgList([...msgList, ...res.data.messagesFromCursor.data]);
+        }
+      });
+    }
+  }, [hasMore, inView, msgList]);
 
   return (
     <div className="flex flex-col items-center gap-5 pb-20">
@@ -87,35 +115,11 @@ function Recent({ userId }: { userId: string }) {
 
       {msgList?.map((msg) => <ReceivedMessageCard key={msg.id} data={msg} />)}
 
-      <Button
-        onClick={async () => {
-          if (msgList && msgList.length >= 5) {
-            loadMore({
-              input: {
-                userId,
-                type: "recent",
-                cursor: {
-                  id: msgList[msgList.length - 1]?.id,
-                  createdAt: msgList[msgList.length - 1]?.createdAt,
-                },
-              },
-            }).then((res) => {
-              if (res.error) {
-                toast.error(res.error.message);
-                return;
-              }
-
-              if (res.data && res.data.messagesFromCursor.cursor.hasMore) {
-                setMsgList([...msgList, ...res.data.messagesFromCursor.data]);
-              }
-            });
-          }
-        }}
-        className="mt-8 mx-auto"
-      >
-        {res.fetching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Load More
-      </Button>
+      {hasMore && (
+        <div ref={ref}>
+          {res.fetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
+        </div>
+      )}
     </div>
   );
 }
