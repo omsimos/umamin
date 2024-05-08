@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { sql, relations, desc } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
@@ -54,11 +54,8 @@ export const message = sqliteTable(
   },
   (t) => {
     return {
-      userIdDescIdx: index("user_id_desc_idx").on(t.userId, desc(t.createdAt)),
-      senderIdDescIdx: index("sender_id_desc_idx").on(
-        t.senderId,
-        desc(t.createdAt),
-      ),
+      userIdIdx: index("user_id_idx").on(t.userId),
+      senderIdIdx: index("sender_id_idx").on(t.senderId),
     };
   },
 );
