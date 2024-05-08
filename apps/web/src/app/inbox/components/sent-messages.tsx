@@ -67,7 +67,7 @@ function Sent({ userId }: { userId: string }) {
 
   const [result] = useQuery({
     query: sentMessagesQuery,
-    variables: { userId, type: "recent" },
+    variables: { userId, type: "sent" },
   });
 
   const [res, loadMore] = useMutation(messagesFromCursorMutation);

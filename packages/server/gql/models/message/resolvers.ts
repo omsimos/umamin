@@ -11,17 +11,17 @@ builder.queryFields((t) => ({
     type: ["Message"],
     args: {
       userId: t.arg.string({ required: true }),
-      type: t.arg.string({ required: true }), // "recent" || "sent"
+      type: t.arg.string({ required: true }), // "received" || "sent"
     },
     resolve: async (_, { userId, type }) => {
       try {
-        if (!["recent", "sent"].includes(type)) {
+        if (!["received", "sent"].includes(type)) {
           throw new Error("Invalid message type");
         }
 
         const result = await db.query.message.findMany({
           where:
-            type === "recent"
+            type === "received"
               ? eq(message.userId, userId)
               : eq(message.senderId, userId),
           limit: 5,
@@ -73,13 +73,13 @@ builder.mutationFields((t) => ({
       const { userId, type, cursor } = input;
 
       try {
-        if (!["recent", "sent"].includes(type)) {
+        if (!["received", "sent"].includes(type)) {
           throw new Error("Invalid message type");
         }
 
         const result = await db.query.message.findMany({
           where: and(
-            type === "recent"
+            type === "received"
               ? eq(message.userId, userId)
               : eq(message.senderId, userId),
 

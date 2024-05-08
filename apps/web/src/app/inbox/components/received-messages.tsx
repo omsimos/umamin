@@ -7,10 +7,10 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   ReceivedMessageCard,
-  recentMessageFragment,
-} from "./recent-message-card";
+  receivedMessageFragment,
+} from "./received-message-card";
 
-export function RecentMessages({ userId }: { userId: string }) {
+export function ReceivedMessages({ userId }: { userId: string }) {
   const ids = useMemo(() => Array.from({ length: 3 }).map(() => nanoid()), []);
 
   return (
@@ -23,12 +23,12 @@ export function RecentMessages({ userId }: { userId: string }) {
         </div>
       }
     >
-      <Recent userId={userId} />
+      <Received userId={userId} />
     </Suspense>
   );
 }
 
-const recentMessagesQuery = graphql(
+const receivedMessagesQuery = graphql(
   `
     query RecentMessages($userId: String!, $type: String!) {
       messages(userId: $userId, type: $type) {
@@ -39,7 +39,7 @@ const recentMessagesQuery = graphql(
       }
     }
   `,
-  [recentMessageFragment],
+  [receivedMessageFragment],
 );
 
 const messagesFromCursorMutation = graphql(
@@ -62,15 +62,15 @@ const messagesFromCursorMutation = graphql(
       }
     }
   `,
-  [recentMessageFragment],
+  [receivedMessageFragment],
 );
 
-function Recent({ userId }: { userId: string }) {
+function Received({ userId }: { userId: string }) {
   const { ref, inView } = useInView();
 
   const [result] = useQuery({
-    query: recentMessagesQuery,
-    variables: { userId, type: "recent" },
+    query: receivedMessagesQuery,
+    variables: { userId, type: "received" },
   });
 
   const [res, loadMore] = useMutation(messagesFromCursorMutation);
@@ -86,7 +86,7 @@ function Recent({ userId }: { userId: string }) {
       loadMore({
         input: {
           userId,
-          type: "recent",
+          type: "received",
           cursor: {
             id: msgList[msgList.length - 1]?.id,
             createdAt: msgList[msgList.length - 1]?.createdAt,

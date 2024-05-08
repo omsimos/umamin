@@ -14,7 +14,7 @@ import { useQuery } from "@urql/next";
 import { UserCard } from "../components/user-card";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { SentMessages } from "./components/sent-messages";
-import { RecentMessages } from "./components/recent-messages";
+import { ReceivedMessages } from "./components/received-messages";
 
 const currentUserQuery = graphql(`
   query CurrentUser {
@@ -55,9 +55,9 @@ function UserProfile() {
 
   const tabsData = [
     {
-      name: "Recent",
-      value: "recent",
-      content: () => <RecentMessages userId={user?.id!} />,
+      name: "Received",
+      value: "received",
+      content: () => <ReceivedMessages userId={user?.id!} />,
     },
     {
       name: "Sent",
@@ -85,7 +85,7 @@ function UserProfile() {
         />
       )}
 
-      <Tabs defaultValue="recent" className="w-full">
+      <Tabs defaultValue="received" className="w-full">
         <TabsList className="w-full bg-transparent px-0 flex mb-5">
           {tabsData.map((tab) => (
             <TabsTrigger

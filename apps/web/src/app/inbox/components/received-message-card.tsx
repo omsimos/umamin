@@ -7,7 +7,7 @@ import {
 import { FragmentOf, graphql, readFragment } from "gql.tada";
 import { formatDistanceToNow } from "date-fns";
 
-export const recentMessageFragment = graphql(`
+export const receivedMessageFragment = graphql(`
   fragment MessageFragment on Message {
     id
     question
@@ -19,9 +19,9 @@ export const recentMessageFragment = graphql(`
 export function ReceivedMessageCard({
   data,
 }: {
-  data: FragmentOf<typeof recentMessageFragment>;
+  data: FragmentOf<typeof receivedMessageFragment>;
 }) {
-  const msg = readFragment(recentMessageFragment, data);
+  const msg = readFragment(receivedMessageFragment, data);
 
   return (
     <Card className="min-w-2 w-full group relative">
