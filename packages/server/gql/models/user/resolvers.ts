@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 
 import { db } from "../../../db";
 import builder from "../../builder";
@@ -51,6 +51,23 @@ builder.queryFields((t) => ({
       }
     },
   }),
+
+  usersWithNote: t.field({
+    type: ["User"],
+    nullable: true,
+    resolve: async () => {
+      try {
+        const result = await db.query.user.findMany({
+          where: isNotNull(user.note),
+        });
+
+        return result;
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
 }));
 
 builder.mutationFields((t) => ({
@@ -67,6 +84,30 @@ builder.mutationFields((t) => ({
         const result = await db
           .update(user)
           .set(args.input)
+          .where(eq(user.id, ctx.currentUser.id))
+          .returning();
+
+        return result[0];
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+  updateNote: t.field({
+    type: "User",
+    authScopes: {
+      authenticated: true,
+    },
+    args: {
+      content: t.arg.string({ required: true }),
+    },
+    resolve: async (_, args, ctx) => {
+      try {
+        const result = await db
+          .update(user)
+          .set({ note: args.content })
           .where(eq(user.id, ctx.currentUser.id))
           .returning();
 

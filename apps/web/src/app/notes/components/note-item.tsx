@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ScanFace } from "lucide-react";
 
 import {
   Tooltip,
@@ -12,12 +11,22 @@ import {
   TooltipProvider,
 } from "@umamin/ui/components/tooltip";
 
-import { SendMessageDrawer } from "./send-message-drawer";
 import { Menu } from "@/app/components/menu";
-import { Avatar, AvatarFallback } from "@umamin/ui/components/avatar";
+import { SendMessageDrawer } from "./send-message-drawer";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@umamin/ui/components/avatar";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 
-export function NoteItem() {
+type Props = {
+  username: string;
+  imageUrl: string;
+  note: string;
+};
+
+export function NoteItem({ username, imageUrl, note }: Props) {
   const menuItems = [
     {
       title: "View",
@@ -46,51 +55,27 @@ export function NoteItem() {
         <div className="flex justify-between">
           <div className="flex gap-4">
             <Link href={`/user/johndoe`} className="font-semibold">
-              {/* <Avatar className="relative top-1">
-            <AvatarImage
-            className="rounded-full"
-            src={post.author.image as string | undefined}
-            alt={`${post.author.name}'s avatar`}
-            />
-            <AvatarFallback className="text-xs">
-            {post.author.name?.split(" ").at(0)}
-            </AvatarFallback>
-          </Avatar> */}
-              <Avatar>
-                <AvatarFallback>
-                  <ScanFace />
+              <Avatar className="relative top-1">
+                <AvatarImage
+                  className="rounded-full"
+                  src={imageUrl}
+                  alt="User avatar"
+                />
+                <AvatarFallback className="text-xs">
+                  {username[0]}
                 </AvatarFallback>
               </Avatar>
             </Link>
 
             <div className="flex flex-col">
               <Link
-                href={`/user/$johndoe`}
+                href={`/user/${username}`}
                 className="font-semibold hover:underline"
               >
-                {/* {post.author.name} */}
-                johndoe
+                {username}
               </Link>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger className="text-sm text-muted-foreground">
-                    {/* <span className="select-none text-muted-foreground">
-                      {formatDistanceToNowStrict(post.createdAt, {
-                        addSuffix: false,
-                        locale: {
-                          formatDistance: (...props) =>
-                          formatDistance(...props),
-                        },
-                      })}
-                    </span> */}
-                    4h · umamin.link
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {/* <span>{formatRelative(post.createdAt, new Date())}</span> */}
-                    full date
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+
+              <p className="text-sm text-muted-foreground">umamin.link</p>
             </div>
           </div>
 
@@ -102,11 +87,7 @@ export function NoteItem() {
       </CardHeader>
 
       <CardContent className="flex w-full gap-3">
-        <p className="whitespace-pre-wrap">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Corrupti sd
-          omnis quam dicta provident reiciendis itaque eum veniam non dolorum
-          aperiam?
-        </p>
+        <p className="whitespace-pre-wrap">{note}</p>
       </CardContent>
     </Card>
   );

@@ -77,7 +77,6 @@ function UserProfile() {
     <main className="container max-w-xl space-y-3 lg:mt-36 mt-28">
       {user && (
         <UserCard
-          id={user.id}
           bio={user.bio}
           username={user.username}
           imageUrl={user.imageUrl}
