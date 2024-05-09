@@ -10,7 +10,7 @@ import { Input } from "@ui/components/ui/input";
 import { Button } from "@ui/components/ui/button";
 import { ChatList } from "@/app/components/chat-list";
 
-const CreateMessageMutation = graphql(`
+const CREATE_MESSAGE_MUTATION = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {
     createMessage(input: $input) {
       id
@@ -38,7 +38,7 @@ export function ChatForm({ userId, sessionId, imageUrl, question }: Props) {
       return;
     }
 
-    const res = await getClient().mutation(CreateMessageMutation, {
+    const res = await getClient().mutation(CREATE_MESSAGE_MUTATION, {
       input: {
         senderId: sessionId,
         userId,

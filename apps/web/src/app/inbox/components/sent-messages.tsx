@@ -25,7 +25,7 @@ export function SentMessages({ userId }: { userId: string }) {
   );
 }
 
-const sentMessagesQuery = graphql(
+const SENT_MESSAGES_QUERY = graphql(
   `
     query Messages($userId: String!, $type: String!) {
       messages(userId: $userId, type: $type) {
@@ -39,7 +39,7 @@ const sentMessagesQuery = graphql(
   [sentMessageFragment],
 );
 
-const messagesFromCursorMutation = graphql(
+const MESSAGES_FROM_CURSOR_MUTATION = graphql(
   `
     mutation MessagesFromCursor($input: MessagesFromCursorInput!) {
       messagesFromCursor(input: $input) {
@@ -66,11 +66,11 @@ function Sent({ userId }: { userId: string }) {
   const { ref, inView } = useInView();
 
   const [result] = useQuery({
-    query: sentMessagesQuery,
+    query: SENT_MESSAGES_QUERY,
     variables: { userId, type: "sent" },
   });
 
-  const [res, loadMore] = useMutation(messagesFromCursorMutation);
+  const [res, loadMore] = useMutation(MESSAGES_FROM_CURSOR_MUTATION);
 
   const messages = result.data?.messages;
   const [msgList, setMsgList] = useState(messages);

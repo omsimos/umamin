@@ -16,7 +16,7 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 import { SentMessages } from "./components/sent-messages";
 import { ReceivedMessages } from "./components/received-messages";
 
-const currentUserQuery = graphql(`
+const CURRENT_USER_QUERY = graphql(`
   query CurrentUser {
     currentUser {
       __typename
@@ -50,7 +50,7 @@ export default function Page() {
 }
 
 function UserProfile() {
-  const [result] = useQuery({ query: currentUserQuery });
+  const [result] = useQuery({ query: CURRENT_USER_QUERY });
   const router = useRouter();
 
   const tabsData = [

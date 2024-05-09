@@ -4,7 +4,6 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, MessageCircleOff } from "lucide-react";
 import { type ControllerRenderProps, useForm } from "react-hook-form";
@@ -72,7 +71,6 @@ const FormSchema = z.object({
 });
 
 export function SettingsForm({ user }: { user: SelectUser }) {
-  const router = useRouter();
   const [saving, setSaving] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -100,7 +98,6 @@ export function SettingsForm({ user }: { user: SelectUser }) {
 
     setSaving(false);
     toast.success("Details updated");
-    router.refresh();
   }
 
   type settingsData = {

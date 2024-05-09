@@ -11,13 +11,19 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import type { UserByUsernameResult } from "@/lib/gql";
 
 import { cn } from "@ui/lib/utils";
 import { Icons } from "./utilities/icons";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
-export function UserCard({ ...user }: UserByUsernameResult) {
+type Props = {
+  imageUrl: string;
+  username: string;
+  createdAt: string;
+  bio?: string | null;
+};
+
+export function UserCard({ ...user }: Props) {
   return (
     <Card className="bg-background">
       <CardHeader className="rounded-2xl">
@@ -58,9 +64,12 @@ export function UserCard({ ...user }: UserByUsernameResult) {
               </p>
 
               <p
-                className={cn("mt-3 text-sm break-words text-muted-foreground", {
-                  "break-all": user?.bio?.split(" ").length === 1,
-                })}
+                className={cn(
+                  "mt-3 text-sm break-words text-muted-foreground",
+                  {
+                    "break-all": user?.bio?.split(" ").length === 1,
+                  },
+                )}
               >
                 {user?.bio}
               </p>

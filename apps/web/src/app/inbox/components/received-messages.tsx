@@ -28,7 +28,7 @@ export function ReceivedMessages({ userId }: { userId: string }) {
   );
 }
 
-const receivedMessagesQuery = graphql(
+const RECEIVED_MESSAGES_QUERY = graphql(
   `
     query RecentMessages($userId: String!, $type: String!) {
       messages(userId: $userId, type: $type) {
@@ -42,7 +42,7 @@ const receivedMessagesQuery = graphql(
   [receivedMessageFragment],
 );
 
-const messagesFromCursorMutation = graphql(
+const MESSAGES_FROM_CURSOR_MUTATION = graphql(
   `
     mutation MessagesFromCursor($input: MessagesFromCursorInput!) {
       messagesFromCursor(input: $input) {
@@ -69,11 +69,11 @@ function Received({ userId }: { userId: string }) {
   const { ref, inView } = useInView();
 
   const [result] = useQuery({
-    query: receivedMessagesQuery,
+    query: RECEIVED_MESSAGES_QUERY,
     variables: { userId, type: "received" },
   });
 
-  const [res, loadMore] = useMutation(messagesFromCursorMutation);
+  const [res, loadMore] = useMutation(MESSAGES_FROM_CURSOR_MUTATION);
 
   const messages = result.data?.messages;
   const [msgList, setMsgList] = useState(messages);

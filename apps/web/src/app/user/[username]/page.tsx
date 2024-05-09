@@ -1,7 +1,21 @@
+import { graphql } from "gql.tada";
 import { redirect } from "next/navigation";
 
+import { getClient } from "@/lib/gql";
 import { UserCard } from "@/app/components/user-card";
-import { UserByUsernameQuery, getClient } from "@/lib/gql";
+
+const USER_BY_USERNAME_QUERY = graphql(`
+  query UserByUsername($username: String!) {
+    userByUsername(username: $username) {
+      __typename
+      id
+      bio
+      username
+      imageUrl
+      createdAt
+    }
+  }
+`);
 
 export async function generateMetadata({
   params,
@@ -26,7 +40,7 @@ export default async function Page({
 }: {
   params: { username: string };
 }) {
-  const result = await getClient().query(UserByUsernameQuery, {
+  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
     username: params.username,
   });
 
@@ -38,7 +52,12 @@ export default async function Page({
 
   return (
     <section className="container max-w-xl space-y-3 lg:mt-36 mt-28">
-      <UserCard {...user} />
+      <UserCard
+        username={user.username}
+        bio={user.bio}
+        imageUrl={user.imageUrl}
+        createdAt={user.createdAt}
+      />
     </section>
   );
 }
