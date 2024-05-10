@@ -7,7 +7,7 @@ import { SentMessagesCard, sentMessageFragment } from "./sent-messages-card";
 import { useInView } from "react-intersection-observer";
 import { toast } from "sonner";
 
-export function SentMessages({ userId }: { userId: string }) {
+export function SentMessages() {
   const ids = useMemo(() => Array.from({ length: 3 }).map(() => nanoid()), []);
 
   return (
@@ -20,15 +20,15 @@ export function SentMessages({ userId }: { userId: string }) {
         </div>
       }
     >
-      <Sent userId={userId} />
+      <Sent />
     </Suspense>
   );
 }
 
 const SENT_MESSAGES_QUERY = graphql(
   `
-    query Messages($userId: String!, $type: String!) {
-      messages(userId: $userId, type: $type) {
+    query Messages($type: String!) {
+      messages(type: $type) {
         __typename
         id
         createdAt
@@ -62,12 +62,12 @@ const MESSAGES_FROM_CURSOR_MUTATION = graphql(
   [sentMessageFragment],
 );
 
-function Sent({ userId }: { userId: string }) {
+function Sent() {
   const { ref, inView } = useInView();
 
   const [result] = useQuery({
     query: SENT_MESSAGES_QUERY,
-    variables: { userId, type: "sent" },
+    variables: { type: "sent" },
   });
 
   const [res, loadMore] = useMutation(MESSAGES_FROM_CURSOR_MUTATION);
@@ -82,7 +82,6 @@ function Sent({ userId }: { userId: string }) {
     if (hasMore && msgList && inView) {
       loadMore({
         input: {
-          userId,
           type: "recent",
           cursor: {
             id: msgList[msgList.length - 1]?.id,

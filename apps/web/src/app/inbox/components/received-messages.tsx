@@ -10,7 +10,7 @@ import {
   receivedMessageFragment,
 } from "./received-message-card";
 
-export function ReceivedMessages({ userId }: { userId: string }) {
+export function ReceivedMessages() {
   const ids = useMemo(() => Array.from({ length: 3 }).map(() => nanoid()), []);
 
   return (
@@ -23,15 +23,15 @@ export function ReceivedMessages({ userId }: { userId: string }) {
         </div>
       }
     >
-      <Received userId={userId} />
+      <Received />
     </Suspense>
   );
 }
 
 const RECEIVED_MESSAGES_QUERY = graphql(
   `
-    query RecentMessages($userId: String!, $type: String!) {
-      messages(userId: $userId, type: $type) {
+    query RecentMessages($type: String!) {
+      messages(type: $type) {
         __typename
         id
         createdAt
@@ -65,12 +65,12 @@ const MESSAGES_FROM_CURSOR_MUTATION = graphql(
   [receivedMessageFragment],
 );
 
-function Received({ userId }: { userId: string }) {
+function Received() {
   const { ref, inView } = useInView();
 
   const [result] = useQuery({
     query: RECEIVED_MESSAGES_QUERY,
-    variables: { userId, type: "received" },
+    variables: { type: "received" },
   });
 
   const [res, loadMore] = useMutation(MESSAGES_FROM_CURSOR_MUTATION);
@@ -85,7 +85,6 @@ function Received({ userId }: { userId: string }) {
     if (hasMore && msgList && inView) {
       loadMore({
         input: {
-          userId,
           type: "received",
           cursor: {
             id: msgList[msgList.length - 1]?.id,

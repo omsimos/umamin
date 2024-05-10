@@ -50,7 +50,6 @@ export const MessagesFromCursorInput = builder.inputType(
   "MessagesFromCursorInput",
   {
     fields: (t) => ({
-      userId: t.string({ required: true }),
       type: t.string({ required: true }),
       cursor: t.field({ type: CursorInput, required: true }),
     }),

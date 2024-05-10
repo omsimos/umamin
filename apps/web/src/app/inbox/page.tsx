@@ -57,12 +57,12 @@ function UserProfile() {
     {
       name: "Received",
       value: "received",
-      content: () => <ReceivedMessages userId={user?.id!} />,
+      content: () => <ReceivedMessages />,
     },
     {
       name: "Sent",
       value: "sent",
-      content: () => <SentMessages userId={user?.id!} />,
+      content: () => <SentMessages />,
     },
   ];
 

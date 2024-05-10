@@ -9,10 +9,9 @@ builder.queryFields((t) => ({
   messages: t.field({
     type: ["Message"],
     args: {
-      userId: t.arg.string({ required: true }),
       type: t.arg.string({ required: true }), // "received" || "sent"
     },
-    resolve: async (_, { userId, type }) => {
+    resolve: async (_, { type }, ctx) => {
       try {
         if (!["received", "sent"].includes(type)) {
           throw new Error("Invalid message type");
@@ -21,8 +20,8 @@ builder.queryFields((t) => ({
         const result = await db.query.message.findMany({
           where:
             type === "received"
-              ? eq(message.userId, userId)
-              : eq(message.senderId, userId),
+              ? eq(message.userId, ctx.currentUser.id)
+              : eq(message.senderId, ctx.currentUser.id),
           limit: 5,
           orderBy: [desc(message.createdAt)],
           with:
@@ -65,8 +64,8 @@ builder.mutationFields((t) => ({
     args: {
       input: t.arg({ type: MessagesFromCursorInput, required: true }),
     },
-    resolve: async (_, { input }) => {
-      const { userId, type, cursor } = input;
+    resolve: async (_, { input }, ctx) => {
+      const { type, cursor } = input;
 
       try {
         if (!["received", "sent"].includes(type)) {
@@ -76,8 +75,8 @@ builder.mutationFields((t) => ({
         const result = await db.query.message.findMany({
           where: and(
             type === "received"
-              ? eq(message.userId, userId)
-              : eq(message.senderId, userId),
+              ? eq(message.userId, ctx.currentUser.id)
+              : eq(message.senderId, ctx.currentUser.id),
 
             cursor
               ? or(
