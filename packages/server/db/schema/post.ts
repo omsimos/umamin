@@ -9,7 +9,7 @@ export const post = sqliteTable("post", {
   id: text("id").primaryKey().default(nanoid()),
   title: text("title").notNull(),
   content: text("content").notNull(),
-  authorId: text("author_id"),
+  authorId: text("author_id").references(() => user.id).notNull(),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),
