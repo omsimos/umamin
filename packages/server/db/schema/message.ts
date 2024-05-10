@@ -22,12 +22,26 @@ export const message = sqliteTable(
       .notNull()
       .default(sql`(current_timestamp)`),
   },
-  (t) => {
-    return {
-      userIdIdx: index("user_id_idx").on(t.userId),
-      senderIdIdx: index("sender_id_idx").on(t.senderId),
-    };
-  },
+  (t) => ({
+    userIdCreatedAtIdx: index("user_id_created_at_idx").on(
+      t.userId,
+      t.createdAt,
+    ),
+    userIdCreatedAtIdIdx: index("user_id_created_at_id_idx").on(
+      t.userId,
+      t.createdAt,
+      t.id,
+    ),
+    senderIdCreatedAtIdx: index("sender_id_created_at_idx").on(
+      t.senderId,
+      t.createdAt,
+    ),
+    senderIdCreatedAtIdIdx: index("sender_id_created_at_id_idx").on(
+      t.userId,
+      t.createdAt,
+      t.id,
+    ),
+  }),
 );
 
 export const messagesRelations = relations(message, ({ one }) => ({
