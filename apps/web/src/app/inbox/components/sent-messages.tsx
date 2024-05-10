@@ -73,25 +73,39 @@ function Sent() {
   const [res, loadMore] = useMutation(MESSAGES_FROM_CURSOR_MUTATION);
 
   const messages = result.data?.messages;
+
+  const [cursor, setCursor] = useState(
+    messages && {
+      id: messages[messages.length - 1].id,
+      createdAt: messages[messages.length - 1].createdAt,
+    },
+  );
+
   const [msgList, setMsgList] = useState(messages);
 
   const hasMore =
     msgList?.length === 5 || res.data?.messagesFromCursor.cursor.hasMore;
 
   useEffect(() => {
-    if (hasMore && msgList && inView) {
+    if (hasMore && msgList && inView && cursor) {
       loadMore({
         input: {
           type: "recent",
-          cursor: {
-            id: msgList[msgList.length - 1]?.id,
-            createdAt: msgList[msgList.length - 1]?.createdAt,
-          },
+          cursor,
         },
       }).then((res) => {
         if (res.error) {
           toast.error(res.error.message);
           return;
+        }
+
+        const _cursor = res.data?.messagesFromCursor.cursor;
+
+        if (_cursor) {
+          setCursor({
+            id: _cursor?.id,
+            createdAt: _cursor?.createdAt,
+          });
         }
 
         if (res.data) {
