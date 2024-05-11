@@ -4,6 +4,7 @@ import { db } from "../../../db";
 import builder from "../../builder";
 import { message } from "../../../db/schema";
 import { CreateMessageInput, MessagesFromCursorInput } from "./types";
+import { nanoid } from "nanoid";
 
 builder.queryFields((t) => ({
   messages: t.field({
@@ -49,7 +50,10 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_, { input }) => {
       try {
-        const result = await db.insert(message).values(input).returning();
+        const result = await db
+          .insert(message)
+          .values({ id: nanoid(), ...input })
+          .returning();
 
         return result[0];
       } catch (err) {

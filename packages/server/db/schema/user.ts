@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import { sql, relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
@@ -8,7 +7,7 @@ import { message } from "./message";
 export const user = sqliteTable(
   "user",
   {
-    id: text("id").primaryKey().default(nanoid()),
+    id: text("id").primaryKey(),
     username: text("username").notNull().unique(),
     email: text("email").notNull().unique(),
     note: text("note"),

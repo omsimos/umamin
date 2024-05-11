@@ -4,6 +4,7 @@ import { OAuth2RequestError } from "arctic";
 
 import { google, lucia } from "@/lib/auth";
 import { db, eq, schema } from "@umamin/server";
+import { nanoid } from "nanoid";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -69,6 +70,7 @@ export async function GET(request: Request): Promise<Response> {
     const user = await db
       .insert(schema.user)
       .values({
+        id: nanoid(),
         googleId: googleUser.sub,
         username: `${googleUser.given_name.split(" ").join("").toLowerCase()}_${usernameId}`,
         imageUrl: googleUser.picture,

@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import { sql, relations } from "drizzle-orm";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
@@ -6,7 +5,7 @@ import { post } from "./post";
 import { upvote } from "./upvote";
 
 export const comment = sqliteTable("post", {
-  id: text("id").primaryKey().default(nanoid()),
+  id: text("id").primaryKey(),
   title: text("title").notNull(),
   content: text("content").notNull(),
   authorId: text("author_id"),
