@@ -1,9 +1,9 @@
-import { eq, isNotNull } from "drizzle-orm";
+import { and, desc, eq, lt, or, isNotNull } from "drizzle-orm";
 
 import { db } from "../../../db";
 import builder from "../../builder";
 import { user } from "../../../db/schema";
-import { UpdateUserInput } from "./types";
+import { UpdateUserInput, UsersWithNoteFromCursorInput } from "./types";
 
 builder.queryFields((t) => ({
   currentUser: t.field({
@@ -59,6 +59,7 @@ builder.queryFields((t) => ({
       try {
         const result = await db.query.user.findMany({
           where: isNotNull(user.note),
+          orderBy: desc(user.updatedAt),
         });
 
         return result;
@@ -112,6 +113,45 @@ builder.mutationFields((t) => ({
           .returning();
 
         return result[0];
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+  usersWithNoteFromCursor: t.field({
+    type: "UsersWithCursor",
+    args: {
+      cursor: t.arg({ type: UsersWithNoteFromCursorInput, required: true }),
+    },
+    resolve: async (_, { cursor }) => {
+      try {
+        const result = await db.query.user.findMany({
+          where: and(
+            isNotNull(user.note),
+            cursor
+              ? or(
+                  lt(user.updatedAt, cursor.updatedAt),
+                  and(
+                    eq(user.updatedAt, cursor.updatedAt),
+                    lt(user.id, cursor.id),
+                  ),
+                )
+              : undefined,
+          ),
+          limit: 5,
+          orderBy: [desc(user.updatedAt), desc(user.id)],
+        });
+
+        return {
+          data: result,
+          cursor: {
+            id: result[result.length - 1]?.id,
+            updatedAt: result[result.length - 1]?.updatedAt,
+            hasMore: result.length === 5,
+          },
+        };
       } catch (err) {
         console.log(err);
         throw err;

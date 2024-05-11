@@ -3,10 +3,16 @@ import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
 import { SelectMessage, SelectUser } from "../db/schema";
 import { DateResolver, JSONResolver } from "graphql-scalars";
 
-type Cursor = {
+type MessageCursor = {
   id: string;
   hasMore: boolean;
   createdAt: string;
+};
+
+type UserCursor = {
+  id: string;
+  hasMore: boolean;
+  updatedAt?: string | null;
 };
 
 const builder = new SchemaBuilder<{
@@ -18,9 +24,14 @@ const builder = new SchemaBuilder<{
     Message: SelectMessage & {
       user?: SelectUser;
     };
-    Cursor: Cursor;
+    MessageCursor: MessageCursor;
+    UserCursor: UserCursor;
+    UsersWithCursor: {
+      cursor: UserCursor;
+      data: SelectUser[];
+    };
     MessagesWithCursor: {
-      cursor: Cursor;
+      cursor: MessageCursor;
       data: SelectMessage[];
     };
   };

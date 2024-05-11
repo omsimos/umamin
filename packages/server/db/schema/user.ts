@@ -28,6 +28,11 @@ export const user = sqliteTable(
   },
   (t) => ({
     noteUpdatedAtIdx: index("note_updated_at_idx").on(t.note, t.updatedAt),
+    noteUpdatedAtIdIdx: index("note_updated_at_id_idx").on(
+      t.note,
+      t.updatedAt,
+      t.id,
+    ),
   }),
 );
 

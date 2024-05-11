@@ -15,7 +15,7 @@ builder.objectType("Message", {
   }),
 });
 
-builder.objectType("Cursor", {
+builder.objectType("MessageCursor", {
   fields: (t) => ({
     id: t.exposeString("id"),
     createdAt: t.exposeString("createdAt"),
@@ -25,7 +25,7 @@ builder.objectType("Cursor", {
 
 builder.objectType("MessagesWithCursor", {
   fields: (t) => ({
-    cursor: t.expose("cursor", { type: "Cursor" }),
+    cursor: t.expose("cursor", { type: "MessageCursor" }),
     data: t.expose("data", { type: ["Message"] }),
   }),
 });
@@ -39,7 +39,7 @@ export const CreateMessageInput = builder.inputType("CreateMessageInput", {
   }),
 });
 
-const CursorInput = builder.inputType("CursorInput", {
+export const CursorInput = builder.inputType("CursorInput", {
   fields: (t) => ({
     id: t.string({ required: true }),
     createdAt: t.string({ required: true }),
