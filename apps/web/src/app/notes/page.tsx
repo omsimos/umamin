@@ -76,10 +76,12 @@ function Notes() {
   const users = result.data?.usersWithNote;
 
   const [cursor, setCursor] = useState(
-    users && {
-      id: users[users.length - 1].id,
-      updatedAt: users[users.length - 1].updatedAt,
-    },
+    !!users?.length
+      ? {
+          id: users[users.length - 1].id,
+          updatedAt: users[users.length - 1].updatedAt,
+        }
+      : undefined,
   );
 
   const [userList, setUserList] = useState(users);
@@ -122,7 +124,7 @@ function Notes() {
 
       <div className="gap-5 flex flex-col">
         {!userList?.length && (
-          <p className="text-sm text-muted-foreground mt-4">
+          <p className="text-sm text-muted-foreground mt-4 text-center">
             No messages to show
           </p>
         )}

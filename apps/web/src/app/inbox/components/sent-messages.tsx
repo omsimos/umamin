@@ -75,10 +75,12 @@ function Sent() {
   const messages = result.data?.messages;
 
   const [cursor, setCursor] = useState(
-    messages && {
-      id: messages[messages.length - 1].id,
-      createdAt: messages[messages.length - 1].createdAt,
-    },
+    !!messages?.length
+      ? {
+          id: messages[messages.length - 1].id,
+          createdAt: messages[messages.length - 1].createdAt,
+        }
+      : undefined,
   );
 
   const [msgList, setMsgList] = useState(messages);
