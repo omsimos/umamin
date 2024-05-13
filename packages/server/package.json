@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "clean": "rm -rf ./node_modules",
-    "db:migrate": "pnpm drizzle-kit generate:sqlite",
-    "db:push": "pnpm drizzle-kit push:sqlite",
+    "db:migrate": "pnpm drizzle-kit generate",
+    "db:push": "pnpm drizzle-kit push",
     "db:studio": "pnpm drizzle-kit studio"
   },
   "devDependencies": {
