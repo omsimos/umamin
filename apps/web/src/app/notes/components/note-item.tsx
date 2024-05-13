@@ -1,15 +1,6 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from "@umamin/ui/components/tooltip";
 
 import { Menu } from "@/app/components/menu";
 import { SendMessageDrawer } from "./send-message-drawer";

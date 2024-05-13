@@ -1,14 +1,15 @@
 "use client";
 
+import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import { graphql } from "gql.tada";
 import { useMutation, useQuery } from "@urql/next";
 import { Suspense, useEffect, useMemo, useState } from "react";
+
 import { NoteItem } from "./components/note-item";
 import { NoteForm } from "./components/note-form";
 import { Skeleton } from "@ui/components/ui/skeleton";
 import { useInView } from "react-intersection-observer";
-import { toast } from "sonner";
 
 export default function Page() {
   const ids = useMemo(() => Array.from({ length: 3 }).map(() => nanoid()), []);
