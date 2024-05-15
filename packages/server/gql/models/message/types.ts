@@ -17,8 +17,8 @@ builder.objectType("Message", {
 
 builder.objectType("MessageCursor", {
   fields: (t) => ({
-    id: t.exposeString("id"),
-    createdAt: t.exposeString("createdAt"),
+    id: t.exposeString("id", { nullable: true }),
+    createdAt: t.exposeString("createdAt", { nullable: true }),
     hasMore: t.exposeBoolean("hasMore"),
   }),
 });

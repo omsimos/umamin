@@ -1,18 +1,19 @@
+import { nanoid } from "nanoid";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 
 import { db } from "../../../db";
 import builder from "../../builder";
 import { message } from "../../../db/schema";
 import { CreateMessageInput, MessagesFromCursorInput } from "./types";
-import { nanoid } from "nanoid";
 
 builder.queryFields((t) => ({
   messages: t.field({
     type: ["Message"],
     args: {
+      userId: t.arg.string({ required: true }),
       type: t.arg.string({ required: true }), // "received" || "sent"
     },
-    resolve: async (_, { type }, ctx) => {
+    resolve: async (_, { userId, type }) => {
       try {
         if (!["received", "sent"].includes(type)) {
           throw new Error("Invalid message type");
@@ -21,8 +22,8 @@ builder.queryFields((t) => ({
         const result = await db.query.message.findMany({
           where:
             type === "received"
-              ? eq(message.userId, ctx.currentUser.id)
-              : eq(message.senderId, ctx.currentUser.id),
+              ? eq(message.userId, userId)
+              : eq(message.senderId, userId),
           limit: 5,
           orderBy: [desc(message.createdAt)],
           with:

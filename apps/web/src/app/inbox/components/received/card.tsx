@@ -4,8 +4,8 @@ import {
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
-import { FragmentOf, graphql, readFragment } from "gql.tada";
 import { formatDistanceToNow } from "date-fns";
+import { FragmentOf, graphql, readFragment } from "gql.tada";
 
 export const receivedMessageFragment = graphql(`
   fragment MessageFragment on Message {

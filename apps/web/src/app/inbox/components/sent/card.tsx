@@ -1,3 +1,4 @@
+import { CircleUser } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { FragmentOf, readFragment, graphql } from "gql.tada";
 
@@ -7,7 +8,6 @@ import {
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
-import { CircleUser } from "lucide-react";
 import { ChatList } from "@/app/components/chat-list";
 
 export const sentMessageFragment = graphql(`
@@ -23,7 +23,7 @@ export const sentMessageFragment = graphql(`
   }
 `);
 
-export function SentMessagesCard({
+export function SentMessageCard({
   data,
 }: {
   data: FragmentOf<typeof sentMessageFragment>;

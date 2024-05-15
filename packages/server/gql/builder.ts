@@ -4,9 +4,9 @@ import { SelectMessage, SelectUser } from "../db/schema";
 import { DateResolver, JSONResolver } from "graphql-scalars";
 
 type MessageCursor = {
-  id: string;
+  id?: string;
+  createdAt?: string;
   hasMore: boolean;
-  createdAt: string;
 };
 
 type UserCursor = {
