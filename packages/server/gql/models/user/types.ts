@@ -26,7 +26,7 @@ export const UpdateUserInput = builder.inputType("UpdateUserInput", {
 
 builder.objectType("UserCursor", {
   fields: (t) => ({
-    id: t.exposeString("id"),
+    id: t.exposeString("id", { nullable: true }),
     updatedAt: t.exposeString("updatedAt", { nullable: true }),
     hasMore: t.exposeBoolean("hasMore"),
   }),

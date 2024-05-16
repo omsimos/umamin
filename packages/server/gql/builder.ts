@@ -4,15 +4,15 @@ import { SelectMessage, SelectUser } from "../db/schema";
 import { DateResolver, JSONResolver } from "graphql-scalars";
 
 type MessageCursor = {
-  id: string;
+  id?: string;
+  createdAt?: string;
   hasMore: boolean;
-  createdAt: string;
 };
 
 type UserCursor = {
-  id: string;
-  hasMore: boolean;
+  id?: string;
   updatedAt?: string | null;
+  hasMore: boolean;
 };
 
 const builder = new SchemaBuilder<{

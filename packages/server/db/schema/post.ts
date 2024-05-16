@@ -3,6 +3,7 @@ import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "./user";
 import { comment } from "./comment";
+import { upvote } from "./upvote";
 
 export const post = sqliteTable("post", {
   id: text("id").primaryKey(),
@@ -19,6 +20,7 @@ export const postsRelations = relations(post, ({ one, many }) => ({
     fields: [post.authorId],
     references: [user.id],
   }),
+  upvotes: many(upvote),
   comments: many(comment),
 }));
 

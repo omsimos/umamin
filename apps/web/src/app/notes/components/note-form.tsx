@@ -1,12 +1,14 @@
+"use client";
+
 import { toast } from "sonner";
 import { ResultOf, graphql } from "gql.tada";
-import { useMutation } from "@urql/next";
+import { Loader2, Send } from "lucide-react";
 import { FormEventHandler, useState } from "react";
 
-import { Loader2, Send } from "lucide-react";
+import { NoteItem } from "./note-item";
 import { Input } from "@ui/components/ui/input";
 import { Button } from "@ui/components/ui/button";
-import { NoteItem } from "./note-item";
+import { getClient } from "@/lib/gql";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!) {
@@ -21,8 +23,8 @@ const UPDATE_NOTE_MUTATION = graphql(`
 `);
 
 export function NoteForm() {
-  const [res, updateNoteFn] = useMutation(UPDATE_NOTE_MUTATION);
   const [content, setContent] = useState("");
+  const [isFetching, setIsFetching] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<
     ResultOf<typeof UPDATE_NOTE_MUTATION>["updateNote"] | null
@@ -30,18 +32,23 @@ export function NoteForm() {
 
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault();
+    setIsFetching(true);
 
-    updateNoteFn({ content }).then((res) => {
-      if (res.error) {
-        toast.error(res.error.message);
-        return;
-      }
+    getClient()
+      .mutation(UPDATE_NOTE_MUTATION, { content })
+      .then((res) => {
+        if (res.error) {
+          toast.error(res.error.message);
+          setIsFetching(false);
+          return;
+        }
 
-      if (res.data) {
-        setContent("");
-        setCurrentUser(res.data.updateNote);
-      }
-    });
+        if (res.data) {
+          setContent("");
+          setCurrentUser(res.data.updateNote);
+        }
+        setIsFetching(false);
+      });
   };
 
   return (
@@ -61,12 +68,12 @@ export function NoteForm() {
           autoComplete="off"
         />
         <Button
-          disabled={res.fetching}
+          disabled={isFetching}
           type="submit"
           size="icon"
           // disabled={input.trim().length === 0}
         >
-          {res.fetching ? (
+          {isFetching ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Send className="h-4 w-4" />

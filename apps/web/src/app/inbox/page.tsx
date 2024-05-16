@@ -1,8 +1,7 @@
-"use client";
-
 import { Suspense } from "react";
-import { graphql } from "gql.tada";
-import { useRouter } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { Skeleton } from "@umamin/ui/components/skeleton";
 
 import {
   Tabs,
@@ -10,24 +9,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import { useQuery } from "@urql/next";
 import { UserCard } from "../components/user-card";
-import { Skeleton } from "@umamin/ui/components/skeleton";
-import { SentMessages } from "./components/sent-messages";
-import { ReceivedMessages } from "./components/received-messages";
-
-const CURRENT_USER_QUERY = graphql(`
-  query CurrentUser {
-    currentUser {
-      __typename
-      id
-      bio
-      username
-      imageUrl
-      createdAt
-    }
-  }
-`);
+import { SentMessages } from "./components/sent/messages";
+import { ReceivedMessages } from "./components/received/messages";
 
 export default function Page() {
   return (
@@ -49,47 +33,34 @@ export default function Page() {
   );
 }
 
-function UserProfile() {
-  const [result] = useQuery({ query: CURRENT_USER_QUERY });
-  const router = useRouter();
+async function UserProfile() {
+  const { user } = await getSession();
+
+  if (!user) {
+    redirect("/login");
+  }
 
   const tabsData = [
     {
       name: "Received",
-      value: "received",
-      content: () => <ReceivedMessages />,
+      content: () => <ReceivedMessages userId={user.id} />,
     },
     {
       name: "Sent",
-      value: "sent",
-      content: () => <SentMessages />,
+      content: () => <SentMessages userId={user.id} />,
     },
   ];
 
-  const user = result.data?.currentUser;
-
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
-
   return (
     <main className="container max-w-xl space-y-3 lg:mt-36 mt-28">
-      {user && (
-        <UserCard
-          bio={user.bio}
-          username={user.username}
-          imageUrl={user.imageUrl}
-          createdAt={user.createdAt}
-        />
-      )}
+      <UserCard {...user} />
 
-      <Tabs defaultValue="received" className="w-full">
+      <Tabs defaultValue="Received" className="w-full">
         <TabsList className="w-full bg-transparent px-0 flex mb-5">
           {tabsData.map((tab) => (
             <TabsTrigger
-              key={tab.value}
-              value={tab.value}
+              key={tab.name}
+              value={tab.name}
               className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none font-semibold"
             >
               {tab.name}
@@ -98,7 +69,7 @@ function UserProfile() {
         </TabsList>
 
         {tabsData.map((tab) => (
-          <TabsContent key={tab.value} value={tab.value}>
+          <TabsContent key={tab.name} value={tab.name}>
             {tab.content()}
           </TabsContent>
         ))}

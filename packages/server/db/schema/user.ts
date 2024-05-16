@@ -44,8 +44,8 @@ export const session = sqliteTable("session", {
 });
 
 export const usersRelations = relations(user, ({ many }) => ({
-  messages: many(message),
-  comments: many(message),
+  receivedMessages: many(message, { relationName: "receiver" }),
+  sentMessages: many(message, { relationName: "sender" }),
   posts: many(post),
 }));
 
