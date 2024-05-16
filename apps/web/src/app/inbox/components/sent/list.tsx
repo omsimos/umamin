@@ -72,8 +72,8 @@ export function SentMessagesList({
 
           if (_cursor) {
             setCursor({
-              id: _cursor?.id,
-              createdAt: _cursor?.createdAt,
+              id: _cursor?.id ?? "",
+              createdAt: _cursor?.createdAt ?? "",
             });
 
             setHasMore(_cursor?.hasMore);

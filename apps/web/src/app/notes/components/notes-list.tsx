@@ -68,8 +68,8 @@ export function NotesList({
 
           if (_cursor) {
             setCursor({
-              id: _cursor?.id!,
-              updatedAt: _cursor?.updatedAt!,
+              id: _cursor?.id ?? "",
+              updatedAt: _cursor?.updatedAt ?? "",
             });
 
             setHasMore(_cursor?.hasMore);
