@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@umamin/typescript-config": "workspace:*",
-    "drizzle-kit": "^0.21.1",
+    "drizzle-kit": "^0.21.2",
     "typescript": "^5.4.5"
   },
   "dependencies": {
