@@ -10,9 +10,9 @@ type MessageCursor = {
 };
 
 type UserCursor = {
-  id: string;
-  hasMore: boolean;
+  id?: string;
   updatedAt?: string | null;
+  hasMore: boolean;
 };
 
 const builder = new SchemaBuilder<{

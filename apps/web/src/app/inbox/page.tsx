@@ -9,8 +9,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import { SentMessages } from "./components/sent";
 import { UserCard } from "../components/user-card";
+import { SentMessages } from "./components/sent/messages";
 import { ReceivedMessages } from "./components/received/messages";
 
 export default function Page() {
