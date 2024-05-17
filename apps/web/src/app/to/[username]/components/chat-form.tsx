@@ -24,13 +24,20 @@ type Props = {
   sessionId?: string;
   imageUrl: string;
   question: string;
+  quietMode: boolean;
 };
 
-export function ChatForm({ userId, sessionId, imageUrl, question }: Props) {
+export function ChatForm({
+  userId,
+  sessionId,
+  imageUrl,
+  question,
+  quietMode,
+}: Props) {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (userId === sessionId) {
@@ -38,52 +45,60 @@ export function ChatForm({ userId, sessionId, imageUrl, question }: Props) {
       return;
     }
 
-    const res = await getClient().mutation(CREATE_MESSAGE_MUTATION, {
-      input: {
-        senderId: sessionId,
-        userId,
-        question,
-        content,
-      },
-    });
+    getClient()
+      .mutation(CREATE_MESSAGE_MUTATION, {
+        input: {
+          senderId: sessionId,
+          userId,
+          question,
+          content,
+        },
+      })
+      .then((res) => {
+        if (res.error) {
+          toast.error("An error occurred");
+          return;
+        }
 
-    if (res.error) {
-      toast.error("An error occurred");
-      return;
-    }
-
-    setMessage(res.data?.createMessage.content ?? "");
-    setContent("");
-    toast.success("Message sent");
+        setMessage(res.data?.createMessage.content ?? "");
+        setContent("");
+        toast.success("Message sent");
+      });
   }
 
   return (
     <div className="flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 min-h-[350px] h-full">
       <ChatList imageUrl={imageUrl} question={question} reply={message} />
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex max-w-lg items-center space-x-2 w-full self-center"
-      >
-        <Input
-          id="message"
-          required
-          maxLength={1000}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Type your message..."
-          className="focus-visible:ring-transparent flex-1 text-base"
-          autoComplete="off"
-        />
-        <Button
-          type="submit"
-          size="icon"
-          // disabled={input.trim().length === 0}
+      {quietMode ? (
+        <p className="text-muted-foreground text-center">
+          User has enabled quiet mode
+        </p>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="flex max-w-lg items-center space-x-2 w-full self-center"
         >
-          <Send className="h-4 w-4" />
-          <span className="sr-only">Send</span>
-        </Button>
-      </form>
+          <Input
+            id="message"
+            required
+            maxLength={1000}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Type your message..."
+            className="focus-visible:ring-transparent flex-1 text-base"
+            autoComplete="off"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            // disabled={input.trim().length === 0}
+          >
+            <Send className="h-4 w-4" />
+            <span className="sr-only">Send</span>
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

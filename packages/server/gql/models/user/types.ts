@@ -6,6 +6,7 @@ builder.objectType("User", {
     username: t.exposeString("username"),
     bio: t.exposeString("bio", { nullable: true }),
     question: t.exposeString("question"),
+    quietMode: t.exposeBoolean("quietMode"),
     googleId: t.exposeString("googleId"),
     note: t.exposeString("note", { nullable: true }),
     email: t.exposeString("email"),

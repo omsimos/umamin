@@ -13,6 +13,7 @@ const UserByUsernameQuery = graphql(`
       id
       username
       question
+      quietMode
       imageUrl
       createdAt
     }
@@ -62,6 +63,7 @@ export default async function SendMessage({
 
         <ChatForm
           userId={user.id}
+          quietMode={user.quietMode}
           sessionId={session?.userId}
           imageUrl={user.imageUrl}
           question={user.question}
