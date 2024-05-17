@@ -30,6 +30,7 @@ import {
   AccordionTrigger,
 } from "@umamin/ui/components/accordion";
 import { SelectUser } from "@umamin/server/db/schema";
+import { useRouter } from "next/navigation";
 
 const UpdateUserMutation = graphql(`
   mutation UpdateUser($input: UpdateUserInput!) {
@@ -71,6 +72,7 @@ const FormSchema = z.object({
 });
 
 export function SettingsForm({ user }: { user: SelectUser }) {
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -98,6 +100,7 @@ export function SettingsForm({ user }: { user: SelectUser }) {
 
     setSaving(false);
     toast.success("Details updated");
+    router.refresh();
   }
 
   type settingsData = {
