@@ -32,13 +32,19 @@ export async function Navbar() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto flex max-w-screen-sm items-center justify-center gap-3 bg-bg bg-opacity-40 bg-clip-padding p-2 text-3xl backdrop-blur-xl backdrop-filter sm:px-10 md:bottom-auto md:top-0 md:z-50 md:bg-transparent md:px-14 md:text-[1.75rem] md:backdrop-blur-none [&>*:hover]:bg-muted [&>*]:flex [&>*]:w-full [&>*]:justify-center [&>*]:rounded-lg [&>*]:py-5 [&>*]:text-center [&>*]:text-muted-foreground [&>*]:transition-colors [&>*]:duration-300">
-        <ShareLinkDialog />
+        {user?.username ? (
+          <ShareLinkDialog username={user?.username} />
+        ) : (
+          <Link href="/login">
+            <Icons.link className="h-6" />
+          </Link>
+        )}
 
         <Link href="/notes">
           <ActivityIcon />
         </Link>
 
-        <Link href="/inbox" aria-label="home button">
+        <Link href={user ? "/inbox" : "/login"} aria-label="home button">
           <Icons.squares />
         </Link>
 

@@ -1,20 +1,13 @@
 import { formatDistanceToNow } from "date-fns";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@umamin/ui/components/tooltip";
-// import { ProfileDropdownMenu } from "./profile-dropdown-menu";
-import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 
 import { cn } from "@ui/lib/utils";
-import { Icons } from "./utilities/icons";
 import { Card, CardHeader } from "@umamin/ui/components/card";
+import { ShareButton } from "./share-button";
 
 type Props = {
   imageUrl: string;
@@ -42,19 +35,7 @@ export function UserCard({ ...user }: Props) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-xl">@{user?.username}</span>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button>
-                        <Icons.link className="h-4 text-muted-foreground" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Copy profile url</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <ShareButton username={user.username} />
               </div>
               <p className="text-muted-foreground text-sm mt-1">
                 Joined{" "}
