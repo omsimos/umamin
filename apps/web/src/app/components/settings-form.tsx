@@ -4,6 +4,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, MessageCircleOff } from "lucide-react";
 import { type ControllerRenderProps, useForm } from "react-hook-form";
@@ -30,7 +31,6 @@ import {
   AccordionTrigger,
 } from "@umamin/ui/components/accordion";
 import { SelectUser } from "@umamin/server/db/schema";
-import { useRouter } from "next/navigation";
 
 const UpdateUserMutation = graphql(`
   mutation UpdateUser($input: UpdateUserInput!) {

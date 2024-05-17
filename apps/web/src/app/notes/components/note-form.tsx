@@ -44,7 +44,9 @@ export function NoteForm({ user }: { user?: User | null }) {
         if (res.data) {
           setContent("");
           setCurrentNote(res.data.updateNote.note);
+          toast.success("Note updated");
         }
+
         setIsFetching(false);
       });
   };
