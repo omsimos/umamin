@@ -31,13 +31,14 @@ const USERS_WITH_NOTE_FROM_CURSOR_MUTATION = graphql(`
   }
 `);
 
-export function NotesList({
-  users,
-}: {
+type Props = {
+  currentUserId?: string;
   users: ResultOf<
     typeof USERS_WITH_NOTE_FROM_CURSOR_MUTATION
   >["usersWithNoteFromCursor"]["data"];
-}) {
+};
+
+export function NotesList({ currentUserId, users }: Props) {
   const { ref, inView } = useInView();
 
   const [cursor, setCursor] = useState({
@@ -89,14 +90,16 @@ export function NotesList({
 
   return (
     <>
-      {userList?.map((user) => (
-        <NoteItem
-          key={user.id}
-          username={user.username}
-          note={user.note!}
-          imageUrl={user.imageUrl}
-        />
-      ))}
+      {userList
+        ?.filter((u) => u.id !== currentUserId)
+        .map((user) => (
+          <NoteItem
+            key={user.id}
+            username={user.username}
+            note={user.note!}
+            imageUrl={user.imageUrl}
+          />
+        ))}
 
       {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
       {hasMore && <div ref={ref}></div>}

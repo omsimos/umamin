@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import { graphql } from "gql.tada";
 
+import { getClient } from "@/lib/gql";
+import { getSession } from "@/lib/auth";
 import { NoteItem } from "./components/note-item";
 import { NoteForm } from "./components/note-form";
-import { Skeleton } from "@ui/components/ui/skeleton";
 import { NotesList } from "./components/notes-list";
-import { getClient } from "@/lib/gql";
+import { Skeleton } from "@ui/components/ui/skeleton";
 
 const USERS_WITH_NOTE_QUERY = graphql(`
   query UsersWithNote {
@@ -21,8 +22,9 @@ const USERS_WITH_NOTE_QUERY = graphql(`
 `);
 
 export default async function Page() {
+  const { user } = await getSession();
   const result = await getClient().query(USERS_WITH_NOTE_QUERY, {});
-  const users = result.data?.usersWithNote;
+  const users = result.data?.usersWithNote?.filter((u) => u.id !== user?.id);
 
   return (
     <Suspense
@@ -38,8 +40,8 @@ export default async function Page() {
         </div>
       }
     >
-      <main className="mt-28 container max-w-xl mx-auto">
-        <NoteForm />
+      <main className="mt-28 container max-w-xl mx-auto pb-32">
+        <NoteForm user={user} />
 
         <div className="gap-5 flex flex-col">
           {!users?.length ? (
@@ -56,7 +58,7 @@ export default async function Page() {
                   imageUrl={user.imageUrl}
                 />
               ))}
-              <NotesList users={users} />
+              <NotesList currentUserId={user?.id} users={users} />
             </>
           )}
         </div>

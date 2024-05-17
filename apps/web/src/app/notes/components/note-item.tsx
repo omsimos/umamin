@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
 import Link from "next/link";
 import { toast } from "sonner";
 
 import { Menu } from "@/app/components/menu";
-import { SendMessageDrawer } from "./send-message-drawer";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
+import { Icons } from "@/app/components/utilities/icons";
 
 type Props = {
   username: string;
@@ -72,7 +72,10 @@ export function NoteItem({ username, imageUrl, note }: Props) {
           </div>
 
           <div className="flex gap-1 text-muted-foreground items-center">
-            <SendMessageDrawer />
+            <Link href={`/to/${username}`} className="hover:underline">
+              <Icons.chat className="h-4 w-5" />
+            </Link>
+
             <Menu menuItems={menuItems} />
           </div>
         </div>

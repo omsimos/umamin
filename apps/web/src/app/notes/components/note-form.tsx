@@ -1,7 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
-import { ResultOf, graphql } from "gql.tada";
+import type { User } from "lucia";
+import { graphql } from "gql.tada";
 import { Loader2, Send } from "lucide-react";
 import { FormEventHandler, useState } from "react";
 
@@ -22,13 +23,10 @@ const UPDATE_NOTE_MUTATION = graphql(`
   }
 `);
 
-export function NoteForm() {
+export function NoteForm({ user }: { user?: User | null }) {
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
-
-  const [currentUser, setCurrentUser] = useState<
-    ResultOf<typeof UPDATE_NOTE_MUTATION>["updateNote"] | null
-  >(null);
+  const [currentNote, setCurrentNote] = useState(user?.note);
 
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault();
@@ -45,7 +43,7 @@ export function NoteForm() {
 
         if (res.data) {
           setContent("");
-          setCurrentUser(res.data.updateNote);
+          setCurrentNote(res.data.updateNote.note);
         }
         setIsFetching(false);
       });
@@ -82,12 +80,12 @@ export function NoteForm() {
         </Button>
       </form>
 
-      {currentUser && (
-        <div className="border-b border-muted mb-5 pb-5">
+      {user && currentNote && (
+        <div className="border-b-2 border-muted border-dashed mb-5 pb-5">
           <NoteItem
-            username={currentUser.username}
-            note={currentUser.note!}
-            imageUrl={currentUser.imageUrl}
+            username={user.username}
+            note={currentNote}
+            imageUrl={user.imageUrl}
           />
         </div>
       )}
