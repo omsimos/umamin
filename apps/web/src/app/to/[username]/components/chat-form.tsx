@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
-import { Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 
 import { getClient } from "@/lib/gql";
 import { Input } from "@ui/components/ui/input";
@@ -36,6 +36,7 @@ export function ChatForm({
 }: Props) {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
+  const [isFetching, setIsFetching] = useState(false);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -44,6 +45,8 @@ export function ChatForm({
       toast.error("You can't send a message to yourself");
       return;
     }
+
+    setIsFetching(true);
 
     getClient()
       .mutation(CREATE_MESSAGE_MUTATION, {
@@ -57,12 +60,14 @@ export function ChatForm({
       .then((res) => {
         if (res.error) {
           toast.error("An error occurred");
+          setIsFetching(false);
           return;
         }
 
         setMessage(res.data?.createMessage.content ?? "");
         setContent("");
         toast.success("Message sent");
+        setIsFetching(false);
       });
   }
 
@@ -82,6 +87,7 @@ export function ChatForm({
           <Input
             id="message"
             required
+            disabled={isFetching}
             maxLength={1000}
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -92,9 +98,14 @@ export function ChatForm({
           <Button
             type="submit"
             size="icon"
+            disabled={isFetching}
             // disabled={input.trim().length === 0}
           >
-            <Send className="h-4 w-4" />
+            {isFetching ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
             <span className="sr-only">Send</span>
           </Button>
         </form>
