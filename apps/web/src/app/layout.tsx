@@ -2,12 +2,10 @@ import "@umamin/ui/globals.css";
 
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { GeistSans } from 'geist/font/sans';
 import NextTopLoader from "nextjs-toploader";
 import { Navbar } from "./components/navbar";
 import { ThemeProvider } from "./components/utilities/theme-provider";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Umamin",
@@ -21,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={GeistSans.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

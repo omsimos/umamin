@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "dev": "turso dev --db-file ./db/dev.db",
     "clean": "rm -rf ./node_modules",
     "db:migrate": "pnpm drizzle-kit generate",
     "db:push": "pnpm drizzle-kit push",
