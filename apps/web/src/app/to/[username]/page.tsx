@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { graphql } from "gql.tada";
 import { redirect } from "next/navigation";
 
@@ -20,6 +21,14 @@ const UserByUsernameQuery = graphql(`
   }
 `);
 
+const getUser = cache(async (username: string) => {
+  const res = await getClient().query(UserByUsernameQuery, {
+    username,
+  });
+
+  return res;
+});
+
 export default async function SendMessage({
   params,
 }: {
@@ -27,10 +36,7 @@ export default async function SendMessage({
 }) {
   const { session } = await getSession();
 
-  const result = await getClient().query(UserByUsernameQuery, {
-    username: params.username,
-  });
-
+  const result = await getUser(params.username);
   const user = result.data?.userByUsername;
 
   if (!user) {

@@ -1,5 +1,5 @@
-import { Suspense } from "react";
 import { graphql } from "gql.tada";
+import { Suspense, cache } from "react";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 
 import { getClient } from "@/lib/gql";
@@ -20,12 +20,17 @@ const SENT_MESSAGES_QUERY = graphql(
   [sentMessageFragment],
 );
 
-export async function SentMessages({ userId }: { userId: string }) {
-  const result = await getClient().query(SENT_MESSAGES_QUERY, {
+const getMessages = cache(async (userId: string) => {
+  const res = await getClient().query(SENT_MESSAGES_QUERY, {
     userId,
     type: "sent",
   });
 
+  return res;
+});
+
+export async function SentMessages({ userId }: { userId: string }) {
+  const result = await getMessages(userId);
   const messages = result.data?.messages;
 
   return (

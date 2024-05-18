@@ -1,5 +1,5 @@
-import { Suspense } from "react";
 import { graphql } from "gql.tada";
+import { Suspense, cache } from "react";
 
 import { getClient } from "@/lib/gql";
 import { getSession } from "@/lib/auth";
@@ -20,9 +20,14 @@ const USERS_WITH_NOTE_QUERY = graphql(`
   }
 `);
 
+const getUsersWithNote = cache(async () => {
+  const res = await getClient().query(USERS_WITH_NOTE_QUERY, {});
+  return res;
+});
+
 export default async function Page() {
   const { user } = await getSession();
-  const result = await getClient().query(USERS_WITH_NOTE_QUERY, {});
+  const result = await getUsersWithNote();
   const users = result.data?.usersWithNote?.filter((u) => u.id !== user?.id);
 
   return (

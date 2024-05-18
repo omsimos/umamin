@@ -1,13 +1,14 @@
+import Link from "next/link";
+import { cache } from "react";
 import { graphql } from "gql.tada";
 import { redirect } from "next/navigation";
+import { MessageSquareMore, UserPlus } from "lucide-react";
 
+import { cn } from "@ui/lib/utils";
 import { getClient } from "@/lib/gql";
 import { UserCard } from "@/app/components/user-card";
-import Link from "next/link";
-import { cn } from "@ui/lib/utils";
-import { Button, buttonVariants } from "@ui/components/ui/button";
-import { MessageSquareMore, UserPlus } from "lucide-react";
 import { NoteItem } from "@/app/notes/components/note-item";
+import { Button, buttonVariants } from "@ui/components/ui/button";
 
 const USER_BY_USERNAME_QUERY = graphql(`
   query UserByUsername($username: String!) {
@@ -41,15 +42,20 @@ export async function generateMetadata({
   };
 }
 
+const getUser = cache(async (username: string) => {
+  const res = await getClient().query(USER_BY_USERNAME_QUERY, {
+    username,
+  });
+
+  return res;
+});
+
 export default async function Page({
   params,
 }: {
   params: { username: string };
 }) {
-  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
-    username: params.username,
-  });
-
+  const result = await getUser(params.username);
   const user = result.data?.userByUsername;
 
   if (!user) {
