@@ -29,6 +29,7 @@
     "graphql-yoga": "^5.3.1",
     "lucia": "^3.2.0",
     "lucide-react": "^0.358.0",
+    "modern-screenshot": "^4.4.39",
     "nanoid": "^5.0.7",
     "next": "14.2.3",
     "next-themes": "^0.3.0",

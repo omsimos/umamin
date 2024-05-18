@@ -80,6 +80,9 @@ importers:
       lucide-react:
         specifier: ^0.358.0
         version: 0.358.0(react@18.2.0)
+      modern-screenshot:
+        specifier: ^4.4.39
+        version: 4.4.39
       nanoid:
         specifier: ^5.0.7
         version: 5.0.7
@@ -3263,6 +3266,9 @@ packages:
   minipass@7.0.4:
     resolution: {integrity: sha512-jYofLM5Dam9279rdkWzqHozUo4ybjdZmCsDHePy5V/PbBcVMiSZR97gmAy45aqi8CK1lG2ECd356FU86avfwUQ==}
     engines: {node: '>=16 || 14 >=14.17'}
+
+  modern-screenshot@4.4.39:
+    resolution: {integrity: sha512-p+I4yLZUDnoJMa5zoi+71nLQmoLQ6WRU4W8vZu1BZk2PlIYOz5mGnj9/7t2lGWKYeOr4zo6pajhY0/9TS5Zcdw==}
 
   ms@2.1.2:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
@@ -7396,6 +7402,8 @@ snapshots:
   minimist@1.2.8: {}
 
   minipass@7.0.4: {}
+
+  modern-screenshot@4.4.39: {}
 
   ms@2.1.2: {}
 
