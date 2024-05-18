@@ -34,7 +34,7 @@ export default async function Page() {
     <Suspense
       fallback={
         <div className="mt-28 mx-auto container max-w-xl">
-          <NoteForm />
+r         {user && <NoteForm />}
 
           <div className="gap-5 flex flex-col">
             <Skeleton className="w-full h-[200px] rounded-lg" />
@@ -45,7 +45,7 @@ export default async function Page() {
       }
     >
       <main className="mt-28 container max-w-xl mx-auto pb-32">
-        <NoteForm user={user} />
+        {user && <NoteForm user={user} />}
 
         <div className="gap-5 flex flex-col">
           {!users?.length ? (
