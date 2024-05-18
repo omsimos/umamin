@@ -2,10 +2,11 @@
 
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
-import { useState, useCallback } from "react";
+import { Trash2 } from "lucide-react";
 import { getClient } from "@/lib/gql";
 import { domToPng } from "modern-screenshot";
 import { Menu } from "@/app/components/menu";
+import { useState, useCallback } from "react";
 
 import {
   AlertDialog,
@@ -25,6 +26,7 @@ const DELETE_MESSAGE_MUTATION = graphql(`
 `);
 
 export function ReceivedMessageMenu({ id }: { id: string }) {
+  const [isDeleted, setIsDeleted] = useState(false);
   const [open, setOpen] = useState(false);
 
   const onSaveImage = useCallback(() => {
@@ -69,6 +71,7 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
         }
 
         toast.success("Message deleted");
+        setIsDeleted(true);
       });
   };
 
@@ -91,8 +94,8 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your
-              account and remove your data from our servers.
+              This action cannot be undone. This will permanently delete the
+              message you received.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -101,7 +104,17 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Menu menuItems={menuItems} />
+
+      {isDeleted ? (
+        <button
+          type="button"
+          onClick={() => toast.info("This message was deleted")}
+        >
+          <Trash2 className="h-4 w-4 text-red-700" />
+        </button>
+      ) : (
+        <Menu menuItems={menuItems} />
+      )}
     </>
   );
 }
