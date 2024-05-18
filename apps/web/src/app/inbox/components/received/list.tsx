@@ -46,7 +46,7 @@ export function ReceivedMessagesList({
     createdAt: messages[messages.length - 1].createdAt,
   });
 
-  const [msgList, setMsgList] = useState<typeof messages>([]);
+  const [msgList, setMsgList] = useState(messages);
   const [hasMore, setHasMore] = useState(messages?.length === 5);
   const [isFetching, setIsFetching] = useState(false);
 

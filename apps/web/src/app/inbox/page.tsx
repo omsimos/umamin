@@ -13,27 +13,7 @@ import { UserCard } from "../components/user-card";
 import { SentMessages } from "./components/sent/messages";
 import { ReceivedMessages } from "./components/received/messages";
 
-export default function Page() {
-  return (
-    <Suspense
-      fallback={
-        <div className="container max-w-xl lg:mt-36 mt-28 mx-auto ">
-          <Skeleton className="w-full h-[200px] rounded-2xl" />
-
-          <div className="space-y-5 mt-24">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="w-full h-[200px] rounded-lg" />
-            ))}
-          </div>
-        </div>
-      }
-    >
-      <UserProfile />
-    </Suspense>
-  );
-}
-
-async function UserProfile() {
+export default async function UserProfile() {
   const { user } = await getSession();
 
   if (!user) {
@@ -52,28 +32,42 @@ async function UserProfile() {
   ];
 
   return (
-    <main className="container max-w-xl space-y-3 lg:mt-36 mt-28">
-      <UserCard {...user} />
+    <Suspense
+      fallback={
+        <div className="container max-w-xl lg:mt-36 mt-28 mx-auto ">
+          <Skeleton className="w-full h-[200px] rounded-2xl" />
 
-      <Tabs defaultValue="Received" className="w-full">
-        <TabsList className="w-full bg-transparent px-0 flex mb-5">
+          <div className="space-y-5 mt-24">
+            <Skeleton className="w-full h-[200px] rounded-lg" />
+            <Skeleton className="w-full h-[200px] rounded-lg" />
+            <Skeleton className="w-full h-[200px] rounded-lg" />
+          </div>
+        </div>
+      }
+    >
+      <main className="container max-w-xl space-y-3 lg:mt-36 mt-28">
+        <UserCard {...user} />
+
+        <Tabs defaultValue="Received" className="w-full">
+          <TabsList className="w-full bg-transparent px-0 flex mb-5">
+            {tabsData.map((tab) => (
+              <TabsTrigger
+                key={tab.name}
+                value={tab.name}
+                className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none font-semibold"
+              >
+                {tab.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
           {tabsData.map((tab) => (
-            <TabsTrigger
-              key={tab.name}
-              value={tab.name}
-              className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none font-semibold"
-            >
-              {tab.name}
-            </TabsTrigger>
+            <TabsContent key={tab.name} value={tab.name}>
+              {tab.content()}
+            </TabsContent>
           ))}
-        </TabsList>
-
-        {tabsData.map((tab) => (
-          <TabsContent key={tab.name} value={tab.name}>
-            {tab.content()}
-          </TabsContent>
-        ))}
-      </Tabs>
-    </main>
+        </Tabs>
+      </main>
+    </Suspense>
   );
 }

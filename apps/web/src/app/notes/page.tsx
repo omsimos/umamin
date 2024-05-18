@@ -3,7 +3,6 @@ import { graphql } from "gql.tada";
 
 import { getClient } from "@/lib/gql";
 import { getSession } from "@/lib/auth";
-import { NoteItem } from "./components/note-item";
 import { NoteForm } from "./components/note-form";
 import { NotesList } from "./components/notes-list";
 import { Skeleton } from "@ui/components/ui/skeleton";
@@ -49,17 +48,7 @@ export default async function Page() {
               No messages to show
             </p>
           ) : (
-            <>
-              {users?.map((user) => (
-                <NoteItem
-                  key={user.id}
-                  username={user.username}
-                  note={user.note!}
-                  imageUrl={user.imageUrl}
-                />
-              ))}
-              <NotesList currentUserId={user?.id} users={users} />
-            </>
+            <NotesList currentUserId={user?.id} users={users} />
           )}
         </div>
       </main>

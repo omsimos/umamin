@@ -4,7 +4,7 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 
 import { getClient } from "@/lib/gql";
 import { SentMessagesList } from "./list";
-import { SentMessageCard, sentMessageFragment } from "./card";
+import { sentMessageFragment } from "./card";
 
 const SENT_MESSAGES_QUERY = graphql(
   `
@@ -44,12 +44,7 @@ export async function SentMessages({ userId }: { userId: string }) {
             No messages to show
           </p>
         ) : (
-          <>
-            {messages?.map((msg) => (
-              <SentMessageCard key={msg.id} data={msg} />
-            ))}
-            <SentMessagesList messages={messages} />
-          </>
+          <SentMessagesList messages={messages} />
         )}
       </div>
     </Suspense>

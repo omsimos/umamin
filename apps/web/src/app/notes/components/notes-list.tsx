@@ -46,7 +46,7 @@ export function NotesList({ currentUserId, users }: Props) {
     updatedAt: users[users.length - 1].updatedAt!,
   });
 
-  const [userList, setUserList] = useState<typeof users>([]);
+  const [userList, setUserList] = useState(users);
   const [hasMore, setHasMore] = useState(users?.length === 5);
   const [isFetching, setIsFetching] = useState(false);
 

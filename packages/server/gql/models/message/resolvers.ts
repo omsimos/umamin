@@ -117,4 +117,21 @@ builder.mutationFields((t) => ({
       }
     },
   }),
+
+  deleteMessage: t.field({
+    type: "String",
+    args: {
+      id: t.arg.string({ required: true }),
+    },
+    resolve: async (_, { id }) => {
+      try {
+        await db.delete(message).where(eq(message.id, id));
+
+        return "Success";
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
 }));

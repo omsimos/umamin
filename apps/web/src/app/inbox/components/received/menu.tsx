@@ -1,11 +1,32 @@
 "use client";
 
 import { toast } from "sonner";
-import { useCallback } from "react";
+import { graphql } from "gql.tada";
+import { useState, useCallback } from "react";
+import { getClient } from "@/lib/gql";
 import { domToPng } from "modern-screenshot";
 import { Menu } from "@/app/components/menu";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@ui/components/ui/alert-dialog";
+
+const DELETE_MESSAGE_MUTATION = graphql(`
+  mutation DeleteMessage($id: String!) {
+    deleteMessage(id: $id)
+  }
+`);
+
 export function ReceivedMessageMenu({ id }: { id: string }) {
+  const [open, setOpen] = useState(false);
+
   const onSaveImage = useCallback(() => {
     const target = document.querySelector(`#${id}`);
 
@@ -23,7 +44,6 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
           scale: "0.9",
           display: "grid",
           placeItems: "center",
-
         },
       })
         .then((dataUrl) => {
@@ -39,6 +59,19 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
     );
   }, [id]);
 
+  const onDelete = () => {
+    getClient()
+      .mutation(DELETE_MESSAGE_MUTATION, { id })
+      .then((res) => {
+        if (res.error) {
+          toast.error("An error occured");
+          return;
+        }
+
+        toast.success("Message deleted");
+      });
+  };
+
   const menuItems = [
     {
       title: "Save Image",
@@ -46,12 +79,29 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
     },
     {
       title: "Delete",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
+      onClick: () => setOpen(true),
       className: "text-red-500",
     },
   ];
 
-  return <Menu menuItems={menuItems} />;
+  return (
+    <>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              account and remove your data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Menu menuItems={menuItems} />
+    </>
+  );
 }
