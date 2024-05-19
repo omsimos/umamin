@@ -23,10 +23,10 @@ export default async function Login() {
       <Card className="space-y-5">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl flex justify-between items-center">
-            <p>Login to proceed</p>
+            <p>Umamin Account</p>
           </CardTitle>
           <CardDescription>
-            The ultimate platform for anonymous messages!
+            Login to proceed. New accounts will automatically be created.
           </CardDescription>
         </CardHeader>
 
