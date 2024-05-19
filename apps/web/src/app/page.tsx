@@ -4,7 +4,7 @@ import { Button, buttonVariants } from "@ui/components/ui/button";
 
 export default function Home() {
   return (
-    <main className="flex items-center flex-col lg:pt-72 pt-52 container">
+    <main className="flex items-center flex-col md:pt-72 pt-36 container">
       <div className="border-y-2 border-muted border-dashed py-8">
         <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent tracking-tighter text-center">
           The Platform for Anonymity

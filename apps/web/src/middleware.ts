@@ -18,15 +18,20 @@ export function middleware(request: NextRequest) {
       ...(isAllowedOrigin && { "Access-Control-Allow-Origin": origin }),
       ...corsOptions,
     };
-    return NextResponse.json({}, { headers: preflightHeaders });
+    if (isAllowedOrigin) {
+      return NextResponse.json({}, { headers: preflightHeaders });
+    } else {
+      return new NextResponse(null, { status: 403, headers: preflightHeaders });
+    }
+  }
+
+  if (!isAllowedOrigin) {
+    return new NextResponse(null, { status: 403 });
   }
 
   const response = NextResponse.next();
 
-  if (isAllowedOrigin) {
-    response.headers.set("Access-Control-Allow-Origin", origin);
-  }
-
+  response.headers.set("Access-Control-Allow-Origin", origin);
   Object.entries(corsOptions).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
