@@ -70,6 +70,12 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
           return;
         }
 
+        if (!res.data?.deleteMessage) {
+          toast.error("Message already deleted");
+          setIsDeleted(true);
+          return;
+        }
+
         toast.success("Message deleted");
         setIsDeleted(true);
       });
