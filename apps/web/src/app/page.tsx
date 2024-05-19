@@ -12,9 +12,11 @@ export default function Home() {
       </div>
 
       <p className="text-muted-foreground mt-8 text-center md:text-xl max-w-2xl">
-        Introducing our next generation platform for anonymous messages and more.{" "}
-        <span className="text-white font-medium">Umamin v2.0</span> requires a new{" "}
-        <span className="text-white underline font-medium">Umamin Account</span> that can be used across the platform. Currently under beta release.
+        Introducing our next generation platform for anonymous messages.{" "}
+        <span className="text-white font-medium">Umamin v2.0</span> requires a
+        new{" "}
+        <span className="text-white underline font-medium">Umamin Account</span>{" "}
+        that can be used across the platform. Currently under beta release.
       </p>
 
       <div className="flex items-center gap-2 mt-8">
