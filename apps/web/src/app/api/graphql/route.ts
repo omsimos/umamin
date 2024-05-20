@@ -18,14 +18,15 @@ const { handleRequest } = createYoga({
   graphqlEndpoint: "/api/graphql",
   graphiql: process.env.NODE_ENV === "development",
   fetchAPI: { Response },
-  // cors: {
-  //   origin:
-  //     process.env.NODE_ENV === "production"
-  //       ? "https://v2.umamin.link"
-  //       : "http://localhost:3000",
-  //   credentials: true,
-  //   methods: ["POST", "GET"],
-  // },
+  cors: {
+    origin:
+      process.env.NODE_ENV === "production"
+        ? "https://v2.umamin.link"
+        : "http://localhost:3000",
+    credentials: true,
+    methods: ["POST", "GET"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  },
   plugins: [
     useCSRFPrevention({
       requestHeaders: ["x-graphql-yoga-csrf"],
