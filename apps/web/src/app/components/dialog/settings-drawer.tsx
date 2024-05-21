@@ -1,4 +1,5 @@
 import { logout } from "@/actions";
+import { UserCog } from "lucide-react";
 import { SignOutButton } from "../sign-out-button";
 import {
   Drawer,
@@ -13,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@umamin/ui/components/card";
-import { Icons } from "../utilities/icons";
 import { SettingsForm } from "../settings-form";
 import { SelectUser } from "@umamin/server/db/schema";
 
@@ -22,7 +22,7 @@ export async function SettingsDrawer({ user }: { user: SelectUser }) {
     <Drawer>
       <DrawerTrigger asChild>
         <button type="button">
-          <Icons.settings />
+          <UserCog className="w-6 h-6" />
         </button>
       </DrawerTrigger>
       <DrawerContent className="my-10">

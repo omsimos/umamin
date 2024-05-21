@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ActivityIcon, Globe, LogIn } from "lucide-react";
+import { LinkIcon, LogIn, MessagesSquare, ScrollText } from "lucide-react";
 
 import { getSession } from "@/lib/auth";
 import { Icons } from "./utilities/icons";
@@ -36,12 +36,12 @@ export async function Navbar() {
           <ShareLinkDialog username={user?.username} />
         ) : (
           <Link href="/login">
-            <Icons.link className="h-6" />
+            <LinkIcon className="h-6 w-6" />
           </Link>
         )}
 
         <Link href="/notes">
-          <ActivityIcon />
+          <ScrollText className="h-6 w-6" />
         </Link>
 
         <Link href={user ? "/inbox" : "/login"} aria-label="home button">
@@ -49,14 +49,14 @@ export async function Navbar() {
         </Link>
 
         <Link href="/">
-          <Globe className="h-5 w-5" />
+          <MessagesSquare className="h-6 w-6" />
         </Link>
 
         {user ? (
           <SettingsDrawer user={user} />
         ) : (
           <Link href="/login">
-            <LogIn className="h-4 w-4" />
+            <LogIn className="h-6 w-6" />
           </Link>
         )}
       </div>

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { toast } from "sonner";
-import { Copy } from "lucide-react";
+import { Copy, LinkIcon } from "lucide-react";
 
 import { Button } from "@umamin/ui/components/button";
 import {
@@ -15,7 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@umamin/ui/components/dialog";
-import { Icons } from "../utilities/icons";
 import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
 
@@ -36,7 +35,7 @@ export function ShareLinkDialog({ username }: { username: string }) {
     <Dialog>
       <DialogTrigger asChild>
         <button type="button">
-          <Icons.link className="h-6" />
+          <LinkIcon className="h-6 w-6" />
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-w-[90%] rounded-md">
