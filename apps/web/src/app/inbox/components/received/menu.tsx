@@ -2,7 +2,6 @@
 
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
-import { Trash2 } from "lucide-react";
 import { getClient } from "@/lib/gql";
 import { domToPng } from "modern-screenshot";
 import { Menu } from "@/app/components/menu";
@@ -18,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@ui/components/ui/alert-dialog";
+import { useMessageStore } from "@/store/useMessageStore";
 
 const DELETE_MESSAGE_MUTATION = graphql(`
   mutation DeleteMessage($id: String!) {
@@ -26,7 +26,7 @@ const DELETE_MESSAGE_MUTATION = graphql(`
 `);
 
 export function ReceivedMessageMenu({ id }: { id: string }) {
-  const [isDeleted, setIsDeleted] = useState(false);
+  const deleteMessage = useMessageStore((state) => state.delete);
   const [open, setOpen] = useState(false);
 
   const onSaveImage = useCallback(() => {
@@ -70,14 +70,8 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
           return;
         }
 
-        if (!res.data?.deleteMessage) {
-          toast.error("Message already deleted");
-          setIsDeleted(true);
-          return;
-        }
-
         toast.success("Message deleted");
-        setIsDeleted(true);
+        deleteMessage(id);
       });
   };
 
@@ -111,16 +105,7 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {isDeleted ? (
-        <button
-          type="button"
-          onClick={() => toast.info("This message was deleted")}
-        >
-          <Trash2 className="h-4 w-4 text-red-700" />
-        </button>
-      ) : (
-        <Menu menuItems={menuItems} />
-      )}
+      <Menu menuItems={menuItems} />
     </>
   );
 }
