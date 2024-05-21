@@ -22,7 +22,7 @@ export function UserCard({ ...user }: Props) {
       <CardHeader className="rounded-2xl">
         <div className="flex justify-between py-5">
           <div className="flex gap-6 items-center">
-            <Avatar className="h-28 w-28">
+            <Avatar className="md:h-28 md:w-28 h-16 w-16">
               <AvatarImage
                 className="rounded-full"
                 src={user?.imageUrl}
@@ -34,7 +34,7 @@ export function UserCard({ ...user }: Props) {
             </Avatar>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-xl">@{user?.username}</span>
+                <span className="font-semibold md:text-xl">@{user?.username}</span>
                 <ShareButton username={user.username} />
               </div>
               <p className="text-muted-foreground text-sm mt-1">

@@ -32,8 +32,8 @@ export function ReceivedMessageCard({
           <ReceivedMessageMenu id={msg.id} />
         </div>
 
-        <CardHeader className="flex">
-          <p className="font-bold text-center  text-lg">{msg.question}</p>
+        <CardHeader className="flex px-12">
+          <p className="font-bold text-center leading-normal text-lg">{msg.question}</p>
         </CardHeader>
         <CardContent>
           <div className="flex w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted">
