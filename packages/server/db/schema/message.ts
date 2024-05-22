@@ -10,10 +10,10 @@ export const message = sqliteTable(
     question: text("question").notNull(),
     content: text("content").notNull(),
     userId: text("user_id")
+      .notNull()
       .references(() => user.id, {
         onDelete: "cascade",
-      })
-      .notNull(),
+      }),
     senderId: text("sender_id").references(() => user.id, {
       onDelete: "cascade",
     }),
@@ -43,7 +43,7 @@ export const message = sqliteTable(
   }),
 );
 
-export const messagesRelations = relations(message, ({ one }) => ({
+export const messageRelations = relations(message, ({ one }) => ({
   user: one(user, {
     fields: [message.userId],
     references: [user.id],

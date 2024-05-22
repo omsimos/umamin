@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { OAuth2RequestError } from "arctic";
 
 import { google, lucia } from "@/lib/auth";
-import { db, eq, schema } from "@umamin/server";
+import { and, db, eq, schema } from "@umamin/server";
 import { nanoid } from "nanoid";
 
 export async function GET(request: Request): Promise<Response> {
@@ -43,12 +43,15 @@ export async function GET(request: Request): Promise<Response> {
 
     const googleUser: GoogleUser = await googleUserResponse.json();
 
-    const existingUser = await db.query.user.findFirst({
-      where: eq(schema.user.googleId, googleUser.sub),
+    const existingUser = await db.query.account.findFirst({
+      where: and(
+        eq(schema.account.providerId, "google"),
+        eq(schema.account.providerUserId, googleUser.sub),
+      ),
     });
 
     if (existingUser) {
-      const session = await lucia.createSession(existingUser.id, {});
+      const session = await lucia.createSession(existingUser.userId, {});
       const sessionCookie = lucia.createSessionCookie(session.id);
 
       cookies().set(
@@ -71,12 +74,17 @@ export async function GET(request: Request): Promise<Response> {
       .insert(schema.user)
       .values({
         id: nanoid(),
-        googleId: googleUser.sub,
         username: `${googleUser.given_name.split(" ").join("").toLowerCase()}_${usernameId}`,
-        imageUrl: googleUser.picture,
-        email: googleUser.email,
       })
       .returning({ userId: schema.user.id });
+
+    await db.insert(schema.account).values({
+      providerId: "google",
+      providerUserId: googleUser.sub,
+      userId: user[0].userId,
+      picture: googleUser.picture,
+      email: googleUser.email,
+    });
 
     const session = await lucia.createSession(user[0].userId, {});
     const sessionCookie = lucia.createSessionCookie(session.id);

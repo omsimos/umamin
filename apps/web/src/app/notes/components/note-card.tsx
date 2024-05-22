@@ -11,7 +11,7 @@ import { Icons } from "@/app/components/utilities/icons";
 
 type Props = {
   username: string;
-  imageUrl: string;
+  imageUrl?: string | null;
   note: string;
   menuItems?: MenuItems;
 };
@@ -26,7 +26,7 @@ export function NoteCard({ username, imageUrl, note, menuItems }: Props) {
               <Avatar className="relative top-1">
                 <AvatarImage
                   className="rounded-full"
-                  src={imageUrl}
+                  src={imageUrl ?? ""}
                   alt="User avatar"
                 />
                 <AvatarFallback className="text-xs">

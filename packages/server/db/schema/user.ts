@@ -9,17 +9,15 @@ export const user = sqliteTable(
   {
     id: text("id").primaryKey(),
     username: text("username").notNull().unique(),
-    email: text("email").notNull().unique(),
     note: text("note"),
     bio: text("bio"),
+    imageUrl: text("image_url"),
     quietMode: integer("quiet_mode", { mode: "boolean" })
       .notNull()
       .default(false),
     question: text("question")
-      .default("Send me an anonymous message!")
-      .notNull(),
-    googleId: text("google_id").notNull(),
-    imageUrl: text("image_url").notNull(),
+      .notNull()
+      .default("Send me an anonymous message!"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(current_timestamp)`),
@@ -38,15 +36,36 @@ export const user = sqliteTable(
 export const session = sqliteTable("session", {
   id: text("id").notNull().primaryKey(),
   userId: text("user_id")
-    .references(() => user.id)
-    .notNull(),
+    .notNull()
+    .references(() => user.id),
   expiresAt: integer("expires_at").notNull(),
 });
 
-export const usersRelations = relations(user, ({ many }) => ({
+export const account = sqliteTable("oauth_account", {
+  providerUserId: text("provider_user_id").primaryKey(),
+  email: text("email").notNull(),
+  picture: text("picture").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  providerId: text("provider_id").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
+});
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const userRelations = relations(user, ({ many }) => ({
   receivedMessages: many(message, { relationName: "receiver" }),
   sentMessages: many(message, { relationName: "sender" }),
   posts: many(post),
+  accounts: many(account),
 }));
 
 export type InsertUser = typeof user.$inferInsert;

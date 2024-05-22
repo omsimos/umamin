@@ -10,7 +10,7 @@ import { Card, CardHeader } from "@umamin/ui/components/card";
 import { ShareButton } from "./share-button";
 
 type Props = {
-  imageUrl: string;
+  imageUrl?: string | null;
   username: string;
   createdAt: string;
   bio?: string | null;
@@ -25,7 +25,7 @@ export function UserCard({ ...user }: Props) {
             <Avatar className="md:h-28 md:w-28 h-16 w-16">
               <AvatarImage
                 className="rounded-full"
-                src={user?.imageUrl}
+                src={user?.imageUrl ?? ""}
                 alt={`${user?.username}'s avatar`}
               />
               <AvatarFallback className="text-xs">
@@ -34,7 +34,9 @@ export function UserCard({ ...user }: Props) {
             </Avatar>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold md:text-xl">@{user?.username}</span>
+                <span className="font-semibold md:text-xl">
+                  @{user?.username}
+                </span>
                 <ShareButton username={user.username} />
               </div>
               <p className="text-muted-foreground text-sm mt-1">
