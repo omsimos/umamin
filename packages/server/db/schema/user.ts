@@ -1,7 +1,6 @@
 import { sql, relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { post } from "./post";
 import { message } from "./message";
 
 export const user = sqliteTable(
@@ -64,7 +63,6 @@ export const accountRelations = relations(account, ({ one }) => ({
 export const userRelations = relations(user, ({ many }) => ({
   receivedMessages: many(message, { relationName: "receiver" }),
   sentMessages: many(message, { relationName: "sender" }),
-  posts: many(post),
   accounts: many(account),
 }));
 
