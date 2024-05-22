@@ -102,7 +102,7 @@ builder.mutationFields((t) => ({
       authenticated: true,
     },
     args: {
-      content: t.arg.string({ required: true }),
+      content: t.arg.string(),
     },
     resolve: async (_, args, ctx) => {
       try {

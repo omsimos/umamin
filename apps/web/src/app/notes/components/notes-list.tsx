@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { ResultOf, graphql } from "gql.tada";
 import { useInView } from "react-intersection-observer";
 
-import { NoteItem } from "./note-item";
+import { NoteCard } from "./note-card";
 import { Skeleton } from "@ui/components/ui/skeleton";
 
 const USERS_WITH_NOTE_FROM_CURSOR_MUTATION = graphql(`
@@ -93,7 +93,7 @@ export function NotesList({ currentUserId, users }: Props) {
       {userList
         ?.filter((u) => u.id !== currentUserId)
         .map((user) => (
-          <NoteItem
+          <NoteCard
             key={user.id}
             username={user.username}
             note={user.note!}

@@ -1,5 +1,4 @@
-"use memo";
-
+import { useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { FragmentOf, graphql, readFragment } from "gql.tada";
 
@@ -9,10 +8,9 @@ import {
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
+import { cn } from "@ui/lib/utils";
 import { ReceivedMessageMenu } from "./menu";
 import { useMessageStore } from "@/store/useMessageStore";
-import { useMemo } from "react";
-import { cn } from "@ui/lib/utils";
 
 export const receivedMessageFragment = graphql(`
   fragment MessageFragment on Message {
@@ -59,7 +57,7 @@ export function ReceivedMessageCard({
           </div>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <p className="text-muted-foreground text-sm mt-1 italic">
+          <p className="text-muted-foreground text-sm mt-1 italic w-full text-center">
             {formatDistanceToNow(new Date(msg.createdAt), {
               addSuffix: true,
             })}

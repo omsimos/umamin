@@ -7,7 +7,7 @@ import { MessageSquareMore, UserPlus } from "lucide-react";
 import { cn } from "@ui/lib/utils";
 import { getClient } from "@/lib/gql";
 import { UserCard } from "@/app/components/user-card";
-import { NoteItem } from "@/app/notes/components/note-item";
+import { NoteCard } from "@/app/notes/components/note-card";
 import { Button, buttonVariants } from "@ui/components/ui/button";
 
 const USER_BY_USERNAME_QUERY = graphql(`
@@ -88,7 +88,7 @@ export default async function Page({
 
       {user.note && (
         <div className="mt-8 pt-4 border-t-2 border-dashed border-muted">
-          <NoteItem
+          <NoteCard
             username={user.username}
             note={user.note}
             imageUrl={user.imageUrl}

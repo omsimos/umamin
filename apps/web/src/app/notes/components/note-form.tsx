@@ -6,13 +6,13 @@ import { graphql } from "gql.tada";
 import { Loader2, Send } from "lucide-react";
 import { FormEventHandler, useState } from "react";
 
-import { NoteItem } from "./note-item";
+import { getClient } from "@/lib/gql";
+import { NoteCard } from "./note-card";
 import { Input } from "@ui/components/ui/input";
 import { Button } from "@ui/components/ui/button";
-import { getClient } from "@/lib/gql";
 
 const UPDATE_NOTE_MUTATION = graphql(`
-  mutation UpdateNote($content: String!) {
+  mutation UpdateNote($content: String) {
     updateNote(content: $content) {
       __typename
       id
@@ -27,6 +27,34 @@ export function NoteForm({ user }: { user?: User | null }) {
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [currentNote, setCurrentNote] = useState(user?.note);
+
+  const onClearNote = () => {
+    setIsFetching(true);
+
+    getClient()
+      .mutation(UPDATE_NOTE_MUTATION, { content: null })
+      .then((res) => {
+        if (res.error) {
+          toast.error(res.error.message);
+          setIsFetching(false);
+          return;
+        }
+
+        if (res.data) {
+          setCurrentNote(null);
+          toast.success("Note cleared");
+        }
+
+        setIsFetching(false);
+      });
+  };
+
+  const menuItems = [
+    {
+      title: "Clear Note",
+      onClick: onClearNote,
+    },
+  ];
 
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault();
@@ -84,11 +112,14 @@ export function NoteForm({ user }: { user?: User | null }) {
 
       {user && currentNote && (
         <div className="border-b-2 border-muted border-dashed mb-5 pb-5">
-          <NoteItem
-            username={user.username}
-            note={currentNote}
-            imageUrl={user.imageUrl}
-          />
+          <div id={user.id}>
+            <NoteCard
+              menuItems={menuItems}
+              username={user.username}
+              note={currentNote}
+              imageUrl={user.imageUrl}
+            />
+          </div>
         </div>
       )}
     </section>

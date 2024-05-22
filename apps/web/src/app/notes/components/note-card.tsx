@@ -1,9 +1,6 @@
-"use client";
-
 import Link from "next/link";
-import { toast } from "sonner";
 
-import { Menu } from "@/app/components/menu";
+import { Menu, type MenuItems } from "@/app/components/menu";
 import {
   Avatar,
   AvatarFallback,
@@ -16,35 +13,14 @@ type Props = {
   username: string;
   imageUrl: string;
   note: string;
+  menuItems?: MenuItems;
 };
 
-export function NoteItem({ username, imageUrl, note }: Props) {
-  const menuItems = [
-    {
-      title: "View",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
-    },
-    {
-      title: "Message",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
-    },
-    {
-      title: "Report",
-      onClick: () => {
-        toast.error("Not implemented yet");
-      },
-      className: "text-red-500",
-    },
-  ];
-
+export function NoteCard({ username, imageUrl, note, menuItems }: Props) {
   return (
     <Card className="flex flex-col items-start justify-between">
       <CardHeader className="w-full">
-        <div className="flex justify-between">
+        <div className="flex justify-between items-start">
           <div className="flex gap-4">
             <Link href={`/user/johndoe`} className="font-semibold">
               <Avatar className="relative top-1">
@@ -71,12 +47,12 @@ export function NoteItem({ username, imageUrl, note }: Props) {
             </div>
           </div>
 
-          <div className="flex gap-1 text-muted-foreground items-center">
+          <div className="flex gap-x-1 text-muted-foreground items-center">
             <Link href={`/to/${username}`} className="hover:underline">
-              <Icons.chat className="h-4 w-5" />
+              <Icons.chat className="h-5 w-5" />
             </Link>
 
-            <Menu menuItems={menuItems} />
+            {menuItems && <Menu menuItems={menuItems} />}
           </div>
         </div>
       </CardHeader>
