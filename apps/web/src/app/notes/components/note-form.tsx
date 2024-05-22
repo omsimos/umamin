@@ -3,13 +3,13 @@
 import { toast } from "sonner";
 import type { User } from "lucia";
 import { graphql } from "gql.tada";
-import { Loader2, Send } from "lucide-react";
 import { FormEventHandler, useState } from "react";
+import { Info, Loader2, Sparkles } from "lucide-react";
 
 import { getClient } from "@/lib/gql";
 import { NoteCard } from "./note-card";
-import { Input } from "@ui/components/ui/input";
 import { Button } from "@ui/components/ui/button";
+import { Textarea } from "@ui/components/ui/textarea";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String) {
@@ -83,9 +83,9 @@ export function NoteForm({ user }: { user?: User | null }) {
     <section>
       <form
         onSubmit={handleSubmit}
-        className="flex items-center space-x-2 mb-8"
+        className="mb-8 flex flex-col gap-y-4 items-end"
       >
-        <Input
+        <Textarea
           id="message"
           required
           value={content}
@@ -95,19 +95,25 @@ export function NoteForm({ user }: { user?: User | null }) {
           className="focus-visible:ring-transparent flex-1 text-base"
           autoComplete="off"
         />
-        <Button
-          disabled={isFetching}
-          type="submit"
-          size="icon"
-          // disabled={input.trim().length === 0}
-        >
-          {isFetching ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-          <span className="sr-only">Send</span>
-        </Button>
+        <div className="flex w-full justify-between items-center">
+          <div className="text-muted-foreground text-sm flex items-center">
+            <Info className="h-4 w-4 mr-2" />
+            <p>Notes are shared to public</p>
+          </div>
+
+          <Button
+            disabled={isFetching || !content}
+            type="submit"
+            // disabled={input.trim().length === 0}
+          >
+            <p>Share Note</p>
+            {isFetching ? (
+              <Loader2 className="h-4 w-4 animate-spin ml-2" />
+            ) : (
+              <Sparkles className="h-4 w-4 ml-2" />
+            )}
+          </Button>
+        </div>
       </form>
 
       {user && currentNote && (

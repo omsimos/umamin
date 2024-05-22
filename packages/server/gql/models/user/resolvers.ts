@@ -60,6 +60,7 @@ builder.queryFields((t) => ({
         const result = await db.query.user.findMany({
           where: isNotNull(user.note),
           orderBy: desc(user.updatedAt),
+          limit: 10,
         });
 
         return result;
@@ -140,7 +141,7 @@ builder.mutationFields((t) => ({
                 )
               : undefined,
           ),
-          limit: 5,
+          limit: 10,
           orderBy: [desc(user.updatedAt), desc(user.id)],
         });
 
@@ -149,7 +150,7 @@ builder.mutationFields((t) => ({
           cursor: {
             id: result[result.length - 1]?.id,
             updatedAt: result[result.length - 1]?.updatedAt,
-            hasMore: result.length === 5,
+            hasMore: result.length === 10,
           },
         };
       } catch (err) {
