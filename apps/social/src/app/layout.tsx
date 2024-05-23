@@ -4,19 +4,18 @@ import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import NextTopLoader from "nextjs-toploader";
-import { Navbar } from "./components/navbar";
 import { ThemeProvider } from "@umamin/ui/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "Umamin — The Platform for Anonimity",
+  title: "Umamin Social — A Platform Built to Share Stories",
   description:
-    "An open-source platform for anonymously sending and receiving messages. Share your thoughts and feelings without revealing your identity!",
+    "A social platform built for the Umamin community, connect with others by sharing your stories and experiences.",
   robots: "index, follow",
   openGraph: {
     type: "website",
-    title: "Umamin — The Platform for Anonimity",
+    title: "Umamin Social — A Platform Built to Share Stories",
     description:
-      "An open-source platform for anonymously sending and receiving messages. Share your thoughts and feelings without revealing your identity!",
+      "A social platform built for the Umamin community, connect with others by sharing your stories and experiences.",
     // images: [],
   },
   twitter: {
@@ -54,7 +53,6 @@ export default function RootLayout({
               },
             }}
           />
-          <Navbar />
           {children}
         </ThemeProvider>
       </body>
