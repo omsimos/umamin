@@ -1,10 +1,20 @@
 import Link from "next/link";
 import { cn } from "@ui/lib/utils";
 import { Button, buttonVariants } from "@ui/components/ui/button";
+import { ExternalLink } from "lucide-react";
 
 export default function Home() {
   return (
     <main className="flex items-center flex-col md:pt-56 pt-36 container">
+      <Link
+        className="flex items-center space-x-2 rounded-full border border-zinc-400 mb-8 text-sm px-4 py-2 hover:border-white transition-colors"
+        href="https://v1.umamin.link"
+        target="_blank"
+      >
+        <p>Looking for Umamin v1.0?</p>
+        <ExternalLink className="w-4 h-4" />
+      </Link>
+
       <div className="border-y-2 border-muted border-dashed py-8">
         <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent tracking-tighter text-center">
           The Platform for Anonymity

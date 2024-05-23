@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { Badge } from "@ui/components/ui/badge";
 import { LinkIcon, LogIn, MessagesSquare, ScrollText } from "lucide-react";
 
 import { getSession } from "@/lib/auth";
 import { Icons } from "./utilities/icons";
-import { BurgerMenu } from "./burger-menu";
+// import { BurgerMenu } from "./burger-menu";
 import { ToggleTheme } from "./utilities/toggle-theme";
 import { SettingsDrawer } from "./dialog/settings-drawer";
 import { ShareLinkDialog } from "./dialog/share-link-dialog";
@@ -12,21 +13,21 @@ export async function Navbar() {
   const { user } = await getSession();
 
   return (
-    <nav>
-      <div className="fixed left-0 right-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter md:z-40">
-        <div className="mx-auto grid w-full max-w-screen-xl grid-cols-3 items-center">
-          <Link
-            href="/"
-            aria-label="logo"
-            className="col-start-2 place-self-center  md:col-start-1 md:ml-7 md:place-self-start"
-          >
-            <span className="font-semibold text-foreground">umamin</span>
-            <span className="text-muted-foreground font-medium">.link</span>
-          </Link>
+    <nav className="">
+      <div className="fixed left-0 right-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter md:z-40 container max-w-screen-xl">
+        <div className="flex justify-between items-center">
+          <div className="space-x-2 flex items-center">
+            <Link href="/" aria-label="logo">
+              <span className="font-semibold text-foreground">umamin</span>
+              <span className="text-muted-foreground font-medium">.link</span>
+            </Link>
 
-          <div className="col-start-3 mr-7 place-self-end self-center flex items-center">
+            <Badge variant="outline">v2-beta</Badge>
+          </div>
+
+          <div className="flex items-center">
             <ToggleTheme />
-            <BurgerMenu />
+            {/* <BurgerMenu /> */}
           </div>
         </div>
       </div>
