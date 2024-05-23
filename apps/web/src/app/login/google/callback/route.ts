@@ -74,6 +74,7 @@ export async function GET(request: Request): Promise<Response> {
       .insert(schema.user)
       .values({
         id: nanoid(),
+        imageUrl: googleUser.picture,
         username: `${googleUser.given_name.split(" ").join("").toLowerCase()}_${usernameId}`,
       })
       .returning({ userId: schema.user.id });

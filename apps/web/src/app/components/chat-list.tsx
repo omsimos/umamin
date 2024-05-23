@@ -7,7 +7,7 @@ import {
 import { cn } from "@umamin/ui/lib/utils";
 
 type Props = {
-  imageUrl?: string;
+  imageUrl?: string | null;
   question: string;
   reply: string;
 };
@@ -17,7 +17,7 @@ export const ChatList = ({ imageUrl, question, reply }: Props) => {
     <div className="flex flex-col">
       <div className="flex gap-2 items-center">
         <Avatar>
-          <AvatarImage className="rounded-full" src={imageUrl} />
+          <AvatarImage className="rounded-full" src={imageUrl ?? ""} />
           <AvatarFallback>
             <ScanFace />
           </AvatarFallback>
