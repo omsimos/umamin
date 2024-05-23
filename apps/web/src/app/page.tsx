@@ -5,13 +5,13 @@ import { ExternalLink } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="flex items-center flex-col md:pt-56 pt-36 container">
+    <main className="flex items-center flex-col lg:pt-56 pt-36 container">
       <Link
-        className="flex items-center space-x-2 rounded-full border border-zinc-400 mb-8 text-sm px-4 py-2 hover:border-white transition-colors"
+        className="flex items-center space-x-2 rounded-full bg-gradient-to-b from-zinc-800 to-zinc-900 mb-8 text-sm px-4 py-2"
         href="https://v1.umamin.link"
         target="_blank"
       >
-        <p>Looking for Umamin v1.0?</p>
+        <p className="text-muted-foreground">Looking for <span className="font-semibold">Umamin v1.0</span>?</p>
         <ExternalLink className="w-4 h-4" />
       </Link>
 

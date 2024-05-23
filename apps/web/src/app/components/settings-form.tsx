@@ -187,7 +187,7 @@ export function SettingsForm({ user }: { user: SelectUser }) {
             const { title, name, content, description } = data;
 
             return (
-              <AccordionItem value={name}>
+              <AccordionItem key={data.name} value={name}>
                 <AccordionTrigger className="text-sm">{title}</AccordionTrigger>
                 <AccordionContent>
                   <FormField
@@ -207,7 +207,7 @@ export function SettingsForm({ user }: { user: SelectUser }) {
           })}
         </Accordion>
 
-        <div className="flex gap-2">
+        <div className="pt-12">
           <Button disabled={saving} type="submit" className="w-full">
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
