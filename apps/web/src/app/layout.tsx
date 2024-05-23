@@ -2,14 +2,26 @@ import "@umamin/ui/globals.css";
 
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
-import { GeistSans } from 'geist/font/sans';
+import { GeistSans } from "geist/font/sans";
 import NextTopLoader from "nextjs-toploader";
 import { Navbar } from "./components/navbar";
 import { ThemeProvider } from "./components/utilities/theme-provider";
 
 export const metadata: Metadata = {
-  title: "Umamin",
-  description: "💌 The ultimate platform for anonymous messages!",
+  title: "Umamin — The Platform for Anonimity",
+  description:
+    "An open-source platform for anonymously sending and receiving messages. Share your thoughts and feelings without revealing your identity!",
+  robots: "index, follow",
+  openGraph: {
+    type: "website",
+    title: "Umamin — The Platform for Anonimity",
+    description:
+      "An open-source platform for anonymously sending and receiving messages. Share your thoughts and feelings without revealing your identity!",
+    // images: [],
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

@@ -207,12 +207,10 @@ export function SettingsForm({ user }: { user: SelectUser }) {
           })}
         </Accordion>
 
-        <div className="pt-12">
-          <Button disabled={saving} type="submit" className="w-full">
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
-          </Button>
-        </div>
+        <Button disabled={saving} type="submit" className="w-full">
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Changes
+        </Button>
       </form>
     </Form>
   );
