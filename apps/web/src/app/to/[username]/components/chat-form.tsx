@@ -22,7 +22,7 @@ const CREATE_MESSAGE_MUTATION = graphql(`
 type Props = {
   userId: string;
   sessionId?: string;
-  imageUrl: string;
+  imageUrl?: string | null;
   question: string;
   quietMode: boolean;
 };

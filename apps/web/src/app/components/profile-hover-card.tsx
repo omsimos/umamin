@@ -22,7 +22,7 @@ type Props = {
   children: React.ReactNode;
   user: {
     username: string;
-    imageUrl: string;
+    imageUrl?: string | null;
     createdAt: string;
   };
 };
@@ -60,7 +60,7 @@ export function ProfileHoverCard({ children, user }: Props) {
             <Avatar className="h-16 w-16">
               <AvatarImage
                 className="rounded-full"
-                src={user.imageUrl as string | undefined}
+                src={user.imageUrl ?? ""}
                 alt={`${user.username}'s avatar`}
               />
               <AvatarFallback className="text-xs">
