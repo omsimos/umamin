@@ -58,7 +58,7 @@ export function NoteCard({ username, imageUrl, note, menuItems }: Props) {
       </CardHeader>
 
       <CardContent className="flex w-full gap-3">
-        <p className="whitespace-pre-wrap">{note}</p>
+        <p className="whitespace-pre-wrap break-words min-w-0">{note}</p>
       </CardContent>
     </Card>
   );

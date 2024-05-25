@@ -47,12 +47,12 @@ export function ReceivedMessageCard({
           </div>
         )}
         <CardHeader className="flex px-12">
-          <p className="font-bold text-center leading-normal text-lg">
+          <p className="font-bold text-center leading-normal text-lg min-w-0 break-words">
             {msg.question}
           </p>
         </CardHeader>
         <CardContent>
-          <div className="flex w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted">
+          <div className="flex w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted break-words min-w-0">
             {msg.content}
           </div>
         </CardContent>

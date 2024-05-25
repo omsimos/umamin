@@ -22,7 +22,7 @@ export const ChatList = ({ imageUrl, question, reply }: Props) => {
             <ScanFace />
           </AvatarFallback>
         </Avatar>
-        <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted">
+        <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted min-w-0 break-words">
           {question}
         </div>
       </div>
@@ -30,7 +30,7 @@ export const ChatList = ({ imageUrl, question, reply }: Props) => {
       {reply && (
         <div
           className={cn(
-            "max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 mb-12 self-end",
+            "max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 mb-12 self-end min-w-0 break-words",
           )}
         >
           {reply}
