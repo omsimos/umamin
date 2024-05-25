@@ -20,7 +20,7 @@
     "@urql/core": "^5.0.3",
     "@urql/exchange-graphcache": "^7.0.2",
     "@urql/next": "^1.1.1",
-    "arctic": "^1.8.1",
+    "arctic": "^1.9.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.6.0",
