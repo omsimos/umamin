@@ -5,13 +5,15 @@ import { ExternalLink } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="flex items-center flex-col lg:pt-56 pt-36 container">
+    <main className="flex items-center flex-col lg:justify-center min-h-screen lg:pt-0 pt-36 container">
       <Link
         className="flex items-center space-x-2 rounded-full bg-gradient-to-b from-zinc-800 to-zinc-900 mb-8 text-sm px-4 py-2"
         href="https://v1.umamin.link"
         target="_blank"
       >
-        <p className="text-muted-foreground">Looking for <span className="font-semibold">Umamin v1.0</span>?</p>
+        <p className="text-muted-foreground">
+          Looking for <span className="font-semibold">Umamin v1.0</span>?
+        </p>
         <ExternalLink className="w-4 h-4" />
       </Link>
 
@@ -25,7 +27,9 @@ export default function Home() {
         Introducing our next generation platform for anonymous messages.{" "}
         <span className="text-white font-medium">Umamin v2.0</span> requires a
         new{" "}
-        <span className="text-white underline font-medium">Umamin Account</span>{" "}
+        <Link href="/login" className="text-white underline font-medium">
+          Umamin Account
+        </Link>{" "}
         that can be used across the platform. Currently under beta release.
       </p>
 
