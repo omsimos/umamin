@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "turso dev --db-file ./db/dev.db",
     "clean": "rm -rf ./node_modules",
-    "db:migrate": "pnpm drizzle-kit generate",
+    "db:generate": "pnpm drizzle-kit generate",
+    "db:migrate": "pnpm drizzle-kit migrate",
     "db:push": "pnpm drizzle-kit push",
     "db:studio": "pnpm drizzle-kit studio"
   },

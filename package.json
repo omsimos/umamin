@@ -4,9 +4,12 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=!./apps/social",
+    "dev:social": "turbo run dev --filter=!./apps/web",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
     "db:push": "pnpm --filter @umamin/server db:push",
+    "db:generate": "pnpm --filter @umamin/server db:generate",
     "db:migrate": "pnpm --filter @umamin/server db:migrate",
     "db:studio": "pnpm --filter @umamin/server db:studio",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
