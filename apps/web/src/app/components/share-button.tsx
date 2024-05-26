@@ -1,6 +1,8 @@
-"use client"
+"use client";
 
 import { Share2 } from "lucide-react";
+import { analytics } from "@/lib/firebase";
+import { logEvent } from "firebase/analytics";
 
 const onShare = (username: string) => {
   if (typeof window !== "undefined") {
@@ -17,6 +19,8 @@ const onShare = (username: string) => {
         `${window.location.origin}/user/${username}`,
       );
     }
+
+    logEvent(analytics, "share_profile");
   }
 };
 

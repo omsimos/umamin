@@ -18,6 +18,8 @@ import {
 } from "@ui/components/ui/alert-dialog";
 import { useMessageStore } from "@/store/useMessageStore";
 import { onSaveImage } from "@/lib/utils";
+import { analytics } from "@/lib/firebase";
+import { logEvent } from "firebase/analytics";
 
 const DELETE_MESSAGE_MUTATION = graphql(`
   mutation DeleteMessage($id: String!) {
@@ -40,13 +42,18 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
 
         toast.success("Message deleted");
         deleteMessage(id);
+
+        logEvent(analytics, "delete_message");
       });
   };
 
   const menuItems = [
     {
       title: "Save Image",
-      onClick: () => onSaveImage(id),
+      onClick: () => {
+        onSaveImage(id);
+        logEvent(analytics, "save_image_message");
+      },
     },
     {
       title: "Delete",

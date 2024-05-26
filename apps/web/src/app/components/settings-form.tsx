@@ -4,7 +4,9 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
+import { analytics } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { logEvent } from "firebase/analytics";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, MessageCircleOff } from "lucide-react";
 import { type ControllerRenderProps, useForm } from "react-hook-form";
@@ -104,6 +106,7 @@ export function SettingsForm({ user }: { user: SelectUser }) {
 
     setSaving(false);
     toast.success("Details updated");
+    logEvent(analytics, "update_details");
     router.refresh();
   }
 

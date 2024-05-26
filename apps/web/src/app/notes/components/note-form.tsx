@@ -3,6 +3,8 @@
 import { toast } from "sonner";
 import type { User } from "lucia";
 import { graphql } from "gql.tada";
+import { analytics } from "@/lib/firebase";
+import { logEvent } from "firebase/analytics";
 import { FormEventHandler, useState } from "react";
 import { Info, Loader2, Sparkles } from "lucide-react";
 
@@ -76,6 +78,8 @@ export function NoteForm({ user }: { user?: User | null }) {
         }
 
         setIsFetching(false);
+
+        logEvent(analytics, "update_note");
       });
   };
 

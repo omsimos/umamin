@@ -3,6 +3,8 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
+import { analytics } from "@/lib/firebase";
+import { logEvent } from "firebase/analytics";
 import { Loader2, Send } from "lucide-react";
 
 import { getClient } from "@/lib/gql";
@@ -68,6 +70,8 @@ export function ChatForm({
         setContent("");
         toast.success("Message sent");
         setIsFetching(false);
+
+        logEvent(analytics, "send_message");
       });
   }
 
