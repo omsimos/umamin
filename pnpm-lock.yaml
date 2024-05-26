@@ -298,6 +298,9 @@ importers:
       drizzle-orm:
         specifier: ^0.30.10
         version: 0.30.10(@libsql/client@0.6.0)(@types/react@18.3.2)(react@18.3.1)
+      graphql:
+        specifier: ^16.8.1
+        version: 16.8.1
       graphql-scalars:
         specifier: ^1.23.0
         version: 1.23.0(graphql@16.8.1)
