@@ -29,6 +29,14 @@ export const onSaveImage = (id: string) => {
       .catch((err) => {
         console.log(err);
       }),
-    { loading: "Saving...", success: "Download ready", error: "An error occured!" },
+    {
+      loading: "Saving...",
+      success: "Download ready",
+      error: "An error occured!",
+    },
   );
+};
+
+export const formatError = (err: string) => {
+  return err.replace("[GraphQL] ", "");
 };

@@ -10,6 +10,7 @@ import { Loader2, MessageCircleOff } from "lucide-react";
 import { type ControllerRenderProps, useForm } from "react-hook-form";
 
 import { getClient } from "@/lib/gql";
+import { formatError } from "@/lib/utils";
 import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
@@ -89,12 +90,15 @@ export function SettingsForm({ user }: { user: SelectUser }) {
     setSaving(true);
 
     const res = await getClient().mutation(UpdateUserMutation, {
-      input: data,
+      input: {
+        ...data,
+        username: data.username.toLowerCase(),
+      },
     });
 
     if (res.error) {
       setSaving(false);
-      toast.error("An error occurred");
+      toast.error(formatError(res.error.message));
       return;
     }
 

@@ -8,13 +8,13 @@ import { Navbar } from "./components/navbar";
 import { ThemeProvider } from "@umamin/ui/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "Umamin — The Platform for Anonimity",
+  title: "Umamin — The Platform for Anonymity",
   description:
     "An open-source platform for anonymously sending and receiving messages. Share your thoughts and feelings without revealing your identity!",
   robots: "index, follow",
   openGraph: {
     type: "website",
-    title: "Umamin — The Platform for Anonimity",
+    title: "Umamin — The Platform for Anonymity",
     description:
       "An open-source platform for anonymously sending and receiving messages. Share your thoughts and feelings without revealing your identity!",
     // images: [],

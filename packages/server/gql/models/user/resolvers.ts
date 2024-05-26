@@ -1,3 +1,4 @@
+import { GraphQLError } from "graphql";
 import { and, desc, eq, lt, or, isNotNull } from "drizzle-orm";
 
 import { db } from "../../../db";
@@ -90,8 +91,14 @@ builder.mutationFields((t) => ({
           .returning();
 
         return result[0];
-      } catch (err) {
+      } catch (err: any) {
         console.log(err);
+
+        if (err.code === "SQLITE_CONSTRAINT") {
+          if (err.message.includes("user.username")) {
+            throw new GraphQLError("Username is already taken.");
+          }
+        }
         throw err;
       }
     },
