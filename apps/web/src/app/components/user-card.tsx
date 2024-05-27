@@ -41,7 +41,7 @@ export function UserCard({ ...user }: Props) {
               </div>
               <p className="text-muted-foreground text-sm mt-1">
                 Joined{" "}
-                {formatDistanceToNow(new Date(user?.createdAt ?? ""), {
+                {formatDistanceToNow(user?.createdAt, {
                   addSuffix: true,
                 })}
               </p>

@@ -58,7 +58,7 @@ export function ReceivedMessageCard({
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-muted-foreground text-sm mt-1 italic w-full text-center">
-            {formatDistanceToNow(new Date(msg.createdAt), {
+            {formatDistanceToNow(msg.createdAt, {
               addSuffix: true,
             })}
           </p>

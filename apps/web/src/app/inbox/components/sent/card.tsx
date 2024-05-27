@@ -78,7 +78,7 @@ export function SentMessageCard({
       <CardFooter className="flex justify-center">
         <div className="text-muted-foreground text-sm mt-1 flex gap-1">
           <p className="italic">
-            {formatDistanceToNow(new Date(msg.createdAt), {
+            {formatDistanceToNow(msg.createdAt, {
               addSuffix: true,
             })}
           </p>

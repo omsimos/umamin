@@ -49,7 +49,7 @@ export function ProfileHoverCard({ children, user }: Props) {
               <CalendarDays className="mr-1 h-3 w-3 text-muted-foreground" />{" "}
               <span className="text-xs text-muted-foreground">
                 Joined{" "}
-                {formatDistanceToNow(new Date(user?.createdAt ?? ""), {
+                {formatDistanceToNow(user?.createdAt, {
                   addSuffix: true,
                 })}
               </span>
