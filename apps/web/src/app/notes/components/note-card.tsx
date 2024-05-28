@@ -22,7 +22,7 @@ export function NoteCard({ username, imageUrl, note, menuItems }: Props) {
       <CardHeader className="w-full">
         <div className="flex justify-between items-start">
           <div className="flex gap-4">
-            <Link href={`/user/johndoe`} className="font-semibold">
+            <Link href={`/user/${username}`} className="font-semibold">
               <Avatar className="relative top-1">
                 <AvatarImage
                   className="rounded-full"
