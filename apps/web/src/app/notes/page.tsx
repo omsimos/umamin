@@ -27,7 +27,7 @@ const getUsersWithNote = cache(async () => {
 export default async function Page() {
   const { user } = await getSession();
   const result = await getUsersWithNote();
-  const users = result.data?.usersWithNote?.filter((u) => u.id !== user?.id);
+  const users = result.data?.usersWithNote;
 
   return (
     <main className="mt-28 container max-w-xl mx-auto pb-32">
