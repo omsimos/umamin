@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import {
   Avatar,
   AvatarFallback,
@@ -12,7 +12,7 @@ import { ShareButton } from "./share-button";
 type Props = {
   imageUrl?: string | null;
   username: string;
-  createdAt: string;
+  createdAt: number;
   bio?: string | null;
 };
 
@@ -41,7 +41,7 @@ export function UserCard({ ...user }: Props) {
               </div>
               <p className="text-muted-foreground text-sm mt-1">
                 Joined{" "}
-                {formatDistanceToNow(user?.createdAt, {
+                {formatDistanceToNow(fromUnixTime(user.createdAt), {
                   addSuffix: true,
                 })}
               </p>

@@ -70,10 +70,10 @@ export function ReceivedMessagesList({
 
           const _cursor = res.data?.messagesFromCursor.cursor;
 
-          if (_cursor) {
+          if (_cursor && _cursor.createdAt) {
             setCursor({
               id: _cursor?.id ?? "",
-              createdAt: _cursor?.createdAt ?? "",
+              createdAt: _cursor?.createdAt,
             });
 
             setHasMore(_cursor?.hasMore);

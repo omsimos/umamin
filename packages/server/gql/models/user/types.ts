@@ -9,8 +9,8 @@ builder.objectType("User", {
     quietMode: t.exposeBoolean("quietMode"),
     note: t.exposeString("note", { nullable: true }),
     imageUrl: t.exposeString("imageUrl", { nullable: true }),
-    createdAt: t.exposeString("createdAt"),
-    updatedAt: t.exposeString("updatedAt", { nullable: true }),
+    createdAt: t.exposeInt("createdAt"),
+    updatedAt: t.exposeInt("updatedAt", { nullable: true }),
   }),
 });
 
@@ -26,7 +26,7 @@ export const UpdateUserInput = builder.inputType("UpdateUserInput", {
 builder.objectType("UserCursor", {
   fields: (t) => ({
     id: t.exposeString("id", { nullable: true }),
-    updatedAt: t.exposeString("updatedAt", { nullable: true }),
+    updatedAt: t.exposeInt("updatedAt", { nullable: true }),
     hasMore: t.exposeBoolean("hasMore"),
   }),
 });
@@ -43,7 +43,7 @@ export const UsersWithNoteFromCursorInput = builder.inputType(
   {
     fields: (t) => ({
       id: t.string({ required: true }),
-      updatedAt: t.string({ required: true }),
+      updatedAt: t.int({ required: true }),
     }),
   },
 );

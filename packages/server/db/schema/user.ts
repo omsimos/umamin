@@ -17,10 +17,10 @@ export const user = sqliteTable(
     question: text("question")
       .notNull()
       .default("Send me an anonymous message!"),
-    createdAt: text("created_at")
+    createdAt: integer("created_at", { mode: "number" })
       .notNull()
-      .default(sql`(current_timestamp)`),
-    updatedAt: text("updated_at").$onUpdate(() => sql`(current_timestamp)`),
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at").$onUpdate(() => sql`(unixepoch())`),
   },
   (t) => ({
     noteUpdatedAtIdx: index("note_updated_at_idx").on(t.note, t.updatedAt),
@@ -48,22 +48,22 @@ export const account = sqliteTable("oauth_account", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   providerId: text("provider_id").notNull(),
-  createdAt: text("created_at")
+  createdAt: integer("created_at", { mode: "number" })
     .notNull()
-    .default(sql`(current_timestamp)`),
+    .default(sql`(unixepoch())`),
 });
 
 export const accountRelations = relations(account, ({ one }) => ({
-  user: one(user, {
+  profile: one(user, {
     fields: [account.userId],
     references: [user.id],
   }),
 }));
 
 export const userRelations = relations(user, ({ many }) => ({
-  receivedMessages: many(message, { relationName: "receiver" }),
-  sentMessages: many(message, { relationName: "sender" }),
-  accounts: many(account),
+  receiver: many(message, { relationName: "receiver" }),
+  sender: many(message, { relationName: "sender" }),
+  profile: many(account),
 }));
 
 export type InsertUser = typeof user.$inferInsert;

@@ -67,10 +67,10 @@ export function NotesList({ currentUserId, users }: Props) {
 
           const _cursor = res.data?.usersWithNoteFromCursor.cursor;
 
-          if (_cursor) {
+          if (_cursor && _cursor.updatedAt) {
             setCursor({
               id: _cursor?.id ?? "",
-              updatedAt: _cursor?.updatedAt ?? "",
+              updatedAt: _cursor?.updatedAt,
             });
 
             setHasMore(_cursor?.hasMore);

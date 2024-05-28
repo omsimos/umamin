@@ -1,5 +1,5 @@
 import { CircleUser } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import { FragmentOf, readFragment, graphql } from "gql.tada";
 
 import {
@@ -78,7 +78,7 @@ export function SentMessageCard({
       <CardFooter className="flex justify-center">
         <div className="text-muted-foreground text-sm mt-1 flex gap-1">
           <p className="italic">
-            {formatDistanceToNow(msg.createdAt, {
+            {formatDistanceToNow(fromUnixTime(msg.createdAt), {
               addSuffix: true,
             })}
           </p>

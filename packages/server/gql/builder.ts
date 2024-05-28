@@ -5,13 +5,13 @@ import { DateResolver, JSONResolver } from "graphql-scalars";
 
 type MessageCursor = {
   id?: string;
-  createdAt?: string;
+  createdAt?: number;
   hasMore: boolean;
 };
 
 type UserCursor = {
   id?: string;
-  updatedAt?: string | null;
+  updatedAt?: number | null;
   hasMore: boolean;
 };
 

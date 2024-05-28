@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d8ad01df-6a1a-4d87-b470-279f6df39ce3",
+  "id": "14e4606c-f66e-4be6-a205-2dee513dc9fc",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "oauth_account": {
@@ -44,11 +44,11 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(current_timestamp)"
+          "default": "(unixepoch())"
         }
       },
       "indexes": {},
@@ -170,15 +170,15 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(current_timestamp)"
+          "default": "(unixepoch())"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -254,11 +254,11 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(current_timestamp)"
+          "default": "(unixepoch())"
         }
       },
       "indexes": {

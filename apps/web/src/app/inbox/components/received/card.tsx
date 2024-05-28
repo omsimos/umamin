@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import { FragmentOf, graphql, readFragment } from "gql.tada";
 
 import {
@@ -58,7 +58,7 @@ export function ReceivedMessageCard({
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-muted-foreground text-sm mt-1 italic w-full text-center">
-            {formatDistanceToNow(msg.createdAt, {
+            {formatDistanceToNow(fromUnixTime(msg.createdAt), {
               addSuffix: true,
             })}
           </p>

@@ -29,7 +29,7 @@ builder.queryFields((t) => ({
           with:
             type === "sent"
               ? {
-                  user: true,
+                  receiver: true,
                 }
               : undefined,
         });
@@ -98,7 +98,7 @@ builder.mutationFields((t) => ({
           with:
             type === "sent"
               ? {
-                  user: true,
+                  receiver: true,
                 }
               : undefined,
         });

@@ -4,7 +4,7 @@ CREATE TABLE `oauth_account` (
 	`picture` text NOT NULL,
 	`user_id` text NOT NULL,
 	`provider_id` text NOT NULL,
-	`created_at` text DEFAULT (current_timestamp) NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
@@ -23,8 +23,8 @@ CREATE TABLE `user` (
 	`image_url` text,
 	`quiet_mode` integer DEFAULT false NOT NULL,
 	`question` text DEFAULT 'Send me an anonymous message!' NOT NULL,
-	`created_at` text DEFAULT (current_timestamp) NOT NULL,
-	`updated_at` text
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer
 );
 --> statement-breakpoint
 CREATE TABLE `message` (
@@ -33,7 +33,7 @@ CREATE TABLE `message` (
 	`content` text NOT NULL,
 	`user_id` text NOT NULL,
 	`sender_id` text,
-	`created_at` text DEFAULT (current_timestamp) NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`sender_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );

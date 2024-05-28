@@ -7,7 +7,7 @@ builder.objectType("Message", {
     content: t.exposeString("content"),
     userId: t.exposeString("userId"),
     senderId: t.exposeString("senderId", { nullable: true }),
-    createdAt: t.exposeString("createdAt"),
+    createdAt: t.exposeInt("createdAt"),
     user: t.expose("user", {
       type: "User",
       nullable: true,
@@ -18,7 +18,7 @@ builder.objectType("Message", {
 builder.objectType("MessageCursor", {
   fields: (t) => ({
     id: t.exposeString("id", { nullable: true }),
-    createdAt: t.exposeString("createdAt", { nullable: true }),
+    createdAt: t.exposeInt("createdAt", { nullable: true }),
     hasMore: t.exposeBoolean("hasMore"),
   }),
 });
@@ -39,10 +39,10 @@ export const CreateMessageInput = builder.inputType("CreateMessageInput", {
   }),
 });
 
-export const CursorInput = builder.inputType("CursorInput", {
+const CursorInput = builder.inputType("CursorInput", {
   fields: (t) => ({
     id: t.string({ required: true }),
-    createdAt: t.string({ required: true }),
+    createdAt: t.int({ required: true }),
   }),
 });
 
