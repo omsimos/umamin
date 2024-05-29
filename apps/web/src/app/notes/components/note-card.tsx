@@ -9,17 +9,20 @@ import {
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { Icons } from "@/app/components/utilities/icons";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
+import { ScanFace } from "lucide-react";
 
 type Props = {
   username: string;
   imageUrl?: string | null;
   updatedAt?: number | null;
+  isAnonymous?: boolean;
   note: string;
   menuItems?: MenuItems;
 };
 
 export function NoteCard({
   username,
+  isAnonymous,
   updatedAt,
   imageUrl,
   note,
@@ -30,26 +33,38 @@ export function NoteCard({
       <CardHeader className="w-full">
         <div className="flex justify-between items-start">
           <div className="flex gap-4">
-            <Link href={`/user/${username}`} className="font-semibold">
-              <Avatar className="relative top-1">
-                <AvatarImage
-                  className="rounded-full"
-                  src={imageUrl ?? ""}
-                  alt="User avatar"
-                />
-                <AvatarFallback className="text-xs">
-                  {username[0]}
+            {isAnonymous ? (
+              <Avatar>
+                <AvatarFallback>
+                  <ScanFace />
                 </AvatarFallback>
               </Avatar>
-            </Link>
+            ) : (
+              <Link href={`/user/${username}`} className="font-semibold">
+                <Avatar className="relative top-1">
+                  <AvatarImage
+                    className="rounded-full"
+                    src={imageUrl ?? ""}
+                    alt="User avatar"
+                  />
+                  <AvatarFallback className="text-xs">
+                    {username[0]}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+            )}
 
             <div className="flex flex-col">
-              <Link
-                href={`/user/${username}`}
-                className="font-semibold hover:underline"
-              >
-                {username}
-              </Link>
+              {isAnonymous ? (
+                <p className="text-muted-foreground font-semibold">anonymous</p>
+              ) : (
+                <Link
+                  href={`/user/${username}`}
+                  className="font-semibold hover:underline"
+                >
+                  {username}
+                </Link>
+              )}
 
               {updatedAt && (
                 <p className="text-sm text-muted-foreground">

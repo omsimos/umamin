@@ -99,6 +99,7 @@ export function NotesList({ currentUserId, notes }: Props) {
             key={note.id}
             updatedAt={note.updatedAt}
             username={note?.user?.username ?? ""}
+            isAnonymous={note.isAnonymous}
             note={note.content}
             imageUrl={note?.user?.imageUrl}
           />

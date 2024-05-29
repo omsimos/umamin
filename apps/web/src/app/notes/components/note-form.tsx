@@ -5,13 +5,16 @@ import { graphql } from "gql.tada";
 import { analytics } from "@/lib/firebase";
 import { logEvent } from "firebase/analytics";
 import { FormEventHandler, useState } from "react";
-import { Info, Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 
 import { getClient } from "@/lib/gql";
 import { NoteCard } from "./note-card";
-import { Button } from "@ui/components/ui/button";
 import { NoteByUserIdQueryResult } from "../queries";
-import { Textarea } from "@ui/components/ui/textarea";
+
+import { Label } from "@umamin/ui/components/label";
+import { Button } from "@umamin/ui/components/button";
+import { Switch } from "@umamin/ui/components/switch";
+import { Textarea } from "@umamin/ui/components/textarea";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
@@ -46,7 +49,12 @@ type Props = {
 export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+
   const [currentNote, setCurrentNote] = useState(currentUserNote?.content);
+  const [anonymous, setAnonymous] = useState(
+    currentUserNote?.isAnonymous ?? false,
+  );
   const [updatedAt, setUpdatedAt] = useState(currentUserNote?.updatedAt);
 
   const onClearNote = () => {
@@ -84,7 +92,7 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
     setIsFetching(true);
 
     getClient()
-      .mutation(UPDATE_NOTE_MUTATION, { content, isAnonymous: false })
+      .mutation(UPDATE_NOTE_MUTATION, { content, isAnonymous })
       .then((res) => {
         if (res.error) {
           toast.error(res.error.message);
@@ -96,6 +104,7 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
           setContent("");
           setCurrentNote(res?.data?.updateNote?.content);
           setUpdatedAt(res?.data?.updateNote?.updatedAt);
+          setAnonymous(res.data.updateNote.isAnonymous)
           toast.success("Note updated");
         }
 
@@ -122,9 +131,18 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
           autoComplete="off"
         />
         <div className="flex w-full justify-between items-center">
-          <div className="text-muted-foreground text-sm flex items-center">
-            <Info className="h-4 w-4 mr-2" />
-            <p>Notes are shared to public</p>
+          <div className="flex items-center space-x-2 text-sm">
+            <Switch
+              checked={isAnonymous}
+              onCheckedChange={setIsAnonymous}
+              id="airplane-mode"
+            />
+            <Label
+              htmlFor="airplane-mode"
+              className={isAnonymous ? "" : "text-muted-foreground"}
+            >
+              Anonymous
+            </Label>
           </div>
 
           <Button
@@ -145,6 +163,7 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
       {currentNote && (
         <div className="border-b-2 border-muted border-dashed mb-5 pb-5">
           <NoteCard
+            isAnonymous={anonymous}
             menuItems={menuItems}
             note={currentNote}
             updatedAt={updatedAt}

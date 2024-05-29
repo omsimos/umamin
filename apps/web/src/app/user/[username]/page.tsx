@@ -24,6 +24,7 @@ const USER_BY_USERNAME_QUERY = graphql(`
         id
         content
         updatedAt
+        isAnonymous
       }
     }
   }
@@ -91,7 +92,7 @@ export default async function Page({
         </Link>
       </div>
 
-      {user.note && (
+      {user.note && !user.note.isAnonymous && (
         <div className="mt-8 pt-4 border-t-2 border-dashed border-muted">
           <NoteCard
             username={user.username}
