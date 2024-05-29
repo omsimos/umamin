@@ -22,24 +22,9 @@ export const message = sqliteTable(
       .default(sql`(unixepoch())`),
   },
   (t) => ({
-    userIdCreatedAtIdx: index("user_id_created_at_idx").on(
-      t.receiverId,
-      t.createdAt,
-    ),
-    userIdCreatedAtIdIdx: index("user_id_created_at_id_idx").on(
-      t.receiverId,
-      t.createdAt,
-      t.id,
-    ),
-    senderIdCreatedAtIdx: index("sender_id_created_at_idx").on(
-      t.senderId,
-      t.createdAt,
-    ),
-    senderIdCreatedAtIdIdx: index("sender_id_created_at_id_idx").on(
-      t.receiverId,
-      t.createdAt,
-      t.id,
-    ),
+    receiverIdIdx: index("receiver_id_idx").on(t.receiverId),
+    senderIdIdx: index("sender_id_idx").on(t.senderId),
+    createdAtIdIdx: index("created_at_id_idx").on(t.createdAt, t.id),
   }),
 );
 
