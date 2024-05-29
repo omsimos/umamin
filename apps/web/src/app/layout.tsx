@@ -6,6 +6,7 @@ import { GeistSans } from "geist/font/sans";
 import NextTopLoader from "nextjs-toploader";
 import { Navbar } from "./components/navbar";
 import { ThemeProvider } from "@umamin/ui/components/theme-provider";
+import { Maintenance } from "./components/maintenance";
 
 export const metadata: Metadata = {
   title: "Umamin — The Platform for Anonymity",
@@ -54,8 +55,14 @@ export default function RootLayout({
               },
             }}
           />
-          <Navbar />
-          {children}
+          {process.env.NEXT_PUBLIC_MAINTENANCE === "true" ? (
+            <Maintenance />
+          ) : (
+            <>
+              <Navbar />
+              {children}
+            </>
+          )}
         </ThemeProvider>
       </body>
     </html>

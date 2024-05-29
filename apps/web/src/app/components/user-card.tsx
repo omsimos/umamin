@@ -1,4 +1,5 @@
-import { formatDistanceToNow } from "date-fns";
+import { BadgeCheck } from "lucide-react";
+import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import {
   Avatar,
   AvatarFallback,
@@ -6,13 +7,13 @@ import {
 } from "@umamin/ui/components/avatar";
 
 import { cn } from "@ui/lib/utils";
-import { Card, CardHeader } from "@umamin/ui/components/card";
 import { ShareButton } from "./share-button";
+import { Card, CardHeader } from "@umamin/ui/components/card";
 
 type Props = {
   imageUrl?: string | null;
   username: string;
-  createdAt: string;
+  createdAt: number;
   bio?: string | null;
 };
 
@@ -34,14 +35,18 @@ export function UserCard({ ...user }: Props) {
             </Avatar>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold md:text-xl">
-                  @{user?.username}
-                </span>
+                <div className="flex items-center space-x-1">
+                  <p className="font-semibold md:text-xl">@{user?.username}</p>
+                  {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
+                    user.username,
+                  ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
+                </div>
+
                 <ShareButton username={user.username} />
               </div>
               <p className="text-muted-foreground text-sm mt-1">
                 Joined{" "}
-                {formatDistanceToNow(user?.createdAt, {
+                {formatDistanceToNow(fromUnixTime(user.createdAt), {
                   addSuffix: true,
                 })}
               </p>

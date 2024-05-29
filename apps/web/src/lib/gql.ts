@@ -4,10 +4,7 @@ import { createClient, fetchExchange } from "@urql/core";
 
 const makeClient = () => {
   return createClient({
-    url:
-      process.env.NODE_ENV === "production"
-        ? "https://v2.umamin.link/api/graphql"
-        : "http://localhost:3000/api/graphql",
+    url: process.env.NEXT_PUBLIC_GQL_URL!,
     exchanges: [cacheExchange({}), fetchExchange],
   });
 };

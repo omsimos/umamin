@@ -68,7 +68,7 @@ export default async function SendMessage({
         </CardHeader>
 
         <ChatForm
-          userId={user.id}
+          receiverId={user.id}
           quietMode={user.quietMode}
           sessionId={session?.userId}
           imageUrl={user.imageUrl}

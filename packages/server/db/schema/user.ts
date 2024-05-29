@@ -1,36 +1,23 @@
 import { sql, relations } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+import { note } from "./note";
 import { message } from "./message";
 
-export const user = sqliteTable(
-  "user",
-  {
-    id: text("id").primaryKey(),
-    username: text("username").notNull().unique(),
-    note: text("note"),
-    bio: text("bio"),
-    imageUrl: text("image_url"),
-    quietMode: integer("quiet_mode", { mode: "boolean" })
-      .notNull()
-      .default(false),
-    question: text("question")
-      .notNull()
-      .default("Send me an anonymous message!"),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`(current_timestamp)`),
-    updatedAt: text("updated_at").$onUpdate(() => sql`(current_timestamp)`),
-  },
-  (t) => ({
-    noteUpdatedAtIdx: index("note_updated_at_idx").on(t.note, t.updatedAt),
-    noteUpdatedAtIdIdx: index("note_updated_at_id_idx").on(
-      t.note,
-      t.updatedAt,
-      t.id,
-    ),
-  }),
-);
+export const user = sqliteTable("user", {
+  id: text("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  bio: text("bio"),
+  imageUrl: text("image_url"),
+  quietMode: integer("quiet_mode", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  question: text("question").notNull().default("Send me an anonymous message!"),
+  createdAt: integer("created_at", { mode: "number" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at").$onUpdate(() => sql`(unixepoch())`),
+});
 
 export const session = sqliteTable("session", {
   id: text("id").notNull().primaryKey(),
@@ -48,22 +35,23 @@ export const account = sqliteTable("oauth_account", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   providerId: text("provider_id").notNull(),
-  createdAt: text("created_at")
+  createdAt: integer("created_at", { mode: "number" })
     .notNull()
-    .default(sql`(current_timestamp)`),
+    .default(sql`(unixepoch())`),
 });
 
 export const accountRelations = relations(account, ({ one }) => ({
-  user: one(user, {
+  profile: one(user, {
     fields: [account.userId],
     references: [user.id],
   }),
 }));
 
-export const userRelations = relations(user, ({ many }) => ({
-  receivedMessages: many(message, { relationName: "receiver" }),
-  sentMessages: many(message, { relationName: "sender" }),
-  accounts: many(account),
+export const userRelations = relations(user, ({ many, one }) => ({
+  receiver: many(message, { relationName: "receiver" }),
+  sender: many(message, { relationName: "sender" }),
+  profile: many(account),
+  note: one(note),
 }));
 
 export type InsertUser = typeof user.$inferInsert;

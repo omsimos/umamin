@@ -6,6 +6,8 @@
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=!./apps/social",
     "dev:social": "turbo run dev --filter=!./apps/web",
+    "build:web": "turbo run build --filter=!./apps/social",
+    "build:social": "turbo run build --filter=!./apps/web",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
     "db:push": "pnpm --filter @umamin/server db:push",

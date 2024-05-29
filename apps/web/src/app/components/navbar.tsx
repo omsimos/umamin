@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Badge } from "@ui/components/ui/badge";
+import { Badge } from "@umamin/ui/components/badge";
 import { LinkIcon, LogIn, MessagesSquare, ScrollText } from "lucide-react";
 
 import { getSession } from "@/lib/auth";

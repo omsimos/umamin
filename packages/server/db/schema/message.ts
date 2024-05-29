@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "./user";
 
@@ -9,7 +9,7 @@ export const message = sqliteTable(
     id: text("id").primaryKey(),
     question: text("question").notNull(),
     content: text("content").notNull(),
-    userId: text("user_id")
+    receiverId: text("receiver_id")
       .notNull()
       .references(() => user.id, {
         onDelete: "cascade",
@@ -17,35 +17,20 @@ export const message = sqliteTable(
     senderId: text("sender_id").references(() => user.id, {
       onDelete: "cascade",
     }),
-    createdAt: text("created_at")
+    createdAt: integer("created_at", { mode: "number" })
       .notNull()
-      .default(sql`(current_timestamp)`),
+      .default(sql`(unixepoch())`),
   },
   (t) => ({
-    userIdCreatedAtIdx: index("user_id_created_at_idx").on(
-      t.userId,
-      t.createdAt,
-    ),
-    userIdCreatedAtIdIdx: index("user_id_created_at_id_idx").on(
-      t.userId,
-      t.createdAt,
-      t.id,
-    ),
-    senderIdCreatedAtIdx: index("sender_id_created_at_idx").on(
-      t.senderId,
-      t.createdAt,
-    ),
-    senderIdCreatedAtIdIdx: index("sender_id_created_at_id_idx").on(
-      t.userId,
-      t.createdAt,
-      t.id,
-    ),
+    receiverIdIdx: index("receiver_id_idx").on(t.receiverId),
+    senderIdIdx: index("sender_id_idx").on(t.senderId),
+    createdAtIdIdx: index("created_at_id_idx").on(t.createdAt, t.id),
   }),
 );
 
 export const messageRelations = relations(message, ({ one }) => ({
-  user: one(user, {
-    fields: [message.userId],
+  receiver: one(user, {
+    fields: [message.receiverId],
     references: [user.id],
     relationName: "receiver",
   }),

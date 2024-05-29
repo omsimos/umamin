@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { toast } from "sonner";
 import { CalendarDays } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import { Button } from "@umamin/ui/components/button";
 
 import {
@@ -23,7 +23,7 @@ type Props = {
   user: {
     username: string;
     imageUrl?: string | null;
-    createdAt: string;
+    createdAt: number;
   };
 };
 
@@ -49,7 +49,7 @@ export function ProfileHoverCard({ children, user }: Props) {
               <CalendarDays className="mr-1 h-3 w-3 text-muted-foreground" />{" "}
               <span className="text-xs text-muted-foreground">
                 Joined{" "}
-                {formatDistanceToNow(user?.createdAt, {
+                {formatDistanceToNow(fromUnixTime(user.createdAt), {
                   addSuffix: true,
                 })}
               </span>

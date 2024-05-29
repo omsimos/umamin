@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d8ad01df-6a1a-4d87-b470-279f6df39ce3",
+  "id": "acf73d42-8d34-47a4-b11a-8e7bf270186a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "oauth_account": {
@@ -44,11 +44,11 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(current_timestamp)"
+          "default": "(unixepoch())"
         }
       },
       "indexes": {},
@@ -131,13 +131,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "note": {
-          "name": "note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "bio": {
           "name": "bio",
           "type": "text",
@@ -170,15 +163,15 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(current_timestamp)"
+          "default": "(unixepoch())"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -191,26 +184,91 @@
             "username"
           ],
           "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "note": {
+      "name": "note",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
         },
-        "note_updated_at_idx": {
-          "name": "note_updated_at_idx",
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_anonymous": {
+          "name": "is_anonymous",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "note_user_id_unique": {
+          "name": "note_user_id_unique",
           "columns": [
-            "note",
-            "updated_at"
+            "user_id"
           ],
-          "isUnique": false
+          "isUnique": true
         },
-        "note_updated_at_id_idx": {
-          "name": "note_updated_at_id_idx",
+        "id_updated_at_idx": {
+          "name": "id_updated_at_idx",
           "columns": [
-            "note",
-            "updated_at",
-            "id"
+            "id",
+            "updated_at"
           ],
           "isUnique": false
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "note_user_id_user_id_fk": {
+          "name": "note_user_id_user_id_fk",
+          "tableFrom": "note",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -238,8 +296,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "user_id": {
-          "name": "user_id",
+        "receiver_id": {
+          "name": "receiver_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -254,43 +312,31 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(current_timestamp)"
+          "default": "(unixepoch())"
         }
       },
       "indexes": {
-        "user_id_created_at_idx": {
-          "name": "user_id_created_at_idx",
+        "receiver_id_idx": {
+          "name": "receiver_id_idx",
           "columns": [
-            "user_id",
-            "created_at"
+            "receiver_id"
           ],
           "isUnique": false
         },
-        "user_id_created_at_id_idx": {
-          "name": "user_id_created_at_id_idx",
+        "sender_id_idx": {
+          "name": "sender_id_idx",
           "columns": [
-            "user_id",
-            "created_at",
-            "id"
+            "sender_id"
           ],
           "isUnique": false
         },
-        "sender_id_created_at_idx": {
-          "name": "sender_id_created_at_idx",
+        "created_at_id_idx": {
+          "name": "created_at_id_idx",
           "columns": [
-            "sender_id",
-            "created_at"
-          ],
-          "isUnique": false
-        },
-        "sender_id_created_at_id_idx": {
-          "name": "sender_id_created_at_id_idx",
-          "columns": [
-            "user_id",
             "created_at",
             "id"
           ],
@@ -298,12 +344,12 @@
         }
       },
       "foreignKeys": {
-        "message_user_id_user_id_fk": {
-          "name": "message_user_id_user_id_fk",
+        "message_receiver_id_user_id_fk": {
+          "name": "message_receiver_id_user_id_fk",
           "tableFrom": "message",
           "tableTo": "user",
           "columnsFrom": [
-            "user_id"
+            "receiver_id"
           ],
           "columnsTo": [
             "id"
