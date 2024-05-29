@@ -1,18 +1,21 @@
 import SchemaBuilder from "@pothos/core";
 import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
-import { SelectMessage, SelectUser } from "../db/schema";
 import { DateResolver, JSONResolver } from "graphql-scalars";
+import { SelectMessage, SelectNote, SelectUser } from "../db/schema";
 
-type MessageCursor = {
+type Cursor<T> = {
   id?: string;
-  createdAt?: number;
   hasMore: boolean;
-};
+} & T;
 
-type UserCursor = {
-  id?: string;
-  updatedAt?: number | null;
-  hasMore: boolean;
+type WithUser<T> = T & { user?: SelectUser | null };
+
+type MessageCursor = Cursor<{ createdAt?: number }>;
+type NoteCursor = Cursor<{ updatedAt?: number | null }>;
+
+type WithCursor<T> = {
+  cursor: T extends SelectMessage ? MessageCursor : NoteCursor;
+  data: WithUser<T extends SelectMessage ? SelectMessage : SelectNote>[];
 };
 
 const builder = new SchemaBuilder<{
@@ -20,20 +23,13 @@ const builder = new SchemaBuilder<{
     authenticated: boolean;
   };
   Objects: {
-    User: SelectUser;
-    Message: SelectMessage & {
-      user?: SelectUser;
-    };
+    User: SelectUser & { note?: SelectNote | null };
+    Note: WithUser<SelectNote>;
+    Message: WithUser<SelectMessage>;
     MessageCursor: MessageCursor;
-    UserCursor: UserCursor;
-    UsersWithCursor: {
-      cursor: UserCursor;
-      data: SelectUser[];
-    };
-    MessagesWithCursor: {
-      cursor: MessageCursor;
-      data: SelectMessage[];
-    };
+    NoteCursor: NoteCursor;
+    NotesWithCursor: WithCursor<SelectNote>;
+    MessagesWithCursor: WithCursor<SelectMessage>;
   };
   Context: {
     currentUser: SelectUser;

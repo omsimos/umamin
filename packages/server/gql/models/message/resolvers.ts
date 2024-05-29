@@ -22,7 +22,7 @@ builder.queryFields((t) => ({
         const result = await db.query.message.findMany({
           where:
             type === "received"
-              ? eq(message.userId, userId)
+              ? eq(message.receiverId, userId)
               : eq(message.senderId, userId),
           limit: 5,
           orderBy: [desc(message.createdAt)],
@@ -66,6 +66,7 @@ builder.mutationFields((t) => ({
 
   messagesFromCursor: t.field({
     type: "MessagesWithCursor",
+    authScopes: { authenticated: true },
     args: {
       input: t.arg({ type: MessagesFromCursorInput, required: true }),
     },
@@ -80,7 +81,7 @@ builder.mutationFields((t) => ({
         const result = await db.query.message.findMany({
           where: and(
             type === "received"
-              ? eq(message.userId, ctx.currentUser.id)
+              ? eq(message.receiverId, ctx.currentUser.id)
               : eq(message.senderId, ctx.currentUser.id),
 
             cursor
@@ -120,12 +121,13 @@ builder.mutationFields((t) => ({
 
   deleteMessage: t.field({
     type: "String",
+    authScopes: { authenticated: true },
     args: {
       id: t.arg.string({ required: true }),
     },
-    resolve: async (_, { id }) => {
+    resolve: async (_, args) => {
       try {
-        await db.delete(message).where(eq(message.id, id));
+        await db.delete(message).where(eq(message.id, args.id));
 
         return "Success";
       } catch (err) {

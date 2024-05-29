@@ -16,10 +16,15 @@ const USER_BY_USERNAME_QUERY = graphql(`
       __typename
       id
       bio
-      note
       username
       imageUrl
       createdAt
+      note {
+        __typename
+        id
+        content
+        updatedAt
+      }
     }
   }
 `);
@@ -90,7 +95,8 @@ export default async function Page({
         <div className="mt-8 pt-4 border-t-2 border-dashed border-muted">
           <NoteCard
             username={user.username}
-            note={user.note}
+            note={user.note.content}
+            updatedAt={user.note.updatedAt}
             imageUrl={user.imageUrl}
           />
         </div>

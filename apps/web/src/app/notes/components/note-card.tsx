@@ -8,15 +8,23 @@ import {
 } from "@umamin/ui/components/avatar";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { Icons } from "@/app/components/utilities/icons";
+import { formatDistanceToNow, fromUnixTime } from "date-fns";
 
 type Props = {
   username: string;
   imageUrl?: string | null;
+  updatedAt?: number | null;
   note: string;
   menuItems?: MenuItems;
 };
 
-export function NoteCard({ username, imageUrl, note, menuItems }: Props) {
+export function NoteCard({
+  username,
+  updatedAt,
+  imageUrl,
+  note,
+  menuItems,
+}: Props) {
   return (
     <Card className="flex flex-col items-start justify-between">
       <CardHeader className="w-full">
@@ -43,7 +51,13 @@ export function NoteCard({ username, imageUrl, note, menuItems }: Props) {
                 {username}
               </Link>
 
-              <p className="text-sm text-muted-foreground">umamin.link</p>
+              {updatedAt && (
+                <p className="text-sm text-muted-foreground">
+                  {formatDistanceToNow(fromUnixTime(updatedAt), {
+                    addSuffix: true,
+                  })}
+                </p>
+              )}
             </div>
           </div>
 

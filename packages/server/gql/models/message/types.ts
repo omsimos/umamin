@@ -5,7 +5,7 @@ builder.objectType("Message", {
     id: t.exposeID("id"),
     question: t.exposeString("question"),
     content: t.exposeString("content"),
-    userId: t.exposeString("userId"),
+    receiverId: t.exposeString("receiverId"),
     senderId: t.exposeString("senderId", { nullable: true }),
     createdAt: t.exposeInt("createdAt"),
     user: t.expose("user", {
@@ -35,7 +35,7 @@ export const CreateMessageInput = builder.inputType("CreateMessageInput", {
     question: t.string({ required: true }),
     content: t.string({ required: true }),
     senderId: t.string(),
-    userId: t.string({ required: true }),
+    receiverId: t.string({ required: true }),
   }),
 });
 

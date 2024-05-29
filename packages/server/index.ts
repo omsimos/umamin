@@ -5,6 +5,7 @@ builder.queryType({});
 builder.mutationType({});
 
 import "./gql/models/user";
+import "./gql/models/note";
 import "./gql/models/message";
 
 export * from "./db";

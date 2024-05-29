@@ -22,7 +22,7 @@ const CREATE_MESSAGE_MUTATION = graphql(`
 `);
 
 type Props = {
-  userId: string;
+  receiverId: string;
   sessionId?: string;
   imageUrl?: string | null;
   question: string;
@@ -30,7 +30,7 @@ type Props = {
 };
 
 export function ChatForm({
-  userId,
+  receiverId,
   sessionId,
   imageUrl,
   question,
@@ -43,7 +43,7 @@ export function ChatForm({
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (userId === sessionId) {
+    if (receiverId === sessionId) {
       toast.error("You can't send a message to yourself");
       return;
     }
@@ -54,7 +54,7 @@ export function ChatForm({
       .mutation(CREATE_MESSAGE_MUTATION, {
         input: {
           senderId: sessionId,
-          userId,
+          receiverId,
           question,
           content,
         },

@@ -9,7 +9,7 @@ export const message = sqliteTable(
     id: text("id").primaryKey(),
     question: text("question").notNull(),
     content: text("content").notNull(),
-    userId: text("user_id")
+    receiverId: text("receiver_id")
       .notNull()
       .references(() => user.id, {
         onDelete: "cascade",
@@ -23,11 +23,11 @@ export const message = sqliteTable(
   },
   (t) => ({
     userIdCreatedAtIdx: index("user_id_created_at_idx").on(
-      t.userId,
+      t.receiverId,
       t.createdAt,
     ),
     userIdCreatedAtIdIdx: index("user_id_created_at_id_idx").on(
-      t.userId,
+      t.receiverId,
       t.createdAt,
       t.id,
     ),
@@ -36,7 +36,7 @@ export const message = sqliteTable(
       t.createdAt,
     ),
     senderIdCreatedAtIdIdx: index("sender_id_created_at_id_idx").on(
-      t.userId,
+      t.receiverId,
       t.createdAt,
       t.id,
     ),
@@ -45,7 +45,7 @@ export const message = sqliteTable(
 
 export const messageRelations = relations(message, ({ one }) => ({
   receiver: one(user, {
-    fields: [message.userId],
+    fields: [message.receiverId],
     references: [user.id],
     relationName: "receiver",
   }),
