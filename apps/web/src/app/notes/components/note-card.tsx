@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { BadgeCheck, ScanFace } from "lucide-react";
+import { formatDistanceToNow, fromUnixTime } from "date-fns";
 
 import { Menu, type MenuItems } from "@/app/components/menu";
 import {
@@ -6,10 +8,8 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { Icons } from "@/app/components/utilities/icons";
-import { formatDistanceToNow, fromUnixTime } from "date-fns";
-import { ScanFace } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 
 type Props = {
   username: string;
@@ -58,12 +58,17 @@ export function NoteCard({
               {isAnonymous ? (
                 <p className="text-muted-foreground font-semibold">anonymous</p>
               ) : (
-                <Link
-                  href={`/user/${username}`}
-                  className="font-semibold hover:underline"
-                >
-                  {username}
-                </Link>
+                <div className="flex items-center space-x-1">
+                  <Link
+                    href={`/user/${username}`}
+                    className="font-semibold hover:underline"
+                  >
+                    {username}
+                  </Link>
+                  {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
+                    username,
+                  ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
+                </div>
               )}
 
               {updatedAt && (
