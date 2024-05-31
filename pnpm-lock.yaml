@@ -135,9 +135,6 @@ importers:
       '@lucia-auth/adapter-drizzle':
         specifier: ^1.0.7
         version: 1.0.7(lucia@3.2.0)
-      '@node-rs/argon2':
-        specifier: ^1.8.3
-        version: 1.8.3
       '@umamin/server':
         specifier: workspace:*
         version: link:../../packages/server
