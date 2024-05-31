@@ -127,7 +127,7 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
           onChange={(e) => setContent(e.target.value)}
           maxLength={1000}
           placeholder="How's your day going?"
-          className="focus-visible:ring-transparent flex-1 text-base"
+          className="focus-visible:ring-transparent text-base max-h-[500px]"
           autoComplete="off"
         />
         <div className="flex w-full justify-between items-center">

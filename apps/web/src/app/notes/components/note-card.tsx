@@ -82,9 +82,11 @@ export function NoteCard({
           </div>
 
           <div className="flex gap-x-1 text-muted-foreground items-center">
-            <Link href={`/to/${username}`} className="hover:underline">
-              <Icons.chat className="h-5 w-5" />
-            </Link>
+            {!isAnonymous && (
+              <Link href={`/to/${username}`} className="hover:underline">
+                <Icons.chat className="h-5 w-5" />
+              </Link>
+            )}
 
             {menuItems && <Menu menuItems={menuItems} />}
           </div>
