@@ -7,6 +7,7 @@ import { message } from "./message";
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
   username: text("username").notNull().unique(),
+  passwordHash: text("password_hash"),
   bio: text("bio"),
   imageUrl: text("image_url"),
   quietMode: integer("quiet_mode", { mode: "boolean" })

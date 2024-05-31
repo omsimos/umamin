@@ -18,11 +18,12 @@
   },
   "dependencies": {
     "@libsql/client": "^0.6.0",
+    "@node-rs/argon2": "^1.8.3",
     "@pothos/core": "^3.41.1",
     "@pothos/plugin-scope-auth": "^3.22.0",
     "drizzle-orm": "^0.30.10",
+    "graphql": "^16.8.1",
     "graphql-scalars": "^1.23.0",
-    "nanoid": "^5.0.7",
-    "graphql": "^16.8.1"
+    "nanoid": "^5.0.7"
   }
 }

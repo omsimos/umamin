@@ -69,25 +69,23 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     const usernameId = generateId(5);
+    const userId = nanoid();
 
-    const user = await db
-      .insert(schema.user)
-      .values({
-        id: nanoid(),
-        imageUrl: googleUser.picture,
-        username: `${googleUser.given_name.split(" ").join("").toLowerCase()}_${usernameId}`,
-      })
-      .returning({ userId: schema.user.id });
+    await db.insert(schema.user).values({
+      id: userId,
+      imageUrl: googleUser.picture,
+      username: `${googleUser.given_name.split(" ").join("").toLowerCase()}_${usernameId}`,
+    });
 
     await db.insert(schema.account).values({
       providerId: "google",
       providerUserId: googleUser.sub,
-      userId: user[0].userId,
+      userId,
       picture: googleUser.picture,
       email: googleUser.email,
     });
 
-    const session = await lucia.createSession(user[0].userId, {});
+    const session = await lucia.createSession(userId, {});
     const sessionCookie = lucia.createSessionCookie(session.id);
 
     cookies().set(

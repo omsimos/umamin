@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { cn } from "@ui/lib/utils";
-import { Sparkles } from "lucide-react";
+import { ThumbsUp } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { buttonVariants } from "@umamin/ui/components/button";
 import {
   Card,
   CardTitle,
@@ -12,10 +11,11 @@ import {
   CardDescription,
   CardContent,
 } from "@umamin/ui/components/card";
+import { RegisterForm } from "./components/form";
+import { buttonVariants } from "@umamin/ui/components/button";
 import { BrowserWarning } from "@umamin/ui/components/browser-warning";
-import { LoginForm } from "./form";
 
-export default async function Login() {
+export default async function Register() {
   const { user } = await getSession();
 
   if (user) {
@@ -30,11 +30,14 @@ export default async function Login() {
           <CardTitle className="text-2xl flex justify-between items-center">
             <p>Umamin Account</p>
           </CardTitle>
-          <CardDescription>Proceed with your created user.</CardDescription>
+          <CardDescription>
+            We recommend Google OAuth for a better experience.
+          </CardDescription>
         </CardHeader>
 
         <CardContent className="p-0">
-          <LoginForm />
+          <RegisterForm />
+
           <Link
             href="/login/google"
             className={cn(
@@ -45,15 +48,16 @@ export default async function Login() {
             )}
             type="button"
           >
+          <ThumbsUp className="mr-2 h-4 w-4" />
             Continue with Google
           </Link>
         </CardContent>
 
         <CardFooter className="flex flex-col items-start p-0">
           <div className="mt-4 text-center text-sm w-full">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="underline">
-              Sign up
+            Already have an account?{" "}
+            <Link href="/login" className="underline">
+              Login
             </Link>
           </div>
         </CardFooter>
