@@ -7,7 +7,7 @@ import { MessageSquareMore, UserPlus } from "lucide-react";
 import { cn } from "@ui/lib/utils";
 import { getClient } from "@/lib/gql";
 import { UserCard } from "@/app/components/user-card";
-import { NoteCard } from "@/app/notes/components/note-card";
+import { NoteCard } from "@/app/notes/components/card";
 import { Button, buttonVariants } from "@ui/components/ui/button";
 
 const USER_BY_USERNAME_QUERY = graphql(`

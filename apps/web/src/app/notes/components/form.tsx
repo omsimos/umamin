@@ -7,8 +7,8 @@ import { logEvent } from "firebase/analytics";
 import { FormEventHandler, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 
+import { NoteCard } from "./card";
 import { getClient } from "@/lib/gql";
-import { NoteCard } from "./note-card";
 import { NoteByUserIdQueryResult } from "../queries";
 
 import { Label } from "@umamin/ui/components/label";

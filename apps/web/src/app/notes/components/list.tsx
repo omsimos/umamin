@@ -6,7 +6,7 @@ import { getClient } from "@/lib/gql";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
-import { NoteCard } from "./note-card";
+import { NoteCard } from "./card";
 import { NoteQueryResult } from "../queries";
 import { Skeleton } from "@ui/components/ui/skeleton";
 
