@@ -15,6 +15,7 @@ import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
+import { formatError } from "@/lib/utils";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
@@ -41,12 +42,10 @@ const DELETE_NOTE_MUTATION = graphql(`
 `);
 
 type Props = {
-  username: string;
-  imageUrl: string | null;
-  currentUserNote?: NoteByUserIdQueryResult | null;
+  currentUserNote?: NoteByUserIdQueryResult;
 };
 
-export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
+export function NoteForm({ currentUserNote }: Props) {
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -66,7 +65,7 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
       .mutation(DELETE_NOTE_MUTATION, { userId: currentUserNote?.userId })
       .then((res) => {
         if (res.error) {
-          toast.error(res.error.message);
+          toast.error(formatError(res.error.message));
           setIsFetching(false);
           return;
         }
@@ -104,7 +103,7 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
           setContent("");
           setCurrentNote(res?.data?.updateNote?.content);
           setUpdatedAt(res?.data?.updateNote?.updatedAt);
-          setAnonymous(res.data.updateNote.isAnonymous)
+          setAnonymous(res.data.updateNote.isAnonymous);
           toast.success("Note updated");
         }
 
@@ -163,12 +162,13 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
       {currentNote && (
         <div className="border-b-2 border-muted border-dashed mb-5 pb-5">
           <NoteCard
-            isAnonymous={anonymous}
+            note={{
+              ...currentUserNote,
+              isAnonymous: anonymous,
+              content: currentNote,
+              updatedAt,
+            }}
             menuItems={menuItems}
-            note={currentNote}
-            updatedAt={updatedAt}
-            username={username ?? ""}
-            imageUrl={imageUrl}
           />
         </div>
       )}

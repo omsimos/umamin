@@ -94,16 +94,7 @@ export function NotesList({ currentUserId, notes }: Props) {
     <>
       {notesList
         ?.filter((u) => u.userId !== currentUserId)
-        .map((note) => (
-          <NoteCard
-            key={note.id}
-            updatedAt={note.updatedAt}
-            username={note?.user?.username ?? ""}
-            isAnonymous={note.isAnonymous}
-            note={note.content}
-            imageUrl={note?.user?.imageUrl}
-          />
-        ))}
+        .map((note) => <NoteCard key={note.id} note={note} />)}
 
       {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
       {hasMore && <div ref={ref}></div>}

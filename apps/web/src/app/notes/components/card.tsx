@@ -10,92 +10,93 @@ import {
 } from "@umamin/ui/components/avatar";
 import { Icons } from "@/app/components/utilities/icons";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
+import { NoteQueryResult } from "../queries";
 
 type Props = {
-  username: string;
-  imageUrl?: string | null;
-  updatedAt?: number | null;
-  isAnonymous?: boolean;
-  note: string;
+  note: Partial<NoteQueryResult>;
   menuItems?: MenuItems;
 };
 
-export function NoteCard({
-  username,
-  isAnonymous,
-  updatedAt,
-  imageUrl,
-  note,
-  menuItems,
-}: Props) {
+export function NoteCard({ note, menuItems }: Props) {
+  const username = note.user?.username;
+
   return (
-    <Card className="flex flex-col items-start justify-between">
-      <CardHeader className="w-full">
-        <div className="flex justify-between items-start">
-          <div className="flex gap-4">
-            {isAnonymous ? (
-              <Avatar>
-                <AvatarFallback>
-                  <ScanFace />
-                </AvatarFallback>
-              </Avatar>
-            ) : (
-              <Link href={`/user/${username}`} className="font-semibold">
-                <Avatar className="relative top-1">
-                  <AvatarImage
-                    className="rounded-full"
-                    src={imageUrl ?? ""}
-                    alt="User avatar"
-                  />
-                  <AvatarFallback className="text-xs">
-                    {username[0]}
+    <div id={note.id}>
+      <Card className="flex flex-col items-start justify-between">
+        <CardHeader className="w-full">
+          <div className="flex justify-between items-start">
+            <div className="flex gap-4">
+              {note.isAnonymous ? (
+                <Avatar>
+                  <AvatarFallback>
+                    <ScanFace />
                   </AvatarFallback>
                 </Avatar>
-              </Link>
-            )}
-
-            <div className="flex flex-col">
-              {isAnonymous ? (
-                <p className="text-muted-foreground font-semibold">anonymous</p>
               ) : (
-                <div className="flex items-center space-x-1">
-                  <Link
-                    href={`/user/${username}`}
-                    className="font-semibold hover:underline"
-                  >
-                    {username}
-                  </Link>
-                  {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                    username,
-                  ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
-                </div>
+                <Link href={`/user/${username}`} className="font-semibold">
+                  <Avatar className="relative top-1">
+                    <AvatarImage
+                      className="rounded-full"
+                      src={note.user?.imageUrl ?? ""}
+                      alt="User avatar"
+                    />
+                    <AvatarFallback className="text-xs">
+                      {note.user?.username[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
               )}
 
-              {updatedAt && (
-                <p className="text-sm text-muted-foreground">
-                  {formatDistanceToNow(fromUnixTime(updatedAt), {
-                    addSuffix: true,
-                  })}
-                </p>
+              <div className="flex flex-col">
+                {note.isAnonymous ? (
+                  <p className="text-muted-foreground font-semibold">
+                    anonymous
+                  </p>
+                ) : (
+                  <div className="flex items-center space-x-1">
+                    <Link
+                      href={`/user/${username}`}
+                      className="font-semibold hover:underline"
+                    >
+                      {username}
+                    </Link>
+                    {username &&
+                      process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
+                        ",",
+                      ).includes(username) && (
+                        <BadgeCheck className="w-4 h-4 text-pink-500" />
+                      )}
+                  </div>
+                )}
+
+                {note.updatedAt && (
+                  <p className="text-sm text-muted-foreground">
+                    {formatDistanceToNow(fromUnixTime(note.updatedAt), {
+                      addSuffix: true,
+                    })}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-x-1 text-muted-foreground items-center">
+              {!note.isAnonymous && (
+                <Link href={`/to/${username}`} className="hover:underline">
+                  <Icons.chat className="h-5 w-5" />
+                </Link>
               )}
+
+              {menuItems && <Menu menuItems={menuItems} />}
             </div>
           </div>
+        </CardHeader>
 
-          <div className="flex gap-x-1 text-muted-foreground items-center">
-            {!isAnonymous && (
-              <Link href={`/to/${username}`} className="hover:underline">
-                <Icons.chat className="h-5 w-5" />
-              </Link>
-            )}
-
-            {menuItems && <Menu menuItems={menuItems} />}
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="flex w-full gap-3">
-        <p className="whitespace-pre-wrap break-words min-w-0">{note}</p>
-      </CardContent>
-    </Card>
+        <CardContent className="flex w-full gap-3">
+          <p className="whitespace-pre-wrap break-words min-w-0">
+            {note.content}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
