@@ -95,10 +95,12 @@ export default async function Page({
       {user.note && !user.note.isAnonymous && (
         <div className="mt-8 pt-4 border-t-2 border-dashed border-muted">
           <NoteCard
-            username={user.username}
-            note={user.note.content}
-            updatedAt={user.note.updatedAt}
-            imageUrl={user.imageUrl}
+            note={{
+              ...user.note,
+              user: {
+                ...user,
+              },
+            }}
           />
         </div>
       )}

@@ -1,4 +1,7 @@
+"use client"
+
 import Link from "next/link";
+import { logEvent } from "firebase/analytics";
 import { BadgeCheck, ScanFace } from "lucide-react";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 
@@ -8,9 +11,11 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import { onSaveImage } from "@/lib/utils";
+import { analytics } from "@/lib/firebase";
+import { NoteQueryResult } from "../queries";
 import { Icons } from "@/app/components/utilities/icons";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
-import { NoteQueryResult } from "../queries";
 
 type Props = {
   note: Partial<NoteQueryResult>;
@@ -86,7 +91,20 @@ export function NoteCard({ note, menuItems }: Props) {
                 </Link>
               )}
 
-              {menuItems && <Menu menuItems={menuItems} />}
+              <Menu
+                menuItems={[
+                  ...(menuItems ?? []),
+                  {
+                    title: "Save Image",
+                    onClick: () => {
+                      if (note.id) {
+                        onSaveImage(note.id);
+                        logEvent(analytics, "save_image_note");
+                      }
+                    },
+                  },
+                ]}
+              />
             </div>
           </div>
         </CardHeader>
