@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { cn } from "@ui/lib/utils";
-import { ThumbsUp } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import {
@@ -12,7 +10,6 @@ import {
   CardContent,
 } from "@umamin/ui/components/card";
 import { RegisterForm } from "./components/form";
-import { buttonVariants } from "@umamin/ui/components/button";
 import { BrowserWarning } from "@umamin/ui/components/browser-warning";
 
 export default async function Register() {
@@ -31,26 +28,12 @@ export default async function Register() {
             <p>Umamin Account</p>
           </CardTitle>
           <CardDescription>
-            We recommend Google OAuth for a better experience.
+            To prevent account loss, we recommend Google OAuth.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="p-0">
           <RegisterForm />
-
-          <Link
-            href="/login/google"
-            className={cn(
-              buttonVariants({
-                variant: "outline",
-              }),
-              "w-full mt-4",
-            )}
-            type="button"
-          >
-          <ThumbsUp className="mr-2 h-4 w-4" />
-            Continue with Google
-          </Link>
         </CardContent>
 
         <CardFooter className="flex flex-col items-start p-0">

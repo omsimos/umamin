@@ -29,7 +29,7 @@ export function UserCard({ ...user }: Props) {
                 src={user?.imageUrl ?? ""}
                 alt={`${user?.username}'s avatar`}
               />
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="md:text-4xl text-xl">
                 {user?.username?.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>

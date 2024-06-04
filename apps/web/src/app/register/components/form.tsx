@@ -1,6 +1,7 @@
 "use client";
 
 import { z } from "zod";
+import { ThumbsUp } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Input } from "@umamin/ui/components/input";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +16,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@umamin/ui/components/form";
+import { signup } from "@/actions";
+import { toast } from "sonner";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 const formSchema = z
   .object({
@@ -29,9 +35,14 @@ const formSchema = z
       .refine((url) => /^[a-zA-Z0-9_-]+$/.test(url), {
         message: "Username must be alphanumeric with no spaces.",
       }),
-    password: z.string().min(5, {
-      message: "Password must be at least 5 characters.",
-    }),
+    password: z
+      .string()
+      .min(5, {
+        message: "Password must be at least 5 characters.",
+      })
+      .max(255, {
+        message: "Password must not exceed 255 characters.",
+      }),
     confirmPassword: z.string(),
   })
   .refine(
@@ -45,6 +56,8 @@ const formSchema = z
   );
 
 export function RegisterForm() {
+  const [loading, setLoading] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,11 +67,20 @@ export function RegisterForm() {
     },
   });
 
-  // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
+
+    const res = await signup({
+      username: values.username,
+      password: values.password,
+    });
+
+    if (res && res.error) {
+      toast.error(res.error);
+      setLoading(false);
+    }
+
+    setLoading(false);
   }
 
   return (
@@ -74,7 +96,7 @@ export function RegisterForm() {
                 <Input placeholder="umamin" {...field} />
               </FormControl>
               <FormDescription>
-                You can only change username with Google OAuth.
+                You can still change this later.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -109,9 +131,19 @@ export function RegisterForm() {
           )}
         />
 
-        <Button type="submit" className="w-full">
-          Create an account
-        </Button>
+        <div>
+          <Button disabled={loading} type="submit" className="w-full">
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Create an account
+          </Button>
+
+          <Button disabled={loading} variant="outline" asChild>
+            <Link href="/login/google" className="mt-4 w-full">
+              <ThumbsUp className="mr-2 h-4 w-4" />
+              Continue with Google
+            </Link>
+          </Button>
+        </div>
       </form>
     </Form>
   );

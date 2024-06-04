@@ -1,17 +1,13 @@
 {
   "compilerOptions": {
     "strict": true,
-    "module": "CommonJS",
+    "module": "esnext",
     "moduleResolution": "Node",
     "target": "ES2022",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "outDir": "dist",
     "baseUrl": ".",
-    "paths": {
-      "@/db/*": ["./db/*"],
-      "@/gql/*": ["./gql/*"]
-    }
   },
   "include": ["."],
   "exclude": ["node_modules", "dist"]

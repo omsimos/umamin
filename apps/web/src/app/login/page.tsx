@@ -1,9 +1,6 @@
 import Link from "next/link";
-import { cn } from "@ui/lib/utils";
-import { Sparkles } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { buttonVariants } from "@umamin/ui/components/button";
 import {
   Card,
   CardTitle,
@@ -30,23 +27,11 @@ export default async function Login() {
           <CardTitle className="text-2xl flex justify-between items-center">
             <p>Umamin Account</p>
           </CardTitle>
-          <CardDescription>Proceed with your created user.</CardDescription>
+          <CardDescription>Proceed with your existing profile.</CardDescription>
         </CardHeader>
 
         <CardContent className="p-0">
           <LoginForm />
-          <Link
-            href="/login/google"
-            className={cn(
-              buttonVariants({
-                variant: "outline",
-              }),
-              "w-full mt-4",
-            )}
-            type="button"
-          >
-            Continue with Google
-          </Link>
         </CardContent>
 
         <CardFooter className="flex flex-col items-start p-0">
