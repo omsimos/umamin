@@ -4,12 +4,12 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
+import { useForm } from "react-hook-form";
 import { analytics } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { logEvent } from "firebase/analytics";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, MessageCircleOff } from "lucide-react";
-import { type ControllerRenderProps, useForm } from "react-hook-form";
 
 import { getClient } from "@/lib/gql";
 import { formatError } from "@/lib/utils";
@@ -21,18 +21,11 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@umamin/ui/components/form";
-
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@umamin/ui/components/accordion";
 import { SelectUser } from "@umamin/server/db/schema";
 
 const UpdateUserMutation = graphql(`
@@ -89,6 +82,16 @@ export function SettingsForm({ user }: { user: SelectUser }) {
   });
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
+    if (
+      user.username === data.username &&
+      user.bio === data.bio &&
+      user.question === data.question &&
+      user.quietMode === data.quietMode
+    ) {
+      toast.info("No changes detected.");
+      return;
+    }
+
     setSaving(true);
 
     const res = await getClient().mutation(UpdateUserMutation, {
@@ -109,57 +112,6 @@ export function SettingsForm({ user }: { user: SelectUser }) {
     logEvent(analytics, "update_details");
     router.refresh();
   }
-
-  type settingsData = {
-    title: string;
-    name: "quietMode" | "question" | "bio" | "username";
-    content: (
-      field: ControllerRenderProps<z.infer<typeof FormSchema>>,
-    ) => JSX.Element;
-    description: string;
-  };
-
-  const settingsData: settingsData[] = [
-    {
-      title: "Update Custom Message",
-      name: "question",
-      content: (field) => (
-        <Textarea
-          placeholder="Send me an anonymous message!"
-          className="focus-visible:ring-transparent resize-none"
-          {...field}
-          value={field.value as string}
-        />
-      ),
-      description: "This will update your anonymous message.",
-    },
-    {
-      title: "Update Username",
-      name: "username",
-      content: (field) => (
-        <Input
-          className="focus-visible:ring-transparent"
-          placeholder="omsimos"
-          {...field}
-          value={field.value as string}
-        />
-      ),
-      description: "This is your public display name.",
-    },
-    {
-      title: "Update Bio",
-      name: "bio",
-      content: (field) => (
-        <Textarea
-          placeholder="Tell us a little bit about yourself"
-          className="focus-visible:ring-transparent resize-none"
-          {...field}
-          value={field.value as string}
-        />
-      ),
-      description: "This will be publicly displayed in your profile.",
-    },
-  ];
 
   return (
     <Form {...form}>
@@ -189,30 +141,60 @@ export function SettingsForm({ user }: { user: SelectUser }) {
           )}
         />
 
-        <Accordion type="single" collapsible>
-          {settingsData.map((data) => {
-            const { title, name, content, description } = data;
+        <FormField
+          control={form.control}
+          name="question"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Custom Message</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Send me an anonymous message!"
+                  className="focus-visible:ring-transparent resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            return (
-              <AccordionItem key={data.name} value={name}>
-                <AccordionTrigger className="text-sm">{title}</AccordionTrigger>
-                <AccordionContent>
-                  <FormField
-                    control={form.control}
-                    name={name}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>{content(field)}</FormControl>
-                        <FormDescription>{description}</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            );
-          })}
-        </Accordion>
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <Input
+                  className="focus-visible:ring-transparent"
+                  placeholder="omsimos"
+                  {...field}
+                  value={field.value as string}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="bio"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Bio</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Tell us a little bit about yourself"
+                  className="focus-visible:ring-transparent resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <Button disabled={saving} type="submit" className="w-full">
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
