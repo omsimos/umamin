@@ -2,10 +2,10 @@
 
 import { login } from "@/actions";
 import { useFormState } from "react-dom";
-import { Input } from "@umamin/ui/components/input";
 
+import { LoginButton } from "./login-button";
+import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
-import { LoginButton } from "./components/login-button";
 
 export function LoginForm() {
   const [state, formAction] = useFormState(login, { error: "" });

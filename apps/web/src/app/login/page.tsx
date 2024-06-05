@@ -9,8 +9,8 @@ import {
   CardDescription,
   CardContent,
 } from "@umamin/ui/components/card";
+import { LoginForm } from "./components/form";
 import { BrowserWarning } from "@umamin/ui/components/browser-warning";
-import { LoginForm } from "./form";
 
 export default async function Login() {
   const { user } = await getSession();
