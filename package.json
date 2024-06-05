@@ -18,8 +18,6 @@
     "ui:add": "pnpm --filter @umamin/ui ui:add"
   },
   "devDependencies": {
-    "@umamin/eslint-config": "workspace:*",
-    "@umamin/typescript-config": "workspace:*",
     "prettier": "^3.2.5",
     "turbo": "^1.13.3"
   },

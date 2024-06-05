@@ -12,7 +12,6 @@
     "db:studio": "pnpm drizzle-kit studio"
   },
   "devDependencies": {
-    "@umamin/typescript-config": "workspace:*",
     "drizzle-kit": "^0.21.2",
     "typescript": "^5.4.5"
   },
