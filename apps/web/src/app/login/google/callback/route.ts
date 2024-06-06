@@ -2,7 +2,7 @@ import { generateId } from "lucia";
 import { cookies } from "next/headers";
 import { OAuth2RequestError } from "arctic";
 
-import { google, lucia } from "@/lib/auth";
+import { getSession, google, lucia } from "@/lib/auth";
 import { and, db, eq, schema } from "@umamin/server";
 import { nanoid } from "nanoid";
 
@@ -43,12 +43,45 @@ export async function GET(request: Request): Promise<Response> {
 
     const googleUser: GoogleUser = await googleUserResponse.json();
 
+    const { user } = await getSession();
+
     const existingUser = await db.query.account.findFirst({
       where: and(
         eq(schema.account.providerId, "google"),
         eq(schema.account.providerUserId, googleUser.sub),
       ),
     });
+
+    if (user && existingUser) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/settings?error=used",
+        },
+      });
+    } else if (user) {
+      await db
+        .update(schema.user)
+        .set({
+          imageUrl: googleUser.picture,
+        })
+        .where(eq(schema.user.id, user.id));
+
+      await db.insert(schema.account).values({
+        providerId: "google",
+        providerUserId: googleUser.sub,
+        userId: user.id,
+        picture: googleUser.picture,
+        email: googleUser.email,
+      });
+
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/settings",
+        },
+      });
+    }
 
     if (existingUser) {
       const session = await lucia.createSession(existingUser.userId, {});

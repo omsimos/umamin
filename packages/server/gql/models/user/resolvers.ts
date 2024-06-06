@@ -29,6 +29,29 @@ builder.queryFields((t) => ({
       }
     },
   }),
+
+  userById: t.field({
+    type: "User",
+    nullable: true,
+    args: {
+      id: t.arg.string({ required: true }),
+    },
+    resolve: async (_, args) => {
+      try {
+        const result = await db.query.user.findFirst({
+          where: eq(user.id, args.id),
+          with: {
+            profile: true,
+          },
+        });
+
+        return result;
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
 }));
 
 builder.mutationFields((t) => ({
