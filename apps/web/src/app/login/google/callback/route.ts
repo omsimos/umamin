@@ -74,7 +74,7 @@ export async function GET(request: Request): Promise<Response> {
     await db.insert(schema.user).values({
       id: userId,
       imageUrl: googleUser.picture,
-      username: `${googleUser.given_name.split(" ").join("").toLowerCase()}_${usernameId}`,
+      username: `umamin_${usernameId}`,
     });
 
     await db.insert(schema.account).values({
@@ -116,7 +116,6 @@ export async function GET(request: Request): Promise<Response> {
 
 interface GoogleUser {
   sub: string;
-  given_name: string;
   picture: string;
   email: string;
 }
