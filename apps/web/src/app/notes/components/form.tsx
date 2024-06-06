@@ -42,10 +42,12 @@ const DELETE_NOTE_MUTATION = graphql(`
 `);
 
 type Props = {
+  username: string;
+  imageUrl: string | null;
   currentUserNote?: NoteByUserIdQueryResult;
 };
 
-export function NoteForm({ currentUserNote }: Props) {
+export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -167,6 +169,11 @@ export function NoteForm({ currentUserNote }: Props) {
               isAnonymous: anonymous,
               content: currentNote,
               updatedAt,
+              user: {
+                ...currentUserNote?.user!,
+                username,
+                imageUrl,
+              },
             }}
             menuItems={menuItems}
           />
