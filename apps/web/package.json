@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "clean": "rm -rf ./node_modules",
+    "clean": "rm -rf ./node_modules .turbo .next",
     "lint": "next lint"
   },
   "dependencies": {
@@ -50,6 +50,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@umamin/eslint": "workspace:*",
     "@0no-co/graphqlsp": "^1.12.5",
     "@types/node": "^20",
     "@types/react": "^18.3.2",

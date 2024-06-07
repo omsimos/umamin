@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "clean": "rm -rf ./node_modules .turbo .next",
     "lint": "next lint"
   },
   "dependencies": {
@@ -37,6 +38,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@umamin/eslint": "workspace:*",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8",
