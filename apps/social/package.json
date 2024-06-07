@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "clean": "rm -rf ./node_modules .turbo .next",
+    "check-types": "tsc --noEmit",
     "lint": "next lint"
   },
   "dependencies": {

@@ -1,14 +1,12 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@umamin/tsconfig/base.json",
   "compilerOptions": {
-    "strict": true,
-    "module": "esnext",
+    "module": "ESNext",
     "moduleResolution": "Node",
-    "target": "ES2022",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
     "outDir": "dist",
-    "baseUrl": ".",
+    "allowJs": true
   },
-  "include": ["."],
+  "include": ["db", "gql"],
   "exclude": ["node_modules", "dist"]
 }

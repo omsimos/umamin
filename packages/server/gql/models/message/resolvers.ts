@@ -56,7 +56,7 @@ builder.mutationFields((t) => ({
           .values({ id: nanoid(), ...input })
           .returning();
 
-        return result[0];
+        return result[0]!;
       } catch (err) {
         console.log(err);
         throw err;

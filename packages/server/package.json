@@ -6,14 +6,15 @@
   "scripts": {
     "dev": "turso dev --db-file ./db/dev.db",
     "clean": "rm -rf ./node_modules .turbo",
+    "check-types": "tsc --noEmit",
     "db:generate": "pnpm drizzle-kit generate",
     "db:migrate": "pnpm drizzle-kit migrate",
     "db:push": "pnpm drizzle-kit push",
     "db:studio": "pnpm drizzle-kit studio"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.21.2",
-    "typescript": "^5.4.5"
+    "@umamin/tsconfig": "workspace:*",
+    "drizzle-kit": "^0.21.2"
   },
   "dependencies": {
     "@libsql/client": "^0.6.0",

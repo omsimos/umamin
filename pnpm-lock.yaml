@@ -320,12 +320,12 @@ importers:
         specifier: ^5.0.7
         version: 5.0.7
     devDependencies:
+      '@umamin/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
       drizzle-kit:
         specifier: ^0.21.2
         version: 0.21.2
-      typescript:
-        specifier: ^5.4.5
-        version: 5.4.5
 
   packages/tsconfig: {}
 
