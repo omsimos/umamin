@@ -11,7 +11,7 @@ importers:
       '@umamin/eslint-config':
         specifier: workspace:*
         version: link:packages/eslint
-      '@umamin/typescript-config':
+      '@umamin/tsconfig':
         specifier: workspace:*
         version: link:packages/tsconfig
       prettier:
@@ -105,9 +105,6 @@ importers:
       '@umamin/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint
-      '@umamin/typescript-config':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
       eslint:
         specifier: ^8
         version: 8.57.0
@@ -253,9 +250,6 @@ importers:
       '@umamin/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint
-      '@umamin/typescript-config':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
       autoprefixer:
         specifier: ^10.0.1
         version: 10.4.18(postcss@8.4.35)
@@ -413,7 +407,7 @@ importers:
       '@umamin/eslint-config':
         specifier: workspace:*
         version: link:../eslint
-      '@umamin/typescript-config':
+      '@umamin/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       autoprefixer:
