@@ -1,12 +1,14 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "@umamin/tsconfig/base.json",
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "outDir": "dist",
-    "allowJs": true
+    "baseUrl": ".",
+    "paths": {
+      "@server/*": ["./src/*"]
+    }
   },
-  "include": ["db", "gql"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

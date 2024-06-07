@@ -1,4 +1,4 @@
-import builder from "../../builder";
+import builder from "@server/gql/builder";
 
 builder.objectType("Profile", {
   fields: (t) => ({

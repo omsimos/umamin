@@ -1,9 +1,9 @@
 import { nanoid } from "nanoid";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 
-import { db } from "../../../db";
-import builder from "../../builder";
-import { message } from "../../../db/schema";
+import { db } from "@server/db";
+import builder from "@server/gql/builder";
+import { message } from "@server/db/schema";
 import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 
 builder.queryFields((t) => ({

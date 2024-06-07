@@ -1,10 +1,10 @@
+import { nanoid } from "nanoid";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 
-import { db } from "../../../db";
-import builder from "../../builder";
-import { note } from "../../../db/schema";
+import { db } from "@server/db";
+import { note } from "@server/db/schema";
+import builder from "@server/gql/builder";
 import { NotesFromCursorInput } from "./types";
-import { nanoid } from "nanoid";
 
 builder.queryFields((t) => ({
   noteByUserId: t.field({
@@ -80,7 +80,7 @@ builder.mutationFields((t) => ({
           })
           .returning();
 
-        return result[0];
+        return result[0]!;
       } catch (err) {
         console.log(err);
         throw err;

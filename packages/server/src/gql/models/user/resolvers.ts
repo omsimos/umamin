@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 import { GraphQLError } from "graphql";
 
-import { db } from "../../../db";
-import builder from "../../builder";
-import { user } from "../../../db/schema";
+import { db } from "@server/db";
+import { user } from "@server/db/schema";
 import { UpdateUserInput } from "./types";
+import builder from "@server/gql/builder";
 
 builder.queryFields((t) => ({
   userByUsername: t.field({
@@ -71,7 +71,7 @@ builder.mutationFields((t) => ({
           .where(eq(user.id, ctx.currentUser.id))
           .returning();
 
-        return result[0];
+        return result[0]!;
       } catch (err: any) {
         console.log(err);
 

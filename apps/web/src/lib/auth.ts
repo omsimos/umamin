@@ -5,7 +5,7 @@ import { Lucia, Session, User } from "lucia";
 import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle";
 
 import { db, schema } from "@umamin/server";
-import { SelectUser } from "@umamin/server/db/schema";
+import { SelectUser } from "@umamin/server/src/db/schema/user";
 
 export const google = new Google(
   process.env.GOOGLE_CLIENT_ID!,

@@ -17,7 +17,7 @@
     "drizzle-kit": "^0.21.2"
   },
   "dependencies": {
-    "@libsql/client": "^0.6.0",
+    "@libsql/client": "^0.6.2",
     "@pothos/core": "^3.41.1",
     "@pothos/plugin-scope-auth": "^3.22.0",
     "drizzle-orm": "^0.30.10",
