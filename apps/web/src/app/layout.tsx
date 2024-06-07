@@ -1,5 +1,4 @@
 import "@umamin/ui/globals.css";
-
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";

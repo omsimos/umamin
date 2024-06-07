@@ -9,7 +9,7 @@
     "build:web": "turbo run build --filter=!./apps/social",
     "build:social": "turbo run build --filter=!./apps/web",
     "lint": "turbo run lint",
-    "clean": "turbo run clean",
+    "clean": "rm -rf ./node_modules .turbo",
     "db:push": "pnpm --filter @umamin/server db:push",
     "db:generate": "pnpm --filter @umamin/server db:generate",
     "db:migrate": "pnpm --filter @umamin/server db:migrate",
@@ -18,7 +18,8 @@
     "ui:add": "pnpm --filter @umamin/ui ui:add"
   },
   "devDependencies": {
-    "@umamin/eslint": "workspace:*",
+    "@umamin/eslint-config": "workspace:*",
+    "@umamin/tsconfig": "workspace:*",
     "prettier": "^3.2.5",
     "turbo": "^2.0.3"
   },

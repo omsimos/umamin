@@ -6,7 +6,7 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 
-import { cn } from "@ui/lib/utils";
+import { cn } from "@umamin/ui/lib/utils";
 import { ShareButton } from "./share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
