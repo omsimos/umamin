@@ -4,11 +4,11 @@ import { graphql } from "gql.tada";
 import { redirect } from "next/navigation";
 import { MessageSquareMore, UserPlus } from "lucide-react";
 
-import { cn } from "@ui/lib/utils";
 import { getClient } from "@/lib/gql";
+import { cn } from "@umamin/ui/lib/utils";
 import { UserCard } from "@/app/components/user-card";
 import { NoteCard } from "@/app/notes/components/card";
-import { Button, buttonVariants } from "@ui/components/ui/button";
+import { Button, buttonVariants } from "@umamin/ui/components/button";
 
 const USER_BY_USERNAME_QUERY = graphql(`
   query UserByUsername($username: String!) {

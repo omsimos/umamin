@@ -94,6 +94,14 @@ builder.mutationFields((t) => ({
       cursor: t.arg({ type: NotesFromCursorInput, required: true }),
     },
     resolve: async (_, { cursor }) => {
+      if (!cursor?.id || !cursor.updatedAt) {
+        return {
+          data: null,
+          hasMore: false,
+          cursor: null,
+        };
+      }
+
       try {
         const result = await db.query.note.findMany({
           where: cursor
@@ -111,10 +119,10 @@ builder.mutationFields((t) => ({
 
         return {
           data: result,
+          hasMore: result.length === 10,
           cursor: {
             id: result[result.length - 1]?.id,
             updatedAt: result[result.length - 1]?.updatedAt,
-            hasMore: result.length === 10,
           },
         };
       } catch (err) {

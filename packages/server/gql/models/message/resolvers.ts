@@ -73,6 +73,14 @@ builder.mutationFields((t) => ({
     resolve: async (_, { input }, ctx) => {
       const { type, cursor } = input;
 
+      if (!cursor?.id || !cursor.createdAt) {
+        return {
+          data: null,
+          hasMore: false,
+          cursor: null,
+        };
+      }
+
       try {
         if (!["received", "sent"].includes(type)) {
           throw new Error("Invalid message type");
@@ -106,10 +114,10 @@ builder.mutationFields((t) => ({
 
         return {
           data: result,
+          hasMore: result.length === 5,
           cursor: {
             id: result[result.length - 1]?.id,
             createdAt: result[result.length - 1]?.createdAt,
-            hasMore: result.length === 5,
           },
         };
       } catch (err) {

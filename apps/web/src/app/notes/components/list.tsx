@@ -8,7 +8,7 @@ import { useInView } from "react-intersection-observer";
 
 import { NoteCard } from "./card";
 import { NoteQueryResult } from "../queries";
-import { Skeleton } from "@ui/components/ui/skeleton";
+import { Skeleton } from "@umamin/ui/components/skeleton";
 
 const NOTES_FROM_CURSOR_MUTATION = graphql(`
   mutation NotesFromCursor($cursor: NotesFromCursorInput!) {
@@ -28,10 +28,10 @@ const NOTES_FROM_CURSOR_MUTATION = graphql(`
           imageUrl
         }
       }
+      hasMore
       cursor {
         __typename
         id
-        hasMore
         updatedAt
       }
     }
@@ -47,8 +47,8 @@ export function NotesList({ currentUserId, notes }: Props) {
   const { ref, inView } = useInView();
 
   const [cursor, setCursor] = useState({
-    id: notes[notes.length - 1].id,
-    updatedAt: notes[notes.length - 1].updatedAt!,
+    id: notes[notes.length - 1]?.id ?? null,
+    updatedAt: notes[notes.length - 1]?.updatedAt ?? null,
   });
 
   const [notesList, setNotesList] = useState(notes);
@@ -70,19 +70,19 @@ export function NotesList({ currentUserId, notes }: Props) {
             return;
           }
 
-          const _cursor = res.data?.notesFromCursor.cursor;
+          const _res = res.data?.notesFromCursor;
 
-          if (_cursor && _cursor.updatedAt) {
+          if (_res?.cursor) {
             setCursor({
-              id: _cursor?.id ?? "",
-              updatedAt: _cursor?.updatedAt,
+              id: _res.cursor.id,
+              updatedAt: _res.cursor.updatedAt,
             });
 
-            setHasMore(_cursor?.hasMore);
+            setHasMore(_res.hasMore);
           }
 
-          if (res.data) {
-            setNotesList([...notesList, ...res.data.notesFromCursor.data]);
+          if (_res?.data) {
+            setNotesList([...notesList, ..._res.data]);
           }
 
           setIsFetching(false);

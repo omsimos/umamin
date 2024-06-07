@@ -30,7 +30,7 @@ export default async function UserProfile() {
   ];
 
   return (
-    <main className="container max-w-xl space-y-3 lg:mt-36 mt-28">
+    <main className="container max-w-xl space-y-3 lg:mt-36 mt-28 pb-24">
       <UserCard {...user} />
 
       <Tabs defaultValue="Received" className="w-full">

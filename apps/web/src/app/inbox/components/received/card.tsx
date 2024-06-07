@@ -8,7 +8,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
-import { cn } from "@ui/lib/utils";
+import { cn } from "@umamin/ui/lib/utils";
 import { ReceivedMessageMenu } from "./menu";
 import { useMessageStore } from "@/store/useMessageStore";
 

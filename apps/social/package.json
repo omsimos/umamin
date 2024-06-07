@@ -35,10 +35,11 @@
     "sonner": "^1.4.41"
   },
   "devDependencies": {
+    "@umamin/eslint-config": "workspace:*",
+    "@umamin/tsconfig": "workspace:*",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@umamin/eslint-config": "workspace:*",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8",

@@ -19,20 +19,20 @@ builder.objectType("NoteCursor", {
   fields: (t) => ({
     id: t.exposeString("id", { nullable: true }),
     updatedAt: t.exposeInt("updatedAt", { nullable: true }),
-    hasMore: t.exposeBoolean("hasMore"),
   }),
 });
 
 builder.objectType("NotesWithCursor", {
   fields: (t) => ({
-    cursor: t.expose("cursor", { type: "NoteCursor" }),
-    data: t.expose("data", { type: ["Note"] }),
+    hasMore: t.exposeBoolean("hasMore"),
+    cursor: t.expose("cursor", { type: "NoteCursor", nullable: true }),
+    data: t.expose("data", { type: ["Note"], nullable: true }),
   }),
 });
 
 export const NotesFromCursorInput = builder.inputType("NotesFromCursorInput", {
   fields: (t) => ({
-    id: t.string({ required: true }),
-    updatedAt: t.int({ required: true }),
+    id: t.string(),
+    updatedAt: t.int(),
   }),
 });

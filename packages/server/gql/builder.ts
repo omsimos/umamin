@@ -8,19 +8,15 @@ import {
   SelectUser,
 } from "../db/schema";
 
-type Cursor<T> = {
-  id?: string;
-  hasMore: boolean;
-} & T;
-
 type WithUser<T> = T & { user?: SelectUser | null };
 
-type MessageCursor = Cursor<{ createdAt?: number }>;
-type NoteCursor = Cursor<{ updatedAt?: number | null }>;
+type MessageCursor = { id?: string | null; createdAt?: number | null };
+type NoteCursor = { id?: string | null; updatedAt?: number | null };
 
 type WithCursor<T> = {
-  cursor: T extends SelectMessage ? MessageCursor : NoteCursor;
-  data: WithUser<T extends SelectMessage ? SelectMessage : SelectNote>[];
+  hasMore: boolean;
+  cursor: (T extends SelectMessage ? MessageCursor : NoteCursor) | null;
+  data: WithUser<T extends SelectMessage ? SelectMessage : SelectNote>[] | null;
 };
 
 const builder = new SchemaBuilder<{
