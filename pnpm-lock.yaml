@@ -11,7 +11,7 @@ importers:
       '@umamin/eslint-config':
         specifier: workspace:*
         version: link:packages/eslint
-      '@umamin/tsconfig':
+      '@umamin/typescript-config':
         specifier: workspace:*
         version: link:packages/tsconfig
       prettier:
@@ -105,7 +105,7 @@ importers:
       '@umamin/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint
-      '@umamin/tsconfig':
+      '@umamin/typescript-config':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       eslint:
@@ -120,9 +120,6 @@ importers:
       tailwindcss:
         specifier: ^3.4.1
         version: 3.4.3
-      typescript:
-        specifier: ^5
-        version: 5.4.5
 
   apps/web:
     dependencies:
@@ -256,7 +253,7 @@ importers:
       '@umamin/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint
-      '@umamin/tsconfig':
+      '@umamin/typescript-config':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       autoprefixer:
@@ -274,9 +271,6 @@ importers:
       tailwindcss:
         specifier: ^3.3.0
         version: 3.4.1
-      typescript:
-        specifier: ^5.4.5
-        version: 5.4.5
 
   packages/eslint:
     devDependencies:
@@ -419,7 +413,7 @@ importers:
       '@umamin/eslint-config':
         specifier: workspace:*
         version: link:../eslint
-      '@umamin/tsconfig':
+      '@umamin/typescript-config':
         specifier: workspace:*
         version: link:../tsconfig
       autoprefixer:
@@ -7491,7 +7485,7 @@ snapshots:
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
       eslint-plugin-jsx-a11y: 6.8.0(eslint@8.57.0)
       eslint-plugin-react: 7.34.1(eslint@8.57.0)
       eslint-plugin-react-hooks: 4.6.0(eslint@8.57.0)
@@ -7562,7 +7556,7 @@ snapshots:
       enhanced-resolve: 5.16.0
       eslint: 8.57.0
       eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
       fast-glob: 3.3.2
       get-tsconfig: 4.7.3
       is-core-module: 2.13.1
@@ -7648,7 +7642,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
+  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0):
     dependencies:
       array-includes: 3.1.7
       array.prototype.findlastindex: 1.2.4

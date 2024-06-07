@@ -38,7 +38,7 @@ export default async function Settings() {
     : null;
 
   return (
-    <Card className="w-full bg-bg border-none mx-auto max-w-lg container mt-36 min-h-screen">
+    <Card className="w-full bg-bg border-none mx-auto max-w-lg container mt-36 min-h-screen pb-24">
       <CardHeader className="p-0">
         <div className="flex items-center justify-between">
           <CardTitle>Settings</CardTitle>

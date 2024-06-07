@@ -67,6 +67,7 @@ export const getSession = cache(
 );
 
 declare module "lucia" {
+  // eslint-disable-next-line no-unused-vars
   interface Register {
     Lucia: typeof lucia;
     DatabaseUserAttributes: DatabaseUserAttributes;
