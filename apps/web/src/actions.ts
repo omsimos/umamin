@@ -1,10 +1,12 @@
 "use server";
 
 import { nanoid } from "nanoid";
+import { db, eq } from "@umamin/db";
 import { cookies } from "next/headers";
-import { hash, verify } from "@node-rs/argon2";
 import { redirect } from "next/navigation";
-import { db, eq, schema } from "@umamin/server";
+import { hash, verify } from "@node-rs/argon2";
+import { user as userSchema } from "@umamin/db/schema/user";
+
 import { getSession, lucia } from "./lib/auth";
 
 export async function logout(): Promise<ActionResult> {
@@ -65,7 +67,7 @@ export async function signup({
 
   const userId = nanoid();
 
-  await db.insert(schema.user).values({
+  await db.insert(userSchema).values({
     id: userId,
     username,
     passwordHash,
@@ -110,7 +112,7 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
   }
 
   const existingUser = await db.query.user.findFirst({
-    where: eq(schema.user.username, username),
+    where: eq(userSchema.username, username),
   });
 
   if (!existingUser || !existingUser.passwordHash) {

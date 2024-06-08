@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { createYoga } from "graphql-yoga";
 import { useAPQ } from "@graphql-yoga/plugin-apq";
-import { gqlSchema, initContextCache } from "@umamin/server";
+import { gqlSchema, initContextCache } from "@umamin/gql";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
 import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspection";
 

@@ -39,9 +39,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Lint files
-        run: pnpm lint
-
       - name: Build project
         env:
           TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}

@@ -1,9 +1,8 @@
 import { nanoid } from "nanoid";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { db, and, desc, eq, lt, or } from "@umamin/db";
 
-import { db } from "@server/db";
-import { note } from "@server/db/schema";
-import builder from "@server/gql/builder";
+import builder from "../../builder";
+import { note } from "@umamin/db/schema/note";
 import { NotesFromCursorInput } from "./types";
 
 builder.queryFields((t) => ({

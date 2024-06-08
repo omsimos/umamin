@@ -1,12 +1,10 @@
 import SchemaBuilder from "@pothos/core";
 import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
 import { DateResolver, JSONResolver } from "graphql-scalars";
-import {
-  SelectAccount,
-  SelectMessage,
-  SelectNote,
-  SelectUser,
-} from "../db/schema";
+
+import { SelectNote } from "@umamin/db/schema/note";
+import { SelectMessage } from "@umamin/db/schema/message";
+import { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 
 type WithUser<T> = T & { user?: SelectUser | null };
 

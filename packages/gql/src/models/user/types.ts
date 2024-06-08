@@ -1,11 +1,11 @@
-import builder from "@server/gql/builder";
+import builder from "../../builder";
 
 builder.objectType("Profile", {
   fields: (t) => ({
     id: t.exposeID("providerUserId"),
     email: t.exposeString("email"),
     picture: t.exposeString("picture"),
-    createdAt: t.exposeInt("createdAt")
+    createdAt: t.exposeInt("createdAt"),
   }),
 });
 

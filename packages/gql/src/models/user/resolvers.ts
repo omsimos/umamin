@@ -1,10 +1,9 @@
-import { eq } from "drizzle-orm";
+import { db, eq } from "@umamin/db";
 import { GraphQLError } from "graphql";
+import { user } from "@umamin/db/schema/user";
 
-import { db } from "@server/db";
-import { user } from "@server/db/schema";
+import builder from "../../builder";
 import { UpdateUserInput } from "./types";
-import builder from "@server/gql/builder";
 
 builder.queryFields((t) => ({
   userByUsername: t.field({

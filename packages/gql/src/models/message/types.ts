@@ -1,4 +1,4 @@
-import builder from "@server/gql/builder";
+import builder from "../../builder";
 
 builder.objectType("Message", {
   fields: (t) => ({

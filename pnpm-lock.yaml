@@ -35,9 +35,12 @@ importers:
       '@lucia-auth/adapter-drizzle':
         specifier: ^1.0.7
         version: 1.0.7(lucia@3.2.0)
-      '@umamin/server':
+      '@umamin/db':
         specifier: workspace:*
-        version: link:../../packages/server
+        version: link:../../packages/db
+      '@umamin/gql':
+        specifier: workspace:*
+        version: link:../../packages/gql
       '@umamin/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -141,9 +144,12 @@ importers:
       '@node-rs/argon2':
         specifier: ^1.8.3
         version: 1.8.3
-      '@umamin/server':
+      '@umamin/db':
         specifier: workspace:*
-        version: link:../../packages/server
+        version: link:../../packages/db
+      '@umamin/gql':
+        specifier: workspace:*
+        version: link:../../packages/gql
       '@umamin/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -272,6 +278,25 @@ importers:
         specifier: ^3.3.0
         version: 3.4.1
 
+  packages/db:
+    dependencies:
+      '@libsql/client':
+        specifier: ^0.6.2
+        version: 0.6.2
+      drizzle-orm:
+        specifier: ^0.30.10
+        version: 0.30.10(@libsql/client@0.6.2)(@types/react@18.3.2)(react@18.3.1)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.2
+        version: 20.14.2
+      '@umamin/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      drizzle-kit:
+        specifier: ^0.21.2
+        version: 0.21.2
+
   packages/eslint:
     devDependencies:
       '@typescript-eslint/eslint-plugin':
@@ -296,20 +321,17 @@ importers:
         specifier: ^5.3.3
         version: 5.4.5
 
-  packages/server:
+  packages/gql:
     dependencies:
-      '@libsql/client':
-        specifier: ^0.6.2
-        version: 0.6.2
       '@pothos/core':
         specifier: ^3.41.1
         version: 3.41.1(graphql@16.8.1)
       '@pothos/plugin-scope-auth':
         specifier: ^3.22.0
         version: 3.22.0(@pothos/core@3.41.1(graphql@16.8.1))(graphql@16.8.1)
-      drizzle-orm:
-        specifier: ^0.30.10
-        version: 0.30.10(@libsql/client@0.6.2)(@types/react@18.3.2)(react@18.3.1)
+      '@umamin/db':
+        specifier: workspace:*
+        version: link:../db
       graphql:
         specifier: ^16.8.1
         version: 16.8.1
@@ -323,9 +345,31 @@ importers:
       '@umamin/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
-      drizzle-kit:
-        specifier: ^0.21.2
-        version: 0.21.2
+
+  packages/server:
+    dependencies:
+      '@pothos/core':
+        specifier: ^3.41.1
+        version: 3.41.1(graphql@16.8.1)
+      '@pothos/plugin-scope-auth':
+        specifier: ^3.22.0
+        version: 3.22.0(@pothos/core@3.41.1(graphql@16.8.1))(graphql@16.8.1)
+      '@umamin/db':
+        specifier: workspace:*
+        version: link:../db
+      graphql:
+        specifier: ^16.8.1
+        version: 16.8.1
+      graphql-scalars:
+        specifier: ^1.23.0
+        version: 1.23.0(graphql@16.8.1)
+      nanoid:
+        specifier: ^5.0.7
+        version: 5.0.7
+    devDependencies:
+      '@umamin/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
 
   packages/tsconfig: {}
 
@@ -431,9 +475,6 @@ importers:
       tailwindcss:
         specifier: ^3.4.3
         version: 3.4.3
-      typescript:
-        specifier: ^5.4.5
-        version: 5.4.5
 
 packages:
 
@@ -3321,6 +3362,7 @@ packages:
   glob@8.1.0:
     resolution: {integrity: sha512-r8hpEjiQEYlF2QU0df3dS+nxxSIreXQS1qRhMJM0Q5NDdR386C7jb7Hwwod8Fgiuex+k0GFjgft18yvxm5XoCQ==}
     engines: {node: '>=12'}
+    deprecated: Glob versions prior to v9 are no longer supported
 
   globals@11.12.0:
     resolution: {integrity: sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==}
@@ -3665,7 +3707,6 @@ packages:
 
   libsql@0.3.18:
     resolution: {integrity: sha512-lvhKr7WV3NLWRbXkjn/MeKqXOAqWKU0PX9QYrvDh7fneukapj+iUQ4qgJASrQyxcCrEsClXCQiiK5W6OoYPAlA==}
-    cpu: [x64, arm64, wasm32]
     os: [darwin, linux, win32]
 
   lilconfig@2.1.0:
@@ -5529,7 +5570,7 @@ snapshots:
   '@grpc/grpc-js@1.9.14':
     dependencies:
       '@grpc/proto-loader': 0.7.13
-      '@types/node': 20.11.28
+      '@types/node': 20.14.2
 
   '@grpc/proto-loader@0.7.13':
     dependencies:
@@ -7493,7 +7534,7 @@ snapshots:
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
       eslint-plugin-jsx-a11y: 6.8.0(eslint@8.57.0)
       eslint-plugin-react: 7.34.1(eslint@8.57.0)
       eslint-plugin-react-hooks: 4.6.0(eslint@8.57.0)
@@ -7564,7 +7605,7 @@ snapshots:
       enhanced-resolve: 5.16.0
       eslint: 8.57.0
       eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
       fast-glob: 3.3.2
       get-tsconfig: 4.7.3
       is-core-module: 2.13.1
@@ -7650,7 +7691,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
+  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0):
     dependencies:
       array-includes: 3.1.7
       array.prototype.findlastindex: 1.2.4
@@ -8840,7 +8881,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 20.11.28
+      '@types/node': 20.14.2
       long: 5.2.3
 
   punycode@2.3.1: {}

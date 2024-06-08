@@ -1,10 +1,14 @@
+import { nanoid } from "nanoid";
 import { generateId } from "lucia";
 import { cookies } from "next/headers";
+import { and, db, eq } from "@umamin/db";
 import { OAuth2RequestError } from "arctic";
+import {
+  user as userSchema,
+  account as accountSchema,
+} from "@umamin/db/schema/user";
 
 import { getSession, google, lucia } from "@/lib/auth";
-import { and, db, eq, schema } from "@umamin/server";
-import { nanoid } from "nanoid";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -47,8 +51,8 @@ export async function GET(request: Request): Promise<Response> {
 
     const existingUser = await db.query.account.findFirst({
       where: and(
-        eq(schema.account.providerId, "google"),
-        eq(schema.account.providerUserId, googleUser.sub),
+        eq(accountSchema.providerId, "google"),
+        eq(accountSchema.providerUserId, googleUser.sub),
       ),
     });
 
@@ -61,13 +65,13 @@ export async function GET(request: Request): Promise<Response> {
       });
     } else if (user) {
       await db
-        .update(schema.user)
+        .update(userSchema)
         .set({
           imageUrl: googleUser.picture,
         })
-        .where(eq(schema.user.id, user.id));
+        .where(eq(userSchema.id, user.id));
 
-      await db.insert(schema.account).values({
+      await db.insert(accountSchema).values({
         providerId: "google",
         providerUserId: googleUser.sub,
         userId: user.id,
@@ -104,13 +108,13 @@ export async function GET(request: Request): Promise<Response> {
     const usernameId = generateId(5);
     const userId = nanoid();
 
-    await db.insert(schema.user).values({
+    await db.insert(userSchema).values({
       id: userId,
       imageUrl: googleUser.picture,
       username: `umamin_${usernameId}`,
     });
 
-    await db.insert(schema.account).values({
+    await db.insert(accountSchema).values({
       providerId: "google",
       providerUserId: googleUser.sub,
       userId,
