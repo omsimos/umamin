@@ -9,21 +9,22 @@
     "build:web": "turbo run build --filter=!./apps/social",
     "build:social": "turbo run build --filter=!./apps/web",
     "lint": "turbo run lint",
-    "clean": "turbo run clean",
-    "db:push": "pnpm --filter @umamin/server db:push",
-    "db:generate": "pnpm --filter @umamin/server db:generate",
-    "db:migrate": "pnpm --filter @umamin/server db:migrate",
-    "db:studio": "pnpm --filter @umamin/server db:studio",
+    "clean": "turbo run clean && rm -rf ./node_modules .turbo",
+    "check-types": "turbo run check-types",
+    "db:push": "pnpm --filter @umamin/db push",
+    "db:generate": "pnpm --filter @umamin/db generate",
+    "db:migrate": "pnpm --filter @umamin/db migrate",
+    "db:studio": "pnpm --filter @umamin/db studio",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "ui:add": "pnpm --filter @umamin/ui ui:add"
   },
   "devDependencies": {
     "@umamin/eslint-config": "workspace:*",
-    "@umamin/typescript-config": "workspace:*",
+    "@umamin/tsconfig": "workspace:*",
     "prettier": "^3.2.5",
-    "turbo": "^1.13.3"
+    "turbo": "^2.0.3"
   },
-  "packageManager": "pnpm@9.1.2",
+  "packageManager": "pnpm@9.2.0",
   "engines": {
     "node": ">=20"
   }

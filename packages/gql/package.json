@@ -1,0 +1,29 @@
+{
+  "name": "@umamin/gql",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc",
+    "build": "tsc",
+    "clean": "rm -rf ./node_modules .turbo .dist",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@umamin/tsconfig": "workspace:*",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@umamin/db": "workspace:*",
+    "@pothos/core": "^3.41.1",
+    "@pothos/plugin-scope-auth": "^3.22.0",
+    "graphql": "^16.8.1",
+    "graphql-scalars": "^1.23.0",
+    "nanoid": "^5.0.7"
+  }
+}

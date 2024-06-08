@@ -4,8 +4,12 @@ import { cookies } from "next/headers";
 import { Lucia, Session, User } from "lucia";
 import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle";
 
-import { db, schema } from "@umamin/server";
-import { SelectUser } from "@umamin/server/db/schema";
+import { db } from "@umamin/db";
+import {
+  SelectUser,
+  user as userSchema,
+  session as sessionSchema,
+} from "@umamin/db/schema/user";
 
 export const google = new Google(
   process.env.GOOGLE_CLIENT_ID!,
@@ -13,7 +17,7 @@ export const google = new Google(
   process.env.GOOGLE_REDIRECT_URI!,
 );
 
-const adapter = new DrizzleSQLiteAdapter(db, schema.session, schema.user);
+const adapter = new DrizzleSQLiteAdapter(db, sessionSchema, userSchema);
 
 export const lucia = new Lucia(adapter, {
   sessionCookie: {
@@ -67,6 +71,7 @@ export const getSession = cache(
 );
 
 declare module "lucia" {
+  // eslint-disable-next-line no-unused-vars
   interface Register {
     Lucia: typeof lucia;
     DatabaseUserAttributes: DatabaseUserAttributes;

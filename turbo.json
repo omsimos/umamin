@@ -1,19 +1,28 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
-  "pipeline": {
+  "globalDependencies": [".env"],
+  "globalEnv": [
+    "NODE_ENV",
+    "NEXT_PUBLIC_*",
+    "GOOGLE_CLIENT_*",
+    "GOOGLE_REDIRECT_URI"
+  ],
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "env": ["TURSO_CONNECTION_URL", "TURSO_AUTH_TOKEN"]
     },
     "lint": {
-      "dependsOn": ["^lint"],
-      "outputs": ["dist/**", "build/**"]
+      "dependsOn": ["^lint"]
     },
     "clean": {},
+    "check-types": {},
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "inputs": ["$TURBO_DEFAULT$", ".env"]
     }
   }
 }

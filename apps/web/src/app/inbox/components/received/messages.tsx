@@ -1,24 +1,9 @@
-import { graphql } from "gql.tada";
 import { Suspense, cache } from "react";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 
 import { getClient } from "@/lib/gql";
 import { ReceivedMessagesList } from "./list";
-import { receivedMessageFragment } from "./card";
-
-const RECEIVED_MESSAGES_QUERY = graphql(
-  `
-    query RecentMessages($type: String!, $userId: String!) {
-      messages(type: $type, userId: $userId) {
-        __typename
-        id
-        createdAt
-        ...MessageFragment
-      }
-    }
-  `,
-  [receivedMessageFragment],
-);
+import { RECEIVED_MESSAGES_QUERY } from "../../queries";
 
 const getMessages = cache(async (userId: string) => {
   const res = await getClient().query(RECEIVED_MESSAGES_QUERY, {

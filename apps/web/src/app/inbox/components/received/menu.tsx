@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
 import { getClient } from "@/lib/gql";
-import { Menu } from "@/app/components/menu";
-import { useState } from "react";
+import { logEvent } from "firebase/analytics";
+
+import { analytics } from "@/lib/firebase";
+import { onSaveImage } from "@/lib/utils";
 
 import {
   AlertDialog,
@@ -15,11 +18,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@ui/components/ui/alert-dialog";
+} from "@umamin/ui/components/alert-dialog";
+import { Menu } from "@/app/components/menu";
 import { useMessageStore } from "@/store/useMessageStore";
-import { onSaveImage } from "@/lib/utils";
-import { analytics } from "@/lib/firebase";
-import { logEvent } from "firebase/analytics";
 
 const DELETE_MESSAGE_MUTATION = graphql(`
   mutation DeleteMessage($id: String!) {

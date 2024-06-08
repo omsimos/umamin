@@ -1,10 +1,14 @@
+import { nanoid } from "nanoid";
 import { generateId } from "lucia";
 import { cookies } from "next/headers";
+import { db, and, eq } from "@umamin/db";
 import { OAuth2RequestError } from "arctic";
+import {
+  user as userSchema,
+  account as accountSchema,
+} from "@umamin/db/schema/user";
 
-import { google, lucia } from "@/lib/auth";
-import { and, db, eq, schema } from "@umamin/server";
-import { nanoid } from "nanoid";
+import { getSession, google, lucia } from "@/lib/auth";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -43,12 +47,45 @@ export async function GET(request: Request): Promise<Response> {
 
     const googleUser: GoogleUser = await googleUserResponse.json();
 
+    const { user } = await getSession();
+
     const existingUser = await db.query.account.findFirst({
       where: and(
-        eq(schema.account.providerId, "google"),
-        eq(schema.account.providerUserId, googleUser.sub),
+        eq(accountSchema.providerId, "google"),
+        eq(accountSchema.providerUserId, googleUser.sub),
       ),
     });
+
+    if (user && existingUser) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/settings?error=used",
+        },
+      });
+    } else if (user) {
+      await db
+        .update(userSchema)
+        .set({
+          imageUrl: googleUser.picture,
+        })
+        .where(eq(userSchema.id, user.id));
+
+      await db.insert(accountSchema).values({
+        providerId: "google",
+        providerUserId: googleUser.sub,
+        userId: user.id,
+        picture: googleUser.picture,
+        email: googleUser.email,
+      });
+
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/settings",
+        },
+      });
+    }
 
     if (existingUser) {
       const session = await lucia.createSession(existingUser.userId, {});
@@ -69,25 +106,23 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     const usernameId = generateId(5);
+    const userId = nanoid();
 
-    const user = await db
-      .insert(schema.user)
-      .values({
-        id: nanoid(),
-        imageUrl: googleUser.picture,
-        username: `${googleUser.given_name.split(" ").join("").toLowerCase()}_${usernameId}`,
-      })
-      .returning({ userId: schema.user.id });
+    await db.insert(userSchema).values({
+      id: userId,
+      imageUrl: googleUser.picture,
+      username: `umamin_${usernameId}`,
+    });
 
-    await db.insert(schema.account).values({
+    await db.insert(accountSchema).values({
       providerId: "google",
       providerUserId: googleUser.sub,
-      userId: user[0].userId,
+      userId,
       picture: googleUser.picture,
       email: googleUser.email,
     });
 
-    const session = await lucia.createSession(user[0].userId, {});
+    const session = await lucia.createSession(userId, {});
     const sessionCookie = lucia.createSessionCookie(session.id);
 
     cookies().set(
@@ -118,7 +153,6 @@ export async function GET(request: Request): Promise<Response> {
 
 interface GoogleUser {
   sub: string;
-  given_name: string;
   picture: string;
   email: string;
 }

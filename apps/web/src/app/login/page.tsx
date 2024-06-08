@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { cn } from "@ui/lib/utils";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { buttonVariants } from "@umamin/ui/components/button";
 import {
   Card,
   CardTitle,
   CardFooter,
   CardHeader,
   CardDescription,
+  CardContent,
 } from "@umamin/ui/components/card";
+import { LoginForm } from "./components/form";
 import { BrowserWarning } from "@umamin/ui/components/browser-warning";
 
 export default async function Login() {
@@ -20,31 +20,27 @@ export default async function Login() {
   }
 
   return (
-    <section className="max-w-lg container mt-36">
+    <section className="max-w-lg md:max-w-md container mt-36 min-h-screen">
       <BrowserWarning />
-      <Card className="space-y-5">
-        <CardHeader className="space-y-1">
+      <Card className="space-y-5 bg-transparent border-none">
+        <CardHeader className="space-y-1 p-0">
           <CardTitle className="text-2xl flex justify-between items-center">
             <p>Umamin Account</p>
           </CardTitle>
-          <CardDescription>
-            Login to proceed. New accounts will automatically be created.
-          </CardDescription>
+          <CardDescription>Proceed with your existing profile.</CardDescription>
         </CardHeader>
 
-        <CardFooter className="flex flex-col items-start">
-          <Link
-            href="/login/google"
-            className={cn(
-              buttonVariants({
-                variant: "default",
-              }),
-              "w-full",
-            )}
-            type="button"
-          >
-            Sign in with Google
-          </Link>
+        <CardContent className="p-0">
+          <LoginForm />
+        </CardContent>
+
+        <CardFooter className="flex flex-col items-start p-0">
+          <div className="mt-4 text-center text-sm w-full">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="underline">
+              Sign up
+            </Link>
+          </div>
         </CardFooter>
       </Card>
     </section>

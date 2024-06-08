@@ -28,6 +28,12 @@ export const NOTE_BY_USER_ID_QUERY = graphql(`
       content
       updatedAt
       isAnonymous
+      user {
+        __typename
+        id
+        username
+        imageUrl
+      }
     }
   }
 `);

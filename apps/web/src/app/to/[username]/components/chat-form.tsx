@@ -4,12 +4,12 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
 import { analytics } from "@/lib/firebase";
-import { logEvent } from "firebase/analytics";
 import { Loader2, Send } from "lucide-react";
+import { logEvent } from "firebase/analytics";
 
 import { getClient } from "@/lib/gql";
-import { Input } from "@ui/components/ui/input";
-import { Button } from "@ui/components/ui/button";
+import { Input } from "@umamin/ui/components/input";
+import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 
 const CREATE_MESSAGE_MUTATION = graphql(`

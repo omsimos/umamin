@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { Badge } from "@umamin/ui/components/badge";
-import { LinkIcon, LogIn, MessagesSquare, ScrollText } from "lucide-react";
+import {
+  LinkIcon,
+  LogIn,
+  MessagesSquare,
+  ScrollText,
+  UserCog,
+} from "lucide-react";
 
 import { getSession } from "@/lib/auth";
 import { Icons } from "./utilities/icons";
-// import { BurgerMenu } from "./burger-menu";
 import { ToggleTheme } from "./utilities/toggle-theme";
-import { SettingsDrawer } from "./dialog/settings-drawer";
 import { ShareLinkDialog } from "./dialog/share-link-dialog";
 
 export async function Navbar() {
@@ -54,7 +58,9 @@ export async function Navbar() {
         </Link>
 
         {user ? (
-          <SettingsDrawer user={user} />
+          <Link href="/settings">
+            <UserCog className="w-6 h-6" />
+          </Link>
         ) : (
           <Link href="/login">
             <LogIn className="h-6 w-6" />

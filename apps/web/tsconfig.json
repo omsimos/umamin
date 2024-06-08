@@ -1,17 +1,6 @@
 {
+  "extends": "@umamin/tsconfig/nextjs.json",
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
     "plugins": [
       {
         "name": "next"
@@ -24,10 +13,15 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@ui/*": ["../../packages/ui/src/*"]
-    },
-    "forceConsistentCasingInFileNames": true
+      "@ui/*": ["../../packages/ui/src/*"] // workaround for @umamin/ui
+    }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "next.config.mjs",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }

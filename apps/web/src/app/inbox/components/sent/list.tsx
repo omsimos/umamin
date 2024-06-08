@@ -1,11 +1,12 @@
 "use client";
 
 import { toast } from "sonner";
+import { graphql } from "gql.tada";
 import { useEffect, useState } from "react";
-import { ResultOf, graphql } from "gql.tada";
 import { useInView } from "react-intersection-observer";
 
 import { getClient } from "@/lib/gql";
+import { SentMessageResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { sentMessageFragment, SentMessageCard } from "./card";
 
@@ -20,10 +21,10 @@ const MESSAGES_FROM_CURSOR_MUTATION = graphql(
           createdAt
           ...SentMessageFragment
         }
+        hasMore
         cursor {
           __typename
           id
-          hasMore
           createdAt
         }
       }
@@ -35,15 +36,13 @@ const MESSAGES_FROM_CURSOR_MUTATION = graphql(
 export function SentMessagesList({
   messages,
 }: {
-  messages: ResultOf<
-    typeof MESSAGES_FROM_CURSOR_MUTATION
-  >["messagesFromCursor"]["data"];
+  messages: SentMessageResult;
 }) {
   const { ref, inView } = useInView();
 
   const [cursor, setCursor] = useState({
-    id: messages[messages.length - 1].id,
-    createdAt: messages[messages.length - 1].createdAt,
+    id: messages[messages.length - 1]?.id ?? null,
+    createdAt: messages[messages.length - 1]?.createdAt ?? null,
   });
 
   const [msgList, setMsgList] = useState(messages);
@@ -68,19 +67,19 @@ export function SentMessagesList({
             return;
           }
 
-          const _cursor = res.data?.messagesFromCursor.cursor;
+          const _res = res.data?.messagesFromCursor;
 
-          if (_cursor && _cursor.createdAt) {
+          if (_res?.cursor) {
             setCursor({
-              id: _cursor?.id ?? "",
-              createdAt: _cursor?.createdAt,
+              id: _res.cursor.id,
+              createdAt: _res.cursor.createdAt,
             });
 
-            setHasMore(_cursor?.hasMore);
+            setHasMore(_res.hasMore);
           }
 
-          if (res.data) {
-            setMsgList([...msgList, ...res.data.messagesFromCursor.data]);
+          if (_res?.data) {
+            setMsgList([...msgList, ..._res.data]);
           }
 
           setIsFetching(false);

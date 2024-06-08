@@ -1,9 +1,9 @@
 import { cache } from "react";
 import { getClient } from "@/lib/gql";
-import { NoteForm } from "./components/note-form";
-import { NotesList } from "./components/notes-list";
-import { NOTES_QUERY, NOTE_BY_USER_ID_QUERY } from "./queries";
 import { getSession } from "@/lib/auth";
+import { NoteForm } from "./components/form";
+import { NotesList } from "./components/list";
+import { NOTES_QUERY, NOTE_BY_USER_ID_QUERY } from "./queries";
 
 const getNotes = cache(async () => {
   const res = await getClient().query(NOTES_QUERY, {});
