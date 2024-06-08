@@ -15,7 +15,8 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@umamin/tsconfig": "workspace:*"
+    "@umamin/tsconfig": "workspace:*",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "@umamin/db": "workspace:*",

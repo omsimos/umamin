@@ -296,6 +296,9 @@ importers:
       drizzle-kit:
         specifier: ^0.21.2
         version: 0.21.2
+      typescript:
+        specifier: ^5.4.5
+        version: 5.4.5
 
   packages/eslint:
     devDependencies:
@@ -318,7 +321,7 @@ importers:
         specifier: ^1.1.0
         version: 1.1.0
       typescript:
-        specifier: ^5.3.3
+        specifier: ^5.4.5
         version: 5.4.5
 
   packages/gql:
@@ -345,31 +348,9 @@ importers:
       '@umamin/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
-
-  packages/server:
-    dependencies:
-      '@pothos/core':
-        specifier: ^3.41.1
-        version: 3.41.1(graphql@16.8.1)
-      '@pothos/plugin-scope-auth':
-        specifier: ^3.22.0
-        version: 3.22.0(@pothos/core@3.41.1(graphql@16.8.1))(graphql@16.8.1)
-      '@umamin/db':
-        specifier: workspace:*
-        version: link:../db
-      graphql:
-        specifier: ^16.8.1
-        version: 16.8.1
-      graphql-scalars:
-        specifier: ^1.23.0
-        version: 1.23.0(graphql@16.8.1)
-      nanoid:
-        specifier: ^5.0.7
-        version: 5.0.7
-    devDependencies:
-      '@umamin/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
+      typescript:
+        specifier: ^5.4.5
+        version: 5.4.5
 
   packages/tsconfig: {}
 
