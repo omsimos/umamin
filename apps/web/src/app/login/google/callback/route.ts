@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { generateId } from "lucia";
 import { cookies } from "next/headers";
-import { and, db, eq } from "@umamin/db";
+import { db, and, eq } from "@umamin/db";
 import { OAuth2RequestError } from "arctic";
 import {
   user as userSchema,
