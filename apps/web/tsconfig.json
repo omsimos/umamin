@@ -12,8 +12,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@ui/*": ["../../packages/ui/src/*"] // workaround for @umamin/ui
+      "@/*": ["./src/*"]
     }
   },
   "include": [
