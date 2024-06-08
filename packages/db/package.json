@@ -21,10 +21,10 @@
     "build": "tsc",
     "clean": "rm -rf ./node_modules .turbo .dist",
     "check-types": "tsc --noEmit",
-    "db:generate": "pnpm drizzle-kit generate",
-    "db:migrate": "pnpm drizzle-kit migrate",
-    "db:push": "pnpm drizzle-kit push",
-    "db:studio": "pnpm drizzle-kit studio"
+    "generate": "pnpm drizzle-kit generate",
+    "migrate": "pnpm drizzle-kit migrate",
+    "push": "pnpm drizzle-kit push",
+    "studio": "pnpm drizzle-kit studio"
   },
   "devDependencies": {
     "@types/node": "^20.14.2",
