@@ -139,7 +139,6 @@ export function RegisterForm() {
 
           <Button disabled={loading} variant="outline" asChild>
             <Link href="/login/google" className="mt-4 w-full">
-              <ThumbsUp className="mr-2 h-4 w-4" />
               Continue with Google
             </Link>
           </Button>
