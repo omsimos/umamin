@@ -92,7 +92,7 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
     typeof username !== "string" ||
     username.length < 5 ||
     username.length > 20 ||
-    !/^[a-z0-9_-]+$/.test(username)
+    !/^[a-zA-Z0-9_-]+$/.test(username)
   ) {
     return {
       error: "Incorrect username or password.",
@@ -112,7 +112,7 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
   }
 
   const existingUser = await db.query.user.findFirst({
-    where: eq(userSchema.username, username),
+    where: eq(userSchema.username, username.toLowerCase()),
   });
 
   if (!existingUser || !existingUser.passwordHash) {

@@ -71,7 +71,7 @@ export function RegisterForm() {
     setLoading(true);
 
     const res = await signup({
-      username: values.username,
+      username: values.username.toLowerCase(),
       password: values.password,
     });
 
