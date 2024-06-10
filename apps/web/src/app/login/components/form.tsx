@@ -32,7 +32,7 @@ export function LoginForm() {
           type="password"
           className="mt-2"
         />
-        {state.error && (
+        {!!state?.error && (
           <p className="text-red-500 text-sm mt-2 font-medium">{state.error}</p>
         )}
       </div>

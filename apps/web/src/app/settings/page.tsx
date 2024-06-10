@@ -32,19 +32,18 @@ export default async function Settings() {
   }
 
   const result = await getUserById(user.id);
-  const profile = result.data?.userById?.profile?.length
-    ? result.data?.userById?.profile[0]
-    : null;
+  const userData = result.data?.userById;
 
   const tabsData = [
     {
       name: "General",
-      content: () =>
-        result.data?.userById && <GeneralSettings {...result.data.userById} />,
+      content: !!userData && <GeneralSettings user={userData} />,
     },
     {
       name: "Account",
-      content: () => !!profile && <AccountSettings {...profile} />,
+      content: !!userData && (
+        <AccountSettings user={userData} pwdHash={user.passwordHash} />
+      ),
     },
   ];
 
@@ -76,7 +75,7 @@ export default async function Settings() {
 
         {tabsData.map((tab) => (
           <TabsContent key={tab.name} value={tab.name}>
-            {tab.content()}
+            {tab.content}
           </TabsContent>
         ))}
       </Tabs>

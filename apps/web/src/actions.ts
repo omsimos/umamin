@@ -13,9 +13,7 @@ export async function logout(): Promise<ActionResult> {
   const { session } = await getSession();
 
   if (!session) {
-    return {
-      error: "Unauthorized",
-    };
+    throw new Error("Unauthorized");
   }
 
   await lucia.invalidateSession(session.id);
@@ -44,7 +42,7 @@ export async function signup({
     !/^[a-z0-9_-]+$/.test(username)
   ) {
     return {
-      error: "Username must be alphanumeric with no spaces.",
+      error: "Username must be alphanumeric with no spaces",
     };
   }
 
@@ -54,7 +52,7 @@ export async function signup({
     password.length > 255
   ) {
     return {
-      error: "Password must be at least 5 characters long.",
+      error: "Password must be at least 5 characters long",
     };
   }
 
@@ -95,7 +93,7 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
     !/^[a-zA-Z0-9_-]+$/.test(username)
   ) {
     return {
-      error: "Incorrect username or password.",
+      error: "Incorrect username or password",
     };
   }
 
@@ -107,7 +105,7 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
     password.length > 255
   ) {
     return {
-      error: "Incorrect username or password.",
+      error: "Incorrect username or password",
     };
   }
 
@@ -117,7 +115,7 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
 
   if (!existingUser || !existingUser.passwordHash) {
     return {
-      error: "Incorrect username or password.",
+      error: "Incorrect username or password",
     };
   }
 
@@ -130,7 +128,7 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
 
   if (!validPassword) {
     return {
-      error: "Incorrect username or password.",
+      error: "Incorrect username or password",
     };
   }
 
@@ -143,6 +141,49 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
   );
 
   return redirect("/inbox");
+}
+
+export async function updatePassword({
+  currentPassword,
+  password,
+}: {
+  currentPassword?: string;
+  password: string;
+}): Promise<ActionResult> {
+  const { user } = await getSession();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  if (currentPassword && user.passwordHash) {
+    const validPassword = await verify(user.passwordHash, currentPassword, {
+      memoryCost: 19456,
+      timeCost: 2,
+      outputLen: 32,
+      parallelism: 1,
+    });
+
+    if (!validPassword) {
+      return {
+        error: "Incorrect password",
+      };
+    }
+  }
+
+  const passwordHash = await hash(password, {
+    memoryCost: 19456,
+    timeCost: 2,
+    outputLen: 32,
+    parallelism: 1,
+  });
+
+  await db
+    .update(userSchema)
+    .set({ passwordHash })
+    .where(eq(userSchema.id, user.id));
+
+  return redirect("/settings");
 }
 
 interface ActionResult {

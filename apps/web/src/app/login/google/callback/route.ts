@@ -60,7 +60,7 @@ export async function GET(request: Request): Promise<Response> {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: "/settings?error=used",
+          Location: "/settings?error=already_linked",
         },
       });
     } else if (user) {
