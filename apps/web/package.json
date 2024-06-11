@@ -20,7 +20,7 @@
     "@umamin/db": "workspace:*",
     "@umamin/gql": "workspace:*",
     "@umamin/ui": "workspace:*",
-    "@urql/core": "^5.0.3",
+    "@urql/core": "^5.0.4",
     "@urql/exchange-graphcache": "^7.0.2",
     "@urql/next": "^1.1.1",
     "arctic": "^1.9.0",
@@ -44,7 +44,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.51.2",
     "react-intersection-observer": "^9.10.2",
-    "sonner": "^1.4.41",
+    "sonner": "^1.5.0",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
     "urql": "^4.1.0",
@@ -52,7 +52,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
-    "@0no-co/graphqlsp": "^1.12.6",
+    "@0no-co/graphqlsp": "^1.12.7",
     "@types/node": "^20",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
