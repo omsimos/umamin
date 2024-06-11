@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
 import { analytics } from "@/lib/firebase";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, MessageCircleOff, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
 
 import { getClient } from "@/lib/gql";
@@ -80,9 +80,10 @@ export function ChatForm({
       <ChatList imageUrl={imageUrl} question={question} reply={message} />
 
       {quietMode ? (
-        <p className="text-muted-foreground text-center">
+        <div className="text-muted-foreground text-sm flex items-center justify-center">
+        <MessageCircleOff className="h-4 w-4 mr-2" />
           User has enabled quiet mode
-        </p>
+        </div>
       ) : (
         <form
           onSubmit={handleSubmit}

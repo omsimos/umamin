@@ -91,7 +91,7 @@ export function GeneralSettings({ user }: { user: UserByIdResult }) {
       user?.question === data.question &&
       user?.quietMode === data.quietMode
     ) {
-      toast.info("No changes detected.");
+      toast.info("No changes detected");
       return;
     }
 

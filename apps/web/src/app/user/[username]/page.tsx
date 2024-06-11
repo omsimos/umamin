@@ -19,6 +19,7 @@ const USER_BY_USERNAME_QUERY = graphql(`
       username
       imageUrl
       createdAt
+      quietMode
       note {
         __typename
         id
@@ -70,12 +71,7 @@ export default async function Page({
 
   return (
     <section className="container max-w-xl lg:mt-36 mt-28">
-      <UserCard
-        username={user.username}
-        bio={user.bio}
-        imageUrl={user.imageUrl}
-        createdAt={user.createdAt}
-      />
+      <UserCard {...user} />
 
       <div className="flex gap-2 mt-3">
         <Button variant="outline" className="w-full" disabled>

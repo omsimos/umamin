@@ -42,6 +42,7 @@ export default function RootLayout({
           <Toaster
             theme="dark"
             className="toaster group"
+            position="top-right"
             toastOptions={{
               classNames: {
                 toast:
