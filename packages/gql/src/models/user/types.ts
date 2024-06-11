@@ -1,6 +1,6 @@
 import builder from "../../builder";
 
-builder.objectType("Profile", {
+builder.objectType("Account", {
   fields: (t) => ({
     id: t.exposeID("providerUserId"),
     email: t.exposeString("email"),
@@ -23,8 +23,8 @@ builder.objectType("User", {
       type: "Note",
       nullable: true,
     }),
-    profile: t.expose("profile", {
-      type: ["Profile"],
+    accounts: t.expose("accounts", {
+      type: ["Account"],
       nullable: true,
     }),
   }),

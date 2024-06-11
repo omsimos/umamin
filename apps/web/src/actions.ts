@@ -5,7 +5,12 @@ import { db, eq } from "@umamin/db";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { hash, verify } from "@node-rs/argon2";
-import { user as userSchema } from "@umamin/db/schema/user";
+import {
+  user as userSchema,
+  account as accountSchema,
+} from "@umamin/db/schema/user";
+import { note as noteSchema } from "@umamin/db/schema/note";
+import { message as messageSchema } from "@umamin/db/schema/message";
 
 import { getSession, lucia } from "./lib/auth";
 
@@ -184,6 +189,36 @@ export async function updatePassword({
     .where(eq(userSchema.id, user.id));
 
   return redirect("/settings");
+}
+
+export async function deleteAccount() {
+  const { user } = await getSession();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    await db.batch([
+      db.delete(messageSchema).where(eq(messageSchema.receiverId, user.id)),
+      db.delete(accountSchema).where(eq(accountSchema.userId, user.id)),
+      db.delete(noteSchema).where(eq(noteSchema.userId, user.id)),
+      db.delete(userSchema).where(eq(userSchema.id, user.id)),
+    ]);
+
+    await lucia.invalidateSession(user.id);
+
+    const sessionCookie = lucia.createBlankSessionCookie();
+    cookies().set(
+      sessionCookie.name,
+      sessionCookie.value,
+      sessionCookie.attributes,
+    );
+  } catch (err) {
+    throw new Error("Failed to delete account");
+  }
+
+  return redirect("/login");
 }
 
 interface ActionResult {

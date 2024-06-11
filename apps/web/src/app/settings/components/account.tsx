@@ -13,11 +13,12 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import { DangerSettings } from "./danger";
 import { UserByIdResult } from "../queries";
+import { AccountForm } from "./account-form";
 import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
-import { AccountForm } from "./account-form";
 
 export function AccountSettings({
   user,
@@ -26,19 +27,19 @@ export function AccountSettings({
   user: UserByIdResult;
   pwdHash?: string | null;
 }) {
-  const profile = user?.profile?.length ? user.profile[0] : null;
+  const account = user?.accounts?.length ? user.accounts[0] : null;
 
   return (
     <div>
-      {!!profile && (
+      {!!account && (
         <>
-          <Label>Profile</Label>
+          <Label>Connected Account</Label>
           <Card className="mt-2">
             <CardHeader className="flex-row space-x-4">
               <Avatar className="h-16 w-16">
                 <AvatarImage
                   className="rounded-full"
-                  src={profile.picture ?? ""}
+                  src={account.picture ?? ""}
                   alt="Profile Picture"
                 />
                 <AvatarFallback className="md:text-4xl text-xl">
@@ -47,11 +48,11 @@ export function AccountSettings({
               </Avatar>
 
               <div className="text-sm">
-                <p>{profile.email}</p>
+                <p>{account.email}</p>
 
                 <p className="text-muted-foreground">
                   Linked{" "}
-                  {formatDistanceToNow(fromUnixTime(profile.createdAt), {
+                  {formatDistanceToNow(fromUnixTime(account.createdAt), {
                     addSuffix: true,
                   })}
                 </p>
@@ -71,12 +72,12 @@ export function AccountSettings({
         </Alert>
       )}
 
-      {!profile && (
+      {!account && (
         <Alert>
           <ShieldAlert className="h-5 w-5" />
           <AlertTitle>Link Account</AlertTitle>
           <AlertDescription>
-            To prevent account loss, you may connect your profile with Google.
+            To prevent account loss, you may connect your account with Google.
             You can still login with your credentials.
           </AlertDescription>
           <Button variant="secondary" asChild className="mt-6 w-full">
@@ -86,6 +87,7 @@ export function AccountSettings({
       )}
 
       <AccountForm pwdHash={pwdHash} />
+      <DangerSettings />
     </div>
   );
 }

@@ -12,7 +12,7 @@ export const USER_BY_ID_QUERY = graphql(`
       imageUrl
       createdAt
       updatedAt
-      profile {
+      accounts {
         __typename
         id
         email

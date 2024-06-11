@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "tsc",
     "build": "tsc",
-    "clean": "rm -rf ./node_modules .turbo .dist",
+    "clean": "rm -rf ./node_modules .turbo dist",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {

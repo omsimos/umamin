@@ -24,7 +24,7 @@ export const session = sqliteTable("session", {
   id: text("id").notNull().primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: "cascade" }),
   expiresAt: integer("expires_at").notNull(),
 });
 
@@ -32,9 +32,7 @@ export const account = sqliteTable("oauth_account", {
   providerUserId: text("provider_user_id").primaryKey(),
   email: text("email").notNull(),
   picture: text("picture").notNull(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
   providerId: text("provider_id").notNull(),
   createdAt: integer("created_at", { mode: "number" })
     .notNull()
@@ -42,16 +40,16 @@ export const account = sqliteTable("oauth_account", {
 });
 
 export const accountRelations = relations(account, ({ one }) => ({
-  profile: one(user, {
+  user: one(user, {
     fields: [account.userId],
     references: [user.id],
   }),
 }));
 
 export const userRelations = relations(user, ({ many, one }) => ({
-  receiver: many(message, { relationName: "receiver" }),
-  sender: many(message, { relationName: "sender" }),
-  profile: many(account),
+  sentMessages: many(message, { relationName: "sender" }),
+  receivedMessages: many(message, { relationName: "receiver" }),
+  accounts: many(account),
   note: one(note),
 }));
 

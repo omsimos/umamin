@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "clean": "rm -rf ./node_modules .turbo .next",
-    "check-types": "tsc --noEmit",
+    "check-types": "tsc --noEmit && gql.tada check",
     "lint": "next lint"
   },
   "dependencies": {
@@ -20,8 +20,8 @@
     "@umamin/db": "workspace:*",
     "@umamin/gql": "workspace:*",
     "@umamin/ui": "workspace:*",
-    "@urql/core": "^5.0.4",
-    "@urql/exchange-graphcache": "^7.0.2",
+    "@urql/core": "^5.0.3",
+    "@urql/exchange-graphcache": "^7.1.1",
     "@urql/next": "^1.1.1",
     "arctic": "^1.9.0",
     "class-variance-authority": "^0.7.0",
@@ -58,6 +58,7 @@
     "@types/react-dom": "^18.3.0",
     "@umamin/eslint-config": "workspace:*",
     "@umamin/tsconfig": "workspace:*",
+    "typescript": "^5.4.5",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.1.3",

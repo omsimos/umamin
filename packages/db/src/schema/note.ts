@@ -7,10 +7,7 @@ export const note = sqliteTable(
   "note",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id")
-      .unique()
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    userId: text("user_id").unique().notNull(),
     content: text("content").notNull(),
     isAnonymous: integer("is_anonymous", { mode: "boolean" }).notNull(),
     createdAt: integer("created_at", { mode: "number" })

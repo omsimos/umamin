@@ -40,7 +40,7 @@ builder.queryFields((t) => ({
         const result = await db.query.user.findFirst({
           where: eq(user.id, args.id),
           with: {
-            profile: true,
+            accounts: true,
           },
         });
 

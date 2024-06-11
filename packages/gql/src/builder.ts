@@ -24,9 +24,9 @@ const builder = new SchemaBuilder<{
   Objects: {
     User: SelectUser & {
       note?: SelectNote | null;
-      profile?: SelectAccount[] | null;
+      accounts?: SelectAccount[] | null;
     };
-    Profile: SelectAccount;
+    Account: SelectAccount;
     Note: WithUser<SelectNote>;
     Message: WithUser<SelectMessage>;
     MessageCursor: MessageCursor;

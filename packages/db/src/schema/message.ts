@@ -9,14 +9,8 @@ export const message = sqliteTable(
     id: text("id").primaryKey(),
     question: text("question").notNull(),
     content: text("content").notNull(),
-    receiverId: text("receiver_id")
-      .notNull()
-      .references(() => user.id, {
-        onDelete: "cascade",
-      }),
-    senderId: text("sender_id").references(() => user.id, {
-      onDelete: "cascade",
-    }),
+    receiverId: text("receiver_id").notNull(),
+    senderId: text("sender_id"),
     createdAt: integer("created_at", { mode: "number" })
       .notNull()
       .default(sql`(unixepoch())`),

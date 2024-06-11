@@ -19,7 +19,7 @@
   "scripts": {
     "dev": "tsc && turso dev --db-file ./src/dev.db",
     "build": "tsc",
-    "clean": "rm -rf ./node_modules .turbo .dist",
+    "clean": "rm -rf ./node_modules .turbo dist",
     "check-types": "tsc --noEmit",
     "generate": "pnpm drizzle-kit generate",
     "migrate": "pnpm drizzle-kit migrate",

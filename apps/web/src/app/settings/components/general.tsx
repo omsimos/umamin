@@ -72,7 +72,7 @@ const FormSchema = z.object({
 export function GeneralSettings({ user }: { user: UserByIdResult }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const profile = user?.profile?.length ? user.profile[0] : null;
+  const account = user?.accounts?.length ? user.accounts[0] : null;
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -153,13 +153,13 @@ export function GeneralSettings({ user }: { user: UserByIdResult }) {
               <FormLabel>Username</FormLabel>
               <FormControl>
                 <Input
-                  disabled={!profile || saving}
+                  disabled={!account || saving}
                   className="focus-visible:ring-transparent"
                   placeholder="omsimos"
                   {...field}
                 />
               </FormControl>
-              {profile ? (
+              {account ? (
                 <FormDescription>
                   Previous usernames will be available to others.
                 </FormDescription>
