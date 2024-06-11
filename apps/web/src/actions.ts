@@ -13,6 +13,7 @@ import { note as noteSchema } from "@umamin/db/schema/note";
 import { message as messageSchema } from "@umamin/db/schema/message";
 
 import { getSession, lucia } from "./lib/auth";
+import { z } from "zod";
 
 export async function logout(): Promise<ActionResult> {
   const { session } = await getSession();
@@ -33,35 +34,53 @@ export async function logout(): Promise<ActionResult> {
   return redirect("/login");
 }
 
-export async function signup({
-  username,
-  password,
-}: {
-  username: string;
-  password: string;
-}): Promise<ActionResult> {
-  if (
-    typeof username !== "string" ||
-    username.length < 5 ||
-    username.length > 20 ||
-    !/^[a-z0-9_-]+$/.test(username)
-  ) {
+const signupSchema = z
+  .object({
+    username: z
+      .string()
+      .min(5, {
+        message: "Username must be at least 5 characters",
+      })
+      .max(20, {
+        message: "Username must not exceed 20 characters",
+      })
+      .refine((url) => /^[a-zA-Z0-9_-]+$/.test(url), {
+        message: "Username must be alphanumeric with no spaces",
+      }),
+    password: z
+      .string()
+      .min(5, {
+        message: "Password must be at least 5 characters",
+      })
+      .max(255, {
+        message: "Password must not exceed 255 characters",
+      }),
+    confirmPassword: z.string(),
+  })
+  .refine(
+    (values) => {
+      return values.password === values.confirmPassword;
+    },
+    {
+      message: "Password does not match",
+      path: ["confirmPassword"],
+    },
+  );
+
+export async function signup(_: any, formData: FormData) {
+  const validatedFields = signupSchema.safeParse({
+    username: formData.get("username"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!validatedFields.success) {
     return {
-      error: "Username must be alphanumeric with no spaces",
+      errors: validatedFields.error.flatten().fieldErrors,
     };
   }
 
-  if (
-    typeof password !== "string" ||
-    password.length < 5 ||
-    password.length > 255
-  ) {
-    return {
-      error: "Password must be at least 5 characters long",
-    };
-  }
-
-  const passwordHash = await hash(password, {
+  const passwordHash = await hash(validatedFields.data.password, {
     memoryCost: 19456,
     timeCost: 2,
     outputLen: 32,
@@ -70,11 +89,25 @@ export async function signup({
 
   const userId = nanoid();
 
-  await db.insert(userSchema).values({
-    id: userId,
-    username,
-    passwordHash,
-  });
+  try {
+    await db.insert(userSchema).values({
+      id: userId,
+      username: validatedFields.data.username.toLowerCase(),
+      passwordHash,
+    });
+  } catch (err: any) {
+    if (err.code === "SQLITE_CONSTRAINT") {
+      if (err.message.includes("user.username")) {
+        return {
+          errors: {
+            username: ["Username already taken"],
+          },
+        };
+      }
+    }
+
+    throw new Error("Something went wrong");
+  }
 
   const session = await lucia.createSession(userId, {});
   const sessionCookie = lucia.createSessionCookie(session.id);

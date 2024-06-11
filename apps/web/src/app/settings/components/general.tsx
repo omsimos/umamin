@@ -129,7 +129,7 @@ export function GeneralSettings({ user }: { user: UserByIdResult }) {
                 <div className="flex-1 space-y-1">
                   <p className="text-sm font-medium leading-none">Quiet Mode</p>
                   <p className="text-sm text-muted-foreground">
-                    Temporarily disable incoming messages.
+                    Temporarily disable incoming messages
                   </p>
                 </div>
                 <FormControl>
@@ -161,7 +161,7 @@ export function GeneralSettings({ user }: { user: UserByIdResult }) {
               </FormControl>
               {account ? (
                 <FormDescription>
-                  Previous usernames will be available to others.
+                  Previous usernames will be available to others
                 </FormDescription>
               ) : (
                 <FormDescription className="flex items-center text-yellow-500">
