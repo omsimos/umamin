@@ -8,14 +8,14 @@ import { FormEventHandler, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 
 import { NoteCard } from "./card";
-import { getClient } from "@/lib/gql";
+import { client } from "@/lib/gql/client";
 import { NoteByUserIdQueryResult } from "../queries";
 
+import { formatError } from "@/lib/utils";
 import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
-import { formatError } from "@/lib/utils";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
@@ -63,7 +63,7 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
 
     setIsFetching(true);
 
-    getClient()
+    client
       .mutation(DELETE_NOTE_MUTATION, { userId: currentUserNote?.userId })
       .then((res) => {
         if (res.error) {
@@ -92,7 +92,7 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
     e.preventDefault();
     setIsFetching(true);
 
-    getClient()
+    client
       .mutation(UPDATE_NOTE_MUTATION, { content, isAnonymous })
       .then((res) => {
         if (res.error) {

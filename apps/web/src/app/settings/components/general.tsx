@@ -12,7 +12,7 @@ import { MessageCircleOff } from "lucide-react";
 import { Info, Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { getClient } from "@/lib/gql";
+import { client } from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
 import { Input } from "@umamin/ui/components/input";
 import { Switch } from "@umamin/ui/components/switch";
@@ -97,7 +97,7 @@ export function GeneralSettings({ user }: { user: UserByIdResult }) {
 
     setSaving(true);
 
-    const res = await getClient().mutation(UpdateUserMutation, {
+    const res = await client.mutation(UpdateUserMutation, {
       input: {
         ...data,
         username: data.username.toLowerCase(),

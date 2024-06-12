@@ -3,14 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./src/index.ts"
   },
   "scripts": {
-    "dev": "tsc",
-    "build": "tsc",
     "clean": "rm -rf ./node_modules .turbo dist",
     "check-types": "tsc --noEmit"
   },

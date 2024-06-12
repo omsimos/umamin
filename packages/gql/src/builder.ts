@@ -35,7 +35,7 @@ const builder = new SchemaBuilder<{
     MessagesWithCursor: WithCursor<SelectMessage>;
   };
   Context: {
-    currentUser: SelectUser;
+    userId?: string;
   };
   Scalars: {
     JSON: {
@@ -50,7 +50,7 @@ const builder = new SchemaBuilder<{
 }>({
   plugins: [ScopeAuthPlugin],
   authScopes: async (ctx) => ({
-    authenticated: !!ctx.currentUser,
+    authenticated: !!ctx.userId,
   }),
 });
 

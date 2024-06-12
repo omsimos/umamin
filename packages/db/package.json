@@ -3,18 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./dist/index.js"
-    },
-    "./schema/*": {
-      "types": "./src/schema/*.ts",
-      "default": "./dist/schema/*.js"
-    },
-    "./db": {
-      "types": "./src/index.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./src/index.ts",
+    "./schema/*": "./src/schema/*.ts"
   },
   "scripts": {
     "dev": "tsc && turso dev --db-file ./src/dev.db",

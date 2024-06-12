@@ -38,6 +38,7 @@ export const getSession = cache(
     { user: User; session: Session } | { user: null; session: null }
   > => {
     const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null;
+
     if (!sessionId) {
       return {
         user: null,
@@ -46,6 +47,7 @@ export const getSession = cache(
     }
 
     const result = await lucia.validateSession(sessionId);
+
     try {
       if (result.session && result.session.fresh) {
         const sessionCookie = lucia.createSessionCookie(result.session.id);
@@ -55,6 +57,7 @@ export const getSession = cache(
           sessionCookie.attributes,
         );
       }
+
       if (!result.session) {
         const sessionCookie = lucia.createBlankSessionCookie();
         cookies().set(

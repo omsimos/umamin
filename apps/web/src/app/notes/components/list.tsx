@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
-import { getClient } from "@/lib/gql";
+import { client } from "@/lib/gql/client";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
@@ -59,7 +59,7 @@ export function NotesList({ currentUserId, notes }: Props) {
     if (hasMore) {
       setIsFetching(true);
 
-      getClient()
+      client
         .mutation(NOTES_FROM_CURSOR_MUTATION, {
           cursor,
         })

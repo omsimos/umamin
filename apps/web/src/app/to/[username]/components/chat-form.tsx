@@ -7,7 +7,7 @@ import { analytics } from "@/lib/firebase";
 import { Loader2, MessageCircleOff, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
 
-import { getClient } from "@/lib/gql";
+import { client } from "@/lib/gql/client";
 import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
@@ -50,7 +50,7 @@ export function ChatForm({
 
     setIsFetching(true);
 
-    getClient()
+    client
       .mutation(CREATE_MESSAGE_MUTATION, {
         input: {
           senderId: sessionId,
@@ -81,7 +81,7 @@ export function ChatForm({
 
       {quietMode ? (
         <div className="text-muted-foreground text-sm flex items-center justify-center">
-        <MessageCircleOff className="h-4 w-4 mr-2" />
+          <MessageCircleOff className="h-4 w-4 mr-2" />
           User has enabled quiet mode
         </div>
       ) : (

@@ -1,6 +1,6 @@
 import { cache } from "react";
-import { getClient } from "@/lib/gql";
 import { getSession } from "@/lib/auth";
+import { getClient } from "@/lib/gql/rsc";
 import { NoteForm } from "./components/form";
 import { NotesList } from "./components/list";
 import { NOTES_QUERY, NOTE_BY_USER_ID_QUERY } from "./queries";

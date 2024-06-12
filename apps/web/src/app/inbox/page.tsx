@@ -21,11 +21,11 @@ export default async function UserProfile() {
   const tabsData = [
     {
       name: "Received",
-      content: () => <ReceivedMessages userId={user.id} />,
+      content: () => <ReceivedMessages />,
     },
     {
       name: "Sent",
-      content: () => <SentMessages userId={user.id} />,
+      content: () => <SentMessages />,
     },
   ];
 

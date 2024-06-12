@@ -2,8 +2,8 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { logout } from "@/actions";
-import { getClient } from "@/lib/gql";
 import { getSession } from "@/lib/auth";
+import { getClient } from "@/lib/gql/rsc";
 import { USER_BY_ID_QUERY } from "./queries";
 import { GeneralSettings } from "./components/general";
 import { AccountSettings } from "./components/account";

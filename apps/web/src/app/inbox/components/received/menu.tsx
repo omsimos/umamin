@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
-import { getClient } from "@/lib/gql";
+import { client } from "@/lib/gql/client";
 import { logEvent } from "firebase/analytics";
 
 import { analytics } from "@/lib/firebase";
@@ -33,7 +33,7 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
 
   const onDelete = () => {
-    getClient()
+    client
       .mutation(DELETE_MESSAGE_MUTATION, { id })
       .then((res) => {
         if (res.error) {

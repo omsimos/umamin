@@ -2,8 +2,8 @@ import { cache } from "react";
 import { graphql } from "gql.tada";
 import { redirect } from "next/navigation";
 
-import { getClient } from "@/lib/gql";
 import { getSession } from "@/lib/auth";
+import { getClient } from "@/lib/gql/rsc";
 import { ChatForm } from "./components/chat-form";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 import { ProfileHoverCard } from "@/app/components/profile-hover-card";

@@ -63,11 +63,15 @@ builder.mutationFields((t) => ({
       input: t.arg({ type: UpdateUserInput, required: true }),
     },
     resolve: async (_, args, ctx) => {
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
+
       try {
         const result = await db
           .update(user)
           .set(args.input)
-          .where(eq(user.id, ctx.currentUser.id))
+          .where(eq(user.id, ctx.userId))
           .returning();
 
         return result[0]!;

@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { GraphQLError } from "graphql";
 import { db, and, desc, eq, lt, or } from "@umamin/db";
 
 import builder from "../../builder";
@@ -8,21 +9,25 @@ import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 builder.queryFields((t) => ({
   messages: t.field({
     type: ["Message"],
+    authScopes: { authenticated: true },
     args: {
-      userId: t.arg.string({ required: true }),
       type: t.arg.string({ required: true }), // "received" || "sent"
     },
-    resolve: async (_, { userId, type }) => {
-      try {
-        if (!["received", "sent"].includes(type)) {
-          throw new Error("Invalid message type");
-        }
+    resolve: async (_, { type }, ctx) => {
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
 
+      if (!["received", "sent"].includes(type)) {
+        throw new GraphQLError("Invalid message type");
+      }
+
+      try {
         const result = await db.query.message.findMany({
           where:
             type === "received"
-              ? eq(message.receiverId, userId)
-              : eq(message.senderId, userId),
+              ? eq(message.receiverId, ctx.userId)
+              : eq(message.senderId, ctx.userId),
           limit: 5,
           orderBy: [desc(message.createdAt)],
           with:
@@ -72,6 +77,14 @@ builder.mutationFields((t) => ({
     resolve: async (_, { input }, ctx) => {
       const { type, cursor } = input;
 
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
+
+      if (!["received", "sent"].includes(type)) {
+        throw new GraphQLError("Invalid message type");
+      }
+
       if (!cursor?.id || !cursor.createdAt) {
         return {
           data: null,
@@ -81,15 +94,11 @@ builder.mutationFields((t) => ({
       }
 
       try {
-        if (!["received", "sent"].includes(type)) {
-          throw new Error("Invalid message type");
-        }
-
         const result = await db.query.message.findMany({
           where: and(
             type === "received"
-              ? eq(message.receiverId, ctx.currentUser.id)
-              : eq(message.senderId, ctx.currentUser.id),
+              ? eq(message.receiverId, ctx.userId)
+              : eq(message.senderId, ctx.userId),
 
             cursor
               ? or(

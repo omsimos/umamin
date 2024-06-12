@@ -5,7 +5,7 @@ import { graphql } from "gql.tada";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
-import { getClient } from "@/lib/gql";
+import { client } from "@/lib/gql/client";
 import { SentMessageResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { sentMessageFragment, SentMessageCard } from "./card";
@@ -53,7 +53,7 @@ export function SentMessagesList({
     if (hasMore) {
       setIsFetching(true);
 
-      getClient()
+      client
         .mutation(MESSAGES_FROM_CURSOR_MUTATION, {
           input: {
             type: "sent",

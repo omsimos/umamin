@@ -61,12 +61,16 @@ builder.mutationFields((t) => ({
       isAnonymous: t.arg.boolean({ required: true }),
     },
     resolve: async (_, { content, isAnonymous }, ctx) => {
+      if (!ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
       try {
         const result = await db
           .insert(note)
           .values({
             id: nanoid(),
-            userId: ctx.currentUser.id,
+            userId: ctx.userId,
             content,
             isAnonymous,
           })
