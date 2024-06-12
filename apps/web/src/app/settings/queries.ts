@@ -1,8 +1,8 @@
 import { graphql, ResultOf } from "gql.tada";
 
-export const USER_BY_ID_QUERY = graphql(`
-  query UserById($id: String!) {
-    userById(id: $id) {
+export const CURRENT_USER_QUERY = graphql(`
+  query CurrentUser {
+    currentUser {
       __typename
       id
       username
@@ -23,4 +23,6 @@ export const USER_BY_ID_QUERY = graphql(`
   }
 `);
 
-export type UserByIdResult = ResultOf<typeof USER_BY_ID_QUERY>["userById"];
+export type CurrentUserResult = ResultOf<
+  typeof CURRENT_USER_QUERY
+>["currentUser"];

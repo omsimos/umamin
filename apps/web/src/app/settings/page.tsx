@@ -1,10 +1,12 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { logout } from "@/actions";
-import { getSession } from "@/lib/auth";
 import { getClient } from "@/lib/gql/rsc";
-import { USER_BY_ID_QUERY } from "./queries";
+import { getSession, lucia } from "@/lib/auth";
+
+import { CURRENT_USER_QUERY } from "./queries";
 import { GeneralSettings } from "./components/general";
 import { AccountSettings } from "./components/account";
 import { SignOutButton } from "./components/sign-out-button";
@@ -17,7 +19,9 @@ import {
 } from "@umamin/ui/components/tabs";
 
 const getUserById = cache(async (id: string) => {
-  const res = await getClient().query(USER_BY_ID_QUERY, {
+  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
+
+  const res = await getClient(sessionId).query(CURRENT_USER_QUERY, {
     id,
   });
 
@@ -32,7 +36,7 @@ export default async function Settings() {
   }
 
   const result = await getUserById(user.id);
-  const userData = result.data?.userById;
+  const userData = result.data?.currentUser;
 
   const tabsData = [
     {

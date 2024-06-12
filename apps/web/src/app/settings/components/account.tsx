@@ -14,8 +14,8 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { DangerSettings } from "./danger";
-import { UserByIdResult } from "../queries";
 import { AccountForm } from "./account-form";
+import { CurrentUserResult } from "../queries";
 import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
@@ -24,7 +24,7 @@ export function AccountSettings({
   user,
   pwdHash,
 }: {
-  user: UserByIdResult;
+  user: CurrentUserResult;
   pwdHash?: string | null;
 }) {
   const account = user?.accounts?.length ? user.accounts[0] : null;

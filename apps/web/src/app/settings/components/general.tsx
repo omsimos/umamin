@@ -28,7 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@umamin/ui/components/form";
-import { UserByIdResult } from "../queries";
+import { CurrentUserResult } from "../queries";
 
 const UpdateUserMutation = graphql(`
   mutation UpdateUser($input: UpdateUserInput!) {
@@ -69,7 +69,7 @@ const FormSchema = z.object({
     }),
 });
 
-export function GeneralSettings({ user }: { user: UserByIdResult }) {
+export function GeneralSettings({ user }: { user: CurrentUserResult }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const account = user?.accounts?.length ? user.accounts[0] : null;

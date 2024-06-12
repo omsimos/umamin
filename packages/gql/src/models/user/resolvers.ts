@@ -29,16 +29,20 @@ builder.queryFields((t) => ({
     },
   }),
 
-  userById: t.field({
+  currentUser: t.field({
     type: "User",
-    nullable: true,
-    args: {
-      id: t.arg.string({ required: true }),
+    authScopes: {
+      authenticated: true,
     },
-    resolve: async (_, args) => {
+    nullable: true,
+    resolve: async (_, _args, ctx) => {
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
+
       try {
         const result = await db.query.user.findFirst({
-          where: eq(user.id, args.id),
+          where: eq(user.id, ctx.userId),
           with: {
             accounts: true,
           },
