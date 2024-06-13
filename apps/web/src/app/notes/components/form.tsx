@@ -87,7 +87,7 @@ export function NoteForm({ username, imageUrl, currentNote }: Props) {
       .mutation(UPDATE_NOTE_MUTATION, { content, isAnonymous })
       .then((res) => {
         if (res.error) {
-          toast.error(res.error.message);
+          toast.error(formatError(res.error.message));
           setIsFetching(false);
           return;
         }

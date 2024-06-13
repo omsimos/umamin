@@ -10,6 +10,9 @@ builder.queryFields((t) => ({
   messages: t.field({
     type: ["Message"],
     authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     args: {
       type: t.arg.string({ required: true }), // "received" || "sent"
     },
@@ -50,6 +53,9 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createMessage: t.field({
     type: "Message",
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     args: {
       input: t.arg({ type: CreateMessageInput, required: true }),
     },
@@ -71,6 +77,9 @@ builder.mutationFields((t) => ({
   messagesFromCursor: t.field({
     type: "MessagesWithCursor",
     authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     args: {
       input: t.arg({ type: MessagesFromCursorInput, required: true }),
     },
@@ -138,6 +147,9 @@ builder.mutationFields((t) => ({
   deleteMessage: t.field({
     type: "String",
     authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     args: {
       id: t.arg.string({ required: true }),
     },

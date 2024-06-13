@@ -1,5 +1,6 @@
 import SchemaBuilder from "@pothos/core";
 import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
+import DirectivePlugin from "@pothos/plugin-directives";
 import { DateResolver, JSONResolver } from "graphql-scalars";
 
 import { SelectNote } from "@umamin/db/schema/note";
@@ -37,6 +38,12 @@ const builder = new SchemaBuilder<{
   Context: {
     userId?: string;
   };
+  Directives: {
+    rateLimit: {
+      locations: "OBJECT" | "FIELD_DEFINITION";
+      args: { limit: number; duration: number };
+    };
+  };
   Scalars: {
     JSON: {
       Input: unknown;
@@ -48,10 +55,11 @@ const builder = new SchemaBuilder<{
     };
   };
 }>({
-  plugins: [ScopeAuthPlugin],
+  plugins: [ScopeAuthPlugin, DirectivePlugin],
   authScopes: async (ctx) => ({
     authenticated: !!ctx.userId,
   }),
+  useGraphQLToolsUnorderedDirectives: true,
 });
 
 builder.addScalarType("JSON", JSONResolver);

@@ -10,6 +10,9 @@ builder.queryFields((t) => ({
   note: t.field({
     type: "Note",
     authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     nullable: true,
     resolve: async (_, _args, ctx) => {
       if (!ctx.userId) {
@@ -34,6 +37,9 @@ builder.queryFields((t) => ({
 
   notes: t.field({
     type: ["Note"],
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     resolve: async () => {
       try {
         const _result = await db.query.note.findMany({
@@ -66,6 +72,9 @@ builder.mutationFields((t) => ({
     type: "Note",
     authScopes: {
       authenticated: true,
+    },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
     },
     args: {
       content: t.arg.string({ required: true }),
@@ -104,6 +113,9 @@ builder.mutationFields((t) => ({
 
   notesFromCursor: t.field({
     type: "NotesWithCursor",
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     args: {
       cursor: t.arg({ type: NotesFromCursorInput, required: true }),
     },
@@ -150,6 +162,9 @@ builder.mutationFields((t) => ({
     type: "String",
     authScopes: {
       authenticated: true,
+    },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
     },
     resolve: async (_, _args, ctx) => {
       if (!ctx.userId) {

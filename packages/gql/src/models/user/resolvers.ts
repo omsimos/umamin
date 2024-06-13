@@ -11,6 +11,9 @@ builder.queryFields((t) => ({
     authScopes: {
       authenticated: true,
     },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     nullable: true,
     resolve: async (_, _args, ctx) => {
       if (!ctx.userId) {
@@ -36,6 +39,9 @@ builder.queryFields((t) => ({
   userByUsername: t.field({
     type: "PublicUser",
     nullable: true,
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     args: {
       username: t.arg.string({ required: true }),
     },
@@ -59,6 +65,9 @@ builder.mutationFields((t) => ({
     type: "User",
     authScopes: {
       authenticated: true,
+    },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
     },
     args: {
       input: t.arg({ type: UpdateUserInput, required: true }),
