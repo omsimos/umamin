@@ -14,6 +14,7 @@ export const message = sqliteTable(
     createdAt: integer("created_at", { mode: "number" })
       .notNull()
       .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at").$onUpdate(() => sql`(unixepoch())`),
   },
   (t) => ({
     receiverIdIdx: index("receiver_id_idx").on(t.receiverId),

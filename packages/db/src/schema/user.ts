@@ -1,7 +1,6 @@
 import { sql, relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { note } from "./note";
 import { message } from "./message";
 
 export const user = sqliteTable("user", {
@@ -37,6 +36,7 @@ export const account = sqliteTable("oauth_account", {
   createdAt: integer("created_at", { mode: "number" })
     .notNull()
     .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at").$onUpdate(() => sql`(unixepoch())`),
 });
 
 export const accountRelations = relations(account, ({ one }) => ({
