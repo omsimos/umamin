@@ -22,9 +22,6 @@ builder.queryFields((t) => ({
       try {
         const result = await db.query.note.findFirst({
           where: eq(note.userId, ctx.userId),
-          with: {
-            user: {},
-          },
         });
 
         return result;

@@ -26,12 +26,6 @@ export const CURRENT_NOTE_QUERY = graphql(`
       content
       updatedAt
       isAnonymous
-      user {
-        __typename
-        id
-        username
-        imageUrl
-      }
     }
   }
 `);

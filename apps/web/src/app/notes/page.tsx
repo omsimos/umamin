@@ -43,7 +43,7 @@ export default async function Page() {
             No notes to show
           </p>
         ) : (
-          <NotesList currentUserId={currentNote?.user?.id} notes={notes} />
+          <NotesList currentUserId={user?.id} notes={notes} />
         )}
       </div>
     </main>

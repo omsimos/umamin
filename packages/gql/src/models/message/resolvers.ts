@@ -14,7 +14,7 @@ builder.queryFields((t) => ({
       rateLimit: { limit: 5, duration: 20 },
     },
     args: {
-      type: t.arg.string({ required: true }), // "received" || "sent"
+      type: t.arg.string({ required: true }),
     },
     resolve: async (_, { type }, ctx) => {
       if (!ctx.userId) {
