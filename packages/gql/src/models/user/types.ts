@@ -18,15 +18,22 @@ builder.objectType("User", {
     quietMode: t.exposeBoolean("quietMode"),
     imageUrl: t.exposeString("imageUrl", { nullable: true }),
     createdAt: t.exposeInt("createdAt"),
-    updatedAt: t.exposeInt("updatedAt", { nullable: true }),
-    note: t.expose("note", {
-      type: "Note",
-      nullable: true,
-    }),
     accounts: t.expose("accounts", {
       type: ["Account"],
       nullable: true,
     }),
+  }),
+});
+
+builder.objectType("PublicUser", {
+  fields: (t) => ({
+    id: t.exposeID("id"),
+    username: t.exposeString("username"),
+    bio: t.exposeString("bio", { nullable: true }),
+    question: t.exposeString("question"),
+    quietMode: t.exposeBoolean("quietMode"),
+    imageUrl: t.exposeString("imageUrl", { nullable: true }),
+    createdAt: t.exposeInt("createdAt"),
   }),
 });
 

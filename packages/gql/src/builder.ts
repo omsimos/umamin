@@ -23,9 +23,9 @@ const builder = new SchemaBuilder<{
   };
   Objects: {
     User: SelectUser & {
-      note?: SelectNote | null;
       accounts?: SelectAccount[] | null;
     };
+    PublicUser: SelectUser;
     Account: SelectAccount;
     Note: WithUser<SelectNote>;
     Message: WithUser<SelectMessage>;

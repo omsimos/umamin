@@ -17,7 +17,6 @@ const NOTES_FROM_CURSOR_MUTATION = graphql(`
       data {
         __typename
         id
-        userId
         content
         updatedAt
         isAnonymous
@@ -93,8 +92,10 @@ export function NotesList({ currentUserId, notes }: Props) {
   return (
     <>
       {notesList
-        ?.filter((u) => u.userId !== currentUserId)
-        .map((note) => <NoteCard key={note.id} note={note} />)}
+        ?.filter((u) => u.user?.id !== currentUserId)
+        .map((note) => (
+          <NoteCard key={note.id} note={note} user={{ ...note.user }} />
+        ))}
 
       {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
       {hasMore && <div ref={ref}></div>}

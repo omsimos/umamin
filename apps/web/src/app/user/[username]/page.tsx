@@ -7,7 +7,6 @@ import { MessageSquareMore, UserPlus } from "lucide-react";
 import { getClient } from "@/lib/gql/rsc";
 import { cn } from "@umamin/ui/lib/utils";
 import { UserCard } from "@/app/components/user-card";
-import { NoteCard } from "@/app/notes/components/card";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 
 const USER_BY_USERNAME_QUERY = graphql(`
@@ -20,13 +19,6 @@ const USER_BY_USERNAME_QUERY = graphql(`
       imageUrl
       createdAt
       quietMode
-      note {
-        __typename
-        id
-        content
-        updatedAt
-        isAnonymous
-      }
     }
   }
 `);
@@ -87,19 +79,6 @@ export default async function Page({
           Message
         </Link>
       </div>
-
-      {user.note && !user.note.isAnonymous && (
-        <div className="mt-8 pt-4 border-t-2 border-dashed border-muted">
-          <NoteCard
-            note={{
-              ...user.note,
-              user: {
-                ...user,
-              },
-            }}
-          />
-        </div>
-      )}
     </section>
   );
 }

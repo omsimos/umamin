@@ -2,7 +2,7 @@ import { graphql, ResultOf } from "gql.tada";
 
 export const CURRENT_USER_QUERY = graphql(`
   query CurrentUser {
-    currentUser {
+    user {
       __typename
       id
       username
@@ -11,7 +11,6 @@ export const CURRENT_USER_QUERY = graphql(`
       quietMode
       imageUrl
       createdAt
-      updatedAt
       accounts {
         __typename
         id
@@ -23,6 +22,4 @@ export const CURRENT_USER_QUERY = graphql(`
   }
 `);
 
-export type CurrentUserResult = ResultOf<
-  typeof CURRENT_USER_QUERY
->["currentUser"];
+export type CurrentUserResult = ResultOf<typeof CURRENT_USER_QUERY>["user"];

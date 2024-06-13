@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { GraphQLError } from "graphql";
 import { db, and, desc, eq, lt, or } from "@umamin/db";
 
 import builder from "../../builder";
@@ -6,18 +7,20 @@ import { note } from "@umamin/db/schema/note";
 import { NotesFromCursorInput } from "./types";
 
 builder.queryFields((t) => ({
-  noteByUserId: t.field({
+  note: t.field({
     type: "Note",
+    authScopes: { authenticated: true },
     nullable: true,
-    args: {
-      userId: t.arg.string({ required: true }),
-    },
-    resolve: async (_, args) => {
+    resolve: async (_, _args, ctx) => {
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
+
       try {
         const result = await db.query.note.findFirst({
-          where: eq(note.userId, args.userId),
+          where: eq(note.userId, ctx.userId),
           with: {
-            user: true,
+            user: {},
           },
         });
 
@@ -33,12 +36,20 @@ builder.queryFields((t) => ({
     type: ["Note"],
     resolve: async () => {
       try {
-        const result = await db.query.note.findMany({
+        const _result = await db.query.note.findMany({
           orderBy: desc(note.updatedAt),
           limit: 10,
           with: {
             user: true,
           },
+        });
+
+        const result = _result.map((note) => {
+          if (note.isAnonymous) {
+            note.user = null!;
+          }
+
+          return note;
         });
 
         return result;
@@ -140,12 +151,13 @@ builder.mutationFields((t) => ({
     authScopes: {
       authenticated: true,
     },
-    args: {
-      userId: t.arg.string({ required: true }),
-    },
-    resolve: async (_, args) => {
+    resolve: async (_, _args, ctx) => {
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
+
       try {
-        await db.delete(note).where(eq(note.userId, args.userId)).returning();
+        await db.delete(note).where(eq(note.userId, ctx.userId));
 
         return "Success";
       } catch (err) {

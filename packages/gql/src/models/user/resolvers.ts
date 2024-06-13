@@ -6,30 +6,7 @@ import builder from "../../builder";
 import { UpdateUserInput } from "./types";
 
 builder.queryFields((t) => ({
-  userByUsername: t.field({
-    type: "User",
-    nullable: true,
-    args: {
-      username: t.arg.string({ required: true }),
-    },
-    resolve: async (_, args) => {
-      try {
-        const result = await db.query.user.findFirst({
-          where: eq(user.username, args.username),
-          with: {
-            note: true,
-          },
-        });
-
-        return result;
-      } catch (err) {
-        console.log(err);
-        throw err;
-      }
-    },
-  }),
-
-  currentUser: t.field({
+  user: t.field({
     type: "User",
     authScopes: {
       authenticated: true,
@@ -46,6 +23,26 @@ builder.queryFields((t) => ({
           with: {
             accounts: true,
           },
+        });
+
+        return result;
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+  userByUsername: t.field({
+    type: "PublicUser",
+    nullable: true,
+    args: {
+      username: t.arg.string({ required: true }),
+    },
+    resolve: async (_, args) => {
+      try {
+        const result = await db.query.user.findFirst({
+          where: eq(user.username, args.username),
         });
 
         return result;

@@ -18,12 +18,9 @@ import {
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
 
-const getUserById = cache(async (id: string) => {
+const getCurrentUser = cache(async () => {
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
-
-  const res = await getClient(sessionId).query(CURRENT_USER_QUERY, {
-    id,
-  });
+  const res = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
 
   return res;
 });
@@ -35,8 +32,8 @@ export default async function Settings() {
     redirect("/login");
   }
 
-  const result = await getUserById(user.id);
-  const userData = result.data?.currentUser;
+  const result = await getCurrentUser();
+  const userData = result.data?.user;
 
   const tabsData = [
     {

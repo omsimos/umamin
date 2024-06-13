@@ -46,11 +46,10 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }));
 
-export const userRelations = relations(user, ({ many, one }) => ({
+export const userRelations = relations(user, ({ many }) => ({
   sentMessages: many(message, { relationName: "sender" }),
   receivedMessages: many(message, { relationName: "receiver" }),
   accounts: many(account),
-  note: one(note),
 }));
 
 export type InsertUser = typeof user.$inferInsert;
