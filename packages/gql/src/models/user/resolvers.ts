@@ -67,7 +67,7 @@ builder.mutationFields((t) => ({
       authenticated: true,
     },
     directives: {
-      rateLimit: { limit: 5, duration: 20 },
+      rateLimit: { limit: 3, duration: 20 },
     },
     args: {
       input: t.arg({ type: UpdateUserInput, required: true }),

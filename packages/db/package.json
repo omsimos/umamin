@@ -7,8 +7,7 @@
     "./schema/*": "./src/schema/*.ts"
   },
   "scripts": {
-    "dev": "tsc && turso dev --db-file ./src/dev.db",
-    "build": "tsc",
+    "dev": "turso dev --db-file ./src/dev.db",
     "clean": "rm -rf ./node_modules .turbo dist",
     "check-types": "tsc --noEmit",
     "generate": "pnpm drizzle-kit generate",

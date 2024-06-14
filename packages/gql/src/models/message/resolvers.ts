@@ -54,7 +54,7 @@ builder.mutationFields((t) => ({
   createMessage: t.field({
     type: "Message",
     directives: {
-      rateLimit: { limit: 5, duration: 20 },
+      rateLimit: { limit: 3, duration: 20 },
     },
     args: {
       input: t.arg({ type: CreateMessageInput, required: true }),
@@ -148,7 +148,7 @@ builder.mutationFields((t) => ({
     type: "String",
     authScopes: { authenticated: true },
     directives: {
-      rateLimit: { limit: 5, duration: 20 },
+      rateLimit: { limit: 3, duration: 20 },
     },
     args: {
       id: t.arg.string({ required: true }),

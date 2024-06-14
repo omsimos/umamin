@@ -71,7 +71,7 @@ builder.mutationFields((t) => ({
       authenticated: true,
     },
     directives: {
-      rateLimit: { limit: 5, duration: 20 },
+      rateLimit: { limit: 3, duration: 20 },
     },
     args: {
       content: t.arg.string({ required: true }),
@@ -161,7 +161,7 @@ builder.mutationFields((t) => ({
       authenticated: true,
     },
     directives: {
-      rateLimit: { limit: 5, duration: 20 },
+      rateLimit: { limit: 3, duration: 20 },
     },
     resolve: async (_, _args, ctx) => {
       if (!ctx.userId) {
