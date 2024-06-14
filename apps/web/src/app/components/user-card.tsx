@@ -1,4 +1,5 @@
-import { BadgeCheck } from "lucide-react";
+import type { User } from "lucia";
+import { BadgeCheck, MessageCircleOff } from "lucide-react";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import {
   Avatar,
@@ -10,14 +11,9 @@ import { cn } from "@umamin/ui/lib/utils";
 import { ShareButton } from "./share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
-type Props = {
-  imageUrl?: string | null;
-  username: string;
-  createdAt: number;
-  bio?: string | null;
-};
-
-export function UserCard({ ...user }: Props) {
+export function UserCard({
+  ...user
+}: Omit<User, "question" | "passwordHash" | "updatedAt">) {
   return (
     <Card className="bg-background">
       <CardHeader className="rounded-2xl">
@@ -40,11 +36,14 @@ export function UserCard({ ...user }: Props) {
                   {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
                     user.username,
                   ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
+                  {user.quietMode && (
+                    <MessageCircleOff className="h-4 w-4 mr-2 text-sm text-pink-500" />
+                  )}
                 </div>
 
                 <ShareButton username={user.username} />
               </div>
-              <p className="text-muted-foreground text-sm mt-1">
+              <p className="text-muted-foreground text-sm">
                 Joined{" "}
                 {formatDistanceToNow(fromUnixTime(user.createdAt), {
                   addSuffix: true,
@@ -52,12 +51,9 @@ export function UserCard({ ...user }: Props) {
               </p>
 
               <p
-                className={cn(
-                  "mt-3 text-sm break-words text-muted-foreground",
-                  {
-                    "break-all": user?.bio?.split(" ").length === 1,
-                  },
-                )}
+                className={cn("mt-2 text-sm break-words", {
+                  "break-all": user?.bio?.split(" ").length === 1,
+                })}
               >
                 {user?.bio}
               </p>

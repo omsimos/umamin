@@ -1,4 +1,5 @@
 import builder from "./builder";
+import { rateLimitDirective } from "graphql-rate-limit-directive";
 
 builder.queryType({});
 builder.mutationType({});
@@ -9,4 +10,5 @@ import "./models/message";
 
 export { initContextCache } from "@pothos/core";
 
-export const gqlSchema = builder.toSchema();
+const { rateLimitDirectiveTransformer } = rateLimitDirective();
+export const gqlSchema = rateLimitDirectiveTransformer(builder.toSchema());

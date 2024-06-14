@@ -4,10 +4,9 @@ import { graphql } from "gql.tada";
 import { redirect } from "next/navigation";
 import { MessageSquareMore, UserPlus } from "lucide-react";
 
-import { getClient } from "@/lib/gql";
+import { getClient } from "@/lib/gql/rsc";
 import { cn } from "@umamin/ui/lib/utils";
 import { UserCard } from "@/app/components/user-card";
-import { NoteCard } from "@/app/notes/components/card";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 
 const USER_BY_USERNAME_QUERY = graphql(`
@@ -19,13 +18,7 @@ const USER_BY_USERNAME_QUERY = graphql(`
       username
       imageUrl
       createdAt
-      note {
-        __typename
-        id
-        content
-        updatedAt
-        isAnonymous
-      }
+      quietMode
     }
   }
 `);
@@ -70,12 +63,7 @@ export default async function Page({
 
   return (
     <section className="container max-w-xl lg:mt-36 mt-28">
-      <UserCard
-        username={user.username}
-        bio={user.bio}
-        imageUrl={user.imageUrl}
-        createdAt={user.createdAt}
-      />
+      <UserCard {...user} />
 
       <div className="flex gap-2 mt-3">
         <Button variant="outline" className="w-full" disabled>
@@ -91,19 +79,6 @@ export default async function Page({
           Message
         </Link>
       </div>
-
-      {user.note && !user.note.isAnonymous && (
-        <div className="mt-8 pt-4 border-t-2 border-dashed border-muted">
-          <NoteCard
-            note={{
-              ...user.note,
-              user: {
-                ...user,
-              },
-            }}
-          />
-        </div>
-      )}
     </section>
   );
 }

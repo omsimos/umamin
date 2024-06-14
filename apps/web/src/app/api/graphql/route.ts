@@ -8,11 +8,11 @@ import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspect
 const { handleRequest } = createYoga({
   schema: gqlSchema,
   context: async () => {
-    const { user } = await getSession();
+    const { session } = await getSession();
 
     return {
       ...initContextCache(),
-      currentUser: user,
+      userId: session?.userId,
     };
   },
   graphqlEndpoint: "/api/graphql",
@@ -24,7 +24,7 @@ const { handleRequest } = createYoga({
         ? "https://v2.umamin.link"
         : "http://localhost:3000",
     credentials: true,
-    methods: ["POST", "GET"],
+    methods: ["POST", "GET", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   },
   plugins: [

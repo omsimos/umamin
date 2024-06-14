@@ -1,26 +1,26 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { logout } from "@/actions";
-import { getClient } from "@/lib/gql";
-import { getSession } from "@/lib/auth";
-import { USER_BY_ID_QUERY } from "./queries";
-import { SettingsForm } from "./components/form";
+import { getClient } from "@/lib/gql/rsc";
+import { getSession, lucia } from "@/lib/auth";
+
+import { CURRENT_USER_QUERY } from "./queries";
+import { GeneralSettings } from "./components/general";
+import { AccountSettings } from "./components/account";
 import { SignOutButton } from "./components/sign-out-button";
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@umamin/ui/components/card";
-import { ProfileInfo } from "./components/profile-info";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@umamin/ui/components/tabs";
 
-const getUserById = cache(async (id: string) => {
-  const res = await getClient().query(USER_BY_ID_QUERY, {
-    id,
-  });
+const getCurrentUser = cache(async () => {
+  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
+  const res = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
 
   return res;
 });
@@ -32,29 +32,54 @@ export default async function Settings() {
     redirect("/login");
   }
 
-  const result = await getUserById(user.id);
-  const profile = result.data?.userById?.profile?.length
-    ? result.data?.userById?.profile[0]
-    : null;
+  const result = await getCurrentUser();
+  const userData = result.data?.user;
+
+  const tabsData = [
+    {
+      name: "General",
+      content: !!userData && <GeneralSettings user={userData} />,
+    },
+    {
+      name: "Account",
+      content: !!userData && (
+        <AccountSettings user={userData} pwdHash={user.passwordHash} />
+      ),
+    },
+  ];
 
   return (
-    <Card className="w-full bg-bg border-none mx-auto max-w-lg container mt-36 min-h-screen pb-24">
-      <CardHeader className="p-0">
-        <div className="flex items-center justify-between">
-          <CardTitle>Settings</CardTitle>
-          <form action={logout}>
-            <SignOutButton />
-          </form>
-        </div>
+    <div className="w-full mx-auto max-w-lg container lg:mt-36 mt-28 min-h-screen pb-24">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl tracking-tight font-semibold">Settings</h2>
+        <form action={logout}>
+          <SignOutButton />
+        </form>
+      </div>
 
-        <CardDescription>Manage your account settings.</CardDescription>
-      </CardHeader>
+      <p className="text-sm text-muted-foreground">
+        Manage your account settings.
+      </p>
 
-      <CardContent className="p-0 mt-6">
-        {!!profile && <ProfileInfo {...profile} />}
+      <Tabs defaultValue="General" className="w-full mt-6">
+        <TabsList className="w-full bg-transparent px-0 flex mb-8">
+          {tabsData.map((tab) => (
+            <TabsTrigger
+              key={tab.name}
+              value={tab.name}
+              className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none font-semibold"
+            >
+              {tab.name}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-        {result.data?.userById && <SettingsForm user={result.data.userById} />}
-      </CardContent>
-    </Card>
+        {tabsData.map((tab) => (
+          <TabsContent key={tab.name} value={tab.name}>
+            {tab.content}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
   );
 }

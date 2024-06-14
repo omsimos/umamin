@@ -3,23 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./dist/index.js"
-    },
-    "./schema/*": {
-      "types": "./src/schema/*.ts",
-      "default": "./dist/schema/*.js"
-    },
-    "./db": {
-      "types": "./src/index.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./src/index.ts",
+    "./schema/*": "./src/schema/*.ts"
   },
   "scripts": {
-    "dev": "tsc && turso dev --db-file ./src/dev.db",
-    "build": "tsc",
-    "clean": "rm -rf ./node_modules .turbo .dist",
+    "dev": "turso dev --db-file ./src/dev.db",
+    "clean": "rm -rf ./node_modules .turbo dist",
     "check-types": "tsc --noEmit",
     "generate": "pnpm drizzle-kit generate",
     "migrate": "pnpm drizzle-kit migrate",
@@ -29,12 +18,12 @@
   "devDependencies": {
     "@types/node": "^20.14.2",
     "@umamin/tsconfig": "workspace:*",
-    "drizzle-kit": "^0.21.2",
+    "drizzle-kit": "^0.22.7",
     "typescript": "^5.4.5"
   },
   "dependencies": {
     "@libsql/client": "^0.6.2",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.30.10"
+    "drizzle-orm": "^0.31.2"
   }
 }

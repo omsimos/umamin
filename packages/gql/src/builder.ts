@@ -1,5 +1,6 @@
 import SchemaBuilder from "@pothos/core";
 import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
+import DirectivePlugin from "@pothos/plugin-directives";
 import { DateResolver, JSONResolver } from "graphql-scalars";
 
 import { SelectNote } from "@umamin/db/schema/note";
@@ -23,10 +24,10 @@ const builder = new SchemaBuilder<{
   };
   Objects: {
     User: SelectUser & {
-      note?: SelectNote | null;
-      profile?: SelectAccount[] | null;
+      accounts?: SelectAccount[] | null;
     };
-    Profile: SelectAccount;
+    PublicUser: SelectUser;
+    Account: SelectAccount;
     Note: WithUser<SelectNote>;
     Message: WithUser<SelectMessage>;
     MessageCursor: MessageCursor;
@@ -35,7 +36,13 @@ const builder = new SchemaBuilder<{
     MessagesWithCursor: WithCursor<SelectMessage>;
   };
   Context: {
-    currentUser: SelectUser;
+    userId?: string;
+  };
+  Directives: {
+    rateLimit: {
+      locations: "OBJECT" | "FIELD_DEFINITION";
+      args: { limit: number; duration: number };
+    };
   };
   Scalars: {
     JSON: {
@@ -48,10 +55,11 @@ const builder = new SchemaBuilder<{
     };
   };
 }>({
-  plugins: [ScopeAuthPlugin],
+  plugins: [ScopeAuthPlugin, DirectivePlugin],
   authScopes: async (ctx) => ({
-    authenticated: !!ctx.currentUser,
+    authenticated: !!ctx.userId,
   }),
+  useGraphQLToolsUnorderedDirectives: true,
 });
 
 builder.addScalarType("JSON", JSONResolver);

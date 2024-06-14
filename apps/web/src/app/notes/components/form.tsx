@@ -2,83 +2,74 @@
 
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
-import { analytics } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
 import { logEvent } from "firebase/analytics";
-import { FormEventHandler, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
+import { FormEventHandler, useState } from "react";
 
 import { NoteCard } from "./card";
-import { getClient } from "@/lib/gql";
-import { NoteByUserIdQueryResult } from "../queries";
+import { client } from "@/lib/gql/client";
+import { CurrentNoteQueryResult } from "../queries";
 
+import { formatError } from "@/lib/utils";
+import { analytics } from "@/lib/firebase";
 import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
-import { formatError } from "@/lib/utils";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
     updateNote(content: $content, isAnonymous: $isAnonymous) {
       __typename
-      userId
       content
       updatedAt
       isAnonymous
-      user {
-        __typename
-        id
-        username
-        imageUrl
-      }
     }
   }
 `);
 
 const DELETE_NOTE_MUTATION = graphql(`
-  mutation DeleteNote($userId: String!) {
-    deleteNote(userId: $userId)
+  mutation DeleteNote {
+    deleteNote
   }
 `);
 
 type Props = {
   username: string;
-  imageUrl: string | null;
-  currentUserNote?: NoteByUserIdQueryResult;
+  imageUrl?: string | null;
+  currentNote?: CurrentNoteQueryResult;
 };
 
-export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
+export function NoteForm({ username, imageUrl, currentNote }: Props) {
+  const router = useRouter();
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-  const [currentNote, setCurrentNote] = useState(currentUserNote?.content);
-  const [anonymous, setAnonymous] = useState(
-    currentUserNote?.isAnonymous ?? false,
-  );
-  const [updatedAt, setUpdatedAt] = useState(currentUserNote?.updatedAt);
+  const [noteContent, setNoteContent] = useState(currentNote?.content);
+  const [anonymous, setAnonymous] = useState(currentNote?.isAnonymous ?? false);
+  const [updatedAt, setUpdatedAt] = useState(currentNote?.updatedAt);
 
   const onClearNote = () => {
-    if (!currentUserNote) return;
+    if (!currentNote) return;
 
     setIsFetching(true);
 
-    getClient()
-      .mutation(DELETE_NOTE_MUTATION, { userId: currentUserNote?.userId })
-      .then((res) => {
-        if (res.error) {
-          toast.error(formatError(res.error.message));
-          setIsFetching(false);
-          return;
-        }
-
-        if (res.data) {
-          setCurrentNote("");
-          toast.success("Note cleared");
-        }
-
+    client.mutation(DELETE_NOTE_MUTATION, {}).then((res) => {
+      if (res.error) {
+        toast.error(formatError(res.error.message));
         setIsFetching(false);
-      });
+        return;
+      }
+
+      if (res.data) {
+        setNoteContent("");
+        toast.success("Note cleared");
+      }
+
+      setIsFetching(false);
+    });
   };
 
   const menuItems = [
@@ -92,24 +83,25 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
     e.preventDefault();
     setIsFetching(true);
 
-    getClient()
+    client
       .mutation(UPDATE_NOTE_MUTATION, { content, isAnonymous })
       .then((res) => {
         if (res.error) {
-          toast.error(res.error.message);
+          toast.error(formatError(res.error.message));
           setIsFetching(false);
           return;
         }
 
         if (res.data) {
           setContent("");
-          setCurrentNote(res?.data?.updateNote?.content);
+          setNoteContent(res?.data?.updateNote?.content);
           setUpdatedAt(res?.data?.updateNote?.updatedAt);
           setAnonymous(res.data.updateNote.isAnonymous);
           toast.success("Note updated");
         }
 
         setIsFetching(false);
+        router.refresh();
 
         logEvent(analytics, "update_note");
       });
@@ -161,20 +153,17 @@ export function NoteForm({ username, imageUrl, currentUserNote }: Props) {
         </div>
       </form>
 
-      {currentNote && (
+      {noteContent && (
         <div className="border-b-2 border-muted border-dashed mb-5 pb-5">
+          <p className="text-sm font-medium mb-2">Your note</p>
           <NoteCard
             note={{
-              ...currentUserNote,
+              ...currentNote,
               isAnonymous: anonymous,
-              content: currentNote,
+              content: noteContent,
               updatedAt,
-              user: {
-                ...currentUserNote?.user!,
-                username,
-                imageUrl,
-              },
             }}
+            user={{ username, imageUrl }}
             menuItems={menuItems}
           />
         </div>

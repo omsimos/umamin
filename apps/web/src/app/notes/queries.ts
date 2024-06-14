@@ -5,7 +5,6 @@ export const NOTES_QUERY = graphql(`
     notes {
       __typename
       id
-      userId
       content
       updatedAt
       isAnonymous
@@ -19,24 +18,19 @@ export const NOTES_QUERY = graphql(`
   }
 `);
 
-export const NOTE_BY_USER_ID_QUERY = graphql(`
-  query NoteByUserId($userId: String!) {
-    noteByUserId(userId: $userId) {
+export const CURRENT_NOTE_QUERY = graphql(`
+  query CurrentNote {
+    note {
       __typename
       id
-      userId
       content
       updatedAt
       isAnonymous
-      user {
-        __typename
-        id
-        username
-        imageUrl
-      }
     }
   }
 `);
 
 export type NoteQueryResult = ResultOf<typeof NOTES_QUERY>["notes"][0];
-export type NoteByUserIdQueryResult = ResultOf<typeof NOTE_BY_USER_ID_QUERY>["noteByUserId"];
+export type CurrentNoteQueryResult = ResultOf<
+  typeof CURRENT_NOTE_QUERY
+>["note"];

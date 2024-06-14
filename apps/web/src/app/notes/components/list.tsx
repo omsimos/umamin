@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
-import { getClient } from "@/lib/gql";
+import { client } from "@/lib/gql/client";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
@@ -17,7 +17,6 @@ const NOTES_FROM_CURSOR_MUTATION = graphql(`
       data {
         __typename
         id
-        userId
         content
         updatedAt
         isAnonymous
@@ -59,7 +58,7 @@ export function NotesList({ currentUserId, notes }: Props) {
     if (hasMore) {
       setIsFetching(true);
 
-      getClient()
+      client
         .mutation(NOTES_FROM_CURSOR_MUTATION, {
           cursor,
         })
@@ -93,8 +92,10 @@ export function NotesList({ currentUserId, notes }: Props) {
   return (
     <>
       {notesList
-        ?.filter((u) => u.userId !== currentUserId)
-        .map((note) => <NoteCard key={note.id} note={note} />)}
+        ?.filter((u) => u.user?.id !== currentUserId)
+        .map((note) => (
+          <NoteCard key={note.id} note={note} user={{ ...note.user }} />
+        ))}
 
       {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
       {hasMore && <div ref={ref}></div>}

@@ -1,19 +1,18 @@
 "use client";
 
 import { z } from "zod";
-import Link from "next/link";
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
 import { useForm } from "react-hook-form";
 import { analytics } from "@/lib/firebase";
-import { CircleX, Info, Loader2, TriangleAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { logEvent } from "firebase/analytics";
 import { MessageCircleOff } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter, useSearchParams } from "next/navigation";
 
-import { getClient } from "@/lib/gql";
+import { client } from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
 import { Input } from "@umamin/ui/components/input";
 import { Switch } from "@umamin/ui/components/switch";
@@ -29,7 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@umamin/ui/components/form";
-import { UserByIdResult } from "../queries";
+import { CurrentUserResult } from "../queries";
 
 const UpdateUserMutation = graphql(`
   mutation UpdateUser($input: UpdateUserInput!) {
@@ -70,11 +69,10 @@ const FormSchema = z.object({
     }),
 });
 
-export function SettingsForm({ user }: { user: UserByIdResult }) {
+export function GeneralSettings({ user }: { user: CurrentUserResult }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
-  const profile = user?.profile?.length ? user.profile[0] : null;
+  const account = user?.accounts?.length ? user.accounts[0] : null;
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -93,13 +91,13 @@ export function SettingsForm({ user }: { user: UserByIdResult }) {
       user?.question === data.question &&
       user?.quietMode === data.quietMode
     ) {
-      toast.info("No changes detected.");
+      toast.info("No changes detected");
       return;
     }
 
     setSaving(true);
 
-    const res = await getClient().mutation(UpdateUserMutation, {
+    const res = await client.mutation(UpdateUserMutation, {
       input: {
         ...data,
         username: data.username.toLowerCase(),
@@ -113,9 +111,9 @@ export function SettingsForm({ user }: { user: UserByIdResult }) {
     }
 
     setSaving(false);
+    router.refresh()
     toast.success("Details updated");
     logEvent(analytics, "update_details");
-    router.refresh();
   }
 
   return (
@@ -131,11 +129,12 @@ export function SettingsForm({ user }: { user: UserByIdResult }) {
                 <div className="flex-1 space-y-1">
                   <p className="text-sm font-medium leading-none">Quiet Mode</p>
                   <p className="text-sm text-muted-foreground">
-                    Temporarily disable incoming messages.
+                    Temporarily disable incoming messages
                   </p>
                 </div>
                 <FormControl>
                   <Switch
+                    disabled={saving}
                     checked={field.value}
                     onCheckedChange={field.onChange}
                   />
@@ -154,22 +153,20 @@ export function SettingsForm({ user }: { user: UserByIdResult }) {
               <FormLabel>Username</FormLabel>
               <FormControl>
                 <Input
-                  disabled={!profile}
+                  disabled={!account || saving}
                   className="focus-visible:ring-transparent"
                   placeholder="omsimos"
                   {...field}
-                  value={field.value as string}
                 />
               </FormControl>
-              {profile ? (
-                <FormDescription className="flex items-center">
-                  <TriangleAlert className="w-4 h-4 mr-1" />
-                  Your previous username will be available to others.
+              {account ? (
+                <FormDescription>
+                  Previous usernames will be available to others
                 </FormDescription>
               ) : (
                 <FormDescription className="flex items-center text-yellow-500">
                   <Info className="w-4 h-4 mr-1" />
-                  Google account required.
+                  Google account required
                 </FormDescription>
               )}
               <FormMessage />
@@ -185,6 +182,7 @@ export function SettingsForm({ user }: { user: UserByIdResult }) {
               <FormLabel>Custom Message</FormLabel>
               <FormControl>
                 <Textarea
+                  disabled={saving}
                   placeholder="Send me an anonymous message!"
                   className="focus-visible:ring-transparent resize-none"
                   {...field}
@@ -203,6 +201,7 @@ export function SettingsForm({ user }: { user: UserByIdResult }) {
               <FormLabel>Bio</FormLabel>
               <FormControl>
                 <Textarea
+                  disabled={saving}
                   placeholder="Tell us a little bit about yourself"
                   className="focus-visible:ring-transparent resize-none"
                   {...field}
@@ -214,22 +213,6 @@ export function SettingsForm({ user }: { user: UserByIdResult }) {
         />
 
         <div>
-          {!profile && (
-            <>
-              {searchParams.get("error") === "used" && (
-                <div className="flex items-center text-red-500 text-sm mb-2">
-                  <CircleX className="h-4 w-4 mr-1" />
-                  Account already linked to a different profile.
-                </div>
-              )}
-              <Button variant="outline" asChild>
-                <Link href="/login/google" className="w-full">
-                  Connect Google Account
-                </Link>
-              </Button>
-            </>
-          )}
-
           <Button disabled={saving} type="submit" className="w-full mt-2">
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes

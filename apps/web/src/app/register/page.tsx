@@ -1,14 +1,6 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import {
-  Card,
-  CardTitle,
-  CardFooter,
-  CardHeader,
-  CardDescription,
-  CardContent,
-} from "@umamin/ui/components/card";
 import { RegisterForm } from "./components/form";
 import { BrowserWarning } from "@umamin/ui/components/browser-warning";
 
@@ -22,29 +14,24 @@ export default async function Register() {
   return (
     <section className="max-w-lg md:max-w-md container mt-36 min-h-screen">
       <BrowserWarning />
-      <Card className="space-y-5 bg-transparent border-none">
-        <CardHeader className="space-y-1 p-0">
-          <CardTitle className="text-2xl flex justify-between items-center">
-            <p>Umamin Account</p>
-          </CardTitle>
-          <CardDescription>
-            To prevent account loss, we recommend Google OAuth.
-          </CardDescription>
-        </CardHeader>
 
-        <CardContent className="p-0">
-          <RegisterForm />
-        </CardContent>
+      <div className="mb-6">
+        <h2 className="text-2xl tracking-tight font-semibold">
+          Umamin Account
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Get started by creating your profile.
+        </p>
+      </div>
 
-        <CardFooter className="flex flex-col items-start p-0">
-          <div className="mt-4 text-center text-sm w-full">
-            Already have an account?{" "}
-            <Link href="/login" className="underline">
-              Login
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
+      <RegisterForm />
+
+      <div className="mt-4 text-center text-sm w-full">
+        Already have an account?{" "}
+        <Link href="/login" className="underline">
+          Login
+        </Link>
+      </div>
     </section>
   );
 }

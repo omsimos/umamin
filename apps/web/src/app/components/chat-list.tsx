@@ -8,7 +8,7 @@ import { cn } from "@umamin/ui/lib/utils";
 
 type Props = {
   imageUrl?: string | null;
-  question: string;
+  question?: string;
   reply: string;
 };
 

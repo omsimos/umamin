@@ -5,19 +5,20 @@ CREATE TABLE `oauth_account` (
 	`user_id` text NOT NULL,
 	`provider_id` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+	`updated_at` integer
 );
 --> statement-breakpoint
 CREATE TABLE `session` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
 	`expires_at` integer NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `user` (
 	`id` text PRIMARY KEY NOT NULL,
 	`username` text NOT NULL,
+	`password_hash` text,
 	`bio` text,
 	`image_url` text,
 	`quiet_mode` integer DEFAULT false NOT NULL,
@@ -32,8 +33,7 @@ CREATE TABLE `note` (
 	`content` text NOT NULL,
 	`is_anonymous` integer NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
-	`updated_at` integer,
-	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+	`updated_at` integer
 );
 --> statement-breakpoint
 CREATE TABLE `message` (
@@ -43,8 +43,7 @@ CREATE TABLE `message` (
 	`receiver_id` text NOT NULL,
 	`sender_id` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
-	FOREIGN KEY (`receiver_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`sender_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+	`updated_at` integer
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `user_username_unique` ON `user` (`username`);--> statement-breakpoint

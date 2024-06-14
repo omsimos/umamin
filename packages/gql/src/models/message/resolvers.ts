@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { GraphQLError } from "graphql";
 import { db, and, desc, eq, lt, or } from "@umamin/db";
 
 import builder from "../../builder";
@@ -8,21 +9,28 @@ import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 builder.queryFields((t) => ({
   messages: t.field({
     type: ["Message"],
-    args: {
-      userId: t.arg.string({ required: true }),
-      type: t.arg.string({ required: true }), // "received" || "sent"
+    authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
     },
-    resolve: async (_, { userId, type }) => {
-      try {
-        if (!["received", "sent"].includes(type)) {
-          throw new Error("Invalid message type");
-        }
+    args: {
+      type: t.arg.string({ required: true }),
+    },
+    resolve: async (_, { type }, ctx) => {
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
 
+      if (!["received", "sent"].includes(type)) {
+        throw new GraphQLError("Invalid message type");
+      }
+
+      try {
         const result = await db.query.message.findMany({
           where:
             type === "received"
-              ? eq(message.receiverId, userId)
-              : eq(message.senderId, userId),
+              ? eq(message.receiverId, ctx.userId)
+              : eq(message.senderId, ctx.userId),
           limit: 5,
           orderBy: [desc(message.createdAt)],
           with:
@@ -45,6 +53,9 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createMessage: t.field({
     type: "Message",
+    directives: {
+      rateLimit: { limit: 3, duration: 20 },
+    },
     args: {
       input: t.arg({ type: CreateMessageInput, required: true }),
     },
@@ -66,11 +77,22 @@ builder.mutationFields((t) => ({
   messagesFromCursor: t.field({
     type: "MessagesWithCursor",
     authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     args: {
       input: t.arg({ type: MessagesFromCursorInput, required: true }),
     },
     resolve: async (_, { input }, ctx) => {
       const { type, cursor } = input;
+
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
+
+      if (!["received", "sent"].includes(type)) {
+        throw new GraphQLError("Invalid message type");
+      }
 
       if (!cursor?.id || !cursor.createdAt) {
         return {
@@ -81,15 +103,11 @@ builder.mutationFields((t) => ({
       }
 
       try {
-        if (!["received", "sent"].includes(type)) {
-          throw new Error("Invalid message type");
-        }
-
         const result = await db.query.message.findMany({
           where: and(
             type === "received"
-              ? eq(message.receiverId, ctx.currentUser.id)
-              : eq(message.senderId, ctx.currentUser.id),
+              ? eq(message.receiverId, ctx.userId)
+              : eq(message.senderId, ctx.userId),
 
             cursor
               ? or(
@@ -129,6 +147,9 @@ builder.mutationFields((t) => ({
   deleteMessage: t.field({
     type: "String",
     authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 3, duration: 20 },
+    },
     args: {
       id: t.arg.string({ required: true }),
     },

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Link from "next/link";
 import { logEvent } from "firebase/analytics";
@@ -18,12 +18,16 @@ import { Icons } from "@/app/components/utilities/icons";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 
 type Props = {
-  note: Partial<NoteQueryResult>;
+  note: Partial<Omit<NoteQueryResult, "user">>;
+  user?: {
+    username?: string;
+    imageUrl?: string | null;
+  };
   menuItems?: MenuItems;
 };
 
-export function NoteCard({ note, menuItems }: Props) {
-  const username = note.user?.username;
+export function NoteCard({ note, user, menuItems }: Props) {
+  const username = user?.username;
 
   return (
     <div id={note.id}>
@@ -42,11 +46,11 @@ export function NoteCard({ note, menuItems }: Props) {
                   <Avatar className="relative top-1">
                     <AvatarImage
                       className="rounded-full"
-                      src={note.user?.imageUrl ?? ""}
+                      src={user?.imageUrl ?? ""}
                       alt="User avatar"
                     />
                     <AvatarFallback className="text-xs">
-                      {note.user?.username[0]}
+                      <ScanFace />
                     </AvatarFallback>
                   </Avatar>
                 </Link>

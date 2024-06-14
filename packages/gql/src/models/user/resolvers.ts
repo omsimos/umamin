@@ -6,18 +6,25 @@ import builder from "../../builder";
 import { UpdateUserInput } from "./types";
 
 builder.queryFields((t) => ({
-  userByUsername: t.field({
+  user: t.field({
     type: "User",
-    nullable: true,
-    args: {
-      username: t.arg.string({ required: true }),
+    authScopes: {
+      authenticated: true,
     },
-    resolve: async (_, args) => {
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
+    nullable: true,
+    resolve: async (_, _args, ctx) => {
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
+
       try {
         const result = await db.query.user.findFirst({
-          where: eq(user.username, args.username),
+          where: eq(user.id, ctx.userId),
           with: {
-            note: true,
+            accounts: true,
           },
         });
 
@@ -29,19 +36,19 @@ builder.queryFields((t) => ({
     },
   }),
 
-  userById: t.field({
-    type: "User",
+  userByUsername: t.field({
+    type: "PublicUser",
     nullable: true,
+    directives: {
+      rateLimit: { limit: 5, duration: 20 },
+    },
     args: {
-      id: t.arg.string({ required: true }),
+      username: t.arg.string({ required: true }),
     },
     resolve: async (_, args) => {
       try {
         const result = await db.query.user.findFirst({
-          where: eq(user.id, args.id),
-          with: {
-            profile: true,
-          },
+          where: eq(user.username, args.username),
         });
 
         return result;
@@ -59,15 +66,22 @@ builder.mutationFields((t) => ({
     authScopes: {
       authenticated: true,
     },
+    directives: {
+      rateLimit: { limit: 3, duration: 20 },
+    },
     args: {
       input: t.arg({ type: UpdateUserInput, required: true }),
     },
     resolve: async (_, args, ctx) => {
+      if (!ctx.userId) {
+        throw new GraphQLError("Unauthorized");
+      }
+
       try {
         const result = await db
           .update(user)
           .set(args.input)
-          .where(eq(user.id, ctx.currentUser.id))
+          .where(eq(user.id, ctx.userId))
           .returning();
 
         return result[0]!;

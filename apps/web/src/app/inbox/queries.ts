@@ -5,8 +5,8 @@ import { receivedMessageFragment } from "./components/received/card";
 
 export const RECEIVED_MESSAGES_QUERY = graphql(
   `
-    query RecentMessages($type: String!, $userId: String!) {
-      messages(type: $type, userId: $userId) {
+    query RecentMessages($type: String!) {
+      messages(type: $type) {
         __typename
         id
         createdAt
@@ -19,8 +19,8 @@ export const RECEIVED_MESSAGES_QUERY = graphql(
 
 export const SENT_MESSAGES_QUERY = graphql(
   `
-    query Messages($type: String!, $userId: String!) {
-      messages(type: $type, userId: $userId) {
+    query Messages($type: String!) {
+      messages(type: $type) {
         __typename
         id
         createdAt

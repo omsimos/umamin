@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { graphql } from "gql.tada";
 import { useInView } from "react-intersection-observer";
 
-import { getClient } from "@/lib/gql";
+import { client } from "@/lib/gql/client";
 import { ReceivedMessagesResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { ReceivedMessageCard, receivedMessageFragment } from "./card";
@@ -53,7 +53,7 @@ export function ReceivedMessagesList({
     if (hasMore) {
       setIsFetching(true);
 
-      getClient()
+      client
         .mutation(MESSAGES_FROM_CURSOR_MUTATION, {
           input: {
             type: "received",

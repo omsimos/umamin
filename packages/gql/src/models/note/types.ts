@@ -3,13 +3,11 @@ import builder from "../../builder";
 builder.objectType("Note", {
   fields: (t) => ({
     id: t.exposeID("id"),
-    userId: t.exposeString("userId"),
     content: t.exposeString("content"),
     isAnonymous: t.exposeBoolean("isAnonymous"),
-    createdAt: t.exposeInt("createdAt"),
     updatedAt: t.exposeInt("updatedAt", { nullable: true }),
     user: t.expose("user", {
-      type: "User",
+      type: "PublicUser",
       nullable: true,
     }),
   }),

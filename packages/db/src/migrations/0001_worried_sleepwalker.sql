@@ -1,1 +1,0 @@
-ALTER TABLE `user` ADD `password_hash` text;
