@@ -1,28 +1,15 @@
 import { cache } from "react";
-import { graphql } from "gql.tada";
 import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/auth";
 import { getClient } from "@/lib/gql/rsc";
 import { ChatForm } from "./components/chat-form";
+import { USER_BY_USERNAME_QUERY } from "./queries";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 import { ProfileHoverCard } from "@/app/components/profile-hover-card";
 
-const UserByUsernameQuery = graphql(`
-  query UserByUsername($username: String!) {
-    userByUsername(username: $username) {
-      id
-      username
-      question
-      quietMode
-      imageUrl
-      createdAt
-    }
-  }
-`);
-
 const getUser = cache(async (username: string) => {
-  const res = await getClient().query(UserByUsernameQuery, {
+  const res = await getClient().query(USER_BY_USERNAME_QUERY, {
     username,
   });
 
@@ -68,11 +55,8 @@ export default async function SendMessage({
         </CardHeader>
 
         <ChatForm
-          receiverId={user.id}
-          quietMode={user.quietMode}
-          sessionId={session?.userId}
-          imageUrl={user.imageUrl}
-          question={user.question}
+          currentUserId={session?.userId}
+          user={user}
         />
       </Card>
     </main>

@@ -7,10 +7,12 @@ import { analytics } from "@/lib/firebase";
 import { Loader2, MessageCircleOff, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
 
+import { formatError } from "@/lib/utils";
 import { client } from "@/lib/gql/client";
 import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
+import { UserByUsernameQueryResult } from "../queries";
 
 const CREATE_MESSAGE_MUTATION = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {
@@ -22,20 +24,11 @@ const CREATE_MESSAGE_MUTATION = graphql(`
 `);
 
 type Props = {
-  receiverId: string;
-  sessionId?: string;
-  imageUrl?: string | null;
-  question: string;
-  quietMode: boolean;
+  currentUserId?: string;
+  user: UserByUsernameQueryResult;
 };
 
-export function ChatForm({
-  receiverId,
-  sessionId,
-  imageUrl,
-  question,
-  quietMode,
-}: Props) {
+export function ChatForm({ currentUserId, user }: Props) {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const [isFetching, setIsFetching] = useState(false);
@@ -43,7 +36,12 @@ export function ChatForm({
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (receiverId === sessionId) {
+    if (!user) {
+      toast.error("An error occurred");
+      return;
+    }
+
+    if (user?.id === currentUserId) {
       toast.error("You can't send a message to yourself");
       return;
     }
@@ -53,15 +51,15 @@ export function ChatForm({
     client
       .mutation(CREATE_MESSAGE_MUTATION, {
         input: {
-          senderId: sessionId,
-          receiverId,
-          question,
+          senderId: currentUserId,
+          receiverId: user?.id,
+          question: user?.question,
           content,
         },
       })
       .then((res) => {
         if (res.error) {
-          toast.error("An error occurred");
+          toast.error(formatError(res.error.message));
           setIsFetching(false);
           return;
         }
@@ -77,9 +75,13 @@ export function ChatForm({
 
   return (
     <div className="flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 min-h-[350px] h-full">
-      <ChatList imageUrl={imageUrl} question={question} reply={message} />
+      <ChatList
+        imageUrl={user?.imageUrl}
+        question={user?.question}
+        reply={message}
+      />
 
-      {quietMode ? (
+      {user?.quietMode ? (
         <div className="text-muted-foreground text-sm flex items-center justify-center">
           <MessageCircleOff className="h-4 w-4 mr-2" />
           User has enabled quiet mode
