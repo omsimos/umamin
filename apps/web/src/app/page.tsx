@@ -34,20 +34,17 @@ export default function Home() {
       </p>
 
       <div className="flex items-center gap-2 mt-8">
-        <Link
-          href="/login"
-          className={cn(buttonVariants({ size: "lg" }), "md:text-base")}
-        >
-          Continue
-        </Link>
+        <Button size="lg" className="md:text-base" asChild>
+          <Link href="/login">Continue</Link>
+        </Button>
 
         <Button
           variant="outline"
           size="lg"
+          asChild
           className="w-full lg:text-base"
-          disabled
         >
-          Umamin Social
+          <Link href="/social">Umamin Social</Link>
         </Button>
       </div>
     </main>
