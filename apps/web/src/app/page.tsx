@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { cn } from "@umamin/ui/lib/utils";
 import { ExternalLink } from "lucide-react";
-import { Button, buttonVariants } from "@umamin/ui/components/button";
+import { Button } from "@umamin/ui/components/button";
 
 export default function Home() {
   return (

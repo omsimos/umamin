@@ -53,7 +53,7 @@ export async function Navbar() {
           <Icons.squares />
         </Link>
 
-        <Link href="/">
+        <Link href="/social">
           <MessagesSquare className="h-6 w-6" />
         </Link>
 
