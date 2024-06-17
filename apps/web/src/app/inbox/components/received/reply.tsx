@@ -17,6 +17,7 @@ import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
 
 type Props = {
   open: boolean;
+  // eslint-disable-next-line no-unused-vars
   onOpenChange: (open: boolean) => void;
   data: ReceivedMenuProps;
 };
