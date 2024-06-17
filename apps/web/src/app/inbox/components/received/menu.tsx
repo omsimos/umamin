@@ -6,8 +6,9 @@ import { graphql } from "gql.tada";
 import { client } from "@/lib/gql/client";
 import { logEvent } from "firebase/analytics";
 
+import { ReplyDialog } from "./reply";
 import { analytics } from "@/lib/firebase";
-import { onSaveImage } from "@/lib/utils";
+import { formatError, onSaveImage } from "@/lib/utils";
 
 import {
   AlertDialog,
@@ -28,27 +29,39 @@ const DELETE_MESSAGE_MUTATION = graphql(`
   }
 `);
 
-export function ReceivedMessageMenu({ id }: { id: string }) {
+export type ReceivedMenuProps = {
+  id: string;
+  question: string;
+  content: string;
+  reply?: string | null;
+  updatedAt?: number | null
+};
+
+export function ReceivedMessageMenu(props: ReceivedMenuProps) {
+  const id = props.id;
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const deleteMessage = useMessageStore((state) => state.delete);
   const [open, setOpen] = useState(false);
 
   const onDelete = () => {
-    client
-      .mutation(DELETE_MESSAGE_MUTATION, { id })
-      .then((res) => {
-        if (res.error) {
-          toast.error("An error occured");
-          return;
-        }
+    client.mutation(DELETE_MESSAGE_MUTATION, { id }).then((res) => {
+      if (res.error) {
+        toast.error(formatError(res.error.message));
+        return;
+      }
 
-        toast.success("Message deleted");
-        deleteMessage(id);
+      toast.success("Message deleted");
+      deleteMessage(id);
 
-        logEvent(analytics, "delete_message");
-      });
+      logEvent(analytics, "delete_message");
+    });
   };
 
   const menuItems = [
+    {
+      title: "Reply",
+      onClick: () => setReplyDialogOpen(true),
+    },
     {
       title: "Save Image",
       onClick: () => {
@@ -82,6 +95,12 @@ export function ReceivedMessageMenu({ id }: { id: string }) {
       </AlertDialog>
 
       <Menu menuItems={menuItems} />
+
+      <ReplyDialog
+        open={replyDialogOpen}
+        onOpenChange={setReplyDialogOpen}
+        data={{ ...props }}
+      />
     </>
   );
 }

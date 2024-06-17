@@ -89,7 +89,7 @@ export function ChatForm({ currentUserId, user }: Props) {
       ) : (
         <form
           onSubmit={handleSubmit}
-          className="flex max-w-lg items-center space-x-2 w-full self-center"
+          className="flex max-w-lg items-center space-x-2 w-full self-center mt-12"
         >
           <Input
             id="message"

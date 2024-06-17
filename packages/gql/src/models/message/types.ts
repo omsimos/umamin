@@ -5,8 +5,10 @@ builder.objectType("Message", {
     id: t.exposeID("id"),
     question: t.exposeString("question"),
     content: t.exposeString("content"),
+    reply: t.exposeString("reply", { nullable: true }),
     receiverId: t.exposeString("receiverId"),
     createdAt: t.exposeInt("createdAt"),
+    updatedAt: t.exposeInt("updatedAt", { nullable: true }),
     user: t.expose("user", {
       type: "User",
       nullable: true,

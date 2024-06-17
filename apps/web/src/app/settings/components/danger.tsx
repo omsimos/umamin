@@ -43,7 +43,7 @@ export function DangerSettings() {
               Delete Account
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md max-w-[90%] rounded-md">
+          <DialogContent className="sm:max-w-md max-w-[95%] rounded-md">
             <DialogHeader>
               <DialogTitle>Are you absolutely sure?</DialogTitle>
               <DialogDescription>

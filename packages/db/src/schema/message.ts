@@ -9,6 +9,7 @@ export const message = sqliteTable(
     id: text("id").primaryKey(),
     question: text("question").notNull(),
     content: text("content").notNull(),
+    reply: text("reply"),
     receiverId: text("receiver_id").notNull(),
     senderId: text("sender_id"),
     createdAt: integer("created_at", { mode: "number" })
