@@ -1,4 +1,6 @@
+import { ObjectRef } from "@pothos/core";
 import builder from "../../builder";
+import { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 
 builder.objectType("Account", {
   fields: (t) => ({
@@ -9,34 +11,37 @@ builder.objectType("Account", {
   }),
 });
 
-builder.objectType("User", {
-  fields: (t) => ({
-    id: t.exposeID("id"),
-    displayName: t.exposeString("displayName", { nullable: true }),
-    username: t.exposeString("username"),
-    bio: t.exposeString("bio", { nullable: true }),
-    question: t.exposeString("question"),
-    quietMode: t.exposeBoolean("quietMode"),
-    imageUrl: t.exposeString("imageUrl", { nullable: true }),
-    createdAt: t.exposeInt("createdAt"),
-    accounts: t.expose("accounts", {
-      type: ["Account"],
-      nullable: true,
-    }),
-  }),
-});
+function addCommonFields(refs: ObjectRef<SelectUser>[]) {
+  for (const ref of refs) {
+    builder.objectFields(ref, (t) => ({
+      id: t.exposeID("id"),
+      displayName: t.exposeString("displayName", { nullable: true }),
+      username: t.exposeString("username"),
+      bio: t.exposeString("bio", { nullable: true }),
+      question: t.exposeString("question"),
+      quietMode: t.exposeBoolean("quietMode"),
+      imageUrl: t.exposeString("imageUrl", { nullable: true }),
+      createdAt: t.exposeInt("createdAt"),
+    }));
+  }
+}
 
-builder.objectType("PublicUser", {
-  fields: (t) => ({
-    id: t.exposeID("id"),
-    username: t.exposeString("username"),
-    bio: t.exposeString("bio", { nullable: true }),
-    question: t.exposeString("question"),
-    quietMode: t.exposeBoolean("quietMode"),
-    imageUrl: t.exposeString("imageUrl", { nullable: true }),
-    createdAt: t.exposeInt("createdAt"),
-  }),
-});
+const UserObject = builder
+  .objectRef<SelectUser & { accounts: SelectAccount[] }>("User")
+  .implement({
+    fields: (t) => ({
+      accounts: t.expose("accounts", {
+        type: ["Account"],
+        nullable: true,
+      }),
+    }),
+  });
+
+const PublicUserObject = builder
+  .objectRef<SelectUser>("PublicUser")
+  .implement({});
+
+addCommonFields([UserObject, PublicUserObject]);
 
 export const UpdateUserInput = builder.inputType("UpdateUserInput", {
   fields: (t) => ({
