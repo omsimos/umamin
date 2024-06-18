@@ -16,6 +16,7 @@ const USER_BY_USERNAME_QUERY = graphql(`
       id
       bio
       username
+      displayName
       imageUrl
       createdAt
       quietMode
