@@ -15,6 +15,13 @@
       "when": 1718642353864,
       "tag": "0001_tiresome_hydra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1718727370168,
+      "tag": "0002_last_yellowjacket",
+      "breakpoints": true
     }
   ]
 }
