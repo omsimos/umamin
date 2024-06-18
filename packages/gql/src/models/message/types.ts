@@ -9,7 +9,7 @@ builder.objectType("Message", {
     receiverId: t.exposeString("receiverId"),
     createdAt: t.exposeInt("createdAt"),
     updatedAt: t.exposeInt("updatedAt", { nullable: true }),
-    user: t.expose("user", {
+    receiver: t.expose("receiver", {
       type: "User",
       nullable: true,
     }),
