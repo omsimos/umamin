@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CircleUser } from "lucide-react";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import { FragmentOf, readFragment, graphql } from "gql.tada";
@@ -14,8 +15,9 @@ export const sentMessageFragment = graphql(`
   fragment SentMessageFragment on Message {
     question
     content
+    reply
     createdAt
-    user {
+    receiver {
       id
       imageUrl
       username
@@ -59,9 +61,12 @@ export function SentMessageCard({
         <div className="flex justify-between items-center text-muted-foreground">
           <div className="flex items-center space-x-2">
             <CircleUser className="h-4 w-4" />
-            <p className="text-sm text-muted-foreground">
-              {msg.user?.username}
-            </p>
+            <Link
+              href={`/user/${msg.receiver?.username}`}
+              className="text-sm text-muted-foreground hover:underline"
+            >
+              {msg.receiver?.username}
+            </Link>
           </div>
 
           <span className="font-semibold">umamin</span>
@@ -70,9 +75,10 @@ export function SentMessageCard({
       </CardHeader>
       <CardContent className="px-5 sm:px-7">
         <ChatList
-          imageUrl={msg.user?.imageUrl}
+          imageUrl={msg.receiver?.imageUrl}
           question={msg.question}
           reply={msg.content}
+          response={msg.reply ?? ""}
         />
       </CardContent>
       <CardFooter className="flex justify-center">
@@ -88,7 +94,7 @@ export function SentMessageCard({
                   @johndoe
                 </p> 
               </ProfileHoverCard>
-                */}
+          */}
         </div>
       </CardFooter>
     </Card>

@@ -14,6 +14,7 @@ import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
+import { useRouter } from "next/navigation";
 
 type Props = {
   open: boolean;
@@ -29,6 +30,7 @@ const CREATE_REPLY_MUTATION = graphql(`
 `);
 
 export function ReplyDialog(props: Props) {
+  const router = useRouter();
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [reply, setReply] = useState(props.data.reply ?? "");
@@ -52,6 +54,7 @@ export function ReplyDialog(props: Props) {
         setUpdatedAt(Date.now() / 1000);
         setContent("");
         setLoading(false);
+        router.refresh();
 
         logEvent(analytics, "add_reply");
       });
@@ -70,7 +73,7 @@ export function ReplyDialog(props: Props) {
         />
 
         {reply && updatedAt && (
-          <span className="text-muted-foreground text-sm italic w-full text-center mt-12">
+          <span className="text-muted-foreground text-sm italic w-full text-center mt-6">
             replied{" "}
             {formatDistanceToNow(fromUnixTime(updatedAt), {
               addSuffix: true,
