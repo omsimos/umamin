@@ -12,6 +12,7 @@ builder.objectType("Account", {
 builder.objectType("User", {
   fields: (t) => ({
     id: t.exposeID("id"),
+    displayName: t.exposeString("displayName", { nullable: true }),
     username: t.exposeString("username"),
     bio: t.exposeString("bio", { nullable: true }),
     question: t.exposeString("question"),
@@ -43,5 +44,6 @@ export const UpdateUserInput = builder.inputType("UpdateUserInput", {
     bio: t.string(),
     question: t.string({ required: true }),
     quietMode: t.boolean({ required: true }),
+    displayName: t.string({ required: true }),
   }),
 });

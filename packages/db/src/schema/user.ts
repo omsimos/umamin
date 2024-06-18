@@ -5,6 +5,7 @@ import { message } from "./message";
 
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
+  displayName: text("display_name"),
   username: text("username").notNull().unique(),
   passwordHash: text("password_hash"),
   bio: text("bio"),

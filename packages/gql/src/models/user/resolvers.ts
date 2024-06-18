@@ -90,7 +90,7 @@ builder.mutationFields((t) => ({
 
         if (err.code === "SQLITE_CONSTRAINT") {
           if (err.message.includes("user.username")) {
-            throw new GraphQLError("Username is already taken.");
+            throw new GraphQLError("Username is already taken");
           }
         }
         throw err;
