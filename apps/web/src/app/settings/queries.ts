@@ -5,8 +5,9 @@ export const CURRENT_USER_QUERY = graphql(`
     user {
       __typename
       id
-      username
       bio
+      username
+      displayName
       question
       quietMode
       imageUrl

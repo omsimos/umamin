@@ -39,6 +39,7 @@ const UpdateUserMutation = graphql(`
       username
       imageUrl
       createdAt
+      displayName
     }
   }
 `);
@@ -55,6 +56,9 @@ const FormSchema = z.object({
     }),
   bio: z.string().max(150, {
     message: "Bio must not be longer than 150 characters.",
+  }),
+  displayName: z.string().max(30, {
+    message: "Display name must not exceed 30 characters.",
   }),
   username: z
     .string()
@@ -81,6 +85,7 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
       bio: user?.bio ?? "",
       question: user?.question,
       username: user?.username,
+      displayName: user?.displayName ?? "",
     },
   });
 
@@ -89,7 +94,8 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
       user?.username === data.username &&
       user?.bio === data.bio &&
       user?.question === data.question &&
-      user?.quietMode === data.quietMode
+      user?.quietMode === data.quietMode &&
+      user?.displayName === data.displayName
     ) {
       toast.info("No changes detected");
       return;
@@ -111,7 +117,7 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
     }
 
     setSaving(false);
-    router.refresh()
+    router.refresh();
     toast.success("Details updated");
     logEvent(analytics, "update_details");
   }
@@ -147,6 +153,25 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
 
         <FormField
           control={form.control}
+          name="displayName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Display Name</FormLabel>
+              <FormControl>
+                <Input
+                  disabled={saving}
+                  className="focus-visible:ring-transparent"
+                  placeholder="Umamin"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="username"
           render={({ field }) => (
             <FormItem>
@@ -155,7 +180,7 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
                 <Input
                   disabled={!account || saving}
                   className="focus-visible:ring-transparent"
-                  placeholder="omsimos"
+                  placeholder="umamin"
                   {...field}
                 />
               </FormControl>

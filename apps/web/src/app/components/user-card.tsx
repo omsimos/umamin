@@ -1,5 +1,5 @@
 import type { User } from "lucia";
-import { BadgeCheck, MessageCircleOff } from "lucide-react";
+import { BadgeCheck, CalendarDays, MessageCircleOff } from "lucide-react";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import {
   Avatar,
@@ -32,7 +32,9 @@ export function UserCard({
             <div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center space-x-1">
-                  <p className="font-semibold md:text-xl">@{user?.username}</p>
+                  <p className="font-semibold md:text-xl">
+                    {user?.displayName ?? user?.username}
+                  </p>
                   {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
                     user.username,
                   ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
@@ -43,20 +45,24 @@ export function UserCard({
 
                 <ShareButton username={user.username} />
               </div>
-              <p className="text-muted-foreground text-sm">
-                Joined{" "}
-                {formatDistanceToNow(fromUnixTime(user.createdAt), {
-                  addSuffix: true,
-                })}
-              </p>
+
+              <p className="text-muted-foreground text-sm">@{user.username}</p>
 
               <p
-                className={cn("mt-2 text-sm break-words", {
+                className={cn("my-2 min-w-0 break-words", {
                   "break-all": user?.bio?.split(" ").length === 1,
                 })}
               >
                 {user?.bio}
               </p>
+
+              <div className="text-muted-foreground text-sm flex items-center">
+                <CalendarDays className="h-4 w-4 mr-1" />
+                Joined{" "}
+                {formatDistanceToNow(fromUnixTime(user.createdAt), {
+                  addSuffix: true,
+                })}
+              </div>
             </div>
           </div>
         </div>
