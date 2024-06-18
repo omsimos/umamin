@@ -17,7 +17,9 @@ export const receivedMessageFragment = graphql(`
     id
     question
     content
+    reply
     createdAt
+    updatedAt
   }
 `);
 
@@ -43,7 +45,11 @@ export function ReceivedMessageCard({
       >
         {!isDeleted && (
           <div className="absolute top-4 right-4 text-muted-foreground">
-            <ReceivedMessageMenu id={msg.id} />
+            <ReceivedMessageMenu
+              {...msg}
+              reply={msg.reply}
+              updatedAt={msg.updatedAt}
+            />
           </div>
         )}
         <CardHeader className="flex px-12">
@@ -57,11 +63,11 @@ export function ReceivedMessageCard({
           </div>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <p className="text-muted-foreground text-sm mt-1 italic w-full text-center">
+          <span className="text-muted-foreground text-sm mt-1 italic w-full text-center">
             {formatDistanceToNow(fromUnixTime(msg.createdAt), {
               addSuffix: true,
             })}
-          </p>
+          </span>
         </CardFooter>
       </Card>
     </div>

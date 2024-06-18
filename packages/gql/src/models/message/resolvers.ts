@@ -74,6 +74,31 @@ builder.mutationFields((t) => ({
     },
   }),
 
+  createReply: t.field({
+    type: "String",
+    authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 3, duration: 20 },
+    },
+    args: {
+      messageId: t.arg.string({ required: true }),
+      content: t.arg.string({ required: true }),
+    },
+    resolve: async (_, args) => {
+      try {
+        await db
+          .update(message)
+          .set({ reply: args.content })
+          .where(eq(message.id, args.messageId));
+
+        return "Success";
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
   messagesFromCursor: t.field({
     type: "MessagesWithCursor",
     authScopes: { authenticated: true },

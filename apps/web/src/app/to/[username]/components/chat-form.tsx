@@ -77,7 +77,7 @@ export function ChatForm({ currentUserId, user }: Props) {
     <div className="flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 min-h-[350px] h-full">
       <ChatList
         imageUrl={user?.imageUrl}
-        question={user?.question}
+        question={user?.question ?? ""}
         reply={message}
       />
 
@@ -89,7 +89,7 @@ export function ChatForm({ currentUserId, user }: Props) {
       ) : (
         <form
           onSubmit={handleSubmit}
-          className="flex max-w-lg items-center space-x-2 w-full self-center"
+          className="flex max-w-lg items-center space-x-2 w-full self-center mt-12"
         >
           <Input
             id="message"

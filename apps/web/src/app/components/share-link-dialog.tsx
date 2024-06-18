@@ -25,7 +25,7 @@ const onCopy = (url: string) => {
   }
 };
 
-export function ShareLinkDialog({ username }: { username: string }) {
+export default function ShareLinkDialog({ username }: { username: string }) {
   const url =
     typeof window !== "undefined"
       ? `${window.location.origin}/to/${username}`
@@ -38,7 +38,7 @@ export function ShareLinkDialog({ username }: { username: string }) {
           <LinkIcon className="h-6 w-6" />
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-w-[90%] rounded-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Share link</DialogTitle>
           <DialogDescription>

@@ -7,15 +7,16 @@ import { SelectNote } from "@umamin/db/schema/note";
 import { SelectMessage } from "@umamin/db/schema/message";
 import { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 
-type WithUser<T> = T & { user?: SelectUser | null };
+type WithUser<T, K extends string> = T & { [P in K]?: SelectUser | null };
 
-type MessageCursor = { id?: string | null; createdAt?: number | null };
-type NoteCursor = { id?: string | null; updatedAt?: number | null };
+type Cursor<K extends string> = { id?: string | null } & {
+  [P in K]?: number | null;
+};
 
-type WithCursor<T> = {
+type WithCursor<T, K extends string, P extends "createdAt" | "updatedAt"> = {
   hasMore: boolean;
-  cursor: (T extends SelectMessage ? MessageCursor : NoteCursor) | null;
-  data: WithUser<T extends SelectMessage ? SelectMessage : SelectNote>[] | null;
+  cursor: Cursor<P> | null;
+  data: WithUser<T, K>[] | null;
 };
 
 const builder = new SchemaBuilder<{
@@ -28,12 +29,12 @@ const builder = new SchemaBuilder<{
     };
     PublicUser: SelectUser;
     Account: SelectAccount;
-    Note: WithUser<SelectNote>;
-    Message: WithUser<SelectMessage>;
-    MessageCursor: MessageCursor;
-    NoteCursor: NoteCursor;
-    NotesWithCursor: WithCursor<SelectNote>;
-    MessagesWithCursor: WithCursor<SelectMessage>;
+    Note: WithUser<SelectNote, "user">;
+    Message: WithUser<SelectMessage, "receiver">;
+    MessageCursor: Cursor<"createdAt">;
+    NoteCursor: Cursor<"updatedAt">;
+    NotesWithCursor: WithCursor<SelectNote, "user", "updatedAt">;
+    MessagesWithCursor: WithCursor<SelectMessage, "receiver", "createdAt">;
   };
   Context: {
     userId?: string;

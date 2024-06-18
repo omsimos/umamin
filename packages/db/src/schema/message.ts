@@ -9,6 +9,7 @@ export const message = sqliteTable(
     id: text("id").primaryKey(),
     question: text("question").notNull(),
     content: text("content").notNull(),
+    reply: text("reply"),
     receiverId: text("receiver_id").notNull(),
     senderId: text("sender_id"),
     createdAt: integer("created_at", { mode: "number" })
@@ -17,9 +18,14 @@ export const message = sqliteTable(
     updatedAt: integer("updated_at").$onUpdate(() => sql`(unixepoch())`),
   },
   (t) => ({
-    receiverIdIdx: index("receiver_id_idx").on(t.receiverId),
-    senderIdIdx: index("sender_id_idx").on(t.senderId),
-    createdAtIdIdx: index("created_at_id_idx").on(t.createdAt, t.id),
+    receiverIdCreatedAtIdx: index("receiver_id_created_at_idx").on(
+      t.receiverId,
+      t.createdAt,
+    ),
+    senderIdCreatedAtIdx: index("sender_id_created_at_idx").on(
+      t.senderId,
+      t.createdAt,
+    ),
   }),
 );
 
