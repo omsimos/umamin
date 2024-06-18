@@ -1,4 +1,5 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Badge } from "@umamin/ui/components/badge";
 import {
   LinkIcon,
@@ -11,7 +12,10 @@ import {
 import { getSession } from "@/lib/auth";
 import { Icons } from "./utilities/icons";
 import { ToggleTheme } from "./utilities/toggle-theme";
-import { ShareLinkDialog } from "./dialog/share-link-dialog";
+
+const ShareLinkDialog = dynamic(() => import("./share-link-dialog"), {
+  ssr: false,
+});
 
 export async function Navbar() {
   const { user } = await getSession();

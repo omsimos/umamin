@@ -62,7 +62,7 @@ export function ReplyDialog(props: Props) {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-w-[95%] rounded-md">
+      <DialogContent className="sm:max-w-xl">
         <h3 className="font-bold text-center leading-normal text-lg min-w-0 break-words mb-6">
           {props.data.question}
         </h3>

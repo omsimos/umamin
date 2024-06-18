@@ -1,4 +1,5 @@
 import { cache } from "react";
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/auth";
@@ -7,6 +8,11 @@ import { ChatForm } from "./components/chat-form";
 import { USER_BY_USERNAME_QUERY } from "./queries";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 import { ProfileHoverCard } from "@/app/components/profile-hover-card";
+
+const UnauthenticatedDialog = dynamic(
+  () => import("./components/unauthenticated"),
+  { ssr: false },
+);
 
 const getUser = cache(async (username: string) => {
   const res = await getClient().query(USER_BY_USERNAME_QUERY, {
@@ -56,6 +62,8 @@ export default async function SendMessage({
 
         <ChatForm currentUserId={session?.userId} user={user} />
       </Card>
+
+      <UnauthenticatedDialog isLoggedIn={!!session} />
     </main>
   );
 }
