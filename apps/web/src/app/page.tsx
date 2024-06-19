@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { Button } from "@umamin/ui/components/button";
 
-export default function Home() {
+export default async function Home() {
   return (
     <main className="flex items-center flex-col lg:justify-center min-h-screen lg:pt-0 pt-36 container">
       <Link

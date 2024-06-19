@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
 import { analytics } from "@/lib/firebase";
-import { Loader2, MessageCircleOff, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
+import { Loader2, MessageCircleOff, Send } from "lucide-react";
 
 import { formatError } from "@/lib/utils";
 import { client } from "@/lib/gql/client";
@@ -33,7 +33,7 @@ export function ChatForm({ currentUserId, user }: Props) {
   const [message, setMessage] = useState("");
   const [isFetching, setIsFetching] = useState(false);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (!user) {
@@ -48,29 +48,32 @@ export function ChatForm({ currentUserId, user }: Props) {
 
     setIsFetching(true);
 
-    client
-      .mutation(CREATE_MESSAGE_MUTATION, {
+    try {
+      const res = await client.mutation(CREATE_MESSAGE_MUTATION, {
         input: {
           senderId: currentUserId,
           receiverId: user?.id,
           question: user?.question,
           content,
         },
-      })
-      .then((res) => {
-        if (res.error) {
-          toast.error(formatError(res.error.message));
-          setIsFetching(false);
-          return;
-        }
-
-        setMessage(res.data?.createMessage.content ?? "");
-        setContent("");
-        toast.success("Message sent");
-        setIsFetching(false);
-
-        logEvent(analytics, "send_message");
       });
+
+      if (res.error) {
+        toast.error(formatError(res.error.message));
+        setIsFetching(false);
+        return;
+      }
+
+      setMessage(content);
+      setContent("");
+      toast.success("Message sent");
+      setIsFetching(false);
+
+      logEvent(analytics, "send_message");
+    } catch (err: any) {
+      toast.error(err.message);
+      setIsFetching(false);
+    }
   }
 
   return (

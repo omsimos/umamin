@@ -19,6 +19,7 @@
     "@pothos/plugin-directives": "^3.10.2",
     "@pothos/plugin-scope-auth": "^3.22.0",
     "@umamin/db": "workspace:*",
+    "@umamin/aes": "workspace:*",
     "graphql": "^16.8.1",
     "graphql-rate-limit-directive": "^2.0.5",
     "graphql-scalars": "^1.23.0",
