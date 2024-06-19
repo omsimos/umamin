@@ -4,6 +4,7 @@ import { db, and, desc, eq, lt, or } from "@umamin/db";
 
 import builder from "../../builder";
 import { message } from "@umamin/db/schema/message";
+import { aesEncrypt, aesDecrypt } from "@umamin/aes";
 import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 
 builder.queryFields((t) => ({
@@ -26,7 +27,7 @@ builder.queryFields((t) => ({
       }
 
       try {
-        const result = await db.query.message.findMany({
+        const _result = await db.query.message.findMany({
           where:
             type === "received"
               ? eq(message.receiverId, ctx.userId)
@@ -41,7 +42,18 @@ builder.queryFields((t) => ({
               : undefined,
         });
 
-        return result;
+        const result = _result.map(async (msg) => {
+          const decryptedText = await aesDecrypt(msg.content);
+          if (decryptedText) {
+            msg.content = decryptedText;
+          }
+
+          return msg;
+        });
+
+        const res = await Promise.all(result);
+
+        return res;
       } catch (err) {
         console.log(err);
         throw err;
@@ -61,9 +73,11 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_, { input }) => {
       try {
+        const { encryptedText } = await aesEncrypt(input.content);
+
         const result = await db
           .insert(message)
-          .values({ id: nanoid(), ...input })
+          .values({ id: nanoid(), ...input, content: encryptedText })
           .returning();
 
         return result[0]!;
@@ -128,7 +142,7 @@ builder.mutationFields((t) => ({
       }
 
       try {
-        const result = await db.query.message.findMany({
+        const _result = await db.query.message.findMany({
           where: and(
             type === "received"
               ? eq(message.receiverId, ctx.userId)
@@ -154,12 +168,23 @@ builder.mutationFields((t) => ({
               : undefined,
         });
 
+        const result = _result.map(async (msg) => {
+          const decryptedText = await aesDecrypt(msg.content);
+          if (decryptedText) {
+            msg.content = decryptedText;
+          }
+
+          return msg;
+        });
+
+        const res = await Promise.all(result);
+
         return {
-          data: result,
-          hasMore: result.length === 5,
+          data: res,
+          hasMore: res.length === 5,
           cursor: {
-            id: result[result.length - 1]?.id,
-            createdAt: result[result.length - 1]?.createdAt,
+            id: res[res.length - 1]?.id,
+            createdAt: res[res.length - 1]?.createdAt,
           },
         };
       } catch (err) {

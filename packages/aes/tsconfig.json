@@ -1,0 +1,10 @@
+{
+  "extends": "@umamin/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "outDir": "dist"
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}
