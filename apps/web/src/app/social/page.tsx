@@ -5,6 +5,7 @@ const data = [
     imageUrl:
       "https://lh3.googleusercontent.com/a/ACg8ocK4CtuGuDZlPy9H_DMb3EQIue9Hrd5bqYcMZOY-Xb8LcuyqsBI=s96-c",
     username: "umamin",
+    displayName: "Umamin Official",
     createdAt: 1718604131,
     content:
       "An open-source social platform built exclusively for the Umamin community.",
@@ -17,6 +18,7 @@ const data = [
     imageUrl:
       "https://lh3.googleusercontent.com/a/ACg8ocJf40m8VVe3wNxhgBe11Bm7ukLSPeR0SDPPg6q8wq6NYRZtCYk=s96-c",
     username: "josh",
+    displayName: "Josh Daniel",
     createdAt: 1718342984,
     content:
       "We're building Umamin Social, a new platform to connect the community. Coming soon! 🚀",

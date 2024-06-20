@@ -11,6 +11,7 @@ export const NOTES_QUERY = graphql(`
       user {
         __typename
         id
+        displayName
         username
         imageUrl
       }

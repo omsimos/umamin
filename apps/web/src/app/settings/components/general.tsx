@@ -57,8 +57,8 @@ const FormSchema = z.object({
   bio: z.string().max(150, {
     message: "Bio must not be longer than 150 characters.",
   }),
-  displayName: z.string().max(30, {
-    message: "Display name must not exceed 30 characters.",
+  displayName: z.string().max(20, {
+    message: "Display name must not exceed 20 characters.",
   }),
   username: z
     .string()

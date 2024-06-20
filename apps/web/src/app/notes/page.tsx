@@ -29,13 +29,7 @@ export default async function Page() {
 
   return (
     <main className="mt-28 container max-w-xl mx-auto pb-32">
-      {user && (
-        <NoteForm
-          username={user.username}
-          imageUrl={user?.imageUrl}
-          currentNote={currentNote}
-        />
-      )}
+      {user && <NoteForm user={user} currentNote={currentNote} />}
 
       <div className="gap-5 flex flex-col">
         {!notes?.length ? (
