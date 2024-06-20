@@ -11,7 +11,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import { onSaveImage } from "@/lib/utils";
+import { onSaveImage, shortTimeAgo } from "@/lib/utils";
 import { analytics } from "@/lib/firebase";
 import { NoteQueryResult } from "../queries";
 import { Icons } from "@/app/components/utilities/icons";
@@ -76,15 +76,15 @@ export function NoteCard({ note, user, menuItems }: Props) {
                       ).includes(username) && (
                         <BadgeCheck className="w-4 h-4 text-pink-500" />
                       )}
-                    <span className="text-muted-foreground truncate">@{username}</span>
+                    <span className="text-muted-foreground truncate">
+                      @{username}
+                    </span>
                   </Link>
                 )}
 
                 {note.updatedAt && (
                   <p className="text-sm text-muted-foreground">
-                    {formatDistanceToNow(fromUnixTime(note.updatedAt), {
-                      addSuffix: true,
-                    })}
+                    {shortTimeAgo(note.updatedAt)}
                   </p>
                 )}
               </div>

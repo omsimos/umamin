@@ -4,15 +4,10 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import {
-  BadgeCheck,
-  Ellipsis,
-  Heart,
-  MessageCircle,
-  ScanFace,
-} from "lucide-react";
+import { BadgeCheck, Heart, MessageCircle, ScanFace } from "lucide-react";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import { cn } from "@umamin/ui/lib/utils";
+import { shortTimeAgo } from "@/lib/utils";
 
 type Props = {
   imageUrl: string;
@@ -53,9 +48,7 @@ export function SocialCard(props: Props) {
           </div>
 
           <p className="text-muted-foreground text-xs">
-            {formatDistanceToNow(fromUnixTime(props.createdAt), {
-              addSuffix: true,
-            })}
+            {shortTimeAgo(props.createdAt)}
           </p>
         </div>
 
