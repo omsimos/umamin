@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 type Props = {
   note: Partial<Omit<NoteQueryResult, "user">>;
   user?: {
+    displayName?: string | null;
     username?: string;
     imageUrl?: string | null;
   };
@@ -62,20 +63,21 @@ export function NoteCard({ note, user, menuItems }: Props) {
                     anonymous
                   </p>
                 ) : (
-                  <div className="flex items-center space-x-1">
-                    <Link
-                      href={`/user/${username}`}
-                      className="font-semibold hover:underline"
-                    >
-                      {username}
-                    </Link>
+                  <Link
+                    href={`/user/${username}`}
+                    className="flex items-center space-x-1 text-sm"
+                  >
+                    <span className="font-semibold flex-none">
+                      {user?.displayName ? user.displayName : user?.username}
+                    </span>
                     {username &&
                       process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
                         ",",
                       ).includes(username) && (
                         <BadgeCheck className="w-4 h-4 text-pink-500" />
                       )}
-                  </div>
+                    <span className="text-muted-foreground truncate">@{username}</span>
+                  </Link>
                 )}
 
                 {note.updatedAt && (

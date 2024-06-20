@@ -17,6 +17,7 @@ import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
+import { SelectUser } from "@umamin/db/schema/user";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
@@ -36,12 +37,11 @@ const DELETE_NOTE_MUTATION = graphql(`
 `);
 
 type Props = {
-  username: string;
-  imageUrl?: string | null;
+  user: SelectUser;
   currentNote?: CurrentNoteQueryResult;
 };
 
-export function NoteForm({ username, imageUrl, currentNote }: Props) {
+export function NoteForm({ user, currentNote }: Props) {
   const router = useRouter();
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
@@ -163,7 +163,11 @@ export function NoteForm({ username, imageUrl, currentNote }: Props) {
               content: noteContent,
               updatedAt,
             }}
-            user={{ username, imageUrl }}
+            user={{
+              displayName: user.displayName,
+              username: user.username,
+              imageUrl: user.imageUrl,
+            }}
             menuItems={menuItems}
           />
         </div>

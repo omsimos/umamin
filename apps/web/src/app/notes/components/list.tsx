@@ -23,6 +23,7 @@ const NOTES_FROM_CURSOR_MUTATION = graphql(`
         user {
           __typename
           id
+          displayName
           username
           imageUrl
         }

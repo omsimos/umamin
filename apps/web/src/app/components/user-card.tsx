@@ -49,7 +49,7 @@ export function UserCard({
               <p className="text-muted-foreground text-sm">@{user.username}</p>
 
               <p
-                className={cn("my-2 min-w-0 break-words", {
+                className={cn("my-2 min-w-0 text-sm break-words", {
                   "break-all": user?.bio?.split(" ").length === 1,
                 })}
               >

@@ -8,6 +8,8 @@ import { ChatForm } from "./components/chat-form";
 import { USER_BY_USERNAME_QUERY } from "./queries";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 import { ProfileHoverCard } from "@/app/components/profile-hover-card";
+import { BadgeCheck, MessageCircleOff } from "lucide-react";
+import { ShareButton } from "@/app/components/share-button";
 
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
@@ -40,24 +42,32 @@ export default async function SendMessage({
     <main className="mt-36 pb-24 grid place-items-center container">
       <Card className="border flex flex-col w-full max-w-2xl">
         <CardHeader className="bg-background border-b w-full item-center rounded-t-2xl flex justify-between flex-row">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <span className="text-muted-foreground">To:</span>
-            <ProfileHoverCard
-              user={{
-                username: user.username,
-                imageUrl: user.imageUrl,
-                createdAt: user.createdAt,
-              }}
-            >
-              <div>
-                <p className="font-medium leading-none cursor-pointer">
-                  @{user.username}
-                </p>
-              </div>
-            </ProfileHoverCard>
+            <p className="font-semibold text-sm">
+              {user?.displayName ?? user?.username}
+            </p>
+            {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
+              user.username,
+            ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
+            {user.quietMode && (
+              <MessageCircleOff className="h-4 w-4 text-pink-500" />
+            )}
+
+            <ShareButton username={user.username} />
           </div>
 
-          <span className="font-semibold text-muted-foreground">umamin</span>
+          {/* <ProfileHoverCard 
+            user={{
+              username: user.username,
+              imageUrl: user.imageUrl,
+              createdAt: user.createdAt,
+            }}
+          >
+            <p className="text-muted-foreground text-sm">@{user.username}</p>
+          </ProfileHoverCard> */}
+
+          <span className="font-semibold text-muted-foreground pb-2">umamin</span>
         </CardHeader>
 
         <ChatForm currentUserId={session?.userId} user={user} />

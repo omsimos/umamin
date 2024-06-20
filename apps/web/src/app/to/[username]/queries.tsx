@@ -5,6 +5,7 @@ export const USER_BY_USERNAME_QUERY = graphql(`
     userByUsername(username: $username) {
       id
       username
+      displayName
       question
       quietMode
       imageUrl

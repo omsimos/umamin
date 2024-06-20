@@ -17,6 +17,7 @@ import { cn } from "@umamin/ui/lib/utils";
 type Props = {
   imageUrl: string;
   username: string;
+  displayName: string;
   createdAt: number;
   content: string;
   isLiked: boolean;
@@ -42,21 +43,20 @@ export function SocialCard(props: Props) {
               href={`/user/${props.username}`}
               className="font-semibold hover:underline"
             >
-              {props.username}
+              {props.displayName}
             </Link>
 
             {props.isVerified && (
               <BadgeCheck className="w-4 h-4 text-pink-500" />
             )}
-
-            <p className="text-muted-foreground">
-              {formatDistanceToNow(fromUnixTime(props.createdAt), {
-                addSuffix: true,
-              })}
-            </p>
+            <span className="text-muted-foreground">@{props.username}</span>
           </div>
 
-          <Ellipsis className="h-5 w-5 text-muted-foreground" />
+          <p className="text-muted-foreground text-xs">
+            {formatDistanceToNow(fromUnixTime(props.createdAt), {
+              addSuffix: true,
+            })}
+          </p>
         </div>
 
         <p className="text-sm mt-1">{props.content}</p>
