@@ -93,8 +93,8 @@ export function NoteForm({ username, imageUrl, currentNote }: Props) {
         }
 
         if (res.data) {
+          setNoteContent(content);
           setContent("");
-          setNoteContent(res?.data?.updateNote?.content);
           setUpdatedAt(res?.data?.updateNote?.updatedAt);
           setAnonymous(res.data.updateNote.isAnonymous);
           toast.success("Note updated");

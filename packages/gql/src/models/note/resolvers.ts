@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { GraphQLError } from "graphql";
+import { aesDecrypt, aesEncrypt } from "@umamin/aes";
 import { db, and, desc, eq, lt, or } from "@umamin/db";
 
 import builder from "../../builder";
@@ -24,6 +25,12 @@ builder.queryFields((t) => ({
           where: eq(note.userId, ctx.userId),
         });
 
+        const decryptedText = await aesDecrypt(result?.content ?? "");
+
+        if (result && decryptedText) {
+          result.content = decryptedText;
+        }
+
         return result;
       } catch (err) {
         console.log(err);
@@ -47,15 +54,23 @@ builder.queryFields((t) => ({
           },
         });
 
-        const result = _result.map((note) => {
+        const result = _result.map(async (note) => {
+          const decryptedText = await aesDecrypt(note.content);
+
           if (note.isAnonymous) {
             note.user = null!;
+          }
+
+          if (decryptedText) {
+            note.content = decryptedText;
           }
 
           return note;
         });
 
-        return result;
+        const res = await Promise.all(result);
+
+        return res;
       } catch (err) {
         console.log(err);
         throw err;
@@ -83,18 +98,20 @@ builder.mutationFields((t) => ({
       }
 
       try {
+        const { encryptedText } = await aesEncrypt(content);
+
         const result = await db
           .insert(note)
           .values({
             id: nanoid(),
             userId: ctx.userId,
-            content,
+            content: encryptedText,
             isAnonymous,
           })
           .onConflictDoUpdate({
             target: note.userId,
             set: {
-              content,
+              content: encryptedText,
               isAnonymous,
             },
           })
@@ -126,7 +143,7 @@ builder.mutationFields((t) => ({
       }
 
       try {
-        const result = await db.query.note.findMany({
+        const _result = await db.query.note.findMany({
           where: cursor
             ? or(
                 lt(note.updatedAt, cursor.updatedAt),
@@ -137,15 +154,32 @@ builder.mutationFields((t) => ({
               )
             : undefined,
           limit: 10,
+          with: { user: true },
           orderBy: [desc(note.updatedAt), desc(note.id)],
         });
 
+        const result = _result.map(async (note) => {
+          const decryptedText = await aesDecrypt(note.content);
+
+          if (note.isAnonymous) {
+            note.user = null!;
+          }
+
+          if (decryptedText) {
+            note.content = decryptedText;
+          }
+
+          return note;
+        });
+
+        const res = await Promise.all(result);
+
         return {
-          data: result,
-          hasMore: result.length === 10,
+          data: res,
+          hasMore: res.length === 10,
           cursor: {
-            id: result[result.length - 1]?.id,
-            updatedAt: result[result.length - 1]?.updatedAt,
+            id: res[result.length - 1]?.id,
+            updatedAt: res[result.length - 1]?.updatedAt,
           },
         };
       } catch (err) {
