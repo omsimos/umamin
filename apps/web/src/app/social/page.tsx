@@ -44,7 +44,7 @@ export default function Social() {
 
       <section className="mt-12 border-t border-t-muted pt-6 w-full max-w-lg mx-auto space-y-6">
         {data.map((props) => (
-          <SocialCard {...props} />
+          <SocialCard key={props.createdAt} {...props} />
         ))}
       </section>
     </main>
