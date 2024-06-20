@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { logEvent } from "firebase/analytics";
 import { BadgeCheck, ScanFace } from "lucide-react";
-import { formatDistanceToNow, fromUnixTime } from "date-fns";
 
 import { Menu, type MenuItems } from "@/app/components/menu";
 import {
