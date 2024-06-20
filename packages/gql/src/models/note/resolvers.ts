@@ -98,20 +98,20 @@ builder.mutationFields((t) => ({
       }
 
       try {
-        const { encryptedText } = await aesEncrypt(content);
+        const encryptedContent = await aesEncrypt(content);
 
         const result = await db
           .insert(note)
           .values({
             id: nanoid(),
             userId: ctx.userId,
-            content: encryptedText,
+            content: encryptedContent,
             isAnonymous,
           })
           .onConflictDoUpdate({
             target: note.userId,
             set: {
-              content: encryptedText,
+              content: encryptedContent,
               isAnonymous,
             },
           })

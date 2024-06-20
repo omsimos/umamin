@@ -43,9 +43,10 @@ builder.queryFields((t) => ({
         });
 
         const result = _result.map(async (msg) => {
-          const decryptedText = await aesDecrypt(msg.content);
-          if (decryptedText) {
-            msg.content = decryptedText;
+          const decryptedContent = await aesDecrypt(msg.content);
+
+          if (decryptedContent) {
+            msg.content = decryptedContent;
           }
 
           return msg;
@@ -73,11 +74,11 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_, { input }) => {
       try {
-        const { encryptedText } = await aesEncrypt(input.content);
+        const encryptedContent = await aesEncrypt(input.content);
 
         const result = await db
           .insert(message)
-          .values({ id: nanoid(), ...input, content: encryptedText })
+          .values({ id: nanoid(), ...input, content: encryptedContent })
           .returning();
 
         return result[0]!;
@@ -100,9 +101,11 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_, args) => {
       try {
+        const encryptedContent = await aesEncrypt(args.content);
+
         await db
           .update(message)
-          .set({ reply: args.content })
+          .set({ reply: encryptedContent })
           .where(eq(message.id, args.messageId));
 
         return "Success";
@@ -169,9 +172,9 @@ builder.mutationFields((t) => ({
         });
 
         const result = _result.map(async (msg) => {
-          const decryptedText = await aesDecrypt(msg.content);
-          if (decryptedText) {
-            msg.content = decryptedText;
+          const decryptedContent = await aesDecrypt(msg.content);
+          if (decryptedContent) {
+            msg.content = decryptedContent;
           }
 
           return msg;

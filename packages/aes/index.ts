@@ -1,3 +1,4 @@
+const crypto = globalThis.crypto;
 const { subtle } = globalThis.crypto;
 
 function toUint8Array(base64Text: string) {
@@ -25,10 +26,7 @@ export async function generateAesKey() {
   const rawKey = await subtle.exportKey("raw", key);
   const keyBase64 = toBase64(new Uint8Array(rawKey));
 
-  return {
-    key,
-    keyBase64,
-  };
+  return keyBase64;
 }
 
 export async function aesEncrypt(plainText: string) {
@@ -58,15 +56,7 @@ export async function aesEncrypt(plainText: string) {
   const ivBase64 = toBase64(iv);
   const cipherTextBase64 = toBase64(new Uint8Array(cipherText));
 
-  const encryptedText = `${cipherTextBase64}.${ivBase64}`;
-
-  return {
-    iv,
-    cipherText,
-    cipherTextBase64,
-    ivBase64,
-    encryptedText,
-  };
+  return `${cipherTextBase64}.${ivBase64}`;
 }
 
 export async function aesDecrypt(text: string) {
