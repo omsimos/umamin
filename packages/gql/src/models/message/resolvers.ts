@@ -44,9 +44,15 @@ builder.queryFields((t) => ({
 
         const result = _result.map(async (msg) => {
           const decryptedContent = await aesDecrypt(msg.content);
-
           if (decryptedContent) {
             msg.content = decryptedContent;
+          }
+
+          if (msg.reply) {
+            const decryptedReply = await aesDecrypt(msg.reply);
+            if (decryptedReply) {
+              msg.reply = decryptedReply;
+            }
           }
 
           return msg;
