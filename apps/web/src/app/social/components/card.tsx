@@ -4,10 +4,9 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import { BadgeCheck, Heart, MessageCircle, ScanFace } from "lucide-react";
-import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import { cn } from "@umamin/ui/lib/utils";
 import { shortTimeAgo } from "@/lib/utils";
+import { BadgeCheck, Heart, MessageCircle, ScanFace } from "lucide-react";
 
 type Props = {
   imageUrl: string;
