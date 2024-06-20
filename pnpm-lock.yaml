@@ -127,14 +127,14 @@ importers:
   apps/web:
     dependencies:
       '@graphql-yoga/plugin-apq':
-        specifier: ^3.3.0
-        version: 3.3.1(@graphql-tools/utils@10.2.2(graphql@16.8.1))(graphql-yoga@5.3.1(graphql@16.8.1))
+        specifier: ^3.4.0
+        version: 3.4.0(@graphql-tools/utils@10.2.2(graphql@16.8.1))(graphql-yoga@5.4.0(graphql@16.8.1))
       '@graphql-yoga/plugin-csrf-prevention':
-        specifier: ^3.3.0
-        version: 3.3.1(graphql-yoga@5.3.1(graphql@16.8.1))
+        specifier: ^3.4.0
+        version: 3.4.0(graphql-yoga@5.4.0(graphql@16.8.1))
       '@graphql-yoga/plugin-disable-introspection':
-        specifier: ^2.3.0
-        version: 2.3.1(graphql-yoga@5.3.1(graphql@16.8.1))(graphql@16.8.1)
+        specifier: ^2.4.0
+        version: 2.4.0(graphql-yoga@5.4.0(graphql@16.8.1))(graphql@16.8.1)
       '@hookform/resolvers':
         specifier: ^3.3.4
         version: 3.6.0(react-hook-form@7.51.5(react@18.3.1))
@@ -157,7 +157,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@urql/core':
-        specifier: ^5.0.3
+        specifier: ^5.0.4
         version: 5.0.4(graphql@16.8.1)
       '@urql/exchange-graphcache':
         specifier: ^7.1.1
@@ -166,7 +166,7 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1(next@14.2.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(urql@4.1.0(@urql/core@5.0.4(graphql@16.8.1))(react@18.3.1))
       arctic:
-        specifier: ^1.9.0
+        specifier: ^1.9.1
         version: 1.9.1
       class-variance-authority:
         specifier: ^0.7.0
@@ -190,8 +190,8 @@ importers:
         specifier: ^16.8.1
         version: 16.8.1
       graphql-yoga:
-        specifier: ^5.3.1
-        version: 5.3.1(graphql@16.8.1)
+        specifier: ^5.4.0
+        version: 5.4.0(graphql@16.8.1)
       lucia:
         specifier: ^3.2.0
         version: 3.2.0
@@ -1198,11 +1198,24 @@ packages:
       '@graphql-tools/utils': ^10.0.0
       graphql-yoga: ^5.3.1
 
+  '@graphql-yoga/plugin-apq@3.4.0':
+    resolution: {integrity: sha512-GywEYCVb67DY3zWE8X9mkQ1wDUD2h/eMgesDRfccUH3VN12dTkVV8z2+Oyxtb4DoKHi1inwdbW6gdm6rttLyQg==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      '@graphql-tools/utils': ^10.0.0
+      graphql-yoga: ^5.4.0
+
   '@graphql-yoga/plugin-csrf-prevention@3.3.1':
     resolution: {integrity: sha512-SRn9VbTy6tPobJrUQfJuHOF8TmV5q0gOKAo4+dz3sC/WTHWq0gXXv01cekQEAjTd+8F6RF53dpB+ECOrNrBi+w==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       graphql-yoga: ^5.3.1
+
+  '@graphql-yoga/plugin-csrf-prevention@3.4.0':
+    resolution: {integrity: sha512-XpjCC08YQxM001udawIZUlcWT2V3NaYdm7tIKsZbieMK5VJcY+8CqnU6UvwnyWcIAgrie57JK/GouvxCEqDa/Q==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      graphql-yoga: ^5.4.0
 
   '@graphql-yoga/plugin-disable-introspection@2.3.1':
     resolution: {integrity: sha512-CTu6Ta6xczgn+n2vpm0QUzgi7BqPjDQQOg8gg8l7SmeavfmEvBHtz2NyaA97vHON2SsUeWRfjQxopCdPPFLETA==}
@@ -1211,8 +1224,19 @@ packages:
       graphql: ^15.2.0 || ^16.0.0
       graphql-yoga: ^5.3.1
 
+  '@graphql-yoga/plugin-disable-introspection@2.4.0':
+    resolution: {integrity: sha512-h3mIEIVw4QSM70R44ZNZh8zKFm43HbzYVqZrs9we6veNdJo7/mlvDLvXZhAI9+d5ShlFjSjIfIAUySlTwqq8zQ==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      graphql: ^15.2.0 || ^16.0.0
+      graphql-yoga: ^5.4.0
+
   '@graphql-yoga/subscription@5.0.0':
     resolution: {integrity: sha512-Ri7sK8hmxd/kwaEa0YT8uqQUb2wOLsmBMxI90QDyf96lzOMJRgBuNYoEkU1pSgsgmW2glceZ96sRYfaXqwVxUw==}
+    engines: {node: '>=18.0.0'}
+
+  '@graphql-yoga/subscription@5.0.1':
+    resolution: {integrity: sha512-1wCB1DfAnaLzS+IdoOzELGGnx1ODEg9nzQXFh4u2j02vAnne6d+v4A7HIH9EqzVdPLoAaMKXCZUUdKs+j3z1fg==}
     engines: {node: '>=18.0.0'}
 
   '@graphql-yoga/typed-event-target@3.0.0':
@@ -2510,6 +2534,11 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  acorn@8.12.0:
+    resolution: {integrity: sha512-RTvkC4w+KNXrM39/lWCUaG0IbRkWdCv7W/IOW9oU6SawyxulvkQy5HQPVTKxEjczcUvapcrw3cFx/60VN/NRNw==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
+
   ajv@6.12.6:
     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
 
@@ -3422,6 +3451,12 @@ packages:
 
   graphql-yoga@5.3.1:
     resolution: {integrity: sha512-n918QV6TF7xTjb9ASnozgsr4ydMc08c+x4eRAWKxxWVwSnzdP2xeN2zw1ljIzRD0ccSCNoBajGDKwcZkJDitPA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      graphql: ^15.2.0 || ^16.0.0
+
+  graphql-yoga@5.4.0:
+    resolution: {integrity: sha512-o91DJjjAMwhb7PFJFA9yb/K55oCbT+0oFKqbwg5RHWAiy7YMgKMVgmbQFmtGPgkKdfbnJCVdYkX5OF30FTq46g==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       graphql: ^15.2.0 || ^16.0.0
@@ -5517,16 +5552,37 @@ snapshots:
       '@graphql-tools/utils': 10.2.2(graphql@16.8.1)
       graphql-yoga: 5.3.1(graphql@16.8.1)
 
+  '@graphql-yoga/plugin-apq@3.4.0(@graphql-tools/utils@10.2.2(graphql@16.8.1))(graphql-yoga@5.4.0(graphql@16.8.1))':
+    dependencies:
+      '@graphql-tools/utils': 10.2.2(graphql@16.8.1)
+      graphql-yoga: 5.4.0(graphql@16.8.1)
+
   '@graphql-yoga/plugin-csrf-prevention@3.3.1(graphql-yoga@5.3.1(graphql@16.8.1))':
     dependencies:
       graphql-yoga: 5.3.1(graphql@16.8.1)
+
+  '@graphql-yoga/plugin-csrf-prevention@3.4.0(graphql-yoga@5.4.0(graphql@16.8.1))':
+    dependencies:
+      graphql-yoga: 5.4.0(graphql@16.8.1)
 
   '@graphql-yoga/plugin-disable-introspection@2.3.1(graphql-yoga@5.3.1(graphql@16.8.1))(graphql@16.8.1)':
     dependencies:
       graphql: 16.8.1
       graphql-yoga: 5.3.1(graphql@16.8.1)
 
+  '@graphql-yoga/plugin-disable-introspection@2.4.0(graphql-yoga@5.4.0(graphql@16.8.1))(graphql@16.8.1)':
+    dependencies:
+      graphql: 16.8.1
+      graphql-yoga: 5.4.0(graphql@16.8.1)
+
   '@graphql-yoga/subscription@5.0.0':
+    dependencies:
+      '@graphql-yoga/typed-event-target': 3.0.0
+      '@repeaterjs/repeater': 3.0.6
+      '@whatwg-node/events': 0.1.1
+      tslib: 2.6.3
+
+  '@graphql-yoga/subscription@5.0.1':
     dependencies:
       '@graphql-yoga/typed-event-target': 3.0.0
       '@repeaterjs/repeater': 3.0.6
@@ -6855,6 +6911,8 @@ snapshots:
 
   acorn@8.11.3: {}
 
+  acorn@8.12.0: {}
+
   ajv@6.12.6:
     dependencies:
       fast-deep-equal: 3.1.3
@@ -7094,7 +7152,7 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.4.15
       '@types/estree': 1.0.5
-      acorn: 8.11.3
+      acorn: 8.12.0
       estree-walker: 3.0.3
       periscopic: 3.1.0
 
@@ -7434,7 +7492,7 @@ snapshots:
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       eslint-plugin-jsx-a11y: 6.8.0(eslint@8.57.0)
       eslint-plugin-react: 7.34.2(eslint@8.57.0)
       eslint-plugin-react-hooks: 4.6.2(eslint@8.57.0)
@@ -7505,7 +7563,7 @@ snapshots:
       enhanced-resolve: 5.17.0
       eslint: 8.57.0
       eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       fast-glob: 3.3.2
       get-tsconfig: 4.7.5
       is-core-module: 2.13.1
@@ -7618,7 +7676,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0):
+  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.2.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
     dependencies:
       array-includes: 3.1.8
       array.prototype.findlastindex: 1.2.5
@@ -8088,6 +8146,21 @@ snapshots:
       '@graphql-tools/utils': 10.2.1(graphql@16.8.1)
       '@graphql-yoga/logger': 2.0.0
       '@graphql-yoga/subscription': 5.0.0
+      '@whatwg-node/fetch': 0.9.18
+      '@whatwg-node/server': 0.9.34
+      dset: 3.1.3
+      graphql: 16.8.1
+      lru-cache: 10.2.2
+      tslib: 2.6.3
+
+  graphql-yoga@5.4.0(graphql@16.8.1):
+    dependencies:
+      '@envelop/core': 5.0.1
+      '@graphql-tools/executor': 1.2.6(graphql@16.8.1)
+      '@graphql-tools/schema': 10.0.4(graphql@16.8.1)
+      '@graphql-tools/utils': 10.2.2(graphql@16.8.1)
+      '@graphql-yoga/logger': 2.0.0
+      '@graphql-yoga/subscription': 5.0.1
       '@whatwg-node/fetch': 0.9.18
       '@whatwg-node/server': 0.9.34
       dset: 3.1.3
@@ -9108,7 +9181,7 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.4.15
       '@jridgewell/trace-mapping': 0.3.25
       '@types/estree': 1.0.5
-      acorn: 8.11.3
+      acorn: 8.12.0
       aria-query: 5.3.0
       axobject-query: 4.0.0
       code-red: 1.0.4
