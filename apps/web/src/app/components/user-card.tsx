@@ -33,7 +33,7 @@ export function UserCard({
               <div className="flex items-center gap-2">
                 <div className="flex items-center space-x-1">
                   <p className="font-semibold md:text-xl">
-                    {user?.displayName ?? user?.username}
+                    {user.displayName ? user.displayName : user.username}
                   </p>
                   {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
                     user.username,
