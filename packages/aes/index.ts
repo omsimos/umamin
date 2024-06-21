@@ -94,3 +94,37 @@ export async function aesDecrypt(text: string) {
     return null;
   }
 }
+
+export async function aesEncryptDemo(plainText: string) {
+  const te = new TextEncoder();
+  const iv = crypto.getRandomValues(new Uint8Array(16));
+
+  // For demo purposes only
+  const demoKey = toUint8Array(
+    "bf2XryXuYmM1KMt3T6nDcaWukPgf/Igw6TTNlFg1jD0=",
+  ).buffer;
+
+  const key = await subtle.importKey(
+    "raw",
+    demoKey,
+    {
+      name: "AES-CBC",
+    },
+    true,
+    ["encrypt", "decrypt"],
+  );
+
+  const cipherText = await subtle.encrypt(
+    {
+      name: "AES-CBC",
+      iv,
+    },
+    key,
+    te.encode(plainText),
+  );
+
+  const ivBase64 = toBase64(iv);
+  const cipherTextBase64 = toBase64(new Uint8Array(cipherText));
+
+  return `${cipherTextBase64}.${ivBase64}`;
+}

@@ -1,12 +1,12 @@
 import { cache } from "react";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
+import { BadgeCheck, Lock, MessageCircleOff } from "lucide-react";
 
 import { getSession } from "@/lib/auth";
 import { getClient } from "@/lib/gql/rsc";
 import { ChatForm } from "./components/chat-form";
 import { USER_BY_USERNAME_QUERY } from "./queries";
-import { BadgeCheck, MessageCircleOff } from "lucide-react";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
@@ -66,11 +66,19 @@ export default async function SendMessage({
             <p className="text-muted-foreground text-sm">@{user.username}</p>
           </ProfileHoverCard> */}
 
-          <span className="font-semibold text-muted-foreground pb-2">umamin</span>
+          <span className="font-semibold text-muted-foreground pb-2">
+            umamin
+          </span>
         </CardHeader>
 
         <ChatForm currentUserId={session?.userId} user={user} />
       </Card>
+
+      <div className="mt-4 text-muted-foreground text-sm flex items-center">
+        <Lock className="h-4 w-4 mr-2" />
+        All messages are automatically encrypted
+        <Lock className="h-4 w-4 ml-2" />
+      </div>
 
       <UnauthenticatedDialog isLoggedIn={!!session} />
     </main>

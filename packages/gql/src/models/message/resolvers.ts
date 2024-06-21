@@ -4,7 +4,7 @@ import { db, and, desc, eq, lt, or } from "@umamin/db";
 
 import builder from "../../builder";
 import { message } from "@umamin/db/schema/message";
-import { aesEncrypt, aesDecrypt } from "@umamin/aes";
+import { aesEncrypt, aesDecrypt, aesEncryptDemo } from "@umamin/aes";
 import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 
 builder.queryFields((t) => ({
@@ -217,6 +217,26 @@ builder.mutationFields((t) => ({
         await db.delete(message).where(eq(message.id, args.id));
 
         return "Success";
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+  encryptMessageDemo: t.field({
+    type: "String",
+    authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 3, duration: 20 },
+    },
+    args: {
+      content: t.arg.string({ required: true }),
+    },
+    resolve: async (_, args) => {
+      try {
+        const res = await aesEncryptDemo(args.content);
+        return res;
       } catch (err) {
         console.log(err);
         throw err;
