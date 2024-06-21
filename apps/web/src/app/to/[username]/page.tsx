@@ -50,7 +50,7 @@ export default async function SendMessage({
               user.username,
             ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
             {user.quietMode && (
-              <MessageCircleOff className="h-4 w-4 text-pink-500" />
+              <MessageCircleOff className="h-4 w-4 text-yellow-500" />
             )}
 
             <ShareButton username={user.username} />

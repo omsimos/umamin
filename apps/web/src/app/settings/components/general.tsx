@@ -8,14 +8,12 @@ import { useForm } from "react-hook-form";
 import { analytics } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { logEvent } from "firebase/analytics";
-import { MessageCircleOff } from "lucide-react";
 import { Info, Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { client } from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
 import { Input } from "@umamin/ui/components/input";
-import { Switch } from "@umamin/ui/components/switch";
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 
@@ -30,22 +28,13 @@ import {
 } from "@umamin/ui/components/form";
 import { CurrentUserResult } from "../queries";
 
-const UpdateUserMutation = graphql(`
+const UPDATE_USER_MUTATION = graphql(`
   mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
-      __typename
-      id
-      bio
-      username
-      imageUrl
-      createdAt
-      displayName
-    }
+    updateUser(input: $input)
   }
 `);
 
 const FormSchema = z.object({
-  quietMode: z.boolean(),
   question: z
     .string()
     .min(1, {
@@ -81,7 +70,6 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      quietMode: user?.quietMode,
       bio: user?.bio ?? "",
       question: user?.question,
       username: user?.username,
@@ -94,7 +82,6 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
       user?.username === data.username &&
       user?.bio === data.bio &&
       user?.question === data.question &&
-      user?.quietMode === data.quietMode &&
       user?.displayName === data.displayName
     ) {
       toast.info("No changes detected");
@@ -103,7 +90,7 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
 
     setSaving(true);
 
-    const res = await client.mutation(UpdateUserMutation, {
+    const res = await client.mutation(UPDATE_USER_MUTATION, {
       input: {
         ...data,
         username: data.username.toLowerCase(),
@@ -125,32 +112,6 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="quietMode"
-          render={({ field }) => (
-            <FormItem>
-              <div className=" flex items-center space-x-4 rounded-md border p-4">
-                <MessageCircleOff />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-none">Quiet Mode</p>
-                  <p className="text-sm text-muted-foreground">
-                    Temporarily disable incoming messages
-                  </p>
-                </div>
-                <FormControl>
-                  <Switch
-                    disabled={saving}
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <FormField
           control={form.control}
           name="displayName"

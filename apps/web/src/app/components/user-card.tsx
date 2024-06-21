@@ -42,7 +42,7 @@ export function UserCard({
                 user.username,
               ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
               {user.quietMode && (
-                <MessageCircleOff className="h-4 w-4 mr-2 text-sm text-pink-500" />
+                <MessageCircleOff className="h-4 w-4 mr-2 text-sm text-yellow-500" />
               )}
             </div>
 
