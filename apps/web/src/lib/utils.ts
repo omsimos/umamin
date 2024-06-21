@@ -54,14 +54,15 @@ export function shortTimeAgo(epoch: number) {
     return `${minutesMatch[1]}m`;
   }
 
-  const daysMatch = distance.match(/(\d+)\s+day/);
-  if (daysMatch) {
-    return `${daysMatch[1]}h`;
-  }
-
   const hoursMatch = distance.match(/(\d+)\s+hour/);
   if (hoursMatch) {
     return `${hoursMatch[1]}h`;
+  }
+
+
+  const daysMatch = distance.match(/(\d+)\s+day/);
+  if (daysMatch) {
+    return `${daysMatch[1]}d`;
   }
 
   const monthsMatch = distance.match(/(\d+)\s+month/);
