@@ -66,7 +66,7 @@ export default async function Page({
     <section className="container max-w-xl lg:mt-36 mt-28">
       <UserCard {...user} />
 
-      <div className="flex gap-2 mt-3">
+      <div className="flex gap-2 mt-6">
         <Button variant="outline" className="w-full" disabled>
           <UserPlus className="h-4 w-4 mr-2" />
           Follow
