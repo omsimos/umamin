@@ -32,9 +32,9 @@ export function NoteCard({ note, user, menuItems }: Props) {
   return (
     <div id={note.id}>
       <Card className="flex flex-col items-start justify-between">
-        <CardHeader className="w-full">
+        <CardHeader className="w-full pb-4 text-sm">
           <div className="flex justify-between items-start">
-            <div className="flex gap-4">
+            <div className="flex gap-3 items-center">
               {note.isAnonymous ? (
                 <Avatar>
                   <AvatarFallback>
@@ -56,17 +56,17 @@ export function NoteCard({ note, user, menuItems }: Props) {
                 </Link>
               )}
 
-              <div className="flex flex-col">
+              <div className="flex flex-col mt-1">
                 {note.isAnonymous ? (
-                  <p className="text-muted-foreground font-semibold">
+                  <span className="text-muted-foreground font-semibold leading-normal">
                     anonymous
-                  </p>
+                  </span>
                 ) : (
                   <Link
                     href={`/user/${username}`}
-                    className="flex items-center space-x-1 text-sm"
+                    className="flex items-center space-x-1"
                   >
-                    <span className="font-semibold flex-none">
+                    <span className="font-semibold flex-none text-base leading-none">
                       {user?.displayName ? user.displayName : user?.username}
                     </span>
                     {username &&
@@ -75,21 +75,22 @@ export function NoteCard({ note, user, menuItems }: Props) {
                       ).includes(username) && (
                         <BadgeCheck className="w-4 h-4 text-pink-500" />
                       )}
-                    <span className="text-muted-foreground truncate">
-                      @{username}
-                    </span>
                   </Link>
                 )}
 
-                {note.updatedAt && (
-                  <p className="text-sm text-muted-foreground">
-                    {shortTimeAgo(note.updatedAt)}
-                  </p>
-                )}
+                <span className="text-muted-foreground truncate">
+                  @{username}
+                </span>
               </div>
             </div>
 
             <div className="flex gap-x-1 text-muted-foreground items-center">
+              {note.updatedAt && (
+                <span className="text-xs text-muted-foreground mr-1">
+                  {shortTimeAgo(note.updatedAt)}
+                </span>
+              )}
+
               {!note.isAnonymous && (
                 <Link href={`/to/${username}`} className="hover:underline">
                   <Icons.chat className="h-5 w-5" />
