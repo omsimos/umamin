@@ -20,7 +20,7 @@ export default async function Register() {
           Umamin Account
         </h2>
         <p className="text-sm text-muted-foreground">
-          Get started by creating your profile.
+          Get started by creating your new profile
         </p>
       </div>
 
