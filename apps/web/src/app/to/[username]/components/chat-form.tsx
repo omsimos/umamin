@@ -85,10 +85,9 @@ export function ChatForm({ currentUserId, user }: Props) {
       />
 
       {user?.quietMode ? (
-        <div className="text-muted-foreground text-sm flex items-center justify-center">
-          <MessageCircleOff className="h-4 w-4 mr-2" />
+        <span className="text-muted-foreground text-center text-sm">
           User has enabled quiet mode
-        </div>
+        </span>
       ) : (
         <form
           onSubmit={handleSubmit}

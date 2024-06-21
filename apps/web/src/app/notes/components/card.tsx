@@ -34,7 +34,7 @@ export function NoteCard({ note, user, menuItems }: Props) {
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full pb-4 text-sm">
           <div className="flex justify-between items-start">
-            <div className="flex gap-3 items-center">
+            <div className="flex gap-3">
               {note.isAnonymous ? (
                 <Avatar>
                   <AvatarFallback>
@@ -58,7 +58,7 @@ export function NoteCard({ note, user, menuItems }: Props) {
 
               <div className="flex flex-col mt-1">
                 {note.isAnonymous ? (
-                  <span className="text-muted-foreground font-semibold leading-normal">
+                  <span className="text-muted-foreground text-base font-semibold leading-normal">
                     anonymous
                   </span>
                 ) : (
@@ -78,9 +78,11 @@ export function NoteCard({ note, user, menuItems }: Props) {
                   </Link>
                 )}
 
-                <span className="text-muted-foreground truncate">
-                  @{username}
-                </span>
+                {!note.isAnonymous && (
+                  <span className="text-muted-foreground truncate">
+                    @{username}
+                  </span>
+                )}
               </div>
             </div>
 

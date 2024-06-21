@@ -9,6 +9,7 @@ import { getSession, lucia } from "@/lib/auth";
 import { CURRENT_USER_QUERY } from "./queries";
 import { GeneralSettings } from "./components/general";
 import { AccountSettings } from "./components/account";
+import { PrivacySettings } from "./components/privacy";
 import { SignOutButton } from "./components/sign-out-button";
 
 import {
@@ -46,6 +47,10 @@ export default async function Settings() {
         <AccountSettings user={userData} pwdHash={user.passwordHash} />
       ),
     },
+    {
+      name: "Privacy",
+      content: !!userData && <PrivacySettings user={userData} />,
+    },
   ];
 
   return (
@@ -58,10 +63,10 @@ export default async function Settings() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Manage your account settings.
+        Manage your account settings
       </p>
 
-      <Tabs defaultValue="General" className="w-full mt-6">
+      <Tabs defaultValue="General" className="w-full mt-12">
         <TabsList className="w-full bg-transparent px-0 flex mb-8">
           {tabsData.map((tab) => (
             <TabsTrigger
