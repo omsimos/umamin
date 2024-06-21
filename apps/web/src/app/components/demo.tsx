@@ -3,11 +3,13 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
+import { logEvent } from "firebase/analytics";
 import { BadgeCheck, Loader2, Send } from "lucide-react";
 
 import { ChatList } from "./chat-list";
 import { client } from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
+import { analytics } from "@/lib/firebase";
 import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
@@ -44,6 +46,7 @@ export function Demo() {
     }
 
     setLoading(false);
+    logEvent(analytics, "send_message_demo");
   };
 
   return (

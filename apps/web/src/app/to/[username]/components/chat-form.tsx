@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
 import { analytics } from "@/lib/firebase";
+import { Loader2, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
-import { Loader2, MessageCircleOff, Send } from "lucide-react";
 
 import { formatError } from "@/lib/utils";
 import { client } from "@/lib/gql/client";

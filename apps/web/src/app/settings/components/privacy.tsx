@@ -4,10 +4,12 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
 import { useRouter } from "next/navigation";
+import { logEvent } from "firebase/analytics";
 import { CircleUserRound, MessageCircleOff } from "lucide-react";
 
 import { formatError } from "@/lib/utils";
 import { client } from "@/lib/gql/client";
+import { analytics } from "@/lib/firebase";
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
 
@@ -54,6 +56,8 @@ export function PrivacySettings({ user }: { user: CurrentUserResult }) {
     toast.success(`Picture ${!picture ? "is now" : "is no longer"} displaying`);
     setLoading(false);
     router.refresh();
+
+    logEvent(analytics, "toggle_display_picture");
   };
 
   const toggleQuietMode = async () => {
@@ -73,6 +77,8 @@ export function PrivacySettings({ user }: { user: CurrentUserResult }) {
     toast.success(`Quiet mode ${!quietMode ? "enabled" : "disabled"}`);
     setLoading(false);
     router.refresh();
+
+    logEvent(analytics, "toggle_quiet_mode");
   };
 
   return (
