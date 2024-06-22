@@ -202,10 +202,10 @@ builder.mutationFields((t) => ({
                   lt(message.createdAt, cursor.createdAt),
                   and(
                     eq(message.createdAt, cursor.createdAt),
-                    lt(message.id, cursor.id),
-                  ),
+                    lt(message.id, cursor.id)
+                  )
                 )
-              : undefined,
+              : undefined
           ),
           limit: 5,
           orderBy: [desc(message.createdAt), desc(message.id)],
@@ -266,7 +266,6 @@ builder.mutationFields((t) => ({
 
   encryptMessageDemo: t.field({
     type: "String",
-    authScopes: { authenticated: true },
     directives: {
       rateLimit: { limit: 3, duration: 20 },
     },
