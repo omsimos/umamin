@@ -3,19 +3,22 @@ import { ExternalLink, Lock } from "lucide-react";
 
 import { Demo } from "./components/demo";
 import { Button } from "@umamin/ui/components/button";
+import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
 
 export default async function Home() {
   return (
     <main className="flex items-center flex-col min-h-screen lg:pt-44 py-36 container">
       <Link
-        className="flex items-center space-x-2 rounded-full bg-gradient-to-b from-zinc-800 to-zinc-900 mb-2 text-sm px-4 py-2"
         href="https://v1.umamin.link"
         target="_blank"
+        className="group rounded-full border text-sm text-white transition-all ease-in hover:cursor-pointer border-white/5 bg-neutral-900 hover:bg-neutral-800"
       >
-        <span className="text-muted-foreground">
-          Looking for <span className="font-semibold">Umamin v1.0</span>?
-        </span>
-        <ExternalLink className="w-4 h-4" />
+        <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-2 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
+          <span>
+            🧐 Looking for <span className="font-semibold">Umamin v1.0</span>?
+          </span>
+          <ExternalLink className="ml-1 size-3 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
+        </AnimatedShinyText>
       </Link>
 
       <div className="border-b-2 border-muted border-dashed py-8">
