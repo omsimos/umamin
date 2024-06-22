@@ -4,6 +4,7 @@ import { ExternalLink, Lock } from "lucide-react";
 import { Demo } from "./components/demo";
 import { Button } from "@umamin/ui/components/button";
 import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
+import { cn } from "@umamin/ui/lib/utils";
 
 export default async function Home() {
   return (
@@ -11,9 +12,11 @@ export default async function Home() {
       <Link
         href="https://v1.umamin.link"
         target="_blank"
-        className="group rounded-full border text-sm text-white transition-all ease-in hover:cursor-pointer border-white/5 bg-neutral-900 hover:bg-neutral-800"
+        className={cn(
+          "group rounded-full border border-black/5 bg-neutral-100 text-base text-white transition-all ease-in hover:cursor-pointer hover:bg-neutral-200 dark:border-white/5 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+        )}
       >
-        <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-2 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
+        <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
           <span>
             🧐 Looking for <span className="font-semibold">Umamin v1.0</span>?
           </span>
@@ -22,7 +25,7 @@ export default async function Home() {
       </Link>
 
       <div className="border-b-2 border-muted border-dashed py-8">
-        <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent tracking-tighter text-center">
+        <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none bg-gradient-to-b from-foreground to-zinc-400 bg-clip-text text-transparent tracking-tighter text-center">
           The Platform for Anonymity
         </h1>
       </div>
@@ -30,7 +33,7 @@ export default async function Home() {
       <p className="text-muted-foreground mt-8 text-center md:text-xl max-w-2xl">
         Introducing our next generation platform for anonymous messages.{" "}
         <span className="text-white font-medium">v2.0</span> requires a new{" "}
-        <Link href="/login" className="text-white underline font-medium">
+        <Link href="/login" className="text-foreground underline font-medium">
           Umamin Account
         </Link>{" "}
         that can be used across the platform.
