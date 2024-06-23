@@ -1,62 +1,68 @@
-const crypto = globalThis.crypto;
+import * as crypto from "crypto";
 const { subtle } = globalThis.crypto;
 
 function toUint8Array(base64Text: string) {
-  return new Uint8Array(
-    atob(base64Text)
-      .split("")
-      .map((char) => char.charCodeAt(0)),
-  );
+  return new Uint8Array(Buffer.from(base64Text, "base64"));
 }
 
 function toBase64(uint8Array: Uint8Array) {
-  return btoa(String.fromCharCode(...uint8Array));
+  return Buffer.from(uint8Array).toString("base64");
 }
 
 export async function generateAesKey() {
-  const key = await subtle.generateKey(
-    {
-      name: "AES-CBC",
-      length: 256,
-    },
-    true,
-    ["encrypt", "decrypt"],
-  );
+  try {
+    const key = await subtle.generateKey(
+      {
+        name: "AES-GCM",
+        length: 256,
+      },
+      true,
+      ["encrypt", "decrypt"],
+    );
 
-  const rawKey = await subtle.exportKey("raw", key);
-  const keyBase64 = toBase64(new Uint8Array(rawKey));
-
-  return keyBase64;
+    const rawKey = await subtle.exportKey("raw", key);
+    const keyBase64 = toBase64(new Uint8Array(rawKey));
+    return keyBase64;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
 }
 
 export async function aesEncrypt(plainText: string) {
-  const te = new TextEncoder();
-  const iv = crypto.getRandomValues(new Uint8Array(16));
-  const rawKey = toUint8Array(process.env.AES_KEY ?? "").buffer;
+  try {
+    const te = new TextEncoder();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const rawKey = toUint8Array(process.env.AES_KEY ?? "");
 
-  const key = await subtle.importKey(
-    "raw",
-    rawKey,
-    {
-      name: "AES-CBC",
-    },
-    true,
-    ["encrypt", "decrypt"],
-  );
+    const key = await subtle.importKey(
+      "raw",
+      rawKey,
+      {
+        name: "AES-GCM",
+      },
+      true,
+      ["encrypt", "decrypt"],
+    );
 
-  const cipherText = await subtle.encrypt(
-    {
-      name: "AES-CBC",
-      iv,
-    },
-    key,
-    te.encode(plainText),
-  );
+    const cipherText = await subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv,
+        tagLength: 96,
+      },
+      key,
+      te.encode(plainText),
+    );
 
-  const ivBase64 = toBase64(iv);
-  const cipherTextBase64 = toBase64(new Uint8Array(cipherText));
+    const ivBase64 = toBase64(iv);
+    const cipherTextBase64 = toBase64(new Uint8Array(cipherText));
 
-  return `${cipherTextBase64}.${ivBase64}`;
+    return `${cipherTextBase64}.${ivBase64}`;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
 }
 
 export async function aesDecrypt(text: string) {
@@ -64,9 +70,9 @@ export async function aesDecrypt(text: string) {
     const cipherTextBase64 = text.split(".")[0] ?? "";
     const ivBase64 = text.split(".")[1] ?? "";
 
-    const cipherText = toUint8Array(cipherTextBase64).buffer;
+    const cipherText = toUint8Array(cipherTextBase64);
     const iv = toUint8Array(ivBase64);
-    const rawKey = toUint8Array(process.env.AES_KEY ?? "").buffer;
+    const rawKey = toUint8Array(process.env.AES_KEY ?? "");
 
     const td = new TextDecoder();
 
@@ -74,7 +80,7 @@ export async function aesDecrypt(text: string) {
       "raw",
       rawKey,
       {
-        name: "AES-CBC",
+        name: "AES-GCM",
       },
       true,
       ["encrypt", "decrypt"],
@@ -82,8 +88,9 @@ export async function aesDecrypt(text: string) {
 
     const plainText = await subtle.decrypt(
       {
-        name: "AES-CBC",
+        name: "AES-GCM",
         iv,
+        tagLength: 96,
       },
       key,
       cipherText,
@@ -91,40 +98,46 @@ export async function aesDecrypt(text: string) {
 
     return td.decode(plainText);
   } catch (err) {
+    console.log(err);
     return null;
   }
 }
 
 export async function aesEncryptDemo(plainText: string) {
-  const te = new TextEncoder();
-  const iv = crypto.getRandomValues(new Uint8Array(16));
+  try {
+    const te = new TextEncoder();
+    const iv = crypto.getRandomValues(new Uint8Array(16));
 
-  // For demo purposes only
-  const demoKey = toUint8Array(
-    "bf2XryXuYmM1KMt3T6nDcaWukPgf/Igw6TTNlFg1jD0=",
-  ).buffer;
+    // For demo purposes only
+    const demoKey = toUint8Array(
+      "62C+HNDSb5tfQXliHQ3YIeI2ix/nFQSQuuyD/aBBukY=",
+    );
 
-  const key = await subtle.importKey(
-    "raw",
-    demoKey,
-    {
-      name: "AES-CBC",
-    },
-    true,
-    ["encrypt", "decrypt"],
-  );
+    const key = await subtle.importKey(
+      "raw",
+      demoKey,
+      {
+        name: "AES-GCM",
+      },
+      true,
+      ["encrypt", "decrypt"],
+    );
 
-  const cipherText = await subtle.encrypt(
-    {
-      name: "AES-CBC",
-      iv,
-    },
-    key,
-    te.encode(plainText),
-  );
+    const cipherText = await subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv,
+      },
+      key,
+      te.encode(plainText),
+    );
 
-  const ivBase64 = toBase64(iv);
-  const cipherTextBase64 = toBase64(new Uint8Array(cipherText));
+    const ivBase64 = toBase64(iv);
+    const cipherTextBase64 = toBase64(new Uint8Array(cipherText));
 
-  return `${cipherTextBase64}.${ivBase64}`;
+    return `${cipherTextBase64}.${ivBase64}`;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
 }
