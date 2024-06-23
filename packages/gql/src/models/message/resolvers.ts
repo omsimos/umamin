@@ -8,6 +8,46 @@ import { aesEncrypt, aesDecrypt, aesEncryptDemo } from "@umamin/aes";
 import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 
 builder.queryFields((t) => ({
+  key: t.field({
+    type: "String",
+    resolve: async () => {
+      return process.env.AES_KEY ?? "";
+    },
+  }),
+
+  encrypt: t.field({
+    type: "String",
+    args: {
+      content: t.arg.string({ required: true }),
+    },
+    resolve: async (_, args) => {
+      try {
+        const res = await aesEncrypt(args.content);
+        return res;
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+  decrypt: t.field({
+    type: "String",
+    args: {
+      content: t.arg.string({ required: true }),
+    },
+    nullable: true,
+    resolve: async (_, args) => {
+      try {
+        const res = await aesDecrypt(args.content);
+        return res;
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
   messages: t.field({
     type: ["Message"],
     authScopes: { authenticated: true },
