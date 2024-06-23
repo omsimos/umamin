@@ -4,8 +4,17 @@ import { user } from "@umamin/db/schema/user";
 
 import builder from "../../builder";
 import { UpdateUserInput } from "./types";
+import { generateAesKey } from "@umamin/aes";
 
 builder.queryFields((t) => ({
+  aesKey: t.field({
+    type: "String",
+    resolve: async () => {
+      const res = await generateAesKey();
+      return res;
+    },
+  }),
+
   user: t.field({
     type: "User",
     authScopes: {
