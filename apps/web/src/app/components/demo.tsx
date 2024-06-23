@@ -61,9 +61,9 @@ export function Demo() {
         )}
       />
 
-      <Card className="border flex flex-col w-full max-w-xl">
-        <ShineBorder color="#641048">
-          <CardHeader className="bg-background border-b w-full item-center rounded-t-2xl flex justify-between flex-row">
+      <ShineBorder color="#b12080" className="w-full max-w-xl">
+        <Card className="border flex flex-col">
+          <CardHeader className="bg-background border-b w-full item-center rounded-t-lg flex justify-between flex-row">
             <div className="flex items-center space-x-1">
               <span className="text-muted-foreground">To:</span>
               <p className="font-semibold text-sm">Umamin Official</p>
@@ -105,8 +105,8 @@ export function Demo() {
               </Button>
             </form>
           </div>
-        </ShineBorder>
-      </Card>
+        </Card>
+      </ShineBorder>
       <div className="mt-4 text-muted-foreground text-sm flex items-center">
         <Lock className="h-4 w-4 mr-2" />
         Messages are automatically encrypted
