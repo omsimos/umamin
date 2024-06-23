@@ -9,6 +9,15 @@ function toBase64(uint8Array: Uint8Array) {
   return Buffer.from(uint8Array).toString("base64");
 }
 
+async function importAesKey(base64Key: string) {
+  const rawKey = toUint8Array(base64Key);
+
+  return await subtle.importKey("raw", rawKey, { name: "AES-GCM" }, true, [
+    "encrypt",
+    "decrypt",
+  ]);
+}
+
 export async function generateAesKey() {
   try {
     const key = await subtle.generateKey(
@@ -21,8 +30,7 @@ export async function generateAesKey() {
     );
 
     const rawKey = await subtle.exportKey("raw", key);
-    const keyBase64 = toBase64(new Uint8Array(rawKey));
-    return keyBase64;
+    return toBase64(new Uint8Array(rawKey));
   } catch (err) {
     console.log(err);
     throw err;
@@ -31,34 +39,23 @@ export async function generateAesKey() {
 
 export async function aesEncrypt(plainText: string) {
   try {
-    const te = new TextEncoder();
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const rawKey = toUint8Array(process.env.AES_KEY ?? "");
+    const rawKey = process.env.AES_KEY;
+    if (!rawKey) throw new Error("AES_KEY environment variable not set");
 
-    const key = await subtle.importKey(
-      "raw",
-      rawKey,
-      {
-        name: "AES-GCM",
-      },
-      true,
-      ["encrypt", "decrypt"],
-    );
+    const enc = new TextEncoder();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await importAesKey(rawKey);
 
     const cipherText = await subtle.encrypt(
       {
         name: "AES-GCM",
         iv,
-        tagLength: 96,
       },
       key,
-      te.encode(plainText),
+      enc.encode(plainText),
     );
 
-    const ivBase64 = toBase64(iv);
-    const cipherTextBase64 = toBase64(new Uint8Array(cipherText));
-
-    return `${cipherTextBase64}.${ivBase64}`;
+    return `${toBase64(new Uint8Array(cipherText))}.${toBase64(iv)}`;
   } catch (err) {
     console.log(err);
     throw err;
@@ -67,36 +64,27 @@ export async function aesEncrypt(plainText: string) {
 
 export async function aesDecrypt(text: string) {
   try {
+    const rawKey = process.env.AES_KEY;
+    if (!rawKey) throw new Error("AES_KEY environment variable not set");
+
     const cipherTextBase64 = text.split(".")[0] ?? "";
     const ivBase64 = text.split(".")[1] ?? "";
 
-    const cipherText = toUint8Array(cipherTextBase64);
+    const dec = new TextDecoder();
     const iv = toUint8Array(ivBase64);
-    const rawKey = toUint8Array(process.env.AES_KEY ?? "");
-
-    const td = new TextDecoder();
-
-    const key = await subtle.importKey(
-      "raw",
-      rawKey,
-      {
-        name: "AES-GCM",
-      },
-      true,
-      ["encrypt", "decrypt"],
-    );
+    const cipherText = toUint8Array(cipherTextBase64);
+    const key = await importAesKey(rawKey);
 
     const plainText = await subtle.decrypt(
       {
         name: "AES-GCM",
         iv,
-        tagLength: 96,
       },
       key,
       cipherText,
     );
 
-    return td.decode(plainText);
+    return dec.decode(plainText);
   } catch (err) {
     console.log(err);
     return null;
@@ -105,23 +93,12 @@ export async function aesDecrypt(text: string) {
 
 export async function aesEncryptDemo(plainText: string) {
   try {
-    const te = new TextEncoder();
-    const iv = crypto.getRandomValues(new Uint8Array(16));
+    const demoKey = process.env.AES_DEMO_KEY;
+    if (!demoKey) throw new Error("AES_DEMO_KEY environment variable not set");
 
-    // For demo purposes only
-    const demoKey = toUint8Array(
-      "62C+HNDSb5tfQXliHQ3YIeI2ix/nFQSQuuyD/aBBukY=",
-    );
-
-    const key = await subtle.importKey(
-      "raw",
-      demoKey,
-      {
-        name: "AES-GCM",
-      },
-      true,
-      ["encrypt", "decrypt"],
-    );
+    const enc = new TextEncoder();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await importAesKey(demoKey);
 
     const cipherText = await subtle.encrypt(
       {
@@ -129,13 +106,10 @@ export async function aesEncryptDemo(plainText: string) {
         iv,
       },
       key,
-      te.encode(plainText),
+      enc.encode(plainText),
     );
 
-    const ivBase64 = toBase64(iv);
-    const cipherTextBase64 = toBase64(new Uint8Array(cipherText));
-
-    return `${cipherTextBase64}.${ivBase64}`;
+    return `${toBase64(new Uint8Array(cipherText))}.${toBase64(iv)}`;
   } catch (err) {
     console.log(err);
     throw err;
