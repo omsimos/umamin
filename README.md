@@ -35,7 +35,7 @@ $ git checkout dev
 $ git checkout -b my-new-branch
 ```
 
-3. Create a `.env` in `apps/web` file with this content:
+3. Create a `.env` in `apps/www` file with this content:
 
 > Adjust the DATABASE_URL to your local MySQL database. [Guide &rarr;](https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases/connect-your-database-typescript-mysql)
 
