@@ -6,7 +6,7 @@ Our goal is to ensure that security issues are addressed promptly and securely, 
 
 If you believe you have found a security vulnerability in Umamin, please follow these steps:
 
-1. **Do Not Open an Issue:**
+1. **Do Not Open a Public Issue:**
    - Do not open a public issue on the repository to report the vulnerability. Public issues can inadvertently expose sensitive details to the broader community before we have a chance to address them.
 
 2. **Do Not Submit a Pull Request:**
@@ -15,6 +15,9 @@ If you believe you have found a security vulnerability in Umamin, please follow 
 3. **Contact Us Directly:**
    - Email us at [umamin.link@gmail.com](mailto:umamin.link@gmail.com) or [joshxfi.dev@gmail.com](mailto:joshxfi.dev@gmail.com) with the details of the vulnerability. Please include as much information as possible to help us understand and reproduce the issue.
 
+4. **Open a Draft Security Advisory:**
+   - If you prefer to use GitHub for reporting, open a draft security advisory from the issue template "Report a security vulnerability". If you've already fixed the vulnerability, fill out the draft security advisory and then publish it.
+
 ## Acknowledgement and Response
 
 - We will acknowledge your report within 5 days.
@@ -22,3 +25,5 @@ If you believe you have found a security vulnerability in Umamin, please follow 
 - Once the vulnerability has been addressed, we will disclose the issue publicly (and credit you with your consent).
 
 We appreciate your help in keeping Umamin secure and thank you for following these guidelines to report security vulnerabilities responsibly.
+
+---
