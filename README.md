@@ -92,7 +92,7 @@ Once ready, you can submit a pull request for review.
 </a>
 
 ## Security
-If you believe you have found a security vulnerability in Umamin, please do not open an issue on this repository. Opening an issue could expose sensitive information before it's addressed. Please read our [Security Policy](https://github.com/omsimos/umamin/blob/main/SECURITY.md) for details on how to report a vulnerability.
+If you believe you have found a security vulnerability in Umamin, please do not open a public issue on this repository. Opening a public issue could expose sensitive information before it's addressed. Please read our [Security Policy](https://github.com/omsimos/umamin/blob/main/SECURITY.md) for details on how to report a vulnerability.
 
 ## License
 
