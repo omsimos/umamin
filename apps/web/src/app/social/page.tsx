@@ -1,4 +1,6 @@
+import { cn } from "@umamin/ui/lib/utils";
 import { SocialCard } from "./components/card";
+import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
 
 const data = [
   {
@@ -33,16 +35,22 @@ export default function Social() {
   return (
     <main className="pt-36">
       <div className="flex flex-col items-center container">
-        <p className="rounded-full bg-gradient-to-b from-zinc-800 to-zinc-900 text-sm px-4 py-2 text-muted-foreground">
-          Coming Soon!
-        </p>
+        <div
+          className={cn(
+            "group rounded-full border border-black/5 bg-neutral-100 text-base text-white transition-all ease-in hover:bg-neutral-200 dark:border-white/5 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+          )}
+        >
+          <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
+            Coming Soon!
+          </AnimatedShinyText>
+        </div>
 
-        <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent tracking-tighter text-center mt-6">
+        <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none bg-gradient-to-b from-foreground to-zinc-400 bg-clip-text text-transparent tracking-tighter text-center mt-6">
           Umamin Social
         </h1>
       </div>
 
-      <section className="mt-12 border-t border-t-muted pt-6 w-full max-w-lg mx-auto space-y-6">
+      <section className="mt-12 pt-6 w-full max-w-lg mx-auto space-y-6 bg-background rounded-md border-t border-t-muted">
         {data.map((props) => (
           <SocialCard key={props.createdAt} {...props} />
         ))}
