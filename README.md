@@ -1,95 +1,103 @@
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/69457996/224477468-89cbc2a2-fa69-4a21-854a-75f75e3652fe.png" width="350" />
+  <img src="https://github.com/omsimos/umamin/assets/69457996/5a7250dc-c65e-4251-8fa9-425006dccb02" width="150" />
+
+  <h1>Umamin</h1>
 </div>
 
 <div align="center">
-  <a href="https://play.google.com/store/apps/details?id=link.umamin.app">
-    <img src="https://user-images.githubusercontent.com/69457996/225260328-aa63b9a8-27fa-49c1-a056-1e4102be475a.png" width="200" />
-  </a>
+  <p>An open-source social platform for sending and receiving encrypted anonymous messages. 🔏</p>
+
+  <img src="https://github.com/omsimos/umamin/actions/workflows/ci.yml/badge.svg" alt="actions">
+  <img src="https://img.shields.io/github/v/release/omsimos/umamin.svg" alt="releases">
+  <img src="https://img.shields.io/github/stars/omsimos/umamin" alt="stars">
 </div>
 
-## About
-
-[Umamin](https://umamin.link) is an open-source platform for sending and receiving anonymous confessions! Each user can create a unique link to which others could send anonymous messages! [Start receiving confessions and messages &rarr;](https://umamin.link)
+<br/>
 
 ## Contributing
 
-If you like this project, please consider giving it a star! Want to contribute? Make sure to review our [code of conduct](https://github.com/joshxfi/umamin/blob/main/CODE_OF_CONDUCT.md).
+If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you!
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L682N4R)
+### Monorepo Setup
+The `apps/` directory contains the Next.js projects. Packages with the `@umamin` prefix can be located at the `packages/` directory.
+| Core Packages  | Description |
+| ------------- | ------------- |
+| `www` | **Umamin Q&A** & landing page  |
+| `social` | **Umamin Social** *(coming soon)*  |
+| `@umamin/db` | Database schema & migrations using Drizzle ORM  |
+| `@umamin/gql` | GraphQL schema models and resolvers using Pothos  |
+| `@umamin/aes` | Encryption algorithm using AES in Galois/Counter Mode (AES-GCM)  |
+
+> [!NOTE]
+> 
+
+
+### Prerequisites
+- [`Turso CLI`](https://docs.turso.tech/cli/installation) (for local libSQL server)
+- `Node.js` >= 20 or [`nvm`](https://github.com/nvm-sh/nvm)
+- `pnpm` >= 9
+
+### Install Dependencies
+If you're using `nvm`, you can easily switch to the required Node.js version.
+```sh
+$ nvm use 20 # ignore if you're already on Node.js >= 20
+$ pnpm install
+```
+
+### Environment Variables
+```env
+# apps/web/.env
+NEXT_PUBLIC_GQL_URL=http://localhost:3000/api/graphql
+TURSO_CONNECTION_URL=http://127.0.0.1:8080
+AES_KEY=7ruID/GBuS2PGiysV9KXMZ6CkC1xuUKJFWEPLYgPPo0= # must be a valid AES-GCM key
+
+# packages/db/.env
+TURSO_CONNECTION_URL=http://127.0.0.1:8080
+```
+
+To generate your own `AES_KEY`, you can use the `generateAesKey()` function.
+```ts
+import { generateAesKey } from "@umamin/aes";
+
+const key = await generateAesKey();
+```
+
+If you need to use Google OAuth, you must setup your own OAuth client. [Setting up OAuth 2.0 &rarr;](https://support.google.com/cloud/answer/6158849)
+```env
+# apps/web/.env
+GOOGLE_CLIENT_ID=CLIENT_ID
+GOOGLE_CLIENT_SECRET=CLIENT_SECRET
+GOOGLE_REDIRECT_URI=http://localhost:3000/login/google/callback
+```
+
+### Development Server
+You can specify which app to run a development server by including a scope (`www` or `social`).
+```sh
+$ pnpm dev:[scope] # dev:www
+```
+
+### Setup Database
+Running a development server automatically creates a libSQL database. Run the migration command below to apply the schema.
+```sh
+$ pnpm db:migrate # or db:push
+```
+
+### Running Build
+After making changes, you can run a build which will check for lint and type errors.
+```sh
+$ pnpm build:[scope] 
+```
+
+Once ready, you can submit a pull request for review.
 
 ### Contributor List
-
 <a href="https://github.com/joshxfi/umamin/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=joshxfi/umamin" />
 </a>
 
-### Contributing Guide
-
-1. Fork this [repository](https://github.com/joshxfi/umamin) and clone your fork.
-2. Create a new branch for your changes:
-
-```sh
-$ cd your_cloned_fork
-$ git checkout dev
-$ git checkout -b my-new-branch
-```
-
-3. Create a `.env` in `apps/web` file with this content:
-
-> Adjust the DATABASE_URL to your local MySQL database. [Guide &rarr;](https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases/connect-your-database-typescript-mysql)
-
-```sh
-DATABASE_URL="mysql://johndoe:randompassword@localhost:3306/mydb"
-NEXT_PUBLIC_GQL_ENDPOINT="http://localhost:3000/api/graphql"
-
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="mysupersecretkey"
-```
-
-4. Create a `.env` in `packages/db` file with this content:
-
-```sh
-DATABASE_URL="mysql://johndoe:randompassword@localhost:3306/mydb"
-```
-
-5. _(optional)_ MySQL image with docker:
-
-```sh
-yarn docker:up # start up a MySQL image
-yarn docker:down # stop MySQL image
-```
-
-6. Sync database schema:
-
-```sh
-yarn workspace @umamin/db prisma db push
-```
-
-> Or run a migration. [Guide &rarr;](https://www.prisma.io/docs/concepts/components/prisma-migrate)
-
-7. To run locally:
-
-```sh
-# Only use yarn as your package manager
-$ yarn
-$ yarn dev
-```
-
-8. Commit your changes and push your branch:
-
-```sh
-$ git add .
-$ git commit -m "chore: some changes"
-$ git push origin HEAD
-```
-
-9. Submit a pull request on the `dev` branch. (resolve conflicts if present)
+## Security
+If you believe you have found a security vulnerability in Umamin, please do not open an issue on this repository. Opening an issue could expose sensitive information before it's addressed. Please read our [Security Policy](https://github.com/omsimos/umamin/blob/main/SECURITY.md) for details on how to report a vulnerability.
 
 ## License
 
-Licensed under the [GPL-3.0 license](https://github.com/joshxfi/umamin/blob/main/LICENSE).
-
----
-
-*Google Play and the Google Play logo are trademarks of Google LLC.*
+Umamin is licensed under [GPL-3.0](https://github.com/joshxfi/umamin/blob/main/LICENSE)
