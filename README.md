@@ -19,7 +19,7 @@
 If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you!
 
 ### Monorepo Setup
-The `apps/` directory contains the Next.js projects. Packages with the `@umamin` prefix can be located at the `packages/` directory.
+Go to the `/apps` directory for projects. Packages with the `@umamin` prefix can be located in the `/packages` directory.
 | Core Packages  | Description |
 | ------------- | ------------- |
 | `www` | **Umamin Q&A** & landing page  |
@@ -27,10 +27,6 @@ The `apps/` directory contains the Next.js projects. Packages with the `@umamin`
 | `@umamin/db` | Database schema & migrations using Drizzle ORM  |
 | `@umamin/gql` | GraphQL schema models and resolvers using Pothos  |
 | `@umamin/aes` | Encryption algorithm using AES in Galois/Counter Mode (AES-GCM)  |
-
-> [!NOTE]
-> 
-
 
 ### Prerequisites
 - [`Turso CLI`](https://docs.turso.tech/cli/installation) (for local libSQL server)
