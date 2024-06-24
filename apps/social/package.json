@@ -1,0 +1,50 @@
+{
+  "name": "social",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "clean": "rm -rf ./node_modules .turbo .next",
+    "check-types": "tsc --noEmit",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@graphql-yoga/plugin-apq": "^3.3.0",
+    "@graphql-yoga/plugin-csrf-prevention": "^3.3.0",
+    "@graphql-yoga/plugin-disable-introspection": "^2.3.0",
+    "@umamin/db": "workspace:*",
+    "@umamin/gql": "workspace:*",
+    "@umamin/ui": "workspace:*",
+    "@lucia-auth/adapter-drizzle": "^1.0.7",
+    "@urql/core": "^5.0.3",
+    "@urql/exchange-graphcache": "^7.0.2",
+    "@urql/next": "^1.1.1",
+    "arctic": "^1.8.1",
+    "geist": "^1.3.0",
+    "gql.tada": "^1.7.5",
+    "graphql": "^16.8.1",
+    "graphql-yoga": "^5.3.1",
+    "nanoid": "^5.0.7",
+    "oslo": "^1.2.0",
+    "urql": "^4.1.0",
+    "lucia": "^3.2.0",
+    "next": "14.2.3",
+    "nextjs-toploader": "^1.6.12",
+    "react": "^18",
+    "react-dom": "^18",
+    "sonner": "^1.4.41"
+  },
+  "devDependencies": {
+    "@umamin/eslint-config": "workspace:*",
+    "@umamin/tsconfig": "workspace:*",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.3",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1"
+  }
+}

@@ -1,33 +1,31 @@
 {
   "name": "umamin",
-  "version": "0.0.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "build": "turbo run build",
-    "clean": "turbo run clean --parallel && rimraf node_modules",
-    "clean:cache": "turbo run clean:cache && rimraf node_modules/.cache",
-    "dev": "turbo run dev --parallel",
-    "generate": "turbo run generate --parallel",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
+    "dev": "turbo run dev",
+    "dev:www": "turbo run dev --filter=!./apps/social",
+    "dev:social": "turbo run dev --filter=!./apps/www",
+    "build:www": "turbo run build --filter=!./apps/social",
+    "build:social": "turbo run build --filter=!./apps/www",
     "lint": "turbo run lint",
-    "start": "turbo run start --parallel",
-    "prepare": "husky install",
-    "docker:down": "docker-compose down",
-    "docker:up": "docker-compose up -d"
+    "clean": "turbo run clean && rm -rf ./node_modules .turbo",
+    "check-types": "turbo run check-types",
+    "db:push": "pnpm --filter @umamin/db push",
+    "db:generate": "pnpm --filter @umamin/db generate",
+    "db:migrate": "pnpm --filter @umamin/db migrate",
+    "db:studio": "pnpm --filter @umamin/db studio",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "ui:add": "pnpm --filter @umamin/ui ui:add"
   },
   "devDependencies": {
-    "husky": "^8.0.1",
-    "prettier": "latest",
-    "rimraf": "^3.0.2",
-    "turbo": "latest"
+    "@umamin/eslint-config": "workspace:*",
+    "@umamin/tsconfig": "workspace:*",
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.4"
   },
+  "packageManager": "pnpm@9.4.0",
   "engines": {
-    "npm": ">=7.0.0",
-    "node": ">=18.0.0"
-  },
-  "packageManager": "yarn@1.22.19"
+    "node": ">=20"
+  }
 }

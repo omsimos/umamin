@@ -1,0 +1,17 @@
+{
+  "name": "@umamin/aes",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "clean": "rm -rf ./node_modules .turbo dist",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.5",
+    "@umamin/tsconfig": "workspace:*",
+    "typescript": "^5.4.5"
+  }
+}
