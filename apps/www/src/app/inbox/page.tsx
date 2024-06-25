@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
@@ -10,6 +11,10 @@ import {
 import { UserCard } from "../components/user-card";
 import { SentMessages } from "./components/sent/messages";
 import { ReceivedMessages } from "./components/received/messages";
+
+const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
+  ssr: false,
+});
 
 export default async function UserProfile() {
   const { user } = await getSession();
@@ -45,6 +50,9 @@ export default async function UserProfile() {
             </TabsTrigger>
           ))}
         </TabsList>
+
+        {/* v2-inbox */}
+        <AdContainer className="mb-5" slotId="7047998078" />
 
         {tabsData.map((tab) => (
           <TabsContent key={tab.name} value={tab.name}>

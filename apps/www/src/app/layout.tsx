@@ -1,11 +1,12 @@
 import "@umamin/ui/globals.css";
+import Script from "next/script";
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import NextTopLoader from "nextjs-toploader";
 import { Navbar } from "./components/navbar";
-import { ThemeProvider } from "@umamin/ui/components/theme-provider";
 import { Maintenance } from "./components/maintenance";
+import { ThemeProvider } from "@umamin/ui/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "Umamin — The Platform for Anonymity",
@@ -65,6 +66,15 @@ export default function RootLayout({
           )}
         </ThemeProvider>
       </body>
+
+      {process.env.NODE_ENV === "production" && (
+        <Script
+          async
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4274133898976040"
+          crossOrigin="anonymous"
+        />
+      )}
     </html>
   );
 }
