@@ -19,7 +19,6 @@
 If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you!
 
 ### Monorepo Setup
-Go to the `/apps` directory for projects. Packages with the `@umamin` prefix can be located in the `/packages` directory.
 | Core Packages  | Description |
 | ------------- | ------------- |
 | `www` | **Umamin Q&A** & landing page  |
@@ -42,7 +41,7 @@ $ pnpm install
 
 ### Environment Variables
 ```env
-# apps/web/.env
+# apps/www/.env
 NEXT_PUBLIC_GQL_URL=http://localhost:3000/api/graphql
 TURSO_CONNECTION_URL=http://127.0.0.1:8080
 AES_KEY=7ruID/GBuS2PGiysV9KXMZ6CkC1xuUKJFWEPLYgPPo0= # must be a valid AES-GCM key
@@ -60,9 +59,9 @@ const key = await generateAesKey();
 
 If you need to use Google OAuth, you must setup your own OAuth client. [Setting up OAuth 2.0 &rarr;](https://support.google.com/cloud/answer/6158849)
 ```env
-# apps/web/.env
-GOOGLE_CLIENT_ID=CLIENT_ID
-GOOGLE_CLIENT_SECRET=CLIENT_SECRET
+# apps/www/.env
+GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
+GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
 GOOGLE_REDIRECT_URI=http://localhost:3000/login/google/callback
 ```
 
