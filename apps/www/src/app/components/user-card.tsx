@@ -19,7 +19,7 @@ export function UserCard({
   ...user
 }: Omit<User, "question" | "passwordHash" | "updatedAt">) {
   return (
-    <main>
+    <main className="container">
       <section className="flex gap-4">
         <Avatar className="md:h-20 md:w-20 h-16 w-16">
           <AvatarImage

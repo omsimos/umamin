@@ -12,9 +12,7 @@ import { UserCard } from "../components/user-card";
 import { SentMessages } from "./components/sent/messages";
 import { ReceivedMessages } from "./components/received/messages";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
-  ssr: false,
-});
+const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
 export default async function UserProfile() {
   const { user } = await getSession();
@@ -35,11 +33,11 @@ export default async function UserProfile() {
   ];
 
   return (
-    <main className="container max-w-xl space-y-8 lg:mt-36 mt-28 pb-24">
+    <main className="max-w-xl mx-auto space-y-8 lg:mt-36 mt-28 pb-24">
       <UserCard {...user} />
 
       <Tabs defaultValue="Received" className="w-full">
-        <TabsList className="w-full bg-transparent px-0 flex mb-5">
+        <TabsList className="w-full bg-transparent sm:px-4 px-0 flex mb-5">
           {tabsData.map((tab) => (
             <TabsTrigger
               key={tab.name}
@@ -55,7 +53,7 @@ export default async function UserProfile() {
         <AdContainer className="mb-5" slotId="7047998078" />
 
         {tabsData.map((tab) => (
-          <TabsContent key={tab.name} value={tab.name}>
+          <TabsContent className="container" key={tab.name} value={tab.name}>
             {tab.content()}
           </TabsContent>
         ))}
