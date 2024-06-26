@@ -79,7 +79,7 @@ export default async function SendMessage({
 
       <div className="mt-4 text-muted-foreground text-sm flex items-center">
         <Lock className="h-4 w-4 mr-2" />
-        All messages are automatically encrypted
+        Messages are automatically encrypted
         <Lock className="h-4 w-4 ml-2" />
       </div>
 
