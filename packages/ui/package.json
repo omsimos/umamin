@@ -7,7 +7,8 @@
     "./postcss.config": "./postcss.config.js",
     "./tailwind.config": "./tailwind.config.ts",
     "./lib/*": "./src/lib/*.ts",
-    "./components/*": "./src/components/ui/*.tsx"
+    "./components/*": "./src/components/ui/*.tsx",
+    "./ad": "./src/components/ad-container.tsx"
   },
   "scripts": {
     "ui:add": "pnpm dlx shadcn-ui@latest add",

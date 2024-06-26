@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { cache } from "react";
-import { SquarePen } from "lucide-react";
+import dynamic from "next/dynamic";
 import { cookies } from "next/headers";
+import { SquarePen } from "lucide-react";
 
 import { getClient } from "@/lib/gql/rsc";
 import { NoteForm } from "./components/form";
@@ -9,6 +10,8 @@ import { NotesList } from "./components/list";
 import { getSession, lucia } from "@/lib/auth";
 import { Button } from "@umamin/ui/components/button";
 import { NOTES_QUERY, CURRENT_NOTE_QUERY } from "./queries";
+
+const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
 const getNotes = cache(async () => {
   const res = await getClient().query(NOTES_QUERY, {});
@@ -31,7 +34,7 @@ export default async function Page() {
   const currentNote = currentNoteResult.data?.note;
 
   return (
-    <main className="mt-28 container max-w-xl mx-auto pb-32">
+    <main className="mt-28 max-w-xl mx-auto pb-32">
       {user ? (
         <NoteForm user={user} currentNote={currentNote} />
       ) : (
@@ -49,6 +52,9 @@ export default async function Page() {
           </Button>
         </div>
       )}
+
+      {/* v2-notes */}
+      <AdContainer className="mb-5" slotId="1999152698" />
 
       <div className="gap-5 flex flex-col">
         {!notes?.length ? (
