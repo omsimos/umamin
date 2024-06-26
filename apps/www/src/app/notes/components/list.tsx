@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import dynamic from "next/dynamic";
 import { graphql } from "gql.tada";
 import { client } from "@/lib/gql/client";
 import { useEffect, useState } from "react";
@@ -9,6 +10,8 @@ import { useInView } from "react-intersection-observer";
 import { NoteCard } from "./card";
 import { NoteQueryResult } from "../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
+
+const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
 const NOTES_FROM_CURSOR_MUTATION = graphql(`
   mutation NotesFromCursor($cursor: NotesFromCursorInput!) {
@@ -94,8 +97,15 @@ export function NotesList({ currentUserId, notes }: Props) {
     <>
       {notesList
         ?.filter((u) => u.user?.id !== currentUserId)
-        .map((note) => (
-          <NoteCard key={note.id} note={note} user={{ ...note.user }} />
+        .map((note, i) => (
+        <div key={note.id} className="w-full">
+          <NoteCard note={note} user={{ ...note.user }} />
+
+          {/* v2-note-list */}
+          {(i + 1) % 5 === 0 && (
+            <AdContainer className="mt-5" slotId="9012650581" />
+          )}
+        </div>
         ))}
 
       {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}

@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
 import { useEffect } from "react";
-import { twMerge } from "tailwind-merge";
+import { cn } from "../lib/utils";
 
 declare global {
   interface Window {
@@ -11,10 +11,9 @@ declare global {
 interface Props {
   slotId: string;
   className?: string;
-  test?: boolean;
 }
 
-const AdContainer = ({ slotId, className, test }: Props) => {
+const AdContainer = ({ slotId, className }: Props) => {
   useEffect(() => {
     if (
       process.env.NODE_ENV === "production" &&
@@ -25,7 +24,11 @@ const AdContainer = ({ slotId, className, test }: Props) => {
   }, []);
 
   return (
-    <div className={twMerge(className, test && "h-24 bg-blue-200")}>
+    <div
+      className={cn(className, {
+        "h-44 border border-yellow-500 rounded": process.env.NODE_ENV === "development",
+      })}
+    >
       <ins
         className="adsbygoogle"
         style={{ display: "block" }}

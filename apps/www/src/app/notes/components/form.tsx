@@ -108,7 +108,7 @@ export function NoteForm({ user, currentNote }: Props) {
   };
 
   return (
-    <section>
+    <section className="container">
       <form
         onSubmit={handleSubmit}
         className="mb-8 flex flex-col gap-y-4 items-end"

@@ -1,14 +1,17 @@
 "use client";
 
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { graphql } from "gql.tada";
+import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
 import { client } from "@/lib/gql/client";
 import { ReceivedMessagesResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { ReceivedMessageCard, receivedMessageFragment } from "./card";
+
+const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
 const MESSAGES_FROM_CURSOR_MUTATION = graphql(
   `
@@ -95,9 +98,18 @@ export function ReceivedMessagesList({
 
   return (
     <>
-      {msgList?.map((msg) => <ReceivedMessageCard key={msg.id} data={msg} />)}
-      {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
+      {msgList?.map((msg, i) => (
+        <div key={msg.id} className="w-full">
+          <ReceivedMessageCard data={msg} />
 
+          {/* v2-received-list */}
+          {(i + 1) % 5 === 0 && (
+            <AdContainer className="mt-5" slotId="1546692714" />
+          )}
+        </div>
+      ))}
+
+      {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
       {hasMore && <div ref={ref}></div>}
     </>
   );
