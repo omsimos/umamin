@@ -90,28 +90,3 @@ export async function aesDecrypt(text: string) {
     return null;
   }
 }
-
-export async function aesEncryptDemo(plainText: string) {
-  try {
-    const demoKey = process.env.AES_DEMO_KEY;
-    if (!demoKey) throw new Error("AES_DEMO_KEY environment variable not set");
-
-    const enc = new TextEncoder();
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const key = await importAesKey(demoKey);
-
-    const cipherText = await subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv,
-      },
-      key,
-      enc.encode(plainText),
-    );
-
-    return `${toBase64(new Uint8Array(cipherText))}.${toBase64(iv)}`;
-  } catch (err) {
-    console.log(err);
-    throw err;
-  }
-}

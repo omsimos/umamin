@@ -4,50 +4,10 @@ import { db, and, desc, eq, lt, or } from "@umamin/db";
 
 import builder from "../../builder";
 import { message } from "@umamin/db/schema/message";
-import { aesEncrypt, aesDecrypt, aesEncryptDemo } from "@umamin/aes";
+import { aesEncrypt, aesDecrypt } from "@umamin/aes";
 import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 
 builder.queryFields((t) => ({
-  key: t.field({
-    type: "String",
-    resolve: async () => {
-      return process.env.AES_KEY ?? "";
-    },
-  }),
-
-  encrypt: t.field({
-    type: "String",
-    args: {
-      content: t.arg.string({ required: true }),
-    },
-    resolve: async (_, args) => {
-      try {
-        const res = await aesEncrypt(args.content);
-        return res;
-      } catch (err) {
-        console.log(err);
-        throw err;
-      }
-    },
-  }),
-
-  decrypt: t.field({
-    type: "String",
-    args: {
-      content: t.arg.string({ required: true }),
-    },
-    nullable: true,
-    resolve: async (_, args) => {
-      try {
-        const res = await aesDecrypt(args.content);
-        return res;
-      } catch (err) {
-        console.log(err);
-        throw err;
-      }
-    },
-  }),
-
   messages: t.field({
     type: ["Message"],
     authScopes: { authenticated: true },
@@ -202,10 +162,10 @@ builder.mutationFields((t) => ({
                   lt(message.createdAt, cursor.createdAt),
                   and(
                     eq(message.createdAt, cursor.createdAt),
-                    lt(message.id, cursor.id)
-                  )
+                    lt(message.id, cursor.id),
+                  ),
                 )
-              : undefined
+              : undefined,
           ),
           limit: 5,
           orderBy: [desc(message.createdAt), desc(message.id)],
@@ -257,25 +217,6 @@ builder.mutationFields((t) => ({
         await db.delete(message).where(eq(message.id, args.id));
 
         return "Success";
-      } catch (err) {
-        console.log(err);
-        throw err;
-      }
-    },
-  }),
-
-  encryptMessageDemo: t.field({
-    type: "String",
-    directives: {
-      rateLimit: { limit: 3, duration: 20 },
-    },
-    args: {
-      content: t.arg.string({ required: true }),
-    },
-    resolve: async (_, args) => {
-      try {
-        const res = await aesEncryptDemo(args.content);
-        return res;
       } catch (err) {
         console.log(err);
         throw err;

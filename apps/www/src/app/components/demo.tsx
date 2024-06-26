@@ -1,67 +1,29 @@
 "use client";
 
-import { toast } from "sonner";
-import { useState } from "react";
-import { graphql } from "gql.tada";
 import { cn } from "@umamin/ui/lib/utils";
-import { logEvent } from "firebase/analytics";
-import { BadgeCheck, Loader2, Send, Lock } from "lucide-react";
+import { BadgeCheck, ScanFace, Lock } from "lucide-react";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@umamin/ui/components/avatar";
+import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
 
-import { ChatList } from "./chat-list";
-import { client } from "@/lib/gql/client";
-import { formatError } from "@/lib/utils";
-import { analytics } from "@/lib/firebase";
-import { Input } from "@umamin/ui/components/input";
-import { Button } from "@umamin/ui/components/button";
 import GridPattern from "@umamin/ui/components/grid-pattern";
 import ShineBorder from "@umamin/ui/components/shine-border";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
-const ENCRYPT_MESSAGE_DEMO_MUTATION = graphql(`
-  mutation EncryptMessageDemo($content: String!) {
-    encryptMessageDemo(content: $content)
-  }
-`);
-
 export function Demo() {
-  const [content, setContent] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const onEncrypt: React.FormEventHandler = async (e) => {
-    e.preventDefault();
-
-    setLoading(true);
-
-    const res = await client.mutation(ENCRYPT_MESSAGE_DEMO_MUTATION, {
-      content,
-    });
-
-    if (res.error) {
-      toast.error(formatError(res.error.message));
-      setLoading(false);
-      return;
-    }
-
-    if (res.data?.encryptMessageDemo) {
-      setMessage(res.data?.encryptMessageDemo);
-      setContent("");
-    }
-
-    setLoading(false);
-    logEvent(analytics, "send_message_demo");
-  };
-
   return (
     <div className="relative w-full grid place-items-center py-10">
       <GridPattern
         className={cn(
           "xl:[mask-image:radial-gradient(circle_at_center,white,transparent_60%)] [mask-image:radial-gradient(circle_at_center,white,transparent)] md:[mask-image:radial-gradient(circle_at_center,white,transparent_80%)] ",
-          "border dark:border-foreground/10 border-foreground/20 z-[-1]"
+          "border dark:border-foreground/10 border-foreground/20 z-[-1]",
         )}
       />
 
-      <ShineBorder color="#b12080" className="w-full max-w-xl">
+      <ShineBorder color="#a9a9b1" className="w-full max-w-xl">
         <Card className="border flex flex-col">
           <CardHeader className="bg-background border-b w-full item-center rounded-t-lg flex justify-between flex-row">
             <div className="flex items-center space-x-1">
@@ -75,43 +37,35 @@ export function Demo() {
             </span>
           </CardHeader>
 
-          <div className="flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 min-h-[350px] h-full">
-            <ChatList
-              imageUrl="https://lh3.googleusercontent.com/a/ACg8ocK4CtuGuDZlPy9H_DMb3EQIue9Hrd5bqYcMZOY-Xb8LcuyqsBI=s96-c"
-              question="Send me an anonymous message!"
-              reply={message}
-            />
+          <div className="flex flex-col px-5 sm:px-7 pt-10 pb-8 min-h-[270px] h-full">
+            <div className="flex gap-2 items-center">
+              <Avatar>
+                <AvatarImage
+                  className="rounded-full"
+                  src="https://lh3.googleusercontent.com/a/ACg8ocK4CtuGuDZlPy9H_DMb3EQIue9Hrd5bqYcMZOY-Xb8LcuyqsBI=s96-c"
+                />
+                <AvatarFallback>
+                  <ScanFace />
+                </AvatarFallback>
+              </Avatar>
+              <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted min-w-0 break-words">
+                Send me an anonymous message!
+              </div>
+            </div>
 
-            <form
-              onSubmit={onEncrypt}
-              className="flex max-w-lg space-x-2 w-full self-center mt-12"
-            >
-              <Input
-                required
-                value={content}
-                disabled={loading}
-                onChange={(e) => setContent(e.target.value)}
-                maxLength={150}
-                placeholder="Type your message..."
-                className="focus-visible:ring-transparent h-full flex-1 text-base"
-                autoComplete="off"
-              />
-              <Button type="submit" size="icon">
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </form>
+            <div className="sm:max-w-[70%] max-w-[85%] bg-muted rounded-lg px-3 py-2 self-end mt-8">
+              <AnimatedShinyText className="min-w-0 break-all text-right">
+                SVHPJZ57QbFTnt3CqdpV+JPg6GCgPh/MbCXA/TsXRAWYEwQN2Xwtcl4=
+              </AnimatedShinyText>
+            </div>
+            <span className="text-muted-foreground mt-2 text-sm text-right flex self-end gap-1 items-center">
+              <Lock className="size-3" />
+              Advanced Encryption Standard
+              <Lock className="size-3" />
+            </span>
           </div>
         </Card>
       </ShineBorder>
-      <div className="mt-4 text-muted-foreground text-sm flex items-center">
-        <Lock className="h-4 w-4 mr-2" />
-        Messages are automatically encrypted
-        <Lock className="h-4 w-4 ml-2" />
-      </div>
     </div>
   );
 }
