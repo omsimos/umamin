@@ -53,7 +53,7 @@ export function Demo() {
               </div>
             </div>
 
-            <div className="sm:max-w-[70%] max-w-[85%] bg-muted rounded-lg px-3 py-2 self-end mt-8">
+            <div className="sm:max-w-[70%] max-w-[75%] bg-muted rounded-lg px-3 py-2 self-end mt-6">
               <AnimatedShinyText className="min-w-0 break-all text-right">
                 SVHPJZ57QbFTnt3CqdpV+JPg6GCgPh/MbCXA/TsXRAWYEwQN2Xwtcl4=
               </AnimatedShinyText>
