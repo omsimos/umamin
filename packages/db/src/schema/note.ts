@@ -16,7 +16,7 @@ export const note = sqliteTable(
     updatedAt: integer("updated_at").$onUpdate(() => sql`(unixepoch())`),
   },
   (t) => ({
-    updateAtIdx: index("updated_at_idx").on(t.updatedAt),
+    updateAtIdIdx: index("updated_at_id_idx").on(t.updatedAt, t.id),
   }),
 );
 
