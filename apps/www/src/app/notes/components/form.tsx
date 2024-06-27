@@ -108,10 +108,10 @@ export function NoteForm({ user, currentNote }: Props) {
   };
 
   return (
-    <section className="container">
+    <section>
       <form
         onSubmit={handleSubmit}
-        className="mb-8 flex flex-col gap-y-4 items-end"
+        className="mb-8 flex flex-col gap-y-4 items-end container"
       >
         <Textarea
           id="message"
@@ -155,7 +155,7 @@ export function NoteForm({ user, currentNote }: Props) {
 
       {noteContent && (
         <div className="border-b-2 border-muted border-dashed mb-5 pb-5">
-          <p className="text-sm font-medium mb-2">Your note</p>
+          <p className="text-sm font-medium mb-2 container">Your note</p>
           <NoteCard
             note={{
               ...currentNote,

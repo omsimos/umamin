@@ -13,9 +13,9 @@ import { sentMessageFragment, SentMessageCard } from "./card";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
-const MESSAGES_FROM_CURSOR_MUTATION = graphql(
+const MESSAGES_FROM_CURSOR_QUERY = graphql(
   `
-    mutation MessagesFromCursor($input: MessagesFromCursorInput!) {
+    query MessagesFromCursor($input: MessagesFromCursorInput!) {
       messagesFromCursor(input: $input) {
         __typename
         data {
@@ -57,12 +57,13 @@ export function SentMessagesList({
       setIsFetching(true);
 
       client
-        .mutation(MESSAGES_FROM_CURSOR_MUTATION, {
+        .query(MESSAGES_FROM_CURSOR_QUERY, {
           input: {
             type: "sent",
             cursor,
           },
         })
+        .toPromise()
         .then((res) => {
           if (res.error) {
             toast.error(res.error.message);

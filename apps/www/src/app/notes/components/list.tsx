@@ -13,8 +13,8 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
-const NOTES_FROM_CURSOR_MUTATION = graphql(`
-  mutation NotesFromCursor($cursor: NotesFromCursorInput!) {
+const NOTES_FROM_CURSOR_QUERY = graphql(`
+  query NotesFromCursor($cursor: NotesFromCursorInput!) {
     notesFromCursor(cursor: $cursor) {
       __typename
       data {
@@ -58,14 +58,15 @@ export function NotesList({ currentUserId, notes }: Props) {
   const [hasMore, setHasMore] = useState(notes?.length === 10);
   const [isFetching, setIsFetching] = useState(false);
 
-  useEffect(() => {
+  function loadNotes() {
     if (hasMore) {
       setIsFetching(true);
 
       client
-        .mutation(NOTES_FROM_CURSOR_MUTATION, {
+        .query(NOTES_FROM_CURSOR_QUERY, {
           cursor,
         })
+        .toPromise()
         .then((res) => {
           if (res.error) {
             toast.error(res.error.message);
@@ -91,21 +92,27 @@ export function NotesList({ currentUserId, notes }: Props) {
           setIsFetching(false);
         });
     }
-  }, [hasMore, inView, notesList]);
+  }
+
+  useEffect(() => {
+    if (inView) {
+      loadNotes();
+    }
+  }, [inView]);
 
   return (
     <>
       {notesList
         ?.filter((u) => u.user?.id !== currentUserId)
         .map((note, i) => (
-        <div key={note.id} className="w-full">
-          <NoteCard note={note} user={{ ...note.user }} />
+          <div key={note.id} className="w-full">
+            <NoteCard note={note} user={{ ...note.user }} />
 
-          {/* v2-note-list */}
-          {(i + 1) % 5 === 0 && (
-            <AdContainer className="mt-5" slotId="9012650581" />
-          )}
-        </div>
+            {/* v2-note-list */}
+            {(i + 1) % 5 === 0 && (
+              <AdContainer className="mt-5" slotId="9012650581" />
+            )}
+          </div>
         ))}
 
       {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}

@@ -30,7 +30,7 @@ export function NoteCard({ note, user, menuItems }: Props) {
   const username = user?.username;
 
   return (
-    <div id={note.id}>
+    <div id={note.id} className="container">
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full pb-4 text-sm">
           <div className="flex justify-between items-start">
