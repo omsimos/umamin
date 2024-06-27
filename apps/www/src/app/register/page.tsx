@@ -20,7 +20,14 @@ export default async function Register() {
           Umamin Account
         </h2>
         <p className="text-sm text-muted-foreground">
-          Get started by creating your new profile
+          By creating an account, you agree to our{" "}
+          <Link href="/privacy" className="text-zinc-200">
+            Privacy Policy
+          </Link>{" "}
+          and{" "}
+          <Link href="/terms" className="text-zinc-200">
+            Terms of Service
+          </Link>
         </p>
       </div>
 

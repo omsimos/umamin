@@ -3,9 +3,9 @@
 import { signup } from "@/actions";
 import { useFormState } from "react-dom";
 import { RegisterButton } from "./button";
+import { cn } from "@umamin/ui/lib/utils";
 import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
-import { cn } from "@umamin/ui/lib/utils";
 
 export function RegisterForm() {
   const [state, formAction] = useFormState(signup, { errors: {} });

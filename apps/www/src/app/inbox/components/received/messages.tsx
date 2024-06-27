@@ -9,6 +9,9 @@ import { RECEIVED_MESSAGES_QUERY } from "../../queries";
 
 const getMessages = cache(async () => {
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
+  if (!sessionId) {
+    return null;
+  }
 
   const res = await getClient(sessionId).query(RECEIVED_MESSAGES_QUERY, {
     type: "received",
@@ -19,7 +22,7 @@ const getMessages = cache(async () => {
 
 export async function ReceivedMessages() {
   const result = await getMessages();
-  const messages = result.data?.messages;
+  const messages = result?.data?.messages;
 
   return (
     <Suspense
