@@ -51,25 +51,22 @@ export function NoteForm({ user, currentNote }: Props) {
   const [anonymous, setAnonymous] = useState(currentNote?.isAnonymous ?? false);
   const [updatedAt, setUpdatedAt] = useState(currentNote?.updatedAt);
 
-  const onClearNote = () => {
+  const onClearNote = async () => {
     if (!currentNote) return;
-
     setIsFetching(true);
 
-    client.mutation(DELETE_NOTE_MUTATION, {}).then((res) => {
-      if (res.error) {
-        toast.error(formatError(res.error.message));
-        setIsFetching(false);
-        return;
-      }
+    const res = await client.mutation(DELETE_NOTE_MUTATION, {});
 
-      if (res.data) {
-        setNoteContent("");
-        toast.success("Note cleared");
-      }
-
+    if (res.error) {
+      toast.error(formatError(res.error.message));
       setIsFetching(false);
-    });
+      return;
+    }
+
+    setNoteContent("");
+    toast.success("Note cleared");
+
+    setIsFetching(false);
   };
 
   const menuItems = [
@@ -79,32 +76,33 @@ export function NoteForm({ user, currentNote }: Props) {
     },
   ];
 
-  const handleSubmit: FormEventHandler = (e) => {
+  const handleSubmit: FormEventHandler = async (e) => {
     e.preventDefault();
     setIsFetching(true);
 
-    client
-      .mutation(UPDATE_NOTE_MUTATION, { content, isAnonymous })
-      .then((res) => {
-        if (res.error) {
-          toast.error(formatError(res.error.message));
-          setIsFetching(false);
-          return;
-        }
+    const res = await client.mutation(UPDATE_NOTE_MUTATION, {
+      content,
+      isAnonymous,
+    });
 
-        if (res.data) {
-          setNoteContent(content);
-          setContent("");
-          setUpdatedAt(res?.data?.updateNote?.updatedAt);
-          setAnonymous(res.data.updateNote.isAnonymous);
-          toast.success("Note updated");
-        }
+    if (res.error) {
+      toast.error(formatError(res.error.message));
+      setIsFetching(false);
+      return;
+    }
 
-        setIsFetching(false);
-        router.refresh();
+    if (res.data) {
+      setNoteContent(content);
+      setContent("");
+      setUpdatedAt(res?.data?.updateNote?.updatedAt);
+      setAnonymous(res.data.updateNote.isAnonymous);
+      toast.success("Note updated");
+    }
 
-        logEvent(analytics, "update_note");
-      });
+    setIsFetching(false);
+    router.refresh();
+
+    logEvent(analytics, "update_note");
   };
 
   return (

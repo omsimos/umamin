@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { toast } from "sonner";
+import { useState } from "react";
 import { graphql } from "gql.tada";
 import { client } from "@/lib/gql/client";
 import { logEvent } from "firebase/analytics";
@@ -34,7 +34,7 @@ export type ReceivedMenuProps = {
   question: string;
   content: string;
   reply?: string | null;
-  updatedAt?: number | null
+  updatedAt?: number | null;
 };
 
 export function ReceivedMessageMenu(props: ReceivedMenuProps) {
@@ -43,18 +43,18 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
   const deleteMessage = useMessageStore((state) => state.delete);
   const [open, setOpen] = useState(false);
 
-  const onDelete = () => {
-    client.mutation(DELETE_MESSAGE_MUTATION, { id }).then((res) => {
-      if (res.error) {
-        toast.error(formatError(res.error.message));
-        return;
-      }
+  const onDelete = async () => {
+    const res = await client.mutation(DELETE_MESSAGE_MUTATION, { id });
 
-      toast.success("Message deleted");
-      deleteMessage(id);
+    if (res.error) {
+      toast.error(formatError(res.error.message));
+      return;
+    }
 
-      logEvent(analytics, "delete_message");
-    });
+    toast.success("Message deleted");
+    deleteMessage(id);
+
+    logEvent(analytics, "delete_message");
   };
 
   const menuItems = [
