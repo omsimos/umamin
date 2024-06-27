@@ -30,7 +30,7 @@ export async function Navbar() {
               <span className="text-muted-foreground font-medium">.link</span>
             </Link>
 
-            <Badge variant="outline">v2-beta</Badge>
+            <Badge variant="outline">v2.0</Badge>
           </div>
 
           <div className="flex items-center">

@@ -39,7 +39,7 @@ export default async function Home() {
 
       <div className="flex items-center gap-2">
         <Button size="lg" className="md:text-base" asChild>
-          <Link href="/login">Continue</Link>
+          <Link href="/register">Continue</Link>
         </Button>
 
         <Button
