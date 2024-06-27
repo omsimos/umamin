@@ -37,7 +37,7 @@ export function ReceivedMessageCard({
   );
 
   return (
-    <div id={msg.id} className="w-full">
+    <div id={msg.id} className="container">
       <Card
         className={cn("min-w-2 w-full group relative", {
           "opacity-50": isDeleted,

@@ -36,28 +36,29 @@ export function ReplyDialog(props: Props) {
   const [reply, setReply] = useState(props.data.reply ?? "");
   const [updatedAt, setUpdatedAt] = useState(props.data.updatedAt);
 
-  const onReply: FormEventHandler = (e) => {
+  const onReply: FormEventHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    client
-      .mutation(CREATE_REPLY_MUTATION, { messageId: props.data.id, content })
-      .then((res) => {
-        if (res.error) {
-          toast.error(formatError(res.error.message));
-          setLoading(false);
-          return;
-        }
+    const res = await client.mutation(CREATE_REPLY_MUTATION, {
+      messageId: props.data.id,
+      content,
+    });
 
-        toast.success("Reply sent");
-        setReply(content);
-        setUpdatedAt(Date.now() / 1000);
-        setContent("");
-        setLoading(false);
-        router.refresh();
+    if (res.error) {
+      toast.error(formatError(res.error.message));
+      setLoading(false);
+      return;
+    }
 
-        logEvent(analytics, "add_reply");
-      });
+    toast.success("Reply sent");
+    setReply(content);
+    setUpdatedAt(Date.now() / 1000);
+    setContent("");
+    setLoading(false);
+    router.refresh();
+
+    logEvent(analytics, "add_reply");
   };
 
   return (

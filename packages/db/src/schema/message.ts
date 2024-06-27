@@ -18,13 +18,15 @@ export const message = sqliteTable(
     updatedAt: integer("updated_at").$onUpdate(() => sql`(unixepoch())`),
   },
   (t) => ({
-    receiverIdCreatedAtIdx: index("receiver_id_created_at_idx").on(
+    receiverIdCreatedAtIdIdx: index("receiver_id_created_at_id_idx").on(
       t.receiverId,
       t.createdAt,
+      t.id
     ),
-    senderIdCreatedAtIdx: index("sender_id_created_at_idx").on(
+    senderIdCreatedAtIdIdx: index("sender_id_created_at_id_idx").on(
       t.senderId,
       t.createdAt,
+      t.id
     ),
   }),
 );

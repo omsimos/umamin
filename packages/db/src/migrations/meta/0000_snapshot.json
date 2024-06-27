@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c27118e0-86a7-45a4-a47e-3ba9bdc3c57a",
+  "id": "8d585efc-818a-46bc-889d-7bcdda6cfc4e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "oauth_account": {
@@ -115,6 +115,13 @@
           "type": "text",
           "primaryKey": true,
           "notNull": true,
+          "autoincrement": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "username": {
@@ -245,11 +252,11 @@
           ],
           "isUnique": true
         },
-        "id_updated_at_idx": {
-          "name": "id_updated_at_idx",
+        "updated_at_id_idx": {
+          "name": "updated_at_id_idx",
           "columns": [
-            "id",
-            "updated_at"
+            "updated_at",
+            "id"
           ],
           "isUnique": false
         }
@@ -280,6 +287,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "reply": {
+          "name": "reply",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "receiver_id": {
@@ -313,23 +327,19 @@
         }
       },
       "indexes": {
-        "receiver_id_idx": {
-          "name": "receiver_id_idx",
+        "receiver_id_created_at_id_idx": {
+          "name": "receiver_id_created_at_id_idx",
           "columns": [
-            "receiver_id"
+            "receiver_id",
+            "created_at",
+            "id"
           ],
           "isUnique": false
         },
-        "sender_id_idx": {
-          "name": "sender_id_idx",
+        "sender_id_created_at_id_idx": {
+          "name": "sender_id_created_at_id_idx",
           "columns": [
-            "sender_id"
-          ],
-          "isUnique": false
-        },
-        "created_at_id_idx": {
-          "name": "created_at_id_idx",
-          "columns": [
+            "sender_id",
             "created_at",
             "id"
           ],

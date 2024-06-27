@@ -67,60 +67,6 @@ builder.queryFields((t) => ({
       }
     },
   }),
-}));
-
-builder.mutationFields((t) => ({
-  createMessage: t.field({
-    type: "Message",
-    directives: {
-      rateLimit: { limit: 3, duration: 20 },
-    },
-    args: {
-      input: t.arg({ type: CreateMessageInput, required: true }),
-    },
-    resolve: async (_, { input }) => {
-      try {
-        const encryptedContent = await aesEncrypt(input.content);
-
-        const result = await db
-          .insert(message)
-          .values({ id: nanoid(), ...input, content: encryptedContent })
-          .returning();
-
-        return result[0]!;
-      } catch (err) {
-        console.log(err);
-        throw err;
-      }
-    },
-  }),
-
-  createReply: t.field({
-    type: "String",
-    authScopes: { authenticated: true },
-    directives: {
-      rateLimit: { limit: 3, duration: 20 },
-    },
-    args: {
-      messageId: t.arg.string({ required: true }),
-      content: t.arg.string({ required: true }),
-    },
-    resolve: async (_, args) => {
-      try {
-        const encryptedContent = await aesEncrypt(args.content);
-
-        await db
-          .update(message)
-          .set({ reply: encryptedContent })
-          .where(eq(message.id, args.messageId));
-
-        return "Success";
-      } catch (err) {
-        console.log(err);
-        throw err;
-      }
-    },
-  }),
 
   messagesFromCursor: t.field({
     type: "MessagesWithCursor",
@@ -196,6 +142,61 @@ builder.mutationFields((t) => ({
             createdAt: res[res.length - 1]?.createdAt,
           },
         };
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+}));
+
+builder.mutationFields((t) => ({
+  createMessage: t.field({
+    type: "Message",
+    directives: {
+      rateLimit: { limit: 3, duration: 20 },
+    },
+    args: {
+      input: t.arg({ type: CreateMessageInput, required: true }),
+    },
+    resolve: async (_, { input }) => {
+      try {
+        const encryptedContent = await aesEncrypt(input.content);
+
+        const result = await db
+          .insert(message)
+          .values({ id: nanoid(), ...input, content: encryptedContent })
+          .returning();
+
+        return result[0]!;
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+  createReply: t.field({
+    type: "String",
+    authScopes: { authenticated: true },
+    directives: {
+      rateLimit: { limit: 3, duration: 20 },
+    },
+    args: {
+      messageId: t.arg.string({ required: true }),
+      content: t.arg.string({ required: true }),
+    },
+    resolve: async (_, args) => {
+      try {
+        const encryptedContent = await aesEncrypt(args.content);
+
+        await db
+          .update(message)
+          .set({ reply: encryptedContent })
+          .where(eq(message.id, args.messageId));
+
+        return "Success";
       } catch (err) {
         console.log(err);
         throw err;

@@ -53,7 +53,7 @@ export default async function UserProfile() {
         <AdContainer className="mb-5" slotId="7047998078" />
 
         {tabsData.map((tab) => (
-          <TabsContent className="container" key={tab.name} value={tab.name}>
+          <TabsContent key={tab.name} value={tab.name}>
             {tab.content()}
           </TabsContent>
         ))}

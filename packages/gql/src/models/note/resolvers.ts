@@ -54,51 +54,6 @@ builder.queryFields((t) => ({
       }
     },
   }),
-}));
-
-builder.mutationFields((t) => ({
-  updateNote: t.field({
-    type: "Note",
-    authScopes: {
-      authenticated: true,
-    },
-    directives: {
-      rateLimit: { limit: 3, duration: 20 },
-    },
-    args: {
-      content: t.arg.string({ required: true }),
-      isAnonymous: t.arg.boolean({ required: true }),
-    },
-    resolve: async (_, { content, isAnonymous }, ctx) => {
-      if (!ctx.userId) {
-        throw new Error("Unauthorized");
-      }
-
-      try {
-        const result = await db
-          .insert(note)
-          .values({
-            id: nanoid(),
-            userId: ctx.userId,
-            content,
-            isAnonymous,
-          })
-          .onConflictDoUpdate({
-            target: note.userId,
-            set: {
-              content,
-              isAnonymous,
-            },
-          })
-          .returning();
-
-        return result[0]!;
-      } catch (err) {
-        console.log(err);
-        throw err;
-      }
-    },
-  }),
 
   notesFromCursor: t.field({
     type: "NotesWithCursor",
@@ -149,6 +104,52 @@ builder.mutationFields((t) => ({
             updatedAt: result[result.length - 1]?.updatedAt,
           },
         };
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
+  }),
+
+}));
+
+builder.mutationFields((t) => ({
+  updateNote: t.field({
+    type: "Note",
+    authScopes: {
+      authenticated: true,
+    },
+    directives: {
+      rateLimit: { limit: 3, duration: 20 },
+    },
+    args: {
+      content: t.arg.string({ required: true }),
+      isAnonymous: t.arg.boolean({ required: true }),
+    },
+    resolve: async (_, { content, isAnonymous }, ctx) => {
+      if (!ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      try {
+        const result = await db
+          .insert(note)
+          .values({
+            id: nanoid(),
+            userId: ctx.userId,
+            content,
+            isAnonymous,
+          })
+          .onConflictDoUpdate({
+            target: note.userId,
+            set: {
+              content,
+              isAnonymous,
+            },
+          })
+          .returning();
+
+        return result[0]!;
       } catch (err) {
         console.log(err);
         throw err;

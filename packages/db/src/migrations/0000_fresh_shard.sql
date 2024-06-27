@@ -17,6 +17,7 @@ CREATE TABLE `session` (
 --> statement-breakpoint
 CREATE TABLE `user` (
 	`id` text PRIMARY KEY NOT NULL,
+	`display_name` text,
 	`username` text NOT NULL,
 	`password_hash` text,
 	`bio` text,
@@ -40,6 +41,7 @@ CREATE TABLE `message` (
 	`id` text PRIMARY KEY NOT NULL,
 	`question` text NOT NULL,
 	`content` text NOT NULL,
+	`reply` text,
 	`receiver_id` text NOT NULL,
 	`sender_id` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
@@ -48,7 +50,6 @@ CREATE TABLE `message` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `user_username_unique` ON `user` (`username`);--> statement-breakpoint
 CREATE UNIQUE INDEX `note_user_id_unique` ON `note` (`user_id`);--> statement-breakpoint
-CREATE INDEX `id_updated_at_idx` ON `note` (`id`,`updated_at`);--> statement-breakpoint
-CREATE INDEX `receiver_id_idx` ON `message` (`receiver_id`);--> statement-breakpoint
-CREATE INDEX `sender_id_idx` ON `message` (`sender_id`);--> statement-breakpoint
-CREATE INDEX `created_at_id_idx` ON `message` (`created_at`,`id`);
+CREATE INDEX `updated_at_id_idx` ON `note` (`updated_at`,`id`);--> statement-breakpoint
+CREATE INDEX `receiver_id_created_at_id_idx` ON `message` (`receiver_id`,`created_at`,`id`);--> statement-breakpoint
+CREATE INDEX `sender_id_created_at_id_idx` ON `message` (`sender_id`,`created_at`,`id`);
