@@ -21,6 +21,10 @@ import {
 
 const getCurrentUser = cache(async () => {
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
+  if (!sessionId) {
+    return null;
+  }
+
   const res = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
 
   return res;
@@ -34,7 +38,7 @@ export default async function Settings() {
   }
 
   const result = await getCurrentUser();
-  const userData = result.data?.user;
+  const userData = result?.data?.user;
 
   const tabsData = [
     {

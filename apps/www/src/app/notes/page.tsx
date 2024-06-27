@@ -20,6 +20,10 @@ const getNotes = cache(async () => {
 
 const getCurrentNote = cache(async () => {
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
+  if (!sessionId) {
+    return null;
+  }
+
   const res = await getClient(sessionId).query(CURRENT_NOTE_QUERY, {});
 
   return res;
@@ -31,7 +35,7 @@ export default async function Page() {
   const currentNoteResult = await getCurrentNote();
 
   const notes = notesResult.data?.notes;
-  const currentNote = currentNoteResult.data?.note;
+  const currentNote = currentNoteResult?.data?.note;
 
   return (
     <main className="mt-28 max-w-xl mx-auto pb-32">
