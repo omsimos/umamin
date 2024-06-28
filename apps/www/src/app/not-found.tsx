@@ -1,7 +1,7 @@
-import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
-import { Button } from "@umamin/ui/components/button";
-import { cn } from "@umamin/ui/lib/utils";
 import Link from "next/link";
+import { cn } from "@umamin/ui/lib/utils";
+import { Button } from "@umamin/ui/components/button";
+import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
 
 export default function NotFound() {
   return (
