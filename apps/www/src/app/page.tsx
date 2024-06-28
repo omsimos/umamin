@@ -13,7 +13,7 @@ export default async function Home() {
         href="https://v1.umamin.link"
         target="_blank"
         className={cn(
-          "group rounded-full border border-black/5 bg-zinc-100 text-base text-white transition-all ease-in hover:cursor-pointer hover:bg-zinc-200 dark:border-white/5 dark:bg-zinc-900 dark:hover:bg-zinc-800",
+          "group rounded-full border border-black/5 bg-zinc-100 text-base text-white transition-all ease-in hover:cursor-pointer hover:bg-zinc-200 dark:border-white/5 dark:bg-zinc-900 dark:hover:bg-zinc-800"
         )}
       >
         <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 transition ease-out hover:text-zinc-300 hover:duration-300 hover:dark:text-zinc-400">
@@ -33,8 +33,8 @@ export default async function Home() {
       <p className="text-muted-foreground text-center md:text-xl max-w-2xl">
         Next generation open-source platform for sending and receiving encrypted
         anonymous messages.{" "}
-        <span className="text-white font-medium">Umamin v2.0</span> requires a
-        new account that can be used across the platform.
+        <span className="text-foreground font-medium">Umamin v2.0</span>{" "}
+        requires a new account that can be used across the platform.
       </p>
 
       <div className="flex items-center gap-2">
