@@ -20,7 +20,7 @@ export default function GlobalError({
   return (
     <html>
       <body>
-        <main className="flex items-center flex-col min-h-screen lg:pt-44 py-36 md:gap-8 gap-6 container">
+        <div className="flex items-center flex-col min-h-screen lg:pt-44 py-36 md:gap-8 gap-6 container">
           <div
             className={cn(
               "group rounded-full border border-black/5 bg-zinc-100 text-base text-white transition-all ease-in dark:border-white/5 dark:bg-zinc-900"
@@ -50,7 +50,7 @@ export default function GlobalError({
               Try Again
             </Button>
           </div>
-        </main>
+        </div>
       </body>
     </html>
   );
