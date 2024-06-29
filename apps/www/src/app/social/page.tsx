@@ -37,7 +37,7 @@ export default function Social() {
       <div className="flex flex-col items-center container">
         <div
           className={cn(
-            "group rounded-full border border-black/5 bg-zinc-100 text-base text-white transition-all ease-in dark:border-white/5 dark:bg-zinc-900",
+            "group rounded-full border border-black/5 bg-zinc-100 text-base text-white transition-all ease-in dark:border-white/5 dark:bg-zinc-900"
           )}
         >
           <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 transition ease-out">
@@ -45,7 +45,7 @@ export default function Social() {
           </AnimatedShinyText>
         </div>
 
-        <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none bg-gradient-to-b from-foreground to-zinc-400 bg-clip-text text-transparent tracking-tighter text-center mt-6">
+        <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none dark:bg-gradient-to-b from-foreground dark:to-zinc-400 bg-zinc-800 bg-clip-text text-transparent tracking-tighter text-center mt-6">
           Umamin Social
         </h1>
       </div>
