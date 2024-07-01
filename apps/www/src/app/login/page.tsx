@@ -2,7 +2,36 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./components/form";
+import { V1Link } from "../components/v1-link";
 import { BrowserWarning } from "@umamin/ui/components/browser-warning";
+
+export const metadata = {
+  title: "Umamin — Login",
+  description:
+    "Log in to Umamin to send and receive encrypted anonymous messages. Secure your privacy and communicate freely.",
+  keywords: [
+    "Umamin login",
+    "anonymous messaging login",
+    "encrypted messages login",
+  ],
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    type: "website",
+    title: "Umamin — Login",
+    description:
+      "Log in to Umamin to send and receive encrypted anonymous messages. Secure your privacy and communicate freely.",
+    url: "https://www.umamin.link/login",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Umamin — Login",
+    description:
+      "Log in to Umamin to send and receive encrypted anonymous messages. Secure your privacy and communicate freely.",
+  },
+};
 
 export default async function Login() {
   const { user } = await getSession();
@@ -13,6 +42,7 @@ export default async function Login() {
 
   return (
     <section className="max-w-lg md:max-w-md container mt-36 min-h-screen">
+      <V1Link className="inline-block mb-6 text-sm" />
       <BrowserWarning />
 
       <div className="mb-6">

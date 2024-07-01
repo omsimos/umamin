@@ -16,6 +16,43 @@ const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
 );
 
+export async function generateMetadata({
+  params,
+}: {
+  params: { username: string };
+}) {
+  const username = params.username.startsWith("%40")
+    ? params.username.split("%40").at(1)
+    : params.username;
+
+  const title = `Send Encrypted Anonymous Message to @${username} | Umamin`;
+
+  const description = `Send an encrypted anonymous message to @${username} on Umamin. Protect your identity while communicating securely and privately.`;
+
+  return {
+    title,
+    description,
+    keywords: [
+      `anonymous message`,
+      `encrypted messaging`,
+      `send message to ${username}`,
+      `secure communication`,
+      `Umamin`,
+    ],
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      url: `https://www.umamin.link/to/${username}`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
+
 const getUser = cache(async (username: string) => {
   const res = await getClient().query(USER_BY_USERNAME_QUERY, {
     username,
