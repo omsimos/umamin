@@ -42,18 +42,20 @@ export default async function Page() {
       {user ? (
         <NoteForm user={user} currentNote={currentNote} />
       ) : (
-        <div className="flex items-center space-x-4 rounded-md border p-4 mb-5">
-          <SquarePen />
-          <div className="flex-1 space-y-1">
-            <p className="text-sm font-medium leading-none">Umamin Notes</p>
-            <p className="text-sm text-muted-foreground">
-              Login to start writing notes
-            </p>
-          </div>
+        <div className="container">
+          <div className="flex items-center space-x-4 rounded-md border p-4 mb-5">
+            <SquarePen />
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium leading-none">Umamin Notes</p>
+              <p className="text-sm text-muted-foreground">
+                Login to start writing notes
+              </p>
+            </div>
 
-          <Button asChild>
-            <Link href="/login">Login</Link>
-          </Button>
+            <Button asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+          </div>
         </div>
       )}
 
