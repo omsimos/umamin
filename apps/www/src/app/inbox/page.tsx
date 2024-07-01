@@ -14,6 +14,29 @@ import { ReceivedMessages } from "./components/received/messages";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
+export const metadata = {
+  title: "Umamin — Inbox",
+  description:
+    "Manage your received messages securely on Umamin. View, reply, and organize your inbox.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    type: "website",
+    title: "Umamin — Inbox",
+    description:
+      "Manage your received messages securely on Umamin. View, reply, and organize your inbox.",
+    url: "https://www.umamin.link/inbox",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Umamin — Inbox",
+    description:
+      "Manage your received messages securely on Umamin. View, reply, and organize your inbox.",
+  },
+};
+
 export default async function UserProfile() {
   const { user } = await getSession();
 

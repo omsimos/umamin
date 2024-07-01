@@ -13,6 +13,35 @@ import { NOTES_QUERY, CURRENT_NOTE_QUERY } from "./queries";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
+export const metadata = {
+  title: "Umamin — Notes",
+  description:
+    "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages. Send your messages anonymously and discover what others have to share.",
+  keywords: [
+    "Umamin notes",
+    "anonymous notes",
+    "send messages",
+    "view messages",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: "website",
+    title: "Umamin — Notes",
+    description:
+      "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages. Send your messages anonymously and discover what others have to share.",
+    url: "https://www.umamin.link/notes",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Umamin — Notes",
+    description:
+      "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages. Send your messages anonymously and discover what others have to share.",
+  },
+};
+
 const getNotes = cache(async () => {
   const res = await getClient().query(NOTES_QUERY, {});
   return res;

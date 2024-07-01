@@ -19,6 +19,29 @@ import {
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
 
+export const metadata = {
+  title: "Umamin — Settings",
+  description:
+    "Manage your preferences and account settings on Umamin. Customize your profile, adjust privacy settings, and control how you interact anonymously.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    type: "website",
+    title: "Umamin — Settings",
+    description:
+      "Manage your preferences and account settings on Umamin. Customize your profile, adjust privacy settings, and control how you interact anonymously.",
+    url: "https://www.umamin.link/settings",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Umamin — Settings",
+    description:
+      "Manage your preferences and account settings on Umamin. Customize your profile, adjust privacy settings, and control how you interact anonymously.",
+  },
+};
+
 const getCurrentUser = cache(async () => {
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
   if (!sessionId) {

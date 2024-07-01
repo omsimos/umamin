@@ -38,14 +38,12 @@ export const metadata: Metadata = {
     title: "Umamin — The Platform for Anonymity",
     description:
       "Umamin is an open-source social platform for sending and receiving encrypted anonymous messages. Ensure your privacy and share your thoughts freely without revealing your identity. Perfect for secure communication and anonymous interactions.",
-    // images: [],
   },
   twitter: {
     card: "summary_large_image",
     title: "Umamin — The Platform for Anonymity",
     description:
       "Umamin is an open-source social platform for sending and receiving encrypted anonymous messages. Ensure your privacy and share your thoughts freely without revealing your identity. Perfect for secure communication and anonymous interactions.",
-    // images: [],
   },
   robots: {
     index: true,
