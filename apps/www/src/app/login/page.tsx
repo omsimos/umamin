@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./components/form";
+import { V1Link } from "../components/v1-link";
 import { BrowserWarning } from "@umamin/ui/components/browser-warning";
 
 export default async function Login() {
@@ -13,6 +14,7 @@ export default async function Login() {
 
   return (
     <section className="max-w-lg md:max-w-md container mt-36 min-h-screen">
+      <V1Link className="inline-block mb-6 text-sm" />
       <BrowserWarning />
 
       <div className="mb-6">
