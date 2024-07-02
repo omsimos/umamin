@@ -53,22 +53,16 @@ export async function generateMetadata({
   };
 }
 
-const getUser = cache(async (username: string) => {
-  const res = await getClient().query(USER_BY_USERNAME_QUERY, {
-    username,
-  });
-
-  return res;
-});
-
 export default async function SendMessage({
   params,
 }: {
   params: { username: string };
 }) {
   const { session } = await getSession();
+  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
+    username: params.username,
+  });
 
-  const result = await getUser(params.username);
   const user = result.data?.userByUsername;
 
   if (!user) {

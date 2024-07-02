@@ -1,4 +1,4 @@
-import { Suspense, cache } from "react";
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 
@@ -7,7 +7,7 @@ import { getClient } from "@/lib/gql/rsc";
 import { SentMessagesList } from "./list";
 import { SENT_MESSAGES_QUERY } from "../../queries";
 
-const getMessages = cache(async () => {
+const getMessages = async () => {
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
 
   if (!sessionId) {
@@ -19,7 +19,7 @@ const getMessages = cache(async () => {
   });
 
   return res;
-});
+};
 
 export async function SentMessages() {
   const result = await getMessages();
