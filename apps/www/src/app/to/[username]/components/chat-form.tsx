@@ -17,8 +17,7 @@ import { UserByUsernameQueryResult } from "../queries";
 const CREATE_MESSAGE_MUTATION = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {
     createMessage(input: $input) {
-      id
-      content
+      __typename
     }
   }
 `);

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { cache } from "react";
 import { graphql } from "gql.tada";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
@@ -10,7 +9,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { UserCard } from "@/app/components/user-card";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"));
+const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const USER_BY_USERNAME_QUERY = graphql(`
   query UserByUsername($username: String!) {
@@ -68,20 +67,15 @@ export async function generateMetadata({
   };
 }
 
-const getUser = cache(async (username: string) => {
-  const res = await getClient().query(USER_BY_USERNAME_QUERY, {
-    username,
-  });
-
-  return res;
-});
-
 export default async function Page({
   params,
 }: {
   params: { username: string };
 }) {
-  const result = await getUser(params.username);
+  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
+    username: params.username,
+  });
+
   const user = result.data?.userByUsername;
 
   if (!user) {

@@ -11,7 +11,7 @@ import { ReceivedMessagesResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { ReceivedMessageCard, receivedMessageFragment } from "./card";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"));
+const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const MESSAGES_FROM_CURSOR_QUERY = graphql(
   `
@@ -110,7 +110,11 @@ export function ReceivedMessagesList({
         </div>
       ))}
 
-      {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
+      {isFetching && (
+        <div className="container">
+          <Skeleton className="w-full h-[200px] rounded-lg" />
+        </div>
+      )}
       {hasMore && <div ref={ref}></div>}
     </>
   );

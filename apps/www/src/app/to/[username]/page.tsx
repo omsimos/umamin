@@ -1,4 +1,3 @@
-import { cache } from "react";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { BadgeCheck, Lock, MessageCircleOff } from "lucide-react";
@@ -10,10 +9,13 @@ import { USER_BY_USERNAME_QUERY } from "./queries";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"));
+const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
+  ssr: false,
+});
 
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
+  { ssr: false },
 );
 
 export async function generateMetadata({
@@ -53,22 +55,16 @@ export async function generateMetadata({
   };
 }
 
-const getUser = cache(async (username: string) => {
-  const res = await getClient().query(USER_BY_USERNAME_QUERY, {
-    username,
-  });
-
-  return res;
-});
-
 export default async function SendMessage({
   params,
 }: {
   params: { username: string };
 }) {
   const { session } = await getSession();
+  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
+    username: params.username,
+  });
 
-  const result = await getUser(params.username);
   const user = result.data?.userByUsername;
 
   if (!user) {
