@@ -35,6 +35,10 @@ const { handleRequest } = createYoga({
     }),
     useResponseCache({
       session: () => cookies().get(lucia.sessionCookieName)?.value,
+      ttl: 5_000,
+      ttlPerType: {
+        Note: 10_000,
+      },
     }),
     useDisableIntrospection({
       isDisabled: () => process.env.NODE_ENV === "production",
