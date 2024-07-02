@@ -23,7 +23,7 @@ const { handleRequest } = createYoga({
   cors: {
     origin:
       process.env.NODE_ENV === "production"
-        ? "https://v2.umamin.link"
+        ? "https://www.umamin.link"
         : "http://localhost:3000",
     credentials: true,
     methods: ["POST", "GET", "OPTIONS"],
