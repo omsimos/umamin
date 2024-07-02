@@ -11,7 +11,7 @@ import { SentMessageResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { sentMessageFragment, SentMessageCard } from "./card";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"));
+const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const MESSAGES_FROM_CURSOR_QUERY = graphql(
   `

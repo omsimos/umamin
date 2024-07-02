@@ -9,7 +9,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { UserCard } from "@/app/components/user-card";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"));
+const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const USER_BY_USERNAME_QUERY = graphql(`
   query UserByUsername($username: String!) {

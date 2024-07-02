@@ -1,4 +1,3 @@
-import { cache } from "react";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { BadgeCheck, Lock, MessageCircleOff } from "lucide-react";
@@ -10,10 +9,13 @@ import { USER_BY_USERNAME_QUERY } from "./queries";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"));
+const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
+  ssr: false,
+});
 
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
+  { ssr: false },
 );
 
 export async function generateMetadata({

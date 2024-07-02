@@ -11,7 +11,9 @@ import { getSession, lucia } from "@/lib/auth";
 import { Button } from "@umamin/ui/components/button";
 import { NOTES_QUERY, CURRENT_NOTE_QUERY } from "./queries";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"));
+const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
+  ssr: false,
+});
 
 export const metadata = {
   title: "Umamin — Notes",

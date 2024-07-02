@@ -11,7 +11,7 @@ import { NoteCard } from "./card";
 import { NoteQueryResult } from "../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"));
+const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const NOTES_FROM_CURSOR_QUERY = graphql(`
   query NotesFromCursor($cursor: NotesFromCursorInput!) {
