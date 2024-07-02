@@ -110,7 +110,11 @@ export function ReceivedMessagesList({
         </div>
       ))}
 
-      {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
+      {isFetching && (
+        <div className="container">
+          <Skeleton className="w-full h-[200px] rounded-lg" />
+        </div>
+      )}
       {hasMore && <div ref={ref}></div>}
     </>
   );
