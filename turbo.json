@@ -1,15 +1,28 @@
 {
-  "$schema": "https://turborepo.org/schema.json",
-  "pipeline": {
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env"],
+  "globalEnv": [
+    "NODE_ENV",
+    "NEXT_PUBLIC_*",
+    "GOOGLE_CLIENT_*",
+    "GOOGLE_REDIRECT_URI"
+  ],
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": [".next/**", "!.next/cache/**"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "env": ["TURSO_CONNECTION_URL", "TURSO_AUTH_TOKEN", "AES_KEY"]
     },
-    "generate": { "outputs": ["dist/**"] },
-    "start": { "outputs": [] },
-    "lint": { "outputs": [] },
-    "dev": { "cache": false },
-    "clean": { "cache": false },
-    "clean:cache": { "cache": false }
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "clean": {},
+    "check-types": {},
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "inputs": ["$TURBO_DEFAULT$", ".env"]
+    }
   }
 }
