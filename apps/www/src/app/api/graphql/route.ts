@@ -1,7 +1,9 @@
-import { getSession } from "@/lib/auth";
+import { cookies } from "next/headers";
 import { createYoga } from "graphql-yoga";
+import { getSession, lucia } from "@/lib/auth";
 import { useAPQ } from "@graphql-yoga/plugin-apq";
 import { gqlSchema, initContextCache } from "@umamin/gql";
+import { useResponseCache } from "@graphql-yoga/plugin-response-cache";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
 import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspection";
 
@@ -30,6 +32,9 @@ const { handleRequest } = createYoga({
   plugins: [
     useCSRFPrevention({
       requestHeaders: ["x-graphql-yoga-csrf"],
+    }),
+    useResponseCache({
+      session: () => cookies().get(lucia.sessionCookieName)?.value,
     }),
     useDisableIntrospection({
       isDisabled: () => process.env.NODE_ENV === "production",
