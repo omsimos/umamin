@@ -12,11 +12,12 @@ import { CurrentNoteQueryResult } from "../queries";
 
 import { formatError } from "@/lib/utils";
 import { analytics } from "@/lib/firebase";
+import { SelectUser } from "@umamin/db/schema/user";
+import { useNoteStore } from "@/store/useNoteStore";
 import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
-import { SelectUser } from "@umamin/db/schema/user";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
@@ -45,12 +46,12 @@ export function NoteForm({ user, currentNote }: Props) {
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-  const [noteContent, setNoteContent] = useState(currentNote?.content);
-  const [anonymous, setAnonymous] = useState(currentNote?.isAnonymous ?? false);
-  const [updatedAt, setUpdatedAt] = useState(currentNote?.updatedAt);
+  const updatedNote = useNoteStore((state) => state.note);
+  const clearNote = useNoteStore((state) => state.clear);
+  const updateNote = useNoteStore((state) => state.update);
+  const isCleared = useNoteStore((state) => state.isCleared);
 
   const onClearNote = async () => {
-    if (!currentNote) return;
     setIsFetching(true);
 
     const res = await client.mutation(DELETE_NOTE_MUTATION, {});
@@ -61,7 +62,7 @@ export function NoteForm({ user, currentNote }: Props) {
       return;
     }
 
-    setNoteContent("");
+    clearNote();
     toast.success("Note cleared");
 
     setIsFetching(false);
@@ -90,10 +91,8 @@ export function NoteForm({ user, currentNote }: Props) {
     }
 
     if (res.data) {
-      setNoteContent(content);
       setContent("");
-      setUpdatedAt(res?.data?.updateNote?.updatedAt);
-      setAnonymous(res.data.updateNote.isAnonymous);
+      updateNote(res.data.updateNote);
       toast.success("Note updated");
     }
 
@@ -147,16 +146,26 @@ export function NoteForm({ user, currentNote }: Props) {
         </div>
       </form>
 
-      {noteContent && (
+      {currentNote && !isCleared && (
         <div className="border-b-2 border-muted border-dashed mb-5 pb-5">
           <p className="text-sm font-medium mb-2 container">Your note</p>
           <NoteCard
-            note={{
-              ...currentNote,
-              isAnonymous: anonymous,
-              content: noteContent,
-              updatedAt,
+            note={!!updatedNote ? updatedNote : currentNote}
+            user={{
+              displayName: user.displayName,
+              username: user.username,
+              imageUrl: user.imageUrl,
             }}
+            menuItems={menuItems}
+          />
+        </div>
+      )}
+
+      {!currentNote && updatedNote && (
+        <div className="border-b-2 border-muted border-dashed mb-5 pb-5">
+          <p className="text-sm font-medium mb-2 container">Your note</p>
+          <NoteCard
+            note={updatedNote}
             user={{
               displayName: user.displayName,
               username: user.username,
