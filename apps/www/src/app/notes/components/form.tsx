@@ -150,7 +150,7 @@ export function NoteForm({ user, currentNote }: Props) {
         <div className="border-b-2 border-muted border-dashed mb-5 pb-5">
           <p className="text-sm font-medium mb-2 container">Your note</p>
           <NoteCard
-            note={!!updatedNote ? updatedNote : currentNote}
+            note={updatedNote ? updatedNote : currentNote}
             user={{
               displayName: user.displayName,
               username: user.username,

@@ -105,7 +105,7 @@ export function SentMessagesList({
 
           {/* v2-sent-list */}
           {(i + 1) % 5 === 0 && (
-            <AdContainer className="mt-5" slotId="1355121027" inView={inView} />
+            <AdContainer className="mt-5" slotId="1355121027" />
           )}
         </div>
       ))}

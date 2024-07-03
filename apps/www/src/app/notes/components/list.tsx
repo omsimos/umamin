@@ -108,13 +108,9 @@ export function NotesList({ currentUserId, notes }: Props) {
           <div key={note.id} className="w-full">
             <NoteCard note={note} user={{ ...note.user }} />
 
-            {/* v2-note-list */}
+            {/* v2-note-feed */}
             {(i + 1) % 5 === 0 && (
-              <AdContainer
-                className="mt-5"
-                slotId="9012650581"
-                inView={inView}
-              />
+              <AdContainer className="mt-5" slotId="4344956885" />
             )}
           </div>
         ))}
