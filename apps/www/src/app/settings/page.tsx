@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -42,17 +41,6 @@ export const metadata = {
   },
 };
 
-const getCurrentUser = cache(async () => {
-  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
-  if (!sessionId) {
-    return null;
-  }
-
-  const res = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
-
-  return res;
-});
-
 export default async function Settings() {
   const { user } = await getSession();
 
@@ -60,7 +48,8 @@ export default async function Settings() {
     redirect("/login");
   }
 
-  const result = await getCurrentUser();
+  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
+  const result = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
   const userData = result?.data?.user;
 
   const tabsData = [

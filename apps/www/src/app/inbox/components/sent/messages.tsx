@@ -7,22 +7,11 @@ import { getClient } from "@/lib/gql/rsc";
 import { SentMessagesList } from "./list";
 import { SENT_MESSAGES_QUERY } from "../../queries";
 
-const getMessages = async () => {
+export async function SentMessages() {
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
-
-  if (!sessionId) {
-    return null;
-  }
-
-  const res = await getClient(sessionId).query(SENT_MESSAGES_QUERY, {
+  const result = await getClient(sessionId).query(SENT_MESSAGES_QUERY, {
     type: "sent",
   });
-
-  return res;
-};
-
-export async function SentMessages() {
-  const result = await getMessages();
   const messages = result?.data?.messages;
 
   return (
