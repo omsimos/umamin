@@ -33,8 +33,14 @@ builder.objectType("MessagesWithCursor", {
 
 export const CreateMessageInput = builder.inputType("CreateMessageInput", {
   fields: (t) => ({
-    question: t.string({ required: true }),
-    content: t.string({ required: true }),
+    question: t.string({
+      required: true,
+      validate: { minLength: 1, maxLength: 150 },
+    }),
+    content: t.string({
+      required: true,
+      validate: { minLength: 1, maxLength: 500 },
+    }),
     senderId: t.string(),
     receiverId: t.string({ required: true }),
   }),

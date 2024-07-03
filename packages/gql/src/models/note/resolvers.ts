@@ -110,7 +110,6 @@ builder.queryFields((t) => ({
       }
     },
   }),
-
 }));
 
 builder.mutationFields((t) => ({
@@ -123,7 +122,10 @@ builder.mutationFields((t) => ({
       rateLimit: { limit: 3, duration: 20 },
     },
     args: {
-      content: t.arg.string({ required: true }),
+      content: t.arg.string({
+        required: true,
+        validate: { minLength: 1, maxLength: 500 },
+      }),
       isAnonymous: t.arg.boolean({ required: true }),
     },
     resolve: async (_, { content, isAnonymous }, ctx) => {

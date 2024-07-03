@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { cache } from "react";
 import dynamic from "next/dynamic";
 import { cookies } from "next/headers";
 import { SquarePen } from "lucide-react";
@@ -44,12 +43,7 @@ export const metadata = {
   },
 };
 
-const getNotes = cache(async () => {
-  const res = await getClient().query(NOTES_QUERY, {});
-  return res;
-});
-
-const getCurrentNote = cache(async () => {
+const getCurrentNote = async () => {
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
   if (!sessionId) {
     return null;
@@ -58,11 +52,11 @@ const getCurrentNote = cache(async () => {
   const res = await getClient(sessionId).query(CURRENT_NOTE_QUERY, {});
 
   return res;
-});
+};
 
 export default async function Page() {
   const { user } = await getSession();
-  const notesResult = await getNotes();
+  const notesResult = await getClient().query(NOTES_QUERY, {});
   const currentNoteResult = await getCurrentNote();
 
   const notes = notesResult.data?.notes;
