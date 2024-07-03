@@ -105,7 +105,7 @@ export function ReceivedMessagesList({
 
           {/* v2-received-list */}
           {(i + 1) % 5 === 0 && (
-            <AdContainer className="mt-5" slotId="1546692714" />
+            <AdContainer className="mt-5" slotId="1546692714" inView={inView} />
           )}
         </div>
       ))}

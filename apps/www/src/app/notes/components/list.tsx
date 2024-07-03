@@ -110,7 +110,11 @@ export function NotesList({ currentUserId, notes }: Props) {
 
             {/* v2-note-list */}
             {(i + 1) % 5 === 0 && (
-              <AdContainer className="mt-5" slotId="9012650581" />
+              <AdContainer
+                className="mt-5"
+                slotId="9012650581"
+                inView={inView}
+              />
             )}
           </div>
         ))}

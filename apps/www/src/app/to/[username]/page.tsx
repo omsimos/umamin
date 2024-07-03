@@ -9,10 +9,6 @@ import { USER_BY_USERNAME_QUERY } from "./queries";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
-  ssr: false,
-});
-
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
   { ssr: false },
@@ -116,8 +112,9 @@ export default async function SendMessage({
         <Lock className="h-4 w-4 ml-2" />
       </div>
 
-      {/* v2-send-to */}
+      {/* v2-send-to
       <AdContainer className="mt-5 w-full max-w-2xl" slotId="9163326848" />
+      */}
 
       <UnauthenticatedDialog isLoggedIn={!!session} />
     </main>

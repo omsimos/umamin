@@ -11,9 +11,10 @@ declare global {
 interface Props {
   slotId: string;
   className?: string;
+  inView?: boolean;
 }
 
-const AdContainer = ({ slotId, className }: Props) => {
+const AdContainer = ({ slotId, className, inView }: Props) => {
   useEffect(() => {
     if (
       process.env.NODE_ENV === "production" &&
@@ -21,12 +22,13 @@ const AdContainer = ({ slotId, className }: Props) => {
     ) {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     }
-  }, []);
+  }, [inView]);
 
   return (
     <div
       className={cn(className, {
-        "h-44 border border-yellow-500 rounded": process.env.NODE_ENV === "development",
+        "h-44 border border-yellow-500 rounded":
+          process.env.NODE_ENV === "development",
       })}
     >
       <ins
