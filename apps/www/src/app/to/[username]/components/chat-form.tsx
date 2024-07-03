@@ -7,6 +7,7 @@ import { analytics } from "@/lib/firebase";
 import { Loader2, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
 
+import { cn } from "@umamin/ui/lib/utils";
 import { formatError } from "@/lib/utils";
 import { client } from "@/lib/gql/client";
 import { Input } from "@umamin/ui/components/input";
@@ -76,7 +77,9 @@ export function ChatForm({ currentUserId, user }: Props) {
   }
 
   return (
-    <div className="flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 min-h-[350px] h-full">
+    <div className={cn(
+      "flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 h-full", user?.quietMode ? "min-h-[250px]" : "min-h-[350px]"
+    )}>
       <ChatList
         imageUrl={user?.imageUrl}
         question={user?.question ?? ""}
