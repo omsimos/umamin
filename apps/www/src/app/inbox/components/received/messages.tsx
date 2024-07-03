@@ -1,15 +1,14 @@
 import { Suspense } from "react";
-import { cookies } from "next/headers";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 
-import { lucia } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { getClient } from "@/lib/gql/rsc";
 import { ReceivedMessagesList } from "./list";
 import { RECEIVED_MESSAGES_QUERY } from "../../queries";
 
 export async function ReceivedMessages() {
-  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
-  const result = await getClient(sessionId).query(RECEIVED_MESSAGES_QUERY, {
+  const { session } = await getSession();
+  const result = await getClient(session?.id).query(RECEIVED_MESSAGES_QUERY, {
     type: "received",
   });
 

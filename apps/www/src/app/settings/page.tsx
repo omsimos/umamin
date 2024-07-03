@@ -42,14 +42,13 @@ export const metadata = {
 };
 
 export default async function Settings() {
-  const { user } = await getSession();
+  const { user, session } = await getSession();
 
   if (!user) {
     redirect("/login");
   }
 
-  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
-  const result = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
+  const result = await getClient(session.id).query(CURRENT_USER_QUERY, {});
   const userData = result?.data?.user;
 
   const tabsData = [
