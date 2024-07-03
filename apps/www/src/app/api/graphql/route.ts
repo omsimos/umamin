@@ -35,9 +35,16 @@ const { handleRequest } = createYoga({
     }),
     useResponseCache({
       session: () => cookies().get(lucia.sessionCookieName)?.value,
+      scopePerSchemaCoordinate: {
+        "Query.user": "PRIVATE",
+        "Query.note": "PRIVATE",
+        "Query.messages": "PRIVATE",
+        "Query.messagesFromCursor": "PRIVATE",
+      },
       ttl: 5_000,
-      ttlPerType: {
-        Note: 10_000,
+      ttlPerSchemaCoordinate: {
+        "Query.notes": 60_000,
+        "Query.notesFromCursor": 60_000,
       },
     }),
     useDisableIntrospection({

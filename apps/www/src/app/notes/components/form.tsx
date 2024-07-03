@@ -2,7 +2,6 @@
 
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
-import { useRouter } from "next/navigation";
 import { logEvent } from "firebase/analytics";
 import { Loader2, Sparkles } from "lucide-react";
 import { FormEventHandler, useState } from "react";
@@ -42,7 +41,6 @@ type Props = {
 };
 
 export function NoteForm({ user, currentNote }: Props) {
-  const router = useRouter();
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -100,8 +98,6 @@ export function NoteForm({ user, currentNote }: Props) {
     }
 
     setIsFetching(false);
-    router.refresh();
-
     logEvent(analytics, "update_note");
   };
 
