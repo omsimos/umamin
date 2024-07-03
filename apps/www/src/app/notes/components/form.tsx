@@ -116,7 +116,7 @@ export function NoteForm({ user, currentNote }: Props) {
           required
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          maxLength={1000}
+          maxLength={500}
           placeholder="How's your day going?"
           className="focus-visible:ring-transparent text-base max-h-[500px]"
           autoComplete="off"

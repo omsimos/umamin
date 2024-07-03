@@ -96,7 +96,7 @@ export function ChatForm({ currentUserId, user }: Props) {
             id="message"
             required
             disabled={isFetching}
-            maxLength={1000}
+            maxLength={500}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Type your message..."

@@ -45,9 +45,15 @@ addCommonFields([UserObject, PublicUserObject]);
 
 export const UpdateUserInput = builder.inputType("UpdateUserInput", {
   fields: (t) => ({
-    username: t.string({ required: true }),
-    bio: t.string(),
-    question: t.string({ required: true }),
-    displayName: t.string({ required: true }),
+    username: t.string({
+      required: true,
+      validate: { minLength: 5, maxLength: 20 },
+    }),
+    bio: t.string({ validate: { maxLength: 150 } }),
+    question: t.string({
+      required: true,
+      validate: { minLength: 1, maxLength: 150 },
+    }),
+    displayName: t.string({ required: true, validate: { maxLength: 20 } }),
   }),
 });
