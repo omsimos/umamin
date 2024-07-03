@@ -101,7 +101,7 @@ export default async function SendMessage({
             <p className="text-muted-foreground text-sm">@{user.username}</p>
           </ProfileHoverCard> */}
 
-            <span className="font-semibold text-muted-foreground pb-2">
+            <span className="font-medium text-muted-foreground pb-2">
               umamin
             </span>
           </CardHeader>
