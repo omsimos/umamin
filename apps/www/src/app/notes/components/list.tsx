@@ -106,7 +106,11 @@ export function NotesList({ currentUserId, notes }: Props) {
         ?.filter((u) => u.user?.id !== currentUserId)
         .map((note, i) => (
           <div key={note.id} className="w-full">
-            <NoteCard note={note} user={{ ...note.user }} />
+            <NoteCard
+              note={note}
+              user={{ ...note.user }}
+              currentUserId={currentUserId}
+            />
 
             {/* v2-note-feed */}
             {(i + 1) % 5 === 0 && (

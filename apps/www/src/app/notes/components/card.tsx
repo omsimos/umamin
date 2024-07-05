@@ -22,21 +22,29 @@ import { ReplyDrawer } from "./reply-drawer";
 type Props = {
   note: Partial<Omit<NoteQueryResult, "user">>;
   user?: {
+    id?: string;
     displayName?: string | null;
     username?: string;
     imageUrl?: string | null;
   };
   menuItems?: MenuItems;
+  currentUserId?: string;
 };
 
-export function NoteCard({ note, user, menuItems }: Props) {
+export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
   const username = user?.username;
 
   const [open, setOpen] = useState(false);
 
   return (
     <div id={note.id} className="container">
-      <ReplyDrawer open={open} setOpen={setOpen} note={note} user={user} />
+      <ReplyDrawer
+        open={open}
+        setOpen={setOpen}
+        note={note}
+        user={user}
+        currentUserId={currentUserId}
+      />
 
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full pb-4 text-sm">
@@ -78,7 +86,7 @@ export function NoteCard({ note, user, menuItems }: Props) {
                     </span>
                     {username &&
                       process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
-                        ","
+                        ",",
                       ).includes(username) && (
                         <BadgeCheck className="w-4 h-4 text-pink-500" />
                       )}
@@ -100,13 +108,22 @@ export function NoteCard({ note, user, menuItems }: Props) {
                 </span>
               )}
 
-              {!note.isAnonymous && (
+              {!note.isAnonymous && currentUserId && (
                 <button
                   onClick={() => setOpen(!open)}
                   className="hover:underline"
                 >
                   <Icons.chat className="h-5 w-5" />
                 </button>
+              )}
+
+              {!note.isAnonymous && !currentUserId && (
+                <Link
+                  href={`/to/${user?.username}`}
+                  className="hover:underline"
+                >
+                  <Icons.chat className="h-5 w-5" />
+                </Link>
               )}
 
               <Menu
