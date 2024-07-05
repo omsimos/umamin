@@ -1,20 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { logEvent } from "firebase/analytics";
 import { BadgeCheck, ScanFace } from "lucide-react";
 
+import { analytics } from "@/lib/firebase";
+import { NoteQueryResult } from "../queries";
+import { Icons } from "@/app/components/utilities/icons";
 import { Menu, type MenuItems } from "@/app/components/menu";
+import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
+
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { onSaveImage, shortTimeAgo } from "@/lib/utils";
-import { analytics } from "@/lib/firebase";
-import { NoteQueryResult } from "../queries";
-import { Icons } from "@/app/components/utilities/icons";
-import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
+import { ReplyDrawer } from "./reply-drawer";
 
 type Props = {
   note: Partial<Omit<NoteQueryResult, "user">>;
@@ -29,8 +32,12 @@ type Props = {
 export function NoteCard({ note, user, menuItems }: Props) {
   const username = user?.username;
 
+  const [open, setOpen] = useState(false);
+
   return (
     <div id={note.id} className="container">
+      <ReplyDrawer open={open} setOpen={setOpen} note={note} user={user} />
+
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full pb-4 text-sm">
           <div className="flex justify-between items-start">
@@ -71,7 +78,7 @@ export function NoteCard({ note, user, menuItems }: Props) {
                     </span>
                     {username &&
                       process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
-                        ",",
+                        ","
                       ).includes(username) && (
                         <BadgeCheck className="w-4 h-4 text-pink-500" />
                       )}
@@ -94,9 +101,12 @@ export function NoteCard({ note, user, menuItems }: Props) {
               )}
 
               {!note.isAnonymous && (
-                <Link href={`/to/${username}`} className="hover:underline">
+                <button
+                  onClick={() => setOpen(!open)}
+                  className="hover:underline"
+                >
                   <Icons.chat className="h-5 w-5" />
-                </Link>
+                </button>
               )}
 
               <Menu
