@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cache } from "react";
 import { graphql } from "gql.tada";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
@@ -67,16 +68,20 @@ export async function generateMetadata({
   };
 }
 
+const getUser = cache(async (username: string) => {
+  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
+    username,
+  });
+
+  return result.data?.userByUsername;
+});
+
 export default async function Page({
   params,
 }: {
   params: { username: string };
 }) {
-  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
-    username: params.username,
-  });
-
-  const user = result.data?.userByUsername;
+  const user = await getUser(params.username);
 
   if (!user) {
     redirect("/404");

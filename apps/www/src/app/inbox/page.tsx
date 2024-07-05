@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -10,6 +11,7 @@ import {
 } from "@umamin/ui/components/tabs";
 import { UserCard } from "../components/user-card";
 import { SentMessages } from "./components/sent/messages";
+import { Skeleton } from "@umamin/ui/components/skeleton";
 import { ReceivedMessages } from "./components/received/messages";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"));
@@ -47,11 +49,35 @@ export default async function UserProfile() {
   const tabsData = [
     {
       name: "Received",
-      content: () => <ReceivedMessages />,
+      content: () => (
+        <Suspense
+          fallback={
+            <div className="space-y-5">
+              <Skeleton className="w-full h-[200px] rounded-lg" />
+              <Skeleton className="w-full h-[200px] rounded-lg" />
+              <Skeleton className="w-full h-[200px] rounded-lg" />
+            </div>
+          }
+        >
+          <ReceivedMessages />
+        </Suspense>
+      ),
     },
     {
       name: "Sent",
-      content: () => <SentMessages />,
+      content: () => (
+        <Suspense
+          fallback={
+            <div className="space-y-5">
+              <Skeleton className="w-full h-[300px] rounded-lg" />
+              <Skeleton className="w-full h-[300px] rounded-lg" />
+              <Skeleton className="w-full h-[300px] rounded-lg" />
+            </div>
+          }
+        >
+          <SentMessages />
+        </Suspense>
+      ),
     },
   ];
 

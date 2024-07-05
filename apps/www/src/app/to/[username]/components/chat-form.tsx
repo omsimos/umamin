@@ -14,6 +14,7 @@ import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { UserByUsernameQueryResult } from "../queries";
+import useBotDetection from "@/hooks/useBotDetection";
 
 const CREATE_MESSAGE_MUTATION = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {
@@ -29,6 +30,7 @@ type Props = {
 };
 
 export function ChatForm({ currentUserId, user }: Props) {
+  useBotDetection();
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const [isFetching, setIsFetching] = useState(false);
@@ -77,9 +79,12 @@ export function ChatForm({ currentUserId, user }: Props) {
   }
 
   return (
-    <div className={cn(
-      "flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 h-full", user?.quietMode ? "min-h-[250px]" : "min-h-[350px]"
-    )}>
+    <div
+      className={cn(
+        "flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 h-full",
+        user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
+      )}
+    >
       <ChatList
         imageUrl={user?.imageUrl}
         question={user?.question ?? ""}

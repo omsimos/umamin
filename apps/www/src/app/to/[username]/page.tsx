@@ -8,10 +8,7 @@ import { ChatForm } from "./components/chat-form";
 import { USER_BY_USERNAME_QUERY } from "./queries";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
-
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
-  ssr: false,
-});
+import { cache } from "react";
 
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
@@ -55,21 +52,26 @@ export async function generateMetadata({
   };
 }
 
+const getUser = cache(async (username: string) => {
+  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
+    username,
+  });
+
+  return result.data?.userByUsername;
+});
+
 export default async function SendMessage({
   params,
 }: {
   params: { username: string };
 }) {
-  const { session } = await getSession();
-  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
-    username: params.username,
-  });
-
-  const user = result.data?.userByUsername;
+  const user = await getUser(params.username);
 
   if (!user) {
     redirect("/404");
   }
+
+  const { session } = await getSession();
 
   return (
     <main className="mt-36 pb-24 grid place-items-center">
@@ -116,8 +118,9 @@ export default async function SendMessage({
         <Lock className="h-4 w-4 ml-2" />
       </div>
 
-      {/* v2-send-to */}
+      {/* v2-send-to
       <AdContainer className="mt-5 w-full max-w-2xl" slotId="9163326848" />
+      */}
 
       <UnauthenticatedDialog isLoggedIn={!!session} />
     </main>

@@ -1,36 +1,51 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { logEvent } from "firebase/analytics";
 import { BadgeCheck, ScanFace } from "lucide-react";
 
+import { analytics } from "@/lib/firebase";
+import { NoteQueryResult } from "../queries";
+import { Icons } from "@/app/components/utilities/icons";
 import { Menu, type MenuItems } from "@/app/components/menu";
+import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
+
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { onSaveImage, shortTimeAgo } from "@/lib/utils";
-import { analytics } from "@/lib/firebase";
-import { NoteQueryResult } from "../queries";
-import { Icons } from "@/app/components/utilities/icons";
-import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
+import { ReplyDrawer } from "./reply-drawer";
 
 type Props = {
   note: Partial<Omit<NoteQueryResult, "user">>;
   user?: {
+    id?: string;
     displayName?: string | null;
     username?: string;
     imageUrl?: string | null;
   };
   menuItems?: MenuItems;
+  currentUserId?: string;
 };
 
-export function NoteCard({ note, user, menuItems }: Props) {
+export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
   const username = user?.username;
+
+  const [open, setOpen] = useState(false);
 
   return (
     <div id={note.id} className="container">
+      <ReplyDrawer
+        open={open}
+        setOpen={setOpen}
+        note={note}
+        user={user}
+        currentUserId={currentUserId}
+      />
+
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full pb-4 text-sm">
           <div className="flex justify-between items-start">
@@ -93,8 +108,20 @@ export function NoteCard({ note, user, menuItems }: Props) {
                 </span>
               )}
 
-              {!note.isAnonymous && (
-                <Link href={`/to/${username}`} className="hover:underline">
+              {!note.isAnonymous && currentUserId && (
+                <button
+                  onClick={() => setOpen(!open)}
+                  className="hover:underline"
+                >
+                  <Icons.chat className="h-5 w-5" />
+                </button>
+              )}
+
+              {!note.isAnonymous && !currentUserId && (
+                <Link
+                  href={`/to/${user?.username}`}
+                  className="hover:underline"
+                >
                   <Icons.chat className="h-5 w-5" />
                 </Link>
               )}

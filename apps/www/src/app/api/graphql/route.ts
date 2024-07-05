@@ -42,10 +42,11 @@ const { handleRequest } = createYoga({
         "Query.messages": "PRIVATE",
         "Query.messagesFromCursor": "PRIVATE",
       },
-      ttl: 5_000,
+      ttl: 30_000,
       ttlPerSchemaCoordinate: {
-        "Query.notes": 30_000,
-        "Query.notesFromCursor": 30_000,
+        "Query.notes": 180_000,
+        "Query.notesFromCursor": 180_000,
+        "Query.userByUsername": 300_000,
       },
     }),
     useDisableIntrospection({

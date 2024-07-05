@@ -11,32 +11,49 @@ declare global {
 interface Props {
   slotId: string;
   className?: string;
+  inFeed?: boolean;
 }
 
-const AdContainer = ({ slotId, className }: Props) => {
+const AdContainer = ({ slotId, className, inFeed }: Props) => {
   useEffect(() => {
-    if (
-      process.env.NODE_ENV === "production" &&
-      typeof window !== "undefined"
-    ) {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    try {
+      if (
+        process.env.NODE_ENV === "production" &&
+        typeof window !== "undefined"
+      ) {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      }
+    } catch (err) {
+      console.log(err);
     }
   }, []);
 
   return (
     <div
       className={cn(className, {
-        "h-44 border border-yellow-500 rounded": process.env.NODE_ENV === "development",
+        "h-44 border border-yellow-500 rounded":
+          process.env.NODE_ENV === "development",
       })}
     >
-      <ins
-        className="adsbygoogle"
-        style={{ display: "block" }}
-        data-ad-client="ca-pub-4274133898976040"
-        data-ad-slot={slotId}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      />
+      {inFeed ? (
+        <ins
+          className="adsbygoogle"
+          style={{ display: "block" }}
+          data-ad-format="fluid"
+          data-ad-layout-key="-h7-z+0-3x+go"
+          data-ad-client="ca-pub-4274133898976040"
+          data-ad-slot={slotId}
+        />
+      ) : (
+        <ins
+          className="adsbygoogle"
+          style={{ display: "block" }}
+          data-ad-client="ca-pub-4274133898976040"
+          data-ad-slot={slotId}
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        />
+      )}
     </div>
   );
 };

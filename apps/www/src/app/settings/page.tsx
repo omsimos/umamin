@@ -1,9 +1,8 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { logout } from "@/actions";
+import { getSession } from "@/lib/auth";
 import { getClient } from "@/lib/gql/rsc";
-import { getSession, lucia } from "@/lib/auth";
 
 import { CURRENT_USER_QUERY } from "./queries";
 import { GeneralSettings } from "./components/general";
@@ -17,6 +16,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
+import { cache } from "react";
 
 export const metadata = {
   title: "Umamin — Settings",
@@ -41,16 +41,20 @@ export const metadata = {
   },
 };
 
+const getUser = cache(async (sessionId?: string) => {
+  const result = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
+
+  return result?.data?.user;
+});
+
 export default async function Settings() {
-  const { user } = await getSession();
+  const { user, session } = await getSession();
 
   if (!user) {
     redirect("/login");
   }
 
-  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? "";
-  const result = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
-  const userData = result?.data?.user;
+  const userData = await getUser(session?.id);
 
   const tabsData = [
     {
