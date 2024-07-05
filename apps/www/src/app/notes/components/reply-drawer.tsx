@@ -10,15 +10,10 @@ import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { Drawer, DrawerContent } from "@umamin/ui/components/drawer";
+import { useMediaQuery } from "@/app/components/utilities/use-media-query";
+import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
 
-export function ReplyDrawer({
-  openDrawer,
-  setOpenDrawer,
-  user,
-  note,
-}: {
-  openDrawer: boolean;
-  setOpenDrawer: React.Dispatch<React.SetStateAction<boolean>>;
+type User = {
   note: Partial<Omit<NoteQueryResult, "user">>;
   user?: {
     displayName?: string | null;
@@ -26,7 +21,36 @@ export function ReplyDrawer({
     imageUrl?: string | null;
     quietMode?: string | null;
   };
-}) {
+};
+
+type ReplyDrawerProps = {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+} & User;
+
+export function ReplyDrawer({ open, setOpen, user, note }: ReplyDrawerProps) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="p-0">
+          <ChatForm user={user} note={note} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerContent className="grid place-items-center">
+        <ChatForm user={user} note={note} />
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+const ChatForm = ({ user, note }: User) => {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
 
@@ -43,59 +67,49 @@ export function ReplyDrawer({
       toast.error(err.message);
     }
   }
-
   return (
-    <Drawer open={openDrawer} onOpenChange={setOpenDrawer}>
-      <DrawerContent className="grid place-items-center">
-        <div
-          className={cn(
-            "container max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 h-full",
-            user?.quietMode ? "min-h-[250px]" : "min-h-[350px]"
-          )}
+    <div
+      className={cn(
+        "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 pt-10 h-full max-h-[500px] overflow-scroll pb-24",
+        user?.quietMode ? "min-h-[250px]" : "min-h-[350px]"
+      )}
+    >
+      <ChatList
+        imageUrl={user?.imageUrl}
+        question={note.content ?? ""}
+        reply={message}
+      />
+      <div className="fixed px-5 sm:px-7 bottom-0 left-1/2 -translate-x-1/2 w-full pb-4 backdrop-blur-sm pt-3 bg-background max-w-xl">
+        <form
+          onSubmit={handleSubmit}
+          className="flex items-center space-x-2 w-full self-center"
         >
-          <ChatList
-            imageUrl={user?.imageUrl}
-            question={note.content ?? ""}
-            reply={message}
+          <Input
+            id="message"
+            required
+            // disabled={isFetching}
+            maxLength={500}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Type your message..."
+            className="focus-visible:ring-transparent flex-1 text-base"
+            autoComplete="off"
           />
-
-          {user?.quietMode ? (
-            <span className="text-muted-foreground text-center text-sm">
-              User has enabled quiet mode
-            </span>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="flex items-center space-x-2 w-full self-center mt-12"
-            >
-              <Input
-                id="message"
-                required
-                // disabled={isFetching}
-                maxLength={500}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Type your message..."
-                className="focus-visible:ring-transparent flex-1 text-base"
-                autoComplete="off"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                // disabled={isFetching}
-                // disabled={input.trim().length === 0}
-              >
-                {/* {isFetching ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : ( */}
-                <Send className="h-4 w-4" />
-                {/* )} */}
-                <span className="sr-only">Send</span>
-              </Button>
-            </form>
-          )}
-        </div>
-      </DrawerContent>
-    </Drawer>
+          <Button
+            type="submit"
+            size="icon"
+            // disabled={isFetching}
+            // disabled={input.trim().length === 0}
+          >
+            {/* {isFetching ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : ( */}
+            <Send className="h-4 w-4" />
+            {/* )} */}
+            <span className="sr-only">Send</span>
+          </Button>
+        </form>
+      </div>
+    </div>
   );
-}
+};

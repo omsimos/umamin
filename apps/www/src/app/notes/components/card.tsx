@@ -32,16 +32,11 @@ type Props = {
 export function NoteCard({ note, user, menuItems }: Props) {
   const username = user?.username;
 
-  const [openDrawer, setOpenDrawer] = useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
     <div id={note.id} className="container">
-      <ReplyDrawer
-        openDrawer={openDrawer}
-        setOpenDrawer={setOpenDrawer}
-        note={note}
-        user={user}
-      />
+      <ReplyDrawer open={open} setOpen={setOpen} note={note} user={user} />
 
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full pb-4 text-sm">
@@ -107,7 +102,7 @@ export function NoteCard({ note, user, menuItems }: Props) {
 
               {!note.isAnonymous && (
                 <button
-                  onClick={() => setOpenDrawer(!openDrawer)}
+                  onClick={() => setOpen(!open)}
                   className="hover:underline"
                 >
                   <Icons.chat className="h-5 w-5" />
