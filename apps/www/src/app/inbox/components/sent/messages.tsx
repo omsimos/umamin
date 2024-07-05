@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 
 import { getSession } from "@/lib/auth";
@@ -6,12 +6,17 @@ import { getClient } from "@/lib/gql/rsc";
 import { SentMessagesList } from "./list";
 import { SENT_MESSAGES_QUERY } from "../../queries";
 
-export async function SentMessages() {
-  const { session } = await getSession();
-  const result = await getClient(session?.id).query(SENT_MESSAGES_QUERY, {
+const getMessages = cache(async (sessionId?: string) => {
+  const result = await getClient(sessionId).query(SENT_MESSAGES_QUERY, {
     type: "sent",
   });
-  const messages = result?.data?.messages;
+
+  return result?.data?.messages;
+});
+
+export async function SentMessages() {
+  const { session } = await getSession();
+  const messages = await getMessages(session?.id);
 
   return (
     <Suspense

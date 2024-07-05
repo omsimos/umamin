@@ -16,6 +16,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
+import { cache } from "react";
 
 export const metadata = {
   title: "Umamin — Settings",
@@ -40,6 +41,12 @@ export const metadata = {
   },
 };
 
+const getUser = cache(async (sessionId?: string) => {
+  const result = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
+
+  return result?.data?.user;
+});
+
 export default async function Settings() {
   const { user, session } = await getSession();
 
@@ -47,8 +54,7 @@ export default async function Settings() {
     redirect("/login");
   }
 
-  const result = await getClient(session.id).query(CURRENT_USER_QUERY, {});
-  const userData = result?.data?.user;
+  const userData = await getUser(session?.id);
 
   const tabsData = [
     {

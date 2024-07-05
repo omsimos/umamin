@@ -8,6 +8,7 @@ import { NoteForm } from "./components/form";
 import { NotesList } from "./components/list";
 import { Button } from "@umamin/ui/components/button";
 import { NOTES_QUERY, CURRENT_NOTE_QUERY } from "./queries";
+import { cache } from "react";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
   ssr: false,
@@ -42,22 +43,26 @@ export const metadata = {
   },
 };
 
-const getCurrentNote = async (sessionId?: string) => {
+const getCurrentNote = cache(async (sessionId?: string) => {
   if (!sessionId) {
     return null;
   }
 
   const res = await getClient(sessionId).query(CURRENT_NOTE_QUERY, {});
-  return res;
-};
+  return res.data?.note;
+});
+
+const getNotes = cache(async () => {
+  const notesResult = await getClient().query(NOTES_QUERY, {});
+
+  return notesResult.data?.notes;
+});
 
 export default async function Page() {
   const { user, session } = await getSession();
-  const notesResult = await getClient().query(NOTES_QUERY, {});
-  const currentNoteResult = await getCurrentNote(session?.id);
 
-  const notes = notesResult.data?.notes;
-  const currentNote = currentNoteResult?.data?.note;
+  const notes = await getNotes();
+  const currentNote = await getCurrentNote(session?.id);
 
   return (
     <main className="mt-28 max-w-xl mx-auto pb-32">
