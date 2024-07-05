@@ -12,6 +12,8 @@ import { CurrentNoteQueryResult } from "../queries";
 
 import { formatError } from "@/lib/utils";
 import { analytics } from "@/lib/firebase";
+import useBotDetection from "@/hooks/useBotDetection";
+
 import { SelectUser } from "@umamin/db/schema/user";
 import { useNoteStore } from "@/store/useNoteStore";
 import { Label } from "@umamin/ui/components/label";
@@ -42,6 +44,7 @@ type Props = {
 };
 
 export function NoteForm({ user, currentNote }: Props) {
+  useBotDetection();
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);

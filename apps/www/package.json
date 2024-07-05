@@ -11,6 +11,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@fingerprintjs/botd": "^1.9.1",
     "@graphql-yoga/plugin-apq": "^3.4.0",
     "@graphql-yoga/plugin-csrf-prevention": "^3.4.0",
     "@graphql-yoga/plugin-disable-introspection": "^2.4.0",
