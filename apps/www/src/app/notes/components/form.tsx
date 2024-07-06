@@ -4,7 +4,13 @@ import { toast } from "sonner";
 import { graphql } from "gql.tada";
 import { logEvent } from "firebase/analytics";
 import { Loader2, Sparkles } from "lucide-react";
-import { FormEventHandler, useState } from "react";
+import {
+  FormEventHandler,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { NoteCard } from "./card";
 import { client } from "@/lib/gql/client";
@@ -103,6 +109,25 @@ export function NoteForm({ user, currentNote }: Props) {
     logEvent(analytics, "update_note");
   };
 
+  // Dynamic Textarea Height
+
+  const textAreaRef = useRef<HTMLTextAreaElement>();
+
+  function updateTextAreaSize(textArea?: HTMLTextAreaElement) {
+    if (textArea == null) return;
+    textArea.style.height = "3rem";
+    textArea.style.height = `${textArea.scrollHeight}px`;
+  }
+
+  const inputRef = useCallback((textArea: HTMLTextAreaElement) => {
+    updateTextAreaSize(textArea);
+    textAreaRef.current = textArea;
+  }, []);
+
+  useEffect(() => {
+    updateTextAreaSize(textAreaRef.current);
+  }, [content]);
+
   return (
     <section>
       <form
@@ -112,11 +137,15 @@ export function NoteForm({ user, currentNote }: Props) {
         <Textarea
           id="message"
           required
+          ref={inputRef}
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          style={{ height: 0 }}
+          onChange={(e) => {
+            setContent(e.target.value);
+          }}
           maxLength={500}
           placeholder="How's your day going?"
-          className="focus-visible:ring-transparent text-base max-h-[500px]"
+          className="focus-visible:ring-transparent text-base max-h-[400px]"
           autoComplete="off"
         />
         <div className="flex w-full justify-between items-center">
