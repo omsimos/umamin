@@ -40,7 +40,7 @@ export const metadata = {
 };
 
 export default async function UserProfile() {
-  const { user } = await getSession();
+  const { user, session } = await getSession();
 
   if (!user) {
     redirect("/login");
@@ -59,7 +59,7 @@ export default async function UserProfile() {
             </div>
           }
         >
-          <ReceivedMessages />
+          <ReceivedMessages sessionId={session.id} />
         </Suspense>
       ),
     },
@@ -75,7 +75,7 @@ export default async function UserProfile() {
             </div>
           }
         >
-          <SentMessages />
+          <SentMessages sessionId={session.id} />
         </Suspense>
       ),
     },
