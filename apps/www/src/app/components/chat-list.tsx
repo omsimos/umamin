@@ -11,17 +11,32 @@ type Props = {
   question: string;
   reply?: string;
   response?: string;
+  anonymous?: boolean;
 };
 
-export const ChatList = ({ imageUrl, question, reply, response }: Props) => {
+export const ChatList = ({
+  imageUrl,
+  question,
+  reply,
+  response,
+  anonymous,
+}: Props) => {
   return (
     <div className="flex flex-col">
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-end">
         <Avatar>
-          <AvatarImage className="rounded-full" src={imageUrl ?? ""} />
-          <AvatarFallback>
-            <ScanFace />
-          </AvatarFallback>
+          {!anonymous ? (
+            <>
+              <AvatarImage className="rounded-full" src={imageUrl ?? ""} />
+              <AvatarFallback>
+                <ScanFace />
+              </AvatarFallback>
+            </>
+          ) : (
+            <AvatarFallback>
+              <ScanFace />
+            </AvatarFallback>
+          )}
         </Avatar>
         <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted min-w-0 break-words">
           {question}
@@ -31,7 +46,7 @@ export const ChatList = ({ imageUrl, question, reply, response }: Props) => {
       {reply && (
         <div
           className={cn(
-            "max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 self-end min-w-0 break-words",
+            "max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 self-end min-w-0 break-words"
           )}
         >
           {reply}

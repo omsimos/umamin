@@ -86,7 +86,7 @@ export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
                     </span>
                     {username &&
                       process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
-                        ",",
+                        ","
                       ).includes(username) && (
                         <BadgeCheck className="w-4 h-4 text-pink-500" />
                       )}
@@ -108,22 +108,16 @@ export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
                 </span>
               )}
 
-              {!note.isAnonymous && currentUserId && (
-                <button
-                  onClick={() => setOpen(!open)}
-                  className="hover:underline"
-                >
+              {/* {!note.isAnonymous && currentUserId && (
+                <button onClick={() => setOpen(!open)}>
                   <Icons.chat className="h-5 w-5" />
                 </button>
-              )}
+              )} */}
 
-              {!note.isAnonymous && !currentUserId && (
-                <Link
-                  href={`/to/${user?.username}`}
-                  className="hover:underline"
-                >
+              {currentUserId && (
+                <button onClick={() => setOpen(!open)}>
                   <Icons.chat className="h-5 w-5" />
-                </Link>
+                </button>
               )}
 
               <Menu

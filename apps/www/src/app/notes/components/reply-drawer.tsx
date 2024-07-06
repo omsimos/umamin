@@ -133,16 +133,17 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
   return (
     <div
       className={cn(
-        "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 pt-10 h-full max-h-[500px] overflow-scroll pb-24",
-        user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
+        "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 pt-10 h-full max-h-[500px] overflow-scroll pb-24 rounded-lg",
+        user?.quietMode ? "min-h-[250px]" : "min-h-[350px]"
       )}
     >
       <ChatList
         imageUrl={user?.imageUrl}
         question={note.content ?? ""}
+        anonymous={note?.isAnonymous}
         reply={message}
       />
-      <div className="fixed px-5 sm:px-7 bottom-0 left-1/2 -translate-x-1/2 w-full pb-4 backdrop-blur-sm pt-3 bg-background max-w-xl">
+      <div className="fixed px-5 sm:px-7 bottom-0 left-1/2 -translate-x-1/2 w-full pb-4 rounded-b-lg bg-background pt-3 max-w-xl">
         <form
           onSubmit={handleSubmit}
           className="flex items-center space-x-2 w-full self-center"
