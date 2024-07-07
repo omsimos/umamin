@@ -54,6 +54,7 @@ export function NoteForm({ user, currentNote }: Props) {
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [textAreaCount, setTextAreaCount] = useState(0);
 
   const updatedNote = useNoteStore((state) => state.note);
   const clearNote = useNoteStore((state) => state.clear);
@@ -142,8 +143,9 @@ export function NoteForm({ user, currentNote }: Props) {
           style={{ height: 0 }}
           onChange={(e) => {
             setContent(e.target.value);
+            setTextAreaCount(e.target.value.length);
           }}
-          maxLength={500}
+          // maxLength={500}
           placeholder="How's your day going?"
           className="focus-visible:ring-transparent text-base max-h-[400px]"
           autoComplete="off"
@@ -163,18 +165,30 @@ export function NoteForm({ user, currentNote }: Props) {
             </Label>
           </div>
 
-          <Button
-            disabled={isFetching || !content}
-            type="submit"
-            // disabled={input.trim().length === 0}
-          >
-            <p>Share Note</p>
-            {isFetching ? (
-              <Loader2 className="h-4 w-4 animate-spin ml-2" />
-            ) : (
-              <Sparkles className="h-4 w-4 ml-2" />
-            )}
-          </Button>
+          <div className="space-x-3">
+            <span
+              className={textAreaCount > 500 ? "text-red-500" : "text-zinc-500"}
+            >
+              {textAreaCount >= 450 ? 500 - textAreaCount : null}
+            </span>
+
+            <Button
+              disabled={
+                isFetching ||
+                !content ||
+                textAreaCount > 500 ||
+                textAreaCount === 0
+              }
+              type="submit"
+            >
+              <p>Share Note</p>
+              {isFetching ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Sparkles className="h-4 w-4 ml-2" />
+              )}
+            </Button>
+          </div>
         </div>
       </form>
 
