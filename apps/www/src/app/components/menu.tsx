@@ -18,11 +18,11 @@ export type MenuItems = {
 
 export const Menu = ({ menuItems }: { menuItems: MenuItems }) => {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger title='post menu'>
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger title="post menu">
         <Icons.elipsisVertical />
       </DropdownMenuTrigger>
-      <DropdownMenuContent className='font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0'>
+      <DropdownMenuContent className="font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0">
         {menuItems.map((item, i) => (
           <React.Fragment key={item.title}>
             <DropdownMenuItem onClick={item.onClick} className={item.className}>
