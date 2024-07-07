@@ -41,7 +41,7 @@ builder.queryFields((t) => ({
       try {
         const result = await db.query.note.findMany({
           orderBy: desc(note.updatedAt),
-          limit: 10,
+          limit: 20,
           with: {
             user: true,
           },

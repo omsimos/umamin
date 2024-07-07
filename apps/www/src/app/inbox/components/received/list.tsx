@@ -49,7 +49,7 @@ export function ReceivedMessagesList({
   });
 
   const [msgList, setMsgList] = useState(messages);
-  const [hasMore, setHasMore] = useState(messages?.length === 5);
+  const [hasMore, setHasMore] = useState(messages?.length === 10);
   const [isFetching, setIsFetching] = useState(false);
 
   function loadMessages() {

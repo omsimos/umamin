@@ -55,7 +55,7 @@ export function NotesList({ currentUserId, notes }: Props) {
   });
 
   const [notesList, setNotesList] = useState(notes);
-  const [hasMore, setHasMore] = useState(notes?.length === 10);
+  const [hasMore, setHasMore] = useState(notes?.length === 20);
   const [isFetching, setIsFetching] = useState(false);
 
   function loadNotes() {
