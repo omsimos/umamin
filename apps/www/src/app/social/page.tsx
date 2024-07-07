@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@umamin/ui/lib/utils";
 import { SocialCard } from "./components/card";
 import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
@@ -37,7 +39,7 @@ export default function Social() {
       <div className="flex flex-col items-center container">
         <div
           className={cn(
-            "group rounded-full border border-black/5 bg-zinc-100 text-base text-white transition-all ease-in dark:border-white/5 dark:bg-zinc-900"
+            "group rounded-full border border-black/5 bg-zinc-100 text-base text-white transition-all ease-in dark:border-white/5 dark:bg-zinc-900",
           )}
         >
           <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 transition ease-out">
