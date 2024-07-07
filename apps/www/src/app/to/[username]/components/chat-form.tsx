@@ -1,20 +1,20 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState } from "react";
 import { graphql } from "gql.tada";
 import { analytics } from "@/lib/firebase";
 import { Loader2, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@umamin/ui/lib/utils";
 import { formatError } from "@/lib/utils";
 import { client } from "@/lib/gql/client";
-import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { UserByUsernameQueryResult } from "../queries";
 import useBotDetection from "@/hooks/useBotDetection";
+import { Textarea } from "@umamin/ui/components/textarea";
 
 const CREATE_MESSAGE_MUTATION = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {
@@ -78,18 +78,39 @@ export function ChatForm({ currentUserId, user }: Props) {
     }
   }
 
+  // Dynamic Textarea Height
+
+  const textAreaRef = useRef<HTMLTextAreaElement>();
+
+  function updateTextAreaSize(textArea?: HTMLTextAreaElement) {
+    if (textArea == null) return;
+    textArea.style.height = "3rem";
+    textArea.style.height = `${textArea.scrollHeight}px`;
+  }
+
+  const inputRef = useCallback((textArea: HTMLTextAreaElement) => {
+    updateTextAreaSize(textArea);
+    textAreaRef.current = textArea;
+  }, []);
+
+  useEffect(() => {
+    updateTextAreaSize(textAreaRef.current);
+  }, [content]);
+
   return (
     <div
       className={cn(
-        "flex flex-col justify-between px-5 sm:px-7 pt-10 pb-8 h-full",
-        user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
+        "flex flex-col justify-between pb-6 h-full max-h-[400px] relative w-full min-w-0",
+        user?.quietMode ? "min-h-[250px]" : "min-h-[350px]"
       )}
     >
-      <ChatList
-        imageUrl={user?.imageUrl}
-        question={user?.question ?? ""}
-        reply={message}
-      />
+      <div className="flex flex-col h-full overflow-scroll pt-10 px-5 sm:px-7 pb-5 w-full relative min-w-0 ">
+        <ChatList
+          imageUrl={user?.imageUrl}
+          question={user?.question ?? ""}
+          reply={message}
+        />
+      </div>
 
       {user?.quietMode ? (
         <span className="text-muted-foreground text-center text-sm">
@@ -98,25 +119,23 @@ export function ChatForm({ currentUserId, user }: Props) {
       ) : (
         <form
           onSubmit={handleSubmit}
-          className="flex max-w-lg items-center space-x-2 w-full self-center mt-12"
+          className="px-5 sm:px-7 flex items-center space-x-2 w-full self-center pt-2 max-w-lg"
         >
-          <Input
+          <Textarea
             id="message"
+            style={{ height: 0 }}
             required
-            disabled={isFetching}
-            maxLength={500}
+            ref={inputRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+            }}
+            maxLength={500}
             placeholder="Type your message..."
-            className="focus-visible:ring-transparent flex-1 text-base"
+            className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
             autoComplete="off"
           />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={isFetching}
-            // disabled={input.trim().length === 0}
-          >
+          <Button type="submit" size="icon" disabled={isFetching}>
             {isFetching ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
