@@ -122,9 +122,8 @@ export function NoteForm({ user, currentNote }: Props) {
             setContent(e.target.value);
             setTextAreaCount(e.target.value.length);
           }}
-          // maxLength={500}
           placeholder="How's your day going?"
-          className="focus-visible:ring-transparent text-base max-h-[400px]"
+          className="focus-visible:ring-transparent text-base lg:max-h-[400px] max-h-[250px]"
           autoComplete="off"
         />
         <div className="flex w-full justify-between items-center">
@@ -146,7 +145,7 @@ export function NoteForm({ user, currentNote }: Props) {
             <span
               className={cn(
                 textAreaCount > 500 ? "text-red-500" : "text-zinc-500",
-                "text-sm"
+                "text-sm",
               )}
             >
               {textAreaCount >= 450 ? 500 - textAreaCount : null}
