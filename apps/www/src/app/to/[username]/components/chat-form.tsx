@@ -5,7 +5,7 @@ import { graphql } from "gql.tada";
 import { analytics } from "@/lib/firebase";
 import { Loader2, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { cn } from "@umamin/ui/lib/utils";
 import { formatError } from "@/lib/utils";
@@ -15,6 +15,7 @@ import { ChatList } from "@/app/components/chat-list";
 import { UserByUsernameQueryResult } from "../queries";
 import { Textarea } from "@umamin/ui/components/textarea";
 import useBotDetection from "@/hooks/use-bot-detection";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 
 const CREATE_MESSAGE_MUTATION = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {
@@ -34,6 +35,8 @@ export function ChatForm({ currentUserId, user }: Props) {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const [isFetching, setIsFetching] = useState(false);
+
+  const inputRef = useDynamicTextarea(content);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -78,25 +81,6 @@ export function ChatForm({ currentUserId, user }: Props) {
     }
   }
 
-  // Dynamic Textarea Height
-
-  const textAreaRef = useRef<HTMLTextAreaElement>();
-
-  function updateTextAreaSize(textArea?: HTMLTextAreaElement) {
-    if (textArea == null) return;
-    textArea.style.height = "3rem";
-    textArea.style.height = `${textArea.scrollHeight}px`;
-  }
-
-  const inputRef = useCallback((textArea: HTMLTextAreaElement) => {
-    updateTextAreaSize(textArea);
-    textAreaRef.current = textArea;
-  }, []);
-
-  useEffect(() => {
-    updateTextAreaSize(textAreaRef.current);
-  }, [content]);
-
   return (
     <div
       className={cn(
@@ -123,7 +107,6 @@ export function ChatForm({ currentUserId, user }: Props) {
         >
           <Textarea
             id="message"
-            style={{ height: 0 }}
             required
             ref={inputRef}
             value={content}

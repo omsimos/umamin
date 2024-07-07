@@ -10,12 +10,13 @@ import { NoteQueryResult } from "../queries";
 
 import { formatError } from "@/lib/utils";
 import { client } from "@/lib/gql/client";
-import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { Drawer, DrawerContent } from "@umamin/ui/components/drawer";
 import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { Textarea } from "@umamin/ui/components/textarea";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 
 type ChatFormProps = {
   note: Partial<Omit<NoteQueryResult, "user">>;
@@ -88,6 +89,7 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const inputRef = useDynamicTextarea(content);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -147,15 +149,17 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
           onSubmit={handleSubmit}
           className="flex items-center space-x-2 w-full self-center"
         >
-          <Input
+          <Textarea
             id="message"
             required
-            disabled={isSending}
-            maxLength={500}
+            ref={inputRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+            }}
+            maxLength={500}
             placeholder="Type your message..."
-            className="focus-visible:ring-transparent flex-1 text-base"
+            className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
             autoComplete="off"
           />
           <Button type="submit" size="icon" disabled={isSending}>

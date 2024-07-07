@@ -4,13 +4,7 @@ import { toast } from "sonner";
 import { graphql } from "gql.tada";
 import { logEvent } from "firebase/analytics";
 import { Loader2, Sparkles } from "lucide-react";
-import {
-  FormEventHandler,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { FormEventHandler, useState } from "react";
 
 import { NoteCard } from "./card";
 import { client } from "@/lib/gql/client";
@@ -26,6 +20,8 @@ import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
 import useBotDetection from "@/hooks/use-bot-detection";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { cn } from "@umamin/ui/lib/utils";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
@@ -55,6 +51,7 @@ export function NoteForm({ user, currentNote }: Props) {
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [textAreaCount, setTextAreaCount] = useState(0);
+  const inputRef = useDynamicTextarea(content);
 
   const updatedNote = useNoteStore((state) => state.note);
   const clearNote = useNoteStore((state) => state.clear);
@@ -110,25 +107,6 @@ export function NoteForm({ user, currentNote }: Props) {
     logEvent(analytics, "update_note");
   };
 
-  // Dynamic Textarea Height
-
-  const textAreaRef = useRef<HTMLTextAreaElement>();
-
-  function updateTextAreaSize(textArea?: HTMLTextAreaElement) {
-    if (textArea == null) return;
-    textArea.style.height = "3rem";
-    textArea.style.height = `${textArea.scrollHeight}px`;
-  }
-
-  const inputRef = useCallback((textArea: HTMLTextAreaElement) => {
-    updateTextAreaSize(textArea);
-    textAreaRef.current = textArea;
-  }, []);
-
-  useEffect(() => {
-    updateTextAreaSize(textAreaRef.current);
-  }, [content]);
-
   return (
     <section>
       <form
@@ -140,7 +118,6 @@ export function NoteForm({ user, currentNote }: Props) {
           required
           ref={inputRef}
           value={content}
-          style={{ height: 0 }}
           onChange={(e) => {
             setContent(e.target.value);
             setTextAreaCount(e.target.value.length);
@@ -167,7 +144,10 @@ export function NoteForm({ user, currentNote }: Props) {
 
           <div className="space-x-3">
             <span
-              className={textAreaCount > 500 ? "text-red-500" : "text-zinc-500"}
+              className={cn(
+                textAreaCount > 500 ? "text-red-500" : "text-zinc-500",
+                "text-sm"
+              )}
             >
               {textAreaCount >= 450 ? 500 - textAreaCount : null}
             </span>
