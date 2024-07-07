@@ -108,13 +108,7 @@ export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
                 </span>
               )}
 
-              {/* {!note.isAnonymous && currentUserId && (
-                <button onClick={() => setOpen(!open)}>
-                  <Icons.chat className="h-5 w-5" />
-                </button>
-              )} */}
-
-              {currentUserId && (
+              {currentUserId && !note.isAnonymous && (
                 <button onClick={() => setOpen(!open)}>
                   <Icons.chat className="h-5 w-5" />
                 </button>

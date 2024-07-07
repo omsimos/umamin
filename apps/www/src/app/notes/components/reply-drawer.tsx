@@ -140,7 +140,6 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
       <ChatList
         imageUrl={user?.imageUrl}
         question={note.content ?? ""}
-        anonymous={note?.isAnonymous}
         reply={message}
       />
       <div className="fixed px-5 sm:px-7 bottom-0 left-1/2 -translate-x-1/2 w-full pb-4 rounded-b-lg bg-background pt-3 max-w-xl">
