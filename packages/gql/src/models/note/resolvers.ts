@@ -39,12 +39,20 @@ builder.queryFields((t) => ({
     },
     resolve: async () => {
       try {
-        const result = await db.query.note.findMany({
+        const _result = await db.query.note.findMany({
           orderBy: desc(note.updatedAt),
           limit: 20,
           with: {
             user: true,
           },
+        });
+
+        const result = _result.map((note) => {
+          if (note.isAnonymous) {
+            note.user = null!;
+          }
+
+          return note;
         });
 
         return result;
