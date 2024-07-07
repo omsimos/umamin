@@ -1,10 +1,12 @@
+"use client";
+
 import Link from "next/link";
 
 import { Demo } from "./components/demo";
 import { Button } from "@umamin/ui/components/button";
 import { V1Link } from "./components/v1-link";
 
-export default async function Home() {
+export default function Home() {
   return (
     <main className="flex items-center flex-col min-h-screen lg:pt-44 py-36 md:gap-8 gap-6 container">
       <V1Link />

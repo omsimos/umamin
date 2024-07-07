@@ -55,7 +55,7 @@ export function NotesList({ currentUserId, notes }: Props) {
   });
 
   const [notesList, setNotesList] = useState(notes);
-  const [hasMore, setHasMore] = useState(notes?.length === 10);
+  const [hasMore, setHasMore] = useState(notes?.length === 20);
   const [isFetching, setIsFetching] = useState(false);
 
   function loadNotes() {
@@ -70,7 +70,6 @@ export function NotesList({ currentUserId, notes }: Props) {
         .then((res) => {
           if (res.error) {
             toast.error(res.error.message);
-            setIsFetching(false);
             return;
           }
 
@@ -95,10 +94,10 @@ export function NotesList({ currentUserId, notes }: Props) {
   }
 
   useEffect(() => {
-    if (inView) {
+    if (inView && !isFetching) {
       loadNotes();
     }
-  }, [inView]);
+  }, [inView, isFetching]);
 
   return (
     <>
@@ -112,9 +111,9 @@ export function NotesList({ currentUserId, notes }: Props) {
               currentUserId={currentUserId}
             />
 
-            {/* v2-note-feed */}
+            {/* v2-note-list */}
             {(i + 1) % 5 === 0 && (
-              <AdContainer className="mt-5" slotId="4344956885" />
+              <AdContainer className="mt-5" slotId="9012650581" />
             )}
           </div>
         ))}

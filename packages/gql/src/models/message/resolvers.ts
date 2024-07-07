@@ -32,7 +32,7 @@ builder.queryFields((t) => ({
             type === "received"
               ? eq(message.receiverId, ctx.userId)
               : eq(message.senderId, ctx.userId),
-          limit: 5,
+          limit: 10,
           orderBy: [desc(message.createdAt)],
           with:
             type === "sent"

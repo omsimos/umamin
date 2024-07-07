@@ -49,7 +49,7 @@ export function SentMessagesList({
   });
 
   const [msgList, setMsgList] = useState(messages);
-  const [hasMore, setHasMore] = useState(messages?.length === 5);
+  const [hasMore, setHasMore] = useState(messages?.length === 10);
   const [isFetching, setIsFetching] = useState(false);
 
   function loadMessages() {
@@ -67,7 +67,6 @@ export function SentMessagesList({
         .then((res) => {
           if (res.error) {
             toast.error(res.error.message);
-            setIsFetching(false);
             return;
           }
 
@@ -92,7 +91,7 @@ export function SentMessagesList({
   }
 
   useEffect(() => {
-    if (inView) {
+    if (inView && !isFetching) {
       loadMessages();
     }
   }, [inView]);
