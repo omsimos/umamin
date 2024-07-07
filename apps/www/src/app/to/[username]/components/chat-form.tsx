@@ -69,7 +69,7 @@ export function ChatForm({ currentUserId, user }: Props) {
         return;
       }
 
-      setMessage(content);
+      setMessage(content.replace(/(\r\n|\n|\r){2,}/g, "\n\n"));
       setContent("");
       toast.success("Message sent");
       setIsFetching(false);
@@ -85,7 +85,7 @@ export function ChatForm({ currentUserId, user }: Props) {
     <div
       className={cn(
         "flex flex-col justify-between pb-6 h-full max-h-[400px] relative w-full min-w-0",
-        user?.quietMode ? "min-h-[250px]" : "min-h-[350px]"
+        user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
       )}
     >
       <div className="flex flex-col h-full overflow-scroll pt-10 px-5 sm:px-7 pb-5 w-full relative min-w-0 ">
