@@ -12,7 +12,7 @@ import { cache } from "react";
 
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
-  { ssr: false },
+  { ssr: false }
 );
 
 export async function generateMetadata({
@@ -76,15 +76,15 @@ export default async function SendMessage({
   return (
     <main className="mt-36 pb-24 grid place-items-center">
       <div className="container w-full max-w-2xl">
-        <Card className="border flex flex-col">
+        <Card className="border flex flex-col w-full">
           <CardHeader className="bg-background border-b w-full item-center rounded-t-2xl flex justify-between flex-row">
             <div className="flex items-center space-x-1">
               <span className="text-muted-foreground">To:</span>
               <p className="font-semibold text-sm">
-                {user?.displayName ?? user?.username}
+                {user?.displayName ? user?.displayName : user?.username}
               </p>
               {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                user.username,
+                user.username
               ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
               {user.quietMode && (
                 <MessageCircleOff className="h-4 w-4 text-yellow-500" />

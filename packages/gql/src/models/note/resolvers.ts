@@ -87,8 +87,8 @@ builder.queryFields((t) => ({
                 lt(note.updatedAt, cursor.updatedAt),
                 and(
                   eq(note.updatedAt, cursor.updatedAt),
-                  lt(note.id, cursor.id),
-                ),
+                  lt(note.id, cursor.id)
+                )
               )
             : undefined,
           limit: 10,
@@ -142,18 +142,20 @@ builder.mutationFields((t) => ({
       }
 
       try {
+        const _content = content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
+
         const result = await db
           .insert(note)
           .values({
             id: nanoid(),
             userId: ctx.userId,
-            content,
+            content: _content,
             isAnonymous,
           })
           .onConflictDoUpdate({
             target: note.userId,
             set: {
-              content,
+              content: _content,
               isAnonymous,
             },
           })

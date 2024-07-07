@@ -12,7 +12,6 @@ import { CurrentNoteQueryResult } from "../queries";
 
 import { formatError } from "@/lib/utils";
 import { analytics } from "@/lib/firebase";
-import useBotDetection from "@/hooks/useBotDetection";
 
 import { SelectUser } from "@umamin/db/schema/user";
 import { useNoteStore } from "@/store/useNoteStore";
@@ -20,6 +19,9 @@ import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
+import useBotDetection from "@/hooks/use-bot-detection";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { cn } from "@umamin/ui/lib/utils";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
@@ -48,6 +50,8 @@ export function NoteForm({ user, currentNote }: Props) {
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [textAreaCount, setTextAreaCount] = useState(0);
+  const inputRef = useDynamicTextarea(content);
 
   const updatedNote = useNoteStore((state) => state.note);
   const clearNote = useNoteStore((state) => state.clear);
@@ -112,11 +116,15 @@ export function NoteForm({ user, currentNote }: Props) {
         <Textarea
           id="message"
           required
+          ref={inputRef}
           value={content}
-          onChange={(e) => setContent(e.target.value)}
-          maxLength={500}
+          onChange={(e) => {
+            setContent(e.target.value);
+            setTextAreaCount(e.target.value.length);
+          }}
+          // maxLength={500}
           placeholder="How's your day going?"
-          className="focus-visible:ring-transparent text-base max-h-[500px]"
+          className="focus-visible:ring-transparent text-base max-h-[400px]"
           autoComplete="off"
         />
         <div className="flex w-full justify-between items-center">
@@ -134,18 +142,33 @@ export function NoteForm({ user, currentNote }: Props) {
             </Label>
           </div>
 
-          <Button
-            disabled={isFetching || !content}
-            type="submit"
-            // disabled={input.trim().length === 0}
-          >
-            <p>Share Note</p>
-            {isFetching ? (
-              <Loader2 className="h-4 w-4 animate-spin ml-2" />
-            ) : (
-              <Sparkles className="h-4 w-4 ml-2" />
-            )}
-          </Button>
+          <div className="space-x-3">
+            <span
+              className={cn(
+                textAreaCount > 500 ? "text-red-500" : "text-zinc-500",
+                "text-sm"
+              )}
+            >
+              {textAreaCount >= 450 ? 500 - textAreaCount : null}
+            </span>
+
+            <Button
+              disabled={
+                isFetching ||
+                !content ||
+                textAreaCount > 500 ||
+                textAreaCount === 0
+              }
+              type="submit"
+            >
+              <p>Share Note</p>
+              {isFetching ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Sparkles className="h-4 w-4 ml-2" />
+              )}
+            </Button>
+          </div>
         </div>
       </form>
 
