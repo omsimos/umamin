@@ -13,8 +13,8 @@ import { client } from "@/lib/gql/client";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { UserByUsernameQueryResult } from "../queries";
-import useBotDetection from "@/hooks/useBotDetection";
 import { Textarea } from "@umamin/ui/components/textarea";
+import useBotDetection from "@/hooks/use-bot-detection";
 
 const CREATE_MESSAGE_MUTATION = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {

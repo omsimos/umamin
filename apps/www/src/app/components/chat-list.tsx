@@ -4,7 +4,6 @@ import {
   AvatarImage,
   AvatarFallback,
 } from "@umamin/ui/components/avatar";
-import { cn } from "@umamin/ui/lib/utils";
 
 type Props = {
   imageUrl?: string | null;
@@ -29,11 +28,7 @@ export const ChatList = ({ imageUrl, question, reply, response }: Props) => {
       </div>
 
       {reply && (
-        <div
-          className={cn(
-            "max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 self-end min-w-0 break-words"
-          )}
-        >
+        <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 self-end min-w-0 break-words">
           {reply}
         </div>
       )}

@@ -15,7 +15,7 @@ import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { Drawer, DrawerContent } from "@umamin/ui/components/drawer";
 import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
-import { useMediaQuery } from "@/app/components/utilities/use-media-query";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 type ChatFormProps = {
   note: Partial<Omit<NoteQueryResult, "user">>;

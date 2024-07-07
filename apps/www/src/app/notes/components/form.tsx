@@ -18,7 +18,6 @@ import { CurrentNoteQueryResult } from "../queries";
 
 import { formatError } from "@/lib/utils";
 import { analytics } from "@/lib/firebase";
-import useBotDetection from "@/hooks/useBotDetection";
 
 import { SelectUser } from "@umamin/db/schema/user";
 import { useNoteStore } from "@/store/useNoteStore";
@@ -26,6 +25,7 @@ import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
+import useBotDetection from "@/hooks/use-bot-detection";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
