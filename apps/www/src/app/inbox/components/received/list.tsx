@@ -67,7 +67,6 @@ export function ReceivedMessagesList({
         .then((res) => {
           if (res.error) {
             toast.error(res.error.message);
-            setIsFetching(false);
             return;
           }
 
@@ -92,7 +91,7 @@ export function ReceivedMessagesList({
   }
 
   useEffect(() => {
-    if (inView) {
+    if (inView && !isFetching) {
       loadMessages();
     }
   }, [inView]);
