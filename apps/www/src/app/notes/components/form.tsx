@@ -88,8 +88,10 @@ export function NoteForm({ user, currentNote }: Props) {
     e.preventDefault();
     setIsFetching(true);
 
+    const processedText = content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
+
     const res = await client.mutation(UPDATE_NOTE_MUTATION, {
-      content,
+      content: processedText,
       isAnonymous,
     });
 
