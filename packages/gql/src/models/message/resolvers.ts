@@ -32,7 +32,7 @@ builder.queryFields((t) => ({
             type === "received"
               ? eq(message.receiverId, ctx.userId)
               : eq(message.senderId, ctx.userId),
-          limit: 5,
+          limit: 10,
           orderBy: [desc(message.createdAt)],
           with:
             type === "sent"
@@ -108,10 +108,10 @@ builder.queryFields((t) => ({
                   lt(message.createdAt, cursor.createdAt),
                   and(
                     eq(message.createdAt, cursor.createdAt),
-                    lt(message.id, cursor.id),
-                  ),
+                    lt(message.id, cursor.id)
+                  )
                 )
-              : undefined,
+              : undefined
           ),
           limit: 5,
           orderBy: [desc(message.createdAt), desc(message.id)],
@@ -148,7 +148,6 @@ builder.queryFields((t) => ({
       }
     },
   }),
-
 }));
 
 builder.mutationFields((t) => ({
@@ -162,7 +161,9 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_, { input }) => {
       try {
-        const encryptedContent = await aesEncrypt(input.content);
+        const content = input.content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
+
+        const encryptedContent = await aesEncrypt(content);
 
         const result = await db
           .insert(message)
@@ -189,7 +190,9 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_, args) => {
       try {
-        const encryptedContent = await aesEncrypt(args.content);
+        const content = args.content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
+
+        const encryptedContent = await aesEncrypt(content);
 
         await db
           .update(message)

@@ -10,12 +10,13 @@ import { NoteQueryResult } from "../queries";
 
 import { formatError } from "@/lib/utils";
 import { client } from "@/lib/gql/client";
-import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { Drawer, DrawerContent } from "@umamin/ui/components/drawer";
 import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
-import { useMediaQuery } from "@/app/components/utilities/use-media-query";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { Textarea } from "@umamin/ui/components/textarea";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 
 type ChatFormProps = {
   note: Partial<Omit<NoteQueryResult, "user">>;
@@ -88,6 +89,7 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const inputRef = useDynamicTextarea(content);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -117,11 +119,10 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
         return;
       }
 
-      setMessage(content);
+      setMessage(content.replace(/(\r\n|\n|\r){2,}/g, "\n\n"));
       setContent("");
       toast.success("Reply sent");
       setIsSending(false);
-      setOpen(false);
 
       logEvent(analytics, "send_note_reply");
     } catch (err: any) {
@@ -133,7 +134,7 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
   return (
     <div
       className={cn(
-        "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 pt-10 h-full max-h-[500px] overflow-scroll pb-24",
+        "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 py-10 h-full max-h-[500px] overflow-scroll rounded-lg",
         user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
       )}
     >
@@ -142,32 +143,36 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
         question={note.content ?? ""}
         reply={message}
       />
-      <div className="fixed px-5 sm:px-7 bottom-0 left-1/2 -translate-x-1/2 w-full pb-4 backdrop-blur-sm pt-3 bg-background max-w-xl">
-        <form
-          onSubmit={handleSubmit}
-          className="flex items-center space-x-2 w-full self-center"
-        >
-          <Input
-            id="message"
-            required
-            disabled={isSending}
-            maxLength={500}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Type your message..."
-            className="focus-visible:ring-transparent flex-1 text-base"
-            autoComplete="off"
-          />
-          <Button type="submit" size="icon" disabled={isSending}>
-            {isSending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            <span className="sr-only">Send</span>
-          </Button>
-        </form>
-      </div>
+      {!message && (
+        <div className="fixed px-5 sm:px-7 bottom-0 left-1/2 -translate-x-1/2 w-full pb-4 rounded-b-lg bg-background pt-3 max-w-xl">
+          <form
+            onSubmit={handleSubmit}
+            className="flex items-center space-x-2 w-full self-center"
+          >
+            <Textarea
+              id="message"
+              required
+              ref={inputRef}
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value);
+              }}
+              maxLength={500}
+              placeholder="Type your message..."
+              className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
+              autoComplete="off"
+            />
+            <Button type="submit" size="icon" disabled={isSending}>
+              {isSending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              <span className="sr-only">Send</span>
+            </Button>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

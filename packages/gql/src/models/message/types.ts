@@ -35,7 +35,7 @@ export const CreateMessageInput = builder.inputType("CreateMessageInput", {
   fields: (t) => ({
     question: t.string({
       required: true,
-      validate: { minLength: 1, maxLength: 150 },
+      validate: { minLength: 1, maxLength: 500 },
     }),
     content: t.string({
       required: true,
