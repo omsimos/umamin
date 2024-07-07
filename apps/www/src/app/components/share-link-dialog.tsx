@@ -34,7 +34,7 @@ export default function ShareLinkDialog({ username }: { username: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button type="button">
+        <button type="button" title="Share Link">
           <LinkIcon className="h-6 w-6" />
         </button>
       </DialogTrigger>

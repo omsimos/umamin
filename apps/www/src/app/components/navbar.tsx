@@ -49,24 +49,28 @@ export async function Navbar() {
           </Link>
         )}
 
-        <Link href="/notes">
+        <Link href="/notes" title="Notes">
           <ScrollText className="h-6 w-6" />
         </Link>
 
-        <Link href={user ? "/inbox" : "/login"} aria-label="home button">
+        <Link
+          href={user ? "/inbox" : "/login"}
+          aria-label="home button"
+          title="Inbox"
+        >
           <Icons.squares />
         </Link>
 
-        <Link href="/social">
+        <Link href="/social" title="Social">
           <MessagesSquare className="h-6 w-6" />
         </Link>
 
         {user ? (
-          <Link href="/settings">
+          <Link href="/settings" title="Settings">
             <UserCog className="w-6 h-6" />
           </Link>
         ) : (
-          <Link href="/login">
+          <Link href="/login" title="Login">
             <LogIn className="h-6 w-6" />
           </Link>
         )}
