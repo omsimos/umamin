@@ -3,8 +3,8 @@
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { graphql } from "gql.tada";
-import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
+import { useCallback, useEffect, useState } from "react";
 
 import { client } from "@/lib/gql/client";
 import { ReceivedMessagesResult } from "../../queries";
@@ -52,43 +52,40 @@ export function ReceivedMessagesList({
   const [hasMore, setHasMore] = useState(messages?.length === 10);
   const [isFetching, setIsFetching] = useState(false);
 
-  function loadMessages() {
+  const loadMessages = useCallback(async () => {
     if (hasMore) {
       setIsFetching(true);
 
-      client
-        .query(MESSAGES_FROM_CURSOR_QUERY, {
-          input: {
-            type: "received",
-            cursor,
-          },
-        })
-        .toPromise()
-        .then((res) => {
-          if (res.error) {
-            toast.error(res.error.message);
-            return;
-          }
+      const res = await client.query(MESSAGES_FROM_CURSOR_QUERY, {
+        input: {
+          type: "received",
+          cursor,
+        },
+      });
 
-          const _res = res.data?.messagesFromCursor;
+      if (res.error) {
+        toast.error(res.error.message);
+        return;
+      }
 
-          if (_res?.cursor) {
-            setCursor({
-              id: _res.cursor.id,
-              createdAt: _res.cursor.createdAt,
-            });
+      const _res = res.data?.messagesFromCursor;
 
-            setHasMore(_res.hasMore);
-          }
-
-          if (_res?.data) {
-            setMsgList([...msgList, ..._res.data]);
-          }
-
-          setIsFetching(false);
+      if (_res?.cursor) {
+        setCursor({
+          id: _res.cursor.id,
+          createdAt: _res.cursor.createdAt,
         });
+
+        setHasMore(_res.hasMore);
+      }
+
+      if (_res?.data) {
+        setMsgList([...msgList, ..._res.data]);
+      }
+
+      setIsFetching(false);
     }
-  }
+  }, [cursor, hasMore, msgList]);
 
   useEffect(() => {
     if (inView && !isFetching) {

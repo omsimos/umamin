@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { graphql } from "gql.tada";
 import { client } from "@/lib/gql/client";
-import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
+import { useCallback, useEffect, useState } from "react";
 
 import { NoteCard } from "./card";
 import { NoteQueryResult } from "../queries";
@@ -58,40 +58,37 @@ export function NotesList({ currentUserId, notes }: Props) {
   const [hasMore, setHasMore] = useState(notes?.length === 20);
   const [isFetching, setIsFetching] = useState(false);
 
-  function loadNotes() {
+  const loadNotes = useCallback(async () => {
     if (hasMore) {
       setIsFetching(true);
 
-      client
-        .query(NOTES_FROM_CURSOR_QUERY, {
-          cursor,
-        })
-        .toPromise()
-        .then((res) => {
-          if (res.error) {
-            toast.error(res.error.message);
-            return;
-          }
+      const res = await client.query(NOTES_FROM_CURSOR_QUERY, {
+        cursor,
+      });
 
-          const _res = res.data?.notesFromCursor;
+      if (res.error) {
+        toast.error(res.error.message);
+        return;
+      }
 
-          if (_res?.cursor) {
-            setCursor({
-              id: _res.cursor.id,
-              updatedAt: _res.cursor.updatedAt,
-            });
+      const _res = res.data?.notesFromCursor;
 
-            setHasMore(_res.hasMore);
-          }
-
-          if (_res?.data) {
-            setNotesList([...notesList, ..._res.data]);
-          }
-
-          setIsFetching(false);
+      if (_res?.cursor) {
+        setCursor({
+          id: _res.cursor.id,
+          updatedAt: _res.cursor.updatedAt,
         });
+
+        setHasMore(_res.hasMore);
+      }
+
+      if (_res?.data) {
+        setNotesList([...notesList, ..._res.data]);
+      }
+
+      setIsFetching(false);
     }
-  }
+  }, [cursor, hasMore, notesList]);
 
   useEffect(() => {
     if (inView && !isFetching) {
