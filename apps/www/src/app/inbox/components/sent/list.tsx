@@ -6,7 +6,7 @@ import { graphql } from "gql.tada";
 import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
-import { client } from "@/lib/gql/client";
+import client from "@/lib/gql/client";
 import { SentMessageResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { useMessageStore } from "@/store/useMessageStore";

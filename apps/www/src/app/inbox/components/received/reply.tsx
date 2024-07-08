@@ -5,7 +5,7 @@ import { logEvent } from "firebase/analytics";
 import { FormEventHandler, useState } from "react";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 
-import { client } from "@/lib/gql/client";
+import client from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
 import { analytics } from "@/lib/firebase";
 

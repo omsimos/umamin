@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { logout } from "@/actions";
+import getClient from "@/lib/gql/rsc";
 import { getSession } from "@/lib/auth";
-import { getClient } from "@/lib/gql/rsc";
 
 import { CURRENT_USER_QUERY } from "./queries";
 import { GeneralSettings } from "./components/general";

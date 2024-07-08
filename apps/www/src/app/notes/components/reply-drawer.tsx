@@ -8,8 +8,8 @@ import { cn } from "@umamin/ui/lib/utils";
 import { analytics } from "@/lib/firebase";
 import { NoteQueryResult } from "../queries";
 
+import client from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
-import { client } from "@/lib/gql/client";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { Drawer, DrawerContent } from "@umamin/ui/components/drawer";

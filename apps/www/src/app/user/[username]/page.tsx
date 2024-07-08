@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { MessageSquareMore, UserPlus } from "lucide-react";
 
-import { getClient } from "@/lib/gql/rsc";
+import getClient from "@/lib/gql/rsc";
 import { cn } from "@umamin/ui/lib/utils";
 import { UserCard } from "@/app/components/user-card";
 import { Button, buttonVariants } from "@umamin/ui/components/button";

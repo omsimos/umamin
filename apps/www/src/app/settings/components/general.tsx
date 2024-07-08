@@ -11,7 +11,7 @@ import { logEvent } from "firebase/analytics";
 import { Info, Loader2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { client } from "@/lib/gql/client";
+import client from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
 import { Input } from "@umamin/ui/components/input";
 import { Button } from "@umamin/ui/components/button";

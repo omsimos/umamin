@@ -3,8 +3,8 @@ import { cache } from "react";
 import dynamic from "next/dynamic";
 import { SquarePen } from "lucide-react";
 
+import getClient from "@/lib/gql/rsc";
 import { getSession } from "@/lib/auth";
-import { getClient } from "@/lib/gql/rsc";
 import { NoteForm } from "./components/form";
 import { NotesList } from "./components/list";
 import { Button } from "@umamin/ui/components/button";

@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { graphql } from "gql.tada";
-import { client } from "@/lib/gql/client";
+import client from "@/lib/gql/client";
 import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 

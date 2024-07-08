@@ -1,14 +1,14 @@
+import { cache } from "react";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { BadgeCheck, Lock, MessageCircleOff } from "lucide-react";
 
+import getClient from "@/lib/gql/rsc";
 import { getSession } from "@/lib/auth";
-import { getClient } from "@/lib/gql/rsc";
 import { ChatForm } from "./components/chat-form";
 import { USER_BY_USERNAME_QUERY } from "./queries";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
-import { cache } from "react";
 
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),

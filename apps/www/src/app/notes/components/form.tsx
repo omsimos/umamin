@@ -7,7 +7,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import { FormEventHandler, useState } from "react";
 
 import { NoteCard } from "./card";
-import { client } from "@/lib/gql/client";
+import client from "@/lib/gql/client";
 import { CurrentNoteQueryResult } from "../queries";
 
 import { formatError } from "@/lib/utils";
