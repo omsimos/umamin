@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cache } from "react";
 import dynamic from "next/dynamic";
 import { SquarePen } from "lucide-react";
 
@@ -8,7 +9,6 @@ import { NoteForm } from "./components/form";
 import { NotesList } from "./components/list";
 import { Button } from "@umamin/ui/components/button";
 import { NOTES_QUERY, CURRENT_NOTE_QUERY } from "./queries";
-import { cache } from "react";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
   ssr: false,
@@ -86,8 +86,8 @@ export default async function Page() {
         </div>
       )}
 
-      {/* v2-notes */}
-      <AdContainer className="mb-5" slotId="1999152698" />
+      {/* v2-notes-feed */}
+      <AdContainer inFeed className="mb-5" slotId="4344956885" />
 
       <div className="gap-5 flex flex-col">
         {!notes?.length ? (
