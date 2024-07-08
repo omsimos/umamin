@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { client } from "@/lib/gql/client";
 import { ReceivedMessagesResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
+import { useMessageStore } from "@/store/useMessageStore";
 import { ReceivedMessageCard, receivedMessageFragment } from "./card";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
@@ -48,7 +49,9 @@ export function ReceivedMessagesList({
     createdAt: messages[messages.length - 1]?.createdAt ?? null,
   });
 
-  const [msgList, setMsgList] = useState(messages);
+  const msgList = useMessageStore((state) => state.receivedList);
+  const updateMsgList = useMessageStore((state) => state.updateReceivedList);
+
   const [hasMore, setHasMore] = useState(messages?.length === 10);
   const [isFetching, setIsFetching] = useState(false);
 
@@ -80,7 +83,7 @@ export function ReceivedMessagesList({
       }
 
       if (_res?.data) {
-        setMsgList([...msgList, ..._res.data]);
+        updateMsgList(_res.data);
       }
 
       setIsFetching(false);
@@ -95,6 +98,17 @@ export function ReceivedMessagesList({
 
   return (
     <>
+      {messages?.map((msg, i) => (
+        <div key={msg.id} className="w-full">
+          <ReceivedMessageCard data={msg} />
+
+          {/* v2-received-list */}
+          {(i + 1) % 5 === 0 && (
+            <AdContainer className="mt-5" slotId="1546692714" />
+          )}
+        </div>
+      ))}
+
       {msgList?.map((msg, i) => (
         <div key={msg.id} className="w-full">
           <ReceivedMessageCard data={msg} />

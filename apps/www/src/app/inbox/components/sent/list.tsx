@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { client } from "@/lib/gql/client";
 import { SentMessageResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
+import { useMessageStore } from "@/store/useMessageStore";
 import { sentMessageFragment, SentMessageCard } from "./card";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
@@ -48,7 +49,9 @@ export function SentMessagesList({
     createdAt: messages[messages.length - 1]?.createdAt ?? null,
   });
 
-  const [msgList, setMsgList] = useState(messages);
+  const msgList = useMessageStore((state) => state.sentList);
+  const updateMsgList = useMessageStore((state) => state.updateSentList);
+
   const [hasMore, setHasMore] = useState(messages?.length === 10);
   const [isFetching, setIsFetching] = useState(false);
 
@@ -80,7 +83,7 @@ export function SentMessagesList({
       }
 
       if (_res?.data) {
-        setMsgList([...msgList, ..._res.data]);
+        updateMsgList(_res.data);
       }
 
       setIsFetching(false);
@@ -95,6 +98,17 @@ export function SentMessagesList({
 
   return (
     <>
+      {messages?.map((msg, i) => (
+        <div key={msg.id} className="w-full">
+          <SentMessageCard data={msg} />
+
+          {/* v2-sent-list */}
+          {(i + 1) % 5 === 0 && (
+            <AdContainer className="mt-5" slotId="1355121027" />
+          )}
+        </div>
+      ))}
+
       {msgList?.map((msg, i) => (
         <div key={msg.id} className="w-full">
           <SentMessageCard data={msg} />
