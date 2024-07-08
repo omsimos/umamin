@@ -108,9 +108,9 @@ export function NotesList({ currentUserId, notes }: Props) {
               currentUserId={currentUserId}
             />
 
-            {/* v2-note-list */}
+            {/* v2-notes-feed */}
             {(i + 1) % 5 === 0 && (
-              <AdContainer className="mt-5" slotId="9012650581" />
+              <AdContainer inFeed className="mt-5" slotId="4344956885" />
             )}
           </div>
         ))}

@@ -86,8 +86,8 @@ export default async function Page() {
         </div>
       )}
 
-      {/* v2-notes-feed */}
-      <AdContainer inFeed className="mb-5" slotId="4344956885" />
+      {/* v2-notes */}
+      <AdContainer inFeed className="mb-5" slotId="1999152698" />
 
       <div className="gap-5 flex flex-col">
         {!notes?.length ? (
