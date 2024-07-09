@@ -108,10 +108,10 @@ builder.queryFields((t) => ({
                   lt(message.createdAt, cursor.createdAt),
                   and(
                     eq(message.createdAt, cursor.createdAt),
-                    lt(message.id, cursor.id)
-                  )
+                    lt(message.id, cursor.id),
+                  ),
                 )
-              : undefined
+              : undefined,
           ),
           limit: 5,
           orderBy: [desc(message.createdAt), desc(message.id)],
@@ -186,7 +186,10 @@ builder.mutationFields((t) => ({
     },
     args: {
       messageId: t.arg.string({ required: true }),
-      content: t.arg.string({ required: true }),
+      content: t.arg.string({
+        required: true,
+        validate: { minLength: 1, maxLength: 500 },
+      }),
     },
     resolve: async (_, args) => {
       try {

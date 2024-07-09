@@ -93,7 +93,7 @@ export function ReplyDialog(props: Props) {
               disabled={loading}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              maxLength={1000}
+              maxLength={500}
               placeholder="Type your reply..."
               className="focus-visible:ring-transparent flex-1 text-base"
               autoComplete="off"
