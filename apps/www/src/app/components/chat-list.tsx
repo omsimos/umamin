@@ -34,7 +34,7 @@ export const ChatList = ({ imageUrl, question, reply, response }: Props) => {
       )}
 
       {response && (
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center mt-6">
           <Avatar>
             <AvatarImage className="rounded-full" src={imageUrl ?? ""} />
             <AvatarFallback>
