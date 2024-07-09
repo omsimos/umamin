@@ -19,6 +19,9 @@ const ShareLinkDialog = dynamic(() => import("./share-link-dialog"), {
 
 export async function Navbar() {
   const { user } = await getSession();
+  const version = process.env.NEXT_PUBLIC_VERSION
+    ? process.env.NEXT_PUBLIC_VERSION
+    : "v2.0.0";
 
   return (
     <nav className="">
@@ -30,7 +33,13 @@ export async function Navbar() {
               <span className="text-muted-foreground font-medium">.link</span>
             </Link>
 
-            <Badge variant="outline">v2.0</Badge>
+            <Link
+              href={`https://github.com/omsimos/umamin/releases/tag/${version}`}
+              target="_blank"
+              title="Release Notes"
+            >
+              <Badge variant="outline">{version}</Badge>
+            </Link>
           </div>
 
           <div className="flex items-center">

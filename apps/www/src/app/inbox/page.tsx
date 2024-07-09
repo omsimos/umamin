@@ -52,7 +52,7 @@ export default async function UserProfile() {
       content: () => (
         <Suspense
           fallback={
-            <div className="space-y-5">
+            <div className="space-y-5 container">
               <Skeleton className="w-full h-[200px] rounded-lg" />
               <Skeleton className="w-full h-[200px] rounded-lg" />
               <Skeleton className="w-full h-[200px] rounded-lg" />
@@ -68,7 +68,7 @@ export default async function UserProfile() {
       content: () => (
         <Suspense
           fallback={
-            <div className="space-y-5">
+            <div className="space-y-5 container">
               <Skeleton className="w-full h-[300px] rounded-lg" />
               <Skeleton className="w-full h-[300px] rounded-lg" />
               <Skeleton className="w-full h-[300px] rounded-lg" />

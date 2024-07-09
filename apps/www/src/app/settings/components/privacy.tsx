@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 import { logEvent } from "firebase/analytics";
 import { CircleUserRound, MessageCircleOff } from "lucide-react";
 
+import client from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
-import { client } from "@/lib/gql/client";
 import { analytics } from "@/lib/firebase";
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";

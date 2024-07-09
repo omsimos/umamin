@@ -8,8 +8,8 @@ import { cn } from "@umamin/ui/lib/utils";
 import { analytics } from "@/lib/firebase";
 import { NoteQueryResult } from "../queries";
 
+import client from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
-import { client } from "@/lib/gql/client";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { Drawer, DrawerContent } from "@umamin/ui/components/drawer";
@@ -136,6 +136,7 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
       className={cn(
         "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 py-10 h-full max-h-[500px] overflow-scroll rounded-lg",
         user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
+        !message ? "pb-28" : ""
       )}
     >
       <ChatList
@@ -158,7 +159,7 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
                 setContent(e.target.value);
               }}
               maxLength={500}
-              placeholder="Type your message..."
+              placeholder="Type your anonymous reply..."
               className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
               autoComplete="off"
             />

@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
-import { client } from "@/lib/gql/client";
+import client from "@/lib/gql/client";
 import { logEvent } from "firebase/analytics";
 
 import { ReplyDialog } from "./reply";

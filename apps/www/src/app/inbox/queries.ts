@@ -5,7 +5,7 @@ import { receivedMessageFragment } from "./components/received/card";
 
 export const RECEIVED_MESSAGES_QUERY = graphql(
   `
-    query RecentMessages($type: String!) {
+    query ReceivedMessages($type: String!) {
       messages(type: $type) {
         __typename
         id

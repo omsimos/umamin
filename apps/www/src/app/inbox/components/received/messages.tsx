@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { getClient } from "@/lib/gql/rsc";
+import getClient from "@/lib/gql/rsc";
 import { ReceivedMessagesList } from "./list";
 import { RECEIVED_MESSAGES_QUERY } from "../../queries";
 

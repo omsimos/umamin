@@ -1,20 +1,20 @@
 "use client";
 
 import { toast } from "sonner";
+import { useState } from "react";
 import { graphql } from "gql.tada";
 import { analytics } from "@/lib/firebase";
 import { Loader2, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
-import { useState } from "react";
 
+import client from "@/lib/gql/client";
 import { cn } from "@umamin/ui/lib/utils";
 import { formatError } from "@/lib/utils";
-import { client } from "@/lib/gql/client";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
 import { UserByUsernameQueryResult } from "../queries";
-import { Textarea } from "@umamin/ui/components/textarea";
 import useBotDetection from "@/hooks/use-bot-detection";
+import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 
 const CREATE_MESSAGE_MUTATION = graphql(`
@@ -30,7 +30,7 @@ type Props = {
   user: UserByUsernameQueryResult;
 };
 
-export function ChatForm({ currentUserId, user }: Props) {
+export default function ChatForm({ currentUserId, user }: Props) {
   useBotDetection();
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
