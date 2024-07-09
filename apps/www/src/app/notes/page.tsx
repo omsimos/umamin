@@ -5,11 +5,11 @@ import { SquarePen } from "lucide-react";
 
 import getClient from "@/lib/gql/rsc";
 import { getSession } from "@/lib/auth";
-import { NoteForm } from "./components/form";
 import { NotesList } from "./components/list";
 import { Button } from "@umamin/ui/components/button";
 import { NOTES_QUERY, CURRENT_NOTE_QUERY } from "./queries";
 
+const NoteForm = dynamic(() => import("./components/form"));
 const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
   ssr: false,
 });

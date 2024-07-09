@@ -5,11 +5,11 @@ import { BadgeCheck, Lock, MessageCircleOff } from "lucide-react";
 
 import getClient from "@/lib/gql/rsc";
 import { getSession } from "@/lib/auth";
-import { ChatForm } from "./components/chat-form";
 import { USER_BY_USERNAME_QUERY } from "./queries";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
+const ChatForm = dynamic(() => import("./components/form"));
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
   { ssr: false }

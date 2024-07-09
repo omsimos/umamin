@@ -30,7 +30,7 @@ type Props = {
   user: UserByUsernameQueryResult;
 };
 
-export function ChatForm({ currentUserId, user }: Props) {
+export default function ChatForm({ currentUserId, user }: Props) {
   useBotDetection();
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
