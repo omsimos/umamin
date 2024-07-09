@@ -136,6 +136,7 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
       className={cn(
         "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 py-10 h-full max-h-[500px] overflow-scroll rounded-lg",
         user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
+        !message ? "pb-28" : ""
       )}
     >
       <ChatList
