@@ -1,9 +1,13 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { V1Link } from "../components/v1-link";
 import { RegisterForm } from "./components/form";
-import { BrowserWarning } from "@umamin/ui/components/browser-warning";
+
+const BrowserWarning = dynamic(
+  () => import("@umamin/ui/components/browser-warning"),
+);
 
 export const metadata = {
   title: "Umamin — Register",
