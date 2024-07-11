@@ -6,7 +6,7 @@ import { logEvent } from "firebase/analytics";
 import { BadgeCheck, ScanFace } from "lucide-react";
 
 import { analytics } from "@/lib/firebase";
-import { NotesQueryResult } from "../queries";
+import { CurrentNoteQueryResult } from "../queries";
 import { Icons } from "@/app/components/utilities/icons";
 import { Menu, type MenuItems } from "@/app/components/menu";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
@@ -17,29 +17,25 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { onSaveImage, shortTimeAgo } from "@/lib/utils";
-import { ReplyDrawer } from "./reply-drawer";
 
 type Props = {
-  note: NotesQueryResult[0];
+  note: NonNullable<CurrentNoteQueryResult>;
+  user?: {
+    id?: string;
+    displayName?: string | null;
+    username?: string;
+    imageUrl?: string | null;
+  };
   menuItems?: MenuItems;
   currentUserId?: string;
 };
 
-export function NoteCard({ note, menuItems, currentUserId }: Props) {
-  const user = note.user;
-  const username = user?.username;
-
+export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
   const [open, setOpen] = useState(false);
+  const username = user?.username;
 
   return (
     <div id={note.id} className="container">
-      <ReplyDrawer
-        open={open}
-        setOpen={setOpen}
-        note={note}
-        currentUserId={currentUserId}
-      />
-
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full pb-4 text-sm">
           <div className="flex justify-between items-start">

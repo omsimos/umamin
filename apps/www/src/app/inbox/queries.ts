@@ -19,7 +19,7 @@ export const RECEIVED_MESSAGES_QUERY = graphql(
 
 export const SENT_MESSAGES_QUERY = graphql(
   `
-    query Messages($type: String!) {
+    query SentMessages($type: String!) {
       messages(type: $type) {
         __typename
         id

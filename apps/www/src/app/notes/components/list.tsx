@@ -8,7 +8,7 @@ import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
 import { NoteCard } from "./card";
-import { NoteQueryResult } from "../queries";
+import { NotesQueryResult } from "../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
@@ -27,6 +27,7 @@ const NOTES_FROM_CURSOR_QUERY = graphql(`
           __typename
           id
           displayName
+          quietMode
           username
           imageUrl
         }
@@ -41,21 +42,28 @@ const NOTES_FROM_CURSOR_QUERY = graphql(`
   }
 `);
 
-type Props = {
-  currentUserId?: string;
-  notes: NoteQueryResult[];
+type Cursor = {
+  id: string | null;
+  updatedAt: number | null;
 };
 
-export function NotesList({ currentUserId, notes }: Props) {
+type Props = {
+  currentUserId?: string;
+  initialCursor: Cursor;
+  initialHasMore?: boolean;
+};
+
+export function NotesList({
+  currentUserId,
+  initialCursor,
+  initialHasMore,
+}: Props) {
   const { ref, inView } = useInView();
 
-  const [cursor, setCursor] = useState({
-    id: notes[notes.length - 1]?.id ?? null,
-    updatedAt: notes[notes.length - 1]?.updatedAt ?? null,
-  });
+  const [cursor, setCursor] = useState(initialCursor);
 
-  const [notesList, setNotesList] = useState(notes);
-  const [hasMore, setHasMore] = useState(notes?.length === 20);
+  const [notesList, setNotesList] = useState<NotesQueryResult>([]);
+  const [hasMore, setHasMore] = useState(initialHasMore);
   const [isFetching, setIsFetching] = useState(false);
 
   const loadNotes = useCallback(async () => {
@@ -83,7 +91,7 @@ export function NotesList({ currentUserId, notes }: Props) {
       }
 
       if (_res?.data) {
-        setNotesList([...notesList, ..._res.data]);
+        setNotesList((prev) => [...prev, ...(_res.data ?? [])]);
       }
 
       setIsFetching(false);
@@ -102,11 +110,7 @@ export function NotesList({ currentUserId, notes }: Props) {
         ?.filter((u) => u.user?.id !== currentUserId)
         .map((note, i) => (
           <div key={note.id} className="w-full">
-            <NoteCard
-              note={note}
-              user={{ ...note.user }}
-              currentUserId={currentUserId}
-            />
+            <NoteCard note={note} currentUserId={currentUserId} />
 
             {/* v2-notes-feed */}
             {(i + 1) % 5 === 0 && (

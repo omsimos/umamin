@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { CurrentNoteQueryResult } from "@/app/notes/queries";
 
-type NoteData = Partial<CurrentNoteQueryResult> | null;
+type NoteData = CurrentNoteQueryResult;
 
 type State = {
   note: NoteData;

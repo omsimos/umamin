@@ -5,6 +5,7 @@ import { SquarePen } from "lucide-react";
 
 import getClient from "@/lib/gql/rsc";
 import { getSession } from "@/lib/auth";
+import { NoteCard } from "./components/card";
 import { NotesList } from "./components/list";
 import { Button } from "@umamin/ui/components/button";
 import { NOTES_QUERY, CURRENT_NOTE_QUERY } from "./queries";
@@ -95,7 +96,29 @@ export default async function Page() {
             No notes to show
           </p>
         ) : (
-          <NotesList currentUserId={user?.id} notes={notes} />
+          <>
+            {notes
+              ?.filter((u) => u.user?.id !== user?.id)
+              .map((note, i) => (
+                <div key={note.id} className="w-full">
+                  <NoteCard note={note} currentUserId={user?.id} />
+
+                  {/* v2-notes-feed */}
+                  {(i + 1) % 5 === 0 && (
+                    <AdContainer inFeed className="mt-5" slotId="4344956885" />
+                  )}
+                </div>
+              ))}
+
+            <NotesList
+              currentUserId={user?.id}
+              initialCursor={{
+                id: notes[notes.length - 1]?.id ?? null,
+                updatedAt: notes[notes.length - 1]?.updatedAt ?? null,
+              }}
+              initialHasMore={notes.length === 20}
+            />
+          </>
         )}
       </div>
     </main>

@@ -6,8 +6,8 @@ import { logEvent } from "firebase/analytics";
 import { Loader2, Sparkles } from "lucide-react";
 import { FormEventHandler, useState } from "react";
 
-import { NoteCard } from "./card";
 import client from "@/lib/gql/client";
+import { NoteCard } from "./display-card";
 import { CurrentNoteQueryResult } from "../queries";
 
 import { formatError } from "@/lib/utils";
@@ -27,6 +27,7 @@ const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
     updateNote(content: $content, isAnonymous: $isAnonymous) {
       __typename
+      id
       content
       updatedAt
       isAnonymous

@@ -6,7 +6,7 @@ import { logEvent } from "firebase/analytics";
 
 import { cn } from "@umamin/ui/lib/utils";
 import { analytics } from "@/lib/firebase";
-import { NoteQueryResult } from "../queries";
+import { NotesQueryResult } from "../queries";
 
 import client from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
@@ -19,14 +19,7 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 
 type ChatFormProps = {
-  note: Partial<Omit<NoteQueryResult, "user">>;
-  user?: {
-    id?: string;
-    displayName?: string | null;
-    username?: string;
-    imageUrl?: string | null;
-    quietMode?: string | null;
-  };
+  note: NotesQueryResult[0];
   currentUserId?: string;
   // eslint-disable-next-line no-unused-vars
   setOpen: (open: boolean) => void;
@@ -34,15 +27,11 @@ type ChatFormProps = {
 
 type ReplyDrawerProps = {
   open: boolean;
-  // eslint-disable-next-line no-unused-vars
-  setOpen: (open: boolean) => void;
-  currentUserId?: string;
 } & ChatFormProps;
 
 export function ReplyDrawer({
   open,
   setOpen,
-  user,
   note,
   currentUserId,
 }: ReplyDrawerProps) {
@@ -54,7 +43,6 @@ export function ReplyDrawer({
         <DialogContent className="p-0">
           <ChatForm
             setOpen={setOpen}
-            user={user}
             note={note}
             currentUserId={currentUserId}
           />
@@ -66,12 +54,7 @@ export function ReplyDrawer({
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerContent className="grid place-items-center">
-        <ChatForm
-          setOpen={setOpen}
-          user={user}
-          note={note}
-          currentUserId={currentUserId}
-        />
+        <ChatForm setOpen={setOpen} note={note} currentUserId={currentUserId} />
       </DrawerContent>
     </Drawer>
   );
@@ -85,11 +68,13 @@ const CREATE_MESSAGE_MUTATION = graphql(`
   }
 `);
 
-const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
+const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const inputRef = useDynamicTextarea(content);
+
+  const user = note.user;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -136,7 +121,7 @@ const ChatForm = ({ user, note, currentUserId, setOpen }: ChatFormProps) => {
       className={cn(
         "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 py-10 h-full max-h-[500px] overflow-scroll rounded-lg",
         user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
-        !message ? "pb-28" : ""
+        !message ? "pb-28" : "",
       )}
     >
       <ChatList
