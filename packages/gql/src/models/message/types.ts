@@ -2,7 +2,7 @@ import builder from "../../builder";
 
 builder.objectType("Message", {
   fields: (t) => ({
-    id: t.exposeID("id"),
+    id: t.exposeID("id", { nullable: false }),
     question: t.exposeString("question", { nullable: false }),
     content: t.exposeString("content", { nullable: false }),
     reply: t.exposeString("reply"),
@@ -24,7 +24,7 @@ builder.objectType("MessageCursor", {
 
 builder.objectType("MessagesWithCursor", {
   fields: (t) => ({
-    hasMore: t.exposeBoolean("hasMore"),
+    hasMore: t.exposeBoolean("hasMore", { nullable: false }),
     cursor: t.expose("cursor", { type: "MessageCursor" }),
     data: t.expose("data", { type: ["Message"] }),
   }),

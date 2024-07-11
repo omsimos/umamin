@@ -31,6 +31,8 @@ builder.objectType("PublicUser", {
     displayName: t.exposeString("displayName"),
     username: t.exposeString("username", { nullable: false }),
     bio: t.exposeString("bio"),
+    question: t.exposeString("question", { nullable: false }),
+    quietMode: t.exposeBoolean("quietMode", { nullable: false }),
     imageUrl: t.exposeString("imageUrl"),
     createdAt: t.exposeInt("createdAt", { nullable: false }),
   }),

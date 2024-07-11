@@ -10,6 +10,7 @@ import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 builder.queryFields((t) => ({
   messages: t.field({
     type: ["Message"],
+    nullable: false,
     authScopes: { authenticated: true },
     directives: {
       rateLimit: { limit: 5, duration: 20 },
@@ -70,6 +71,7 @@ builder.queryFields((t) => ({
 
   messagesFromCursor: t.field({
     type: "MessagesWithCursor",
+    nullable: false,
     authScopes: { authenticated: true },
     directives: {
       rateLimit: { limit: 5, duration: 20 },

@@ -33,6 +33,7 @@ builder.queryFields((t) => ({
 
   notes: t.field({
     type: ["Note"],
+    nullable: false,
     directives: {
       rateLimit: { limit: 5, duration: 20 },
     },
@@ -64,6 +65,7 @@ builder.queryFields((t) => ({
 
   notesFromCursor: t.field({
     type: "NotesWithCursor",
+    nullable: false,
     directives: {
       rateLimit: { limit: 5, duration: 20 },
     },
