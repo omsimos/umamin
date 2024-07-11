@@ -372,17 +372,17 @@ importers:
         specifier: ^10.2.2
         version: 10.2.2(graphql@16.8.1)
       '@pothos/core':
-        specifier: ^3.41.2
-        version: 3.41.2(graphql@16.8.1)
+        specifier: ^4.0.0
+        version: 4.0.0(graphql@16.8.1)
       '@pothos/plugin-directives':
-        specifier: ^3.10.3
-        version: 3.10.3(graphql@16.8.1)
+        specifier: ^4.0.0
+        version: 4.0.0(graphql@16.8.1)
       '@pothos/plugin-scope-auth':
-        specifier: ^3.22.1
-        version: 3.22.1(@pothos/core@3.41.2(graphql@16.8.1))(graphql@16.8.1)
-      '@pothos/plugin-validation':
-        specifier: ^3.10.2
-        version: 3.10.2(@pothos/core@3.41.2(graphql@16.8.1))(graphql@16.8.1)(zod@3.23.8)
+        specifier: ^4.0.0
+        version: 4.0.0(@pothos/core@4.0.0(graphql@16.8.1))(graphql@16.8.1)
+      '@pothos/plugin-zod':
+        specifier: ^4.0.0
+        version: 4.0.0(@pothos/core@4.0.0(graphql@16.8.1))(graphql@16.8.1)(zod@3.23.8)
       '@umamin/aes':
         specifier: workspace:*
         version: link:../aes
@@ -1358,6 +1358,9 @@ packages:
   '@jridgewell/sourcemap-codec@1.4.15':
     resolution: {integrity: sha512-eF2rxCRulEKXHTRiDrDy6erMYWqNw4LPdQ8UQA4huuxaQsVeRPFl2oM8oDGxMFhJUWZf9McpLtJasDDZb/Bpeg==}
 
+  '@jridgewell/sourcemap-codec@1.5.0':
+    resolution: {integrity: sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==}
+
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
 
@@ -1860,26 +1863,26 @@ packages:
     resolution: {integrity: sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
-  '@pothos/core@3.41.2':
-    resolution: {integrity: sha512-iR1gqd93IyD/snTW47HwKSsRCrvnJaYwjVNcUG8BztZPqMxyJKPAnjPHAgu1XB82KEdysrNqIUnXqnzZIs08QA==}
+  '@pothos/core@4.0.0':
+    resolution: {integrity: sha512-PJpPMmYypjlPZ/MpRPDWQ14EEAv3KCU7ckPna3emQrhLolnaEhgj5ZpigNn+gkO03wwMmPrumYMtr77jOKIVmQ==}
     peerDependencies:
-      graphql: '>=15.1.0'
+      graphql: ^16.8.1
 
-  '@pothos/plugin-directives@3.10.3':
-    resolution: {integrity: sha512-r5/PVTUzoYQXjntvL7b6XhrlAtTbCU66Uo3ySYOXSw9t6eJnWGKq+OBZO3w2X8u4wF9VQhW66KucC5Q04MYkVQ==}
+  '@pothos/plugin-directives@4.0.0':
+    resolution: {integrity: sha512-ptdkXKp9jAKJbcAQTGQb+jV+UrlhdLO/+O0A6NhF1k/aZzabHjLRQSfwe3TsmkLJbyn5ihoANy6gSyrZjWPgYg==}
     peerDependencies:
-      graphql: '>=15.1.0'
+      graphql: ^16.8.1
 
-  '@pothos/plugin-scope-auth@3.22.1':
-    resolution: {integrity: sha512-mkfbiS6tSYXFrxY9U5mEqSzAWDB3YoqQLTE/D7J/QghbDbkfFSiwQwYHHl0tL1FO32l69RMCdZy3Kz7MBBZG8w==}
+  '@pothos/plugin-scope-auth@4.0.0':
+    resolution: {integrity: sha512-XzCpviqeN83ggSgCOKGIAehmRWlP23xdK2AAzkkm65RcKImuwrKWbn4BeXbpMhMrwCYANM3M622uyeLzI0GYUw==}
     peerDependencies:
-      '@pothos/core': '*'
-      graphql: '>=15.1.0'
+      '@pothos/core': 4.0.0
+      graphql: ^16.8.1
 
-  '@pothos/plugin-validation@3.10.2':
-    resolution: {integrity: sha512-oA1z2NXYNozol47+opKiNzKc7+lfMKQeyu2oQd8ijQyRv+cMLpwx1kkd/E8gkt63XUpBWPmE7IZDJ6/Xyrfs3g==}
+  '@pothos/plugin-zod@4.0.0':
+    resolution: {integrity: sha512-+NWRmb7AkS6t90vp9kSO2t+HHyivCS4JzJutI0y6B1Ytult/ojntE/PAyWdIiIdj9dk2y912CoiylL89lhjEnQ==}
     peerDependencies:
-      '@pothos/core': '*'
+      '@pothos/core': 4.0.0
       graphql: ^16.8.1
       zod: '*'
 
@@ -2381,14 +2384,14 @@ packages:
   '@types/ms@0.7.34':
     resolution: {integrity: sha512-nG96G3Wp6acyAgJqGasjODb+acrI7KltPiRxzHPXnP3NgI28bpQDRv53olbqGXbfcgF5aiiHmO3xpwEpS5Ld9g==}
 
+  '@types/node@20.14.10':
+    resolution: {integrity: sha512-MdiXf+nDuMvY0gJKxyfZ7/6UFsETO7mGKF54MVD/ekJS6HdFtpZFBgrh6Pseu64XTb2MLyFPlbW6hj8HYRQNOQ==}
+
   '@types/node@20.14.2':
     resolution: {integrity: sha512-xyu6WAMVwv6AKFLB+e/7ySZVr/0zLCzOa7rSpq6jNwpqOrUbcACDWC+53d4n2QHOnDou0fbIsg8wZu/sxrnI4Q==}
 
   '@types/node@20.14.5':
     resolution: {integrity: sha512-aoRR+fJkZT2l0aGOJhuA8frnCSoNX6W7U2mpNq63+BxBIj5BQFt8rHy627kijCmm63ijdSdwvGgpUsU6MBsZZA==}
-
-  '@types/node@20.14.9':
-    resolution: {integrity: sha512-06OCtnTXtWOZBJlRApleWndH4JsRVs1pDCc8dLSQp+7PpUpX3ePdHyeNSFTeSe7FtKyQkrlPvHwJOW3SLd8Oyg==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -2757,6 +2760,11 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  acorn@8.12.1:
+    resolution: {integrity: sha512-tcpGyI9zbizT9JbV6oYE477V6mTlXvvi0T0G3SNIYE2apm/G5huBa1+K89VGeovbg+jycCrfhl3ADxErOuO6Jg==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
+
   ajv-keywords@3.5.2:
     resolution: {integrity: sha512-5p6WTN0DdTGVQk6VjcEju19IgaHudalcfabD7yhDGeA6bcQnmL+CpveLJq/3hvfwd1aof6L386Ougkx6RfyMIQ==}
     peerDependencies:
@@ -2900,6 +2908,11 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
+  browserslist@4.23.2:
+    resolution: {integrity: sha512-qkqSyistMYdxAcw+CzbZwlBy8AGmS/eEWs+sEV5TnLRGDOL+C5M2EnH6tlZyg0YoAxGJAFKh61En9BR941GnHA==}
+    engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
+    hasBin: true
+
   buffer-from@1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
 
@@ -2925,6 +2938,9 @@ packages:
 
   caniuse-lite@1.0.30001632:
     resolution: {integrity: sha512-udx3o7yHJfUxMLkGohMlVHCvFvWmirKh9JAH/d7WOLPetlH+LTL5cocMZ0t7oZx/mdlOWXti97xLZWc8uURRHg==}
+
+  caniuse-lite@1.0.30001641:
+    resolution: {integrity: sha512-Phv5thgl67bHYo1TtMY/MurjkHhV4EDaCosezRXgZ8jzA/Ub+wjxAvbGvjoFENStinwi5kCyOYV3mi5tOGykwA==}
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
@@ -3244,6 +3260,9 @@ packages:
 
   electron-to-chromium@1.4.798:
     resolution: {integrity: sha512-by9J2CiM9KPGj9qfp5U4FcPSbXJG7FNzqnYaY4WLzX+v2PHieVGmnsA4dxfpGE3QEC7JofpPZmn7Vn1B9NR2+Q==}
+
+  electron-to-chromium@1.4.824:
+    resolution: {integrity: sha512-GTQnZOP1v0wCuoWzKOxL8rurg9T13QRYISkoICGaZzskBf9laC3V8g9BHTpJv+j9vBRcKOulbGXwMzuzNdVrAA==}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -5101,8 +5120,8 @@ packages:
       uglify-js:
         optional: true
 
-  terser@5.31.1:
-    resolution: {integrity: sha512-37upzU1+viGvuFtBo9NPufCb9dwM0+l9hMxYyWfBA+fbwrPqNJAhbZ6W47bBFnZHKHTUBnMvi87434qq+qnxOg==}
+  terser@5.31.2:
+    resolution: {integrity: sha512-LGyRZVFm/QElZHy/CPr/O4eNZOZIzsrQ92y4v9UJe/pFJjypje2yI3C2FmPtvUEnhadlSbmG2nXtdcjHOjCfxw==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -5261,6 +5280,12 @@ packages:
 
   update-browserslist-db@1.0.16:
     resolution: {integrity: sha512-KVbTxlBYlckhF5wgfyZXTWnMn7MMZjMu9XG8bPlliUOP9ThaF4QnhP8qrjrH7DRzHfSk0oQv1wToW+iA5GajEQ==}
+    hasBin: true
+    peerDependencies:
+      browserslist: '>= 4.21.0'
+
+  update-browserslist-db@1.1.0:
+    resolution: {integrity: sha512-EdRAaAyk2cUE1wOf2DkEhzxqOQvFOoRJFNS6NeyJ01Gp2beMRpBAINjM2iDXE3KCuKhwnvHIQCJm6ThL2Z+HzQ==}
     hasBin: true
     peerDependencies:
       browserslist: '>= 4.21.0'
@@ -6365,6 +6390,8 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.4.15': {}
 
+  '@jridgewell/sourcemap-codec@1.5.0': {}
+
   '@jridgewell/trace-mapping@0.3.25':
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
@@ -6775,22 +6802,22 @@ snapshots:
 
   '@pkgr/core@0.1.1': {}
 
-  '@pothos/core@3.41.2(graphql@16.8.1)':
+  '@pothos/core@4.0.0(graphql@16.8.1)':
     dependencies:
       graphql: 16.8.1
 
-  '@pothos/plugin-directives@3.10.3(graphql@16.8.1)':
+  '@pothos/plugin-directives@4.0.0(graphql@16.8.1)':
     dependencies:
       graphql: 16.8.1
 
-  '@pothos/plugin-scope-auth@3.22.1(@pothos/core@3.41.2(graphql@16.8.1))(graphql@16.8.1)':
+  '@pothos/plugin-scope-auth@4.0.0(@pothos/core@4.0.0(graphql@16.8.1))(graphql@16.8.1)':
     dependencies:
-      '@pothos/core': 3.41.2(graphql@16.8.1)
+      '@pothos/core': 4.0.0(graphql@16.8.1)
       graphql: 16.8.1
 
-  '@pothos/plugin-validation@3.10.2(@pothos/core@3.41.2(graphql@16.8.1))(graphql@16.8.1)(zod@3.23.8)':
+  '@pothos/plugin-zod@4.0.0(@pothos/core@4.0.0(graphql@16.8.1))(graphql@16.8.1)(zod@3.23.8)':
     dependencies:
-      '@pothos/core': 3.41.2(graphql@16.8.1)
+      '@pothos/core': 4.0.0(graphql@16.8.1)
       graphql: 16.8.1
       zod: 3.23.8
 
@@ -7329,15 +7356,15 @@ snapshots:
 
   '@types/ms@0.7.34': {}
 
+  '@types/node@20.14.10':
+    dependencies:
+      undici-types: 5.26.5
+
   '@types/node@20.14.2':
     dependencies:
       undici-types: 5.26.5
 
   '@types/node@20.14.5':
-    dependencies:
-      undici-types: 5.26.5
-
-  '@types/node@20.14.9':
     dependencies:
       undici-types: 5.26.5
 
@@ -7842,9 +7869,9 @@ snapshots:
 
   '@xtuc/long@4.2.2': {}
 
-  acorn-import-attributes@1.9.5(acorn@8.12.0):
+  acorn-import-attributes@1.9.5(acorn@8.12.1):
     dependencies:
-      acorn: 8.12.0
+      acorn: 8.12.1
 
   acorn-jsx@5.3.2(acorn@8.11.3):
     dependencies:
@@ -7857,6 +7884,8 @@ snapshots:
   acorn@8.11.3: {}
 
   acorn@8.12.0: {}
+
+  acorn@8.12.1: {}
 
   ajv-keywords@3.5.2(ajv@6.12.6):
     dependencies:
@@ -8034,6 +8063,13 @@ snapshots:
       node-releases: 2.0.14
       update-browserslist-db: 1.0.16(browserslist@4.23.1)
 
+  browserslist@4.23.2:
+    dependencies:
+      caniuse-lite: 1.0.30001641
+      electron-to-chromium: 1.4.824
+      node-releases: 2.0.14
+      update-browserslist-db: 1.1.0(browserslist@4.23.2)
+
   buffer-from@1.1.2: {}
 
   builtin-modules@3.3.0: {}
@@ -8055,6 +8091,8 @@ snapshots:
   camelcase-css@2.0.1: {}
 
   caniuse-lite@1.0.30001632: {}
+
+  caniuse-lite@1.0.30001641: {}
 
   ccount@2.0.1: {}
 
@@ -8115,9 +8153,9 @@ snapshots:
 
   code-red@1.0.4:
     dependencies:
-      '@jridgewell/sourcemap-codec': 1.4.15
+      '@jridgewell/sourcemap-codec': 1.5.0
       '@types/estree': 1.0.5
-      acorn: 8.12.0
+      acorn: 8.12.1
       estree-walker: 3.0.3
       periscopic: 3.1.0
 
@@ -8273,6 +8311,8 @@ snapshots:
   eastasianwidth@0.2.0: {}
 
   electron-to-chromium@1.4.798: {}
+
+  electron-to-chromium@1.4.824: {}
 
   emoji-regex@8.0.0: {}
 
@@ -9448,7 +9488,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 20.14.9
+      '@types/node': 20.14.10
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -9575,7 +9615,7 @@ snapshots:
 
   magic-string@0.30.10:
     dependencies:
-      '@jridgewell/sourcemap-codec': 1.4.15
+      '@jridgewell/sourcemap-codec': 1.5.0
 
   markdown-extensions@2.0.0: {}
 
@@ -10829,10 +10869,10 @@ snapshots:
   svelte@4.2.18:
     dependencies:
       '@ampproject/remapping': 2.3.0
-      '@jridgewell/sourcemap-codec': 1.4.15
+      '@jridgewell/sourcemap-codec': 1.5.0
       '@jridgewell/trace-mapping': 0.3.25
       '@types/estree': 1.0.5
-      acorn: 8.12.0
+      acorn: 8.12.1
       aria-query: 5.3.0
       axobject-query: 4.0.0
       code-red: 1.0.4
@@ -10891,13 +10931,13 @@ snapshots:
       jest-worker: 27.5.1
       schema-utils: 3.3.0
       serialize-javascript: 6.0.2
-      terser: 5.31.1
+      terser: 5.31.2
       webpack: 5.92.1
 
-  terser@5.31.1:
+  terser@5.31.2:
     dependencies:
       '@jridgewell/source-map': 0.3.6
-      acorn: 8.12.0
+      acorn: 8.12.1
       commander: 2.20.3
       source-map-support: 0.5.21
 
@@ -11075,6 +11115,12 @@ snapshots:
       escalade: 3.1.2
       picocolors: 1.0.1
 
+  update-browserslist-db@1.1.0(browserslist@4.23.2):
+    dependencies:
+      browserslist: 4.23.2
+      escalade: 3.1.2
+      picocolors: 1.0.1
+
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
@@ -11156,9 +11202,9 @@ snapshots:
       '@webassemblyjs/ast': 1.12.1
       '@webassemblyjs/wasm-edit': 1.12.1
       '@webassemblyjs/wasm-parser': 1.12.1
-      acorn: 8.12.0
-      acorn-import-attributes: 1.9.5(acorn@8.12.0)
-      browserslist: 4.23.1
+      acorn: 8.12.1
+      acorn-import-attributes: 1.9.5(acorn@8.12.1)
+      browserslist: 4.23.2
       chrome-trace-event: 1.0.4
       enhanced-resolve: 5.17.0
       es-module-lexer: 1.5.4

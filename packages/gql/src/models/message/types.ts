@@ -3,31 +3,30 @@ import builder from "../../builder";
 builder.objectType("Message", {
   fields: (t) => ({
     id: t.exposeID("id"),
-    question: t.exposeString("question"),
-    content: t.exposeString("content"),
-    reply: t.exposeString("reply", { nullable: true }),
-    receiverId: t.exposeString("receiverId"),
-    createdAt: t.exposeInt("createdAt"),
-    updatedAt: t.exposeInt("updatedAt", { nullable: true }),
+    question: t.exposeString("question", { nullable: false }),
+    content: t.exposeString("content", { nullable: false }),
+    reply: t.exposeString("reply"),
+    receiverId: t.exposeString("receiverId", { nullable: false }),
+    createdAt: t.exposeInt("createdAt", { nullable: false }),
+    updatedAt: t.exposeInt("updatedAt"),
     receiver: t.expose("receiver", {
       type: "User",
-      nullable: true,
     }),
   }),
 });
 
 builder.objectType("MessageCursor", {
   fields: (t) => ({
-    id: t.exposeString("id", { nullable: true }),
-    createdAt: t.exposeInt("createdAt", { nullable: true }),
+    id: t.exposeString("id"),
+    createdAt: t.exposeInt("createdAt"),
   }),
 });
 
 builder.objectType("MessagesWithCursor", {
   fields: (t) => ({
     hasMore: t.exposeBoolean("hasMore"),
-    cursor: t.expose("cursor", { type: "MessageCursor", nullable: true }),
-    data: t.expose("data", { type: ["Message"], nullable: true }),
+    cursor: t.expose("cursor", { type: "MessageCursor" }),
+    data: t.expose("data", { type: ["Message"] }),
   }),
 });
 

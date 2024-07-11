@@ -14,7 +14,6 @@ builder.queryFields((t) => ({
     directives: {
       rateLimit: { limit: 5, duration: 20 },
     },
-    nullable: true,
     resolve: async (_, _args, ctx) => {
       if (!ctx.userId) {
         throw new GraphQLError("Unauthorized");
@@ -38,7 +37,6 @@ builder.queryFields((t) => ({
 
   userByUsername: t.field({
     type: "PublicUser",
-    nullable: true,
     directives: {
       rateLimit: { limit: 5, duration: 20 },
     },
