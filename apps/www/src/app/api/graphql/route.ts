@@ -85,7 +85,7 @@ const { handleRequest } = createYoga({
       skipDocumentValidation: true,
       async getPersistedOperation(key: string) {
         const file = await fs.readFile(
-          process.cwd() + "/src/app/persisted-operations.json",
+          process.cwd() + "/public/persisted-operations.json",
           "utf-8",
         );
         const persistedOperations = JSON.parse(file);
