@@ -12,11 +12,11 @@ import client from "@/lib/gql/client";
 import { formatError } from "@/lib/utils";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
-import { Drawer, DrawerContent } from "@umamin/ui/components/drawer";
-import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { Drawer, DrawerContent } from "@umamin/ui/components/drawer";
+import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
 
 type ChatFormProps = {
   note: NotesQueryResult[0];
@@ -61,12 +61,17 @@ export function ReplyDrawer({
 }
 
 const CREATE_MESSAGE_MUTATION = graphql(`
-  mutation CreateMessage($input: CreateMessageInput!) {
+  mutation CreateMessageFromNote($input: CreateMessageInput!) {
     createMessage(input: $input) {
       __typename
     }
   }
 `);
+
+const createMessagePersisted = graphql.persisted(
+  "sha256:53f885d2afe8feedba14ca10ddf0bda7d6a1dd79dd21eefd5ea792074848ee60",
+  CREATE_MESSAGE_MUTATION,
+);
 
 const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
   const [content, setContent] = useState("");
@@ -88,7 +93,7 @@ const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
     setIsSending(true);
 
     try {
-      const res = await client.mutation(CREATE_MESSAGE_MUTATION, {
+      const res = await client.mutation(createMessagePersisted, {
         input: {
           senderId: currentUserId,
           receiverId: user?.id,

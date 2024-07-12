@@ -27,6 +27,16 @@ const UPDATE_QUIET_MODE_MUTATION = graphql(`
   }
 `);
 
+const updatePicturePersisted = graphql.persisted(
+  "sha256:84fbec200028bf15058bc1addbef6e960ac4013dfb8c03205440e89e9f6cb19d",
+  UPDATE_PICTURE_MUTATION,
+);
+
+const updateQuietModePersisted = graphql.persisted(
+  "sha256:8c072442a1cbead14dc07404113b1dc2e3473fbd060fb5658f2c0acf6189a6c7",
+  UPDATE_QUIET_MODE_MUTATION,
+);
+
 export function PrivacySettings({ user }: { user: CurrentUserResult }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -42,7 +52,7 @@ export function PrivacySettings({ user }: { user: CurrentUserResult }) {
       return;
     }
 
-    const res = await client.mutation(UPDATE_PICTURE_MUTATION, {
+    const res = await client.mutation(updatePicturePersisted, {
       imageUrl: picture ? null : user?.accounts[0]?.picture,
     });
 
@@ -63,7 +73,7 @@ export function PrivacySettings({ user }: { user: CurrentUserResult }) {
   const toggleQuietMode = async () => {
     setLoading(true);
 
-    const res = await client.mutation(UPDATE_QUIET_MODE_MUTATION, {
+    const res = await client.mutation(updateQuietModePersisted, {
       quietMode: !quietMode,
     });
 

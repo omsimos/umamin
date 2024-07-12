@@ -41,6 +41,16 @@ const DELETE_NOTE_MUTATION = graphql(`
   }
 `);
 
+const updateNotePersisted = graphql.persisted(
+  "sha256:ee74fb98a70e158ec538193fef5c090523d87c18151e2d3687bc60def53169f2",
+  UPDATE_NOTE_MUTATION,
+);
+
+const deleteNotePersisted = graphql.persisted(
+  "sha256:fc93cc2e396e0300768942f32a039bf1e92ddf6e2bcea99af54c537feacdf133",
+  DELETE_NOTE_MUTATION,
+);
+
 type Props = {
   user: SelectUser;
   currentNote?: CurrentNoteQueryResult;
@@ -62,7 +72,7 @@ export default function NoteForm({ user, currentNote }: Props) {
   const onClearNote = async () => {
     setIsFetching(true);
 
-    const res = await client.mutation(DELETE_NOTE_MUTATION, {});
+    const res = await client.mutation(deleteNotePersisted, {});
 
     if (res.error) {
       toast.error(formatError(res.error.message));
@@ -87,7 +97,7 @@ export default function NoteForm({ user, currentNote }: Props) {
     e.preventDefault();
     setIsFetching(true);
 
-    const res = await client.mutation(UPDATE_NOTE_MUTATION, {
+    const res = await client.mutation(updateNotePersisted, {
       content,
       isAnonymous,
     });

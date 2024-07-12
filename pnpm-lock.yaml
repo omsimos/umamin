@@ -138,6 +138,9 @@ importers:
       '@graphql-yoga/plugin-disable-introspection':
         specifier: ^2.6.0
         version: 2.6.0(graphql-yoga@5.6.0(graphql@16.8.1))(graphql@16.8.1)
+      '@graphql-yoga/plugin-persisted-operations':
+        specifier: ^3.6.0
+        version: 3.6.0(@graphql-tools/utils@10.3.1(graphql@16.8.1))(graphql-yoga@5.6.0(graphql@16.8.1))(graphql@16.8.1)
       '@graphql-yoga/plugin-response-cache':
         specifier: ^3.8.0
         version: 3.8.0(@envelop/core@5.0.1)(graphql-yoga@5.6.0(graphql@16.8.1))(graphql@16.8.1)
@@ -180,6 +183,9 @@ importers:
       '@urql/exchange-graphcache':
         specifier: ^7.1.1
         version: 7.1.1(@urql/core@5.0.4(graphql@16.8.1))(graphql@16.8.1)
+      '@urql/exchange-persisted':
+        specifier: ^4.3.0
+        version: 4.3.0(@urql/core@5.0.4(graphql@16.8.1))
       '@urql/next':
         specifier: ^1.1.1
         version: 1.1.1(next@14.2.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(urql@4.1.0(@urql/core@5.0.4(graphql@16.8.1))(react@18.3.1))
@@ -1293,6 +1299,14 @@ packages:
     resolution: {integrity: sha512-3enu+LVgrrQvcjPVfaXhYjc4CbPFcci+VSQ0CaN30JQxFsOt0Wa95Xc1JY4CyfBnwa+8XPC8sJgl2yVKZbyrIg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
+      graphql: ^15.2.0 || ^16.0.0
+      graphql-yoga: ^5.6.0
+
+  '@graphql-yoga/plugin-persisted-operations@3.6.0':
+    resolution: {integrity: sha512-XbOcm5tvNlDsLBUvoUkc5t77ZyO9rGZdk/kQCOD6E0ZQ6PiMMgQS4X72kwWJLmqTS2Qj6x4uHkmVfNnbZyz+jA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      '@graphql-tools/utils': ^10.0.0
       graphql: ^15.2.0 || ^16.0.0
       graphql-yoga: ^5.6.0
 
@@ -2605,6 +2619,11 @@ packages:
 
   '@urql/exchange-graphcache@7.1.1':
     resolution: {integrity: sha512-9aqgVrFY79MxCQ/u4F4RHZQ4NqToVJJk4I2sQx/5d/lvB9tInA5Z8ZL5XuflaKM7NJ8Pm5HGisB/iD7mKHKriA==}
+    peerDependencies:
+      '@urql/core': ^5.0.0
+
+  '@urql/exchange-persisted@4.3.0':
+    resolution: {integrity: sha512-gI3i5uA9K/f0z5VLqKL5SGJpTrPjsN+BOMvAGJj13Bg4JUmJCaqYYHKetay27q4K2GDZIMGDoeytR7XkpP5ftg==}
     peerDependencies:
       '@urql/core': ^5.0.0
 
@@ -6386,6 +6405,12 @@ snapshots:
       graphql: 16.8.1
       graphql-yoga: 5.6.0(graphql@16.8.1)
 
+  '@graphql-yoga/plugin-persisted-operations@3.6.0(@graphql-tools/utils@10.3.1(graphql@16.8.1))(graphql-yoga@5.6.0(graphql@16.8.1))(graphql@16.8.1)':
+    dependencies:
+      '@graphql-tools/utils': 10.3.1(graphql@16.8.1)
+      graphql: 16.8.1
+      graphql-yoga: 5.6.0(graphql@16.8.1)
+
   '@graphql-yoga/plugin-response-cache@3.8.0(@envelop/core@5.0.1)(graphql-yoga@5.6.0(graphql@16.8.1))(graphql@16.8.1)':
     dependencies:
       '@envelop/response-cache': 6.2.0(@envelop/core@5.0.1)(graphql@16.8.1)
@@ -7732,6 +7757,11 @@ snapshots:
       wonka: 6.3.4
     transitivePeerDependencies:
       - graphql
+
+  '@urql/exchange-persisted@4.3.0(@urql/core@5.0.4(graphql@16.8.1))':
+    dependencies:
+      '@urql/core': 5.0.4(graphql@16.8.1)
+      wonka: 6.3.4
 
   '@urql/next@1.1.1(next@14.2.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(urql@4.1.0(@urql/core@5.0.4(graphql@16.8.1))(react@18.3.1))':
     dependencies:

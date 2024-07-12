@@ -12,10 +12,10 @@ import { cn } from "@umamin/ui/lib/utils";
 import { formatError } from "@/lib/utils";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
-import { UserByUsernameQueryResult } from "../queries";
 import useBotDetection from "@/hooks/use-bot-detection";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import type { UserByUsernameQueryResult } from "@/app/user/[username]/queries";
 
 const CREATE_MESSAGE_MUTATION = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {
@@ -24,6 +24,11 @@ const CREATE_MESSAGE_MUTATION = graphql(`
     }
   }
 `);
+
+const createMessagePersisted = graphql.persisted(
+  "sha256:3550bab6df63cc9b4f891263677b487dbf67eba1b5cc9af9fec5fc037d2e49f0",
+  CREATE_MESSAGE_MUTATION,
+);
 
 type Props = {
   currentUserId?: string;
@@ -54,7 +59,7 @@ export default function ChatForm({ currentUserId, user }: Props) {
     setIsFetching(true);
 
     try {
-      const res = await client.mutation(CREATE_MESSAGE_MUTATION, {
+      const res = await client.mutation(createMessagePersisted, {
         input: {
           senderId: currentUserId,
           receiverId: user?.id,

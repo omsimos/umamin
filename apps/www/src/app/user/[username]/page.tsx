@@ -1,31 +1,14 @@
 import Link from "next/link";
-import { cache } from "react";
-import { graphql } from "gql.tada";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { MessageSquareMore, UserPlus } from "lucide-react";
 
-import getClient from "@/lib/gql/rsc";
 import { cn } from "@umamin/ui/lib/utils";
+import { getUserByUsername } from "./queries";
 import { UserCard } from "@/app/components/user-card";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 
 const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
-
-const USER_BY_USERNAME_QUERY = graphql(`
-  query UserByUsername($username: String!) {
-    userByUsername(username: $username) {
-      __typename
-      id
-      bio
-      username
-      displayName
-      imageUrl
-      createdAt
-      quietMode
-    }
-  }
-`);
 
 export async function generateMetadata({
   params,
@@ -68,20 +51,12 @@ export async function generateMetadata({
   };
 }
 
-const getUser = cache(async (username: string) => {
-  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
-    username,
-  });
-
-  return result.data?.userByUsername;
-});
-
 export default async function Page({
   params,
 }: {
   params: { username: string };
 }) {
-  const user = await getUser(params.username);
+  const user = await getUserByUsername(params.username);
 
   if (!user) {
     redirect("/404");

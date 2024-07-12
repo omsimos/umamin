@@ -1,18 +1,16 @@
-import { cache } from "react";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { BadgeCheck, Lock, MessageCircleOff } from "lucide-react";
 
-import getClient from "@/lib/gql/rsc";
 import { getSession } from "@/lib/auth";
-import { USER_BY_USERNAME_QUERY } from "./queries";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
+import { getUserByUsername } from "@/app/user/[username]/queries";
 
 const ChatForm = dynamic(() => import("./components/form"));
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
-  { ssr: false }
+  { ssr: false },
 );
 
 export async function generateMetadata({
@@ -52,20 +50,12 @@ export async function generateMetadata({
   };
 }
 
-const getUser = cache(async (username: string) => {
-  const result = await getClient().query(USER_BY_USERNAME_QUERY, {
-    username,
-  });
-
-  return result.data?.userByUsername;
-});
-
 export default async function SendMessage({
   params,
 }: {
   params: { username: string };
 }) {
-  const user = await getUser(params.username);
+  const user = await getUserByUsername(params.username);
 
   if (!user) {
     redirect("/404");
@@ -84,7 +74,7 @@ export default async function SendMessage({
                 {user?.displayName ? user?.displayName : user?.username}
               </p>
               {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                user.username
+                user.username,
               ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
               {user.quietMode && (
                 <MessageCircleOff className="h-4 w-4 text-yellow-500" />

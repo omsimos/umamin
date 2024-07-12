@@ -16,7 +16,7 @@ const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const MESSAGES_FROM_CURSOR_QUERY = graphql(
   `
-    query MessagesFromCursor($input: MessagesFromCursorInput!) {
+    query SentMessagesFromCursor($input: MessagesFromCursorInput!) {
       messagesFromCursor(input: $input) {
         __typename
         data {
@@ -35,6 +35,11 @@ const MESSAGES_FROM_CURSOR_QUERY = graphql(
     }
   `,
   [sentMessageFragment],
+);
+
+const messagesFromCursorPersisted = graphql.persisted(
+  "sha256:9ceb104c0e9991769bf9544b2f7d605f0c66bfcfc488c0ae3dfaa7a975001b30",
+  MESSAGES_FROM_CURSOR_QUERY,
 );
 
 export function SentMessagesList({
@@ -59,7 +64,7 @@ export function SentMessagesList({
     if (hasMore) {
       setIsFetching(true);
 
-      const res = await client.query(MESSAGES_FROM_CURSOR_QUERY, {
+      const res = await client.query(messagesFromCursorPersisted, {
         input: {
           type: "sent",
           cursor,

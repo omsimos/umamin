@@ -1,18 +1,8 @@
-import { cache } from "react";
-import getClient from "@/lib/gql/rsc";
 import { SentMessagesList } from "./list";
-import { SENT_MESSAGES_QUERY } from "../../queries";
-
-const getMessages = cache(async (sessionId?: string) => {
-  const result = await getClient(sessionId).query(SENT_MESSAGES_QUERY, {
-    type: "sent",
-  });
-
-  return result?.data?.messages;
-});
+import { getSentMessages } from "../../queries";
 
 export async function SentMessages({ sessionId }: { sessionId: string }) {
-  const messages = await getMessages(sessionId);
+  const messages = await getSentMessages(sessionId);
 
   return (
     <div className="flex w-full flex-col items-center gap-5 pb-20">

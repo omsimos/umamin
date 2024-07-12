@@ -1,10 +1,8 @@
+import { logout } from "@/actions";
+import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-import { logout } from "@/actions";
-import getClient from "@/lib/gql/rsc";
-import { getSession } from "@/lib/auth";
-
-import { CURRENT_USER_QUERY } from "./queries";
+import { getCurrentUser } from "./queries";
 import { GeneralSettings } from "./components/general";
 import { AccountSettings } from "./components/account";
 import { PrivacySettings } from "./components/privacy";
@@ -16,7 +14,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import { cache } from "react";
 
 export const metadata = {
   title: "Umamin — Settings",
@@ -41,12 +38,6 @@ export const metadata = {
   },
 };
 
-const getUser = cache(async (sessionId?: string) => {
-  const result = await getClient(sessionId).query(CURRENT_USER_QUERY, {});
-
-  return result?.data?.user;
-});
-
 export default async function Settings() {
   const { user, session } = await getSession();
 
@@ -54,7 +45,7 @@ export default async function Settings() {
     redirect("/login");
   }
 
-  const userData = await getUser(session?.id);
+  const userData = await getCurrentUser(session?.id);
 
   const tabsData = [
     {
