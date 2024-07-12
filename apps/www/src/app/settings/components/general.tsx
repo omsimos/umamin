@@ -35,7 +35,7 @@ const UPDATE_USER_MUTATION = graphql(`
 `);
 
 const updateUserPersisted = graphql.persisted(
-  "sha256:0eb5223468cd7923b5d9a12fc2104425d047f9d34a871160b2e8d37bfc9224fc",
+  "0eb5223468cd7923b5d9a12fc2104425d047f9d34a871160b2e8d37bfc9224fc",
   UPDATE_USER_MUTATION,
 );
 

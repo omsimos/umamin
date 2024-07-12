@@ -43,7 +43,7 @@ const NOTES_FROM_CURSOR_QUERY = graphql(`
 `);
 
 const notesFromCursorPersisted = graphql.persisted(
-  "sha256:262877a65aad9be976828c1e5854027f21dc0cd3edcd6991b4ada34ecfe67157",
+  "262877a65aad9be976828c1e5854027f21dc0cd3edcd6991b4ada34ecfe67157",
   NOTES_FROM_CURSOR_QUERY,
 );
 

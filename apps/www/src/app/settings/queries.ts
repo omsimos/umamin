@@ -26,7 +26,7 @@ export const CURRENT_USER_QUERY = graphql(`
 `);
 
 const currentUserPersisted = graphql.persisted(
-  "sha256:3f2320bbe96bd7895f618b6cdedfdee5d2f40e3e0c1d75095ea0844a0ff107b4",
+  "3f2320bbe96bd7895f618b6cdedfdee5d2f40e3e0c1d75095ea0844a0ff107b4",
   CURRENT_USER_QUERY,
 );
 

@@ -69,7 +69,7 @@ const CREATE_MESSAGE_MUTATION = graphql(`
 `);
 
 const createMessagePersisted = graphql.persisted(
-  "sha256:53f885d2afe8feedba14ca10ddf0bda7d6a1dd79dd21eefd5ea792074848ee60",
+  "53f885d2afe8feedba14ca10ddf0bda7d6a1dd79dd21eefd5ea792074848ee60",
   CREATE_MESSAGE_MUTATION,
 );
 

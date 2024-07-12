@@ -38,7 +38,7 @@ const MESSAGES_FROM_CURSOR_QUERY = graphql(
 );
 
 const messagesFromCursorPersisted = graphql.persisted(
-  "sha256:9ceb104c0e9991769bf9544b2f7d605f0c66bfcfc488c0ae3dfaa7a975001b30",
+  "9ceb104c0e9991769bf9544b2f7d605f0c66bfcfc488c0ae3dfaa7a975001b30",
   MESSAGES_FROM_CURSOR_QUERY,
 );
 

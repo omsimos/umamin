@@ -28,12 +28,12 @@ const UPDATE_QUIET_MODE_MUTATION = graphql(`
 `);
 
 const updatePicturePersisted = graphql.persisted(
-  "sha256:84fbec200028bf15058bc1addbef6e960ac4013dfb8c03205440e89e9f6cb19d",
+  "84fbec200028bf15058bc1addbef6e960ac4013dfb8c03205440e89e9f6cb19d",
   UPDATE_PICTURE_MUTATION,
 );
 
 const updateQuietModePersisted = graphql.persisted(
-  "sha256:8c072442a1cbead14dc07404113b1dc2e3473fbd060fb5658f2c0acf6189a6c7",
+  "8c072442a1cbead14dc07404113b1dc2e3473fbd060fb5658f2c0acf6189a6c7",
   UPDATE_QUIET_MODE_MUTATION,
 );
 

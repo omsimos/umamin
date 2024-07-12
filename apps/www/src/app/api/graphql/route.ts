@@ -55,7 +55,7 @@ const { handleRequest } = createYoga({
       isDisabled: () => process.env.NODE_ENV === "production",
     }),
     usePersistedOperations({
-      allowArbitraryOperations: process.env.NODE_ENV === "development",
+      // allowArbitraryOperations: process.env.NODE_ENV === "development",
       customErrors: {
         notFound: {
           message: "Operation is not found",

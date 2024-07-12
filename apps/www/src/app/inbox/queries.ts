@@ -34,12 +34,12 @@ const SENT_MESSAGES_QUERY = graphql(
 );
 
 const receivedMessagesPersisted = graphql.persisted(
-  "sha256:f07a17f7e44b839d7a1449115b9810d55447696a558d7416f16dc0b9c978217f",
+  "f07a17f7e44b839d7a1449115b9810d55447696a558d7416f16dc0b9c978217f",
   RECEIVED_MESSAGES_QUERY,
 );
 
 const sentMessagesPersisted = graphql.persisted(
-  "sha256:05e86ea80c5038a466e952fe9fceeb57d537e1afbe6575df5f27b44944a1531f",
+  "05e86ea80c5038a466e952fe9fceeb57d537e1afbe6575df5f27b44944a1531f",
   SENT_MESSAGES_QUERY,
 );
 

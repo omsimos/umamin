@@ -35,12 +35,12 @@ const CURRENT_NOTE_QUERY = graphql(`
 `);
 
 const currentNotePersisted = graphql.persisted(
-  "sha256:e341bcbefcb9ca743aaf5e281b372e9327b541708538e9f70f11d411d1f21ea0",
+  "e341bcbefcb9ca743aaf5e281b372e9327b541708538e9f70f11d411d1f21ea0",
   CURRENT_NOTE_QUERY,
 );
 
 const notesPersisted = graphql.persisted(
-  "sha256:1d9ebe0bebd8b210f11924e100d0026c50fc6ea80b537dbafee4062ddc06d8f8",
+  "1d9ebe0bebd8b210f11924e100d0026c50fc6ea80b537dbafee4062ddc06d8f8",
   NOTES_QUERY,
 );
 

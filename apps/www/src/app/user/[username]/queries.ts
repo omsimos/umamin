@@ -20,7 +20,7 @@ export const USER_BY_USERNAME_QUERY = graphql(`
 `);
 
 const userByUsernamePersisted = graphql.persisted(
-  "sha256:e56708c4cacdba6c698de1f4bc45a999ca535fb519bd806caf9a62a6582159e4",
+  "e56708c4cacdba6c698de1f4bc45a999ca535fb519bd806caf9a62a6582159e4",
   USER_BY_USERNAME_QUERY,
 );
 
