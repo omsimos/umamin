@@ -129,9 +129,6 @@ importers:
       '@fingerprintjs/botd':
         specifier: ^1.9.1
         version: 1.9.1
-      '@graphql-yoga/plugin-apq':
-        specifier: ^3.6.0
-        version: 3.6.0(@graphql-tools/utils@10.3.1(graphql@16.8.1))(graphql-yoga@5.6.0(graphql@16.8.1))
       '@graphql-yoga/plugin-csrf-prevention':
         specifier: ^3.6.0
         version: 3.6.0(graphql-yoga@5.6.0(graphql@16.8.1))
@@ -1268,13 +1265,6 @@ packages:
     peerDependencies:
       '@graphql-tools/utils': ^10.0.0
       graphql-yoga: ^5.3.1
-
-  '@graphql-yoga/plugin-apq@3.6.0':
-    resolution: {integrity: sha512-+vKaTuJEAxIJLI0vDB5nj7JL7vNhbGL59/ZOcHKKxroYIOdVXRvqouRV7voyXT/BJ+qve69jDoSk4jaQhT7nrg==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      '@graphql-tools/utils': ^10.0.0
-      graphql-yoga: ^5.6.0
 
   '@graphql-yoga/plugin-csrf-prevention@3.3.1':
     resolution: {integrity: sha512-SRn9VbTy6tPobJrUQfJuHOF8TmV5q0gOKAo4+dz3sC/WTHWq0gXXv01cekQEAjTd+8F6RF53dpB+ECOrNrBi+w==}
@@ -6381,11 +6371,6 @@ snapshots:
     dependencies:
       '@graphql-tools/utils': 10.3.1(graphql@16.8.1)
       graphql-yoga: 5.3.1(graphql@16.8.1)
-
-  '@graphql-yoga/plugin-apq@3.6.0(@graphql-tools/utils@10.3.1(graphql@16.8.1))(graphql-yoga@5.6.0(graphql@16.8.1))':
-    dependencies:
-      '@graphql-tools/utils': 10.3.1(graphql@16.8.1)
-      graphql-yoga: 5.6.0(graphql@16.8.1)
 
   '@graphql-yoga/plugin-csrf-prevention@3.3.1(graphql-yoga@5.3.1(graphql@16.8.1))':
     dependencies:

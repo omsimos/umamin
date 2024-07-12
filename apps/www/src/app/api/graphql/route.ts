@@ -2,7 +2,6 @@ import { promises as fs } from "fs";
 import { cookies } from "next/headers";
 import { createYoga } from "graphql-yoga";
 import { getSession, lucia } from "@/lib/auth";
-import { useAPQ } from "@graphql-yoga/plugin-apq";
 import { gqlSchema, initContextCache } from "@umamin/gql";
 import { useResponseCache } from "@graphql-yoga/plugin-response-cache";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
@@ -92,7 +91,6 @@ const { handleRequest } = createYoga({
         return persistedOperations[key];
       },
     }),
-    useAPQ(),
   ],
 });
 
