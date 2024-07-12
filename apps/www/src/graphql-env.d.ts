@@ -20,7 +20,6 @@ export type introspection = {
     'CreateMessageInput': { kind: 'INPUT_OBJECT'; name: 'CreateMessageInput'; isOneOf: false; inputFields: [{ name: 'content'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; defaultValue: null }, { name: 'question'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; defaultValue: null }, { name: 'receiverId'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; defaultValue: null }, { name: 'senderId'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
     'CursorInput': { kind: 'INPUT_OBJECT'; name: 'CursorInput'; isOneOf: false; inputFields: [{ name: 'createdAt'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
     'Date': unknown;
-    'Float': unknown;
     'ID': unknown;
     'Int': unknown;
     'JSON': unknown;

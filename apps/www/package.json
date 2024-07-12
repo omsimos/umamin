@@ -8,7 +8,10 @@
     "start": "next start",
     "clean": "rm -rf ./node_modules .turbo .next",
     "check-types": "tsc --noEmit && gql.tada check",
-    "lint": "next lint"
+    "lint": "next lint",
+    "gql:check": "gql.tada check",
+    "gql:generate-persisted": "gql.tada generate-persisted",
+    "gql:generate-schema": "gql.tada generate-schema http://localhost:3000/api/graphql"
   },
   "dependencies": {
     "@fingerprintjs/botd": "^1.9.1",
