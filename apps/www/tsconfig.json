@@ -9,7 +9,7 @@
         "name": "@0no-co/graphqlsp",
         "schema": "./src/schema.graphql",
         "tadaOutputLocation": "./src/graphql-env.d.ts",
-        "tadaPersistedLocation": "./public/persisted-operations.json",
+        "tadaPersistedLocation": "./src/persisted-operations.json",
         "trackFieldUsage": false
       }
     ],

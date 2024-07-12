@@ -1,8 +1,8 @@
-import { promises as fs } from "fs";
 import { cookies } from "next/headers";
 import { createYoga } from "graphql-yoga";
 import { getSession, lucia } from "@/lib/auth";
 import { gqlSchema, initContextCache } from "@umamin/gql";
+import persistedOperations from "@/persisted-operations.json";
 import { useResponseCache } from "@graphql-yoga/plugin-response-cache";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
 import { usePersistedOperations } from "@graphql-yoga/plugin-persisted-operations";
@@ -83,11 +83,7 @@ const { handleRequest } = createYoga({
       },
       skipDocumentValidation: true,
       async getPersistedOperation(key: string) {
-        const file = await fs.readFile(
-          process.cwd() + "/public/persisted-operations.json",
-          "utf-8",
-        );
-        const persistedOperations = JSON.parse(file);
+        // @ts-ignore
         return persistedOperations[key];
       },
     }),
