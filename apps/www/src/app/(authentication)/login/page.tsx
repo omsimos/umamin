@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./components/form";
-import { V1Link } from "../components/v1-link";
+import { V1Link } from "@/app/components/v1-link";
 
 const BrowserWarning = dynamic(
   () => import("@umamin/ui/components/browser-warning"),

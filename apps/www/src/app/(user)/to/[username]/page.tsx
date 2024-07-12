@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { BadgeCheck, Lock, MessageCircleOff } from "lucide-react";
 
 import { getSession } from "@/lib/auth";
+import { getUserByUsername } from "../../queries";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
-import { getUserByUsername } from "@/app/user/[username]/queries";
 
 const ChatForm = dynamic(() => import("./components/form"));
 const UnauthenticatedDialog = dynamic(

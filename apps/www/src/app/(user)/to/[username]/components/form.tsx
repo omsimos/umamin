@@ -15,7 +15,7 @@ import { ChatList } from "@/app/components/chat-list";
 import useBotDetection from "@/hooks/use-bot-detection";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import type { UserByUsernameQueryResult } from "@/app/user/[username]/queries";
+import type { UserByUsernameQueryResult } from "../../../queries";
 
 const CREATE_MESSAGE_MUTATION = graphql(`
   mutation CreateMessage($input: CreateMessageInput!) {

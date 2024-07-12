@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { MessageSquareMore, UserPlus } from "lucide-react";
 
 import { cn } from "@umamin/ui/lib/utils";
-import { getUserByUsername } from "./queries";
+import { getUserByUsername } from "../../queries";
 import { UserCard } from "@/app/components/user-card";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 

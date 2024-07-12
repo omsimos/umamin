@@ -9,7 +9,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import { UserCard } from "../components/user-card";
+import { UserCard } from "@/app/components/user-card";
 import { SentMessages } from "./components/sent/messages";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { ReceivedMessages } from "./components/received/messages";
