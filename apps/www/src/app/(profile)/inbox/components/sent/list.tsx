@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import dynamic from "next/dynamic";
 import { graphql } from "gql.tada";
 import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
@@ -11,8 +10,6 @@ import { SentMessageResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { useMessageStore } from "@/store/useMessageStore";
 import { sentMessageFragment, SentMessageCard } from "./card";
-
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const MESSAGES_FROM_CURSOR_QUERY = graphql(
   `
@@ -34,12 +31,12 @@ const MESSAGES_FROM_CURSOR_QUERY = graphql(
       }
     }
   `,
-  [sentMessageFragment],
+  [sentMessageFragment]
 );
 
 const messagesFromCursorPersisted = graphql.persisted(
   "9ceb104c0e9991769bf9544b2f7d605f0c66bfcfc488c0ae3dfaa7a975001b30",
-  MESSAGES_FROM_CURSOR_QUERY,
+  MESSAGES_FROM_CURSOR_QUERY
 );
 
 export function SentMessagesList({
@@ -103,25 +100,27 @@ export function SentMessagesList({
 
   return (
     <>
-      {messages?.map((msg, i) => (
+      {messages?.map((msg) => (
         <div key={msg.id} className="w-full">
           <SentMessageCard data={msg} />
 
-          {/* v2-sent-list */}
-          {(i + 1) % 5 === 0 && (
-            <AdContainer className="mt-5" slotId="1355121027" />
-          )}
+          {/* v2-sent-list 
+            {(i + 1) % 5 === 0 && (
+                <AdContainer className="mt-5" slotId="1355121027" />
+            )}
+          */}
         </div>
       ))}
 
-      {msgList?.map((msg, i) => (
+      {msgList?.map((msg) => (
         <div key={msg.id} className="w-full">
           <SentMessageCard data={msg} />
 
-          {/* v2-sent-list */}
-          {(i + 1) % 5 === 0 && (
-            <AdContainer className="mt-5" slotId="1355121027" />
-          )}
+          {/* v2-sent-list 
+            {(i + 1) % 5 === 0 && (
+                <AdContainer className="mt-5" slotId="1355121027" />
+            )}
+          */}
         </div>
       ))}
 

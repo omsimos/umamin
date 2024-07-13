@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import dynamic from "next/dynamic";
 import { graphql } from "gql.tada";
 import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
@@ -11,8 +10,6 @@ import { ReceivedMessagesResult } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { useMessageStore } from "@/store/useMessageStore";
 import { ReceivedMessageCard, receivedMessageFragment } from "./card";
-
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const MESSAGES_FROM_CURSOR_QUERY = graphql(
   `
@@ -34,12 +31,12 @@ const MESSAGES_FROM_CURSOR_QUERY = graphql(
       }
     }
   `,
-  [receivedMessageFragment],
+  [receivedMessageFragment]
 );
 
 const messagesFromCursorPersisted = graphql.persisted(
   "10ae521c718fee919520bf95d2cdc74ee1bd0d862d468ca4948ad705bb1e2909",
-  MESSAGES_FROM_CURSOR_QUERY,
+  MESSAGES_FROM_CURSOR_QUERY
 );
 
 export function ReceivedMessagesList({
@@ -103,25 +100,27 @@ export function ReceivedMessagesList({
 
   return (
     <>
-      {messages?.map((msg, i) => (
+      {messages?.map((msg) => (
         <div key={msg.id} className="w-full">
           <ReceivedMessageCard data={msg} />
 
-          {/* v2-received-list */}
-          {(i + 1) % 5 === 0 && (
-            <AdContainer className="mt-5" slotId="1546692714" />
-          )}
+          {/* v2-received-list 
+            {(i + 1) % 5 === 0 && (
+                <AdContainer className="mt-5" slotId="1546692714" />
+            )}
+          */}
         </div>
       ))}
 
-      {msgList?.map((msg, i) => (
+      {msgList?.map((msg) => (
         <div key={msg.id} className="w-full">
           <ReceivedMessageCard data={msg} />
 
-          {/* v2-received-list */}
-          {(i + 1) % 5 === 0 && (
-            <AdContainer className="mt-5" slotId="1546692714" />
-          )}
+          {/* v2-received-list 
+            {(i + 1) % 5 === 0 && (
+                <AdContainer className="mt-5" slotId="1546692714" />
+            )}
+          */}
         </div>
       ))}
 

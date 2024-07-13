@@ -73,7 +73,7 @@ const { handleRequest } = createYoga({
           },
         },
         persistedQueryOnly: {
-          message: "Only persisted operations are allowed",
+          message: "Operation is not allowed",
           extensions: {
             http: {
               status: 403,

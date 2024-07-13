@@ -98,8 +98,16 @@ export default async function UserProfile() {
           ))}
         </TabsList>
 
-        {/* v2-inbox */}
-        <AdContainer className="mb-5" slotId="7047998078" />
+        {/* v2-notes-feed */}
+        <AdContainer
+          inFeed
+          className="mb-5 sticky top-20 z-50"
+          slotId="4344956885"
+        />
+
+        {/* v2-inbox 
+            <AdContainer className="mb-5" slotId="7047998078" />
+        */}
 
         {tabsData.map((tab) => (
           <TabsContent key={tab.name} value={tab.name}>

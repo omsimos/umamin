@@ -70,8 +70,12 @@ export default async function Page() {
         </div>
       )}
 
-      {/* v2-notes */}
-      <AdContainer className="mb-5" slotId="1999152698" />
+      {/* v2-notes-feed */}
+      <AdContainer
+        inFeed
+        className="mt-5 sticky top-20 z-50"
+        slotId="4344956885"
+      />
 
       <div className="gap-5 flex flex-col">
         {!notes?.length ? (
@@ -82,16 +86,15 @@ export default async function Page() {
           <>
             {notes
               ?.filter((u) => u.user?.id !== user?.id)
-              .map((note, i) => (
+              .map((note) => (
                 <div key={note.id} className="w-full">
                   <NoteCard note={note} currentUserId={user?.id} />
-
-                  {/* v2-notes-feed */}
-                  {(i + 1) % 5 === 0 && (
-                    <AdContainer inFeed className="mt-5" slotId="4344956885" />
-                  )}
                 </div>
               ))}
+
+            {/* v2-notes 
+                <AdContainer className="mb-5" slotId="1999152698" />
+            */}
 
             <NotesList
               currentUserId={user?.id}

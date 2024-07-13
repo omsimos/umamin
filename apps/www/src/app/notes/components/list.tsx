@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import dynamic from "next/dynamic";
 import { graphql } from "gql.tada";
 import client from "@/lib/gql/client";
 import { useInView } from "react-intersection-observer";
@@ -10,8 +9,6 @@ import { useCallback, useEffect, useState } from "react";
 import { NoteCard } from "./card";
 import { NotesQueryResult } from "../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
-
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const NOTES_FROM_CURSOR_QUERY = graphql(`
   query NotesFromCursor($cursor: NotesFromCursorInput!) {
@@ -44,7 +41,7 @@ const NOTES_FROM_CURSOR_QUERY = graphql(`
 
 const notesFromCursorPersisted = graphql.persisted(
   "262877a65aad9be976828c1e5854027f21dc0cd3edcd6991b4ada34ecfe67157",
-  NOTES_FROM_CURSOR_QUERY,
+  NOTES_FROM_CURSOR_QUERY
 );
 
 type Cursor = {
@@ -113,14 +110,15 @@ export function NotesList({
     <>
       {notesList
         ?.filter((u) => u.user?.id !== currentUserId)
-        .map((note, i) => (
+        .map((note) => (
           <div key={note.id} className="w-full">
             <NoteCard note={note} currentUserId={currentUserId} />
 
-            {/* v2-notes-feed */}
-            {(i + 1) % 5 === 0 && (
-              <AdContainer inFeed className="mt-5" slotId="4344956885" />
-            )}
+            {/* v2-notes-feed 
+                {(i + 1) % 5 === 0 && (
+                    <AdContainer inFeed className="mt-5" slotId="4344956885" />
+                )}
+            */}
           </div>
         ))}
 
