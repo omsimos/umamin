@@ -36,7 +36,7 @@ const UPDATE_USER_MUTATION = graphql(`
 
 const updateUserPersisted = graphql.persisted(
   "0eb5223468cd7923b5d9a12fc2104425d047f9d34a871160b2e8d37bfc9224fc",
-  UPDATE_USER_MUTATION,
+  UPDATE_USER_MUTATION
 );
 
 const FormSchema = z.object({
@@ -152,7 +152,7 @@ export function GeneralSettings({ user }: { user: CurrentUserResult }) {
               </FormControl>
               {account ? (
                 <FormDescription>
-                  Previous usernames will be available to others
+                  Your previous username will be available to other users.
                 </FormDescription>
               ) : (
                 <FormDescription className="flex items-center text-yellow-500">
