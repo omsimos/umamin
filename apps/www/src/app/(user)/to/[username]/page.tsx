@@ -66,11 +66,8 @@ export default async function SendMessage({
 
   return (
     <main className="pb-24 min-h-screen flex flex-col">
-      {/* v2-sent-to */}
-      <AdContainer
-        className="mb-5 w-full h-[90px] sticky z-50 top-20 max-w-md mt-20"
-        slotId="9163326848"
-      />
+      {/* v2-send-to */}
+      <AdContainer className="mb-5 w-full mt-20 max-w-2xl" slotId="9163326848" />
 
       <div className="container w-full max-w-2xl">
         <Card className="border flex flex-col w-full">
@@ -90,16 +87,6 @@ export default async function SendMessage({
               <ShareButton username={user.username} />
             </div>
 
-            {/* <ProfileHoverCard 
-            user={{
-              username: user.username,
-              imageUrl: user.imageUrl,
-              createdAt: user.createdAt,
-            }}
-          >
-            <p className="text-muted-foreground text-sm">@{user.username}</p>
-          </ProfileHoverCard> */}
-
             <span className="font-medium text-muted-foreground pb-2">
               umamin
             </span>
@@ -114,10 +101,6 @@ export default async function SendMessage({
         Advanced Encryption Standard
         <Lock className="h-4 w-4 ml-2" />
       </div>
-
-      {/* v2-send-to
-      <AdContainer className="mt-5 w-full max-w-2xl" slotId="9163326848" />
-      */}
 
       <UnauthenticatedDialog isLoggedIn={!!session} />
     </main>

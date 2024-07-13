@@ -70,11 +70,8 @@ export default async function Page() {
         </div>
       )}
 
-      {/* v2-note- */}
-      <AdContainer
-        className="mb-5 h-[90px] sticky top-20 z-50"
-        slotId="1999152698"
-      />
+      {/* v2-notes */}
+      <AdContainer className="mb-5" slotId="1999152698" />
 
       <div className="gap-5 flex flex-col">
         {!notes?.length ? (
@@ -90,10 +87,6 @@ export default async function Page() {
                   <NoteCard note={note} currentUserId={user?.id} />
                 </div>
               ))}
-
-            {/* v2-notes 
-                <AdContainer className="mb-5" slotId="1999152698" />
-            */}
 
             <NotesList
               currentUserId={user?.id}
