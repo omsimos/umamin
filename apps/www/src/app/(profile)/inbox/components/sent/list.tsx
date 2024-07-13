@@ -6,7 +6,7 @@ import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
 import client from "@/lib/gql/client";
-import { SentMessageResult } from "../../queries";
+import type { InboxProps } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { useMessageStore } from "@/store/useMessageStore";
 import { sentMessageFragment, SentMessageCard } from "./card";
@@ -41,15 +41,10 @@ const messagesFromCursorPersisted = graphql.persisted(
 
 export function SentMessagesList({
   messages,
-}: {
-  messages: SentMessageResult;
-}) {
+  initialCursor,
+}: InboxProps<"sent">) {
   const { ref, inView } = useInView();
-
-  const [cursor, setCursor] = useState({
-    id: messages[messages.length - 1]?.id ?? null,
-    createdAt: messages[messages.length - 1]?.createdAt ?? null,
-  });
+  const [cursor, setCursor] = useState(initialCursor);
 
   const msgList = useMessageStore((state) => state.sentList);
   const updateMsgList = useMessageStore((state) => state.updateSentList);

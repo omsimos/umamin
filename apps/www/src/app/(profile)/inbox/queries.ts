@@ -16,7 +16,7 @@ const RECEIVED_MESSAGES_QUERY = graphql(
       }
     }
   `,
-  [receivedMessageFragment],
+  [receivedMessageFragment]
 );
 
 const SENT_MESSAGES_QUERY = graphql(
@@ -30,17 +30,17 @@ const SENT_MESSAGES_QUERY = graphql(
       }
     }
   `,
-  [sentMessageFragment],
+  [sentMessageFragment]
 );
 
 const receivedMessagesPersisted = graphql.persisted(
   "f07a17f7e44b839d7a1449115b9810d55447696a558d7416f16dc0b9c978217f",
-  RECEIVED_MESSAGES_QUERY,
+  RECEIVED_MESSAGES_QUERY
 );
 
 const sentMessagesPersisted = graphql.persisted(
   "05e86ea80c5038a466e952fe9fceeb57d537e1afbe6575df5f27b44944a1531f",
-  SENT_MESSAGES_QUERY,
+  SENT_MESSAGES_QUERY
 );
 
 export const getReceivedMessages = cache(async (sessionId?: string) => {
@@ -66,3 +66,13 @@ export type ReceivedMessagesResult = ResultOf<
 export type SentMessageResult = ResultOf<
   typeof SENT_MESSAGES_QUERY
 >["messages"];
+
+type Cursor = {
+  id: string | null;
+  createdAt: number | null;
+};
+
+export type InboxProps<T = "received" | "sent"> = {
+  messages?: T extends "received" ? ReceivedMessagesResult : SentMessageResult;
+  initialCursor: Cursor;
+};

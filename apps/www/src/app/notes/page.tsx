@@ -73,7 +73,7 @@ export default async function Page() {
       {/* v2-notes-feed */}
       <AdContainer
         inFeed
-        className="mt-5 sticky top-20 z-50"
+        className="mb-5 sticky top-20 z-50"
         slotId="4344956885"
       />
 

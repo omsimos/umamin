@@ -11,7 +11,13 @@ export async function ReceivedMessages({ sessionId }: { sessionId?: string }) {
           No messages to show
         </p>
       ) : (
-        <ReceivedMessagesList messages={messages} />
+        <ReceivedMessagesList
+          messages={messages}
+          initialCursor={{
+            id: messages[messages.length - 1]?.id ?? null,
+            createdAt: messages[messages.length - 1]?.createdAt ?? null,
+          }}
+        />
       )}
     </div>
   );

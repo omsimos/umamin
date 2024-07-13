@@ -6,7 +6,7 @@ import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
 import client from "@/lib/gql/client";
-import { ReceivedMessagesResult } from "../../queries";
+import type { InboxProps } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { useMessageStore } from "@/store/useMessageStore";
 import { ReceivedMessageCard, receivedMessageFragment } from "./card";
@@ -39,17 +39,9 @@ const messagesFromCursorPersisted = graphql.persisted(
   MESSAGES_FROM_CURSOR_QUERY
 );
 
-export function ReceivedMessagesList({
-  messages,
-}: {
-  messages: ReceivedMessagesResult;
-}) {
+export function ReceivedMessagesList({ messages, initialCursor }: InboxProps<"received">) {
   const { ref, inView } = useInView();
-
-  const [cursor, setCursor] = useState({
-    id: messages[messages.length - 1]?.id ?? null,
-    createdAt: messages[messages.length - 1]?.createdAt ?? null,
-  });
+  const [cursor, setCursor] = useState(initialCursor);
 
   const msgList = useMessageStore((state) => state.receivedList);
   const updateMsgList = useMessageStore((state) => state.updateReceivedList);
@@ -103,24 +95,12 @@ export function ReceivedMessagesList({
       {messages?.map((msg) => (
         <div key={msg.id} className="w-full">
           <ReceivedMessageCard data={msg} />
-
-          {/* v2-received-list 
-            {(i + 1) % 5 === 0 && (
-                <AdContainer className="mt-5" slotId="1546692714" />
-            )}
-          */}
         </div>
       ))}
 
       {msgList?.map((msg) => (
         <div key={msg.id} className="w-full">
           <ReceivedMessageCard data={msg} />
-
-          {/* v2-received-list 
-            {(i + 1) % 5 === 0 && (
-                <AdContainer className="mt-5" slotId="1546692714" />
-            )}
-          */}
         </div>
       ))}
 
