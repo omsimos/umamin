@@ -98,11 +98,10 @@ export default async function UserProfile() {
           ))}
         </TabsList>
 
-        {/* v2-notes-feed */}
+        {/* v2-inbox */}
         <AdContainer
-          inFeed
-          className="mb-5 sticky top-20 z-50"
-          slotId="4344956885"
+          className="mb-5 sticky h-[90px] top-20 z-50"
+          slotId="7047998078"
         />
 
         {/* v2-inbox 

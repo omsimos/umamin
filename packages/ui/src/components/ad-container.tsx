@@ -30,10 +30,10 @@ const AdContainer = ({ slotId, className, inFeed }: Props) => {
 
   return (
     <div
-      className={cn(className, {
+      className={cn({
         "h-44 border border-yellow-500 rounded":
           process.env.NODE_ENV === "development",
-      })}
+      }, className)}
     >
       {inFeed ? (
         <ins

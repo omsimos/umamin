@@ -66,11 +66,10 @@ export default async function SendMessage({
 
   return (
     <main className="pb-24 min-h-screen flex flex-col">
-      {/* v2-notes-feed */}
+      {/* v2-sent-to */}
       <AdContainer
-        inFeed
-        className="mb-5 w-full mt-20"
-        slotId="4344956885"
+        className="mb-5 w-full h-[90px] sticky z-50 top-20 max-w-md mt-20"
+        slotId="9163326848"
       />
 
       <div className="container w-full max-w-2xl">

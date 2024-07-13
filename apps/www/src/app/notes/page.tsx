@@ -70,11 +70,10 @@ export default async function Page() {
         </div>
       )}
 
-      {/* v2-notes-feed */}
+      {/* v2-note- */}
       <AdContainer
-        inFeed
-        className="mb-5 sticky top-20 z-50"
-        slotId="4344956885"
+        className="mb-5 h-[90px] sticky top-20 z-50"
+        slotId="1999152698"
       />
 
       <div className="gap-5 flex flex-col">
