@@ -4,7 +4,7 @@ export default function Loading() {
   return (
     <div className="mt-36 pb-24 grid place-items-center container">
       <div className="w-full max-w-2xl relative">
-        <Skeleton className="rounded-b-md w-full h-[440px]" />
+        <div className="rounded-b-md w-full h-[440px] opacity-10 bg-muted" />
 
         <div className="h-[440px] w-full absolute top-0 left-0 flex flex-col">
           <div className="w-full flex justify-between py-8 px-5 sm:px-7">
