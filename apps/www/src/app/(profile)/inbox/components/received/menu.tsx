@@ -29,6 +29,11 @@ const DELETE_MESSAGE_MUTATION = graphql(`
   }
 `);
 
+const deleteMessagePersisted = graphql.persisted(
+  "402dc5134e5ce477b966ad52be60a7ce75ca058a46a6f024bf34074a878a5a7d",
+  DELETE_MESSAGE_MUTATION
+);
+
 export type ReceivedMenuProps = {
   id: string;
   question: string;
@@ -44,7 +49,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
   const [open, setOpen] = useState(false);
 
   const onDelete = async () => {
-    const res = await client.mutation(DELETE_MESSAGE_MUTATION, { id });
+    const res = await client.mutation(deleteMessagePersisted, { id });
 
     if (res.error) {
       toast.error(formatError(res.error.message));

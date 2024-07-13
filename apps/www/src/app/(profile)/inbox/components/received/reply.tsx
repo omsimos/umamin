@@ -31,6 +31,11 @@ const CREATE_REPLY_MUTATION = graphql(`
   }
 `);
 
+const createReplyPeresisted = graphql.persisted(
+  "a9f43ea2b50cd25c32cadd6fd3db25e06ed0919f12705455856d59a48dd572cd",
+  CREATE_REPLY_MUTATION
+);
+
 export function ReplyDialog(props: Props) {
   const router = useRouter();
   const [content, setContent] = useState("");
@@ -43,7 +48,7 @@ export function ReplyDialog(props: Props) {
     e.preventDefault();
     setLoading(true);
 
-    const res = await client.mutation(CREATE_REPLY_MUTATION, {
+    const res = await client.mutation(createReplyPeresisted, {
       messageId: props.data.id,
       content,
     });

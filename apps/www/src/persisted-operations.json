@@ -1,4 +1,6 @@
 {
+  "a9f43ea2b50cd25c32cadd6fd3db25e06ed0919f12705455856d59a48dd572cd": "mutation CreateReply($messageId: String!, $content: String!) {\n  createReply(messageId: $messageId, content: $content)\n}",
+  "402dc5134e5ce477b966ad52be60a7ce75ca058a46a6f024bf34074a878a5a7d": "mutation DeleteMessage($id: String!) {\n  deleteMessage(id: $id)\n}",
   "f07a17f7e44b839d7a1449115b9810d55447696a558d7416f16dc0b9c978217f": "query ReceivedMessages($type: String!) {\n  messages(type: $type) {\n    __typename\n    id\n    createdAt\n    ...MessageFragment\n  }\n}\n\nfragment MessageFragment on Message {\n  id\n  question\n  content\n  reply\n  createdAt\n  updatedAt\n}",
   "05e86ea80c5038a466e952fe9fceeb57d537e1afbe6575df5f27b44944a1531f": "query SentMessages($type: String!) {\n  messages(type: $type) {\n    __typename\n    id\n    createdAt\n    ...SentMessageFragment\n  }\n}\n\nfragment SentMessageFragment on Message {\n  question\n  content\n  reply\n  createdAt\n  receiver {\n    id\n    imageUrl\n    username\n  }\n}",
   "3f2320bbe96bd7895f618b6cdedfdee5d2f40e3e0c1d75095ea0844a0ff107b4": "query CurrentUser {\n  user {\n    __typename\n    id\n    bio\n    username\n    displayName\n    question\n    quietMode\n    imageUrl\n    createdAt\n    accounts {\n      __typename\n      id\n      email\n      picture\n      createdAt\n    }\n  }\n}",
