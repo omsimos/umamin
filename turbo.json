@@ -12,7 +12,12 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "env": ["TURSO_CONNECTION_URL", "TURSO_AUTH_TOKEN", "AES_KEY"]
+      "env": [
+        "TURSO_CONNECTION_URL",
+        "TURSO_AUTH_TOKEN",
+        "AES_KEY",
+        "NEXT_RUNTIME"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]

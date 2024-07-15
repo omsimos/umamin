@@ -25,6 +25,7 @@
     "@mdx-js/react": "^3.0.1",
     "@next/mdx": "^14.2.5",
     "@node-rs/argon2": "^1.8.3",
+    "@sentry/nextjs": "^8",
     "@types/mdx": "^2.0.13",
     "@umamin/aes": "workspace:*",
     "@umamin/db": "workspace:*",
