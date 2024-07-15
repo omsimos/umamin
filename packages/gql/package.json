@@ -10,8 +10,9 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@umamin/tsconfig": "workspace:*",
-    "typescript": "^5.4.5"
+    "graphql": "^16.9.0",
+    "typescript": "^5.4.5",
+    "@umamin/tsconfig": "workspace:*"
   },
   "dependencies": {
     "@graphql-tools/utils": "^10.3.2",
@@ -21,7 +22,6 @@
     "@pothos/plugin-zod": "^4.0.2",
     "@umamin/aes": "workspace:*",
     "@umamin/db": "workspace:*",
-    "graphql": "^16.9.0",
     "graphql-rate-limit-directive": "^2.0.5",
     "graphql-scalars": "^1.23.0",
     "nanoid": "^5.0.7",
