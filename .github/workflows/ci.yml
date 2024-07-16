@@ -14,15 +14,24 @@ jobs:
   build:
     needs: setup-environment
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
       - uses: pnpm/action-setup@v3
         with:
           version: ${{ needs.setup-environment.outputs.pnpm-version }}
+
+      - name: Restore pnpm store and node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Build project
         env:
@@ -33,15 +42,24 @@ jobs:
   graphql-diagnostics:
     needs: [setup-environment, build]
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
       - uses: pnpm/action-setup@v3
         with:
           version: ${{ needs.setup-environment.outputs.pnpm-version }}
+
+      - name: Restore pnpm store and node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Run GraphQL diagnostics
         run: pnpm gql:check
