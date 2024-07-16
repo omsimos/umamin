@@ -7,6 +7,7 @@ import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
 import { NoteCard } from "./card";
+import { formatError } from "@/lib/utils";
 import { NotesQueryResult } from "../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 
@@ -77,7 +78,7 @@ export function NotesList({
       });
 
       if (res.error) {
-        toast.error(res.error.message);
+        toast.error(formatError(res.error.message));
         return;
       }
 

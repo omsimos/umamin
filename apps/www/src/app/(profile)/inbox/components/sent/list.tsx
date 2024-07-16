@@ -6,6 +6,7 @@ import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
 import client from "@/lib/gql/client";
+import { formatError } from "@/lib/utils";
 import type { InboxProps } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { useMessageStore } from "@/store/useMessageStore";
@@ -64,7 +65,7 @@ export function SentMessagesList({
       });
 
       if (res.error) {
-        toast.error(res.error.message);
+        toast.error(formatError(res.error.message));
         return;
       }
 

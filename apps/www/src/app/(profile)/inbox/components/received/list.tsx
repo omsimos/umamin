@@ -6,6 +6,7 @@ import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
 import client from "@/lib/gql/client";
+import { formatError } from "@/lib/utils";
 import type { InboxProps } from "../../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { useMessageStore } from "@/store/useMessageStore";
@@ -39,7 +40,10 @@ const messagesFromCursorPersisted = graphql.persisted(
   MESSAGES_FROM_CURSOR_QUERY
 );
 
-export function ReceivedMessagesList({ messages, initialCursor }: InboxProps<"received">) {
+export function ReceivedMessagesList({
+  messages,
+  initialCursor,
+}: InboxProps<"received">) {
   const { ref, inView } = useInView();
   const [cursor, setCursor] = useState(initialCursor);
 
@@ -61,7 +65,7 @@ export function ReceivedMessagesList({ messages, initialCursor }: InboxProps<"re
       });
 
       if (res.error) {
-        toast.error(res.error.message);
+        toast.error(formatError(res.error.message));
         return;
       }
 

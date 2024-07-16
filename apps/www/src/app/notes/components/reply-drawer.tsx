@@ -70,7 +70,7 @@ const CREATE_MESSAGE_MUTATION = graphql(`
 
 const createMessagePersisted = graphql.persisted(
   "53f885d2afe8feedba14ca10ddf0bda7d6a1dd79dd21eefd5ea792074848ee60",
-  CREATE_MESSAGE_MUTATION,
+  CREATE_MESSAGE_MUTATION
 );
 
 const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
@@ -116,7 +116,7 @@ const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
 
       logEvent(analytics, "send_note_reply");
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error("An error occured");
       setIsSending(false);
       setOpen(false);
     }
@@ -126,7 +126,7 @@ const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
       className={cn(
         "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 py-10 h-full max-h-[500px] overflow-scroll rounded-lg",
         user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
-        !message ? "pb-28" : "",
+        !message ? "pb-28" : ""
       )}
     >
       <ChatList

@@ -67,7 +67,7 @@ export default async function SendMessage({
   return (
     <main className="pb-24 min-h-screen flex flex-col">
       {/* v2-send-to */}
-      <AdContainer className="mb-5 w-full mt-20 max-w-2xl" slotId="9163326848" />
+      <AdContainer className="mb-5 w-full mt-20 max-w-2xl mx-auto" slotId="9163326848" />
 
       <div className="container w-full max-w-2xl">
         <Card className="border flex flex-col w-full">

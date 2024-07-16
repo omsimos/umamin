@@ -45,9 +45,9 @@ const { handleRequest } = createYoga({
       },
       ttl: 30_000,
       ttlPerSchemaCoordinate: {
-        "Query.notes": 180_000,
-        "Query.notesFromCursor": 180_000,
-        "Query.userByUsername": 180_000,
+        "Query.notes": 120_000,
+        "Query.notesFromCursor": 120_000,
+        "Query.userByUsername": 120_000,
       },
     }),
     useDisableIntrospection({
