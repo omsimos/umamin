@@ -17,6 +17,8 @@ jobs:
 
   build:
     needs: setup-pnpm
+    runs-on: ubuntu-latest
+
     steps:
       - name: Build project
         env:
@@ -26,6 +28,8 @@ jobs:
 
   graphql-diagnostics:
     needs: [setup-pnpm, build]
+    runs-on: ubuntu-latest
+
     steps:
       - name: Run GraphQL diagnostics
         run: pnpm gql:check
