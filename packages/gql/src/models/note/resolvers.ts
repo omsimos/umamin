@@ -13,7 +13,6 @@ builder.queryFields((t) => ({
     directives: {
       rateLimit: { limit: 5, duration: 20 },
     },
-    nullable: true,
     resolve: async (_, _args, ctx) => {
       if (!ctx.userId) {
         throw new GraphQLError("Unauthorized");
@@ -34,6 +33,7 @@ builder.queryFields((t) => ({
 
   notes: t.field({
     type: ["Note"],
+    nullable: false,
     directives: {
       rateLimit: { limit: 5, duration: 20 },
     },
@@ -65,6 +65,7 @@ builder.queryFields((t) => ({
 
   notesFromCursor: t.field({
     type: "NotesWithCursor",
+    nullable: false,
     directives: {
       rateLimit: { limit: 5, duration: 20 },
     },

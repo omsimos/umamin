@@ -6,7 +6,7 @@ import { logEvent } from "firebase/analytics";
 import { BadgeCheck, ScanFace } from "lucide-react";
 
 import { analytics } from "@/lib/firebase";
-import { NoteQueryResult } from "../queries";
+import { NotesQueryResult } from "../queries";
 import { Icons } from "@/app/components/utilities/icons";
 import { Menu, type MenuItems } from "@/app/components/menu";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
@@ -20,18 +20,13 @@ import { onSaveImage, shortTimeAgo } from "@/lib/utils";
 import { ReplyDrawer } from "./reply-drawer";
 
 type Props = {
-  note: Partial<Omit<NoteQueryResult, "user">>;
-  user?: {
-    id?: string;
-    displayName?: string | null;
-    username?: string;
-    imageUrl?: string | null;
-  };
+  note: NotesQueryResult[0];
   menuItems?: MenuItems;
   currentUserId?: string;
 };
 
-export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
+export function NoteCard({ note, menuItems, currentUserId }: Props) {
+  const user = note.user;
   const username = user?.username;
 
   const [open, setOpen] = useState(false);
@@ -42,7 +37,6 @@ export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
         open={open}
         setOpen={setOpen}
         note={note}
-        user={user}
         currentUserId={currentUserId}
       />
 
@@ -86,7 +80,7 @@ export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
                     </span>
                     {username &&
                       process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
-                        ","
+                        ",",
                       ).includes(username) && (
                         <BadgeCheck className="w-4 h-4 text-pink-500" />
                       )}

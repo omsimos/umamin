@@ -1,13 +1,12 @@
 import Link from "next/link";
-import { cache } from "react";
 import dynamic from "next/dynamic";
 import { SquarePen } from "lucide-react";
 
-import getClient from "@/lib/gql/rsc";
 import { getSession } from "@/lib/auth";
+import { NoteCard } from "./components/card";
 import { NotesList } from "./components/list";
+import { getNotes, getCurrentNote } from "./queries";
 import { Button } from "@umamin/ui/components/button";
-import { NOTES_QUERY, CURRENT_NOTE_QUERY } from "./queries";
 
 const NoteForm = dynamic(() => import("./components/form"));
 const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
@@ -42,21 +41,6 @@ export const metadata = {
       "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages. Send your messages anonymously and discover what others have to share.",
   },
 };
-
-const getCurrentNote = cache(async (sessionId?: string) => {
-  if (!sessionId) {
-    return null;
-  }
-
-  const res = await getClient(sessionId).query(CURRENT_NOTE_QUERY, {});
-  return res.data?.note;
-});
-
-const getNotes = cache(async () => {
-  const notesResult = await getClient().query(NOTES_QUERY, {});
-
-  return notesResult.data?.notes;
-});
 
 export default async function Page() {
   const { user, session } = await getSession();
@@ -95,7 +79,24 @@ export default async function Page() {
             No notes to show
           </p>
         ) : (
-          <NotesList currentUserId={user?.id} notes={notes} />
+          <>
+            {notes
+              ?.filter((u) => u.user?.id !== user?.id)
+              .map((note) => (
+                <div key={note.id} className="w-full">
+                  <NoteCard note={note} currentUserId={user?.id} />
+                </div>
+              ))}
+
+            <NotesList
+              currentUserId={user?.id}
+              initialCursor={{
+                id: notes[notes.length - 1]?.id ?? null,
+                updatedAt: notes[notes.length - 1]?.updatedAt ?? null,
+              }}
+              initialHasMore={notes.length === 20}
+            />
+          </>
         )}
       </div>
     </main>

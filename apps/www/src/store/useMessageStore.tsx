@@ -1,6 +1,9 @@
 /* eslint no-unused-vars: 0 */
 
-import { ReceivedMessagesResult, SentMessageResult } from "@/app/inbox/queries";
+import {
+  ReceivedMessagesResult,
+  SentMessageResult,
+} from "@/app/(profile)/inbox/queries";
 import { create } from "zustand";
 
 type State = {

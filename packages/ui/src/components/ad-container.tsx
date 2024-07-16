@@ -8,13 +8,13 @@ declare global {
     adsbygoogle: any;
   }
 }
-interface Props {
+
+type Props = {
   slotId: string;
   className?: string;
-  inFeed?: boolean;
-}
+};
 
-const AdContainer = ({ slotId, className, inFeed }: Props) => {
+const AdContainer = ({ slotId, className }: Props) => {
   useEffect(() => {
     try {
       if (
@@ -35,25 +35,14 @@ const AdContainer = ({ slotId, className, inFeed }: Props) => {
           process.env.NODE_ENV === "development",
       })}
     >
-      {inFeed ? (
-        <ins
-          className="adsbygoogle"
-          style={{ display: "block" }}
-          data-ad-format="fluid"
-          data-ad-layout-key="-h7-z+0-3x+go"
-          data-ad-client="ca-pub-4274133898976040"
-          data-ad-slot={slotId}
-        />
-      ) : (
-        <ins
-          className="adsbygoogle"
-          style={{ display: "block" }}
-          data-ad-client="ca-pub-4274133898976040"
-          data-ad-slot={slotId}
-          data-ad-format="auto"
-          data-full-width-responsive="true"
-        />
-      )}
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block" }}
+        data-ad-client="ca-pub-4274133898976040"
+        data-ad-slot={slotId}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
     </div>
   );
 };

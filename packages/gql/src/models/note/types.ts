@@ -2,29 +2,28 @@ import builder from "../../builder";
 
 builder.objectType("Note", {
   fields: (t) => ({
-    id: t.exposeID("id"),
-    content: t.exposeString("content"),
-    isAnonymous: t.exposeBoolean("isAnonymous"),
-    updatedAt: t.exposeInt("updatedAt", { nullable: true }),
+    id: t.exposeID("id", { nullable: false }),
+    content: t.exposeString("content", { nullable: false }),
+    isAnonymous: t.exposeBoolean("isAnonymous", { nullable: false }),
+    updatedAt: t.exposeInt("updatedAt"),
     user: t.expose("user", {
       type: "PublicUser",
-      nullable: true,
     }),
   }),
 });
 
 builder.objectType("NoteCursor", {
   fields: (t) => ({
-    id: t.exposeString("id", { nullable: true }),
-    updatedAt: t.exposeInt("updatedAt", { nullable: true }),
+    id: t.exposeString("id"),
+    updatedAt: t.exposeInt("updatedAt"),
   }),
 });
 
 builder.objectType("NotesWithCursor", {
   fields: (t) => ({
-    hasMore: t.exposeBoolean("hasMore"),
-    cursor: t.expose("cursor", { type: "NoteCursor", nullable: true }),
-    data: t.expose("data", { type: ["Note"], nullable: true }),
+    hasMore: t.exposeBoolean("hasMore", { nullable: false }),
+    cursor: t.expose("cursor", { type: "NoteCursor" }),
+    data: t.expose("data", { type: ["Note"] }),
   }),
 });
 

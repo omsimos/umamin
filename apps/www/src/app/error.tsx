@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Error from "next/error";
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { cn } from "@umamin/ui/lib/utils";
 import { Button } from "@umamin/ui/components/button";
 import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
@@ -14,7 +16,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

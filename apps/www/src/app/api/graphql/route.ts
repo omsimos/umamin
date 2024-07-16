@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { createYoga } from "graphql-yoga";
 import { getSession, lucia } from "@/lib/auth";
-import { useAPQ } from "@graphql-yoga/plugin-apq";
 import { gqlSchema, initContextCache } from "@umamin/gql";
+import persistedOperations from "@/persisted-operations.json";
 import { useResponseCache } from "@graphql-yoga/plugin-response-cache";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
+import { usePersistedOperations } from "@graphql-yoga/plugin-persisted-operations";
 import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspection";
 
 const { handleRequest } = createYoga({
@@ -44,15 +45,48 @@ const { handleRequest } = createYoga({
       },
       ttl: 30_000,
       ttlPerSchemaCoordinate: {
-        "Query.notes": 180_000,
-        "Query.notesFromCursor": 180_000,
-        "Query.userByUsername": 300_000,
+        "Query.notes": 120_000,
+        "Query.notesFromCursor": 120_000,
+        "Query.userByUsername": 120_000,
       },
     }),
     useDisableIntrospection({
       isDisabled: () => process.env.NODE_ENV === "production",
     }),
-    useAPQ(),
+    usePersistedOperations({
+      allowArbitraryOperations: process.env.NODE_ENV === "development",
+      customErrors: {
+        notFound: {
+          message: "Operation is not found",
+          extensions: {
+            http: {
+              status: 404,
+            },
+          },
+        },
+        keyNotFound: {
+          message: "Key is not found",
+          extensions: {
+            http: {
+              status: 404,
+            },
+          },
+        },
+        persistedQueryOnly: {
+          message: "Operation is not allowed",
+          extensions: {
+            http: {
+              status: 403,
+            },
+          },
+        },
+      },
+      skipDocumentValidation: true,
+      async getPersistedOperation(key: string) {
+        // @ts-ignore
+        return persistedOperations[key];
+      },
+    }),
   ],
 });
 

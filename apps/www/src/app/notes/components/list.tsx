@@ -1,17 +1,15 @@
 "use client";
 
 import { toast } from "sonner";
-import dynamic from "next/dynamic";
 import { graphql } from "gql.tada";
 import client from "@/lib/gql/client";
 import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
 import { NoteCard } from "./card";
-import { NoteQueryResult } from "../queries";
+import { formatError } from "@/lib/utils";
+import { NotesQueryResult } from "../queries";
 import { Skeleton } from "@umamin/ui/components/skeleton";
-
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
 
 const NOTES_FROM_CURSOR_QUERY = graphql(`
   query NotesFromCursor($cursor: NotesFromCursorInput!) {
@@ -27,6 +25,7 @@ const NOTES_FROM_CURSOR_QUERY = graphql(`
           __typename
           id
           displayName
+          quietMode
           username
           imageUrl
         }
@@ -41,33 +40,45 @@ const NOTES_FROM_CURSOR_QUERY = graphql(`
   }
 `);
 
-type Props = {
-  currentUserId?: string;
-  notes: NoteQueryResult[];
+const notesFromCursorPersisted = graphql.persisted(
+  "262877a65aad9be976828c1e5854027f21dc0cd3edcd6991b4ada34ecfe67157",
+  NOTES_FROM_CURSOR_QUERY
+);
+
+type Cursor = {
+  id: string | null;
+  updatedAt: number | null;
 };
 
-export function NotesList({ currentUserId, notes }: Props) {
+type Props = {
+  currentUserId?: string;
+  initialCursor: Cursor;
+  initialHasMore?: boolean;
+};
+
+export function NotesList({
+  currentUserId,
+  initialCursor,
+  initialHasMore,
+}: Props) {
   const { ref, inView } = useInView();
 
-  const [cursor, setCursor] = useState({
-    id: notes[notes.length - 1]?.id ?? null,
-    updatedAt: notes[notes.length - 1]?.updatedAt ?? null,
-  });
+  const [cursor, setCursor] = useState(initialCursor);
 
-  const [notesList, setNotesList] = useState(notes);
-  const [hasMore, setHasMore] = useState(notes?.length === 20);
+  const [notesList, setNotesList] = useState<NotesQueryResult>([]);
+  const [hasMore, setHasMore] = useState(initialHasMore);
   const [isFetching, setIsFetching] = useState(false);
 
   const loadNotes = useCallback(async () => {
     if (hasMore) {
       setIsFetching(true);
 
-      const res = await client.query(NOTES_FROM_CURSOR_QUERY, {
+      const res = await client.query(notesFromCursorPersisted, {
         cursor,
       });
 
       if (res.error) {
-        toast.error(res.error.message);
+        toast.error(formatError(res.error.message));
         return;
       }
 
@@ -83,7 +94,7 @@ export function NotesList({ currentUserId, notes }: Props) {
       }
 
       if (_res?.data) {
-        setNotesList([...notesList, ..._res.data]);
+        setNotesList((prev) => [...prev, ...(_res.data ?? [])]);
       }
 
       setIsFetching(false);
@@ -100,18 +111,15 @@ export function NotesList({ currentUserId, notes }: Props) {
     <>
       {notesList
         ?.filter((u) => u.user?.id !== currentUserId)
-        .map((note, i) => (
+        .map((note) => (
           <div key={note.id} className="w-full">
-            <NoteCard
-              note={note}
-              user={{ ...note.user }}
-              currentUserId={currentUserId}
-            />
+            <NoteCard note={note} currentUserId={currentUserId} />
 
-            {/* v2-notes-feed */}
-            {(i + 1) % 5 === 0 && (
-              <AdContainer inFeed className="mt-5" slotId="4344956885" />
-            )}
+            {/* v2-notes-feed 
+                {(i + 1) % 5 === 0 && (
+                    <AdContainer inFeed className="mt-5" slotId="4344956885" />
+                )}
+            */}
           </div>
         ))}
 

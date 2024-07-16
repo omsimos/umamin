@@ -24,7 +24,7 @@ export async function Navbar() {
     : "v2.0.0";
 
   return (
-    <nav className="">
+    <nav>
       <div className="fixed left-0 right-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter lg:z-40 container max-w-screen-xl">
         <div className="flex justify-between items-center">
           <div className="space-x-2 flex items-center">
