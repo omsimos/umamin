@@ -9,12 +9,14 @@ on:
       - main
 
 jobs:
-  build:
+  setup-pnpm:
     uses: ./.github/workflows/setup.yml
     with:
       node-version: 20
       pnpm-version: 9.5.0
 
+  build:
+    needs: setup-pnpm
     steps:
       - name: Build project
         env:
@@ -23,12 +25,7 @@ jobs:
         run: pnpm build
 
   graphql-diagnostics:
-    need: build
-    uses: ./.github/workflows/setup.yml
-    with:
-      node-version: 20
-      pnpm-version: 9.5.0
-
+    needs: [setup-pnpm, build]
     steps:
       - name: Run GraphQL diagnostics
         run: pnpm gql:check
