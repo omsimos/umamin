@@ -1,5 +1,4 @@
 name: CI
-
 on:
   push:
     branches:
@@ -9,17 +8,22 @@ on:
       - main
 
 jobs:
-  setup-pnpm:
+  setup-environment:
     uses: ./.github/workflows/setup.yml
-    with:
-      node-version: 20
-      pnpm-version: 9.5.0
 
   build:
-    needs: setup-pnpm
+    needs: setup-environment
     runs-on: ubuntu-latest
-
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: ${{ needs.setup-environment.outputs.pnpm-version }}
+
       - name: Build project
         env:
           TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
@@ -27,9 +31,17 @@ jobs:
         run: pnpm build
 
   graphql-diagnostics:
-    needs: [setup-pnpm, build]
+    needs: [setup-environment, build]
     runs-on: ubuntu-latest
-
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: ${{ needs.setup-environment.outputs.pnpm-version }}
+
       - name: Run GraphQL diagnostics
         run: pnpm gql:check

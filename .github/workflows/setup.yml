@@ -1,18 +1,16 @@
-name: Setup
-
+name: Setup Environment
 on:
   workflow_call:
-    inputs:
-      node-version:
-        required: true
-        type: string
+    outputs:
       pnpm-version:
-        required: true
-        type: string
+        description: "The installed pnpm version"
+        value: ${{ jobs.setup-env.outputs.pnpm-version }}
 
 jobs:
-  setup:
+  setup-env:
     runs-on: ubuntu-latest
+    outputs:
+      pnpm-version: ${{ steps.pnpm-version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -21,12 +19,12 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ inputs.node-version }}
+          node-version: 20
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: ${{ inputs.pnpm-version }}
+          version: 9.5.0
           run_install: false
 
       - name: Get pnpm store directory
@@ -42,3 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Get pnpm version
+        id: pnpm-version
+        run: echo "version=$(pnpm --version)" >> $GITHUB_OUTPUT
