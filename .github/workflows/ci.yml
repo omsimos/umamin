@@ -1,34 +1,41 @@
 name: CI
 
 on:
-  - push:
-      branches:
-        - "**"
-  - pull_request:
-      branches:
-        - main
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
-    uses: ./.github/workflows/setup.yml
-    with:
-      node-version: 20
-      pnpm-version: 9.5.0
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
 
     steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.5.0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run GraphQL diagnostics
+        run: pnpm gql:check
+
       - name: Build project
         env:
           TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm build
-
-  graphql-diagnostics:
-    need: build
-    uses: ./.github/workflows/setup.yml
-    with:
-      node-version: 20
-      pnpm-version: 9.5.0
-
-    steps:
-      - name: Run GraphQL diagnostics
-        run: pnpm gql:check
