@@ -15,6 +15,7 @@
       "env": [
         "TURSO_CONNECTION_URL",
         "TURSO_AUTH_TOKEN",
+        "SENTRY_AUTH_TOKEN",
         "AES_KEY",
         "NEXT_RUNTIME"
       ]
