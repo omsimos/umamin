@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    uses: omsimos/umamin/.github/workflows/setup.yml@main
+    uses: ./.github/workflows/setup.yml
     with:
       node-version: 20
       pnpm-version: 9.5.0
@@ -24,7 +24,7 @@ jobs:
 
   graphql-diagnostics:
     need: build
-    uses: omsimos/umamin/.github/workflows/setup.yml@main
+    uses: ./.github/workflows/setup.yml
     with:
       node-version: 20
       pnpm-version: 9.5.0
