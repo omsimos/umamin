@@ -69,7 +69,7 @@ export function ProgressDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
 
-        <AdContainer className="w-full" slotId="9163326848" />
+        <AdContainer className="w-full mx-auto" slotId="9163326848" />
 
         <AlertDialogFooter className="px-4">
           {progress !== 100 ? (
