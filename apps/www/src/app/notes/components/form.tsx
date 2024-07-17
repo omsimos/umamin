@@ -22,6 +22,7 @@ import { Switch } from "@umamin/ui/components/switch";
 import useBotDetection from "@/hooks/use-bot-detection";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { ProgressDialog } from "@/app/components/progress-dialog";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
@@ -43,12 +44,12 @@ const DELETE_NOTE_MUTATION = graphql(`
 
 const updateNotePersisted = graphql.persisted(
   "ee74fb98a70e158ec538193fef5c090523d87c18151e2d3687bc60def53169f2",
-  UPDATE_NOTE_MUTATION,
+  UPDATE_NOTE_MUTATION
 );
 
 const deleteNotePersisted = graphql.persisted(
   "fc93cc2e396e0300768942f32a039bf1e92ddf6e2bcea99af54c537feacdf133",
-  DELETE_NOTE_MUTATION,
+  DELETE_NOTE_MUTATION
 );
 
 type Props = {
@@ -59,6 +60,7 @@ type Props = {
 export default function NoteForm({ user, currentNote }: Props) {
   useBotDetection();
   const [content, setContent] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [textAreaCount, setTextAreaCount] = useState(0);
@@ -97,29 +99,41 @@ export default function NoteForm({ user, currentNote }: Props) {
     e.preventDefault();
     setIsFetching(true);
 
-    const res = await client.mutation(updateNotePersisted, {
-      content,
-      isAnonymous,
-    });
+    try {
+      const res = await client.mutation(updateNotePersisted, {
+        content,
+        isAnonymous,
+      });
 
-    if (res.error) {
-      toast.error(formatError(res.error.message));
+      if (res.error) {
+        toast.error(formatError(res.error.message));
+        setIsFetching(false);
+        return;
+      }
+
+      if (res.data) {
+        setDialogOpen(true);
+        setContent("");
+        updateNote(res.data.updateNote);
+      }
+
       setIsFetching(false);
-      return;
+      logEvent(analytics, "update_note");
+    } catch (err: any) {
+      toast.error("An error occured");
+      setIsFetching(false);
     }
-
-    if (res.data) {
-      setContent("");
-      updateNote(res.data.updateNote);
-      toast.success("Note updated");
-    }
-
-    setIsFetching(false);
-    logEvent(analytics, "update_note");
   };
 
   return (
     <section>
+      <ProgressDialog
+        type="Note"
+        description="Your previous note will be replaced with the new one."
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
+
       <form
         onSubmit={handleSubmit}
         className="mb-8 flex flex-col gap-y-4 items-end container"
@@ -156,7 +170,7 @@ export default function NoteForm({ user, currentNote }: Props) {
             <span
               className={cn(
                 textAreaCount > 500 ? "text-red-500" : "text-zinc-500",
-                "text-sm",
+                "text-sm"
               )}
             >
               {textAreaCount >= 450 ? 500 - textAreaCount : null}

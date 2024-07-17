@@ -30,10 +30,14 @@ const AdContainer = ({ slotId, className }: Props) => {
 
   return (
     <div
-      className={cn(className, {
-        "h-44 border border-yellow-500 rounded":
-          process.env.NODE_ENV === "development",
-      })}
+      className={cn(
+        "w-full",
+        {
+          "h-44 border border-yellow-500 rounded":
+            process.env.NODE_ENV === "development",
+        },
+        className
+      )}
     >
       <ins
         className="adsbygoogle"

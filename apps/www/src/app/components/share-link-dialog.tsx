@@ -25,7 +25,7 @@ const onCopy = (url: string) => {
   }
 };
 
-export default function ShareLinkDialog({ username }: { username: string }) {
+export function ShareLinkDialog({ username }: { username: string }) {
   const url =
     typeof window !== "undefined"
       ? `${window.location.origin}/to/${username}`
