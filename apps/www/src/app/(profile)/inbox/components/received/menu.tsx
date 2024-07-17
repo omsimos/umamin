@@ -70,7 +70,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     {
       title: "Save Image",
       onClick: () => {
-        onSaveImage(id);
+        onSaveImage(`umamin-${id}`);
         logEvent(analytics, "save_image_message");
       },
     },

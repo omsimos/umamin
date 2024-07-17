@@ -33,11 +33,11 @@ export function ReceivedMessageCard({
 
   const isDeleted = useMemo(
     () => deletedMessages.includes(msg.id),
-    [deletedMessages, msg.id],
+    [deletedMessages, msg.id]
   );
 
   return (
-    <div id={msg.id} className="container">
+    <div id={`umamin-${msg.id}`} className="container">
       <Card
         className={cn("min-w-2 w-full group relative", {
           "opacity-50": isDeleted,

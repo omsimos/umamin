@@ -35,7 +35,7 @@ export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
   const username = user?.username;
 
   return (
-    <div id={note.id} className="container">
+    <div id={`umamin-${note.id}`} className="container">
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full pb-4 text-sm">
           <div className="flex justify-between items-start">
@@ -76,7 +76,7 @@ export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
                     </span>
                     {username &&
                       process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
-                        ",",
+                        ","
                       ).includes(username) && (
                         <BadgeCheck className="w-4 h-4 text-pink-500" />
                       )}
@@ -111,7 +111,7 @@ export function NoteCard({ note, user, menuItems, currentUserId }: Props) {
                     title: "Save Image",
                     onClick: () => {
                       if (note.id) {
-                        onSaveImage(note.id);
+                        onSaveImage(`umamin-${note.id}`);
                         logEvent(analytics, "save_image_note");
                       }
                     },
