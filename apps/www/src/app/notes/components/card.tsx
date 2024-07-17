@@ -32,7 +32,7 @@ export function NoteCard({ note, menuItems, currentUserId }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div id={note.id} className="container">
+    <div id={`umamin-${note.id}`} className="container">
       <ReplyDrawer
         open={open}
         setOpen={setOpen}
@@ -80,7 +80,7 @@ export function NoteCard({ note, menuItems, currentUserId }: Props) {
                     </span>
                     {username &&
                       process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
-                        ",",
+                        ","
                       ).includes(username) && (
                         <BadgeCheck className="w-4 h-4 text-pink-500" />
                       )}
@@ -115,7 +115,7 @@ export function NoteCard({ note, menuItems, currentUserId }: Props) {
                     title: "Save Image",
                     onClick: () => {
                       if (note.id) {
-                        onSaveImage(note.id);
+                        onSaveImage(`umamin-${note.id}`);
                         logEvent(analytics, "save_image_note");
                       }
                     },

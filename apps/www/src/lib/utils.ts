@@ -23,7 +23,7 @@ export const onSaveImage = (id: string) => {
     })
       .then((dataUrl) => {
         const link = document.createElement("a");
-        link.download = `umamin-${id}.png`;
+        link.download = `${id}.png`;
         link.href = dataUrl;
         link.click();
       })
@@ -34,7 +34,7 @@ export const onSaveImage = (id: string) => {
       loading: "Saving...",
       success: "Download ready",
       error: "An error occured!",
-    },
+    }
   );
 };
 
@@ -58,7 +58,6 @@ export function shortTimeAgo(epoch: number) {
   if (hoursMatch) {
     return `${hoursMatch[1]}h`;
   }
-
 
   const daysMatch = distance.match(/(\d+)\s+day/);
   if (daysMatch) {
