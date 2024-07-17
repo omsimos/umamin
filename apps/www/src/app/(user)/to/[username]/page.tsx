@@ -7,7 +7,6 @@ import { getUserByUsername } from "../../queries";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 const ChatForm = dynamic(() => import("./components/form"));
 const UnauthenticatedDialog = dynamic(
   () => import("./components/unauthenticated"),
@@ -65,10 +64,7 @@ export default async function SendMessage({
   const { session } = await getSession();
 
   return (
-    <main className="pb-24 min-h-screen flex flex-col">
-      {/* v2-send-to */}
-      <AdContainer className="mb-5 w-full mt-20 max-w-2xl mx-auto" slotId="9163326848" />
-
+    <main className="pb-24 min-h-screen flex flex-col justify-center">
       <div className="container w-full max-w-2xl">
         <Card className="border flex flex-col w-full">
           <CardHeader className="bg-background border-b w-full item-center rounded-t-2xl flex justify-between flex-row">

@@ -14,11 +14,15 @@ import {
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
 
-export default function UnauthenticatedDialog({ isLoggedIn }: { isLoggedIn: boolean }) {
-  const [open, setOpen] = useState(!isLoggedIn);
+export default function UnauthenticatedDialog({
+  isLoggedIn,
+}: {
+  isLoggedIn: boolean;
+}) {
+  const [open, onOpenChange] = useState(!isLoggedIn);
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center justify-center">
