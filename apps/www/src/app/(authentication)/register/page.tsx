@@ -7,6 +7,7 @@ import { V1Link } from "@/app/components/v1-link";
 
 const BrowserWarning = dynamic(
   () => import("@umamin/ui/components/browser-warning"),
+  { ssr: false }
 );
 
 export const metadata = {
