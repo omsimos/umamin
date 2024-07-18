@@ -36,7 +36,7 @@ export function ProgressDialog({
     if (open) {
       setProgress(0);
 
-      const duration = 5000;
+      const duration = 7000;
       const intervalTime = 100;
       const totalIntervals = duration / intervalTime;
       let currentInterval = 0;
