@@ -20,6 +20,12 @@
         "NEXT_RUNTIME"
       ]
     },
+    "dev:test": {
+      "cache": false
+    },
+    "e2e:test": {
+      "dependsOn": ["^build"]
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
