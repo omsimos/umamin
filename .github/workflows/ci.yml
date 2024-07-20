@@ -43,6 +43,8 @@ jobs:
         run: pnpm build
 
       - name: Run Playwright tests
+        env:
+          TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
         run: pnpm test
 
       - uses: actions/upload-artifact@v4
