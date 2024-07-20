@@ -1,4 +1,4 @@
-name: E2E Tests
+name: Playwright Tests
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  test:
+  e2e:
     timeout-minutes: 60
     runs-on: ubuntu-latest
 
@@ -31,7 +31,7 @@ jobs:
         run: pnpm exec playwright install --with-deps
 
       - name: Run Playwright tests
-        run: pnpm exec playwright test
+        run: pnpm run ci
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "ci": "turbo run build --filter=!./apps/social e2e:test",
     "dev:www": "turbo run dev --filter=!./apps/social",
     "dev:social": "turbo run dev --filter=!./apps/www",
     "build:www": "turbo run build --filter=!./apps/social",
