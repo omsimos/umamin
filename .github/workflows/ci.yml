@@ -12,20 +12,15 @@ jobs:
   build-and-test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20]
 
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
           version: 9.5.0
-
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20
           cache: "pnpm"
 
       - name: Install dependencies
