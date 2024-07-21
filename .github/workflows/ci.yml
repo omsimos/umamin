@@ -9,8 +9,39 @@ on:
       - main
 
 jobs:
-  build-and-test:
-    timeout-minutes: 60
+  build:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.5.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --prefer-offline
+
+      - name: Run GraphQL diagnostics
+        run: pnpm gql:check
+
+      - name: Build project
+        env:
+          TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: pnpm build
+
+  e2e:
+    needs: build
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -31,20 +62,18 @@ jobs:
         run: pnpm install --prefer-offline
 
       - name: Install Playwright Browsers
-        run: pnpm dlx playwright install --with-deps
-
-      - name: Run GraphQL diagnostics
-        run: pnpm gql:check
+        run: pnpm dlx playwright install --with-deps chromium
 
       - name: Build project
         env:
           TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm build
 
       - name: Run Playwright tests
         env:
           TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          AES_KEY: ${{ secrets.AES_KEY }}
         run: pnpm test
 
       - uses: actions/upload-artifact@v4
