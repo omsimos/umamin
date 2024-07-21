@@ -23,8 +23,14 @@
     "dev:test": {
       "cache": false
     },
-    "e2e:test": {
-      "dependsOn": ["^build"]
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "env": [
+        "TURSO_CONNECTION_URL",
+        "TURSO_AUTH_TOKEN",
+        "AES_KEY"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev:test": "playwright test",
-    "e2e:test": "start-server-and-test \"(cd ../../apps/www && pnpm start)\" http://localhost:3000 \"playwright test\"",
+    "test": "start-server-and-test \"(cd ../../apps/www && pnpm start)\" http://localhost:3000 \"playwright test\"",
     "clean": "rm -rf ./node_modules .turbo dist"
   },
   "devDependencies": {
