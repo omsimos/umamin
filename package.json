@@ -27,7 +27,7 @@
     "@umamin/eslint-config": "workspace:*",
     "@umamin/tsconfig": "workspace:*",
     "prettier": "^3.2.5",
-    "turbo": "^2.0.6"
+    "turbo": "^2.0.9"
   },
   "packageManager": "pnpm@9.5.0",
   "engines": {
