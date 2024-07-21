@@ -62,7 +62,7 @@ jobs:
         run: pnpm install --prefer-offline
 
       - name: Install Playwright Browsers
-        run: pnpm dlx playwright install --with-deps chromium
+        run: pnpm dlx playwright install --with-deps
 
       - name: Build project
         env:
