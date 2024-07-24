@@ -1,5 +1,6 @@
 {
   "name": "@umamin/e2e",
+  "type": "module",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -12,6 +13,7 @@
     "@types/node": "^20.14.11",
     "@umamin/tsconfig": "workspace:*",
     "start-server-and-test": "^2.0.4",
+    "nanoid": "^5.0.7",
     "typescript": "^5.4.5"
   }
 }
