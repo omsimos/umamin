@@ -5,7 +5,13 @@ const username = `test_${nanoid(5)}`;
 const password = "password";
 
 test.describe("Authentication", () => {
-  test("can create an account", async ({ page }) => {
+  test.afterEach(async ({ page }) => {
+    await page.goto("/settings");
+    await expect(page).toHaveTitle(/Umamin — Settings/);
+    await page.getByTestId("logout").click();
+  });
+
+  test("can register", async ({ page }) => {
     await page.goto("/register");
     await expect(page).toHaveTitle(/Umamin — Register/);
 
@@ -18,18 +24,12 @@ test.describe("Authentication", () => {
     await expect(page).toHaveTitle(/Umamin — Inbox/);
   });
 
-  test("can login and logout", async ({ page }) => {
+  test("can login", async ({ page }) => {
     await page.goto("/login");
     await expect(page).toHaveTitle(/Umamin — Login/);
 
     await page.getByLabel("Username").fill(username);
     await page.getByLabel("Password").fill(password);
     await page.getByRole("button", { name: "Login" }).click();
-
-    await page.waitForURL("**/inbox");
-    await expect(page).toHaveTitle(/Umamin — Inbox/);
-
-    await page.goto("/settings");
-    await page.getByRole("button", { name: "Sign Out" }).click();
   });
 });
