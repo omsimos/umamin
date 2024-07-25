@@ -9,7 +9,7 @@ export function SignOutButton() {
 
   return (
     <Button
-      data-testid="logout"
+      data-testid="logout-btn"
       type="submit"
       disabled={pending}
       variant="outline"

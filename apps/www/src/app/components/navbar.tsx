@@ -71,11 +71,15 @@ export async function Navbar() {
         </Link>
 
         {user ? (
-          <Link href="/settings" title="Settings">
+          <Link
+            data-testid="nav-settings-btn"
+            href="/settings"
+            title="Settings"
+          >
             <UserCog className="w-6 h-6" />
           </Link>
         ) : (
-          <Link href="/login" title="Login">
+          <Link data-testid="nav-login-btn" href="/login" title="Login">
             <LogIn className="h-6 w-6" />
           </Link>
         )}
