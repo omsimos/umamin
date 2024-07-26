@@ -20,9 +20,6 @@
         "NEXT_RUNTIME"
       ]
     },
-    "dev:test": {
-      "cache": false
-    },
     "test": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
