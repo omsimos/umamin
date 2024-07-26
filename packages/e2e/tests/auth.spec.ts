@@ -6,11 +6,9 @@ const password = "password";
 
 test("should redirect unauthenticated users", async ({ page }) => {
   await page.goto("/inbox");
-  await page.waitForURL("**/login");
   await expect(page).toHaveTitle(/Umamin — Login/);
 
   await page.goto("/settings");
-  await page.waitForURL("**/login");
   await expect(page).toHaveTitle(/Umamin — Login/);
 });
 
@@ -21,6 +19,9 @@ test.describe.serial("Authentication", () => {
   test("can register", async ({ page }) => {
     await page.getByRole("link", { name: "Continue" }).click();
     await expect(page).toHaveTitle(/Umamin — Register/);
+    await expect(
+      page.getByRole("heading", { name: "Umamin Account" })
+    ).toBeVisible();
 
     await page.getByLabel("Username").fill(username);
     await page.getByLabel("Password", { exact: true }).fill(password);
@@ -34,8 +35,10 @@ test.describe.serial("Authentication", () => {
 
   test("can login", async ({ page }) => {
     await page.getByTestId("nav-login-btn").click();
-    await page.waitForURL("**/login");
     await expect(page).toHaveTitle(/Umamin — Login/);
+    await expect(
+      page.getByRole("heading", { name: "Umamin Account" })
+    ).toBeVisible();
 
     await page.getByLabel("Username").fill(username);
     await page.getByLabel("Password").fill(password);
@@ -47,12 +50,10 @@ test.describe.serial("Authentication", () => {
 
     // go to settings and logout
     await page.getByTestId("nav-settings-btn").click();
-    await page.waitForURL("**/settings");
     await expect(page).toHaveTitle(/Umamin — Settings/);
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
 
     await page.getByTestId("logout-btn").click();
-    await page.waitForURL("**/login");
     await expect(page).toHaveTitle(/Umamin — Login/);
     await expect(
       page.getByRole("heading", { name: "Umamin Account" })
