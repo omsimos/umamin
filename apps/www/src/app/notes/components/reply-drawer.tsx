@@ -17,7 +17,6 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { Drawer, DrawerContent } from "@umamin/ui/components/drawer";
 import { Dialog, DialogContent } from "@umamin/ui/components/dialog";
-import { ProgressDialog } from "@/app/components/progress-dialog";
 
 type ChatFormProps = {
   note: NotesQueryResult[0];
@@ -77,7 +76,6 @@ const createMessagePersisted = graphql.persisted(
 const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const inputRef = useDynamicTextarea(content);
 
@@ -111,7 +109,7 @@ const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
         return;
       }
 
-      setDialogOpen(true);
+      setMessage(content.replace(/(\r\n|\n|\r){2,}/g, "\n\n"));
       setIsSending(false);
 
       logEvent(analytics, "send_note_reply");
@@ -123,61 +121,48 @@ const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
   }
 
   return (
-    <>
-      <ProgressDialog
-        type="Reply"
-        description="Your message is anonymous and encrypted. It will be delivered to the recipient's inbox."
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onProgressComplete={() => {
-          setMessage(content.replace(/(\r\n|\n|\r){2,}/g, "\n\n"));
-          setContent("");
-        }}
+    <div
+      className={cn(
+        "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 py-10 h-full max-h-[500px] overflow-scroll rounded-lg",
+        user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
+        !message ? "pb-28" : ""
+      )}
+    >
+      <ChatList
+        imageUrl={user?.imageUrl}
+        question={note.content ?? ""}
+        reply={message}
       />
-
-      <div
-        className={cn(
-          "max-w-xl w-full flex flex-col justify-between px-5 sm:px-7 py-10 h-full max-h-[500px] overflow-scroll rounded-lg",
-          user?.quietMode ? "min-h-[250px]" : "min-h-[350px]",
-          !message ? "pb-28" : ""
-        )}
-      >
-        <ChatList
-          imageUrl={user?.imageUrl}
-          question={note.content ?? ""}
-          reply={message}
-        />
-        {!message && (
-          <div className="fixed px-5 sm:px-7 bottom-0 left-1/2 -translate-x-1/2 w-full pb-4 rounded-b-lg bg-background pt-3 max-w-xl">
-            <form
-              onSubmit={handleSubmit}
-              className="flex items-center space-x-2 w-full self-center"
-            >
-              <Textarea
-                id="message"
-                required
-                ref={inputRef}
-                value={content}
-                onChange={(e) => {
-                  setContent(e.target.value);
-                }}
-                maxLength={500}
-                placeholder="Type your anonymous reply..."
-                className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
-                autoComplete="off"
-              />
-              <Button type="submit" size="icon" disabled={isSending}>
-                {isSending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-                <span className="sr-only">Send</span>
-              </Button>
-            </form>
-          </div>
-        )}
-      </div>
-    </>
+      {!message && (
+        <div className="fixed px-5 sm:px-7 bottom-0 left-1/2 -translate-x-1/2 w-full pb-4 rounded-b-lg bg-background pt-3 max-w-xl">
+          <form
+            onSubmit={handleSubmit}
+            className="flex items-center space-x-2 w-full self-center"
+          >
+            <Textarea
+              id="message"
+              required
+              ref={inputRef}
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value);
+              }}
+              maxLength={500}
+              placeholder="Type your anonymous reply..."
+              className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
+              autoComplete="off"
+            />
+            <Button type="submit" size="icon" disabled={isSending}>
+              {isSending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              <span className="sr-only">Send</span>
+            </Button>
+          </form>
+        </div>
+      )}
+    </div>
   );
 };

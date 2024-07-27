@@ -19,7 +19,8 @@ const AdContainer = ({ slotId, className }: Props) => {
     try {
       if (
         process.env.NODE_ENV === "production" &&
-        typeof window !== "undefined"
+        typeof window !== "undefined" &&
+        !window.location.hostname.includes("localhost")
       ) {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       }

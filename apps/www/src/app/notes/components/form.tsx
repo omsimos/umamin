@@ -22,7 +22,6 @@ import { Switch } from "@umamin/ui/components/switch";
 import useBotDetection from "@/hooks/use-bot-detection";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { ProgressDialog } from "@/app/components/progress-dialog";
 
 const UPDATE_NOTE_MUTATION = graphql(`
   mutation UpdateNote($content: String!, $isAnonymous: Boolean!) {
@@ -60,7 +59,6 @@ type Props = {
 export default function NoteForm({ user, currentNote }: Props) {
   useBotDetection();
   const [content, setContent] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [textAreaCount, setTextAreaCount] = useState(0);
@@ -112,8 +110,8 @@ export default function NoteForm({ user, currentNote }: Props) {
       }
 
       if (res.data) {
-        setDialogOpen(true);
         setContent("");
+        toast.success("Note updated")
         updateNote(res.data.updateNote);
       }
 
@@ -127,13 +125,6 @@ export default function NoteForm({ user, currentNote }: Props) {
 
   return (
     <section>
-      <ProgressDialog
-        type="Note"
-        description="Your previous note will be replaced with the new one."
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-      />
-
       <form
         onSubmit={handleSubmit}
         className="mb-8 flex flex-col gap-y-4 items-end container"
@@ -177,6 +168,7 @@ export default function NoteForm({ user, currentNote }: Props) {
             </span>
 
             <Button
+              data-testid="share-note-btn"
               disabled={
                 isFetching ||
                 !content ||
