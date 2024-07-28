@@ -31,17 +31,13 @@ const AdContainer = ({ slotId, className }: Props) => {
 
   return (
     <div
-      className={cn(
-        "w-full",
-        {
-          "h-44 border border-yellow-500 rounded":
-            process.env.NODE_ENV === "development",
-        },
-        className
-      )}
+      className={cn("w-full", {
+        "h-44 border border-yellow-500 rounded":
+          process.env.NODE_ENV === "development",
+      })}
     >
       <ins
-        className="adsbygoogle"
+        className={`adsbygoogle ${className}`}
         style={{ display: "block" }}
         data-ad-client="ca-pub-4274133898976040"
         data-ad-slot={slotId}
