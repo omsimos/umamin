@@ -1,62 +1,23 @@
-import { nanoid } from "nanoid";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../playwright/fixtures.js";
 
-const username = `test_${nanoid(5)}`;
-const password = "password";
+// Reset storage state for this file to avoid being authenticated
+test.use({ storageState: { cookies: [], origins: [] } });
+test.describe.configure({ mode: "parallel" });
 
-test("should redirect unauthenticated users", async ({ page }) => {
-  await page.goto("/inbox");
+test.afterEach(async ({ page }) => {
+  await page.waitForURL("**/login");
   await expect(page).toHaveTitle(/Umamin — Login/);
-
-  await page.goto("/settings");
-  await expect(page).toHaveTitle(/Umamin — Login/);
+  await expect(
+    page.getByRole("heading", { name: "Umamin Account" })
+  ).toBeVisible();
 });
 
-test.describe.serial("Authentication", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-  });
-  test("can register", async ({ page }) => {
-    await page.getByRole("link", { name: "Continue" }).click();
-    await expect(page).toHaveTitle(/Umamin — Register/);
-    await expect(
-      page.getByRole("heading", { name: "Umamin Account" })
-    ).toBeVisible();
+test("should redirect unauthenticated users from inbox", async ({ page }) => {
+  await page.goto("/inbox");
+});
 
-    await page.getByLabel("Username").fill(username);
-    await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByLabel("Confirm Password").fill(password);
-    await page.getByRole("button", { name: "Create an account" }).click();
-
-    await page.waitForURL("**/inbox");
-    await expect(page).toHaveTitle(/Umamin — Inbox/);
-    await expect(page.getByTestId("username")).toBeVisible();
-  });
-
-  test("can login", async ({ page }) => {
-    await page.getByTestId("nav-login-btn").click();
-    await expect(page).toHaveTitle(/Umamin — Login/);
-    await expect(
-      page.getByRole("heading", { name: "Umamin Account" })
-    ).toBeVisible();
-
-    await page.getByLabel("Username").fill(username);
-    await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Login" }).click();
-
-    await page.waitForURL("**/inbox");
-    await expect(page).toHaveTitle(/Umamin — Inbox/);
-    await expect(page.getByTestId("username")).toBeVisible();
-
-    // go to settings and logout
-    await page.getByTestId("nav-settings-btn").click();
-    await expect(page).toHaveTitle(/Umamin — Settings/);
-    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
-
-    await page.getByTestId("logout-btn").click();
-    await expect(page).toHaveTitle(/Umamin — Login/);
-    await expect(
-      page.getByRole("heading", { name: "Umamin Account" })
-    ).toBeVisible();
-  });
+test("should redirect unauthenticated users from settings", async ({
+  page,
+}) => {
+  await page.goto("/settings");
 });

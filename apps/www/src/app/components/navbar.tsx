@@ -54,11 +54,12 @@ export async function Navbar() {
           </Link>
         )}
 
-        <Link href="/notes" title="Notes">
+        <Link data-testid="nav-notes-btn" href="/notes" title="Notes">
           <ScrollText className="h-6 w-6" />
         </Link>
 
         <Link
+          data-testid="nav-inbox-btn"
           href={user ? "/inbox" : "/login"}
           aria-label="home button"
           title="Inbox"

@@ -122,7 +122,12 @@ export default function ChatForm({ currentUserId, user }: Props) {
             className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
             autoComplete="off"
           />
-          <Button type="submit" size="icon" disabled={isFetching}>
+          <Button
+            data-testid="send-msg-btn"
+            type="submit"
+            size="icon"
+            disabled={isFetching}
+          >
             {isFetching ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (

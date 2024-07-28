@@ -152,7 +152,12 @@ const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
               className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
               autoComplete="off"
             />
-            <Button type="submit" size="icon" disabled={isSending}>
+            <Button
+              data-testid="note-send-reply-btn"
+              type="submit"
+              size="icon"
+              disabled={isSending}
+            >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
