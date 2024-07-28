@@ -61,7 +61,8 @@ jobs:
           retention-days: 1
 
   merge-reports:
-    if: ${{ !cancelled() }}
+    # if: ${{ !cancelled() }}
+    if: false # Disable this job temporarily
     needs: [e2e]
 
     runs-on: ubuntu-latest
