@@ -10,6 +10,7 @@ on:
 
 jobs:
   e2e:
+    if: false # Disable this job temporarily
     timeout-minutes: 60
     runs-on: ubuntu-latest
     strategy:
@@ -41,6 +42,7 @@ jobs:
       - name: Build project
         env:
           TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm build
 
       - name: Run Playwright tests

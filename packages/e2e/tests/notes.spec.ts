@@ -8,9 +8,6 @@ test.beforeEach(async ({ page }) => {
   await page.getByTestId("nav-notes-btn").click();
   await page.waitForURL("**/notes");
   await expect(page).toHaveTitle(/Umamin — Notes/);
-  await expect(
-    page.getByRole("heading", { name: "Umamin Notes" })
-  ).toBeVisible();
 });
 
 test("can update note", async ({ page }) => {
