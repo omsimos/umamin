@@ -115,7 +115,11 @@ export function ReplyDialog(props: Props) {
                 className="focus-visible:ring-transparent flex-1 text-base resize-none min-h-10 max-h-20"
                 autoComplete="off"
               />
-              <Button type="submit" size="icon">
+              <Button
+                data-testid="msg-send-reply-btn"
+                type="submit"
+                size="icon"
+              >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (

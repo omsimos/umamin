@@ -4,8 +4,9 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "start": "turbo run start --filter=!./apps/social",
     "test": "turbo run test --filter=./packages/e2e",
+    "start": "turbo run start --filter=!./apps/social",
+    "dev:test": "pnpm --filter @umamin/e2e dev:test",
     "dev:www": "turbo run dev --filter=!./apps/social",
     "dev:social": "turbo run dev --filter=!./apps/www",
     "build:www": "turbo run build --filter=!./apps/social",
@@ -27,7 +28,7 @@
     "@umamin/eslint-config": "workspace:*",
     "@umamin/tsconfig": "workspace:*",
     "prettier": "^3.2.5",
-    "turbo": "^2.0.6"
+    "turbo": "^2.0.9"
   },
   "packageManager": "pnpm@9.5.0",
   "engines": {

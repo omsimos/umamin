@@ -103,7 +103,10 @@ export function NoteCard({ note, menuItems, currentUserId }: Props) {
               )}
 
               {currentUserId && !note.isAnonymous && (
-                <button onClick={() => setOpen(!open)}>
+                <button
+                  data-testid="note-reply-btn"
+                  onClick={() => setOpen(!open)}
+                >
                   <Icons.chat className="h-5 w-5" />
                 </button>
               )}

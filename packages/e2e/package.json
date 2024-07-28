@@ -1,17 +1,18 @@
 {
   "name": "@umamin/e2e",
+  "type": "module",
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev:test": "playwright test",
-    "test": "start-server-and-test \"(cd ../../apps/www && pnpm start)\" http://localhost:3000 \"playwright test\"",
+    "dev:test": "npx playwright test --ui",
+    "test": "playwright test",
     "clean": "rm -rf ./node_modules .turbo dist"
   },
   "devDependencies": {
-    "@playwright/test": "^1.45.2",
+    "@playwright/test": "^1.45.3",
     "@types/node": "^20.14.11",
     "@umamin/tsconfig": "workspace:*",
-    "start-server-and-test": "^2.0.4",
+    "nanoid": "^5.0.7",
     "typescript": "^5.4.5"
   }
 }
