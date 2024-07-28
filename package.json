@@ -2,7 +2,7 @@
   "name": "umamin",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --filter=!./apps/social --filter=!./packages/e2e",
     "dev": "turbo run dev",
     "test": "turbo run test --filter=./packages/e2e",
     "start": "turbo run start --filter=!./apps/social",
