@@ -20,11 +20,11 @@
   "devDependencies": {
     "@types/node": "^20.14.2",
     "@umamin/tsconfig": "workspace:*",
-    "drizzle-kit": "^0.23.0",
+    "drizzle-kit": "^0.23.1",
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@libsql/client": "^0.7.0",
+    "@libsql/client": "^0.8.0",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.32.1"
   }
