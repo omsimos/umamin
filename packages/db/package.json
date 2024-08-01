@@ -21,7 +21,7 @@
     "@types/node": "^20.14.2",
     "@umamin/tsconfig": "workspace:*",
     "drizzle-kit": "^0.23.1",
-    "typescript": "^5.4.5"
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "@libsql/client": "^0.8.0",
