@@ -111,7 +111,7 @@ export default function NoteForm({ user, currentNote }: Props) {
 
       if (res.data) {
         setContent("");
-        toast.success("Note updated")
+        toast.success("Note updated");
         updateNote(res.data.updateNote);
       }
 

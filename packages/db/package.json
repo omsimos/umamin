@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "turso dev --db-file ./src/dev.db",
     "start": "turso dev --db-file ./src/dev.db",
+    "test": "turso dev --db-file ./src/dev.db",
     "clean": "rm -rf ./node_modules .turbo dist",
     "check-types": "tsc --noEmit",
     "generate": "pnpm drizzle-kit generate",
