@@ -26,6 +26,7 @@ If you like this project, please consider giving it a star! ✨ If you wish to s
 | `@umamin/db` | Database schema & migrations using Drizzle ORM  |
 | `@umamin/gql` | GraphQL schema models and resolvers using Pothos  |
 | `@umamin/aes` | Encryption algorithm using AES in Galois/Counter Mode (AES-GCM)  |
+| `@umamin/e2e` | End-to-end testing suite using Playwright  |
 
 ### Prerequisites
 - [`Turso CLI`](https://docs.turso.tech/cli/installation) (for local libSQL server)
