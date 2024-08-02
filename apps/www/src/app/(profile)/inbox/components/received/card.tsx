@@ -58,7 +58,10 @@ export function ReceivedMessageCard({
           </p>
         </CardHeader>
         <CardContent>
-          <div className="flex w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted break-words min-w-0">
+          <div
+            data-testid="received-msg-content"
+            className="flex w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted break-words min-w-0"
+          >
             {msg.content}
           </div>
         </CardContent>

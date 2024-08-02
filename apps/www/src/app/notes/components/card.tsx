@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { logEvent } from "firebase/analytics";
-import { BadgeCheck, ScanFace } from "lucide-react";
+import { BadgeCheck, MessageCircleOff, ScanFace } from "lucide-react";
 
 import { analytics } from "@/lib/firebase";
 import { NotesQueryResult } from "../queries";
@@ -102,9 +102,16 @@ export function NoteCard({ note, menuItems, currentUserId }: Props) {
                 </span>
               )}
 
-              {currentUserId && !note.isAnonymous && (
-                <button onClick={() => setOpen(!open)}>
-                  <Icons.chat className="h-5 w-5" />
+              {currentUserId && note.user?.quietMode && (
+                <MessageCircleOff className="size-4" />
+              )}
+
+              {currentUserId && !note.isAnonymous && !note.user?.quietMode && (
+                <button
+                  data-testid="note-reply-btn"
+                  onClick={() => setOpen(!open)}
+                >
+                  <Icons.chat className="size-5" />
                 </button>
               )}
 

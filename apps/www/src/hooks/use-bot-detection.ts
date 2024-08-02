@@ -19,7 +19,11 @@ const useBotDetection = () => {
       }
     };
 
-    detectBot();
+    if (
+      typeof window !== "undefined" &&
+      !window.location.hostname.includes("localhost")
+    )
+      detectBot();
   }, [router]);
 };
 

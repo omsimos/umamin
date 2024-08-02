@@ -28,7 +28,10 @@ export const ChatList = ({ imageUrl, question, reply, response }: Props) => {
       </div>
 
       {reply && (
-        <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 self-end break-words">
+        <div
+          data-testid="msg-content"
+          className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 self-end break-words"
+        >
           {reply}
         </div>
       )}

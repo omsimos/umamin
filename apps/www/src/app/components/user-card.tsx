@@ -39,7 +39,7 @@ export function UserCard({
                 {user.displayName ? user.displayName : user.username}
               </p>
               {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                user.username,
+                user.username
               ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
               {user.quietMode && (
                 <MessageCircleOff className="h-4 w-4 mr-2 text-sm text-yellow-500" />
@@ -48,7 +48,9 @@ export function UserCard({
 
             <ShareButton username={user.username} />
           </div>
-          <p className="text-muted-foreground text-sm">@{user.username}</p>
+          <p data-testid="username" className="text-muted-foreground text-sm">
+            @{user.username}
+          </p>
         </div>
       </section>
 

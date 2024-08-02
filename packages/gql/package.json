@@ -10,9 +10,9 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
+    "@umamin/tsconfig": "workspace:*",
     "graphql": "^16.9.0",
-    "typescript": "^5.4.5",
-    "@umamin/tsconfig": "workspace:*"
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "@graphql-tools/utils": "^10.3.2",

@@ -114,12 +114,6 @@ export function NotesList({
         .map((note) => (
           <div key={note.id} className="w-full">
             <NoteCard note={note} currentUserId={currentUserId} />
-
-            {/* v2-notes-feed 
-                {(i + 1) % 5 === 0 && (
-                    <AdContainer inFeed className="mt-5" slotId="4344956885" />
-                )}
-            */}
           </div>
         ))}
 

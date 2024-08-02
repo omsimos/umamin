@@ -86,9 +86,14 @@ export default async function Page() {
           <>
             {notes
               ?.filter((u) => u.user?.id !== user?.id)
-              .map((note) => (
+              .map((note, i) => (
                 <div key={note.id} className="w-full">
                   <NoteCard note={note} currentUserId={user?.id} />
+
+                  {/* v2-notes-list */}
+                  {(i + 1) % 5 === 0 && (
+                    <AdContainer className="mt-5" slotId="9012650581" />
+                  )}
                 </div>
               ))}
 

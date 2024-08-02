@@ -8,6 +8,8 @@
   },
   "scripts": {
     "dev": "turso dev --db-file ./src/dev.db",
+    "start": "turso dev --db-file ./src/dev.db",
+    "test": "turso dev --db-file ./src/dev.db",
     "clean": "rm -rf ./node_modules .turbo dist",
     "check-types": "tsc --noEmit",
     "generate": "pnpm drizzle-kit generate",
@@ -18,12 +20,12 @@
   "devDependencies": {
     "@types/node": "^20.14.2",
     "@umamin/tsconfig": "workspace:*",
-    "drizzle-kit": "^0.23.0",
-    "typescript": "^5.4.5"
+    "drizzle-kit": "^0.23.1",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@libsql/client": "^0.7.0",
+    "@libsql/client": "^0.8.0",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.32.0"
+    "drizzle-orm": "^0.32.1"
   }
 }
