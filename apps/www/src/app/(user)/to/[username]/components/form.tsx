@@ -74,6 +74,8 @@ export default function ChatForm({ currentUserId, user }: Props) {
         return;
       }
 
+      setContent("");
+      toast.success("Message sent anonymously");
       setMessage(content.replace(/(\r\n|\n|\r){2,}/g, "\n\n"));
       setIsFetching(false);
 

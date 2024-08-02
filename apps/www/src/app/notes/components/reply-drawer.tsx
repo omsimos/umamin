@@ -109,6 +109,7 @@ const ChatForm = ({ note, currentUserId, setOpen }: ChatFormProps) => {
         return;
       }
 
+      toast.success("Reply sent anonymously");
       setMessage(content.replace(/(\r\n|\n|\r){2,}/g, "\n\n"));
       setIsSending(false);
 
