@@ -37,7 +37,8 @@
     "nextjs-toploader": "^1.6.12",
     "react": "^18",
     "react-dom": "^18",
-    "sonner": "^1.5.0"
+    "sonner": "^1.5.0",
+    "@whatwg-node/server": "^0.9.46"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.12",
