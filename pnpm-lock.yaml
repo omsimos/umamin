@@ -44,6 +44,9 @@ importers:
       '@lucia-auth/adapter-drizzle':
         specifier: ^1.0.7
         version: 1.0.7(lucia@3.2.0)
+      '@node-rs/argon2':
+        specifier: ^1.8.3
+        version: 1.8.3
       '@umamin/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -72,7 +75,7 @@ importers:
         specifier: ^1.8.1
         version: 1.9.2
       geist:
-        specifier: ^1.3.0
+        specifier: ^1.3.1
         version: 1.3.1(next@14.2.5(@opentelemetry/api@1.9.0)(@playwright/test@1.45.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       gql.tada:
         specifier: ^1.8.5
@@ -86,6 +89,9 @@ importers:
       lucia:
         specifier: ^3.2.0
         version: 3.2.0
+      lucide-react:
+        specifier: ^0.424.0
+        version: 0.424.0(react@18.3.1)
       nanoid:
         specifier: ^5.0.7
         version: 5.0.7
@@ -110,6 +116,9 @@ importers:
       urql:
         specifier: ^4.1.0
         version: 4.1.0(@urql/core@5.0.5(graphql@16.9.0))(react@18.3.1)
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: ^1.12.12
@@ -4365,6 +4374,11 @@ packages:
     resolution: {integrity: sha512-+dRIu9Sry+E8wPF9+sY5eKld2omrU4X5IKXxrgqBt+o11IIHVU0QOfNoVWFuj0ZRDrxr4Wci26o2mKZqLGE0lA==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  lucide-react@0.424.0:
+    resolution: {integrity: sha512-x2Nj2aytk1iOyHqt4hKenfVlySq0rYxNeEf8hE0o+Yh0iE36Rqz0rkngVdv2uQtjZ70LAE73eeplhhptYt9x4Q==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc
 
   magic-string@0.30.11:
     resolution: {integrity: sha512-+Wri9p0QHMy+545hKww7YAu5NyzF8iomPL/RQazugQ9+Ez4Ic3mERMd8ZTX5rfK944j+560ZJi8iAwgak1Ac7A==}
@@ -10042,6 +10056,10 @@ snapshots:
       react: 18.3.1
 
   lucide-react@0.407.0(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+
+  lucide-react@0.424.0(react@18.3.1):
     dependencies:
       react: 18.3.1
 
