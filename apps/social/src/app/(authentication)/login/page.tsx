@@ -45,7 +45,7 @@ export default async function Login() {
   }
 
   return (
-    <section className="max-w-lg md:max-w-md container mt-36 min-h-screen">
+    <section className="max-w-lg md:max-w-md container mt-24 min-h-screen">
       <BrowserWarning />
 
       <div className="mb-6">

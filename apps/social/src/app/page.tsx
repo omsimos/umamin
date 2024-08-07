@@ -1,20 +1,9 @@
-import { logout } from "@/actions";
-import { getSession } from "@/lib/auth";
-import { Button } from "@umamin/ui/components/button";
+import { Feed } from "./components/feed";
 
-export default async function Home() {
-  const { session } = await getSession();
-
+export default function Home() {
   return (
     <main>
-      <h1>Hello World</h1>
-      {session && (
-        <form action={logout}>
-          <Button type="submit" variant="outline">
-            Sign Out
-          </Button>
-        </form>
-      )}
+      <Feed />
     </main>
   );
 }

@@ -5,6 +5,7 @@ import { GeistSans } from "geist/font/sans";
 import NextTopLoader from "nextjs-toploader";
 import type { Metadata, Viewport } from "next";
 
+import { Navbar } from "./components/navbar";
 import { ThemeProvider } from "@umamin/ui/components/theme-provider";
 
 export const viewport: Viewport = {
@@ -88,6 +89,7 @@ export default function RootLayout({
               },
             }}
           />
+          <Navbar />
           {children}
         </ThemeProvider>
       </body>
