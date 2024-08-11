@@ -22,7 +22,7 @@ type Props = {
 
 export function PostCard(props: Props) {
   return (
-    <div className="flex space-x-3 sm:px-0 container border-b border-b-muted pb-6">
+    <div className="flex space-x-3 sm:px-0 container border-b border-muted pb-6">
       <Avatar>
         <AvatarImage src={props.imageUrl} alt="User avatar" />
         <AvatarFallback>

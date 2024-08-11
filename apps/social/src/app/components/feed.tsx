@@ -32,7 +32,7 @@ const data = [
 export function Feed() {
   return (
     <main>
-      <section className="mt-12 pt-6 w-full max-w-lg mx-auto space-y-6 bg-background border-t border-t-muted">
+      <section className="mt-12 pt-6 w-full max-w-lg mx-auto space-y-6 bg-background border-t border-muted">
         {data.map((props) => (
           <PostCard key={props.createdAt} {...props} />
         ))}

@@ -1,5 +1,6 @@
 import SchemaBuilder from "@pothos/core";
 import ValidationPlugin from "@pothos/plugin-zod";
+import SubGraphPlugin from "@pothos/plugin-sub-graph";
 import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
 import DirectivePlugin from "@pothos/plugin-directives";
 import { DateResolver, JSONResolver } from "graphql-scalars";
@@ -24,6 +25,7 @@ const builder = new SchemaBuilder<{
   AuthScopes: {
     authenticated: boolean;
   };
+  SubGraphs: "www" | "social";
   Objects: {
     User: SelectUser & {
       accounts?: SelectAccount[] | null;
@@ -57,7 +59,11 @@ const builder = new SchemaBuilder<{
     };
   };
 }>({
-  plugins: [ScopeAuthPlugin, DirectivePlugin, ValidationPlugin],
+  plugins: [ScopeAuthPlugin, DirectivePlugin, ValidationPlugin, SubGraphPlugin],
+  subGraphs: {
+    defaultForTypes: [],
+    fieldsInheritFromTypes: true,
+  },
   scopeAuth: {
     authScopes: async (ctx) => ({
       authenticated: !!ctx.userId,

@@ -443,6 +443,9 @@ importers:
       '@pothos/plugin-scope-auth':
         specifier: ^4.0.2
         version: 4.0.2(@pothos/core@4.0.2(graphql@16.9.0))(graphql@16.9.0)
+      '@pothos/plugin-sub-graph':
+        specifier: ^4.1.0
+        version: 4.1.0(@pothos/core@4.0.2(graphql@16.9.0))(graphql@16.9.0)
       '@pothos/plugin-zod':
         specifier: ^4.0.2
         version: 4.0.2(@pothos/core@4.0.2(graphql@16.9.0))(graphql@16.9.0)(zod@3.23.8)
@@ -1982,6 +1985,12 @@ packages:
     resolution: {integrity: sha512-gPn8G2gJfhzb+nhm43k9RVMtdz92u+ZzyYbLv0/FpPbA4c25hWvvYRLcj2jOkxI29PIzC056rWaMbqKZ1ajOfA==}
     peerDependencies:
       '@pothos/core': 4.0.2
+      graphql: '>=16.6.0'
+
+  '@pothos/plugin-sub-graph@4.1.0':
+    resolution: {integrity: sha512-ZOty3q8t1REyD2VGFXzDoqvBEN8sbjrjTScPayU9hDQ28riIcXhAlNQGv86CJfexm68wRL7RRUw+FgAiQdp9dw==}
+    peerDependencies:
+      '@pothos/core': '*'
       graphql: '>=16.6.0'
 
   '@pothos/plugin-zod@4.0.2':
@@ -7180,6 +7189,11 @@ snapshots:
       graphql: 16.9.0
 
   '@pothos/plugin-scope-auth@4.0.2(@pothos/core@4.0.2(graphql@16.9.0))(graphql@16.9.0)':
+    dependencies:
+      '@pothos/core': 4.0.2(graphql@16.9.0)
+      graphql: 16.9.0
+
+  '@pothos/plugin-sub-graph@4.1.0(@pothos/core@4.0.2(graphql@16.9.0))(graphql@16.9.0)':
     dependencies:
       '@pothos/core': 4.0.2(graphql@16.9.0)
       graphql: 16.9.0

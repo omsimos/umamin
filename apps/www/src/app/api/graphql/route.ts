@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { createYoga } from "graphql-yoga";
 import { getSession, lucia } from "@/lib/auth";
-import { gqlSchema, initContextCache } from "@umamin/gql";
+import { www_schema, initContextCache } from "@umamin/gql";
 import persistedOperations from "@/persisted-operations.json";
 import { useResponseCache } from "@graphql-yoga/plugin-response-cache";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
@@ -9,7 +9,7 @@ import { usePersistedOperations } from "@graphql-yoga/plugin-persisted-operation
 import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspection";
 
 const { handleRequest } = createYoga({
-  schema: gqlSchema,
+  schema: www_schema,
   context: async () => {
     const { session } = await getSession();
 

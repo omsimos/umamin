@@ -1,13 +1,13 @@
 import { cookies } from "next/headers";
 import { createYoga } from "graphql-yoga";
 import { getSession, lucia } from "@/lib/auth";
-import { gqlSchema, initContextCache } from "@umamin/gql";
+import { social_schema, initContextCache } from "@umamin/gql";
 import { useResponseCache } from "@graphql-yoga/plugin-response-cache";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
 import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspection";
 
 const { handleRequest } = createYoga({
-  schema: gqlSchema,
+  schema: social_schema,
   context: async () => {
     const { session } = await getSession();
 
