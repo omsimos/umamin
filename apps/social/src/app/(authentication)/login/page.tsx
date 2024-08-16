@@ -45,7 +45,7 @@ export default async function Login() {
   }
 
   return (
-    <section className="container pt-16 lg:pt-20 flex flex-col items-center">
+    <section className="container pt-10 flex flex-col items-center">
       <BrowserWarning />
       <div className="border-b-2 border-muted border-dashed pb-5 mb-10 sm:text-center inline-block">
         <h1 className="font-bold md:text-6xl text-[10vw] leading-none dark:bg-gradient-to-b from-foreground dark:to-zinc-400 bg-clip-text bg-zinc-800 text-transparent tracking-tighter text-nowrap">
