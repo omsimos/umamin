@@ -1,4 +1,5 @@
-import { PostCard, PostCardMain } from "../../components/post-card";
+import { PostCard, PostCardMain } from "@/app/components/post-card";
+import ReplyForm from "../components/reply-form";
 
 const postData = {
   id: "C-r5lAwpJUg",
@@ -76,20 +77,22 @@ const repliesData = [
 
 export default function Post() {
   return (
-    <main>
-      <section className="w-full max-w-lg mx-auto bg-background">
-        <PostCardMain key={postData.createdAt} {...postData} />
+    <main className="w-full max-w-lg mx-auto bg-background pb-24">
+      <PostCardMain key={postData.createdAt} {...postData} />
 
-        <div className="w-full container py-4 border-b mb-6 font-medium text-muted-foreground">
-          Replies
-        </div>
+      <div className="w-full container py-4 border-b mb-6 font-medium text-muted-foreground">
+        Replies
+      </div>
 
-        <div className="space-y-6">
-          {repliesData.map((reply) => {
-            return <PostCard key={reply.createdAt} {...reply} />;
-          })}
-        </div>
-      </section>
+      <div className="space-y-6">
+        {repliesData.map((reply) => {
+          return <PostCard key={reply.createdAt} {...reply} />;
+        })}
+      </div>
+
+      <div>
+        <ReplyForm />
+      </div>
     </main>
   );
 }

@@ -24,7 +24,7 @@ export async function Navbar() {
   const { user, session } = await getSession();
 
   return (
-    <nav className="py-3 container md:px-0 grid grid-cols-3 items-center w-full max-w-lg bg-opacity-95 bg-bg backdrop-blur-3xl fixed top-0 left-0 right-0 z-50">
+    <nav className="py-3 container md:px-0 grid grid-cols-3 items-center w-full max-w-lg bg-opacity-95 bg-bg backdrop-blur-3xl fixed top-0 left-0 right-0 z-50 rounded-md">
       <Link href="/" aria-label="back">
         <ArrowLeft />
       </Link>
@@ -51,7 +51,7 @@ export async function Navbar() {
         <DropdownMenuContent className="font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0 mr-4">
           <DropdownMenuItem>Profile</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem asChild>
             {session ? (
               <form action={logout} className="place-self-end">
                 <SignOutButton />
