@@ -1,5 +1,9 @@
-import type { Metadata, Viewport } from "next";
+import { Toaster } from "sonner";
+import Script from "next/script";
 import { GeistSans } from "geist/font/sans";
+import NextTopLoader from "nextjs-toploader";
+import type { Metadata, Viewport } from "next";
+import { ThemeProvider } from "@umamin/ui/components/theme-provider";
 import "@umamin/ui/globals.css";
 
 export const viewport: Viewport = {
@@ -59,7 +63,42 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={GeistSans.className}>{children}</body>
+      <body className={GeistSans.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <NextTopLoader showSpinner={false} />
+          <Toaster
+            theme="dark"
+            className="toaster group"
+            position="top-right"
+            toastOptions={{
+              classNames: {
+                toast:
+                  "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
+                description: "group-[.toast]:text-muted-foreground",
+                actionButton:
+                  "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+                cancelButton:
+                  "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+              },
+            }}
+          />
+          {children}
+        </ThemeProvider>
+      </body>
+
+      {process.env.NODE_ENV === "production" && (
+        <Script
+          async
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4274133898976040"
+          crossOrigin="anonymous"
+        />
+      )}
     </html>
   );
 }
