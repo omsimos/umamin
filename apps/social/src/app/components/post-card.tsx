@@ -23,7 +23,7 @@ type Props = {
 
 export function PostCard(props: Props) {
   return (
-    <div className="px-7 flex space-x-3 sm:px-0 container border-b border-muted pb-6">
+    <div className="px-7 flex space-x-3 sm:px-0 container border-b border-muted pb-6 text-[15px]">
       <Avatar>
         <AvatarImage src={props.imageUrl} alt="User avatar" />
         <AvatarFallback>
@@ -31,7 +31,7 @@ export function PostCard(props: Props) {
         </AvatarFallback>
       </Avatar>
 
-      <div className="text-sm w-full">
+      <div className=" w-full">
         <div className="flex justify-between">
           <div className="flex items-center space-x-1">
             <Link
@@ -52,7 +52,7 @@ export function PostCard(props: Props) {
           </p>
         </div>
 
-        <p className="text-sm mt-1">{props.content}</p>
+        <p className=" mt-1">{props.content}</p>
 
         <div className="flex items-center space-x-4 text-muted-foreground mt-4">
           <div
@@ -82,7 +82,7 @@ export function PostCard(props: Props) {
 
 export function PostCardMain(props: Props) {
   return (
-    <div className="px-7 container border-x-0 sm:border-x border border-muted py-6 bg-card sm:rounded-md sm:px-6">
+    <div className="text-15px px-7 container border-x-0 sm:border-x border border-muted py-6 bg-card sm:rounded-md sm:px-6">
       <div className="flex justify-center gap-3">
         <Avatar>
           <AvatarImage src={props.imageUrl} alt="User avatar" />
@@ -91,7 +91,7 @@ export function PostCardMain(props: Props) {
           </AvatarFallback>
         </Avatar>
 
-        <div className="flex justify-between w-full items-center text-sm">
+        <div className="flex justify-between w-full items-center text-[15px]">
           <div className="flex items-center space-x-1">
             <Link
               href={`/user/${props.username}`}
@@ -112,8 +112,8 @@ export function PostCardMain(props: Props) {
         </div>
       </div>
 
-      <div className="text-sm w-full">
-        <p className="text-sm mt-1">{props.content}</p>
+      <div className="text-[15px] w-full">
+        <p className="mt-1">{props.content}</p>
 
         <div className="flex items-center space-x-4 text-muted-foreground mt-4">
           <div
