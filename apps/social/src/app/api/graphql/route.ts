@@ -1,9 +1,11 @@
 import { cookies } from "next/headers";
 import { createYoga } from "graphql-yoga";
 import { getSession, lucia } from "@/lib/auth";
+import persistedOperations from "@/persisted-operations.json";
 import { social_schema, initContextCache } from "@umamin/gql";
 import { useResponseCache } from "@graphql-yoga/plugin-response-cache";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
+import { usePersistedOperations } from "@graphql-yoga/plugin-persisted-operations";
 import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspection";
 
 const { handleRequest } = createYoga({
@@ -45,6 +47,40 @@ const { handleRequest } = createYoga({
     }),
     useDisableIntrospection({
       isDisabled: () => process.env.NODE_ENV === "production",
+    }),
+    usePersistedOperations({
+      allowArbitraryOperations: process.env.NODE_ENV === "development",
+      customErrors: {
+        notFound: {
+          message: "Operation is not found",
+          extensions: {
+            http: {
+              status: 404,
+            },
+          },
+        },
+        keyNotFound: {
+          message: "Key is not found",
+          extensions: {
+            http: {
+              status: 404,
+            },
+          },
+        },
+        persistedQueryOnly: {
+          message: "Operation is not allowed",
+          extensions: {
+            http: {
+              status: 403,
+            },
+          },
+        },
+      },
+      skipDocumentValidation: true,
+      async getPersistedOperation(key: string) {
+        // @ts-ignore
+        return persistedOperations[key];
+      },
     }),
   ],
 });
