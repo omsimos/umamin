@@ -3,10 +3,12 @@ import { ExternalLink } from "lucide-react";
 import { cn } from "@umamin/ui/lib/utils";
 import { Button } from "@umamin/ui/components/button";
 import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
+import GridPattern from "./components/grid-pattern";
 
 export default function Home() {
   return (
     <main className="flex items-center flex-col min-h-screen lg:pt-44 py-36 md:gap-8 gap-6 container">
+      <GridPattern className="[mask-image:radial-gradient(ellipse_at_center,white,transparent_60%)]" />
       <Link
         href="#"
         className={cn(
