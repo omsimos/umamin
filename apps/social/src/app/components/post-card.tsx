@@ -23,7 +23,7 @@ type Props = {
 
 export function PostCard(props: Props) {
   return (
-    <div className="flex space-x-3 sm:px-0 container border-b border-muted pb-6">
+    <div className="px-7 flex space-x-3 sm:px-0 container border-b border-muted pb-6">
       <Avatar>
         <AvatarImage src={props.imageUrl} alt="User avatar" />
         <AvatarFallback>
@@ -82,7 +82,7 @@ export function PostCard(props: Props) {
 
 export function PostCardMain(props: Props) {
   return (
-    <div className="container border border-muted py-6 bg-card rounded-md sm:px-6">
+    <div className="px-7 container border-x-0 sm:border-x border border-muted py-6 bg-card sm:rounded-md sm:px-6">
       <div className="flex justify-center gap-3">
         <Avatar>
           <AvatarImage src={props.imageUrl} alt="User avatar" />
