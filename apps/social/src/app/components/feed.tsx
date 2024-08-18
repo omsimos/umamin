@@ -2,6 +2,7 @@ import { PostCard } from "./post-card";
 
 const data = [
   {
+    id: "C-r5lAwpJUg",
     imageUrl:
       "https://lh3.googleusercontent.com/a/ACg8ocK4CtuGuDZlPy9H_DMb3EQIue9Hrd5bqYcMZOY-Xb8LcuyqsBI=s96-c",
     username: "umamin",
@@ -15,6 +16,7 @@ const data = [
     comments: 9,
   },
   {
+    id: "C-r5lAwpJUg",
     imageUrl:
       "https://lh3.googleusercontent.com/a/ACg8ocJf40m8VVe3wNxhgBe11Bm7ukLSPeR0SDPPg6q8wq6NYRZtCYk=s96-c",
     username: "josh",
@@ -32,7 +34,7 @@ const data = [
 export function Feed() {
   return (
     <main>
-      <section className="mt-12 pt-6 w-full max-w-lg mx-auto space-y-6 bg-background border-t border-muted">
+      <section className="pt-6 w-full max-w-lg mx-auto space-y-6 bg-background border-t border-muted">
         {data.map((props) => (
           <PostCard key={props.createdAt} {...props} />
         ))}
