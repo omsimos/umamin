@@ -25,7 +25,7 @@ const builder = new SchemaBuilder<{
   AuthScopes: {
     authenticated: boolean;
   };
-  SubGraphs: "www" | "social";
+  SubGraphs: "www" | "social" | "partners";
   Objects: {
     User: SelectUser & {
       accounts?: SelectAccount[] | null;

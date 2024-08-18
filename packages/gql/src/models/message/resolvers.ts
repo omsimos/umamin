@@ -10,7 +10,7 @@ import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 builder.queryFields((t) => ({
   messages: t.field({
     type: ["Message"],
-    subGraphs: ["www"],
+    subGraphs: ["www", "partners"],
     nullable: false,
     authScopes: { authenticated: true },
     directives: {
@@ -18,8 +18,9 @@ builder.queryFields((t) => ({
     },
     args: {
       type: t.arg.string({ required: true }),
+      limit: t.arg.int(),
     },
-    resolve: async (_, { type }, ctx) => {
+    resolve: async (_, { type, limit }, ctx) => {
       if (!ctx.userId) {
         throw new GraphQLError("Unauthorized");
       }
@@ -34,7 +35,7 @@ builder.queryFields((t) => ({
             type === "received"
               ? eq(message.receiverId, ctx.userId)
               : eq(message.senderId, ctx.userId),
-          limit: 10,
+          limit: limit || 10,
           orderBy: [desc(message.createdAt)],
           with:
             type === "sent"
@@ -72,7 +73,7 @@ builder.queryFields((t) => ({
 
   messagesFromCursor: t.field({
     type: "MessagesWithCursor",
-    subGraphs: ["www"],
+    subGraphs: ["www", "partners"],
     nullable: false,
     authScopes: { authenticated: true },
     directives: {
@@ -112,10 +113,10 @@ builder.queryFields((t) => ({
                   lt(message.createdAt, cursor.createdAt),
                   and(
                     eq(message.createdAt, cursor.createdAt),
-                    lt(message.id, cursor.id),
-                  ),
+                    lt(message.id, cursor.id)
+                  )
                 )
-              : undefined,
+              : undefined
           ),
           limit: 5,
           orderBy: [desc(message.createdAt), desc(message.id)],
@@ -157,7 +158,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createMessage: t.field({
     type: "Message",
-    subGraphs: ["www"],
+    subGraphs: ["www", "partners"],
     directives: {
       rateLimit: { limit: 3, duration: 20 },
     },
@@ -218,7 +219,7 @@ builder.mutationFields((t) => ({
 
   deleteMessage: t.field({
     type: "String",
-    subGraphs: ["www"],
+    subGraphs: ["www", "partners"],
     authScopes: { authenticated: true },
     directives: {
       rateLimit: { limit: 3, duration: 20 },
