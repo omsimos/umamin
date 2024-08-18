@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@umamin/ui", "@umamin/server"],
+  pageExtensions: ["js", "jsx", "mdx", "ts", "tsx"],
+  experimental: {
+    serverComponentsExternalPackages: ["@node-rs/argon2"],
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
+
+  transpilePackages: ["@umamin/ui", "@umamin/db", "@umamin/gql"],
   images: {
     remotePatterns: [
       {

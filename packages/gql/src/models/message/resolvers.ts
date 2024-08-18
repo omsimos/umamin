@@ -10,6 +10,7 @@ import { CreateMessageInput, MessagesFromCursorInput } from "./types";
 builder.queryFields((t) => ({
   messages: t.field({
     type: ["Message"],
+    subGraphs: ["www"],
     nullable: false,
     authScopes: { authenticated: true },
     directives: {
@@ -71,6 +72,7 @@ builder.queryFields((t) => ({
 
   messagesFromCursor: t.field({
     type: "MessagesWithCursor",
+    subGraphs: ["www"],
     nullable: false,
     authScopes: { authenticated: true },
     directives: {
@@ -155,6 +157,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   createMessage: t.field({
     type: "Message",
+    subGraphs: ["www"],
     directives: {
       rateLimit: { limit: 3, duration: 20 },
     },
@@ -182,6 +185,7 @@ builder.mutationFields((t) => ({
 
   createReply: t.field({
     type: "String",
+    subGraphs: ["www"],
     authScopes: { authenticated: true },
     directives: {
       rateLimit: { limit: 3, duration: 20 },
@@ -214,6 +218,7 @@ builder.mutationFields((t) => ({
 
   deleteMessage: t.field({
     type: "String",
+    subGraphs: ["www"],
     authScopes: { authenticated: true },
     directives: {
       rateLimit: { limit: 3, duration: 20 },

@@ -1,15 +1,15 @@
 import { cookies } from "next/headers";
 import { createYoga } from "graphql-yoga";
 import { getSession, lucia } from "@/lib/auth";
-import { www_schema, initContextCache } from "@umamin/gql";
 import persistedOperations from "@/persisted-operations.json";
+import { social_schema, initContextCache } from "@umamin/gql";
 import { useResponseCache } from "@graphql-yoga/plugin-response-cache";
 import { useCSRFPrevention } from "@graphql-yoga/plugin-csrf-prevention";
 import { usePersistedOperations } from "@graphql-yoga/plugin-persisted-operations";
 import { useDisableIntrospection } from "@graphql-yoga/plugin-disable-introspection";
 
 const { handleRequest } = createYoga({
-  schema: www_schema,
+  schema: social_schema,
   context: async () => {
     const { session } = await getSession();
 
@@ -24,7 +24,7 @@ const { handleRequest } = createYoga({
   cors: {
     origin:
       process.env.NODE_ENV === "production"
-        ? "https://www.umamin.link"
+        ? "https://social.umamin.link"
         : "http://localhost:3000",
     credentials: true,
     methods: ["POST", "GET", "OPTIONS"],
@@ -39,14 +39,9 @@ const { handleRequest } = createYoga({
       invalidateViaMutation: false,
       scopePerSchemaCoordinate: {
         "Query.user": "PRIVATE",
-        "Query.note": "PRIVATE",
-        "Query.messages": "PRIVATE",
-        "Query.messagesFromCursor": "PRIVATE",
       },
       ttl: 30_000,
       ttlPerSchemaCoordinate: {
-        "Query.notes": 120_000,
-        "Query.notesFromCursor": 120_000,
         "Query.userByUsername": 120_000,
       },
     }),

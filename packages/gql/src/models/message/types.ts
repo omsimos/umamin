@@ -1,6 +1,7 @@
 import builder from "../../builder";
 
 builder.objectType("Message", {
+  subGraphs: ["www"],
   fields: (t) => ({
     id: t.exposeID("id", { nullable: false }),
     question: t.exposeString("question", { nullable: false }),
@@ -16,6 +17,7 @@ builder.objectType("Message", {
 });
 
 builder.objectType("MessageCursor", {
+  subGraphs: ["www"],
   fields: (t) => ({
     id: t.exposeString("id"),
     createdAt: t.exposeInt("createdAt"),
@@ -23,6 +25,7 @@ builder.objectType("MessageCursor", {
 });
 
 builder.objectType("MessagesWithCursor", {
+  subGraphs: ["www"],
   fields: (t) => ({
     hasMore: t.exposeBoolean("hasMore", { nullable: false }),
     cursor: t.expose("cursor", { type: "MessageCursor" }),
@@ -31,6 +34,7 @@ builder.objectType("MessagesWithCursor", {
 });
 
 export const CreateMessageInput = builder.inputType("CreateMessageInput", {
+  subGraphs: ["www"],
   fields: (t) => ({
     question: t.string({
       required: true,
@@ -46,6 +50,7 @@ export const CreateMessageInput = builder.inputType("CreateMessageInput", {
 });
 
 const CursorInput = builder.inputType("CursorInput", {
+  subGraphs: ["www"],
   fields: (t) => ({
     id: t.string(),
     createdAt: t.int(),
@@ -55,9 +60,10 @@ const CursorInput = builder.inputType("CursorInput", {
 export const MessagesFromCursorInput = builder.inputType(
   "MessagesFromCursorInput",
   {
+    subGraphs: ["www"],
     fields: (t) => ({
       type: t.string({ required: true }),
       cursor: t.field({ type: CursorInput }),
     }),
-  },
+  }
 );

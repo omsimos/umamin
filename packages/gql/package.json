@@ -19,6 +19,7 @@
     "@pothos/core": "^4.0.2",
     "@pothos/plugin-directives": "^4.0.1",
     "@pothos/plugin-scope-auth": "^4.0.2",
+    "@pothos/plugin-sub-graph": "^4.1.0",
     "@pothos/plugin-zod": "^4.0.2",
     "@umamin/aes": "workspace:*",
     "@umamin/db": "workspace:*",
