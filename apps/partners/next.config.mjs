@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@umamin/ui", "@umamin/db", "@umamin/gql"],
+  experimental: {
+    serverComponentsExternalPackages: ["@node-rs/argon2"],
+  },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
