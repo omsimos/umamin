@@ -1,0 +1,48 @@
+input CreateMessageInput {
+  content: String!
+  question: String!
+  receiverId: String!
+  senderId: String
+}
+
+input CursorInput {
+  createdAt: Int
+  id: String
+}
+
+type Message {
+  content: String!
+  createdAt: Int!
+  id: ID!
+  question: String!
+  receiverId: String!
+  reply: String
+  updatedAt: Int
+}
+
+type MessageCursor {
+  createdAt: Int
+  id: String
+}
+
+input MessagesFromCursorInput {
+  cursor: CursorInput
+  limit: Int
+  type: String!
+}
+
+type MessagesWithCursor {
+  cursor: MessageCursor
+  data: [Message!]
+  hasMore: Boolean!
+}
+
+type Mutation {
+  createMessage(input: CreateMessageInput!): Message
+  deleteMessage(id: String!): String
+}
+
+type Query {
+  messages(limit: Int, type: String!): [Message!]!
+  messagesFromCursor(input: MessagesFromCursorInput!): MessagesWithCursor!
+}

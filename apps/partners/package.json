@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "gql:generate-persisted": "gql.tada generate-persisted",
+    "gql:generate-schema": "gql.tada generate-schema http://localhost:3000/api/graphql"
   },
   "dependencies": {
     "@graphql-yoga/plugin-csrf-prevention": "^3.6.2",
