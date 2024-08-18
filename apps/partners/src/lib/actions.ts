@@ -83,7 +83,7 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
     sessionCookie.attributes
   );
 
-  return redirect("/inbox");
+  return redirect("/dashboard");
 }
 
 export async function updatePassword({
