@@ -9,6 +9,7 @@ import { NotesFromCursorInput } from "./types";
 builder.queryFields((t) => ({
   note: t.field({
     type: "Note",
+    subGraphs: ["www"],
     authScopes: { authenticated: true },
     directives: {
       rateLimit: { limit: 5, duration: 20 },
@@ -33,6 +34,7 @@ builder.queryFields((t) => ({
 
   notes: t.field({
     type: ["Note"],
+    subGraphs: ["www"],
     nullable: false,
     directives: {
       rateLimit: { limit: 5, duration: 20 },
@@ -65,6 +67,7 @@ builder.queryFields((t) => ({
 
   notesFromCursor: t.field({
     type: "NotesWithCursor",
+    subGraphs: ["www"],
     nullable: false,
     directives: {
       rateLimit: { limit: 5, duration: 20 },
@@ -124,6 +127,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   updateNote: t.field({
     type: "Note",
+    subGraphs: ["www"],
     authScopes: {
       authenticated: true,
     },
@@ -172,6 +176,7 @@ builder.mutationFields((t) => ({
 
   deleteNote: t.field({
     type: "String",
+    subGraphs: ["www"],
     authScopes: {
       authenticated: true,
     },

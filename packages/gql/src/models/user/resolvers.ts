@@ -8,6 +8,7 @@ import { UpdateUserInput } from "./types";
 builder.queryFields((t) => ({
   user: t.field({
     type: "User",
+    subGraphs: ["www", "social"],
     authScopes: {
       authenticated: true,
     },
@@ -37,6 +38,7 @@ builder.queryFields((t) => ({
 
   userByUsername: t.field({
     type: "PublicUser",
+    subGraphs: ["www", "social"],
     directives: {
       rateLimit: { limit: 5, duration: 20 },
     },
@@ -61,6 +63,7 @@ builder.queryFields((t) => ({
 builder.mutationFields((t) => ({
   updateUser: t.field({
     type: "String",
+    subGraphs: ["www", "social"],
     authScopes: {
       authenticated: true,
     },
@@ -94,6 +97,7 @@ builder.mutationFields((t) => ({
 
   updatePicture: t.field({
     type: "String",
+    subGraphs: ["www", "social"],
     authScopes: {
       authenticated: true,
     },
@@ -124,6 +128,7 @@ builder.mutationFields((t) => ({
 
   updateQuietMode: t.field({
     type: "String",
+    subGraphs: ["www", "social"],
     authScopes: {
       authenticated: true,
     },

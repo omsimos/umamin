@@ -1,6 +1,7 @@
 import builder from "../../builder";
 
 builder.objectType("Account", {
+  subGraphs: ["www", "social"],
   fields: (t) => ({
     id: t.exposeID("providerUserId", { nullable: false }),
     email: t.exposeString("email", { nullable: false }),
@@ -10,6 +11,7 @@ builder.objectType("Account", {
 });
 
 builder.objectType("User", {
+  subGraphs: ["www", "social"],
   fields: (t) => ({
     id: t.exposeID("id", { nullable: false }),
     displayName: t.exposeString("displayName"),
@@ -26,6 +28,7 @@ builder.objectType("User", {
 });
 
 builder.objectType("PublicUser", {
+  subGraphs: ["www", "social"],
   fields: (t) => ({
     id: t.exposeID("id", { nullable: false }),
     displayName: t.exposeString("displayName"),
@@ -39,6 +42,7 @@ builder.objectType("PublicUser", {
 });
 
 export const UpdateUserInput = builder.inputType("UpdateUserInput", {
+  subGraphs: ["www", "social"],
   fields: (t) => ({
     username: t.string({
       required: true,
