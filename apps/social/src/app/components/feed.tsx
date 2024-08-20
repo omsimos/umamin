@@ -1,6 +1,6 @@
 import { PostCard } from "./post-card";
 
-const data = [
+export const userPlaceholder = [
   {
     id: "C-r5lAwpJUg",
     imageUrl:
@@ -33,9 +33,9 @@ const data = [
 
 export function Feed() {
   return (
-    <main>
-      <section className="pt-6 w-full max-w-lg mx-auto space-y-6 bg-background border-t border-muted">
-        {data.map((props) => (
+    <main className="container">
+      <section className="pt-6 w-full max-w-xl mx-auto space-y-6 bg-background border-t border-muted">
+        {userPlaceholder.map((props) => (
           <PostCard key={props.createdAt} {...props} />
         ))}
       </section>

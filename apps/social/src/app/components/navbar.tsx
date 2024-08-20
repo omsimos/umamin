@@ -34,7 +34,7 @@ export async function Navbar() {
   return (
     <>
       <nav className="md:px-0 bg-background/95 backdrop-blur-3xl fixed top-0 left-0 right-0 z-50">
-        <div className="py-3 w-full max-w-lg grid grid-cols-3 items-center container">
+        <div className="py-3 w-full max-w-xl grid grid-cols-3 items-center container">
           <Link href="/" aria-label="back">
             <ArrowLeft className="text-zinc-300" />
           </Link>
@@ -62,7 +62,9 @@ export async function Navbar() {
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0 mr-4">
-              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/user`}>Profile</Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 {session ? (

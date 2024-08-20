@@ -63,7 +63,7 @@ export default async function Page({
   }
 
   return (
-    <section className="max-w-xl mx-auto lg:mt-36 mt-28">
+    <section className="max-w-xl mx-auto mt-5">
       <UserCard {...user} />
 
       <div className="flex gap-2 mt-6 container">

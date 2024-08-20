@@ -21,14 +21,23 @@ export default function Loading() {
 
           <div className="flex gap-1 items-center">
             <Skeleton className="size-[15px] rounded-full" />
-            <Skeleton className="h-[10px] w-[100px] rounded-md" />
+            <Skeleton className="h-[10px] w-[130px] rounded-md" />
           </div>
         </div>
       </div>
 
-      <div className="flex justify-around mt-6 gap-2">
-        <Skeleton className="h-[40px] w-full rounded-md" />
-        <Skeleton className="h-[40px] w-full rounded-md" />
+      <div className="space-y-5 mt-8">
+        <div>
+          <div className="flex justify-around">
+            <Skeleton className="h-[15px] w-[90px] rounded-md" />
+            <Skeleton className="h-[15px] w-[90px] rounded-md" />
+          </div>
+
+          <Skeleton className="w-full h-[2px] rounded-md mt-2" />
+        </div>
+
+        <Skeleton className="w-full h-[200px] rounded-md" />
+        <Skeleton className="w-full h-[200px] rounded-md" />
       </div>
     </div>
   );
