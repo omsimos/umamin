@@ -1,3 +1,4 @@
+import PostForm from "../post/components/post-form";
 import { PostCard } from "./post-card";
 
 export const userPlaceholder = [
@@ -34,10 +35,14 @@ export const userPlaceholder = [
 export function Feed() {
   return (
     <main className="container">
-      <section className="pt-6 w-full max-w-xl mx-auto space-y-6 bg-background border-t border-muted">
-        {userPlaceholder.map((props) => (
-          <PostCard key={props.createdAt} {...props} />
-        ))}
+      <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
+        <PostForm />
+
+        <div className="border-t space-y-6 pt-6">
+          {userPlaceholder.map((props) => (
+            <PostCard key={props.createdAt} {...props} />
+          ))}
+        </div>
       </section>
     </main>
   );
