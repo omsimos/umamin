@@ -34,11 +34,11 @@ export const userPlaceholder = [
 
 export function Feed() {
   return (
-    <main className="container">
+    <main>
       <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
         <PostForm />
 
-        <div className="border-t space-y-6 pt-6">
+        <div className="border-y space-y-6 pt-6 bg-card sm:rounded-md sm:border-x">
           {userPlaceholder.map((props) => (
             <PostCard key={props.createdAt} {...props} />
           ))}
