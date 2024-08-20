@@ -43,7 +43,7 @@ export default function PostForm() {
             setTextAreaCount(e.target.value.length);
           }}
           placeholder="How's your day going?"
-          className="focus-visible:ring-transparent text-base lg:max-h-[400px] max-h-[250px] bg-muted/20"
+          className="focus-visible:ring-transparent text-base lg:max-h-[400px] max-h-[250px] bg-card caret-pink-300"
           autoComplete="off"
         />
         <div className="flex w-full justify-between items-center">
