@@ -1,5 +1,6 @@
+import { getSession } from "@/lib/auth";
 import PostForm from "../post/components/post-form";
-import { PostCard } from "./post-card";
+import { PostCard, PostCardWithComment } from "./post-card";
 
 export const userPlaceholder = [
   {
@@ -30,18 +31,39 @@ export const userPlaceholder = [
     likes: 7,
     comments: 4,
   },
+  {
+    id: "C-r5lAwpJUg",
+    imageUrl:
+      "https://lh3.googleusercontent.com/a/ACg8ocKpLSOuzPnPwOYTFC88ENWUU_7ieMdwtQZ9UzkqCJaRbnpUELk=s96-c",
+    username: "dale",
+    displayName: "Dale Hyamero",
+    createdAt: 1718342984,
+    content:
+      "Next generation open-source platform for sending and receiving encrypted anonymous messages. Umamin v2.0 requires a new account that can be used across the platform.",
+    isLiked: false,
+    isVerified: true,
+    likes: 10,
+    comments: 6,
+  },
 ];
 
-export function Feed() {
+export async function Feed() {
+  const { user } = await getSession();
+
   return (
-    <main>
+    <main className="pb-40">
       <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
         <PostForm />
 
-        <div className="border-y space-y-6 pt-6 bg-card sm:rounded-md sm:border-x">
+        <div className="border-y space-y-6 pt-6 bg-muted/20 sm:rounded-md sm:border-x">
           {userPlaceholder.map((props) => (
-            <PostCard key={props.createdAt} {...props} />
+            <PostCard key={props.createdAt} {...props} className="border-b" />
           ))}
+          <PostCardWithComment
+            {...userPlaceholder}
+            sessionImage={user?.imageUrl}
+          />
+          <PostCard {...userPlaceholder[2]!} />
         </div>
       </section>
     </main>
