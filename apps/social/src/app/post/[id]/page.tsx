@@ -1,6 +1,11 @@
 import { getSession } from "@/lib/auth";
 import ReplyForm from "../components/reply-form";
-import { PostCard, PostCardMain } from "@/app/components/post-card";
+import {
+  PostCard,
+  PostCardMain,
+  PostCardWithComment,
+} from "@/app/components/post-card";
+import { userPlaceholder } from "@/app/components/feed";
 
 const postData = {
   id: "C-r5lAwpJUg",
@@ -18,49 +23,6 @@ const postData = {
 };
 
 const repliesData = [
-  {
-    id: "C-r5lAwpJUg",
-    imageUrl:
-      "https://lh3.googleusercontent.com/a/ACg8ocJf40m8VVe3wNxhgBe11Bm7ukLSPeR0SDPPg6q8wq6NYRZtCYk=s96-c",
-    username: "josh",
-    displayName: "Josh Daniel",
-    createdAt: 1718342984,
-    content:
-      "We're building Umamin Social, a new platform to connect the community. Coming soon! 🚀",
-    isLiked: false,
-    isVerified: false,
-    likes: 7,
-    comments: 4,
-  },
-
-  {
-    id: "C-r5lAwpJUg",
-    imageUrl:
-      "https://lh3.googleusercontent.com/a/ACg8ocKpLSOuzPnPwOYTFC88ENWUU_7ieMdwtQZ9UzkqCJaRbnpUELk=s96-c",
-    username: "dale",
-    displayName: "Dale Hyamero",
-    createdAt: 1718342984,
-    content:
-      "Next generation open-source platform for sending and receiving encrypted anonymous messages. Umamin v2.0 requires a new account that can be used across the platform.",
-    isLiked: false,
-    isVerified: true,
-    likes: 10,
-    comments: 6,
-  },
-  {
-    id: "C-r5lAwpJUg",
-    imageUrl:
-      "https://lh3.googleusercontent.com/a/ACg8ocJf40m8VVe3wNxhgBe11Bm7ukLSPeR0SDPPg6q8wq6NYRZtCYk=s96-c",
-    username: "josh",
-    displayName: "Josh Daniel",
-    createdAt: 1718342984,
-    content:
-      "We're building Umamin Social, a new platform to connect the community. Coming soon! 🚀",
-    isLiked: false,
-    isVerified: false,
-    likes: 7,
-    comments: 4,
-  },
   {
     id: "C-r5lAwpJUg",
     imageUrl:
@@ -90,7 +52,18 @@ export default async function Post() {
 
       <div className="space-y-6">
         {repliesData.map((reply) => {
-          return <PostCard key={reply.createdAt} {...reply} />;
+          return (
+            <PostCard key={reply.createdAt} {...reply} className="border-b" />
+          );
+        })}
+        <PostCardWithComment
+          {...userPlaceholder}
+          sessionImage={user?.imageUrl}
+        />
+        {repliesData.map((reply) => {
+          return (
+            <PostCard key={reply.createdAt} {...reply} className="border-b" />
+          );
         })}
       </div>
     </main>
