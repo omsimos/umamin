@@ -4,20 +4,21 @@ import { logout } from "@/actions";
 import logo from "/public/logo.svg";
 import { getSession } from "@/lib/auth";
 import { SignOutButton } from "./sign-out-btn";
+
 import {
   ArrowLeft,
+  ScanFace,
   LinkIcon,
   LogIn,
-  MessagesSquare,
-  ScanFace,
-  ScrollText,
   UserCog,
+  ScrollText,
+  MessagesSquare,
 } from "lucide-react";
 
 import {
   Avatar,
-  AvatarFallback,
   AvatarImage,
+  AvatarFallback,
 } from "@umamin/ui/components/avatar";
 
 import {
@@ -64,6 +65,10 @@ export async function Navbar() {
             <DropdownMenuContent className="font-semibold [&>*]:cursor-pointer [&>*]:border-b [&>*]:last:border-0 mr-4">
               <DropdownMenuItem asChild>
                 <Link href={`/user`}>Profile</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href={`/settings`}>Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>

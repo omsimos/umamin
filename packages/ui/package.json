@@ -8,28 +8,47 @@
     "./tailwind.config": "./tailwind.config.ts",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/ui/*.tsx",
-    "./ad": "./src/components/ad-container.tsx"
+    "./ad": "./src/components/ad-container.tsx",
+    "./app/*": "./src/components/*.tsx"
   },
   "scripts": {
     "ui:add": "pnpm dlx shadcn-ui@latest add",
     "clean": "rm -rf ./node_modules .turbo",
     "lint": "eslint . --max-warnings 0",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "gql:generate-persisted": "gql.tada generate-persisted",
+    "gql:generate-schema": "gql.tada generate-schema http://localhost:3000/api/graphql"
   },
   "devDependencies": {
+    "@0no-co/graphqlsp": "^1.12.12",
+    "@lucia-auth/adapter-drizzle": "^1.0.7",
+    "@node-rs/argon2": "^1.8.3",
     "@tailwindcss/typography": "^0.5.13",
     "@types/eslint": "^8.56.5",
     "@types/node": "^20.11.24",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
+    "@umamin/aes": "workspace:*",
+    "@umamin/db": "workspace:*",
     "@umamin/eslint-config": "workspace:*",
+    "@umamin/gql": "workspace:*",
     "@umamin/tsconfig": "workspace:*",
+    "@urql/core": "^5.0.5",
+    "@urql/exchange-persisted": "^4.3.0",
+    "@urql/next": "^1.1.1",
+    "arctic": "^1.9.2",
     "autoprefixer": "^10.4.19",
+    "date-fns": "^3.6.0",
     "eslint": "^8.57.0",
+    "firebase": "^10.12.4",
+    "gql.tada": "^1.8.5",
+    "lucia": "^3.2.0",
+    "nanoid": "^5.0.7",
+    "next": "14.2.5",
     "postcss": "^8.4.40",
     "react": "^18.3.1",
-    "typescript": "^5.5.4",
-    "tailwindcss": "^3.4.7"
+    "tailwindcss": "^3.4.7",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

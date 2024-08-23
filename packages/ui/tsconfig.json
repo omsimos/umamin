@@ -1,11 +1,25 @@
 {
   "extends": "@umamin/tsconfig/react-library.json",
   "compilerOptions": {
+    "plugins": [
+      {
+        "name": "next"
+      },
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "./src/schema.graphql",
+        "tadaOutputLocation": "./src/graphql-env.d.ts",
+        "tadaPersistedLocation": "./src/persisted-operations.json",
+        "trackFieldUsage": false
+      }
+    ],
     "outDir": "dist",
     "rootDir": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "module": "esnext",
+    "moduleResolution": "bundler",
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
