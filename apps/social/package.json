@@ -24,6 +24,7 @@
     "@umamin/db": "workspace:*",
     "@umamin/gql": "workspace:*",
     "@umamin/ui": "workspace:*",
+    "@umamin/shared": "workspace:*",
     "@urql/core": "^5.0.5",
     "@urql/exchange-graphcache": "^7.1.1",
     "@urql/exchange-persisted": "^4.3.0",

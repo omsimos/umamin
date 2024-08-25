@@ -1,0 +1,47 @@
+{
+  "name": "@umamin/shared",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "next lint"
+  },
+  "exports": {
+    "./app/*": "./app/*.tsx",
+    "./routes/*": "./routes/*.ts",
+    "./components": "./components/index.ts",
+    "./lib": "./utils/lib/*.ts",
+    "./actions": "./actions.ts"
+  },
+  "peerDependencies": {
+    "react": "^18",
+    "react-dom": "^18",
+    "next": "14.2.5",
+    "gql.tada": "^1.8.5",
+    "graphql": "^16.9.0",
+    "@urql/core": "^5.0.5",
+    "@urql/next": "^1.1.1",
+    "urql": "^4.1.0"
+  },
+  "dependencies": {
+    "@umamin/db": "workspace:*",
+    "@umamin/gql": "workspace:*",
+    "@umamin/ui": "workspace:*",
+    "@lucia-auth/adapter-drizzle": "^1.0.7",
+    "nanoid": "^5.0.7",
+    "zod": "^3.22.4",
+    "lucia": "^3.2.0",
+    "arctic": "^1.9.2",
+    "lucide-react": "^0.407.0",
+    "@node-rs/argon2": "^1.8.3"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.6"
+  }
+}
