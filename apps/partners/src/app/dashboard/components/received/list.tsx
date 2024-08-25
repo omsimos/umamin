@@ -59,7 +59,7 @@ export function ReceivedMessagesList({ messages, initialCursor }: Props) {
   const [cursor, setCursor] = useState(initialCursor);
   const [msgs, setMsgs] = useState([] as ReceivedMessagesResult);
 
-  const [hasMore, setHasMore] = useState(messages?.length === 10);
+  const [hasMore, setHasMore] = useState(messages?.length === 30);
   const [isFetching, setIsFetching] = useState(false);
 
   const loadMessages = useCallback(async () => {
@@ -104,7 +104,7 @@ export function ReceivedMessagesList({ messages, initialCursor }: Props) {
   }, [inView]);
 
   return (
-    <section className="grid xl:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-3">
+    <section className="grid xl:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-3 w-full">
       {messages?.map((msg) => (
         <div key={msg.id}>
           <ReceivedMessageCard data={msg} />
@@ -122,11 +122,7 @@ export function ReceivedMessagesList({ messages, initialCursor }: Props) {
         </div>
       ))}
 
-      {isFetching && (
-        <div className="container">
-          <Skeleton className="w-full h-[200px] rounded-lg" />
-        </div>
-      )}
+      {isFetching && <Skeleton className="w-full h-[200px] rounded-lg" />}
       {hasMore && <div ref={ref}></div>}
     </section>
   );

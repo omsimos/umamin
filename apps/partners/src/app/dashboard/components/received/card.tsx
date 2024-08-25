@@ -27,7 +27,7 @@ export function ReceivedMessageCard({
   const msg = readFragment(receivedMessageFragment, data);
 
   return (
-    <div id={`umamin-${msg.id}`} className="w-full max-w-[500px]">
+    <div id={`umamin-${msg.id}`} className="w-full">
       <Card>
         <CardHeader className="flex px-12">
           <p className="font-bold text-center leading-normal text-lg min-w-0 break-words">

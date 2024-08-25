@@ -17,6 +17,7 @@
     "@graphql-yoga/plugin-response-cache": "^3.8.2",
     "@lucia-auth/adapter-drizzle": "^1.0.7",
     "@node-rs/argon2": "^1.8.3",
+    "@tanstack/react-virtual": "^3.9.0",
     "@umamin/db": "workspace:*",
     "@umamin/gql": "workspace:*",
     "@umamin/ui": "workspace:*",
