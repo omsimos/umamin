@@ -1,7 +1,7 @@
 "use client";
 
-import { login } from "@/actions";
 import { useFormState } from "react-dom";
+import { login } from "@umamin/shared/actions";
 
 import { LoginButton } from "./login-button";
 import { Input } from "@umamin/ui/components/input";

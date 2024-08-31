@@ -1,19 +1,23 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { RegisterForm } from "./components/form";
+import { getSession } from "@umamin/shared/lib/auth";
 
 const BrowserWarning = dynamic(
   () => import("@umamin/ui/components/browser-warning"),
   { ssr: false }
 );
 
-export default async function Register() {
+export default async function Register({
+  redirectPath,
+}: {
+  redirectPath: string;
+}) {
   const { user } = await getSession();
 
   if (user) {
-    redirect("/inbox");
+    redirect(redirectPath);
   }
 
   return (

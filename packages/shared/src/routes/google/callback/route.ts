@@ -8,7 +8,7 @@ import {
   account as accountSchema,
 } from "@umamin/db/schema/user";
 
-import { getSession, google, lucia } from "@/lib/auth";
+import { getSession, google, lucia } from "@umamin/shared/lib/auth";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);

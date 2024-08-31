@@ -1,3 +1,5 @@
+import Register from "@umamin/shared/pages/register/page";
+
 export const metadata = {
   title: "Umamin Social — Register",
   description:
@@ -26,4 +28,6 @@ export const metadata = {
   },
 };
 
-export { default } from "@umamin/shared/app/register/page";
+export default function Page() {
+  return <Register redirectPath="/" />;
+}

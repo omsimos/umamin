@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@umamin/ui", "@umamin/db", "@umamin/gql"],
+  transpilePackages: [
+    "@umamin/ui",
+    "@umamin/db",
+    "@umamin/gql",
+    "@umamin/shared",
+  ],
   experimental: {
     serverComponentsExternalPackages: ["@node-rs/argon2"],
   },

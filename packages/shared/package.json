@@ -6,11 +6,10 @@
     "lint": "next lint"
   },
   "exports": {
-    "./app/*": "./app/*.tsx",
-    "./routes/*": "./routes/*.ts",
-    "./components": "./components/index.ts",
-    "./lib": "./utils/lib/*.ts",
-    "./actions": "./actions.ts"
+    "./pages/*": "./src/*.tsx",
+    "./routes/*": "./src/routes/*.ts",
+    "./lib/*": "./src/lib/*.ts",
+    "./actions": "./src/actions.ts"
   },
   "peerDependencies": {
     "react": "^18",

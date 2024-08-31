@@ -53,6 +53,9 @@ importers:
       '@umamin/gql':
         specifier: workspace:*
         version: link:../../packages/gql
+      '@umamin/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@umamin/ui':
         specifier: workspace:*
         version: link:../../packages/ui

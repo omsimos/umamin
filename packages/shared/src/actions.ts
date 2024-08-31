@@ -28,7 +28,7 @@ export async function logout(): Promise<ActionResult> {
   cookies().set(
     sessionCookie.name,
     sessionCookie.value,
-    sessionCookie.attributes,
+    sessionCookie.attributes
   );
 
   return redirect("/login");
@@ -64,7 +64,7 @@ const signupSchema = z
     {
       message: "Password does not match",
       path: ["confirmPassword"],
-    },
+    }
   );
 
 export async function signup(_: any, formData: FormData) {
@@ -115,7 +115,7 @@ export async function signup(_: any, formData: FormData) {
   cookies().set(
     sessionCookie.name,
     sessionCookie.value,
-    sessionCookie.attributes,
+    sessionCookie.attributes
   );
 
   return redirect("/inbox");
@@ -175,10 +175,10 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
   cookies().set(
     sessionCookie.name,
     sessionCookie.value,
-    sessionCookie.attributes,
+    sessionCookie.attributes
   );
 
-  return redirect("/inbox");
+  return {};
 }
 
 export async function updatePassword({
@@ -245,7 +245,7 @@ export async function deleteAccount() {
     cookies().set(
       sessionCookie.name,
       sessionCookie.value,
-      sessionCookie.attributes,
+      sessionCookie.attributes
     );
   } catch (err) {
     throw new Error("Failed to delete account");
@@ -255,5 +255,5 @@ export async function deleteAccount() {
 }
 
 interface ActionResult {
-  error: string | null;
+  error?: string | null;
 }

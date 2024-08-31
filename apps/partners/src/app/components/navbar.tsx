@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { logout } from "@/lib/actions";
+import { logout } from "@umamin/shared/actions";
 import { SignOutButton } from "./sign-out-btn";
 import { Badge } from "@umamin/ui/components/badge";
 
