@@ -1,1 +1,1 @@
-export { default } from "@umamin/shared/app/register/loading";
+export { default } from "@umamin/shared/pages/register/loading";

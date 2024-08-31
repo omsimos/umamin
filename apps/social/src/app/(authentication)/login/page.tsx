@@ -1,3 +1,5 @@
+import Login from "@umamin/shared/pages/login/page";
+
 export const metadata = {
   title: "Umamin Social — Login",
   description:
@@ -26,4 +28,6 @@ export const metadata = {
   },
 };
 
-export { default } from "@umamin/shared/app/login/page";
+export default function Page() {
+  return <Login redirectPath="/" />;
+}
