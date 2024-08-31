@@ -1,11 +1,12 @@
 "use client";
 
-import { signup } from "@/actions";
 import { useFormState } from "react-dom";
-import { RegisterButton } from "./button";
 import { cn } from "@umamin/ui/lib/utils";
+import { signup } from "@umamin/shared/actions";
 import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
+
+import { RegisterButton } from "./button";
 
 export function RegisterForm() {
   const [state, formAction] = useFormState(signup, { errors: {} });
@@ -24,7 +25,7 @@ export function RegisterForm() {
         <p
           className={cn(
             "text-sm mt-2 text-muted-foreground",
-            state.errors.username && "text-red-500",
+            state.errors.username && "text-red-500"
           )}
         >
           {state.errors.username

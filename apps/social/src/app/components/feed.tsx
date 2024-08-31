@@ -1,5 +1,5 @@
-import { getSession } from "@/lib/auth";
 import PostForm from "../post/components/post-form";
+import { getSession } from "@umamin/shared/lib/auth";
 import { PostCard, PostCardWithComment } from "./post-card";
 
 export const userPlaceholder = [
