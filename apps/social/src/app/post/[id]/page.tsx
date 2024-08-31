@@ -1,5 +1,5 @@
-import { getSession } from "@/lib/auth";
 import ReplyForm from "../components/reply-form";
+import { getSession } from "@umamin/shared/lib/auth";
 import {
   PostCard,
   PostCardMain,

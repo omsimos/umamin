@@ -5,8 +5,8 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { cn } from "@umamin/ui/lib/utils";
-import { shortTimeAgo } from "@/lib/utils";
 import { Input } from "@umamin/ui/components/input";
+import { shortTimeAgo } from "@umamin/shared/lib/utils";
 import { BadgeCheck, Heart, MessageCircle, ScanFace } from "lucide-react";
 
 type Props = {

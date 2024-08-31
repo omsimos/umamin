@@ -1,9 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { logout } from "@/actions";
-import logo from "/public/logo.svg";
-import { getSession } from "@/lib/auth";
-import { SignOutButton } from "./sign-out-btn";
+import { logout } from "@umamin/shared/actions";
+import { getSession } from "@umamin/shared/lib/auth";
 import {
   ArrowLeft,
   LinkIcon,
@@ -27,6 +25,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@umamin/ui/components/dropdown-menu";
+
+import logo from "/public/logo.svg";
+import { SignOutButton } from "./sign-out-btn";
 
 export async function Navbar() {
   const { user, session } = await getSession();

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { createYoga } from "graphql-yoga";
-import { getSession, lucia } from "@/lib/auth";
+import { getSession, lucia } from "@umamin/shared/lib/auth";
 import persistedOperations from "@/persisted-operations.json";
 import { partners_schema, initContextCache } from "@umamin/gql";
 import { useResponseCache } from "@graphql-yoga/plugin-response-cache";

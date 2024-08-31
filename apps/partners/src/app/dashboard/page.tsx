@@ -1,5 +1,5 @@
-import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getSession } from "@umamin/shared/lib/auth";
 import { ReceivedMessages } from "./components/received/messages";
 
 export default async function Dashboard() {
