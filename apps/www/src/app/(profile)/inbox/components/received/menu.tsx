@@ -3,12 +3,12 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { graphql } from "gql.tada";
-import client from "@/lib/gql/client";
 import { logEvent } from "firebase/analytics";
+import client from "@umamin/shared/lib/gql/client";
+import { formatError, onSaveImage } from "@umamin/shared/lib/utils";
 
 import { ReplyDialog } from "./reply";
 import { analytics } from "@/lib/firebase";
-import { formatError, onSaveImage } from "@/lib/utils";
 
 import {
   AlertDialog,

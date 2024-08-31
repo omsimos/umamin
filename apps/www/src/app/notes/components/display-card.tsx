@@ -16,7 +16,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import { onSaveImage, shortTimeAgo } from "@/lib/utils";
+import { onSaveImage, shortTimeAgo } from "@umamin/shared/lib/utils";
 
 type Props = {
   note: NonNullable<CurrentNoteQueryResult>;

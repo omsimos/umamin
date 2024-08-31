@@ -2,9 +2,9 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { SquarePen } from "lucide-react";
 
-import { getSession } from "@/lib/auth";
 import { NoteCard } from "./components/card";
 import { NotesList } from "./components/list";
+import { getSession } from "@umamin/shared/lib/auth";
 import { getNotes, getCurrentNote } from "./queries";
 import { Button } from "@umamin/ui/components/button";
 

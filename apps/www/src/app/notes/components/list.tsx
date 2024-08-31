@@ -2,13 +2,13 @@
 
 import { toast } from "sonner";
 import { graphql } from "gql.tada";
-import client from "@/lib/gql/client";
+import client from "@umamin/shared/lib/gql/client";
 import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
 import { NoteCard } from "./card";
-import { formatError } from "@/lib/utils";
 import { NotesQueryResult } from "../queries";
+import { formatError } from "@umamin/shared/lib/utils";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 
 const NOTES_FROM_CURSOR_QUERY = graphql(`

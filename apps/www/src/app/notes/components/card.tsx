@@ -16,8 +16,8 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import { onSaveImage, shortTimeAgo } from "@/lib/utils";
 import { ReplyDrawer } from "./reply-drawer";
+import { onSaveImage, shortTimeAgo } from "@umamin/shared/lib/utils";
 
 type Props = {
   note: NotesQueryResult[0];

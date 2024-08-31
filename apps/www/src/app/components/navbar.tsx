@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@umamin/ui/components/badge";
+import { getSession } from "@umamin/shared/lib/auth";
 import {
   LinkIcon,
   LogIn,
@@ -8,7 +9,6 @@ import {
   UserCog,
 } from "lucide-react";
 
-import { getSession } from "@/lib/auth";
 import { Icons } from "./utilities/icons";
 import { ToggleTheme } from "./utilities/toggle-theme";
 import { ShareLinkDialog } from "./share-link-dialog";

@@ -1,6 +1,6 @@
 import { cache } from "react";
-import getClient from "@/lib/gql/rsc";
 import { graphql, ResultOf } from "gql.tada";
+import getClient from "@umamin/shared/lib/gql/rsc";
 
 export const CURRENT_USER_QUERY = graphql(`
   query CurrentUser {

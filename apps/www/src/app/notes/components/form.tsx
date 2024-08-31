@@ -6,19 +6,18 @@ import { logEvent } from "firebase/analytics";
 import { Loader2, Sparkles } from "lucide-react";
 import { FormEventHandler, useState } from "react";
 
-import client from "@/lib/gql/client";
 import { NoteCard } from "./display-card";
 import { CurrentNoteQueryResult } from "../queries";
 
-import { formatError } from "@/lib/utils";
-import { analytics } from "@/lib/firebase";
-
 import { cn } from "@umamin/ui/lib/utils";
+import { analytics } from "@/lib/firebase";
+import client from "@umamin/shared/lib/gql/client";
 import { SelectUser } from "@umamin/db/schema/user";
 import { useNoteStore } from "@/store/useNoteStore";
 import { Label } from "@umamin/ui/components/label";
 import { Button } from "@umamin/ui/components/button";
 import { Switch } from "@umamin/ui/components/switch";
+import { formatError } from "@umamin/shared/lib/utils";
 import useBotDetection from "@/hooks/use-bot-detection";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
