@@ -18,9 +18,9 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { deleteAccount } from "@/actions";
 import { DeleteButton } from "./delete-button";
 import { Button } from "@umamin/ui/components/button";
+import { deleteAccount } from "@umamin/shared/actions";
 
 export function DangerSettings() {
   const [confirmText, setConfirmText] = useState("");

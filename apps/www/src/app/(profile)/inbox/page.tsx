@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
-import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getSession } from "@umamin/shared/lib/auth";
 
 import {
   Tabs,

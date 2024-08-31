@@ -7,11 +7,11 @@ import { analytics } from "@/lib/firebase";
 import { Loader2, Send } from "lucide-react";
 import { logEvent } from "firebase/analytics";
 
-import client from "@/lib/gql/client";
 import { cn } from "@umamin/ui/lib/utils";
-import { formatError } from "@/lib/utils";
+import client from "@umamin/shared/lib/gql/client";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/app/components/chat-list";
+import { formatError } from "@umamin/shared/lib/utils";
 import useBotDetection from "@/hooks/use-bot-detection";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";

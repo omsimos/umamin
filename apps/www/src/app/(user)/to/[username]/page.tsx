@@ -2,8 +2,8 @@ import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { BadgeCheck, Lock, MessageCircleOff } from "lucide-react";
 
-import { getSession } from "@/lib/auth";
 import { getUserByUsername } from "../../queries";
+import { getSession } from "@umamin/shared/lib/auth";
 import { ShareButton } from "@/app/components/share-button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 

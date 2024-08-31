@@ -6,10 +6,10 @@ import { logEvent } from "firebase/analytics";
 import { FormEventHandler, useState } from "react";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 
-import client from "@/lib/gql/client";
 import { cn } from "@umamin/ui/lib/utils";
-import { formatError } from "@/lib/utils";
 import { analytics } from "@/lib/firebase";
+import client from "@umamin/shared/lib/gql/client";
+import { formatError } from "@umamin/shared/lib/utils";
 
 import type { ReceivedMenuProps } from "./menu";
 import { Button } from "@umamin/ui/components/button";

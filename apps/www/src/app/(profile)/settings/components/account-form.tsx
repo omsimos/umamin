@@ -21,7 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@umamin/ui/components/form";
-import { updatePassword } from "@/actions";
+import { updatePassword } from "@umamin/shared/actions";
 
 const FormSchema = z
   .object({

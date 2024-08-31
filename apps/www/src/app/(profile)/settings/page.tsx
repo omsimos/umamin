@@ -1,6 +1,6 @@
-import { logout } from "@/actions";
-import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { logout } from "@umamin/shared/actions";
+import { getSession } from "@umamin/shared/lib/auth";
 
 import { getCurrentUser } from "./queries";
 import { GeneralSettings } from "./components/general";

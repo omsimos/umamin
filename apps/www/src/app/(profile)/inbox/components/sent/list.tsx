@@ -6,9 +6,9 @@ import { graphql } from "gql.tada";
 import { useInView } from "react-intersection-observer";
 import { useCallback, useEffect, useState } from "react";
 
-import client from "@/lib/gql/client";
-import { formatError } from "@/lib/utils";
 import type { InboxProps } from "../../queries";
+import client from "@umamin/shared/lib/gql/client";
+import { formatError } from "@umamin/shared/lib/utils";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { useMessageStore } from "@/store/useMessageStore";
 import { sentMessageFragment, SentMessageCard } from "./card";
