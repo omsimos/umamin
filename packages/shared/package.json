@@ -12,11 +12,11 @@
     "./actions": "./src/actions.ts"
   },
   "peerDependencies": {
-    "gql.tada": "^1.8.5",
+    "gql.tada": "^1.8.6",
     "graphql": "^16.9.0",
-    "next": "14.2.5",
-    "react": "^18",
-    "react-dom": "^18"
+    "next": "14.2.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "dependencies": {
     "@lucia-auth/adapter-drizzle": "^1.0.7",
@@ -42,9 +42,10 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
+    "@0no-co/graphqlsp": "^1.12.13",
     "eslint-config-next": "14.2.6",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5.5.4"
   }
 }
