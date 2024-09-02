@@ -27,17 +27,17 @@ importers:
   apps/partners:
     dependencies:
       '@graphql-yoga/plugin-csrf-prevention':
-        specifier: ^3.6.2
-        version: 3.6.2(graphql-yoga@5.6.2(graphql@16.9.0))
+        specifier: ^3.7.0
+        version: 3.7.0(graphql-yoga@5.7.0(graphql@16.9.0))
       '@graphql-yoga/plugin-disable-introspection':
-        specifier: ^2.6.2
-        version: 2.6.2(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)
+        specifier: ^2.7.0
+        version: 2.7.0(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)
       '@graphql-yoga/plugin-persisted-operations':
-        specifier: ^3.6.2
-        version: 3.6.2(@graphql-tools/utils@10.3.2(graphql@16.9.0))(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)
+        specifier: ^3.7.0
+        version: 3.7.0(@graphql-tools/utils@10.3.2(graphql@16.9.0))(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)
       '@graphql-yoga/plugin-response-cache':
-        specifier: ^3.8.2
-        version: 3.8.2(@envelop/core@5.0.1)(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)
+        specifier: ^3.9.0
+        version: 3.9.0(@envelop/core@5.0.1)(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)
       '@lucia-auth/adapter-drizzle':
         specifier: ^1.0.7
         version: 1.0.7(lucia@3.2.0)
@@ -78,8 +78,8 @@ importers:
         specifier: ^16.9.0
         version: 16.9.0
       graphql-yoga:
-        specifier: ^5.6.2
-        version: 5.6.2(graphql@16.9.0)
+        specifier: ^5.7.0
+        version: 5.7.0(graphql@16.9.0)
       lucia:
         specifier: ^3.2.0
         version: 3.2.0
@@ -157,17 +157,17 @@ importers:
         specifier: ^1.9.1
         version: 1.9.1
       '@graphql-yoga/plugin-csrf-prevention':
-        specifier: ^3.6.2
-        version: 3.6.2(graphql-yoga@5.6.2(graphql@16.9.0))
+        specifier: ^3.7.0
+        version: 3.7.0(graphql-yoga@5.7.0(graphql@16.9.0))
       '@graphql-yoga/plugin-disable-introspection':
-        specifier: ^2.6.2
-        version: 2.6.2(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)
+        specifier: ^2.7.0
+        version: 2.7.0(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)
       '@graphql-yoga/plugin-persisted-operations':
-        specifier: ^3.6.2
-        version: 3.6.2(@graphql-tools/utils@10.3.2(graphql@16.9.0))(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)
+        specifier: ^3.7.0
+        version: 3.7.0(@graphql-tools/utils@10.3.2(graphql@16.9.0))(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)
       '@graphql-yoga/plugin-response-cache':
-        specifier: ^3.8.2
-        version: 3.8.2(@envelop/core@5.0.1)(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)
+        specifier: ^3.9.0
+        version: 3.9.0(@envelop/core@5.0.1)(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)
       '@lucia-auth/adapter-drizzle':
         specifier: ^1.0.7
         version: 1.0.7(lucia@3.2.0)
@@ -205,8 +205,8 @@ importers:
         specifier: ^16.9.0
         version: 16.9.0
       graphql-yoga:
-        specifier: ^5.6.2
-        version: 5.6.2(graphql@16.9.0)
+        specifier: ^5.7.0
+        version: 5.7.0(graphql@16.9.0)
       lucia:
         specifier: ^3.2.0
         version: 3.2.0
@@ -281,17 +281,17 @@ importers:
         specifier: ^1.9.1
         version: 1.9.1
       '@graphql-yoga/plugin-csrf-prevention':
-        specifier: ^3.6.2
-        version: 3.6.2(graphql-yoga@5.6.2(graphql@16.9.0))
+        specifier: ^3.7.0
+        version: 3.7.0(graphql-yoga@5.7.0(graphql@16.9.0))
       '@graphql-yoga/plugin-disable-introspection':
-        specifier: ^2.6.2
-        version: 2.6.2(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)
+        specifier: ^2.7.0
+        version: 2.7.0(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)
       '@graphql-yoga/plugin-persisted-operations':
-        specifier: ^3.6.2
-        version: 3.6.2(@graphql-tools/utils@10.3.2(graphql@16.9.0))(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)
+        specifier: ^3.7.0
+        version: 3.7.0(@graphql-tools/utils@10.3.2(graphql@16.9.0))(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)
       '@graphql-yoga/plugin-response-cache':
-        specifier: ^3.8.2
-        version: 3.8.2(@envelop/core@5.0.1)(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)
+        specifier: ^3.9.0
+        version: 3.9.0(@envelop/core@5.0.1)(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)
       '@hookform/resolvers':
         specifier: ^3.9.0
         version: 3.9.0(react-hook-form@7.52.1(react@18.3.1))
@@ -359,8 +359,8 @@ importers:
         specifier: ^16.9.0
         version: 16.9.0
       graphql-yoga:
-        specifier: ^5.6.2
-        version: 5.6.2(graphql@16.9.0)
+        specifier: ^5.7.0
+        version: 5.7.0(graphql@16.9.0)
       lucia:
         specifier: ^3.2.0
         version: 3.2.0
@@ -1491,33 +1491,33 @@ packages:
     resolution: {integrity: sha512-Mg8psdkAp+YTG1OGmvU+xa6xpsAmSir0hhr3yFYPyLNwzUj95DdIwsMpKadDj9xDpYgJcH3Hp/4JMal9DhQimA==}
     engines: {node: '>=18.0.0'}
 
-  '@graphql-yoga/plugin-csrf-prevention@3.6.2':
-    resolution: {integrity: sha512-frxWfhmhC+DMji2YNddTX03NBgjO1TvT1ZQlcmSgvI3eA+/hsf5Dt0CytjvopuLPP/4Jc0HKf27LVCXIXcAPCQ==}
+  '@graphql-yoga/plugin-csrf-prevention@3.7.0':
+    resolution: {integrity: sha512-QDl+pGY4ZcIlFqkpZc8PAF/Zwk/ve1E+5V5O7Af0lBjuq+MEACZHMrac8pV/h57JS13fwBt2Sss3urb9L+xq/A==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      graphql-yoga: ^5.6.2
+      graphql-yoga: ^5.7.0
 
-  '@graphql-yoga/plugin-disable-introspection@2.6.2':
-    resolution: {integrity: sha512-NVnoEBcC3tFfQuts52SlC/zBT8hnOdFlMT0AYVdx2YQnScS3gpXbiwsQ+30n1Ar1iW0xlSBtAB3ySPffsxpMWw==}
+  '@graphql-yoga/plugin-disable-introspection@2.7.0':
+    resolution: {integrity: sha512-N+/T/ToxAtS1vS7YZadk5fRfYMrHAfw1gqQRdZTzX9JFmZkVknHDptwEwtbn+mZ7LfcZY7Kd/oLpcw/VTjgNJg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       graphql: ^15.2.0 || ^16.0.0
-      graphql-yoga: ^5.6.2
+      graphql-yoga: ^5.7.0
 
-  '@graphql-yoga/plugin-persisted-operations@3.6.2':
-    resolution: {integrity: sha512-dsmJ3rTUFLorMOac2QfU2MOiyOc48bRMOzGvr2E+5dwnFggL2WZ/iLLzICQANl3c2xg6tFGAG91jqUEniRNXNQ==}
+  '@graphql-yoga/plugin-persisted-operations@3.7.0':
+    resolution: {integrity: sha512-jfr+rIZBXbFxUO3j87u+VWWwyzIEn4SqSogRexyTFGhFb8hott8UALf/jOBEtZUIyHzsO3O1TN1pG+TPbQFkHA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@graphql-tools/utils': ^10.0.0
       graphql: ^15.2.0 || ^16.0.0
-      graphql-yoga: ^5.6.2
+      graphql-yoga: ^5.7.0
 
-  '@graphql-yoga/plugin-response-cache@3.8.2':
-    resolution: {integrity: sha512-oMQilGIbC6RIhQceF2/d2wcCkeipYYdPawDO+E096FgeqTL5R+iwtML5+IzBao/aMM5mLEYYtOJnDZ7S0V5ZFA==}
+  '@graphql-yoga/plugin-response-cache@3.9.0':
+    resolution: {integrity: sha512-npuVvmPcgkh+kr7zdXjfenSNM0DgXYTG466YmiQ5/ygjDl1bnyCDxNwtss3CrLh5qDFzAn20gp72zuSHvwY0fg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       graphql: ^15.2.0 || ^16.0.0
-      graphql-yoga: ^5.6.2
+      graphql-yoga: ^5.7.0
 
   '@graphql-yoga/subscription@5.0.1':
     resolution: {integrity: sha512-1wCB1DfAnaLzS+IdoOzELGGnx1ODEg9nzQXFh4u2j02vAnne6d+v4A7HIH9EqzVdPLoAaMKXCZUUdKs+j3z1fg==}
@@ -4199,8 +4199,8 @@ packages:
     peerDependencies:
       graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
 
-  graphql-yoga@5.6.2:
-    resolution: {integrity: sha512-HvbLrijZ/dolo8PFjM3Qjs9jUdRUjnQWtoJT3vGRW5IXo2tpqfXBSJrOpyMgApPJmw0hpIpF3uS5RplmNB0YdQ==}
+  graphql-yoga@5.7.0:
+    resolution: {integrity: sha512-QyGVvFAvGhMrzjJvhjsxsyoE+e4lNrj5f5qOsRYJuWIjyw7tHfbBvybZIwzNOGY0aB5sgA8BlVvu5hxjdKJ5tQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       graphql: ^15.2.0 || ^16.0.0
@@ -6733,26 +6733,26 @@ snapshots:
     dependencies:
       tslib: 2.6.3
 
-  '@graphql-yoga/plugin-csrf-prevention@3.6.2(graphql-yoga@5.6.2(graphql@16.9.0))':
+  '@graphql-yoga/plugin-csrf-prevention@3.7.0(graphql-yoga@5.7.0(graphql@16.9.0))':
     dependencies:
-      graphql-yoga: 5.6.2(graphql@16.9.0)
+      graphql-yoga: 5.7.0(graphql@16.9.0)
 
-  '@graphql-yoga/plugin-disable-introspection@2.6.2(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)':
+  '@graphql-yoga/plugin-disable-introspection@2.7.0(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)':
     dependencies:
       graphql: 16.9.0
-      graphql-yoga: 5.6.2(graphql@16.9.0)
+      graphql-yoga: 5.7.0(graphql@16.9.0)
 
-  '@graphql-yoga/plugin-persisted-operations@3.6.2(@graphql-tools/utils@10.3.2(graphql@16.9.0))(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)':
+  '@graphql-yoga/plugin-persisted-operations@3.7.0(@graphql-tools/utils@10.3.2(graphql@16.9.0))(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)':
     dependencies:
       '@graphql-tools/utils': 10.3.2(graphql@16.9.0)
       graphql: 16.9.0
-      graphql-yoga: 5.6.2(graphql@16.9.0)
+      graphql-yoga: 5.7.0(graphql@16.9.0)
 
-  '@graphql-yoga/plugin-response-cache@3.8.2(@envelop/core@5.0.1)(graphql-yoga@5.6.2(graphql@16.9.0))(graphql@16.9.0)':
+  '@graphql-yoga/plugin-response-cache@3.9.0(@envelop/core@5.0.1)(graphql-yoga@5.7.0(graphql@16.9.0))(graphql@16.9.0)':
     dependencies:
       '@envelop/response-cache': 6.2.1(@envelop/core@5.0.1)(graphql@16.9.0)
       graphql: 16.9.0
-      graphql-yoga: 5.6.2(graphql@16.9.0)
+      graphql-yoga: 5.7.0(graphql@16.9.0)
     transitivePeerDependencies:
       - '@envelop/core'
 
@@ -9899,7 +9899,7 @@ snapshots:
       graphql: 16.9.0
       tslib: 2.6.3
 
-  graphql-yoga@5.6.2(graphql@16.9.0):
+  graphql-yoga@5.7.0(graphql@16.9.0):
     dependencies:
       '@envelop/core': 5.0.1
       '@graphql-tools/executor': 1.3.0(graphql@16.9.0)
