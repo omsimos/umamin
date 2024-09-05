@@ -12,7 +12,12 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === "production",
   },
 
-  transpilePackages: ["@umamin/ui", "@umamin/db", "@umamin/gql"],
+  transpilePackages: [
+    "@umamin/ui",
+    "@umamin/db",
+    "@umamin/gql",
+    "@umamin/shared",
+  ],
   images: {
     remotePatterns: [
       {
@@ -63,4 +68,3 @@ export default withSentryConfig(withMDX(nextConfig), {
   // https://vercel.com/docs/cron-jobs
   automaticVercelMonitors: true,
 });
-
