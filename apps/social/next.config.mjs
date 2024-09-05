@@ -8,7 +8,12 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === "production",
   },
 
-  transpilePackages: ["@umamin/ui", "@umamin/db", "@umamin/gql", "@umamin/shared"],
+  transpilePackages: [
+    "@umamin/ui",
+    "@umamin/db",
+    "@umamin/gql",
+    "@umamin/shared",
+  ],
   images: {
     remotePatterns: [
       {
