@@ -14,7 +14,7 @@
   "peerDependencies": {
     "gql.tada": "^1.8.6",
     "graphql": "^16.9.0",
-    "next": "14.2.8",
+    "next": "14.2.11",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
