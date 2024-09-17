@@ -29,5 +29,5 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <Register redirectPath="/inbox" />;
+  return <Register redirectPath="/inbox" className="mt-36" />;
 }

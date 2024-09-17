@@ -29,5 +29,5 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <Register redirectPath="/" />;
+  return <Register redirectPath="/" className="mt-16" />;
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
+import { cn } from "@umamin/shared/lib/utils";
 import { RegisterForm } from "./components/form";
 import { getSession } from "@umamin/shared/lib/auth";
 
@@ -11,8 +12,10 @@ const BrowserWarning = dynamic(
 
 export default async function Register({
   redirectPath,
+  className,
 }: {
   redirectPath: string;
+  className?: string;
 }) {
   const { user } = await getSession();
 
@@ -21,7 +24,9 @@ export default async function Register({
   }
 
   return (
-    <section className="max-w-lg md:max-w-md container mt-36 min-h-screen">
+    <section
+      className={cn("max-w-lg md:max-w-md container min-h-screen", className)}
+    >
       <BrowserWarning />
 
       <div className="mb-6">
