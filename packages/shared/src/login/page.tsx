@@ -2,6 +2,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./components/form";
+import { cn } from "@umamin/shared/lib/utils";
 import { getSession } from "@umamin/shared/lib/auth";
 
 const BrowserWarning = dynamic(
@@ -11,8 +12,10 @@ const BrowserWarning = dynamic(
 
 export default async function Login({
   redirectPath,
+  className,
 }: {
   redirectPath: string;
+  className?: string;
 }) {
   const { user } = await getSession();
 
@@ -21,27 +24,28 @@ export default async function Login({
   }
 
   return (
-    <>
+    <section
+      className={cn("max-w-lg md:max-w-md container min-h-screen", className)}
+    >
       <BrowserWarning />
-      <section className="max-w-lg md:max-w-md container mt-36 min-h-screen">
-        <div className="mb-6">
-          <h2 className="text-2xl tracking-tight font-semibold">
-            Umamin Account
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Proceed with your Umamin v2.0 profile
-          </p>
-        </div>
 
-        <LoginForm />
+      <div className="mb-6">
+        <h2 className="text-2xl tracking-tight font-semibold">
+          Continue with Umamin
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Proceed with your created Umamin Account
+        </p>
+      </div>
 
-        <div className="mt-4 text-center text-sm w-full">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="underline">
-            Sign up
-          </Link>
-        </div>
-      </section>
-    </>
+      <LoginForm />
+
+      <div className="mt-4 text-center text-sm w-full">
+        Don&apos;t have an account?{" "}
+        <Link href="/register" className="underline">
+          Sign up
+        </Link>
+      </div>
+    </section>
   );
 }

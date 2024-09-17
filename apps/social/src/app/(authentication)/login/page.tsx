@@ -29,5 +29,5 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <Login redirectPath="/" />;
+  return <Login redirectPath="/" className="mt-16" />;
 }

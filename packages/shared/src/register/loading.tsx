@@ -2,7 +2,7 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 
 export default function Loading() {
   return (
-    <div className="container max-w-xl lg:mt-36 mt-28 mx-auto ">
+    <div className="container max-w-xl lg:mt-24 mt-16 mx-auto ">
       <div className="flex flex-col gap-4">
         <div className="flex gap-3">
           <Skeleton className="size-16 md:size-20 rounded-full" />
