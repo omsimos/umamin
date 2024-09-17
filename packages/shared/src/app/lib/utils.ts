@@ -1,4 +1,6 @@
 import { toast } from "sonner";
+import { twMerge } from "tailwind-merge";
+import { type ClassValue, clsx } from "clsx";
 import { domToPng } from "modern-screenshot";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 
@@ -75,4 +77,8 @@ export function shortTimeAgo(epoch: number) {
   }
 
   return distance;
+}
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }
