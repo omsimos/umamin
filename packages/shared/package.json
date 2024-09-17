@@ -8,8 +8,8 @@
   "exports": {
     "./pages/*": "./src/*.tsx",
     "./routes/*": "./src/routes/*.ts",
-    "./lib/*": "./src/lib/*.ts",
-    "./actions": "./src/actions.ts"
+    "./lib/*": "./src/app/lib/*.ts",
+    "./actions": "./src/app/actions.ts"
   },
   "peerDependencies": {
     "gql.tada": "^1.8.6",
