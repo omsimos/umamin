@@ -2,23 +2,16 @@
 
 import Link from "next/link";
 import Error from "next/error";
-import { useEffect } from "react";
-import * as Sentry from "@sentry/nextjs";
 import { cn } from "@umamin/ui/lib/utils";
 import { Button } from "@umamin/ui/components/button";
 import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
 
 export default function GlobalError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
   return (
     <html>
       <body>

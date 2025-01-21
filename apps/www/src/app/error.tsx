@@ -2,23 +2,16 @@
 
 import Link from "next/link";
 import Error from "next/error";
-import { useEffect } from "react";
-import * as Sentry from "@sentry/nextjs";
 import { cn } from "@umamin/ui/lib/utils";
 import { Button } from "@umamin/ui/components/button";
 import { AnimatedShinyText } from "@umamin/ui/components/animated-shiny-text";
 
 export default function GlobalError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
   return (
     <div className="flex items-center flex-col min-h-screen lg:pt-44 py-36 md:gap-8 gap-6 container">
       <div
