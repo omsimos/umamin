@@ -1,4 +1,0 @@
-{
-  "f07a17f7e44b839d7a1449115b9810d55447696a558d7416f16dc0b9c978217f": "query ReceivedMessages($type: String!) {\n  messages(type: $type, limit: 30) {\n    __typename\n    id\n    createdAt\n    ...MessageFragment\n  }\n}\n\nfragment MessageFragment on Message {\n  id\n  question\n  content\n  reply\n  createdAt\n  updatedAt\n}",
-  "10ae521c718fee919520bf95d2cdc74ee1bd0d862d468ca4948ad705bb1e2909": "query ReceivedMessagesFromCursor($input: MessagesFromCursorInput!) {\n  messagesFromCursor(input: $input) {\n    __typename\n    data {\n      __typename\n      id\n      createdAt\n      ...MessageFragment\n    }\n    hasMore\n    cursor {\n      __typename\n      id\n      createdAt\n    }\n  }\n}\n\nfragment MessageFragment on Message {\n  id\n  question\n  content\n  reply\n  createdAt\n  updatedAt\n}"
-}
