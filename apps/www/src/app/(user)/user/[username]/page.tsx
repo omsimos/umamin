@@ -8,13 +8,12 @@ import { getUserByUsername } from "../../queries";
 import { UserCard } from "@/app/components/user-card";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
+const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { username: string };
+export async function generateMetadata(props: {
+  params: Promise<{ username: string }>;
 }) {
+  const params = await props.params;
   const username = params.username.startsWith("%40")
     ? params.username.split("%40").at(1)
     : params.username;
@@ -51,11 +50,10 @@ export async function generateMetadata({
   };
 }
 
-export default async function Page({
-  params,
-}: {
-  params: { username: string };
+export default async function Page(props: {
+  params: Promise<{ username: string }>;
 }) {
+  const params = await props.params;
   const user = await getUserByUsername(params.username);
 
   if (!user) {

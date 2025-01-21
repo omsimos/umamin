@@ -13,9 +13,7 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 import { useMessageStore } from "@/store/useMessageStore";
 import { sentMessageFragment, SentMessageCard } from "./card";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
-  ssr: false,
-});
+const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
 const MESSAGES_FROM_CURSOR_QUERY = graphql(
   `

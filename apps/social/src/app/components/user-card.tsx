@@ -11,9 +11,7 @@ import {
 import { cn } from "@umamin/ui/lib/utils";
 import { ShareButton } from "../(user)/user/components/share-button";
 
-const CopyLink = dynamic(() => import("../(user)/user/components/copy-link"), {
-  ssr: false,
-});
+const CopyLink = dynamic(() => import("../(user)/user/components/copy-link"));
 
 export function UserCard({
   ...user

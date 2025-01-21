@@ -9,9 +9,7 @@ import { getNotes, getCurrentNote } from "./queries";
 import { Button } from "@umamin/ui/components/button";
 
 const NoteForm = dynamic(() => import("./components/form"));
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), {
-  ssr: false,
-});
+const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
 export const metadata = {
   title: "Umamin — Notes",

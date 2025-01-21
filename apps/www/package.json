@@ -23,7 +23,7 @@
     "@lucia-auth/adapter-drizzle": "^1.0.7",
     "@mdx-js/loader": "^3.0.1",
     "@mdx-js/react": "^3.0.1",
-    "@next/mdx": "^14.2.7",
+    "@next/mdx": "15.1.5",
     "@node-rs/argon2": "^1.8.3",
     "@types/mdx": "^2.0.13",
     "@umamin/aes": "workspace:*",
@@ -44,12 +44,12 @@
     "lucide-react": "^0.407.0",
     "modern-screenshot": "^4.4.39",
     "nanoid": "^5.0.7",
-    "next": "14.2.11",
+    "next": "15.1.5",
     "next-themes": "^0.3.0",
     "nextjs-toploader": "^3.6.15",
     "oslo": "^1.2.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "react-hook-form": "^7.52.1",
     "react-intersection-observer": "^9.10.2",
     "remark-gfm": "^4.0.0",
@@ -63,15 +63,21 @@
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.13",
     "@types/node": "^20",
-    "@types/react": "^18.3.2",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "19.0.7",
+    "@types/react-dom": "19.0.3",
     "@umamin/eslint-config": "workspace:*",
     "@umamin/tsconfig": "workspace:*",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
-    "eslint-config-next": "14.2.5",
+    "eslint-config-next": "15.1.5",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.0.7",
+      "@types/react-dom": "19.0.3"
+    }
   }
 }

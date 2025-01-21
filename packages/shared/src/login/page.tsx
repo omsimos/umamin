@@ -6,8 +6,7 @@ import { cn } from "@umamin/shared/lib/utils";
 import { getSession } from "@umamin/shared/lib/auth";
 
 const BrowserWarning = dynamic(
-  () => import("@umamin/ui/components/browser-warning"),
-  { ssr: false }
+  () => import("@umamin/ui/components/browser-warning")
 );
 
 export default async function Login({

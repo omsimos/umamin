@@ -4,9 +4,7 @@ import createMDX from "@next/mdx";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   pageExtensions: ["js", "jsx", "mdx", "ts", "tsx"],
-  experimental: {
-    serverComponentsExternalPackages: ["@node-rs/argon2", "@sentry/nextjs"],
-  },
+  serverExternalPackages: ["@node-rs/argon2", "@sentry/nextjs"],
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },

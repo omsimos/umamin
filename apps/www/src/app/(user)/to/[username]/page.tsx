@@ -9,15 +9,13 @@ import { Card, CardHeader } from "@umamin/ui/components/card";
 
 const ChatForm = dynamic(() => import("./components/form"));
 const UnauthenticatedDialog = dynamic(
-  () => import("./components/unauthenticated"),
-  { ssr: false }
+  () => import("./components/unauthenticated")
 );
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { username: string };
+export async function generateMetadata(props: {
+  params: Promise<{ username: string }>;
 }) {
+  const params = await props.params;
   const username = params.username.startsWith("%40")
     ? params.username.split("%40").at(1)
     : params.username;
@@ -50,11 +48,10 @@ export async function generateMetadata({
   };
 }
 
-export default async function SendMessage({
-  params,
-}: {
-  params: { username: string };
+export default async function SendMessage(props: {
+  params: Promise<{ username: string }>;
 }) {
+  const params = await props.params;
   const user = await getUserByUsername(params.username);
 
   if (!user) {

@@ -8,7 +8,7 @@ import { getUserByUsername } from "../../queries";
 import { UserCard } from "@/app/components/user-card";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 
-const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
+const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
 export async function generateMetadata({
   params,

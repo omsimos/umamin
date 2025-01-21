@@ -35,7 +35,7 @@ const { handleRequest } = createYoga({
       requestHeaders: ["x-graphql-yoga-csrf"],
     }),
     useResponseCache({
-      session: () => cookies().get(lucia.sessionCookieName)?.value,
+      session: async () => (await cookies()).get(lucia.sessionCookieName)?.value,
       invalidateViaMutation: false,
       scopePerSchemaCoordinate: {
         "Query.user": "PRIVATE",
