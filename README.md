@@ -1,99 +1,135 @@
-<div align="center">
-  <img src="https://github.com/omsimos/umamin/assets/69457996/5a7250dc-c65e-4251-8fa9-425006dccb02" width="150" />
+# Turborepo starter
 
-  <h1>Umamin</h1>
-</div>
+This Turborepo starter is maintained by the Turborepo core team.
 
-<div align="center">
-  <p>An open-source social platform for sending and receiving encrypted anonymous messages. 🔏</p>
+## Using this example
 
-  <img src="https://github.com/omsimos/umamin/actions/workflows/ci.yml/badge.svg" alt="actions">
-  <img src="https://img.shields.io/github/v/release/omsimos/umamin.svg" alt="releases">
-  <img src="https://img.shields.io/github/stars/omsimos/umamin" alt="stars">
-</div>
+Run the following command:
 
-<br/>
-
-## Contributing
-
-If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you!
-
-### Monorepo Setup
-| Core Packages  | Description |
-| ------------- | ------------- |
-| `www` | **Umamin Q&A** & landing page  |
-| `social` | **Umamin Social** *(coming soon)*  |
-| `@umamin/db` | Database schema & migrations using Drizzle ORM  |
-| `@umamin/gql` | GraphQL schema models and resolvers using Pothos  |
-| `@umamin/aes` | Encryption algorithm using AES in Galois/Counter Mode (AES-GCM)  |
-| `@umamin/e2e` | End-to-end testing suite using Playwright  |
-
-### Prerequisites
-- [`Turso CLI`](https://docs.turso.tech/cli/installation) (for local libSQL server)
-- `Node.js` >= 20 or [`nvm`](https://github.com/nvm-sh/nvm)
-- `pnpm` >= 9
-
-### Install Dependencies
-If you're using `nvm`, you can easily switch to the required Node.js version.
 ```sh
-$ nvm use 20 # ignore if you're already on Node.js >= 20
-$ pnpm install
+npx create-turbo@latest
 ```
 
-### Environment Variables
-```env
-# apps/www/.env
-NEXT_PUBLIC_GQL_URL=http://localhost:3000/api/graphql
-TURSO_CONNECTION_URL=http://127.0.0.1:8080
-AES_KEY=7ruID/GBuS2PGiysV9KXMZ6CkC1xuUKJFWEPLYgPPo0= # must be a valid AES-GCM key
+## What's inside?
 
-# packages/db/.env
-TURSO_CONNECTION_URL=http://127.0.0.1:8080
+This Turborepo includes the following packages/apps:
+
+### Apps and Packages
+
+- `docs`: a [Next.js](https://nextjs.org/) app
+- `web`: another [Next.js](https://nextjs.org/) app
+- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
+- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
+- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+
+Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+
+### Utilities
+
+This Turborepo has some additional tools already setup for you:
+
+- [TypeScript](https://www.typescriptlang.org/) for static type checking
+- [ESLint](https://eslint.org/) for code linting
+- [Prettier](https://prettier.io) for code formatting
+
+### Build
+
+To build all apps and packages, run the following command:
+
+```
+cd my-turborepo
+
+# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
+turbo build
+
+# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
+npx turbo build
+yarn dlx turbo build
+pnpm exec turbo build
 ```
 
-To generate your own `AES_KEY`, you can use the `generateAesKey()` function.
-```ts
-import { generateAesKey } from "@umamin/aes";
+You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
 
-const key = await generateAesKey();
+```
+# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
+turbo build --filter=docs
+
+# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
+npx turbo build --filter=docs
+yarn exec turbo build --filter=docs
+pnpm exec turbo build --filter=docs
 ```
 
-If you need to use Google OAuth, you must setup your own OAuth client. [Setting up OAuth 2.0 &rarr;](https://support.google.com/cloud/answer/6158849)
-```env
-# apps/www/.env
-GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
-GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
-GOOGLE_REDIRECT_URI=http://localhost:3000/login/google/callback
+### Develop
+
+To develop all apps and packages, run the following command:
+
+```
+cd my-turborepo
+
+# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
+turbo dev
+
+# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
+npx turbo dev
+yarn exec turbo dev
+pnpm exec turbo dev
 ```
 
-### Development Server
-You can specify which app to run a development server by including a scope (`www` or `social`).
-```sh
-$ pnpm dev:[scope] # dev:www
+You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+
+```
+# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
+turbo dev --filter=web
+
+# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
+npx turbo dev --filter=web
+yarn exec turbo dev --filter=web
+pnpm exec turbo dev --filter=web
 ```
 
-### Setup Database
-Running a development server automatically creates a libSQL database. Run the migration command below to apply the schema.
-```sh
-$ pnpm db:migrate # or db:push
+### Remote Caching
+
+> [!TIP]
+> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+
+Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+
+By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+
+```
+cd my-turborepo
+
+# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
+turbo login
+
+# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
+npx turbo login
+yarn exec turbo login
+pnpm exec turbo login
 ```
 
-### Running Build
-After making changes, you can run a build which will check for lint and type errors.
-```sh
-$ pnpm build:[scope] 
+This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+
+Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+
+```
+# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
+turbo link
+
+# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
+npx turbo link
+yarn exec turbo link
+pnpm exec turbo link
 ```
 
-Once ready, you can submit a pull request for review.
+## Useful Links
 
-### Contributor List
-<a href="https://github.com/joshxfi/umamin/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=joshxfi/umamin" />
-</a>
+Learn more about the power of Turborepo:
 
-## Security
-If you believe you have found a security vulnerability in Umamin, please do not open a public issue on this repository. Opening a public issue could expose sensitive information before it's addressed. Please read our [Security Policy](https://github.com/omsimos/umamin/blob/main/SECURITY.md) for details on how to report a vulnerability.
-
-## License
-
-Umamin is licensed under [GPL-3.0](https://github.com/joshxfi/umamin/blob/main/LICENSE)
+- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
+- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
+- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
+- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
+- [Configuration Options](https://turborepo.com/docs/reference/configuration)
+- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)

@@ -1,39 +1,20 @@
 {
-  "name": "umamin",
+  "name": "my-turborepo",
   "private": true,
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "test": "turbo run test",
-    "start": "turbo run start",
-    "dev:test": "pnpm --filter @umamin/e2e dev:test",
-    "dev:www": "turbo run dev --filter=www --filter=@umamin/db",
-    "dev:social": "turbo run dev --filter=social --filter=@umamin/db",
-    "build:www": "turbo run build --filter=www",
-    "build:social": "turbo run build --filter=social",
-    "gql:check": "pnpm --filter www gql:check",
-    "gql:generate-persisted": "pnpm --filter www gql:generate-persisted",
-    "gql:generate-schema": "pnpm --filter www gql:generate-schema",
     "lint": "turbo run lint",
-    "clean": "turbo run clean && rm -rf ./node_modules .turbo",
-    "check-types": "turbo run check-types",
-    "db:push": "pnpm --filter @umamin/db push",
-    "db:generate": "pnpm --filter @umamin/db generate",
-    "db:migrate": "pnpm --filter @umamin/db migrate",
-    "db:studio": "pnpm --filter @umamin/db studio",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "ui:add": "pnpm --filter @umamin/ui ui:add"
+    "check-types": "turbo run check-types"
   },
   "devDependencies": {
-    "@umamin/eslint-config": "workspace:*",
-    "@umamin/tsconfig": "workspace:*",
-    "prettier": "^3.4.2",
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.3"
+    "prettier": "^3.6.0",
+    "turbo": "^2.5.4",
+    "typescript": "5.8.2"
   },
-  "packageManager": "pnpm@9.10.0",
+  "packageManager": "pnpm@10.12.3",
   "engines": {
-    "node": ">=20",
-    "pnpm": ">=9"
+    "node": ">=20"
   }
 }
