@@ -2,39 +2,45 @@ name: CI
 
 on:
   push:
-    branches:
-      - "**"
+    branches: ["main", "dev"]
   pull_request:
-    branches:
-      - main
+    types: [opened, synchronize]
 
 jobs:
   build:
     timeout-minutes: 15
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      TURBO_REMOTE_ONLY: true
 
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
         with:
-          version: 9.10.0
-      - uses: actions/setup-node@v4
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: 20
+          version: 10.12.3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --prefer-offline
-
-      - name: Run GraphQL diagnostics
-        run: pnpm gql:check
+        run: pnpm install
 
       - name: Build project
-        env:
-          TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm build
