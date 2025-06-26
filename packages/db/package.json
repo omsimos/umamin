@@ -1,0 +1,28 @@
+{
+  "name": "@umamin/db",
+  "private": true,
+  "version": "0.1.0",
+  "exports": {
+    "./*": {
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc --watch  & turso dev --db-file local.db",
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.9",
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.44.2",
+    "nanoid": "^5.1.5"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.2"
+  }
+}
