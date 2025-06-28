@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { sql, relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { user } from "./user";
+import { userTable } from "./user";
 
 export const message = sqliteTable(
   "message",
@@ -27,14 +27,14 @@ export const message = sqliteTable(
 );
 
 export const messageRelations = relations(message, ({ one }) => ({
-  receiver: one(user, {
+  receiver: one(userTable, {
     fields: [message.receiverId],
-    references: [user.id],
+    references: [userTable.id],
     relationName: "receiver",
   }),
-  sender: one(user, {
+  sender: one(userTable, {
     fields: [message.senderId],
-    references: [user.id],
+    references: [userTable.id],
     relationName: "sender",
   }),
 }));
