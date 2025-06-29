@@ -6,10 +6,13 @@ import {
   LogInIcon,
   MessagesSquareIcon,
   ScrollText,
+  UserCogIcon,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
+import { getSession } from "@/lib/auth";
 
 export async function Navbar() {
+  const { session } = await getSession();
   const version = process.env.NEXT_PUBLIC_VERSION
     ? process.env.NEXT_PUBLIC_VERSION
     : "v3.0.0";
@@ -61,9 +64,19 @@ export async function Navbar() {
           <MessagesSquareIcon className="h-6 w-6" />
         </Link>
 
-        <Link data-testid="nav-login-btn" href="/login" title="Login">
-          <LogInIcon className="h-6 w-6" />
-        </Link>
+        {session ? (
+          <Link
+            data-testid="nav-settings-btn"
+            href="/settings"
+            title="Settings"
+          >
+            <UserCogIcon className="w-6 h-6" />
+          </Link>
+        ) : (
+          <Link data-testid="nav-login-btn" href="/login" title="Login">
+            <LogInIcon className="h-6 w-6" />
+          </Link>
+        )}
       </div>
     </nav>
   );
