@@ -14,6 +14,7 @@ import {
 import { google } from "@/lib/oauth";
 import { getSession } from "@/lib/auth";
 import { generateUsernameId } from "@/lib/utils";
+import { NextRequest } from "next/server";
 
 const claimsSchema = z.object({
   sub: z.string(),
@@ -21,15 +22,15 @@ const claimsSchema = z.object({
   email: z.email(),
 });
 
-export async function GET(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-  const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
+export async function GET(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams;
+  const code = searchParams.get("code");
+  const state = searchParams.get("state");
 
-  const storedState =
-    (await cookies()).get("google_oauth_state")?.value ?? null;
-  const codeVerifier =
-    (await cookies()).get("google_code_verifier")?.value ?? null;
+  const cookieStore = await cookies();
+
+  const storedState = cookieStore.get("google_oauth_state")?.value ?? null;
+  const codeVerifier = cookieStore.get("google_code_verifier")?.value ?? null;
 
   if (
     code === null ||
