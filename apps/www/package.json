@@ -21,6 +21,8 @@
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@tanstack/react-form": "^1.12.4",
+    "@tanstack/react-query": "^5.81.5",
+    "@tanstack/react-query-devtools": "^5.81.5",
     "@umamin/db": "workspace:*",
     "arctic": "^3.7.0",
     "class-variance-authority": "^0.7.1",
