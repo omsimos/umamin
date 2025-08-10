@@ -17,12 +17,12 @@
     "studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.9",
-    "dotenv": "^16.5.0",
-    "drizzle-orm": "^0.44.2",
+    "@libsql/client": "^0.15.10",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.44.4",
     "nanoid": "^5.1.5"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.2"
+    "drizzle-kit": "^0.31.4"
   }
 }
