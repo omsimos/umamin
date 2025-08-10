@@ -15,10 +15,12 @@ export const message = sqliteTable(
     reply: text("reply"),
     receiverId: text("receiver_id").notNull(),
     senderId: text("sender_id"),
-    createdAt: integer("created_at", { mode: "number" })
+    createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at").$onUpdate(() => sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
+      () => sql`(unixepoch())`,
+    ),
   },
   (t) => [
     index("receiver_id_created_at_id_idx").on(t.receiverId, t.createdAt, t.id),

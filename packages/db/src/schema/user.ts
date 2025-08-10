@@ -17,10 +17,12 @@ export const userTable = sqliteTable("user", {
     .notNull()
     .default(false),
   question: text("question").notNull().default("Send me an anonymous message!"),
-  createdAt: integer("created_at", { mode: "number" })
+  createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at").$onUpdate(() => sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
+    () => sql`(unixepoch())`,
+  ),
 });
 
 export const sessionTable = sqliteTable("session", {
