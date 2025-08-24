@@ -46,8 +46,8 @@ export function NoteList() {
 
   const virtualizer = useVirtualizer({
     count: hasNextPage ? allPosts.length + 1 : allPosts.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 200,
+    getScrollElement: () => (typeof window !== "undefined" ? document.documentElement : null),
+    estimateSize: () => 216,
     paddingEnd: 100,
   });
 
@@ -110,7 +110,7 @@ export function NoteList() {
   }
 
   return (
-    <div ref={parentRef} className="h-[700px] w-full overflow-auto">
+    <div ref={parentRef} className="w-full">
       {allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
@@ -139,6 +139,7 @@ export function NoteList() {
               key={virtualRow.key}
               data-index={virtualRow.index}
               ref={virtualizer.measureElement}
+              className="pb-4"
               style={{
                 position: "absolute",
                 top: 0,
