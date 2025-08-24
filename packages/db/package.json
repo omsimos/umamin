@@ -14,10 +14,11 @@
     "check-types": "tsc --noEmit",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
-    "studio": "drizzle-kit studio"
+    "studio": "drizzle-kit studio",
+    "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.10",
+    "@libsql/client": "^0.15.12",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "nanoid": "^5.1.5"
