@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SelectNote } from "@umamin/db/schema/note";
 import { NoteCard } from "./note-card";
 import { SelectUser } from "@umamin/db/schema/user";
+import { NoteCardSkeleton } from "./note-card-skeleton";
 
 type NotesResponse = {
   data: (SelectNote & { user: SelectUser })[];
@@ -100,11 +101,10 @@ export function NoteList() {
 
   if (isLoading) {
     return (
-      <div className="w-full mx-auto space-y-3">
-        {/* {Array.from({ length: 3 }).map((_, i) => ( */}
-        {/*   <PostCardSkeleton key={i} /> */}
-        {/* ))} */}
-        <p>loading...</p>
+      <div className="w-full mx-auto space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <NoteCardSkeleton key={i} />
+        ))}
       </div>
     );
   }
@@ -150,10 +150,7 @@ export function NoteList() {
             >
               {isLoaderRow ? (
                 hasNextPage ? (
-                  <p>
-                    loading...
-                    {/* <PostCardSkeleton /> */}
-                  </p>
+                  <NoteCardSkeleton />
                 ) : (
                   <div className="text-center mt-4 text-muted-foreground">
                     Nothing more to load
