@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useEffect } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
@@ -43,11 +43,9 @@ export function NoteList() {
   });
 
   const allPosts = data?.pages.flatMap((page) => page.data) ?? [];
-  const parentRef = useRef<HTMLDivElement>(null);
 
-  const virtualizer = useVirtualizer({
+  const virtualizer = useWindowVirtualizer({
     count: hasNextPage ? allPosts.length + 1 : allPosts.length,
-    getScrollElement: () => (typeof window !== "undefined" ? document.documentElement : null),
     estimateSize: () => 216,
     paddingEnd: 100,
   });
@@ -110,7 +108,7 @@ export function NoteList() {
   }
 
   return (
-    <div ref={parentRef} className="w-full">
+    <div className="w-full">
       {allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
