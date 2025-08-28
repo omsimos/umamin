@@ -18,9 +18,9 @@
     "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.12",
+    "@libsql/client": "^0.15.14",
     "dotenv": "^17.2.1",
-    "drizzle-orm": "^0.44.4",
+    "drizzle-orm": "^0.44.5",
     "nanoid": "^5.1.5"
   },
   "devDependencies": {
