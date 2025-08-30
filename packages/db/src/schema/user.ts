@@ -1,8 +1,7 @@
 import { nanoid } from "nanoid";
 import { sql, relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-
-import { message } from "./message";
+import { messageTable } from "./message";
 
 export const userTable = sqliteTable("user", {
   id: text("id")
@@ -21,7 +20,7 @@ export const userTable = sqliteTable("user", {
     .notNull()
     .default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
-    () => sql`(unixepoch())`,
+    () => new Date(),
   ),
 });
 
@@ -50,7 +49,7 @@ export const accountTable = sqliteTable("oauth_account", {
     .notNull()
     .default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
-    () => sql`(unixepoch())`,
+    () => new Date(),
   ),
 });
 
@@ -62,8 +61,8 @@ export const accountRelations = relations(accountTable, ({ one }) => ({
 }));
 
 export const userRelations = relations(userTable, ({ many }) => ({
-  sentMessages: many(message, { relationName: "sender" }),
-  receivedMessages: many(message, { relationName: "receiver" }),
+  sentMessages: many(messageTable, { relationName: "sender" }),
+  receivedMessages: many(messageTable, { relationName: "receiver" }),
   accounts: many(accountTable),
 }));
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -6,7 +7,7 @@ import { LoginForm } from "./components/login-form";
 
 const BrowserWarning = dynamic(() => import("@/components/browser-warning"));
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Umamin — Login",
   description:
     "Log in to Umamin to send and receive encrypted anonymous messages. Secure your privacy and communicate freely.",

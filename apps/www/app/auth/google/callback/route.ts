@@ -87,6 +87,7 @@ export async function GET(req: NextRequest) {
         },
       });
     } else if (user) {
+      // TODO: batch operation
       await db
         .update(userTable)
         .set({

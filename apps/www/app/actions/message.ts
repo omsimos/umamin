@@ -3,8 +3,8 @@
 import * as z from "zod";
 import { cache } from "react";
 import { db } from "@umamin/db/index";
-import { message } from "@umamin/db/schema/message";
 import { and, desc, eq, lt, or } from "drizzle-orm";
+import { messageTable } from "@umamin/db/schema/message";
 
 import { Cursor } from "@/types";
 import { getSession } from "@/lib/auth";
@@ -28,23 +28,23 @@ export const getMessagesAction = cache(
 
       if (cursor && cursor.createdAt) {
         cursorCondition = or(
-          lt(message.createdAt, cursor.createdAt),
+          lt(messageTable.createdAt, cursor.createdAt),
           and(
-            eq(message.createdAt, cursor.createdAt),
-            lt(message.id, cursor.id),
+            eq(messageTable.createdAt, cursor.createdAt),
+            lt(messageTable.id, cursor.id),
           ),
         );
       }
 
       const messageId =
-        type === "received" ? message.receiverId : message.senderId;
+        type === "received" ? messageTable.receiverId : messageTable.senderId;
 
-      const data = await db.query.message.findMany({
+      const data = await db.query.messageTable.findMany({
         where: and(cursorCondition, eq(messageId, session.userId)),
         with: {
           receiver: true,
         },
-        orderBy: [desc(message.createdAt), desc(message.id)],
+        orderBy: [desc(messageTable.createdAt), desc(messageTable.id)],
         limit: 10,
       });
 
@@ -99,8 +99,13 @@ export async function deleteMessageAction(id: string) {
     }
 
     await db
-      .delete(message)
-      .where(and(eq(message.id, id), eq(message.receiverId, session.userId)));
+      .delete(messageTable)
+      .where(
+        and(
+          eq(messageTable.id, id),
+          eq(messageTable.receiverId, session.userId),
+        ),
+      );
 
     return { success: true };
   } catch (err) {
@@ -128,12 +133,15 @@ export async function createReplyAction({
     const encryptedReply = await aesEncrypt(content);
 
     await db
-      .update(message)
+      .update(messageTable)
       .set({
         reply: encryptedReply,
       })
       .where(
-        and(eq(message.id, messageId), eq(message.receiverId, session.userId)),
+        and(
+          eq(messageTable.id, messageId),
+          eq(messageTable.receiverId, session.userId),
+        ),
       );
 
     return { success: true };
@@ -165,7 +173,7 @@ export async function sendMessageAction(
     const formattedContent = content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
     const encryptedContent = await aesEncrypt(formattedContent);
 
-    await db.insert(message).values({
+    await db.insert(messageTable).values({
       senderId,
       receiverId,
       question,

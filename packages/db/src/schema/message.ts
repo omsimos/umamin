@@ -4,8 +4,8 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { userTable } from "./user";
 
-export const message = sqliteTable(
-  "message",
+export const messageTable = sqliteTable(
+  "messageTable",
   {
     id: text("id")
       .primaryKey()
@@ -28,18 +28,18 @@ export const message = sqliteTable(
   ],
 );
 
-export const messageRelations = relations(message, ({ one }) => ({
+export const messageRelations = relations(messageTable, ({ one }) => ({
   receiver: one(userTable, {
-    fields: [message.receiverId],
+    fields: [messageTable.receiverId],
     references: [userTable.id],
     relationName: "receiver",
   }),
   sender: one(userTable, {
-    fields: [message.senderId],
+    fields: [messageTable.senderId],
     references: [userTable.id],
     relationName: "sender",
   }),
 }));
 
-export type InsertMessage = typeof message.$inferInsert;
-export type SelectMessage = typeof message.$inferSelect;
+export type InsertMessage = typeof messageTable.$inferInsert;
+export type SelectMessage = typeof messageTable.$inferSelect;
