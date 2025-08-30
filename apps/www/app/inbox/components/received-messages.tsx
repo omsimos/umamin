@@ -30,7 +30,7 @@ export function ReceivedMessages() {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<MessagesResponse>({
-    queryKey: ["sent_messages"],
+    queryKey: ["received_messages"],
     queryFn: async ({ pageParam }) => {
       const data = await getMessagesAction({
         cursor: pageParam as Cursor,

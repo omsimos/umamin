@@ -2,18 +2,12 @@ import { formatDistanceToNow } from "date-fns";
 import { BadgeCheck, CalendarDays, MessageCircleOff } from "lucide-react";
 
 import { ShareButton } from "./share-button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import CopyLink from "./copy-link";
-import { getSession } from "@/lib/auth";
+import { SelectUser } from "@umamin/db/schema/user";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CopyLink } from "./copy-link";
 
-export async function UserCard() {
-  const { user } = await getSession();
-
-  if (!user) {
-    return null;
-  }
-
+export function UserCard({ user }: { user: SelectUser }) {
   return (
     <div>
       <section className="flex gap-4">

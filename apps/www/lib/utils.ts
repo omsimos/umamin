@@ -49,3 +49,19 @@ export function shortTimeAgo(date: Date) {
 
   return distance;
 }
+
+export const getBaseUrl = () => {
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  return "http://localhost:3000";
+};
+
+export function formatUsername(username: string) {
+  const formattedUsername = username.startsWith("%40")
+    ? username.split("%40").at(1)
+    : username;
+
+  return formattedUsername ?? "";
+}

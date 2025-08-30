@@ -3,9 +3,9 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserCard } from "./components/user-card";
 import { SentMessages } from "./components/sent-messages";
 import { ReceivedMessages } from "./components/received-messages";
+import { CurrentUserCard } from "./components/current-user-card";
 
 // const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
@@ -41,7 +41,7 @@ export default async function InboxPage() {
 
   return (
     <main className="max-w-xl mx-auto container">
-      <UserCard />
+      <CurrentUserCard />
 
       <Tabs defaultValue="received" className="w-full mt-4">
         <TabsList className="w-full bg-transparent flex mb-5">

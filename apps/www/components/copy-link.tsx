@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { Link2 } from "lucide-react";
+import { Link2Icon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
@@ -12,7 +12,7 @@ const onCopy = (url: string) => {
   }
 };
 
-export default function CopyLink({ username }: { username: string }) {
+export function CopyLink({ username }: { username: string }) {
   const url =
     typeof window !== "undefined"
       ? `${window.location.origin}/to/${username}`
@@ -21,7 +21,7 @@ export default function CopyLink({ username }: { username: string }) {
   if (!url) {
     return (
       <div className="text-muted-foreground flex items-center">
-        <Link2 className="h-4 w-4 mr-2" />
+        <Link2Icon className="h-4 w-4 mr-2" />
         <Skeleton className="w-48 h-5" />
       </div>
     );
@@ -32,7 +32,7 @@ export default function CopyLink({ username }: { username: string }) {
       onClick={() => onCopy(url)}
       className="text-muted-foreground flex items-center"
     >
-      <Link2 className="h-4 w-4 mr-2" />
+      <Link2Icon className="h-4 w-4 mr-2" />
       <Badge variant="secondary">{url.replace(/(^\w+:|^)\/\//, "")}</Badge>
     </button>
   );
