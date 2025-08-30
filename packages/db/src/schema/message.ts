@@ -5,7 +5,7 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { userTable } from "./user";
 
 export const messageTable = sqliteTable(
-  "messageTable",
+  "message",
   {
     id: text("id")
       .primaryKey()
