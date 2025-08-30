@@ -9,11 +9,14 @@
     "db:generate": "pnpm --filter=@umamin/db generate",
     "db:migrate": "pnpm --filter=@umamin/db migrate",
     "db:studio": "pnpm --filter=@umamin/db studio",
-    "lint": "turbo run lint",
+    "lint": "eslint .",
+    "lint:all": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"
   },
   "devDependencies": {
+    "eslint": "^9.34.0",
+    "eslint-config-turbo": "^2.5.6",
     "prettier": "^3.6.2",
     "turbo": "^2.5.6",
     "typescript": "5.9.2"

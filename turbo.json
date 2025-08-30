@@ -1,11 +1,21 @@
 {
   "$schema": "https://turborepo.com/schema.json",
+  "globalDependencies": [".env"],
+  "globalEnv": ["NODE_ENV"],
   "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "dist"]
+      "outputs": [".next/**", "!.next/cache/**", "dist"],
+      "env": [
+        "VERCEL_URL",
+        "TURSO_CONNECTION_URL",
+        "TURSO_AUTH_TOKEN",
+        "GOOGLE_CLIENT_*",
+        "GOOGLE_REDIRECT_URI",
+        "AES_256_GCM_KEY"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
