@@ -12,7 +12,7 @@ const onCopy = (url: string) => {
   }
 };
 
-export function CopyLink({ username }: { username: string }) {
+export default function CopyLink({ username }: { username: string }) {
   const url =
     typeof window !== "undefined"
       ? `${window.location.origin}/to/${username}`
@@ -30,7 +30,7 @@ export function CopyLink({ username }: { username: string }) {
   return (
     <button
       onClick={() => onCopy(url)}
-      className="text-muted-foreground flex items-center"
+      className="text-muted-foreground flex items-center cursor-pointer"
     >
       <Link2Icon className="h-4 w-4 mr-2" />
       <Badge variant="secondary">{url.replace(/(^\w+:|^)\/\//, "")}</Badge>

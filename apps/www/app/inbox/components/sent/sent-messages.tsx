@@ -9,11 +9,11 @@ import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 
 import { SentMessageCard } from "./sent-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
 import { SelectMessage } from "@umamin/db/schema/message";
 import { SelectUser } from "@umamin/db/schema/user";
 import { Cursor } from "@/types";
 import { getMessagesAction } from "@/app/actions/message";
+import { SentMessageCardSkeleton } from "./sent-message-card-skeleton";
 
 type MessagesResponse = {
   messages?: (SelectMessage & { receiver: SelectUser })[];
@@ -52,6 +52,7 @@ export function SentMessages() {
     count: hasNextPage ? allPosts.length + 1 : allPosts.length,
     estimateSize: () => 200,
     paddingEnd: 100,
+    gap: 16,
     overscan: 6,
   });
 
@@ -106,7 +107,7 @@ export function SentMessages() {
     return (
       <div className="w-full mx-auto space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <p key={i}>loading...</p>
+          <SentMessageCardSkeleton key={i} />
         ))}
       </div>
     );
@@ -150,20 +151,14 @@ export function SentMessages() {
             >
               {isLoaderRow ? (
                 hasNextPage ? (
-                  <p>loading...</p>
+                  <SentMessageCardSkeleton />
                 ) : (
                   <div className="text-center mt-4 text-muted-foreground">
                     Nothing more to load
                   </div>
                 )
               ) : (
-                <HoverPrefetchLink
-                  href={`/posts/${msg?.id}`}
-                  key={msg?.id}
-                  className="block mb-3"
-                >
-                  <SentMessageCard key={msg?.id} data={msg} />
-                </HoverPrefetchLink>
+                <SentMessageCard key={msg?.id} data={msg} />
               )}
             </div>
           );

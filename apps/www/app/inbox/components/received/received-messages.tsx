@@ -7,13 +7,13 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 
-import { SentMessageCard } from "./sent-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
 import { SelectMessage } from "@umamin/db/schema/message";
 import { SelectUser } from "@umamin/db/schema/user";
 import { Cursor } from "@/types";
 import { getMessagesAction } from "@/app/actions/message";
+import { ReceivedMessageCard } from "./received-card";
+import { ReceivedMessageCardSkeleton } from "./received-message-card-skeleton";
 
 type MessagesResponse = {
   messages?: (SelectMessage & { receiver: SelectUser })[];
@@ -50,8 +50,9 @@ export function ReceivedMessages() {
 
   const virtualizer = useWindowVirtualizer({
     count: hasNextPage ? allPosts.length + 1 : allPosts.length,
-    estimateSize: () => 200,
+    estimateSize: () => 280,
     paddingEnd: 100,
+    gap: 16,
     overscan: 6,
   });
 
@@ -104,9 +105,9 @@ export function ReceivedMessages() {
 
   if (isLoading) {
     return (
-      <div className="w-full mx-auto space-y-3">
+      <div className="w-full mx-auto space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <p key={i}>loading...</p>
+          <ReceivedMessageCardSkeleton key={i} />
         ))}
       </div>
     );
@@ -152,20 +153,14 @@ export function ReceivedMessages() {
             >
               {isLoaderRow ? (
                 hasNextPage ? (
-                  <p>loading...</p>
+                  <ReceivedMessageCardSkeleton />
                 ) : (
                   <div className="text-center mt-4 text-muted-foreground">
                     Nothing more to load
                   </div>
                 )
               ) : (
-                <HoverPrefetchLink
-                  href={`/posts/${msg?.id}`}
-                  key={msg?.id}
-                  className="block mb-3"
-                >
-                  <SentMessageCard key={msg?.id} data={msg} />
-                </HoverPrefetchLink>
+                <ReceivedMessageCard key={msg?.id} data={msg} />
               )}
             </div>
           );

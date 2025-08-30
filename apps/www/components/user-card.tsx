@@ -1,11 +1,19 @@
+"use client";
+
 import { formatDistanceToNow } from "date-fns";
-import { BadgeCheckIcon, CalendarDaysIcon, MessageCircleOffIcon } from "lucide-react";
+import {
+  BadgeCheckIcon,
+  CalendarDaysIcon,
+  MessageCircleOffIcon,
+} from "lucide-react";
 
 import { ShareButton } from "./share-button";
 import { cn } from "@/lib/utils";
 import { SelectUser } from "@umamin/db/schema/user";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CopyLink } from "./copy-link";
+import dynamic from "next/dynamic";
+
+const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
 
 export function UserCard({ user }: { user: SelectUser }) {
   return (

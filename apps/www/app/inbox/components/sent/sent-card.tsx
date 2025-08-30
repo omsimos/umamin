@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CircleUserIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -9,8 +8,9 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { ChatList } from "@/components/chat-list";
-import { SelectMessage } from "@umamin/db/schema/message";
 import { SelectUser } from "@umamin/db/schema/user";
+import { SelectMessage } from "@umamin/db/schema/message";
+import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
 
 export function SentMessageCard({
   data,
@@ -46,12 +46,12 @@ export function SentMessageCard({
         <div className="flex justify-between items-center text-muted-foreground">
           <div className="flex items-center space-x-2">
             <CircleUserIcon className="h-4 w-4" />
-            <Link
+            <HoverPrefetchLink
               href={`/user/${data.receiver?.username}`}
               className="text-sm text-muted-foreground hover:underline"
             >
               {data.receiver?.username}
-            </Link>
+            </HoverPrefetchLink>
           </div>
 
           <span className="font-semibold">umamin</span>

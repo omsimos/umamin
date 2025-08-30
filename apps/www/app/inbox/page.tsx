@@ -3,9 +3,11 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SentMessages } from "./components/sent-messages";
-import { ReceivedMessages } from "./components/received-messages";
 import { CurrentUserCard } from "./components/current-user-card";
+import { Suspense } from "react";
+import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
+import { ReceivedMessages } from "./components/received/received-messages";
+import { SentMessages } from "./components/sent/sent-messages";
 
 // const AdContainer = dynamic(() => import("@umamin/ui/ad"));
 
@@ -41,19 +43,21 @@ export default async function InboxPage() {
 
   return (
     <main className="max-w-xl mx-auto container">
-      <CurrentUserCard />
+      <Suspense fallback={<UserCardSkeleton />}>
+        <CurrentUserCard />
+      </Suspense>
 
       <Tabs defaultValue="received" className="w-full mt-4">
         <TabsList className="w-full bg-transparent flex mb-5">
           <TabsTrigger
             value="received"
-            className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none font-semibold"
+            className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-r-none font-semibold"
           >
             Received
           </TabsTrigger>
           <TabsTrigger
             value="sent"
-            className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none font-semibold"
+            className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-l-none font-semibold"
           >
             Sent
           </TabsTrigger>

@@ -1,12 +1,14 @@
 "use server";
 
-import { aesDecrypt, aesEncrypt } from "@/lib/aes";
-import { getSession } from "@/lib/auth";
-import { Cursor } from "@/types";
+import * as z from "zod";
+import { cache } from "react";
 import { db } from "@umamin/db/index";
 import { message } from "@umamin/db/schema/message";
 import { and, desc, eq, lt, or } from "drizzle-orm";
-import { cache } from "react";
+
+import { Cursor } from "@/types";
+import { getSession } from "@/lib/auth";
+import { aesDecrypt, aesEncrypt } from "@/lib/aes";
 
 type GetMessagesParams = {
   cursor?: Cursor | null;
@@ -133,6 +135,42 @@ export async function createReplyAction({
       .where(
         and(eq(message.id, messageId), eq(message.receiverId, session.userId)),
       );
+
+    return { success: true };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+const sendMessageSchema = z.object({
+  question: z.string().min(1).max(500),
+  content: z.string().min(1).max(500),
+  senderId: z.string().optional(),
+  receiverId: z.string(),
+});
+
+export async function sendMessageAction(
+  values: z.infer<typeof sendMessageSchema>,
+) {
+  try {
+    const params = sendMessageSchema.safeParse(values);
+
+    if (!params.success) {
+      return { error: "Invalid input" };
+    }
+
+    const { question, content, senderId, receiverId } = params.data;
+
+    const formattedContent = content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
+    const encryptedContent = await aesEncrypt(formattedContent);
+
+    await db.insert(message).values({
+      senderId,
+      receiverId,
+      question,
+      content: encryptedContent,
+    });
 
     return { success: true };
   } catch (err) {
