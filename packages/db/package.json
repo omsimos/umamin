@@ -19,11 +19,11 @@
   },
   "dependencies": {
     "@libsql/client": "^0.15.12",
-    "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.5",
     "nanoid": "^5.1.5"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.4"
+    "drizzle-kit": "^0.31.4",
+    "@types/node": "^20.19.11"
   }
 }
