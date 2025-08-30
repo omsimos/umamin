@@ -2,8 +2,10 @@ import { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 export const AnimatedShinyText = ({
+  className,
   children,
 }: {
+  className?: string;
   children: React.ReactNode;
 }) => {
   return (
@@ -15,6 +17,7 @@ export const AnimatedShinyText = ({
       }
       className={cn(
         "mx-auto max-w-md text-zinc-500/70 dark:text-zinc-100/50 ",
+        className,
 
         // Shimmer effect
         "animate-shimmer bg-clip-text bg-no-repeat [background-position:0_0] [background-size:var(--shimmer-width)_100%] [transition:background-position_1s_cubic-bezier(.6,.6,0,1)_infinite]",

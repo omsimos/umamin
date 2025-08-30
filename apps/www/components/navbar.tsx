@@ -10,9 +10,10 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { getSession } from "@/lib/auth";
+import { ShareLinkDialog } from "./share-link-dialog";
 
 export async function Navbar() {
-  const { session } = await getSession();
+  const { user, session } = await getSession();
   const version = process.env.NEXT_PUBLIC_VERSION
     ? process.env.NEXT_PUBLIC_VERSION
     : "v3.0.0";
@@ -43,9 +44,13 @@ export async function Navbar() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto flex max-w-screen-sm items-center justify-center gap-3 bg-bg bg-opacity-40 bg-clip-padding p-2 text-3xl backdrop-blur-xl backdrop-filter sm:px-10 lg:bottom-auto lg:top-0 lg:z-50 lg:bg-transparent lg:px-14 lg:text-[1.75rem] lg:backdrop-blur-none [&>*:hover]:bg-muted [&>*]:flex [&>*]:w-full [&>*]:justify-center [&>*]:rounded-lg [&>*]:py-5 [&>*]:text-center [&>*]:text-muted-foreground [&>*]:transition-colors [&>*]:duration-300">
-        <Link href="/login">
-          <LinkIcon className="h-6 w-6" />
-        </Link>
+        {user?.username ? (
+          <ShareLinkDialog username={user?.username} />
+        ) : (
+          <Link href="/login">
+            <LinkIcon className="h-6 w-6" />
+          </Link>
+        )}
 
         <Link data-testid="nav-notes-btn" href="/notes" title="Notes">
           <ScrollTextIcon className="h-6 w-6" />
