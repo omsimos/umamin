@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MessageSquareMore, UserPlus } from "lucide-react";
+import { MessageSquareMoreIcon, UserPlusIcon } from "lucide-react";
 
 import { SelectUser } from "@umamin/db/schema/user";
 import { formatUsername, getBaseUrl } from "@/lib/utils";
@@ -64,13 +64,13 @@ export default async function Page({
 
       <div className="flex gap-2 mt-6 w-full">
         <Button variant="outline" disabled className="flex-1">
-          <UserPlus />
+          <UserPlusIcon />
           Follow
         </Button>
 
         <Button asChild variant="outline" className="flex-1">
           <Link href={`/to/${username}`}>
-            <MessageSquareMore />
+            <MessageSquareMoreIcon />
             Message
           </Link>
         </Button>

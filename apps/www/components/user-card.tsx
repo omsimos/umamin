@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
-import { BadgeCheck, CalendarDays, MessageCircleOff } from "lucide-react";
+import { BadgeCheckIcon, CalendarDaysIcon, MessageCircleOffIcon } from "lucide-react";
 
 import { ShareButton } from "./share-button";
 import { cn } from "@/lib/utils";
@@ -30,9 +30,9 @@ export function UserCard({ user }: { user: SelectUser }) {
               </p>
               {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
                 user.username,
-              ) && <BadgeCheck className="w-4 h-4 text-pink-500" />}
+              ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
               {user.quietMode && (
-                <MessageCircleOff className="h-4 w-4 mr-2 text-sm text-yellow-500" />
+                <MessageCircleOffIcon className="h-4 w-4 mr-2 text-sm text-yellow-500" />
               )}
             </div>
 
@@ -57,7 +57,7 @@ export function UserCard({ user }: { user: SelectUser }) {
           <CopyLink username={user.username} />
 
           <div className="text-muted-foreground text-sm flex items-center">
-            <CalendarDays className="h-4 w-4 mr-2" />
+            <CalendarDaysIcon className="h-4 w-4 mr-2" />
             Joined{" "}
             {formatDistanceToNow(user.createdAt, {
               addSuffix: true,

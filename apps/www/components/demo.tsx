@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheckIcon, ScanFace, Lock } from "lucide-react";
+import { BadgeCheckIcon, ScanFaceIcon, LockIcon } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 
 import { GridPattern } from "./grid-pattern";
@@ -31,7 +31,7 @@ export function Demo() {
                 src="https://lh3.googleusercontent.com/a/ACg8ocK4CtuGuDZlPy9H_DMb3EQIue9Hrd5bqYcMZOY-Xb8LcuyqsBI=s96-c"
               />
               <AvatarFallback>
-                <ScanFace />
+                <ScanFaceIcon />
               </AvatarFallback>
             </Avatar>
             <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted min-w-0 break-words">
@@ -45,9 +45,9 @@ export function Demo() {
             </AnimatedShinyText>
           </div>
           <span className="text-muted-foreground mt-2 text-sm text-right flex self-end gap-1 items-center">
-            <Lock className="size-3" />
+            <LockIcon className="size-3" />
             Advanced Encryption Standard
-            <Lock className="size-3" />
+            <LockIcon className="size-3" />
           </span>
         </div>
       </Card>

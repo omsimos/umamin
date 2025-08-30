@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TriangleAlert } from "lucide-react";
+import { TriangleAlertIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 import {
@@ -31,7 +31,7 @@ export default function BrowserWarning() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center justify-center">
-              <TriangleAlert className="w-4 h-4 mr-1 text-yellow-500" />
+              <TriangleAlertIcon className="w-4 h-4 mr-1 text-yellow-500" />
               In-app browser detected
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -47,7 +47,7 @@ export default function BrowserWarning() {
 
       {isFb && (
         <Alert className="my-4" variant="destructive">
-          <TriangleAlert className="h-4 w-4" />
+          <TriangleAlertIcon className="h-4 w-4" />
           <AlertTitle>Warning</AlertTitle>
           <AlertDescription>
             Facebook in-app browser detected, please use an external browser to

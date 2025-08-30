@@ -1,4 +1,4 @@
-import { ScanFace } from "lucide-react";
+import { ScanFaceIcon } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 type Props = {
@@ -15,7 +15,7 @@ export const ChatList = ({ imageUrl, question, reply, response }: Props) => {
         <Avatar>
           <AvatarImage className="rounded-full" src={imageUrl ?? ""} />
           <AvatarFallback>
-            <ScanFace />
+            <ScanFaceIcon />
           </AvatarFallback>
         </Avatar>
         <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted min-w-0 break-words">
@@ -37,7 +37,7 @@ export const ChatList = ({ imageUrl, question, reply, response }: Props) => {
           <Avatar>
             <AvatarImage className="rounded-full" src={imageUrl ?? ""} />
             <AvatarFallback>
-              <ScanFace />
+              <ScanFaceIcon />
             </AvatarFallback>
           </Avatar>
           <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted min-w-0 break-words">

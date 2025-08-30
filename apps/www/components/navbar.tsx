@@ -5,7 +5,7 @@ import {
   LinkIcon,
   LogInIcon,
   MessagesSquareIcon,
-  ScrollText,
+  ScrollTextIcon,
   UserCogIcon,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
@@ -48,7 +48,7 @@ export async function Navbar() {
         </Link>
 
         <Link data-testid="nav-notes-btn" href="/notes" title="Notes">
-          <ScrollText className="h-6 w-6" />
+          <ScrollTextIcon className="h-6 w-6" />
         </Link>
 
         <Link

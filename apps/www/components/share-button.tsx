@@ -1,6 +1,6 @@
 "use client";
 
-import { Share2 } from "lucide-react";
+import { Share2Icon } from "lucide-react";
 
 const onShare = (username: string) => {
   try {
@@ -27,7 +27,7 @@ const onShare = (username: string) => {
 export function ShareButton({ username }: { username: string }) {
   return (
     <button onClick={() => onShare(username)}>
-      <Share2 className="h-4 w-4 text-muted-foreground" />
+      <Share2Icon className="h-4 w-4 text-muted-foreground" />
     </button>
   );
 }

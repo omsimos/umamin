@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CircleUser } from "lucide-react";
+import { CircleUserIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import {
@@ -45,7 +45,7 @@ export function SentMessageCard({
       <CardHeader>
         <div className="flex justify-between items-center text-muted-foreground">
           <div className="flex items-center space-x-2">
-            <CircleUser className="h-4 w-4" />
+            <CircleUserIcon className="h-4 w-4" />
             <Link
               href={`/user/${data.receiver?.username}`}
               className="text-sm text-muted-foreground hover:underline"
