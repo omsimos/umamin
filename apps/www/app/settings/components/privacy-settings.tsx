@@ -1,41 +1,26 @@
 "use client";
 
 import { toast } from "sonner";
-import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CircleUserRoundIcon, MessageCircleOffIcon } from "lucide-react";
 import {
-  CircleUserRoundIcon,
-  InfoIcon,
-  MessageCircleOffIcon,
-} from "lucide-react";
-import {
-  getCurrentUserAction,
   toggleDisplayPictureAction,
   toggleQuietModeAction,
 } from "@/app/actions/user";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { UserWithAccount } from "@/types/user";
 
-export function PrivacySettings() {
+export function PrivacySettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
-  const { data } = useQuery({
-    queryKey: ["current_user"],
-    queryFn: getCurrentUserAction,
-  });
-
-  const user = data?.user;
-  const account = useMemo(
-    () => (user?.accounts?.length ? user.accounts[0] : null),
-    [user],
-  );
 
   const displayPictureMutation = useMutation({
     mutationFn: async () => {
-      if (!account) {
+      if (!user.account) {
         throw new Error("Google account not connected");
       }
 
-      const res = await toggleDisplayPictureAction(account.picture);
+      const res = await toggleDisplayPictureAction(user.account.picture);
       if (res.error) {
         throw new Error(res.error);
       }
@@ -80,7 +65,7 @@ export function PrivacySettings() {
         <CircleUserRoundIcon />
         <div className="flex-1 space-y-1">
           <p className="text-sm font-medium leading-none">Display Picture</p>
-          {account ? (
+          {user.account ? (
             <p className="text-sm text-muted-foreground">
               Show picture from connected account
             </p>
@@ -89,7 +74,7 @@ export function PrivacySettings() {
           )}
         </div>
         <Switch
-          disabled={displayPictureMutation.isPending || !account}
+          disabled={displayPictureMutation.isPending || !user.account}
           checked={!!user?.imageUrl}
           onCheckedChange={() => displayPictureMutation.mutate()}
         />

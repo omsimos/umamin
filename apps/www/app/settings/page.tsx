@@ -3,11 +3,7 @@ import { getSession, logout } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 import { SignOutButton } from "./components/sign-out-button";
-
-import { GeneralSettings } from "./components/general-settings";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AccountSettings } from "./components/account-settings";
-import { PrivacySettings } from "./components/privacy-settings";
+import { SettingsTabs } from "./components/settings-tabs";
 
 export const metadata: Metadata = {
   title: "Umamin — Settings",
@@ -52,40 +48,7 @@ export default async function Settings() {
         Manage your account settings
       </p>
 
-      <Tabs defaultValue="general" className="w-full mt-12">
-        <TabsList className="w-full bg-transparent px-0 flex mb-8">
-          <TabsTrigger
-            value="general"
-            className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-r-none font-semibold"
-          >
-            General
-          </TabsTrigger>
-          <TabsTrigger
-            value="account"
-            className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-none font-semibold"
-          >
-            Account
-          </TabsTrigger>
-          <TabsTrigger
-            value="privacy"
-            className="w-full data-[state=active]:border-border border-secondary transition-color border-b rounded-l-none font-semibold"
-          >
-            Privacy
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="general">
-          <GeneralSettings />
-        </TabsContent>
-
-        <TabsContent value="account">
-          <AccountSettings />
-        </TabsContent>
-
-        <TabsContent value="privacy">
-          <PrivacySettings />
-        </TabsContent>
-      </Tabs>
+      <SettingsTabs />
     </div>
   );
 }

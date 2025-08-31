@@ -1,7 +1,7 @@
 import * as z from "zod";
 import { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 
-export type UserWithAccounts = SelectUser & { accounts: SelectAccount[] };
+export type UserWithAccount = SelectUser & { account: SelectAccount | null };
 
 export const generalSettingsSchema = z.object({
   question: z

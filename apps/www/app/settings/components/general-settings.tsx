@@ -1,33 +1,15 @@
 /* eslint-disable react/no-children-prop */
-"use client";
-
-import { InfoIcon } from "lucide-react";
-import { useMemo } from "react";
 
 import * as z from "zod";
-import { useAppForm } from "@/hooks/form";
-import { generalSettingsSchema } from "@/types/user";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  generalSettingsAction,
-  getCurrentUserAction,
-} from "@/app/actions/user";
 import { toast } from "sonner";
+import { InfoIcon } from "lucide-react";
+import { useAppForm } from "@/hooks/form";
+import { generalSettingsSchema, UserWithAccount } from "@/types/user";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { generalSettingsAction } from "@/app/actions/user";
 
-export function GeneralSettings() {
+export function GeneralSettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
-  const { data } = useQuery({
-    queryKey: ["current_user"],
-    queryFn: getCurrentUserAction,
-  });
-
-  const user = data?.user;
-
-  const account = useMemo(
-    () => (user?.accounts?.length ? user.accounts[0] : null),
-    [user],
-  );
-
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof generalSettingsSchema>) => {
       const res = await generalSettingsAction(values);
@@ -97,15 +79,15 @@ export function GeneralSettings() {
               label="Username"
               placeholder="umamin"
               isRequired
-              disabled={!account || mutation.isPending}
+              disabled={!user.account || mutation.isPending}
             />
-            {account ? (
+            {user.account ? (
               <p className="text-sm text-muted-foreground">
                 Your previous username will be available to other users.
               </p>
             ) : (
               <p className="text-sm text-yellow-600 flex items-center gap-1">
-                <InfoIcon className="h-4 w-4" /> Google account required to
+                <InfoIcon className="h-4 w-4" /> Google user.account required to
                 change username
               </p>
             )}

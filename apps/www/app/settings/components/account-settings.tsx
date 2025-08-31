@@ -8,37 +8,25 @@ import {
   ShieldAlertIcon,
 } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PasswordForm } from "./password-form";
-import { useQuery } from "@tanstack/react-query";
-import { getCurrentUserAction } from "@/app/actions/user";
-import { Label } from "@/components/ui/label";
-import { Card, CardHeader } from "@/components/ui/card";
-import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import { DangerSettings } from "./danger-settings";
+
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { UserWithAccount } from "@/types/user";
 
-export function AccountSettings() {
-  const { data } = useQuery({
-    queryKey: ["current_user"],
-    queryFn: getCurrentUserAction,
-  });
-
-  const account = useMemo(
-    () => (data?.user?.accounts?.length ? data?.user.accounts[0] : null),
-    [data?.user?.accounts],
-  );
-
+export function AccountSettings({ user }: { user: UserWithAccount }) {
   return (
     <div>
-      {!!account && (
+      {!!user.account && (
         <>
           <Label>Connected Account</Label>
           <Card className="mt-2">
@@ -46,7 +34,7 @@ export function AccountSettings() {
               <Avatar className="h-16 w-16">
                 <AvatarImage
                   className="rounded-full"
-                  src={account.picture ?? ""}
+                  src={user.account.picture ?? ""}
                   alt="Profile Picture"
                 />
                 <AvatarFallback className="md:text-4xl text-xl">
@@ -55,11 +43,11 @@ export function AccountSettings() {
               </Avatar>
 
               <div className="text-sm">
-                <p>{account.email}</p>
+                <p>{user.account.email}</p>
 
                 <p className="text-muted-foreground">
                   Linked{" "}
-                  {formatDistanceToNow(account.createdAt, {
+                  {formatDistanceToNow(user.account.createdAt, {
                     addSuffix: true,
                   })}
                 </p>
@@ -69,7 +57,7 @@ export function AccountSettings() {
         </>
       )}
 
-      {!data?.user?.passwordHash && (
+      {!user?.passwordHash && (
         <Alert className="mt-8">
           <ShieldAlertIcon className="h-5 w-5" />
           <AlertTitle>Password (optional)</AlertTitle>
@@ -79,7 +67,7 @@ export function AccountSettings() {
         </Alert>
       )}
 
-      {!account && (
+      {!user.account && (
         <Alert>
           <AlertTitle>Link Account</AlertTitle>
           <AlertDescription>
@@ -102,15 +90,13 @@ export function AccountSettings() {
             variant="outline"
             className="flex items-center justify-between text-muted-foreground mt-8 w-full"
           >
-            <p>
-              {data?.user?.passwordHash ? "Change Password" : "Set a Password"}
-            </p>
+            <p>{user?.passwordHash ? "Change Password" : "Set a Password"}</p>
 
             <ChevronsUpDownIcon className="size-4" />
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <PasswordForm passwordHash={data?.user?.passwordHash} />
+          <PasswordForm passwordHash={user?.passwordHash} />
         </CollapsibleContent>
       </Collapsible>
 
