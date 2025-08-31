@@ -9,6 +9,7 @@ import { messageTable } from "@umamin/db/schema/message";
 import { Cursor } from "@/types";
 import { getSession } from "@/lib/auth";
 import { aesDecrypt, aesEncrypt } from "@/lib/aes";
+import { formatContent } from "@/lib/utils";
 
 type GetMessagesParams = {
   cursor?: Cursor | null;
@@ -170,7 +171,7 @@ export async function sendMessageAction(
 
     const { question, content, senderId, receiverId } = params.data;
 
-    const formattedContent = content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
+    const formattedContent = formatContent(content);
     const encryptedContent = await aesEncrypt(formattedContent);
 
     await db.insert(messageTable).values({

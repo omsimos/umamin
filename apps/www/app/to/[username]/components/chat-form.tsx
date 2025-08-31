@@ -4,13 +4,14 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { SendIcon, Loader2Icon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, formatContent } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChatList } from "@/components/chat-list";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectUser } from "@umamin/db/schema/user";
 import { sendMessageAction } from "@/app/actions/message";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { useMutation } from "@tanstack/react-query";
 
 type Props = {
   currentUserId?: string;
@@ -20,26 +21,11 @@ type Props = {
 export function ChatForm({ currentUserId, user }: Props) {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
-  const [isFetching, setIsFetching] = useState(false);
 
   const inputRef = useDynamicTextarea(content);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    if (!user) {
-      toast.error("An error occurred");
-      return;
-    }
-
-    if (user?.id === currentUserId) {
-      toast.error("You can't send a message to yourself");
-      return;
-    }
-
-    setIsFetching(true);
-
-    try {
+  const mutation = useMutation({
+    mutationFn: async () => {
       const res = await sendMessageAction({
         senderId: currentUserId,
         receiverId: user?.id,
@@ -47,22 +33,24 @@ export function ChatForm({ currentUserId, user }: Props) {
         content,
       });
 
-      if (res.error) {
-        toast.error(res.error);
-        setIsFetching(false);
-        return;
+      if (user?.id === currentUserId) {
+        throw new Error("You can't send a message to yourself");
       }
 
-      setContent("");
+      if (res.error) {
+        throw new Error(res.error);
+      }
+    },
+    onSuccess: () => {
+      setMessage(formatContent(content));
       toast.success("Message sent anonymously");
-      setMessage(content.replace(/(\r\n|\n|\r){2,}/g, "\n\n"));
-      setIsFetching(false);
-    } catch (err) {
+      setContent("");
+    },
+    onError: (err) => {
       console.log(err);
-      toast.error("An error occured");
-      setIsFetching(false);
-    }
-  }
+      toast.error(err.message);
+    },
+  });
 
   return (
     <div
@@ -85,7 +73,10 @@ export function ChatForm({ currentUserId, user }: Props) {
         </span>
       ) : (
         <form
-          onSubmit={handleSubmit}
+          onSubmit={(e) => {
+            e.preventDefault();
+            mutation.mutate();
+          }}
           className="px-5 sm:px-7 flex items-center space-x-2 w-full self-center pt-2 max-w-lg"
         >
           <Textarea
@@ -93,7 +84,7 @@ export function ChatForm({ currentUserId, user }: Props) {
             required
             ref={inputRef}
             value={content}
-            disabled={isFetching}
+            disabled={mutation.isPending}
             onChange={(e) => {
               setContent(e.target.value);
             }}
@@ -106,9 +97,9 @@ export function ChatForm({ currentUserId, user }: Props) {
             data-testid="send-msg-btn"
             type="submit"
             size="icon"
-            disabled={isFetching}
+            disabled={mutation.isPending}
           >
-            {isFetching ? (
+            {mutation.isPending ? (
               <Loader2Icon className="w-4 h-4 animate-spin" />
             ) : (
               <SendIcon className="h-4 w-4" />
@@ -118,5 +109,5 @@ export function ChatForm({ currentUserId, user }: Props) {
         </form>
       )}
     </div>
-   );
+  );
 }

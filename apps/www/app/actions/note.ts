@@ -1,10 +1,11 @@
 "use server";
 
 import * as z from "zod";
+import { sql } from "drizzle-orm";
 import { db } from "@umamin/db/index";
 import { getSession } from "@/lib/auth";
+import { formatContent } from "@/lib/utils";
 import { noteTable } from "@umamin/db/schema/note";
-import { sql } from "drizzle-orm";
 
 const createNoteSchema = z.object({
   isAnonymous: z.boolean().default(false),
@@ -32,19 +33,19 @@ export async function createNoteAction(
       return { error: "User not authenticated" };
     }
 
-    const modifiedContent = content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
+    const formattedContent = formatContent(content);
 
     await db
       .insert(noteTable)
       .values({
         userId: session?.userId,
-        content: modifiedContent,
+        content: formattedContent,
         isAnonymous,
       })
       .onConflictDoUpdate({
         target: noteTable.userId,
         set: {
-          content: modifiedContent,
+          content: formattedContent,
           isAnonymous,
           updatedAt: sql`(unixepoch())`,
         },

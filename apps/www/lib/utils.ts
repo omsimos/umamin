@@ -65,3 +65,7 @@ export function formatUsername(username: string) {
 
   return formattedUsername ?? "";
 }
+
+export function formatContent(content: string) {
+  return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
+}
