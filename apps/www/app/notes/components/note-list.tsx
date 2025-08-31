@@ -18,7 +18,7 @@ type NotesResponse = {
   nextCursor: string | null;
 };
 
-export function NoteList() {
+export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   const {
     data,
     isLoading,
@@ -155,7 +155,11 @@ export function NoteList() {
                   </div>
                 )
               ) : (
-                <NoteCard key={post.id} data={post} />
+                <NoteCard
+                  isAuthenticated={isAuthenticated}
+                  key={post.id}
+                  data={post}
+                />
               )}
             </div>
           );

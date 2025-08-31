@@ -16,16 +16,19 @@ import { Menu } from "@/components/menu";
 
 type Props = {
   data: SelectNote & { user: SelectUser };
+  isAuthenticated: boolean;
 };
 
-export function NoteCard({ data }: Props) {
+export function NoteCard({ data, isAuthenticated }: Props) {
   const user = data.user;
   const username = user.username;
   const [replyOpen, setReplyOpen] = useState(false);
 
   return (
     <div id={`umamin-${data.id}`}>
-      <ReplyDrawer isOpen={replyOpen} setIsOpen={setReplyOpen} note={data} />
+      {isAuthenticated && (
+        <ReplyDrawer isOpen={replyOpen} setIsOpen={setReplyOpen} note={data} />
+      )}
 
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full text-sm">
@@ -93,25 +96,27 @@ export function NoteCard({ data }: Props) {
                 <MessageCircleOffIcon className="size-4" />
               )}
 
-              {!data.isAnonymous && !data.user.quietMode && (
+              {isAuthenticated && !data.isAnonymous && !data.user.quietMode && (
                 <button onClick={() => setReplyOpen((prev) => !prev)}>
                   <MessageSquareTextIcon className="size-5" />
                 </button>
               )}
 
-              <Menu
-                menuItems={[
-                  {
-                    title: "Reply",
-                    onClick: () => setReplyOpen(true),
-                    disabled: data.user.quietMode,
-                  },
-                  {
-                    title: "Save Image",
-                    onClick: () => saveImage(`umamin-${data.id}`),
-                  },
-                ]}
-              />
+              {isAuthenticated && (
+                <Menu
+                  menuItems={[
+                    {
+                      title: "Reply",
+                      onClick: () => setReplyOpen(true),
+                      disabled: data.user.quietMode,
+                    },
+                    {
+                      title: "Save Image",
+                      onClick: () => saveImage(`umamin-${data.id}`),
+                    },
+                  ]}
+                />
+              )}
             </div>
           </div>
         </CardHeader>
