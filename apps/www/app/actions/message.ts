@@ -155,7 +155,6 @@ export async function createReplyAction({
 const sendMessageSchema = z.object({
   question: z.string().min(1).max(500),
   content: z.string().min(1).max(500),
-  senderId: z.string().optional(),
   receiverId: z.string(),
 });
 
@@ -169,10 +168,17 @@ export async function sendMessageAction(
       return { error: "Invalid input" };
     }
 
-    const { question, content, senderId, receiverId } = params.data;
+    const { question, content, receiverId } = params.data;
+    const { session } = await getSession();
+
+    if (receiverId === session?.userId) {
+      return { error: "You can't send a message to yourself" };
+    }
 
     const formattedContent = formatContent(content);
     const encryptedContent = await aesEncrypt(formattedContent);
+
+    const senderId = session?.userId ?? null;
 
     await db.insert(messageTable).values({
       senderId,

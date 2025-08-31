@@ -13,12 +13,7 @@ import { sendMessageAction } from "@/app/actions/message";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useMutation } from "@tanstack/react-query";
 
-type Props = {
-  currentUserId?: string;
-  user: SelectUser;
-};
-
-export function ChatForm({ currentUserId, user }: Props) {
+export function ChatForm({ user }: { user: SelectUser }) {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
 
@@ -27,15 +22,10 @@ export function ChatForm({ currentUserId, user }: Props) {
   const mutation = useMutation({
     mutationFn: async () => {
       const res = await sendMessageAction({
-        senderId: currentUserId,
         receiverId: user?.id,
         question: user?.question,
         content,
       });
-
-      if (user?.id === currentUserId) {
-        throw new Error("You can't send a message to yourself");
-      }
 
       if (res.error) {
         throw new Error(res.error);
