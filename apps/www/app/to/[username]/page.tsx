@@ -82,7 +82,7 @@ export default async function SendMessage({
             <span className="font-medium text-muted-foreground">umamin</span>
           </div>
 
-          <ChatForm currentUserId={session?.userId} user={user} />
+          <ChatForm user={user} />
         </section>
       </div>
 
