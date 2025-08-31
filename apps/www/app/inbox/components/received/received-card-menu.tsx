@@ -17,6 +17,7 @@ import { deleteMessageAction } from "@/app/actions/message";
 import { Menu } from "@/components/menu";
 import { ReplyDialog } from "./reply-dialog";
 import { Button } from "@/components/ui/button";
+import { saveImage } from "@/lib/utils";
 
 export type ReceivedMenuProps = {
   id: string;
@@ -51,9 +52,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     },
     {
       title: "Save Image",
-      onClick: () => {
-        // onSaveImage(`umamin-${id}`);
-      },
+      onClick: () => saveImage(`umamin-${id}`),
     },
     {
       title: "Delete",

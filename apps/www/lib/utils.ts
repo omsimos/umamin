@@ -1,6 +1,8 @@
-import { clsx, type ClassValue } from "clsx";
-import { customAlphabet } from "nanoid";
+import { toast } from "sonner";
+import { customAlphabet, nanoid } from "nanoid";
 import { twMerge } from "tailwind-merge";
+import { clsx, type ClassValue } from "clsx";
+import { domToPng } from "modern-screenshot";
 import { formatDistanceToNow } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
@@ -69,3 +71,39 @@ export function formatUsername(username: string) {
 export function formatContent(content: string) {
   return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
 }
+
+export const saveImage = (id: string) => {
+  const target = document.querySelector(`#${id}`);
+
+  if (!target) {
+    toast.error("An error occured");
+    return;
+  }
+
+  toast.promise(
+    domToPng(target, {
+      quality: 1,
+      scale: 4,
+      backgroundColor: "#111113",
+      style: {
+        scale: "0.9",
+        display: "grid",
+        placeItems: "center",
+      },
+    })
+      .then((dataUrl) => {
+        const link = document.createElement("a");
+        link.download = `umamin-${nanoid(5)}.png`;
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch((err) => {
+        console.log(err);
+      }),
+    {
+      loading: "Saving...",
+      success: "Download ready",
+      error: "An error occured!",
+    },
+  );
+};

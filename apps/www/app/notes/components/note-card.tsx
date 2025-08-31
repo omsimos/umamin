@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { shortTimeAgo } from "@/lib/utils";
+import { saveImage, shortTimeAgo } from "@/lib/utils";
 import { SelectNote } from "@umamin/db/schema/note";
 import { SelectUser } from "@umamin/db/schema/user";
 import {
@@ -28,7 +28,7 @@ export function NoteCard({ data }: Props) {
       <ReplyDrawer isOpen={replyOpen} setIsOpen={setReplyOpen} note={data} />
 
       <Card className="flex flex-col items-start justify-between">
-        <CardHeader className="w-full pb-4 text-sm">
+        <CardHeader className="w-full text-sm">
           <div className="flex justify-between items-start">
             <div className="flex gap-3">
               {data.isAnonymous ? (
@@ -108,11 +108,7 @@ export function NoteCard({ data }: Props) {
                   },
                   {
                     title: "Save Image",
-                    onClick: () => {
-                      if (data.id) {
-                        // onSaveImage(`umamin-${data.id}`);
-                      }
-                    },
+                    onClick: () => saveImage(`umamin-${data.id}`),
                   },
                 ]}
               />
