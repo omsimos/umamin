@@ -18,6 +18,7 @@ import { Menu } from "@/components/menu";
 import { ReplyDialog } from "./reply-dialog";
 import { Button } from "@/components/ui/button";
 import { saveImage } from "@/lib/utils";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export type ReceivedMenuProps = {
   id: string;
@@ -29,21 +30,27 @@ export type ReceivedMenuProps = {
 
 export function ReceivedMessageMenu(props: ReceivedMenuProps) {
   const id = props.id;
+  const queryClient = useQueryClient();
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
-  // const deleteMessageAction = useMessageStore((state) => state.delete);
   const [open, setOpen] = useState(false);
 
-  const onDelete = async () => {
-    const res = await deleteMessageAction(id);
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await deleteMessageAction(id);
 
-    if (res.error) {
-      toast.error(res.error);
-      return;
-    }
-
-    toast.success("Message deleted");
-    // deleteMessage(id);
-  };
+      if (res.error) {
+        throw new Error(res.error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["received_messages"] });
+      toast.success("Message deleted");
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to delete message. Please try again.");
+    },
+  });
 
   const menuItems = [
     {
@@ -75,7 +82,11 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction asChild>
-              <Button variant="destructive" onClick={onDelete}>
+              <Button
+                disabled={deleteMutation.isPending}
+                variant="destructive"
+                onClick={() => deleteMutation.mutate()}
+              >
                 Continue
               </Button>
             </AlertDialogAction>
