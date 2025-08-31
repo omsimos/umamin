@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
 import { ProgressProvider } from "@bprogress/next/app";
 import { getQueryClient } from "@/lib/get-query-client";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -27,6 +28,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </ProgressProvider>
+      <Toaster position="top-right" />
     </ThemeProvider>
   );
 }
