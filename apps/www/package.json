@@ -36,6 +36,7 @@
     "@tanstack/react-virtual": "^3.13.12",
     "@types/mdx": "^2.0.13",
     "@umamin/db": "workspace:*",
+    "@umamin/aes": "workspace:*",
     "@umamin/ui": "workspace:*",
     "arctic": "^3.7.0",
     "class-variance-authority": "^0.7.1",

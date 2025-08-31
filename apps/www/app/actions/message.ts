@@ -4,11 +4,11 @@ import * as z from "zod";
 import { cache } from "react";
 import { db } from "@umamin/db/index";
 import { and, desc, eq, lt, or } from "drizzle-orm";
+import { aesDecrypt, aesEncrypt } from "@umamin/aes";
 import { messageTable } from "@umamin/db/schema/message";
 
 import { Cursor } from "@/types";
 import { getSession } from "@/lib/auth";
-import { aesDecrypt, aesEncrypt } from "@/lib/aes";
 import { formatContent } from "@/lib/utils";
 
 type GetMessagesParams = {
