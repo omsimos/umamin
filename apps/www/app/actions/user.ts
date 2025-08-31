@@ -136,8 +136,6 @@ export async function updatePasswordAction(
     console.log(err);
     return { error: "An error occured" };
   }
-
-  redirect("/settings");
 }
 
 export async function toggleDisplayPictureAction(accountImgUrl: string) {
