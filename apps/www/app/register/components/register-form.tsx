@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { useAppForm } from "@/hooks/form";
 import { registerSchema } from "@/lib/schema";
-import { Button } from "@/components/ui/button";
+import { Button } from "@umamin/ui/components/button";
 import { signup } from "@/lib/auth";
 
 export function RegisterForm() {

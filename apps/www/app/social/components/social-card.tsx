@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn, shortTimeAgo } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@umamin/ui/components/avatar";
+import { shortTimeAgo } from "@/lib/utils";
+import { cn } from "@umamin/ui/lib/utils";
 import {
   BadgeCheckIcon,
   HeartIcon,

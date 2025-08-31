@@ -2,8 +2,8 @@
 
 import { toast } from "sonner";
 import { Link2Icon } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@umamin/ui/components/skeleton";
+import { Badge } from "@umamin/ui/components/badge";
 
 const onCopy = (url: string) => {
   if (typeof window !== "undefined") {

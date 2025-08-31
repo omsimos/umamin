@@ -4,10 +4,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNoteAction } from "@/app/actions/note";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@umamin/ui/components/button";
+import { Label } from "@umamin/ui/components/label";
+import { Switch } from "@umamin/ui/components/switch";
+import { Textarea } from "@umamin/ui/components/textarea";
 
 export function NoteForm() {
   const queryClient = useQueryClient();

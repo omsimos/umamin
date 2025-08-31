@@ -12,7 +12,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@umamin/ui/components/alert-dialog";
 
 export default function UnauthenticatedDialog({
   isLoggedIn,

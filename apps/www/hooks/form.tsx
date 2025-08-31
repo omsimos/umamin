@@ -1,9 +1,9 @@
 import { LucideIcon } from "lucide-react";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@umamin/ui/components/input";
+import { Label } from "@umamin/ui/components/label";
+import { Button } from "@umamin/ui/components/button";
+import { Textarea } from "@umamin/ui/components/textarea";
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import { LoadingIcon } from "@/components/loading-icon";
 

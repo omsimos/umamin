@@ -1,13 +1,7 @@
 import { toast } from "sonner";
-import { customAlphabet, nanoid } from "nanoid";
-import { twMerge } from "tailwind-merge";
-import { clsx, type ClassValue } from "clsx";
 import { domToPng } from "modern-screenshot";
+import { customAlphabet, nanoid } from "nanoid";
 import { formatDistanceToNow } from "date-fns";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 export function generateUsernameId(length = 12) {
   const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";

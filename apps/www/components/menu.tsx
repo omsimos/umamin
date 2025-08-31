@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@umamin/ui/components/dropdown-menu";
 import { Icons } from "@/lib/icons";
 
 export type MenuItems = {

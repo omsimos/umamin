@@ -1,5 +1,5 @@
 import { LockIcon } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@umamin/ui/components/skeleton";
 import { ChatFormSkeleton } from "./components/chat-form-skeleton";
 
 export default function Loading() {

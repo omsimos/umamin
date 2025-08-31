@@ -1,6 +1,6 @@
 import { ScanFaceIcon } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@umamin/ui/components/avatar";
+import { Skeleton } from "@umamin/ui/components/skeleton";
 
 export const ChatListSkeleton = () => {
   return (

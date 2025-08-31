@@ -5,7 +5,7 @@ import { MessageSquareMoreIcon, UserPlusIcon } from "lucide-react";
 import { SelectUser } from "@umamin/db/schema/user";
 import { formatUsername, getBaseUrl } from "@/lib/utils";
 import { Metadata } from "next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@umamin/ui/components/button";
 import { UserCard } from "@/components/user-card";
 
 // const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });

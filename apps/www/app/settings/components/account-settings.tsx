@@ -11,16 +11,16 @@ import {
 import { PasswordForm } from "./password-form";
 import { DangerSettings } from "./danger-settings";
 
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Label } from "@umamin/ui/components/label";
+import { Button } from "@umamin/ui/components/button";
+import { Card, CardHeader } from "@umamin/ui/components/card";
+import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@umamin/ui/components/avatar";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@umamin/ui/components/collapsible";
 import { UserWithAccount } from "@/types/user";
 
 export function AccountSettings({ user }: { user: UserWithAccount }) {

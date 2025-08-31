@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Demo } from "@/components/demo";
-import { Button } from "@/components/ui/button";
+import { Button } from "@umamin/ui/components/button";
 
 export default async function Home() {
   return (

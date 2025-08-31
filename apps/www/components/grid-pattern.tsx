@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@umamin/ui/lib/utils";
 import { useId } from "react";
 
 export function GridPattern() {
