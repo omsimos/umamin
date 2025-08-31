@@ -16,6 +16,7 @@ import {
 import { deleteMessageAction } from "@/app/actions/message";
 import { Menu } from "@/components/menu";
 import { ReplyDialog } from "./reply-dialog";
+import { Button } from "@/components/ui/button";
 
 export type ReceivedMenuProps = {
   id: string;
@@ -74,7 +75,11 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+            <AlertDialogAction asChild>
+              <Button variant="destructive" onClick={onDelete}>
+                Continue
+              </Button>
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

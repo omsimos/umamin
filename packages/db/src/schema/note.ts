@@ -17,7 +17,7 @@ export const noteTable = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
     updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
-      () => sql`(unixepoch())`,
+      () => new Date(),
     ),
   },
   (t) => [index("updated_at_id_idx").on(t.updatedAt, t.id)],

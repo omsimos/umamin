@@ -19,7 +19,7 @@ export const messageTable = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
     updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
-      () => sql`(unixepoch())`,
+      () => new Date(),
     ),
   },
   (t) => [
