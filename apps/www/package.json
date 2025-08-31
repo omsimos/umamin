@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "ui:add": "pnpm dlx shadcn@latest add",
+    "ui:add": "pnpm dlx shadcn@canary add",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -36,6 +36,7 @@
     "@tanstack/react-virtual": "^3.13.12",
     "@types/mdx": "^2.0.13",
     "@umamin/db": "workspace:*",
+    "@umamin/ui": "workspace:*",
     "arctic": "^3.7.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
