@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 import Providers from "./providers";
 import { Navbar } from "@/components/navbar";
@@ -35,6 +36,7 @@ export default function RootLayout({
           <Navbar />
           <div className="pt-24">{children}</div>
         </Providers>
+        <GoogleAnalytics gaId="G-FGYK94W3YB" />
       </body>
     </html>
   );
