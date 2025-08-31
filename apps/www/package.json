@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@bprogress/next": "^3.2.12",
-    "@libsql/client": "^0.15.12",
+    "@libsql/client": "^0.15.14",
     "@next/third-parties": "^15.5.2",
     "@node-rs/argon2": "^2.0.2",
     "@oslojs/crypto": "^1.0.1",
@@ -26,10 +26,10 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
-    "@tanstack/react-form": "^1.19.2",
+    "@tanstack/react-form": "^1.19.3",
     "@tanstack/react-pacer": "^0.16.1",
-    "@tanstack/react-query": "^5.85.5",
-    "@tanstack/react-query-devtools": "^5.85.5",
+    "@tanstack/react-query": "^5.85.6",
+    "@tanstack/react-query-devtools": "^5.85.6",
     "@tanstack/react-virtual": "^3.13.12",
     "@umamin/db": "workspace:*",
     "arctic": "^3.7.0",
@@ -48,7 +48,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
-    "zod": "^4.1.4"
+    "zod": "^4.1.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
@@ -56,7 +56,7 @@
     "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "^20.19.11",
     "@types/react": "^19.1.12",
-    "@types/react-dom": "^19.1.8",
+    "@types/react-dom": "^19.1.9",
     "eslint": "^9.34.0",
     "eslint-config-next": "15.5.2",
     "eslint-plugin-react-hooks": "^5.2.0",
