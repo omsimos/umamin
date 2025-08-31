@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         user: true,
       },
       where: cursorCondition,
-      orderBy: [desc(noteTable.createdAt), desc(noteTable.id)],
+      orderBy: [desc(noteTable.updatedAt), desc(noteTable.id)],
       limit: 10,
     });
 

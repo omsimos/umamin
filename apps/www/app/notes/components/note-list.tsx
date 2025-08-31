@@ -46,7 +46,7 @@ export function NoteList() {
 
   const virtualizer = useWindowVirtualizer({
     count: hasNextPage ? allPosts.length + 1 : allPosts.length,
-    estimateSize: () => 216,
+    estimateSize: () => 250,
     paddingEnd: 100,
   });
 
