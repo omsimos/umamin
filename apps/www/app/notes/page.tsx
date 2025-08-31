@@ -3,7 +3,7 @@ import { NoteForm } from "./components/note-form";
 import { NoteList } from "./components/note-list";
 import { getSession } from "@/lib/auth";
 import { SquarePenIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@umamin/ui/components/button";
 import Link from "next/link";
 
 export const metadata: Metadata = {

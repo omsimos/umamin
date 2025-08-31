@@ -12,11 +12,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@umamin/ui/components/alert-dialog";
 import { deleteMessageAction } from "@/app/actions/message";
 import { Menu } from "@/components/menu";
 import { ReplyDialog } from "./reply-dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@umamin/ui/components/button";
 import { saveImage } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 

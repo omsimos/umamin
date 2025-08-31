@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@umamin/ui/components/tabs";
 import { CurrentUserCard } from "./components/current-user-card";
 import { Suspense } from "react";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";

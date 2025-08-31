@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@umamin/ui/components/avatar";
+import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { saveImage, shortTimeAgo } from "@/lib/utils";
 import { SelectNote } from "@umamin/db/schema/note";
 import { SelectUser } from "@umamin/db/schema/user";

@@ -5,9 +5,9 @@ import { useActionState } from "react";
 import { Loader2Icon } from "lucide-react";
 
 import { login } from "@/lib/auth";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Label } from "@umamin/ui/components/label";
+import { Input } from "@umamin/ui/components/input";
+import { Button } from "@umamin/ui/components/button";
 
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(login, { error: "" });

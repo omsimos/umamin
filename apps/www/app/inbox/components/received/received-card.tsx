@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@umamin/ui/lib/utils";
 import { SelectMessage } from "@umamin/db/schema/message";
 import { ReceivedMessageMenu } from "./received-card-menu";
 import { formatDistanceToNow } from "date-fns/formatDistanceToNow";

@@ -1,5 +1,5 @@
 import { AnimatedShinyText } from "@/components/animated-shiny-text";
-import { cn } from "@/lib/utils";
+import { cn } from "@umamin/ui/lib/utils";
 import { SocialCard } from "./components/social-card";
 
 const data = [

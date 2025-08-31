@@ -4,10 +4,11 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { SendIcon, Loader2Icon } from "lucide-react";
 
-import { cn, formatContent } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { formatContent } from "@/lib/utils";
+import { cn } from "@umamin/ui/lib/utils";
+import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/components/chat-list";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@umamin/ui/components/textarea";
 import { SelectUser } from "@umamin/db/schema/user";
 import { sendMessageAction } from "@/app/actions/message";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";

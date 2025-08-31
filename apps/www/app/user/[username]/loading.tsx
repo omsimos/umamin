@@ -1,5 +1,5 @@
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
-import { Button } from "@/components/ui/button";
+import { Button } from "@umamin/ui/components/button";
 import { MessageSquareMoreIcon, UserPlusIcon } from "lucide-react";
 
 export default function Loading() {

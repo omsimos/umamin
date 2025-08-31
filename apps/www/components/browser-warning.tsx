@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { TriangleAlertIcon } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
 
 import {
   AlertDialog,
@@ -12,7 +12,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "./ui/alert-dialog";
+} from "@umamin/ui/components/alert-dialog";
 
 export default function BrowserWarning() {
   const [isFb, setIsFb] = useState(false);

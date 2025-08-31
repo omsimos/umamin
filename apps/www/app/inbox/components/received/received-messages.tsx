@@ -7,7 +7,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
 import { SelectMessage } from "@umamin/db/schema/message";
 import { SelectUser } from "@umamin/db/schema/user";
 import { Cursor } from "@/types";

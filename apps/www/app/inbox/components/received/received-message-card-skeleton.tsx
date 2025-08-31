@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@umamin/ui/components/skeleton";
 import { Icons } from "@/lib/icons";
 
 export function ReceivedMessageCardSkeleton() {

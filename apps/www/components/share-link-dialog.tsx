@@ -4,7 +4,7 @@ import React from "react";
 import { toast } from "sonner";
 import { CopyIcon, LinkIcon } from "lucide-react";
 
-import { Button } from "./ui/button";
+import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogClose,
@@ -14,9 +14,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./ui/dialog";
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
+} from "@umamin/ui/components/dialog";
+import { Label } from "@umamin/ui/components/label";
+import { Input } from "@umamin/ui/components/input";
 
 const onCopy = (url: string) => {
   if (typeof window !== "undefined") {

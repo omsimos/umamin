@@ -7,8 +7,8 @@ import {
   toggleDisplayPictureAction,
   toggleQuietModeAction,
 } from "@/app/actions/user";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Label } from "@umamin/ui/components/label";
+import { Switch } from "@umamin/ui/components/switch";
 import { UserWithAccount } from "@/types/user";
 
 export function PrivacySettings({ user }: { user: UserWithAccount }) {

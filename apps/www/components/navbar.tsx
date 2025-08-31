@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@umamin/ui/components/badge";
 import {
   LayoutDashboardIcon,
   LinkIcon,

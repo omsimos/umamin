@@ -8,7 +8,7 @@ import { PrivacySettings } from "./privacy-settings";
 import { GeneralSettings } from "./general-settings";
 
 import { getCurrentUserAction } from "@/app/actions/user";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@umamin/ui/components/tabs";
 
 export function SettingsTabs() {
   const { data } = useQuery({

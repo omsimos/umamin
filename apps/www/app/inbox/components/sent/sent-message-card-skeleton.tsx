@@ -4,8 +4,8 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@umamin/ui/components/card";
+import { Skeleton } from "@umamin/ui/components/skeleton";
 import { ChatListSkeleton } from "@/components/skeleton/chat-list-skeleton";
 
 export function SentMessageCardSkeleton() {

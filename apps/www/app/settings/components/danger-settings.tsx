@@ -9,11 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from "@umamin/ui/components/dialog";
+import { Input } from "@umamin/ui/components/input";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
+import { Button } from "@umamin/ui/components/button";
 import { DeleteButton } from "./danger-button";
 import { deleteAccountAction } from "@/app/actions/user";
 

@@ -6,7 +6,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-} from "@/components/ui/card";
+} from "@umamin/ui/components/card";
 import { ChatList } from "@/components/chat-list";
 import { SelectUser } from "@umamin/db/schema/user";
 import { SelectMessage } from "@umamin/db/schema/message";

@@ -5,12 +5,12 @@ import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
 
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { ReceivedMenuProps } from "./received-card-menu";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@umamin/ui/components/dialog";
 import { ChatList } from "@/components/chat-list";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { Textarea } from "@umamin/ui/components/textarea";
+import { Button } from "@umamin/ui/components/button";
 import { createReplyAction } from "@/app/actions/message";
-import { cn } from "@/lib/utils";
+import { cn } from "@umamin/ui/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Props = {
