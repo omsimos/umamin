@@ -61,8 +61,8 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
   return (
     <section>
       <Label>Update Preferences</Label>
-      <div className=" flex items-center space-x-4 rounded-md border p-4 mt-2">
-        <CircleUserRoundIcon />
+      <div className="flex items-center space-x-4 rounded-md border p-4 mt-2">
+        <CircleUserRoundIcon className="size-6" />
         <div className="flex-1 space-y-1">
           <p className="text-sm font-medium leading-none">Display Picture</p>
           {user.account ? (
@@ -80,8 +80,8 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
         />
       </div>
 
-      <div className=" flex items-center space-x-4 rounded-md border p-4 mt-4">
-        <MessageCircleOffIcon />
+      <div className="flex items-center space-x-4 rounded-md border p-4 mt-4">
+        <MessageCircleOffIcon className="size-6" />
         <div className="flex-1 space-y-1">
           <p className="text-sm font-medium leading-none">Quiet Mode</p>
           <p className="text-sm text-muted-foreground">

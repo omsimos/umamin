@@ -30,7 +30,7 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
         <>
           <Label>Connected Account</Label>
           <Card className="mt-2">
-            <CardHeader className="flex-row space-x-4">
+            <CardHeader className="flex flex-row space-x-4 items-center">
               <Avatar className="h-16 w-16">
                 <AvatarImage
                   className="rounded-full"
