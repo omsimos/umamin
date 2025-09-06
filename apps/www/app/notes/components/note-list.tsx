@@ -71,6 +71,17 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     count: totalRows,
     estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
     paddingEnd: 100,
+    overscan: 12,
+    getItemKey: (index) => {
+      if (hasNextPage && index === totalRows - 1) return "loader";
+      if (isAdRow(index)) {
+        const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
+        return `ad-${adIndex}`;
+      }
+      const dataIndex = dataIndexForRow(index);
+      const post = allPosts[dataIndex];
+      return post?.id ?? `row-${index}`;
+    },
   });
 
   const items = virtualizer.getVirtualItems();
