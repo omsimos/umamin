@@ -98,12 +98,12 @@ importers:
       '@types/mdx':
         specifier: ^2.0.13
         version: 2.0.13
-      '@umamin/aes':
-        specifier: workspace:*
-        version: link:../../packages/aes
       '@umamin/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@umamin/encryption':
+        specifier: workspace:*
+        version: link:../../packages/encryption
       '@umamin/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -202,15 +202,6 @@ importers:
         specifier: ^5.9.2
         version: 5.9.2
 
-  packages/aes:
-    devDependencies:
-      '@types/node':
-        specifier: ^20.19.9
-        version: 20.19.11
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-
   packages/db:
     dependencies:
       '@libsql/client':
@@ -229,6 +220,15 @@ importers:
       drizzle-kit:
         specifier: ^0.31.4
         version: 0.31.4
+
+  packages/encryption:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.19.9
+        version: 20.19.11
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
 
   packages/ui:
     dependencies:

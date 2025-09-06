@@ -1,5 +1,5 @@
 {
-  "name": "@umamin/aes",
+  "name": "@umamin/encryption",
   "version": "0.0.0",
   "private": true,
   "exports": {
