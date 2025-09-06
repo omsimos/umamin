@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: "/login",
+          Location: "/inbox",
         },
       });
     }
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
     return new Response(null, {
       status: 302,
       headers: {
-        Location: "/login",
+        Location: "/inbox",
       },
     });
   } catch (err) {
