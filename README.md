@@ -1,135 +1,119 @@
-# Turborepo starter
+<div align="center">
+  <img src="https://github.com/omsimos/umamin/assets/69457996/5a7250dc-c65e-4251-8fa9-425006dccb02" width="150" />
 
-This Turborepo starter is maintained by the Turborepo core team.
+  <h1>Umamin</h1>
+</div>
 
-## Using this example
+<div align="center">
+  <p>An open-source social platform for sending and receiving encrypted anonymous messages. 🔏</p>
 
-Run the following command:
+  <img src="https://github.com/joshxfi/umamin/actions/workflows/ci.yml/badge.svg" alt="actions">
+  <img src="https://img.shields.io/github/v/release/joshxfi/umamin.svg" alt="releases">
+  <img src="https://img.shields.io/github/stars/joshxfi/umamin" alt="stars">
+</div>
 
+<br/>
+
+## Contributing
+
+If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you!
+
+### Monorepo Setup
+| Core Packages  | Description |
+| ------------- | ------------- |
+| `www` | **Umamin Q&A** & landing page  |
+| `@umamin/ui` | Shared UI components |
+| `@umamin/db` | Database schema & migrations using Drizzle ORM (libSQL/Turso) |
+| `@umamin/encryption` | Encryption algorithm using AES in Galois/Counter Mode (AES-GCM)  |
+
+### Prerequisites
+- [`Turso CLI`](https://docs.turso.tech/cli/installation) (for local libSQL server)
+- `Node.js` >= 20 or [`nvm`](https://github.com/nvm-sh/nvm)
+- `pnpm` 10.x
+
+### Install Dependencies
+If you're using `nvm`, you can easily switch to the required Node.js version.
 ```sh
-npx create-turbo@latest
+nvm use 20  # ignore if you're already on Node.js >= 20
+pnpm install
 ```
 
-## What's inside?
+### Environment Variables
+```env
+# apps/www/.env
+TURSO_CONNECTION_URL=http://127.0.0.1:8080
+# Optional if your database requires an auth token
+TURSO_AUTH_TOKEN=
 
-This Turborepo includes the following packages/apps:
+# AES‑GCM 256-bit key in base64 for encrypting messages
+AES_256_GCM_KEY=7ruID/GBuS2PGiysV9KXMZ6CkC1xuUKJFWEPLYgPPo0=
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+Generate an AES‑GCM key in base64 (Node 20+):
+```ts
+// Run in a Node REPL or small script
+async function generateAes256GcmKeyBase64() {
+  const key = await crypto.subtle.generateKey(
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  );
+  const raw = await crypto.subtle.exportKey('raw', key);
+  return Buffer.from(new Uint8Array(raw)).toString('base64');
+}
+generateAes256GcmKeyBase64().then(console.log);
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+If you need to use Google OAuth, set up your own OAuth client: [Setting up OAuth 2.0 →](https://support.google.com/cloud/answer/6158849)
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+### Development Server
+Run all apps in dev mode:
+```sh
+pnpm dev
 ```
 
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+Or run a specific app:
+```sh
+pnpm --filter=www dev
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
+### Setup Database
+With Turso CLI running (or a local libSQL server), apply migrations:
+```sh
+pnpm db:migrate
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+Other useful database commands:
+```sh
+pnpm db:generate   # generate SQL from schema
+pnpm db:studio     # open Drizzle Studio
 ```
 
-## Useful Links
+### Running Build
+Build everything:
+```sh
+pnpm build
+```
+Build a specific app or package:
+```sh
+pnpm --filter=www build
+```
 
-Learn more about the power of Turborepo:
+Once ready, you can submit a pull request for review.
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+### Contributor List
+<a href="https://github.com/joshxfi/umamin/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=joshxfi/umamin" />
+</a>
+
+## Security
+If you believe you have found a security vulnerability in Umamin, please do not open a public issue. Instead, open a private security advisory on GitHub or contact the maintainers directly.
+
+## License
+
+Umamin is licensed under [GPL-3.0](https://github.com/joshxfi/umamin/blob/main/LICENSE)
+

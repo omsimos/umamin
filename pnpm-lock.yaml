@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@types/node':
+        specifier: ^20.19.11
+        version: 20.19.11
       eslint:
         specifier: ^9.34.0
         version: 9.34.0(jiti@2.5.1)

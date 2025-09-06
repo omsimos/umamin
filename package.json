@@ -9,6 +9,7 @@
     "db:generate": "pnpm --filter=@umamin/db generate",
     "db:migrate": "pnpm --filter=@umamin/db migrate",
     "db:studio": "pnpm --filter=@umamin/db studio",
+    "aes:generate": "npx tsx ./scripts/generate-aes-key.ts",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"
@@ -18,6 +19,7 @@
     "eslint-config-turbo": "^2.5.6",
     "prettier": "^3.6.2",
     "turbo": "^2.5.6",
+    "@types/node": "^20.19.11",
     "typescript": "5.9.2"
   },
   "packageManager": "pnpm@10.15.0",
