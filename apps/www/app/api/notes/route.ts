@@ -12,12 +12,12 @@ export async function GET(request: NextRequest) {
     let cursorCondition;
 
     if (cursor) {
-      const [createdAt, cursorId] = cursor.split("_");
-      const cursorDate = new Date(createdAt);
+      const [updatedAt, cursorId] = cursor.split("_");
+      const cursorDate = new Date(updatedAt);
 
       cursorCondition = or(
-        lt(noteTable.createdAt, cursorDate),
-        and(eq(noteTable.createdAt, cursorDate), lt(noteTable.id, cursorId)),
+        lt(noteTable.updatedAt, cursorDate),
+        and(eq(noteTable.updatedAt, cursorDate), lt(noteTable.id, cursorId)),
       );
     }
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       data: posts,
       nextCursor:
         posts.length === 10
-          ? `${posts[posts.length - 1].createdAt}_${posts[posts.length - 1].id}`
+          ? `${posts[posts.length - 1].updatedAt}_${posts[posts.length - 1].id}`
           : null,
     });
   } catch (error) {
