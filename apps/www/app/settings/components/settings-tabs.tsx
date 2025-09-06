@@ -8,10 +8,16 @@ import { PrivacySettings } from "./privacy-settings";
 import { GeneralSettings } from "./general-settings";
 
 import { getCurrentUserAction } from "@/app/actions/user";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@umamin/ui/components/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@umamin/ui/components/tabs";
+import { SettingsSkeleton } from "./settings-skeleton";
 
 export function SettingsTabs() {
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["current_user"],
     queryFn: getCurrentUserAction,
   });
@@ -26,8 +32,6 @@ export function SettingsTabs() {
       account: accounts?.length ? accounts[0] : null,
     };
   }, [data?.user]);
-
-  if (!userData) return null;
 
   return (
     <Tabs defaultValue="general" className="w-full mt-12">
@@ -52,17 +56,23 @@ export function SettingsTabs() {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="general">
-        <GeneralSettings user={userData} />
-      </TabsContent>
+      {isLoading || !userData ? (
+        <SettingsSkeleton />
+      ) : (
+        <>
+          <TabsContent value="general">
+            <GeneralSettings user={userData} />
+          </TabsContent>
 
-      <TabsContent value="account">
-        <AccountSettings user={userData} />
-      </TabsContent>
+          <TabsContent value="account">
+            <AccountSettings user={userData} />
+          </TabsContent>
 
-      <TabsContent value="privacy">
-        <PrivacySettings user={userData} />
-      </TabsContent>
+          <TabsContent value="privacy">
+            <PrivacySettings user={userData} />
+          </TabsContent>
+        </>
+      )}
     </Tabs>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -6,7 +7,7 @@ import { RegisterForm } from "./components/register-form";
 
 const BrowserWarning = dynamic(() => import("@/components/browser-warning"));
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Umamin — Register",
   description:
     "Create an account on Umamin to start sending and receiving encrypted anonymous messages. Join our secure platform and ensure your privacy today.",
@@ -42,7 +43,7 @@ export default async function Register() {
   }
 
   return (
-    <section className="max-w-lg md:max-w-md container mt-36 min-h-screen">
+    <section className="max-w-lg md:max-w-md container min-h-screen">
       <BrowserWarning />
 
       <div className="mb-6">
