@@ -19,7 +19,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     >
       <ProgressProvider
         height="2px"
-        color="#BD0C3B"
+        color="#970064"
         options={{ showSpinner: false }}
         shallowRouting
       >
