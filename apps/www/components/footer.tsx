@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="pb-24 flex flex-col items-center text-muted-foreground text-sm">
+    <footer className="pb-24 lg:pb-8 flex flex-col items-center text-muted-foreground text-sm">
       <div>
         <span>developed</span> by{" "}
         <Link

@@ -7,12 +7,23 @@ import { useAppForm } from "@/hooks/form";
 import { generalSettingsSchema, UserWithAccount } from "@/types/user";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { generalSettingsAction } from "@/app/actions/user";
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 
 export function GeneralSettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
+
+  const rateLimitedAction = useAsyncRateLimitedCallback(generalSettingsAction, {
+    limit: 3,
+    window: 60000, // 1 minute
+    windowType: "sliding",
+    onReject: () => {
+      throw new Error("Limit reached. Please wait before trying again.");
+    },
+  });
+
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof generalSettingsSchema>) => {
-      const res = await generalSettingsAction(values);
+      const res = await rateLimitedAction(values);
       if (res?.error) {
         throw new Error(res.error);
       }

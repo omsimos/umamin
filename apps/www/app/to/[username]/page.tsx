@@ -60,31 +60,29 @@ export default async function SendMessage({
   const { session } = await getSession();
 
   return (
-    <>
-      <div className="w-full max-w-xl container">
-        <section className="border flex flex-col w-full pt-0 rounded-xl bg-card">
-          <div className="bg-background border-b w-full item-center px-6 py-4 rounded-t-2xl flex justify-between flex-row">
-            <div className="flex items-center space-x-1">
-              <span className="text-muted-foreground">To:</span>
-              <p className="font-semibold text-sm">
-                {user?.displayName ? user?.displayName : user?.username}
-              </p>
-              {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                user.username,
-              ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
-              {user.quietMode && (
-                <MessageCircleOffIcon className="h-4 w-4 text-yellow-500" />
-              )}
+    <div className="w-full max-w-xl container min-h-screen">
+      <section className="border flex flex-col w-full pt-0 rounded-xl bg-card">
+        <div className="bg-background border-b w-full item-center px-6 py-4 rounded-t-2xl flex justify-between flex-row">
+          <div className="flex items-center space-x-1">
+            <span className="text-muted-foreground">To:</span>
+            <p className="font-semibold text-sm">
+              {user?.displayName ? user?.displayName : user?.username}
+            </p>
+            {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
+              user.username,
+            ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+            {user.quietMode && (
+              <MessageCircleOffIcon className="h-4 w-4 text-yellow-500" />
+            )}
 
-              <ShareButton username={user.username} />
-            </div>
-
-            <span className="font-medium text-muted-foreground">umamin</span>
+            <ShareButton username={user.username} />
           </div>
 
-          <ChatForm user={user} />
-        </section>
-      </div>
+          <span className="font-medium text-muted-foreground">umamin</span>
+        </div>
+
+        <ChatForm user={user} />
+      </section>
 
       <div className="mt-4 text-muted-foreground text-sm flex items-center justify-center">
         <LockIcon className="h-4 w-4 mr-2" />
@@ -93,7 +91,7 @@ export default async function SendMessage({
       </div>
 
       <UnauthenticatedDialog isLoggedIn={!!session} />
-    </>
+    </div>
   );
 }
 

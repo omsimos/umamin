@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppForm } from "@/hooks/form";
 import { passwordFormSchema } from "@/types/user";
 import { updatePasswordAction } from "@/app/actions/user";
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 
 export function PasswordForm({
   passwordHash,
@@ -16,9 +17,18 @@ export function PasswordForm({
 }) {
   const queryClient = useQueryClient();
 
+  const rateLimitedAction = useAsyncRateLimitedCallback(updatePasswordAction, {
+    limit: 2,
+    window: 60000, // 1 minute
+    windowType: "sliding",
+    onReject: () => {
+      throw new Error("Limit reached. Please wait before trying again.");
+    },
+  });
+
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof passwordFormSchema>) => {
-      const res = await updatePasswordAction(values);
+      const res = await rateLimitedAction(values);
 
       if (res?.error) {
         throw new Error(res.error);

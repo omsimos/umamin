@@ -10,9 +10,22 @@ import {
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
 import { UserWithAccount } from "@/types/user";
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 
 export function PrivacySettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
+
+  const rateLimitedToggleDisplay = useAsyncRateLimitedCallback(
+    toggleDisplayPictureAction,
+    {
+      limit: 3,
+      window: 60000, // 1 minute
+      windowType: "sliding",
+      onReject: () => {
+        throw new Error("Limit reached. Please wait before trying again.");
+      },
+    },
+  );
 
   const displayPictureMutation = useMutation({
     mutationFn: async () => {
@@ -20,7 +33,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
         throw new Error("Google account not connected");
       }
 
-      const res = await toggleDisplayPictureAction(user.account.picture);
+      const res = await rateLimitedToggleDisplay(user.account.picture);
       if (res.error) {
         throw new Error(res.error);
       }
@@ -39,9 +52,21 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
   });
 
+  const rateLimitedToggleQuiet = useAsyncRateLimitedCallback(
+    toggleQuietModeAction,
+    {
+      limit: 3,
+      window: 60000, // 1 minute
+      windowType: "sliding",
+      onReject: () => {
+        throw new Error("Limit reached. Please wait before trying again.");
+      },
+    },
+  );
+
   const quietModeMutation = useMutation({
     mutationFn: async () => {
-      const res = await toggleQuietModeAction();
+      const res = await rateLimitedToggleQuiet();
       if (res.error) {
         throw new Error(res.error);
       }

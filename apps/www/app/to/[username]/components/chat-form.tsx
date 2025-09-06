@@ -13,6 +13,7 @@ import { SelectUser } from "@umamin/db/schema/user";
 import { sendMessageAction } from "@/app/actions/message";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useMutation } from "@tanstack/react-query";
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 
 export function ChatForm({ user }: { user: SelectUser }) {
   const [content, setContent] = useState("");
@@ -20,9 +21,18 @@ export function ChatForm({ user }: { user: SelectUser }) {
 
   const inputRef = useDynamicTextarea(content);
 
+  const rateLimitedMessage = useAsyncRateLimitedCallback(sendMessageAction, {
+    limit: 3,
+    window: 60000, // 1 minute
+    windowType: "sliding",
+    onReject: () => {
+      throw new Error("Limit reached. Please wait before trying again.");
+    },
+  });
+
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await sendMessageAction({
+      const res = await rateLimitedMessage({
         receiverId: user?.id,
         question: user?.question,
         content,
