@@ -51,7 +51,7 @@ export default async function Login() {
           Umamin Account
         </h2>
         <p className="text-sm text-muted-foreground">
-          Proceed with your Umamin v2.0 profile
+          Proceed with your Umamin profile
         </p>
       </div>
 

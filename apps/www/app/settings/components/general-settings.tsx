@@ -87,7 +87,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
               </p>
             ) : (
               <p className="text-sm text-yellow-600 flex items-center gap-1">
-                <InfoIcon className="h-4 w-4" /> Google user.account required to
+                <InfoIcon className="h-4 w-4" /> Google account required to
                 change username
               </p>
             )}
