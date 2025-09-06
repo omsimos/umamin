@@ -94,12 +94,7 @@ export function ChatForm({ user }: { user: SelectUser }) {
             className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
             autoComplete="off"
           />
-          <Button
-            data-testid="send-msg-btn"
-            type="submit"
-            size="icon"
-            disabled={mutation.isPending}
-          >
+          <Button type="submit" size="icon" disabled={mutation.isPending}>
             {mutation.isPending ? (
               <Loader2Icon className="w-4 h-4 animate-spin" />
             ) : (

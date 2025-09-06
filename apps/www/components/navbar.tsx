@@ -52,16 +52,11 @@ export async function Navbar() {
           </Link>
         )}
 
-        <Link data-testid="nav-notes-btn" href="/notes" title="Notes">
+        <Link href="/notes" title="Notes">
           <ScrollTextIcon className="h-6 w-6" />
         </Link>
 
-        <Link
-          data-testid="nav-inbox-btn"
-          href="/login"
-          aria-label="home button"
-          title="Inbox"
-        >
+        <Link href="/login" aria-label="home button" title="Inbox">
           <LayoutDashboardIcon />
         </Link>
 
@@ -70,15 +65,11 @@ export async function Navbar() {
         </Link>
 
         {session ? (
-          <Link
-            data-testid="nav-settings-btn"
-            href="/settings"
-            title="Settings"
-          >
+          <Link href="/settings" title="Settings">
             <UserCogIcon className="w-6 h-6" />
           </Link>
         ) : (
-          <Link data-testid="nav-login-btn" href="/login" title="Login">
+          <Link href="/login" title="Login">
             <LogInIcon className="h-6 w-6" />
           </Link>
         )}

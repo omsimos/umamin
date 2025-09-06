@@ -22,10 +22,7 @@ export function ReceivedMessageCard({ data }: { data: SelectMessage }) {
         <p className="font-bold text-center leading-normal text-lg min-w-0 break-words mb-4">
           {data.question}
         </p>
-        <div
-          data-testid="received-data-content"
-          className="flex w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted break-words min-w-0"
-        >
+        <div className="flex w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted break-words min-w-0">
           {data.content}
         </div>
         <p className="text-muted-foreground text-sm mt-4 italic text-center">

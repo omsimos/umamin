@@ -5,8 +5,16 @@ import { Loader2Icon, SendIcon } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { SelectNote } from "@umamin/db/schema/note";
-import { Dialog, DialogContent, DialogTitle } from "@umamin/ui/components/dialog";
-import { Drawer, DrawerContent, DrawerTitle } from "@umamin/ui/components/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@umamin/ui/components/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from "@umamin/ui/components/drawer";
 import { formatContent } from "@/lib/utils";
 import { cn } from "@umamin/ui/lib/utils";
 import { ChatList } from "@/components/chat-list";
@@ -114,12 +122,7 @@ const ChatForm = ({ note }: ChatFormProps) => {
               className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
               autoComplete="off"
             />
-            <Button
-              data-testid="note-send-reply-btn"
-              type="submit"
-              size="icon"
-              disabled={mutation.isPending}
-            >
+            <Button type="submit" size="icon" disabled={mutation.isPending}>
               {mutation.isPending ? (
                 <Loader2Icon className="w-4 h-4 animate-spin" />
               ) : (

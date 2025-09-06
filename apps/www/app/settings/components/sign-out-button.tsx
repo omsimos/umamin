@@ -8,12 +8,7 @@ export function SignOutButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button
-      data-testid="logout-btn"
-      type="submit"
-      disabled={pending}
-      variant="outline"
-    >
+    <Button type="submit" disabled={pending} variant="outline">
       {pending && <Loader2Icon className="size-4 animate-spin" />}
       Sign Out
     </Button>

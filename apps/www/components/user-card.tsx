@@ -46,7 +46,7 @@ export function UserCard({ user }: { user: SelectUser }) {
 
             <ShareButton username={user.username} />
           </div>
-          <p data-testid="username" className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-sm">
             @{user.username}
           </p>
         </div>
