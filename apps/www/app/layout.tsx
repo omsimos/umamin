@@ -5,6 +5,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 
 import Providers from "./providers";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 
 import "./globals.css";
 
@@ -81,6 +82,7 @@ export default function RootLayout({
         <Providers>
           <Navbar />
           <div className="pt-24">{children}</div>
+          <Footer />
         </Providers>
         <GoogleAnalytics gaId="G-FGYK94W3YB" />
       </body>
