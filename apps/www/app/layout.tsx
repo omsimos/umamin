@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
@@ -83,6 +84,15 @@ export default function RootLayout({
         </Providers>
         <GoogleAnalytics gaId="G-FGYK94W3YB" />
       </body>
+
+      {process.env.NODE_ENV === "production" && (
+        <Script
+          async
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4274133898976040"
+          crossOrigin="anonymous"
+        />
+      )}
     </html>
   );
 }

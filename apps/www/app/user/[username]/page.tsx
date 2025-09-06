@@ -1,4 +1,5 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import { MessageSquareMoreIcon, UserPlusIcon } from "lucide-react";
 
@@ -8,7 +9,7 @@ import { Metadata } from "next";
 import { Button } from "@umamin/ui/components/button";
 import { UserCard } from "@/components/user-card";
 
-// const AdContainer = dynamic(() => import("@umamin/ui/ad"), { ssr: false });
+const AdContainer = dynamic(() => import("@/components/ad-container"));
 
 export async function generateMetadata({
   params,
@@ -77,7 +78,7 @@ export default async function Page({
       </div>
 
       {/* v2-user */}
-      {/* <AdContainer className="mt-5" slotId="4417432474" /> */}
+      <AdContainer className="mt-5" slotId="4417432474" />
     </section>
   );
 }

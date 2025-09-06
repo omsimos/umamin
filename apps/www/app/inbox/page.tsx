@@ -1,15 +1,21 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@umamin/ui/components/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@umamin/ui/components/tabs";
 import { CurrentUserCard } from "./components/current-user-card";
-import { Suspense } from "react";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
 import { ReceivedMessages } from "./components/received/received-messages";
 import { SentMessages } from "./components/sent/sent-messages";
 
-// const AdContainer = dynamic(() => import("@umamin/ui/ad"));
+const AdContainer = dynamic(() => import("@/components/ad-container"));
 
 export const metadata: Metadata = {
   title: "Umamin — Inbox",
@@ -64,7 +70,7 @@ export default async function InboxPage() {
         </TabsList>
 
         {/* v2-inbox */}
-        {/* <AdContainer className="mb-5" slotId="7047998078" /> */}
+        <AdContainer className="mb-4" slotId="7047998078" />
 
         <TabsContent value="received">
           <ReceivedMessages />

@@ -1,17 +1,25 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 
-import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@umamin/ui/components/alert";
 import { SelectNote } from "@umamin/db/schema/note";
-import { NoteCard } from "./note-card";
 import { SelectUser } from "@umamin/db/schema/user";
+import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
+
+const AdContainer = dynamic(() => import("@/components/ad-container"), {
+  ssr: false,
+});
 
 type NotesResponse = {
   data: (SelectNote & { user: SelectUser })[];
@@ -31,58 +39,57 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     queryKey: ["notes"],
     queryFn: async ({ pageParam }) => {
       const url = pageParam ? `/api/notes?cursor=${pageParam}` : "/api/notes";
-
       const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error("Network response was not ok");
-      }
+      if (!res.ok) throw new Error("Network response was not ok");
       return res.json();
     },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
-  const allPosts = data?.pages.flatMap((page) => page.data) ?? [];
+  const allPosts = data?.pages.flatMap((p) => p.data) ?? [];
+
+  const AD_FREQUENCY = 5; // show 1 ad *after* every 5 posts
+
+  const adCountFor = (n: number) => Math.floor(n / AD_FREQUENCY);
+
+  const isAdRow = (rowIndex: number) =>
+    (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
+
+  const dataIndexForRow = (rowIndex: number) => {
+    const adsAtOrBefore = Math.floor((rowIndex + 1) / (AD_FREQUENCY + 1));
+    const adsBefore = isAdRow(rowIndex) ? adsAtOrBefore - 1 : adsAtOrBefore;
+    return rowIndex - adsBefore;
+  };
+
+  const totalRows = useMemo(() => {
+    const rows = allPosts.length + adCountFor(allPosts.length);
+    return hasNextPage ? rows + 1 : rows; // +1 for loader row at the end
+  }, [allPosts.length, hasNextPage]);
 
   const virtualizer = useWindowVirtualizer({
-    count: hasNextPage ? allPosts.length + 1 : allPosts.length,
-    estimateSize: () => 250,
+    count: totalRows,
+    estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
     paddingEnd: 100,
   });
+
+  const items = virtualizer.getVirtualItems();
 
   const handleNextPage = useThrottledCallback(
     () => {
       fetchNextPage();
     },
-    {
-      wait: 3000,
-    },
+    { wait: 3000 },
   );
 
   useEffect(() => {
-    const [lastItem] = [...virtualizer.getVirtualItems()].reverse();
-
-    if (!lastItem) {
-      return;
-    }
-
-    if (
-      lastItem.index >= allPosts.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
+    if (!hasNextPage || isFetchingNextPage || items.length === 0) return;
+    const lastItem = items[items.length - 1];
+    const lastIndex = totalRows - 1; // loader row index if hasNextPage
+    if (lastItem?.index >= lastIndex) {
       handleNextPage();
     }
-  }, [
-    hasNextPage,
-    fetchNextPage,
-    allPosts.length,
-    isFetchingNextPage,
-    handleNextPage,
-    virtualizer.getVirtualItems(),
-  ]);
-
-  const items = virtualizer.getVirtualItems();
+  }, [items, hasNextPage, isFetchingNextPage, totalRows, handleNextPage]);
 
   if (error) {
     return (
@@ -119,6 +126,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
         </Alert>
       )}
 
+      {/* v2-notes (top ad) */}
+      <AdContainer className="mb-5" slotId="1999152698" />
+
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
@@ -126,16 +136,13 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
           position: "relative",
         }}
       >
-        {items.map((virtualRow) => {
-          const isLoaderRow = virtualRow.index > allPosts.length - 1;
-          const post = allPosts[virtualRow.index];
-
-          if (!isLoaderRow && !post) return null;
+        {items.map((row) => {
+          const isLoaderRow = hasNextPage && row.index === totalRows - 1;
 
           return (
             <div
-              key={virtualRow.key}
-              data-index={virtualRow.index}
+              key={row.key}
+              data-index={row.index}
               ref={virtualizer.measureElement}
               className="pb-4"
               style={{
@@ -143,23 +150,28 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
                 top: 0,
                 left: 0,
                 width: "100%",
-                transform: `translateY(${virtualRow.start}px)`,
+                transform: `translateY(${row.start}px)`,
               }}
             >
               {isLoaderRow ? (
-                hasNextPage ? (
-                  <NoteCardSkeleton />
-                ) : (
-                  <div className="text-center mt-4 text-muted-foreground">
-                    Nothing more to load
-                  </div>
-                )
+                <NoteCardSkeleton />
+              ) : isAdRow(row.index) ? (
+                // v2-notes-list (inline ad row)
+                <AdContainer className="mb-4" slotId="9012650581" />
               ) : (
-                <NoteCard
-                  isAuthenticated={isAuthenticated}
-                  key={post.id}
-                  data={post}
-                />
+                (() => {
+                  const dataIndex = dataIndexForRow(row.index);
+                  const post = allPosts[dataIndex];
+                  if (!post) return null;
+
+                  return (
+                    <NoteCard
+                      isAuthenticated={isAuthenticated}
+                      key={post.id}
+                      data={post}
+                    />
+                  );
+                })()
               )}
             </div>
           );
