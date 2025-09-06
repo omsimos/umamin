@@ -16,8 +16,8 @@ export const metadata = {
     "anonymous messaging sign up",
   ],
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
   openGraph: {
     type: "website",

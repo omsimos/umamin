@@ -17,8 +17,8 @@ export const metadata: Metadata = {
     "encrypted messages login",
   ],
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
   openGraph: {
     type: "website",
