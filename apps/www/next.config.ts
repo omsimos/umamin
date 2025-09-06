@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
+  transpilePackages: ["@umamin/db", "@umamin/encryption", "@umamin/ui"],
 };
 
 const withMDX = createMDX({
