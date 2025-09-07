@@ -12,6 +12,7 @@ import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
+import { revalidateTag } from "next/cache";
 
 export const getCurrentUserAction = cache(async () => {
   try {
@@ -45,7 +46,7 @@ export async function generalSettingsAction(
       return { error: "Invalid input" };
     }
 
-    const { session } = await getSession();
+    const { session, user } = await getSession();
 
     if (!session) {
       throw new Error("Unauthorized");
@@ -53,10 +54,20 @@ export async function generalSettingsAction(
 
     const data = params.data;
 
+    const oldUsername = user?.username;
+
     await db
       .update(userTable)
       .set(data)
       .where(eq(userTable.id, session.userId));
+
+    // Invalidate user data cache tags. If username changed, bust both old and new.
+    if (oldUsername) {
+      revalidateTag(`user-${oldUsername}`);
+    }
+    if (data.username && data.username !== oldUsername) {
+      revalidateTag(`user-${data.username}`);
+    }
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };
@@ -80,6 +91,9 @@ export async function deleteAccountAction() {
 
     await invalidateSession(session.id);
     await deleteSessionTokenCookie();
+
+    // Invalidate user's public cache
+    revalidateTag(`user-${user.username}`);
   } catch (err) {
     console.log(err);
   }
@@ -153,6 +167,9 @@ export async function toggleDisplayPictureAction(accountImgUrl: string) {
       .set({ imageUrl })
       .where(eq(userTable.id, user.id));
 
+    // Bust user profile caches that depend on imageUrl
+    revalidateTag(`user-${user.username}`);
+
     return { imageUrl };
   } catch (err) {
     console.log(err);
@@ -174,6 +191,9 @@ export async function toggleQuietModeAction() {
       .update(userTable)
       .set({ quietMode })
       .where(eq(userTable.id, user.id));
+
+    // Bust caches for quiet mode indicator
+    revalidateTag(`user-${user.username}`);
 
     return { quietMode };
   } catch (err) {
