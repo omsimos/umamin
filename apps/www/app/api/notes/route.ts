@@ -4,6 +4,8 @@ import { desc, lt, and, or, eq } from "drizzle-orm";
 import { noteTable } from "@umamin/db/schema/note";
 import { db } from "@umamin/db/index";
 
+export const revalidate = 30;
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;

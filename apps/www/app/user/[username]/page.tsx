@@ -84,12 +84,7 @@ export default async function Page({
 }
 
 async function getUserByUsername(username: string): Promise<SelectUser> {
-  const res = await fetch(`${getBaseUrl()}/api/users/${username}`, {
-    next: {
-      revalidate: 86400, // 24 hours (tag invalidation keeps it fresh on updates)
-      tags: [`user-${username}`],
-    },
-  });
+  const res = await fetch(`${getBaseUrl()}/api/users/${username}`);
 
   if (!res.ok) notFound();
   const user = await res.json();

@@ -12,7 +12,7 @@ import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
-import { revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 
 export const getCurrentUserAction = cache(async () => {
   try {
@@ -61,12 +61,12 @@ export async function generalSettingsAction(
       .set(data)
       .where(eq(userTable.id, session.userId));
 
-    // Invalidate user data cache tags. If username changed, bust both old and new.
+    // Invalidate API route cache for old and new paths
     if (oldUsername) {
-      revalidateTag(`user-${oldUsername}`);
+      revalidatePath(`/api/users/${oldUsername}`);
     }
     if (data.username && data.username !== oldUsername) {
-      revalidateTag(`user-${data.username}`);
+      revalidatePath(`/api/users/${data.username}`);
     }
   } catch (err) {
     console.log(err);
@@ -92,8 +92,8 @@ export async function deleteAccountAction() {
     await invalidateSession(session.id);
     await deleteSessionTokenCookie();
 
-    // Invalidate user's public cache
-    revalidateTag(`user-${user.username}`);
+    // Invalidate user's API route cache
+    revalidatePath(`/api/users/${user.username}`);
   } catch (err) {
     console.log(err);
   }
@@ -167,8 +167,8 @@ export async function toggleDisplayPictureAction(accountImgUrl: string) {
       .set({ imageUrl })
       .where(eq(userTable.id, user.id));
 
-    // Bust user profile caches that depend on imageUrl
-    revalidateTag(`user-${user.username}`);
+    // Bust user's API route cache (imageUrl affects profile payload)
+    revalidatePath(`/api/users/${user.username}`);
 
     return { imageUrl };
   } catch (err) {
@@ -192,8 +192,8 @@ export async function toggleQuietModeAction() {
       .set({ quietMode })
       .where(eq(userTable.id, user.id));
 
-    // Bust caches for quiet mode indicator
-    revalidateTag(`user-${user.username}`);
+    // Bust user's API route cache (quiet mode affects profile payload)
+    revalidatePath(`/api/users/${user.username}`);
 
     return { quietMode };
   } catch (err) {
