@@ -6,6 +6,7 @@ import { db } from "@umamin/db/index";
 import { getSession } from "@/lib/auth";
 import { formatContent } from "@/lib/utils";
 import { noteTable } from "@umamin/db/schema/note";
+import { revalidatePath } from "next/cache";
 
 const createNoteSchema = z.object({
   isAnonymous: z.boolean().default(false),
@@ -50,6 +51,8 @@ export async function createNoteAction(
           updatedAt: sql`(unixepoch())`,
         },
       });
+
+    revalidatePath("/api/notes");
   } catch (error) {
     console.log("Error creating note:", error);
     return { error: "Failed to create note" };
