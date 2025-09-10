@@ -33,8 +33,8 @@ const data = [
 
 export default function Social() {
   return (
-    <main>
-      <div  className="flex flex-col items-center container">
+    <main className="pb-24">
+      <div className="flex flex-col items-center container">
         <div
           className={cn(
             "group rounded-full border border-black/5 bg-zinc-100 text-base text-white transition-all ease-in dark:border-white/5 dark:bg-zinc-900",

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { toast } from "sonner";
+import { useState } from "react";
+import { Loader2Icon, MessageSquareShareIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNoteAction } from "@/app/actions/note";
 import { Button } from "@umamin/ui/components/button";
@@ -30,20 +31,14 @@ export function NoteForm() {
 
   return (
     <section>
-      <div>
-        <Label htmlFor="message" className="h-7">
-          Content
-          <span className="text-destructive">*</span>
-        </Label>
-        <Textarea
-          required
-          disabled={mutation.isPending}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          id="message"
-          placeholder="How's your day going"
-        />
-      </div>
+      <Textarea
+        required
+        disabled={mutation.isPending}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        id="message"
+        placeholder="How's your day going"
+      />
 
       <div className="flex items-center justify-between mt-2">
         <div className="flex items-center space-x-2">
@@ -57,7 +52,7 @@ export function NoteForm() {
         </div>
 
         <Button
-          disabled={mutation.isPending}
+          disabled={mutation.isPending || !content}
           onClick={() =>
             mutation.mutate({
               content: content.trim(),
@@ -65,6 +60,11 @@ export function NoteForm() {
             })
           }
         >
+          {mutation.isPending ? (
+            <Loader2Icon className="animate-spin" />
+          ) : (
+            <MessageSquareShareIcon />
+          )}
           Share Note
         </Button>
       </div>

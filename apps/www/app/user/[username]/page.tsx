@@ -60,7 +60,7 @@ export default async function Page({
   const user = await getUserByUsername(username);
 
   return (
-    <section className="max-w-xl mx-auto container">
+    <section className="max-w-xl mx-auto min-h-screen container">
       <UserCard user={user} />
 
       <div className="flex gap-2 mt-6 w-full">

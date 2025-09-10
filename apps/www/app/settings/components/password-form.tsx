@@ -9,6 +9,7 @@ import { useAppForm } from "@/hooks/form";
 import { passwordFormSchema } from "@/types/user";
 import { updatePasswordAction } from "@/app/actions/user";
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
+import { KeyIcon } from "lucide-react";
 
 export function PasswordForm({
   passwordHash,
@@ -107,6 +108,7 @@ export function PasswordForm({
       <div className="flex justify-end">
         <form.AppForm>
           <form.SubmitButton
+            icon={KeyIcon}
             disabled={mutation.isPending}
             label={passwordHash ? "Update Password" : "Set Password"}
           />

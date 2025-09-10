@@ -48,7 +48,7 @@ export default async function InboxPage() {
   }
 
   return (
-    <main className="max-w-xl mx-auto container">
+    <main className="max-w-xl mx-auto min-h-screen container">
       <Suspense fallback={<UserCardSkeleton />}>
         <CurrentUserCard />
       </Suspense>

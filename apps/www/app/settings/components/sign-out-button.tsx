@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2Icon } from "lucide-react";
+import { Loader2Icon, LogOutIcon } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@umamin/ui/components/button";
 
@@ -9,7 +9,7 @@ export function SignOutButton() {
 
   return (
     <Button type="submit" disabled={pending} variant="outline">
-      {pending && <Loader2Icon className="size-4 animate-spin" />}
+      {pending ? <Loader2Icon className="animate-spin" /> : <LogOutIcon />}
       Sign Out
     </Button>
   );

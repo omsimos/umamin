@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 import { toast } from "sonner";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, CheckIcon } from "lucide-react";
 import { useAppForm } from "@/hooks/form";
 import { generalSettingsSchema, UserWithAccount } from "@/types/user";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -133,7 +133,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
 
       <div className="flex justify-end">
         <form.AppForm>
-          <form.SubmitButton label="Save Changes" />
+          <form.SubmitButton icon={CheckIcon} label="Save Changes" />
         </form.AppForm>
       </div>
     </form>

@@ -87,7 +87,7 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
       <Collapsible defaultOpen={true}>
         <CollapsibleTrigger asChild className="w-full">
           <Button
-            variant="outline"
+            variant="secondary"
             className="flex items-center justify-between text-muted-foreground mt-8 w-full"
           >
             <p>{user?.passwordHash ? "Change Password" : "Set a Password"}</p>

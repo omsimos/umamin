@@ -82,8 +82,8 @@ function SubmitButton({
     <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
       {([canSubmit, isSubmitting]) => (
         <Button disabled={isSubmitting || !canSubmit || disabled} {...props}>
-          {label}
           <LoadingIcon icon={icon} loading={isSubmitting || !!disabled} />
+          {label}
         </Button>
       )}
     </form.Subscribe>
