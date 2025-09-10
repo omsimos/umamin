@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { desc, lt, and, or, eq } from "drizzle-orm";
 
 import { noteTable } from "@umamin/db/schema/note";
-import { db } from "@umamin/db/index";
+import { db } from "@umamin/db";
 
 export const revalidate = 30;
 

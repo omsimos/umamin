@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 import { nanoid } from "nanoid";
 import { and, eq } from "drizzle-orm";
-import { db } from "@umamin/db/index";
+import { db } from "@umamin/db";
 import { cookies } from "next/headers";
 import { decodeIdToken, OAuth2RequestError, type OAuth2Tokens } from "arctic";
 import { accountTable, userTable } from "@umamin/db/schema/user";

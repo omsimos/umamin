@@ -3,7 +3,7 @@
 import * as z from "zod";
 import { cache } from "react";
 import { eq } from "drizzle-orm";
-import { db } from "@umamin/db/index";
+import { db } from "@umamin/db";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { hash, verify } from "@node-rs/argon2";

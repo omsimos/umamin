@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 import { sql } from "drizzle-orm";
-import { db } from "@umamin/db/index";
+import { db } from "@umamin/db";
 import { getSession } from "@/lib/auth";
 import { formatContent } from "@/lib/utils";
 import { noteTable } from "@umamin/db/schema/note";

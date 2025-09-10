@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 import { cache } from "react";
-import { db } from "@umamin/db/index";
+import { db } from "@umamin/db";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import { aesDecrypt, aesEncrypt } from "@umamin/encryption";
 import { messageTable } from "@umamin/db/schema/message";

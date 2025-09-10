@@ -9,7 +9,7 @@ import {
   SelectUser,
   sessionTable,
 } from "@umamin/db/schema/user";
-import { db } from "@umamin/db/index";
+import { db } from "@umamin/db";
 
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";

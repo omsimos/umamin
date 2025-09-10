@@ -14,7 +14,7 @@ import {
   generateSessionToken,
   createSession,
 } from "./session";
-import { db } from "@umamin/db/index";
+import { db } from "@umamin/db";
 import { userTable } from "@umamin/db/schema/user";
 import { registerSchema } from "./schema";
 

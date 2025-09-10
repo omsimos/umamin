@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db } from "@umamin/db/index";
+import { db } from "@umamin/db";
 import { userTable } from "@umamin/db/schema/user";
 
 export const revalidate = 86400;

@@ -3,14 +3,18 @@
   "private": true,
   "version": "0.1.0",
   "exports": {
-    "./*": {
-      "types": "./src/*.ts",
-      "default": "./dist/*.js"
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.mjs"
+    },
+    "./schema/*": {
+      "types": "./src/schema/*.ts",
+      "import": "./src/schema/*.ts"
     }
   },
   "scripts": {
-    "dev": "tsc --watch  & turso dev --db-file local.db",
-    "build": "tsc",
+    "dev": "tsdown --watch  & turso dev --db-file local.db",
+    "build": "tsdown",
     "check-types": "tsc --noEmit",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
@@ -23,7 +27,9 @@
     "nanoid": "^5.1.5"
   },
   "devDependencies": {
+    "@types/node": "^20.19.11",
     "drizzle-kit": "^0.31.4",
-    "@types/node": "^20.19.11"
+    "tsdown": "^0.15.0",
+    "typescript": "^5.9.2"
   }
 }
