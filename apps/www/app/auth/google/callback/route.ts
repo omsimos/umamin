@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     if (existingUser) {
       const sessionToken = generateSessionToken();
       const session = await createSession(sessionToken, existingUser.userId);
-      setSessionTokenCookie(sessionToken, new Date(session.expiresAt));
+      await setSessionTokenCookie(sessionToken, new Date(session.expiresAt));
 
       return new Response(null, {
         status: 302,
@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
 
     const sessionToken = generateSessionToken();
     const session = await createSession(sessionToken, userId);
-    setSessionTokenCookie(sessionToken, new Date(session.expiresAt));
+    await setSessionTokenCookie(sessionToken, new Date(session.expiresAt));
 
     return new Response(null, {
       status: 302,

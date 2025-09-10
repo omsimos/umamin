@@ -61,9 +61,13 @@ export const getMessagesAction = cache(
           }
 
           if (msg.reply) {
-            const decryptedReply = await aesDecrypt(msg.reply);
-            if (decryptedReply) {
-              reply = decryptedReply;
+            try {
+              const decryptedReply = await aesDecrypt(msg.reply);
+              if (decryptedReply) {
+                reply = decryptedReply;
+              }
+            } catch {
+              reply = msg.reply;
             }
           }
           return {
