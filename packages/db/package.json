@@ -22,12 +22,12 @@
     "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.12",
+    "@libsql/client": "^0.15.15",
     "drizzle-orm": "^0.44.5",
     "nanoid": "^5.1.5"
   },
   "devDependencies": {
-    "@types/node": "^20.19.11",
+    "@types/node": "^20.19.13",
     "drizzle-kit": "^0.31.4",
     "tsdown": "^0.15.0",
     "typescript": "^5.9.2"
