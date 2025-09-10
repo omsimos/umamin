@@ -13,6 +13,17 @@ export async function GET(
 
     const user = await db.query.userTable.findFirst({
       where: eq(userTable.username, username),
+      columns: {
+        id: true,
+        username: true,
+        displayName: true,
+        imageUrl: true,
+        bio: true,
+        question: true,
+        quietMode: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     if (!user) {
