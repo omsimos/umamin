@@ -3,7 +3,7 @@ import { db } from "@umamin/db";
 import { userTable } from "@umamin/db/schema/user";
 import { unstable_cache } from "next/cache";
 
-export const revalidate = 86400; // 24h
+export const revalidate = 604800; // 7 days
 
 export async function GET(
   _req: Request,
