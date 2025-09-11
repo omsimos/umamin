@@ -20,7 +20,6 @@ import { cn } from "@umamin/ui/lib/utils";
 import { ChatList } from "@/components/chat-list";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { Button } from "@umamin/ui/components/button";
-import { SelectUser } from "@umamin/db/schema/user";
 import { PublicUser } from "@/types/user";
 import { useMutation } from "@tanstack/react-query";
 import { sendMessageAction } from "@/app/actions/message";

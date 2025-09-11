@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import { noteTable } from "@umamin/db/schema/note";
 import { db } from "@umamin/db";
 
-export const revalidate = 60;
+export const revalidate = 120;
 
 export async function GET(req: NextRequest) {
   try {
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       },
       ["api-notes", cursor ?? ""],
       {
-        revalidate: 30,
+        revalidate: 120,
         tags: cursor ? [] : ["notes:head"],
       },
     )();
