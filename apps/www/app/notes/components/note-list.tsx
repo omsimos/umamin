@@ -21,8 +21,9 @@ const AdContainer = dynamic(() => import("@/components/ad-container"), {
   ssr: false,
 });
 
+type NoteItem = SelectNote & { user?: PublicUser };
 type NotesResponse = {
-  data: (SelectNote & { user: PublicUser })[];
+  data: NoteItem[];
   nextCursor: string | null;
 };
 
@@ -48,9 +49,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   });
 
   // De-duplicate posts by id across pages
-  const allPosts = (() => {
+  const allPosts: NoteItem[] = (() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
-    const map = new Map<string, (SelectNote & { user: PublicUser })>();
+    const map = new Map<string, NoteItem>();
     for (const item of flat) map.set(item.id, item);
     return Array.from(map.values());
   })();

@@ -202,5 +202,3 @@ export async function toggleQuietModeAction() {
     return { error: "An error occured" };
   }
 }
-
-// getUserByUsernameAction removed in favor of CDN-cached API route

@@ -1,8 +1,11 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@umamin/ui/components/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@umamin/ui/components/avatar";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { saveImage, shortTimeAgo } from "@/lib/utils";
 import { SelectNote } from "@umamin/db/schema/note";
-import { SelectUser } from "@umamin/db/schema/user";
 import { PublicUser } from "@/types/user";
 import {
   ScanFaceIcon,
@@ -16,19 +19,23 @@ import { useState } from "react";
 import { Menu } from "@/components/menu";
 
 type Props = {
-  data: SelectNote & { user: PublicUser };
+  data: SelectNote & { user?: PublicUser };
   isAuthenticated: boolean;
 };
 
 export function NoteCard({ data, isAuthenticated }: Props) {
   const user = data.user;
-  const username = user.username;
+  const username = user?.username;
   const [replyOpen, setReplyOpen] = useState(false);
 
   return (
     <div id={`umamin-${data.id}`}>
-      {isAuthenticated && (
-        <ReplyDrawer isOpen={replyOpen} setIsOpen={setReplyOpen} note={data} />
+      {isAuthenticated && !data.isAnonymous && user && (
+        <ReplyDrawer
+          isOpen={replyOpen}
+          setIsOpen={setReplyOpen}
+          note={{ ...data, user }}
+        />
       )}
 
       <Card className="flex flex-col items-start justify-between">
@@ -93,11 +100,9 @@ export function NoteCard({ data, isAuthenticated }: Props) {
                 </span>
               )}
 
-              {data.user.quietMode && (
-                <MessageCircleOffIcon className="size-4" />
-              )}
+              {user?.quietMode && <MessageCircleOffIcon className="size-4" />}
 
-              {isAuthenticated && !data.isAnonymous && !data.user.quietMode && (
+              {isAuthenticated && !data.isAnonymous && !user?.quietMode && (
                 <button onClick={() => setReplyOpen((prev) => !prev)}>
                   <MessageSquareTextIcon className="size-5" />
                 </button>
@@ -109,7 +114,7 @@ export function NoteCard({ data, isAuthenticated }: Props) {
                     {
                       title: "Reply",
                       onClick: () => setReplyOpen(true),
-                      disabled: data.user.quietMode,
+                      disabled: data.isAnonymous || !!user?.quietMode,
                     },
                     {
                       title: "Save Image",

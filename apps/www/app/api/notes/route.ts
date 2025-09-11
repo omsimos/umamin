@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        const posts = await db.query.noteTable.findMany({
+        const notes = await db.query.noteTable.findMany({
           with: {
             user: {
               columns: {
@@ -48,12 +48,16 @@ export async function GET(req: NextRequest) {
           limit: 10,
         });
 
+        const notesData = notes.map(({ user, userId, ...note }) =>
+          note.isAnonymous ? { ...note } : { user, userId, ...note },
+        );
+
         return {
-          data: posts,
+          data: notesData,
           nextCursor:
-            posts.length === 10
-              ? `${posts[posts.length - 1].updatedAt?.getTime()}.${
-                  posts[posts.length - 1].id
+            notesData.length === 10
+              ? `${notesData[notesData.length - 1].updatedAt?.getTime()}.${
+                  notesData[notesData.length - 1].id
                 }`
               : null,
         };
@@ -67,7 +71,7 @@ export async function GET(req: NextRequest) {
 
     return Response.json(result);
   } catch (error) {
-    console.error("Error fetching posts:", error);
+    console.error("Error fetching notes:", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
