@@ -27,8 +27,14 @@ export function NoteForm() {
       setContent("");
     },
     onSettled: () => {
-      // Reset the infinite query so page boundaries align after insertion
-      queryClient.removeQueries({ queryKey: ["notes"], exact: true });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      queryClient.setQueryData(["notes"], (old: any) => {
+        if (!old || !old.pages || !old.pageParams) return old;
+        return {
+          pages: [old.pages[0]],
+          pageParams: [old.pageParams[0]],
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
   });
