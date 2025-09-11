@@ -1,14 +1,12 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import { MessageSquareMoreIcon, UserPlusIcon } from "lucide-react";
 
-import { SelectUser } from "@umamin/db/schema/user";
-import { formatUsername } from "@/lib/utils";
-import { Metadata } from "next";
-import { Button } from "@umamin/ui/components/button";
 import { UserCard } from "@/components/user-card";
-import { getUserByUsernameAction } from "@/app/actions/user";
+import { Button } from "@umamin/ui/components/button";
+import { formatUsername, getBaseUrl } from "@/lib/utils";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"));
 
@@ -58,7 +56,13 @@ export default async function Page({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const user = await getUserByUsername(username);
+  const res = await fetch(`${getBaseUrl()}/api/users/${username}`);
+
+  if (!res.ok) {
+    notFound();
+  }
+
+  const user = await res.json();
 
   return (
     <section className="max-w-xl mx-auto min-h-screen container">
@@ -82,10 +86,4 @@ export default async function Page({
       <AdContainer className="mt-5" slotId="4417432474" />
     </section>
   );
-}
-
-async function getUserByUsername(username: string): Promise<SelectUser> {
-  const user = await getUserByUsernameAction(username);
-  if (!user) notFound();
-  return user as SelectUser;
 }

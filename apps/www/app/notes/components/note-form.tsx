@@ -26,7 +26,11 @@ export function NoteForm() {
       toast.success("Your note has been shared with the community.");
       setContent("");
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
+    onSettled: () => {
+      // Reset the infinite query so page boundaries align after insertion
+      queryClient.removeQueries({ queryKey: ["notes"], exact: true });
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+    },
   });
 
   return (

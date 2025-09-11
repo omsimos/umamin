@@ -4,15 +4,16 @@ import * as z from "zod";
 import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db } from "@umamin/db";
-import { getSession } from "@/lib/auth";
+import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { hash, verify } from "@node-rs/argon2";
+
+import { getSession } from "@/lib/auth";
+import { noteTable } from "@umamin/db/schema/note";
+import { messageTable } from "@umamin/db/schema/message";
 import { accountTable, userTable } from "@umamin/db/schema/user";
 import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
-import { messageTable } from "@umamin/db/schema/message";
-import { noteTable } from "@umamin/db/schema/note";
 import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
-import { revalidateTag, unstable_cache } from "next/cache";
 
 export const getCurrentUserAction = cache(async () => {
   try {
@@ -202,36 +203,4 @@ export async function toggleQuietModeAction() {
   }
 }
 
-export async function getUserByUsernameAction(username: string) {
-  const getCached = unstable_cache(
-    async () => {
-      const data = await db.query.userTable.findFirst({
-        where: eq(userTable.username, username),
-        columns: {
-          id: true,
-          username: true,
-          displayName: true,
-          imageUrl: true,
-          bio: true,
-          question: true,
-          quietMode: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-      return data ?? null;
-    },
-    ["user-by-username", username],
-    {
-      revalidate: 86400,
-      tags: [`user:${username}`],
-    },
-  );
-
-  try {
-    return await getCached();
-  } catch (err) {
-    console.log(err);
-    return null;
-  }
-}
+// getUserByUsernameAction removed in favor of CDN-cached API route

@@ -15,8 +15,6 @@ import {
 import { SelectNote } from "@umamin/db/schema/note";
 import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
-import { getNotesAction } from "@/app/actions/note";
-import { Cursor } from "@/types";
 import { PublicUser } from "@/types/user";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"), {
@@ -25,7 +23,7 @@ const AdContainer = dynamic(() => import("@/components/ad-container"), {
 
 type NotesResponse = {
   data: (SelectNote & { user: PublicUser })[];
-  nextCursor: import("@/types").Cursor | null;
+  nextCursor: string | null;
 };
 
 export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
@@ -40,15 +38,22 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   } = useInfiniteQuery<NotesResponse>({
     queryKey: ["notes"],
     queryFn: async ({ pageParam }) => {
-      const res = await getNotesAction({ cursor: pageParam as Cursor | null });
-      if ("error" in res) throw new Error("Network response was not ok");
-      return res as NotesResponse;
+      const url = pageParam ? `/api/notes?cursor=${pageParam}` : "/api/notes";
+      const res = await fetch(url, { cache: "default" });
+      if (!res.ok) throw new Error("Network response was not ok");
+      return (await res.json()) as NotesResponse;
     },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
-  const allPosts = data?.pages.flatMap((p) => p.data) ?? [];
+  // De-duplicate posts by id across pages
+  const allPosts = (() => {
+    const flat = data?.pages.flatMap((p) => p.data) ?? [];
+    const map = new Map<string, (SelectNote & { user: PublicUser })>();
+    for (const item of flat) map.set(item.id, item);
+    return Array.from(map.values());
+  })();
 
   const AD_FREQUENCY = 5; // show 1 ad *after* every 5 posts
 
