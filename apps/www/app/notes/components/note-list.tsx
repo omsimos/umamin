@@ -13,17 +13,19 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { SelectNote } from "@umamin/db/schema/note";
-import { SelectUser } from "@umamin/db/schema/user";
 import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
+import { getNotesAction } from "@/app/actions/note";
+import { Cursor } from "@/types";
+import { PublicUser } from "@/types/user";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"), {
   ssr: false,
 });
 
 type NotesResponse = {
-  data: (SelectNote & { user: SelectUser })[];
-  nextCursor: string | null;
+  data: (SelectNote & { user: PublicUser })[];
+  nextCursor: import("@/types").Cursor | null;
 };
 
 export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
@@ -38,10 +40,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   } = useInfiniteQuery<NotesResponse>({
     queryKey: ["notes"],
     queryFn: async ({ pageParam }) => {
-      const url = pageParam ? `/api/notes?cursor=${pageParam}` : "/api/notes";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Network response was not ok");
-      return res.json();
+      const res = await getNotesAction({ cursor: pageParam as Cursor | null });
+      if ("error" in res) throw new Error("Network response was not ok");
+      return res as NotesResponse;
     },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,

@@ -1,4 +1,4 @@
 export type Cursor = {
   id: string;
-  createdAt: Date;
+  date: Date;
 };

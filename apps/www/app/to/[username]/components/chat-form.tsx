@@ -9,13 +9,13 @@ import { cn } from "@umamin/ui/lib/utils";
 import { Button } from "@umamin/ui/components/button";
 import { ChatList } from "@/components/chat-list";
 import { Textarea } from "@umamin/ui/components/textarea";
-import { SelectUser } from "@umamin/db/schema/user";
 import { sendMessageAction } from "@/app/actions/message";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useMutation } from "@tanstack/react-query";
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
+import { PublicUser } from "@/types/user";
 
-export function ChatForm({ user }: { user: SelectUser }) {
+export function ChatForm({ user }: { user: PublicUser }) {
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
 

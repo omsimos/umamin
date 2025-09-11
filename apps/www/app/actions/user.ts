@@ -12,7 +12,7 @@ import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
-import { revalidatePath } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 
 export const getCurrentUserAction = cache(async () => {
   try {
@@ -61,12 +61,12 @@ export async function generalSettingsAction(
       .set(data)
       .where(eq(userTable.id, session.userId));
 
-    // Invalidate API route cache for old and new paths
+    // Invalidate API cache for old and new user tags
     if (oldUsername) {
-      revalidatePath(`/api/users/${oldUsername}`);
+      revalidateTag(`user:${oldUsername}`);
     }
     if (data.username && data.username !== oldUsername) {
-      revalidatePath(`/api/users/${data.username}`);
+      revalidateTag(`user:${data.username}`);
     }
   } catch (err) {
     console.log(err);
@@ -92,8 +92,8 @@ export async function deleteAccountAction() {
     await invalidateSession(session.id);
     await deleteSessionTokenCookie();
 
-    // Invalidate user's API route cache
-    revalidatePath(`/api/users/${user.username}`);
+    // Invalidate user's cached data by tag
+    revalidateTag(`user:${user.username}`);
   } catch (err) {
     console.log(err);
   }
@@ -167,8 +167,8 @@ export async function toggleDisplayPictureAction(accountImgUrl: string) {
       .set({ imageUrl })
       .where(eq(userTable.id, user.id));
 
-    // Bust user's API route cache (imageUrl affects profile payload)
-    revalidatePath(`/api/users/${user.username}`);
+    // Invalidate user's cached data (imageUrl affects profile payload)
+    revalidateTag(`user:${user.username}`);
 
     return { imageUrl };
   } catch (err) {
@@ -192,12 +192,46 @@ export async function toggleQuietModeAction() {
       .set({ quietMode })
       .where(eq(userTable.id, user.id));
 
-    // Bust user's API route cache (quiet mode affects profile payload)
-    revalidatePath(`/api/users/${user.username}`);
+    // Invalidate user's cached data (quiet mode affects profile payload)
+    revalidateTag(`user:${user.username}`);
 
     return { quietMode };
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };
+  }
+}
+
+export async function getUserByUsernameAction(username: string) {
+  const getCached = unstable_cache(
+    async () => {
+      const data = await db.query.userTable.findFirst({
+        where: eq(userTable.username, username),
+        columns: {
+          id: true,
+          username: true,
+          displayName: true,
+          imageUrl: true,
+          bio: true,
+          question: true,
+          quietMode: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      return data ?? null;
+    },
+    ["user-by-username", username],
+    {
+      revalidate: 86400,
+      tags: [`user:${username}`],
+    },
+  );
+
+  try {
+    return await getCached();
+  } catch (err) {
+    console.log(err);
+    return null;
   }
 }

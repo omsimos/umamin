@@ -3,6 +3,8 @@ import { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 
 export type UserWithAccount = SelectUser & { account: SelectAccount | null };
 
+export type PublicUser = Omit<SelectUser, "passwordHash">;
+
 export const generalSettingsSchema = z.object({
   question: z
     .string()

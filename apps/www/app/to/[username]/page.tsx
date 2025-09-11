@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 import { BadgeCheckIcon, LockIcon, MessageCircleOffIcon } from "lucide-react";
 
 import { getSession } from "@/lib/auth";
-import { formatUsername, getBaseUrl } from "@/lib/utils";
+import { formatUsername } from "@/lib/utils";
 import { ChatForm } from "./components/chat-form";
-import { SelectUser } from "@umamin/db/schema/user";
 import { ShareButton } from "@/components/share-button";
 import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
+import { getUserByUsernameAction } from "@/app/actions/user";
 
 export async function generateMetadata({
   params,
@@ -51,7 +51,7 @@ export default async function SendMessage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const user = await getUserByUsername(username);
+  const user = await getUserByUsernameAction(username);
 
   if (!user) {
     notFound();
@@ -93,13 +93,4 @@ export default async function SendMessage({
       <UnauthenticatedDialog isLoggedIn={!!session} />
     </div>
   );
-}
-
-async function getUserByUsername(username: string): Promise<SelectUser> {
-  const res = await fetch(`${getBaseUrl()}/api/users/${username}`);
-
-  if (!res.ok) notFound();
-  const user = await res.json();
-
-  return user;
 }

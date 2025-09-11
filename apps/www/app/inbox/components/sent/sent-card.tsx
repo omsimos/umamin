@@ -9,13 +9,14 @@ import {
 } from "@umamin/ui/components/card";
 import { ChatList } from "@/components/chat-list";
 import { SelectUser } from "@umamin/db/schema/user";
+import { PublicUser } from "@/types/user";
 import { SelectMessage } from "@umamin/db/schema/message";
 import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
 
 export function SentMessageCard({
   data,
 }: {
-  data: SelectMessage & { receiver: SelectUser };
+  data: SelectMessage & { receiver: PublicUser };
 }) {
   // const menuItems = [
   //   {

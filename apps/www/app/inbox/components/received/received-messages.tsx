@@ -7,16 +7,20 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 
-import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@umamin/ui/components/alert";
 import { SelectMessage } from "@umamin/db/schema/message";
-import { SelectUser } from "@umamin/db/schema/user";
+import { PublicUser } from "@/types/user";
 import { Cursor } from "@/types";
 import { getMessagesAction } from "@/app/actions/message";
 import { ReceivedMessageCard } from "./received-card";
 import { ReceivedMessageCardSkeleton } from "./received-message-card-skeleton";
 
 type MessagesResponse = {
-  messages?: (SelectMessage & { receiver: SelectUser })[];
+  messages?: (SelectMessage & { receiver: PublicUser })[];
   nextCursor?: Cursor | null;
 };
 
@@ -32,15 +36,14 @@ export function ReceivedMessages() {
   } = useInfiniteQuery<MessagesResponse>({
     queryKey: ["received_messages"],
     queryFn: async ({ pageParam }) => {
-      const data = await getMessagesAction({
+      const res = await getMessagesAction({
         cursor: pageParam as Cursor,
         type: "received",
       });
-      if (data.error) {
-        throw new Error(data.error);
+      if ("error" in res) {
+        throw new Error(res.error);
       }
-
-      return data;
+      return res as MessagesResponse;
     },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,

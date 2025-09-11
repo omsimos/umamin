@@ -4,10 +4,11 @@ import { notFound } from "next/navigation";
 import { MessageSquareMoreIcon, UserPlusIcon } from "lucide-react";
 
 import { SelectUser } from "@umamin/db/schema/user";
-import { formatUsername, getBaseUrl } from "@/lib/utils";
+import { formatUsername } from "@/lib/utils";
 import { Metadata } from "next";
 import { Button } from "@umamin/ui/components/button";
 import { UserCard } from "@/components/user-card";
+import { getUserByUsernameAction } from "@/app/actions/user";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"));
 
@@ -84,10 +85,7 @@ export default async function Page({
 }
 
 async function getUserByUsername(username: string): Promise<SelectUser> {
-  const res = await fetch(`${getBaseUrl()}/api/users/${username}`);
-
-  if (!res.ok) notFound();
-  const user = await res.json();
-
-  return user;
+  const user = await getUserByUsernameAction(username);
+  if (!user) notFound();
+  return user as SelectUser;
 }

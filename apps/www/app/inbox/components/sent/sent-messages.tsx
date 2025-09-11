@@ -11,12 +11,13 @@ import { SentMessageCard } from "./sent-card";
 import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
 import { SelectMessage } from "@umamin/db/schema/message";
 import { SelectUser } from "@umamin/db/schema/user";
+import { PublicUser } from "@/types/user";
 import { Cursor } from "@/types";
 import { getMessagesAction } from "@/app/actions/message";
 import { SentMessageCardSkeleton } from "./sent-message-card-skeleton";
 
 type MessagesResponse = {
-  messages?: (SelectMessage & { receiver: SelectUser })[];
+  messages?: (SelectMessage & { receiver: PublicUser })[];
   nextCursor?: Cursor | null;
 };
 
@@ -32,15 +33,14 @@ export function SentMessages() {
   } = useInfiniteQuery<MessagesResponse>({
     queryKey: ["sent_messages"],
     queryFn: async ({ pageParam }) => {
-      const data = await getMessagesAction({
+      const res = await getMessagesAction({
         cursor: pageParam as Cursor,
         type: "sent",
       });
-      if (data.error) {
-        throw new Error(data.error);
+      if ("error" in res) {
+        throw new Error(res.error);
       }
-
-      return data;
+      return res as MessagesResponse;
     },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,

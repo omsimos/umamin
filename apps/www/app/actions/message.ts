@@ -5,7 +5,8 @@ import { cache } from "react";
 import { db } from "@umamin/db";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import { aesDecrypt, aesEncrypt } from "@umamin/encryption";
-import { messageTable } from "@umamin/db/schema/message";
+import { messageTable, SelectMessage } from "@umamin/db/schema/message";
+import { PublicUser } from "@/types/user";
 
 import { Cursor } from "@/types";
 import { getSession } from "@/lib/auth";
@@ -27,11 +28,11 @@ export const getMessagesAction = cache(
 
       let cursorCondition;
 
-      if (cursor && cursor.createdAt) {
+      if (cursor && cursor.date) {
         cursorCondition = or(
-          lt(messageTable.createdAt, cursor.createdAt),
+          lt(messageTable.createdAt, cursor.date),
           and(
-            eq(messageTable.createdAt, cursor.createdAt),
+            eq(messageTable.createdAt, cursor.date),
             lt(messageTable.id, cursor.id),
           ),
         );
@@ -43,7 +44,15 @@ export const getMessagesAction = cache(
       const data = await db.query.messageTable.findMany({
         where: and(cursorCondition, eq(messageId, session.userId)),
         with: {
-          receiver: true,
+          receiver: {
+            columns: {
+              id: true,
+              username: true,
+              displayName: true,
+              imageUrl: true,
+              quietMode: true,
+            },
+          },
         },
         orderBy: [desc(messageTable.createdAt), desc(messageTable.id)],
         limit: 10,
@@ -79,12 +88,12 @@ export const getMessagesAction = cache(
       );
 
       return {
-        messages: messagesData,
+        messages: messagesData as (SelectMessage & { receiver: PublicUser })[],
         nextCursor:
           messagesData.length === 10
             ? {
                 id: messagesData[messagesData.length - 1].id,
-                createdAt: messagesData[messagesData.length - 1].createdAt,
+                date: messagesData[messagesData.length - 1].createdAt,
               }
             : null,
       };

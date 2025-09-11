@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { saveImage, shortTimeAgo } from "@/lib/utils";
 import { SelectNote } from "@umamin/db/schema/note";
 import { SelectUser } from "@umamin/db/schema/user";
+import { PublicUser } from "@/types/user";
 import {
   ScanFaceIcon,
   BadgeCheckIcon,
@@ -15,7 +16,7 @@ import { useState } from "react";
 import { Menu } from "@/components/menu";
 
 type Props = {
-  data: SelectNote & { user: SelectUser };
+  data: SelectNote & { user: PublicUser };
   isAuthenticated: boolean;
 };
 
