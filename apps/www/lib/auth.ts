@@ -1,6 +1,6 @@
 "use server";
 
-import z from "zod/v4";
+import * as z from "zod";
 import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";

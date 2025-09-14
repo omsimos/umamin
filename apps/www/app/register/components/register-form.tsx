@@ -1,7 +1,7 @@
 /* eslint-disable react/no-children-prop */
 "use client";
 
-import z from "zod/v4";
+import * as z from "zod";
 import Link from "next/link";
 import { toast } from "sonner";
 

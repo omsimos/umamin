@@ -1,4 +1,4 @@
-import { z } from "zod/v4";
+import * as z from "zod";
 import { nanoid } from "nanoid";
 import { and, eq } from "drizzle-orm";
 import { db } from "@umamin/db";

@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { Loader2Icon, SendIcon } from "lucide-react";
 import { useState } from "react";
-import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
+import { formatDistanceToNow } from "date-fns";
 
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { ReceivedMenuProps } from "./received-card-menu";
