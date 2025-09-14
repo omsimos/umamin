@@ -1,22 +1,20 @@
-import { useEffect, useRef, RefCallback } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
 
 function updateTextAreaSize(textArea?: HTMLTextAreaElement | null) {
-  if (textArea == null) return;
+  if (!textArea) return;
   textArea.style.height = "3rem";
   textArea.style.height = `${textArea.scrollHeight}px`;
 }
 
-export function useDynamicTextarea(
-  content: string,
-): RefCallback<HTMLTextAreaElement> {
+export function useDynamicTextarea(content: string) {
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const inputRef = (textArea: HTMLTextAreaElement) => {
-    updateTextAreaSize(textArea);
+  const inputRef = useCallback((textArea: HTMLTextAreaElement | null) => {
     textAreaRef.current = textArea;
-  };
+    updateTextAreaSize(textArea);
+  }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     updateTextAreaSize(textAreaRef.current);
   }, [content]);
 

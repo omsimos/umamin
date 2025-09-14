@@ -5,7 +5,11 @@ import { formatDistanceToNow } from "date-fns";
 
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { ReceivedMenuProps } from "./received-card-menu";
-import { Dialog, DialogContent, DialogTitle } from "@umamin/ui/components/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@umamin/ui/components/dialog";
 import { ChatList } from "@/components/chat-list";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { Button } from "@umamin/ui/components/button";
