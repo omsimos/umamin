@@ -8,9 +8,12 @@ import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 
 import { SentMessageCard } from "./sent-card";
-import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@umamin/ui/components/alert";
 import { SelectMessage } from "@umamin/db/schema/message";
-import { SelectUser } from "@umamin/db/schema/user";
 import { PublicUser } from "@/types/user";
 import { Cursor } from "@/types";
 import { getMessagesAction } from "@/app/actions/message";
