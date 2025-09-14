@@ -41,8 +41,13 @@ export const getMessagesAction = cache(
       const messageId =
         type === "received" ? messageTable.receiverId : messageTable.senderId;
 
+      const baseCondition = eq(messageId, session.userId);
+      const whereCondition = cursorCondition
+        ? and(cursorCondition, baseCondition)
+        : baseCondition;
+
       const data = await db.query.messageTable.findMany({
-        where: and(cursorCondition, eq(messageId, session.userId)),
+        where: whereCondition,
         with: {
           receiver: {
             columns: {

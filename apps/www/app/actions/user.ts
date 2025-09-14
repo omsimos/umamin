@@ -120,8 +120,12 @@ export async function updatePasswordAction(
 
     const { currentPassword, newPassword } = params.data;
 
-    // if user already has a password
-    if (currentPassword && user.passwordHash) {
+    // If user has an existing password, require and verify current password
+    if (user.passwordHash) {
+      if (!currentPassword || currentPassword.length === 0) {
+        return { error: "Current password is required" };
+      }
+
       const validPassword = await verify(user.passwordHash, currentPassword, {
         memoryCost: 19456,
         timeCost: 2,
@@ -130,9 +134,7 @@ export async function updatePasswordAction(
       });
 
       if (!validPassword) {
-        return {
-          error: "Incorrect password",
-        };
+        return { error: "Incorrect password" };
       }
     }
 
