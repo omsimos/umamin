@@ -3,7 +3,5 @@
     {
       "mode": "auto"
     }
-  ],
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true
+  ]
 }

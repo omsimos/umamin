@@ -13,7 +13,7 @@ If you believe you have found a security vulnerability in Umamin, please follow 
    - Do not submit a pull request with a fix for the vulnerability until you have consulted with us. This ensures we can review and address the issue appropriately before making any changes public.
 
 3. **Contact Us Directly:**
-   - Email us at [umamin.link@gmail.com](mailto:umamin.link@gmail.com) or [joshxfi.dev@gmail.com](mailto:joshxfi.dev@gmail.com) with the details of the vulnerability. Please include as much information as possible to help us understand and reproduce the issue.
+   - Email us at [umamin@omsimos.com](mailto:umamin.link@gmail.com) or [joshxfi.dev@gmail.com](mailto:joshxfi.dev@gmail.com) with the details of the vulnerability. Please include as much information as possible to help us understand and reproduce the issue.
 
 4. **Open a Draft Security Advisory:**
    - If you prefer to use GitHub for reporting, open a draft security advisory from the issue template "Report a security vulnerability". If you've already fixed the vulnerability, fill out the draft security advisory and then publish it.
@@ -25,3 +25,4 @@ If you believe you have found a security vulnerability in Umamin, please follow 
 - Once the vulnerability has been addressed, we will disclose the issue publicly (and credit you with your consent).
 
 We appreciate your help in keeping Umamin secure and thank you for following these guidelines to report security vulnerabilities responsibly.
+

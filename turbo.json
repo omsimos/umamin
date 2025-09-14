@@ -1,43 +1,35 @@
 {
-  "$schema": "https://turbo.build/schema.json",
+  "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": [".env"],
-  "globalEnv": [
-    "NODE_ENV",
-    "NEXT_PUBLIC_*",
-    "GOOGLE_CLIENT_*",
-    "GOOGLE_REDIRECT_URI"
-  ],
+  "globalEnv": ["NODE_ENV"],
+  "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"],
-      "inputs": ["$TURBO_DEFAULT$", ".env"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**", "dist"],
       "env": [
+        "VERCEL_URL",
         "TURSO_CONNECTION_URL",
         "TURSO_AUTH_TOKEN",
-        "SENTRY_AUTH_TOKEN",
-        "AES_KEY",
-        "NEXT_RUNTIME"
-      ]
-    },
-    "test": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "env": [
-        "TURSO_CONNECTION_URL",
-        "TURSO_AUTH_TOKEN",
-        "AES_KEY"
+        "GOOGLE_CLIENT_*",
+        "GOOGLE_REDIRECT_URI",
+        "AES_256_GCM_KEY"
       ]
     },
     "lint": {
       "dependsOn": ["^lint"]
     },
-    "clean": {},
-    "check-types": {},
+    "clean": {
+      "cache": false,
+      "dependsOn": ["^clean"]
+    },
+    "check-types": {
+      "dependsOn": ["^check-types"]
+    },
     "dev": {
       "cache": false,
-      "persistent": true,
-      "inputs": ["$TURBO_DEFAULT$", ".env"]
+      "persistent": true
     }
   }
 }

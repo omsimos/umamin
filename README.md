@@ -16,22 +16,20 @@
 
 ## Contributing
 
-If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you!
+If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you! Please review our [Code of Conduct](./CODE_OF_CONDUCT.md) before contributing.
 
 ### Monorepo Setup
 | Core Packages  | Description |
 | ------------- | ------------- |
-| `www` | **Umamin Q&A** & landing page  |
-| `social` | **Umamin Social** *(coming soon)*  |
-| `@umamin/db` | Database schema & migrations using Drizzle ORM  |
-| `@umamin/gql` | GraphQL schema models and resolvers using Pothos  |
-| `@umamin/aes` | Encryption algorithm using AES in Galois/Counter Mode (AES-GCM)  |
-| `@umamin/e2e` | End-to-end testing suite using Playwright  |
+| `www` | **Umamin Q&A** & landing page (Next.js) |
+| `@umamin/db` | Database schema & migrations using Drizzle ORM + Turso/libSQL |
+| `@umamin/encryption` | AES-GCM encryption/decryption utilities (uses `AES_256_GCM_KEY`) |
+| `@umamin/ui` | Shared UI components and styling |
 
 ### Prerequisites
 - [`Turso CLI`](https://docs.turso.tech/cli/installation) (for local libSQL server)
 - `Node.js` >= 20 or [`nvm`](https://github.com/nvm-sh/nvm)
-- `pnpm` >= 9
+- `pnpm` >= 10
 
 ### Install Dependencies
 If you're using `nvm`, you can easily switch to the required Node.js version.
@@ -43,57 +41,80 @@ $ pnpm install
 ### Environment Variables
 ```env
 # apps/www/.env
-NEXT_PUBLIC_GQL_URL=http://localhost:3000/api/graphql
+# Database (used via @umamin/db)
 TURSO_CONNECTION_URL=http://127.0.0.1:8080
-AES_KEY=7ruID/GBuS2PGiysV9KXMZ6CkC1xuUKJFWEPLYgPPo0= # must be a valid AES-GCM key
+TURSO_AUTH_TOKEN= # can be empty for local
 
-# packages/db/.env
-TURSO_CONNECTION_URL=http://127.0.0.1:8080
-```
+# Encryption
+AES_256_GCM_KEY=REPLACE_WITH_BASE64_KEY
 
-To generate your own `AES_KEY`, you can use the `generateAesKey()` function.
-```ts
-import { generateAesKey } from "@umamin/aes";
-
-const key = await generateAesKey();
-```
-
-If you need to use Google OAuth, you must setup your own OAuth client. [Setting up OAuth 2.0 &rarr;](https://support.google.com/cloud/answer/6158849)
-```env
-# apps/www/.env
+# Google OAuth (optional)
 GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
 GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
-GOOGLE_REDIRECT_URI=http://localhost:3000/login/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
+
+# packages/db/.env (for drizzle-kit CLI)
+TURSO_CONNECTION_URL=http://127.0.0.1:8080
+TURSO_AUTH_TOKEN= # can be empty for local
 ```
 
-### Development Server
-You can specify which app to run a development server by including a scope (`www` or `social`).
+Generate an AES-256-GCM key using the helper script:
 ```sh
-$ pnpm dev:[scope] # dev:www
+$ pnpm aes:generate
+# copy the printed key into AES_256_GCM_KEY
+```
+
+If you need to use Google OAuth, you must set up your own OAuth client. [Setting up OAuth 2.0 →](https://support.google.com/cloud/answer/6158849)
+
+### Development Server
+Run the development servers with Turborepo:
+```sh
+$ pnpm dev # runs app(s) and local db dev (if configured)
+```
+
+Run a specific app only:
+```sh
+$ pnpm dev --filter=www
 ```
 
 ### Setup Database
-Running a development server automatically creates a libSQL database. Run the migration command below to apply the schema.
+Start a local libSQL server and run migrations.
 ```sh
-$ pnpm db:migrate # or db:push
+# optional: start local libSQL (turso dev) alongside type-checker
+$ pnpm --filter=@umamin/db dev
+
+# generate migrations from schema changes
+$ pnpm db:generate
+
+# apply migrations
+$ pnpm db:migrate
+
+# open drizzle studio
+$ pnpm db:studio
 ```
 
 ### Running Build
-After making changes, you can run a build which will check for lint and type errors.
+After making changes, build the project (runs lint and type checks via tasks).
 ```sh
-$ pnpm build:[scope] 
+$ pnpm build # build all
+# or
+$ pnpm build --filter=www
 ```
 
 Once ready, you can submit a pull request for review.
 
 ### Contributor List
-<a href="https://github.com/joshxfi/umamin/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=joshxfi/umamin" />
+<a href="https://github.com/omsimos/umamin/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=omsimos/umamin" />
 </a>
 
+## Code of Conduct
+
+We are committed to fostering a welcoming, respectful community. Please read and follow our [Code of Conduct](./CODE_OF_CONDUCT.md) when participating in this project.
+
 ## Security
-If you believe you have found a security vulnerability in Umamin, please do not open a public issue on this repository. Opening a public issue could expose sensitive information before it's addressed. Please read our [Security Policy](https://github.com/omsimos/umamin/blob/main/SECURITY.md) for details on how to report a vulnerability.
+If you believe you have found a security vulnerability in Umamin, please do not open a public issue on this repository. Opening a public issue could expose sensitive information before it's addressed. Please read our [Security Policy](./SECURITY.md) for details on how to report a vulnerability.
 
 ## License
 
-Umamin is licensed under [GPL-3.0](https://github.com/joshxfi/umamin/blob/main/LICENSE)
+Umamin is licensed under [GPL-3.0](https://github.com/omsimos/umamin/blob/main/LICENSE).

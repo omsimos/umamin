@@ -1,38 +1,29 @@
 {
-  "name": "umamin",
+  "name": "my-turborepo",
   "private": true,
   "scripts": {
-    "build": "turbo run build --filter=!./apps/social --filter=!./packages/e2e",
+    "build": "turbo run build",
     "dev": "turbo run dev",
-    "test": "turbo run test",
-    "start": "turbo run start --filter=!./apps/social",
-    "dev:test": "pnpm --filter @umamin/e2e dev:test",
-    "dev:www": "turbo run dev --filter=!./apps/social",
-    "dev:social": "turbo run dev --filter=!./apps/www",
-    "build:www": "turbo run build --filter=!./apps/social",
-    "build:social": "turbo run build --filter=!./apps/www",
-    "gql:check": "pnpm --filter www gql:check",
-    "gql:generate-persisted": "pnpm --filter www gql:generate-persisted",
-    "gql:generate-schema": "pnpm --filter www gql:generate-schema",
+    "clean": "turbo clean && rm -rf .turbo node_modules",
+    "ui:add:www": "pnpm --filter=www ui:add",
+    "db:generate": "pnpm --filter=@umamin/db generate",
+    "db:migrate": "pnpm --filter=@umamin/db migrate",
+    "db:studio": "pnpm --filter=@umamin/db studio",
+    "aes:generate": "npx tsx ./scripts/generate-aes-key.ts",
     "lint": "turbo run lint",
-    "clean": "turbo run clean && rm -rf ./node_modules .turbo",
-    "check-types": "turbo run check-types",
-    "db:push": "pnpm --filter @umamin/db push",
-    "db:generate": "pnpm --filter @umamin/db generate",
-    "db:migrate": "pnpm --filter @umamin/db migrate",
-    "db:studio": "pnpm --filter @umamin/db studio",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "ui:add": "pnpm --filter @umamin/ui ui:add"
+    "check-types": "turbo run check-types"
   },
   "devDependencies": {
-    "@umamin/eslint-config": "workspace:*",
-    "@umamin/tsconfig": "workspace:*",
-    "prettier": "^3.2.5",
-    "typescript": "^5.5.4",
-    "turbo": "^2.0.11"
+    "@types/node": "^20.19.11",
+    "eslint": "^9.34.0",
+    "eslint-config-turbo": "^2.5.6",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.6",
+    "typescript": "5.9.2"
   },
-  "packageManager": "pnpm@9.6.0",
+  "packageManager": "pnpm@10.16.1",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   }
 }

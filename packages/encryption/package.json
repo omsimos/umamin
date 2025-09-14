@@ -1,0 +1,22 @@
+{
+  "name": "@umamin/encryption",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "dev": "tsdown --watch",
+    "build": "tsdown",
+    "clean": "rm -rf ./node_modules .turbo dist",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.9",
+    "tsdown": "^0.15.1",
+    "typescript": "^5.9.2"
+  }
+}
