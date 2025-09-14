@@ -36,6 +36,7 @@ export function PasswordForm({
       }
     },
     onSuccess: async () => {
+      form.reset();
       toast.success("Password updated");
       await queryClient.invalidateQueries({ queryKey: ["current_user"] });
     },
