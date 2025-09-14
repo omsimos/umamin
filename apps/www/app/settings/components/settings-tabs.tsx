@@ -34,7 +34,7 @@ export function SettingsTabs() {
   }, [data?.user]);
 
   return (
-    <Tabs defaultValue="general" className="w-full mt-12">
+    <Tabs defaultValue="general" className="w-full">
       <TabsList className="w-full bg-transparent px-0 flex mb-8">
         <TabsTrigger
           value="general"

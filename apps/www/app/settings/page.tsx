@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 
 import { SignOutButton } from "./components/sign-out-button";
 import { SettingsTabs } from "./components/settings-tabs";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@umamin/ui/components/alert";
+import { Link2OffIcon } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Umamin — Settings",
@@ -28,8 +34,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Settings() {
+export default async function Settings({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { session } = await getSession();
+  const error = (await searchParams).error;
 
   if (!session) {
     redirect("/login");
@@ -44,9 +55,19 @@ export default async function Settings() {
         </form>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground mb-12">
         Manage your account settings
       </p>
+
+      {error === "already_linked" && (
+        <Alert variant="destructive" className="mb-4">
+          <Link2OffIcon />
+          <AlertTitle>Failed to link account</AlertTitle>
+          <AlertDescription>
+            Google account already connected to a different profile.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <SettingsTabs />
     </div>
