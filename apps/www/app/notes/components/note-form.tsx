@@ -15,7 +15,7 @@ export function NoteForm() {
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-  const mutation = useMutation({
+  const updateNoteMutation = useMutation({
     mutationFn: createNoteAction,
     onSuccess: (data) => {
       if (data?.error) {
@@ -25,6 +25,10 @@ export function NoteForm() {
 
       toast.success("Your note has been shared with the community.");
       setContent("");
+    },
+    onError: (err) => {
+      console.log(err);
+      toast.error("An error occurred while sharing your note.");
     },
     onSettled: () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,6 +40,7 @@ export function NoteForm() {
         };
       });
       queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["current_note"] });
     },
   });
 
@@ -43,7 +48,7 @@ export function NoteForm() {
     <section>
       <Textarea
         required
-        disabled={mutation.isPending}
+        disabled={updateNoteMutation.isPending}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         id="message"
@@ -54,7 +59,7 @@ export function NoteForm() {
         <div className="flex items-center space-x-2">
           <Switch
             checked={isAnonymous}
-            disabled={mutation.isPending}
+            disabled={updateNoteMutation.isPending}
             onCheckedChange={setIsAnonymous}
             id="anonymous-mode"
           />
@@ -62,15 +67,15 @@ export function NoteForm() {
         </div>
 
         <Button
-          disabled={mutation.isPending || !content}
+          disabled={updateNoteMutation.isPending || !content}
           onClick={() =>
-            mutation.mutate({
+            updateNoteMutation.mutate({
               content: content.trim(),
               isAnonymous,
             })
           }
         >
-          {mutation.isPending ? (
+          {updateNoteMutation.isPending ? (
             <Loader2Icon className="animate-spin" />
           ) : (
             <MessageSquareShareIcon />

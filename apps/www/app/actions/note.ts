@@ -1,9 +1,9 @@
 "use server";
 
 import * as z from "zod";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@umamin/db";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { formatContent } from "@/lib/utils";
 import { noteTable } from "@umamin/db/schema/note";
@@ -54,8 +54,54 @@ export async function createNoteAction(
 
     // Invalidate only the head (first page) of notes
     revalidateTag("notes:head");
+    revalidateTag(`current-note:${session.userId}`);
   } catch (error) {
     console.log("Error creating note:", error);
     return { error: "Failed to create note" };
   }
 }
+
+export const getCurrentNoteAction = async () => {
+  const { session } = await getSession();
+
+  if (!session?.userId) {
+    throw new Error("User not authenticated");
+  }
+
+  const getCachedData = unstable_cache(
+    async () => {
+      const data = await db.query.noteTable.findFirst({
+        where: eq(noteTable.userId, session.userId),
+      });
+
+      return data;
+    },
+    ["api-current-note", session.userId],
+    {
+      tags: [`current-note:${session.userId}`],
+    },
+  );
+
+  const result = await getCachedData();
+  return result;
+};
+
+export const clearNoteAction = async () => {
+  try {
+    const { session } = await getSession();
+
+    if (!session?.userId) {
+      return { error: "User not authenticated" };
+    }
+
+    await db
+      .update(noteTable)
+      .set({ content: "" })
+      .where(eq(noteTable.userId, session.userId));
+
+    revalidateTag(`current-note:${session.userId}`);
+  } catch (error) {
+    console.log("Error clearing note:", error);
+    return { error: "Failed to clear note" };
+  }
+};
