@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth";
 import { SquarePenIcon } from "lucide-react";
 import { Button } from "@umamin/ui/components/button";
 import Link from "next/link";
+import { CurrentUserNote } from "./components/current-user-note";
 
 export const metadata: Metadata = {
   title: "Umamin — Notes",
@@ -45,7 +46,10 @@ export default async function Page() {
       </h1>
 
       {session ? (
-        <NoteForm />
+        <>
+          <NoteForm />
+          <CurrentUserNote />
+        </>
       ) : (
         <div className="flex items-center space-x-4 rounded-md border p-4 mb-5">
           <SquarePenIcon />
