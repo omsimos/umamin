@@ -24,23 +24,12 @@ export function NoteForm() {
       }
 
       toast.success("Your note has been shared with the community.");
+      queryClient.invalidateQueries({ queryKey: ["current_note"] });
       setContent("");
     },
     onError: (err) => {
       console.log(err);
       toast.error("An error occurred while sharing your note.");
-    },
-    onSettled: () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      queryClient.setQueryData(["notes"], (old: any) => {
-        if (!old || !old.pages || !old.pageParams) return old;
-        return {
-          pages: [old.pages[0]],
-          pageParams: [old.pageParams[0]],
-        };
-      });
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["current_note"] });
     },
   });
 

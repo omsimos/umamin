@@ -5,8 +5,6 @@ import { unstable_cache } from "next/cache";
 import { noteTable } from "@umamin/db/schema/note";
 import { db } from "@umamin/db";
 
-export const revalidate = 120;
-
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
@@ -31,7 +29,7 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        const notes = await db.query.noteTable.findMany({
+        const base = {
           with: {
             user: {
               columns: {
@@ -43,10 +41,16 @@ export async function GET(req: NextRequest) {
               },
             },
           },
-          where: cursorCondition,
           orderBy: [desc(noteTable.updatedAt), desc(noteTable.id)],
           limit: 10,
-        });
+        };
+
+        const notes = cursorCondition
+          ? await db.query.noteTable.findMany({
+              ...base,
+              where: cursorCondition,
+            })
+          : await db.query.noteTable.findMany(base);
 
         const notesData = notes.map(({ user, userId, ...note }) =>
           note.isAnonymous ? { ...note } : { user, userId, ...note },
@@ -64,8 +68,7 @@ export async function GET(req: NextRequest) {
       },
       ["api-notes", cursor ?? ""],
       {
-        revalidate: 120,
-        tags: cursor ? [] : ["notes:head"],
+        revalidate: 30,
       },
     )();
 
