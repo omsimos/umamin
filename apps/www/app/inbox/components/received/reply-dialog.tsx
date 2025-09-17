@@ -1,7 +1,8 @@
 import { toast } from "sonner";
-import { Loader2Icon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { useMutation } from "@tanstack/react-query";
+import { Loader2Icon, SendIcon } from "lucide-react";
 
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { ReceivedMenuProps } from "./received-card-menu";
@@ -15,7 +16,6 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import { Button } from "@umamin/ui/components/button";
 import { createReplyAction } from "@/app/actions/message";
 import { cn } from "@umamin/ui/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   open: boolean;
@@ -24,7 +24,6 @@ type Props = {
 };
 
 export function ReplyDialog(props: Props) {
-  const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [updatedAt, setUpdatedAt] = useState(props.data.updatedAt);
   const [reply, setReply] = useState(props.data.reply ?? "");
@@ -46,7 +45,6 @@ export function ReplyDialog(props: Props) {
       setReply(content);
       setContent("");
       setUpdatedAt(new Date());
-      queryClient.invalidateQueries({ queryKey: ["received_messages"] });
     },
     onError: (err) => {
       console.error(err);

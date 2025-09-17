@@ -37,7 +37,7 @@ export function SentMessages() {
     queryKey: ["sent_messages"],
     queryFn: async ({ pageParam }) => {
       const res = await getMessagesAction({
-        cursor: pageParam as Cursor,
+        cursor: (pageParam as string) ?? "",
         type: "sent",
       });
       if ("error" in res) {
@@ -47,6 +47,11 @@ export function SentMessages() {
     },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
+
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const allPosts = data?.pages.flatMap((page) => page.messages) ?? [];

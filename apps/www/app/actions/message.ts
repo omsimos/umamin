@@ -8,12 +8,12 @@ import { aesDecrypt, aesEncrypt } from "@umamin/encryption";
 import { messageTable, SelectMessage } from "@umamin/db/schema/message";
 import { PublicUser } from "@/types/user";
 
-import { Cursor } from "@/types";
 import { getSession } from "@/lib/auth";
 import { formatContent } from "@/lib/utils";
+import { unstable_cache } from "next/cache";
 
 type GetMessagesParams = {
-  cursor?: Cursor | null;
+  cursor?: string;
   type: "sent" | "received";
 };
 
@@ -26,82 +26,102 @@ export const getMessagesAction = cache(
         throw new Error("Unauthorized");
       }
 
-      let cursorCondition;
+      const getCachedData = unstable_cache(
+        async () => {
+          let cursorCondition;
 
-      if (cursor && cursor.date) {
-        cursorCondition = or(
-          lt(messageTable.createdAt, cursor.date),
-          and(
-            eq(messageTable.createdAt, cursor.date),
-            lt(messageTable.id, cursor.id),
-          ),
-        );
-      }
-
-      const messageId =
-        type === "received" ? messageTable.receiverId : messageTable.senderId;
-
-      const baseCondition = eq(messageId, session.userId);
-      const whereCondition = cursorCondition
-        ? and(cursorCondition, baseCondition)
-        : baseCondition;
-
-      const data = await db.query.messageTable.findMany({
-        where: whereCondition,
-        with: {
-          receiver: {
-            columns: {
-              id: true,
-              username: true,
-              displayName: true,
-              imageUrl: true,
-              quietMode: true,
-            },
-          },
-        },
-        orderBy: [desc(messageTable.createdAt), desc(messageTable.id)],
-        limit: 10,
-      });
-
-      const messagesData = await Promise.all(
-        data.map(async (msg) => {
-          let content: string;
-          let reply: string | null = null;
-
-          try {
-            content = await aesDecrypt(msg.content);
-          } catch {
-            content = msg.content;
-          }
-
-          if (msg.reply) {
-            try {
-              const decryptedReply = await aesDecrypt(msg.reply);
-              if (decryptedReply) {
-                reply = decryptedReply;
-              }
-            } catch {
-              reply = msg.reply;
+          if (cursor) {
+            const sep = cursor.indexOf(".");
+            if (sep > 0) {
+              const ms = Number(cursor.slice(0, sep));
+              const cursorId = cursor.slice(sep + 1);
+              const cursorDate = new Date(ms);
+              cursorCondition = or(
+                lt(messageTable.createdAt, cursorDate),
+                and(
+                  eq(messageTable.createdAt, cursorDate),
+                  lt(messageTable.id, cursorId),
+                ),
+              );
             }
           }
+
+          const messageId =
+            type === "received"
+              ? messageTable.receiverId
+              : messageTable.senderId;
+
+          const baseCondition = eq(messageId, session.userId);
+          const whereCondition = cursorCondition
+            ? and(cursorCondition, baseCondition)
+            : baseCondition;
+
+          const data = await db.query.messageTable.findMany({
+            where: whereCondition,
+            with: {
+              receiver: {
+                columns: {
+                  id: true,
+                  username: true,
+                  displayName: true,
+                  imageUrl: true,
+                  quietMode: true,
+                },
+              },
+            },
+            orderBy: [desc(messageTable.createdAt), desc(messageTable.id)],
+            limit: 10,
+          });
+
+          const messagesData = await Promise.all(
+            data.map(async (msg) => {
+              let content: string;
+              let reply: string | null = null;
+
+              try {
+                content = await aesDecrypt(msg.content);
+              } catch {
+                content = msg.content;
+              }
+
+              if (msg.reply) {
+                try {
+                  const decryptedReply = await aesDecrypt(msg.reply);
+                  if (decryptedReply) {
+                    reply = decryptedReply;
+                  }
+                } catch {
+                  reply = msg.reply;
+                }
+              }
+              return {
+                ...msg,
+                content,
+                reply,
+              };
+            }),
+          );
+
           return {
-            ...msg,
-            content,
-            reply,
+            messages: messagesData as (SelectMessage & {
+              receiver: PublicUser;
+            })[],
+            nextCursor:
+              messagesData.length === 10
+                ? `${messagesData[messagesData.length - 1].createdAt?.getTime()}.${
+                    messagesData[messagesData.length - 1].id
+                  }`
+                : null,
           };
-        }),
+        },
+        [`api-${type}-messages`, session.userId, cursor ?? ""],
+        {
+          revalidate: 30,
+        },
       );
 
-      return {
-        messages: messagesData as (SelectMessage & { receiver: PublicUser })[],
-        nextCursor:
-          messagesData.length === 10
-            ? {
-                id: messagesData[messagesData.length - 1].id,
-                date: messagesData[messagesData.length - 1].createdAt,
-              }
-            : null,
-      };
+      const result = await getCachedData();
+      return result;
     } catch (err) {
       console.log(err);
       return { error: "An error occurred" };

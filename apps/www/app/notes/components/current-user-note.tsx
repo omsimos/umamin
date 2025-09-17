@@ -8,14 +8,26 @@ import {
   CardHeader,
 } from "@umamin/ui/components/card";
 import { formatDistanceToNow } from "date-fns";
-import { MessageCircleDashedIcon, MessageCircleMoreIcon } from "lucide-react";
+import {
+  BadgeCheckIcon,
+  MessageCircleDashedIcon,
+  MessageCircleMoreIcon,
+  ScanFaceIcon,
+} from "lucide-react";
 import { Menu } from "@/components/menu";
 import { saveImage } from "@/lib/utils";
 import { clearNoteAction, getCurrentNoteAction } from "@/app/actions/note";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { toast } from "sonner";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@umamin/ui/components/avatar";
+import { SelectUser } from "@umamin/db/schema/user";
+import { cn } from "@umamin/ui/lib/utils";
 
-export function CurrentUserNote() {
+export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["current_note"],
@@ -82,27 +94,62 @@ export function CurrentUserNote() {
     <div id={`umamin-${data.id}`}>
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full flex items-center justify-between text-muted-foreground">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {data.isAnonymous ? (
               <MessageCircleDashedIcon className="size-4" />
             ) : (
               <MessageCircleMoreIcon className="size-4" />
             )}
-            <h3>Your {data.isAnonymous && "anonymous"} note</h3>
+            <h3 className="font-medium">
+              Your {data.isAnonymous ? "anonymous" : "shared"} note
+            </h3>
           </div>
 
           <Menu menuItems={menuItems} />
         </CardHeader>
 
-        <CardContent className="flex w-full">
-          <div className="whitespace-pre-wrap break-words rounded-lg min-w-0">
+        <CardContent className="w-full">
+          <div
+            className={cn("flex gap-3 mb-4", {
+              "blur-xs": data.isAnonymous,
+            })}
+          >
+            <Avatar className="relative top-1">
+              <AvatarImage
+                className="rounded-full"
+                src={currentUser?.imageUrl ?? ""}
+                alt="User avatar"
+              />
+              <AvatarFallback className="text-xs">
+                <ScanFaceIcon />
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="flex flex-col mt-1">
+              <div className="flex items-center space-x-1">
+                <span className="font-semibold flex-none text-base leading-none">
+                  {currentUser.displayName
+                    ? currentUser.displayName
+                    : currentUser.username}
+                </span>
+                {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
+                  currentUser.username,
+                ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+              </div>
+
+              <span className="text-muted-foreground truncate">
+                @{currentUser.username}
+              </span>
+            </div>
+          </div>
+
+          <div className="whitespace-pre-wrap break-words bg-muted p-5 rounded-lg min-w-0">
             {data.content}
           </div>
         </CardContent>
 
-        <CardFooter>
-          <p className="text-muted-foreground text-sm italic">
-            Shared{" "}
+        <CardFooter className="justify-center w-full">
+          <p className="text-muted-foreground text-center text-sm italic">
             {data.updatedAt &&
               formatDistanceToNow(data.updatedAt, {
                 addSuffix: true,

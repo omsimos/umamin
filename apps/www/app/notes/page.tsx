@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const { session } = await getSession();
+  const { user } = await getSession();
 
   return (
     <div className="container max-w-xl space-y-12">
@@ -45,10 +45,10 @@ export default async function Page() {
         Umamin Notes
       </h1>
 
-      {session ? (
+      {user ? (
         <>
           <NoteForm />
-          <CurrentUserNote />
+          <CurrentUserNote currentUser={user} />
         </>
       ) : (
         <div className="flex items-center space-x-4 rounded-md border p-4 mb-5">
@@ -65,7 +65,7 @@ export default async function Page() {
           </Button>
         </div>
       )}
-      <NoteList isAuthenticated={!!session} />
+      <NoteList isAuthenticated={!!user} />
     </div>
   );
 }
