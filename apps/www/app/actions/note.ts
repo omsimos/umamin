@@ -52,8 +52,6 @@ export async function createNoteAction(
         },
       });
 
-    // Invalidate only the head (first page) of notes
-    revalidateTag("notes:head");
     revalidateTag(`current-note:${session.userId}`);
   } catch (error) {
     console.log("Error creating note:", error);
