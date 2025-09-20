@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import { GoogleTagManager } from "@next/third-parties/google";
 
 import Providers from "./providers";
 import { Navbar } from "@/components/navbar";
@@ -84,8 +84,9 @@ export default function RootLayout({
           <div className="pt-24">{children}</div>
           <Footer />
         </Providers>
-        <GoogleAnalytics gaId="G-FGYK94W3YB" />
       </body>
+
+      <GoogleTagManager gtmId={process.env.GOOGLE_TAG_ID ?? ""} />
 
       {process.env.NODE_ENV === "production" && (
         <Script
