@@ -9,7 +9,7 @@
     }
   },
   "scripts": {
-    "dev": "tsdown --watch",
+    "dev": "tsdown --watch ./src",
     "build": "tsdown",
     "clean": "rm -rf ./node_modules .turbo dist",
     "check-types": "tsc --noEmit"

@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "dev": "tsdown --watch  & turso dev --db-file local.db",
+    "dev": "tsdown --watch ./src  & turso dev --db-file local.db",
     "build": "tsdown",
     "check-types": "tsc --noEmit",
     "generate": "drizzle-kit generate",
