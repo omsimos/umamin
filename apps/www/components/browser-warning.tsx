@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { TriangleAlertIcon } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@umamin/ui/components/alert";
 
 import {
   AlertDialog,
@@ -15,15 +19,8 @@ import {
 } from "@umamin/ui/components/alert-dialog";
 
 export default function BrowserWarning() {
-  const [isFb, setIsFb] = useState(false);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (navigator.userAgent.match(/FBAN|FBAV/i)) {
-      setIsFb(true);
-      setOpen(true);
-    }
-  }, []);
+  const isFbAgent = /FBAN|FBAV/i.test(navigator.userAgent);
+  const [open, setOpen] = useState(isFbAgent);
 
   return (
     <>
@@ -45,7 +42,7 @@ export default function BrowserWarning() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {isFb && (
+      {isFbAgent && (
         <Alert className="my-4" variant="destructive">
           <TriangleAlertIcon className="h-4 w-4" />
           <AlertTitle>Warning</AlertTitle>
