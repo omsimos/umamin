@@ -15,7 +15,7 @@
     "check-types": "turbo run check-types"
   },
   "devDependencies": {
-    "@types/node": "^20.19.17",
+    "@types/node": "^22.18.8",
     "eslint": "^9.36.0",
     "eslint-config-turbo": "^2.5.8",
     "prettier": "^3.6.2",
