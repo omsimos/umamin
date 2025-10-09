@@ -22,8 +22,8 @@
     "turbo": "^2.5.8",
     "typescript": "5.9.2"
   },
-  "packageManager": "pnpm@10.17.1",
+  "packageManager": "pnpm@10.18.1",
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22"
   }
 }
