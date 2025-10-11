@@ -27,13 +27,15 @@ export const getCurrentUserAction = cache(async () => {
       .select()
       .from(userTable)
       .where(eq(userTable.id, session.userId))
-      .limit(1);
+      .limit(1)
+      .$withCache(false);
 
     const accounts = userRecord
       ? await db
           .select()
           .from(accountTable)
           .where(eq(accountTable.userId, session.userId))
+          .$withCache(false)
       : [];
 
     const data = userRecord ? { ...userRecord, accounts } : undefined;
@@ -91,9 +93,7 @@ export async function deleteAccountAction() {
   }
 
   try {
-    await db
-      .delete(messageTable)
-      .where(eq(messageTable.receiverId, user.id));
+    await db.delete(messageTable).where(eq(messageTable.receiverId, user.id));
     await db.delete(accountTable).where(eq(accountTable.userId, user.id));
     await db.delete(noteTable).where(eq(noteTable.userId, user.id));
     await db.delete(userTable).where(eq(userTable.id, user.id));
