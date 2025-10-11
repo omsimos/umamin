@@ -68,9 +68,11 @@ export const getCurrentNoteAction = async () => {
 
   const getCachedData = unstable_cache(
     async () => {
-      const data = await db.query.noteTable.findFirst({
-        where: eq(noteTable.userId, session.userId),
-      });
+      const [data] = await db
+        .select()
+        .from(noteTable)
+        .where(eq(noteTable.userId, session.userId))
+        .limit(1);
 
       return data;
     },

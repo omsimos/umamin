@@ -6,6 +6,7 @@ import { db } from "@umamin/db";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import { aesDecrypt, aesEncrypt } from "@umamin/encryption";
 import { messageTable, SelectMessage } from "@umamin/db/schema/message";
+import { userTable } from "@umamin/db/schema/user";
 import { PublicUser } from "@/types/user";
 
 import { getSession } from "@/lib/auth";
@@ -56,22 +57,29 @@ export const getMessagesAction = cache(
             ? and(cursorCondition, baseCondition)
             : baseCondition;
 
-          const data = await db.query.messageTable.findMany({
-            where: whereCondition,
-            with: {
+          const rows = await db
+            .select({
+              message: messageTable,
               receiver: {
-                columns: {
-                  id: true,
-                  username: true,
-                  displayName: true,
-                  imageUrl: true,
-                  quietMode: true,
-                },
+                id: userTable.id,
+                username: userTable.username,
+                displayName: userTable.displayName,
+                imageUrl: userTable.imageUrl,
+                quietMode: userTable.quietMode,
               },
-            },
-            orderBy: [desc(messageTable.createdAt), desc(messageTable.id)],
-            limit: 10,
-          });
+            })
+            .from(messageTable)
+            .leftJoin(userTable, eq(messageTable.receiverId, userTable.id))
+            .where(whereCondition)
+            .orderBy(desc(messageTable.createdAt), desc(messageTable.id))
+            .limit(10);
+
+          const data = rows
+            .filter((row) => row.receiver !== null)
+            .map(({ message, receiver }) => ({
+              ...message,
+              receiver,
+            }));
 
           const messagesData = await Promise.all(
             data.map(async (msg) => {

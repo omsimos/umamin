@@ -3,6 +3,7 @@ import { desc, lt, and, or, eq } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 
 import { noteTable } from "@umamin/db/schema/note";
+import { userTable } from "@umamin/db/schema/user";
 import { db } from "@umamin/db";
 
 export async function GET(req: NextRequest) {
@@ -29,28 +30,30 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        const base = {
-          with: {
+        const baseQuery = db
+          .select({
+            note: noteTable,
             user: {
-              columns: {
-                id: true,
-                username: true,
-                displayName: true,
-                imageUrl: true,
-                quietMode: true,
-              },
+              id: userTable.id,
+              username: userTable.username,
+              displayName: userTable.displayName,
+              imageUrl: userTable.imageUrl,
+              quietMode: userTable.quietMode,
             },
-          },
-          orderBy: [desc(noteTable.updatedAt), desc(noteTable.id)],
-          limit: 10,
-        };
+          })
+          .from(noteTable)
+          .leftJoin(userTable, eq(noteTable.userId, userTable.id))
+          .orderBy(desc(noteTable.updatedAt), desc(noteTable.id))
+          .limit(10);
 
-        const notes = cursorCondition
-          ? await db.query.noteTable.findMany({
-              ...base,
-              where: cursorCondition,
-            })
-          : await db.query.noteTable.findMany(base);
+        const rows = await (cursorCondition
+          ? baseQuery.where(cursorCondition)
+          : baseQuery);
+
+        const notes = rows.map(({ note, user }) => ({
+          ...note,
+          user: user ?? undefined,
+        }));
 
         const notesData = notes.map(({ user, userId, ...note }) =>
           note.isAnonymous ? { ...note } : { user, userId, ...note },
