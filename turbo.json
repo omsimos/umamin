@@ -10,10 +10,9 @@
       "outputs": [".next/**", "!.next/cache/**", "dist"],
       "env": [
         "VERCEL_URL",
-        "TURSO_CONNECTION_URL",
-        "TURSO_AUTH_TOKEN",
-        "GOOGLE_CLIENT_*",
-        "GOOGLE_REDIRECT_URI",
+        "TURSO_*",
+        "GOOGLE_*",
+        "UPSTASH_REDIS_*",
         "AES_256_GCM_KEY"
       ]
     },

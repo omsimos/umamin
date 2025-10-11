@@ -72,12 +72,16 @@ export async function GET(req: NextRequest) {
     const googleUser = claims.data;
     const { user } = await getSession();
 
-    const existingUser = await db.query.accountTable.findFirst({
-      where: and(
-        eq(accountTable.providerId, "google"),
-        eq(accountTable.providerUserId, googleUser.sub),
-      ),
-    });
+    const [existingUser] = await db
+      .select()
+      .from(accountTable)
+      .where(
+        and(
+          eq(accountTable.providerId, "google"),
+          eq(accountTable.providerUserId, googleUser.sub),
+        ),
+      )
+      .limit(1);
 
     if (user && existingUser) {
       return new Response(null, {
@@ -127,20 +131,19 @@ export async function GET(req: NextRequest) {
     const usernameId = generateUsernameId();
     const userId = nanoid();
 
-    await db.batch([
-      db.insert(userTable).values({
-        id: userId,
-        imageUrl: googleUser.picture,
-        username: `user_${usernameId}`,
-      }),
-      db.insert(accountTable).values({
-        providerId: "google",
-        providerUserId: googleUser.sub,
-        userId,
-        picture: googleUser.picture,
-        email: googleUser.email,
-      }),
-    ]);
+    await db.insert(userTable).values({
+      id: userId,
+      imageUrl: googleUser.picture,
+      username: `user_${usernameId}`,
+    });
+
+    await db.insert(accountTable).values({
+      providerId: "google",
+      providerUserId: googleUser.sub,
+      userId,
+      picture: googleUser.picture,
+      email: googleUser.email,
+    });
 
     const sessionToken = generateSessionToken();
     const session = await createSession(sessionToken, userId);

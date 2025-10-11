@@ -80,9 +80,11 @@ export async function login(_initialState: unknown, formData: FormData) {
   }
 
   try {
-    const existingUser = await db.query.userTable.findFirst({
-      where: eq(userTable.username, username.toLowerCase()),
-    });
+    const [existingUser] = await db
+      .select()
+      .from(userTable)
+      .where(eq(userTable.username, username.toLowerCase()))
+      .limit(1);
 
     if (!existingUser || !existingUser.passwordHash) {
       return {

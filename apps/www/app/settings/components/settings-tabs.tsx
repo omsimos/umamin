@@ -25,7 +25,7 @@ export function SettingsTabs() {
   const userData = useMemo(() => {
     if (!data?.user) return null;
 
-    const { accounts, ...rest } = data.user;
+    const { accounts, ...rest } = data?.user;
 
     return {
       ...rest,

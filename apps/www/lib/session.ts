@@ -8,6 +8,7 @@ import {
   SelectSession,
   SelectUser,
   sessionTable,
+  userTable,
 } from "@umamin/db/schema/user";
 import { db } from "@umamin/db";
 
@@ -40,18 +41,22 @@ export async function validateSessionToken(
   token: string,
 ): Promise<SessionValidationResult> {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-  const result = await db.query.sessionTable.findFirst({
-    where: eq(sessionTable.id, sessionId),
-    with: {
-      user: true,
-    },
-  });
+  const [result] = await db
+    .select({
+      session: sessionTable,
+      user: userTable,
+    })
+    .from(sessionTable)
+    .leftJoin(userTable, eq(sessionTable.userId, userTable.id))
+    .where(eq(sessionTable.id, sessionId))
+    .limit(1)
+    .$withCache(false);
 
-  if (!result) {
+  if (!result || !result.user) {
     return { session: null, user: null };
   }
 
-  const { user, ...session } = result;
+  const { session, user } = result;
   if (Date.now() >= session.expiresAt) {
     await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
     return { session: null, user: null };

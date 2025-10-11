@@ -14,20 +14,21 @@ export async function GET(
 
     const getCached = unstable_cache(
       async () => {
-        const user = await db.query.userTable.findFirst({
-          where: eq(userTable.username, username),
-          columns: {
-            id: true,
-            username: true,
-            displayName: true,
-            imageUrl: true,
-            bio: true,
-            question: true,
-            quietMode: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        });
+        const [user] = await db
+          .select({
+            id: userTable.id,
+            username: userTable.username,
+            displayName: userTable.displayName,
+            imageUrl: userTable.imageUrl,
+            bio: userTable.bio,
+            question: userTable.question,
+            quietMode: userTable.quietMode,
+            createdAt: userTable.createdAt,
+            updatedAt: userTable.updatedAt,
+          })
+          .from(userTable)
+          .where(eq(userTable.username, username))
+          .limit(1);
         return user;
       },
       ["api-user-by-username", username],
