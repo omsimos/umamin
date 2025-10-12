@@ -7,8 +7,8 @@ import {
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import {
   BadgeCheckIcon,
-  MessageSquareXIcon,
   MessageSquareTextIcon,
+  MessageSquareXIcon,
   ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
