@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { TriangleAlertIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +10,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
+import { TriangleAlertIcon } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 export default function UnauthenticatedDialog({
   isLoggedIn,

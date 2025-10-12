@@ -1,15 +1,14 @@
-import { Metadata } from "next";
-import { getSession, logout } from "@/lib/auth";
-import { redirect } from "next/navigation";
-
-import { SignOutButton } from "./components/sign-out-button";
-import { SettingsTabs } from "./components/settings-tabs";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { Link2OffIcon } from "lucide-react";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getSession, logout } from "@/lib/auth";
+import { SettingsTabs } from "./components/settings-tabs";
+import { SignOutButton } from "./components/sign-out-button";
 
 export const metadata: Metadata = {
   title: "Umamin — Settings",

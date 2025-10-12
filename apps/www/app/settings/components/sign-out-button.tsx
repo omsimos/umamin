@@ -1,9 +1,9 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@umamin/ui/components/button";
 import { Loader2Icon, LogOutIcon } from "lucide-react";
 import { useFormStatus } from "react-dom";
-import { Button } from "@umamin/ui/components/button";
-import { useQueryClient } from "@tanstack/react-query";
 
 export function SignOutButton() {
   const { pending } = useFormStatus();

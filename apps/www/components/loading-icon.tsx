@@ -1,4 +1,4 @@
-import { type LucideIcon, Loader2Icon } from "lucide-react";
+import { Loader2Icon, type LucideIcon } from "lucide-react";
 
 type Props = {
   loading: boolean;

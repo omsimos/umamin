@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Badge } from "@umamin/ui/components/badge";
 import {
   LayoutDashboardIcon,
@@ -8,9 +7,10 @@ import {
   ScrollTextIcon,
   UserCogIcon,
 } from "lucide-react";
-import { ThemeToggle } from "./theme-toggle";
+import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { ShareLinkDialog } from "./share-link-dialog";
+import { ThemeToggle } from "./theme-toggle";
 
 export async function Navbar() {
   const { user, session } = await getSession();

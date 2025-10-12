@@ -1,14 +1,12 @@
-/* eslint-disable react/no-children-prop */
 "use client";
 
-import * as z from "zod";
+import { Button } from "@umamin/ui/components/button";
 import Link from "next/link";
 import { toast } from "sonner";
-
+import type * as z from "zod";
 import { useAppForm } from "@/hooks/form";
-import { registerSchema } from "@/lib/schema";
-import { Button } from "@umamin/ui/components/button";
 import { signup } from "@/lib/auth";
+import { registerSchema } from "@/lib/schema";
 
 export function RegisterForm() {
   const form = useAppForm({

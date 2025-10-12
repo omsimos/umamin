@@ -1,5 +1,5 @@
+import type { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 import * as z from "zod";
-import { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 
 export type UserWithAccount = SelectUser & { account: SelectAccount | null };
 

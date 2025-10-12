@@ -1,11 +1,10 @@
-import type { Metadata, Viewport } from "next";
-import Script from "next/script";
-import { Geist, Geist_Mono } from "next/font/google";
 import { GoogleTagManager } from "@next/third-parties/google";
-
-import Providers from "./providers";
-import { Navbar } from "@/components/navbar";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { Footer } from "@/components/footer";
+import { Navbar } from "@/components/navbar";
+import Providers from "./providers";
 
 import "./globals.css";
 

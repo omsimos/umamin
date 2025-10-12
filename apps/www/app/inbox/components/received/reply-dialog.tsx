@@ -1,21 +1,20 @@
-import { toast } from "sonner";
-import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2Icon, SendIcon } from "lucide-react";
-
-import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { ReceivedMenuProps } from "./received-card-menu";
+import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@umamin/ui/components/dialog";
-import { ChatList } from "@/components/chat-list";
 import { Textarea } from "@umamin/ui/components/textarea";
-import { Button } from "@umamin/ui/components/button";
-import { createReplyAction } from "@/app/actions/message";
 import { cn } from "@umamin/ui/lib/utils";
+import { formatDistanceToNow } from "date-fns";
+import { Loader2Icon, SendIcon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createReplyAction } from "@/app/actions/message";
+import { ChatList } from "@/components/chat-list";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import type { ReceivedMenuProps } from "./received-card-menu";
 
 type Props = {
   open: boolean;

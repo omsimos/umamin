@@ -3,14 +3,14 @@ import {
   encodeBase32LowerCaseNoPadding,
   encodeHexLowerCase,
 } from "@oslojs/encoding";
+import { db } from "@umamin/db";
 import {
-  InsertSession,
-  SelectSession,
-  SelectUser,
+  type InsertSession,
+  type SelectSession,
+  type SelectUser,
   sessionTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { db } from "@umamin/db";
 
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";

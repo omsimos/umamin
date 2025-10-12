@@ -1,12 +1,11 @@
-import { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { BadgeCheckIcon, LockIcon, MessageCircleOffIcon } from "lucide-react";
-
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { ShareButton } from "@/components/share-button";
+import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { getSession } from "@/lib/auth";
 import { formatUsername, getBaseUrl } from "@/lib/utils";
 import { ChatForm } from "./components/chat-form";
-import { ShareButton } from "@/components/share-button";
-import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 
 export async function generateMetadata({
   params,

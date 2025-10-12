@@ -1,15 +1,14 @@
 /* eslint-disable react/no-children-prop */
 "use client";
 
-import * as z from "zod";
-import { toast } from "sonner";
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-
+import { KeyIcon } from "lucide-react";
+import { toast } from "sonner";
+import type * as z from "zod";
+import { updatePasswordAction } from "@/app/actions/user";
 import { useAppForm } from "@/hooks/form";
 import { passwordFormSchema } from "@/types/user";
-import { updatePasswordAction } from "@/app/actions/user";
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
-import { KeyIcon } from "lucide-react";
 
 export function PasswordForm({
   passwordHash,

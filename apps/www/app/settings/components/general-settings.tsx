@@ -1,13 +1,13 @@
 /* eslint-disable react/no-children-prop */
 
-import * as z from "zod";
-import { toast } from "sonner";
-import { InfoIcon, CheckIcon } from "lucide-react";
-import { useAppForm } from "@/hooks/form";
-import { generalSettingsSchema, UserWithAccount } from "@/types/user";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { generalSettingsAction } from "@/app/actions/user";
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CheckIcon, InfoIcon } from "lucide-react";
+import { toast } from "sonner";
+import type * as z from "zod";
+import { generalSettingsAction } from "@/app/actions/user";
+import { useAppForm } from "@/hooks/form";
+import { generalSettingsSchema, type UserWithAccount } from "@/types/user";
 
 export function GeneralSettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();

@@ -1,11 +1,11 @@
+import { Button } from "@umamin/ui/components/button";
+import { SquarePenIcon } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { getSession } from "@/lib/auth";
+import { CurrentUserNote } from "./components/current-user-note";
 import { NoteForm } from "./components/note-form";
 import { NoteList } from "./components/note-list";
-import { getSession } from "@/lib/auth";
-import { SquarePenIcon } from "lucide-react";
-import { Button } from "@umamin/ui/components/button";
-import Link from "next/link";
-import { CurrentUserNote } from "./components/current-user-note";
 
 export const metadata: Metadata = {
   title: "Umamin — Notes",

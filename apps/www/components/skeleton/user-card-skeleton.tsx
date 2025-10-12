@@ -1,6 +1,6 @@
-import { CalendarDaysIcon, Link2Icon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@umamin/ui/components/avatar";
 import { Skeleton } from "@umamin/ui/components/skeleton";
+import { CalendarDaysIcon, Link2Icon } from "lucide-react";
 
 export function UserCardSkeleton() {
   return (

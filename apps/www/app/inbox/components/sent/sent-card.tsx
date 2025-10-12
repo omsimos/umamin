@@ -1,16 +1,15 @@
-import { CircleUserIcon } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-
+import type { SelectMessage } from "@umamin/db/schema/message";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
+import { formatDistanceToNow } from "date-fns";
+import { CircleUserIcon } from "lucide-react";
 import { ChatList } from "@/components/chat-list";
-import { PublicUser } from "@/types/user";
-import { SelectMessage } from "@umamin/db/schema/message";
 import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
+import type { PublicUser } from "@/types/user";
 
 export function SentMessageCard({
   data,

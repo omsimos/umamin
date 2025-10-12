@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
 import { db } from "@umamin/db";
 import { userTable } from "@umamin/db/schema/user";
+import { eq } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 
 export const revalidate = 604800; // 7 days

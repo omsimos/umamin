@@ -1,9 +1,9 @@
 "use client";
 
-import { toast } from "sonner";
-import { Link2Icon } from "lucide-react";
-import { Skeleton } from "@umamin/ui/components/skeleton";
 import { Badge } from "@umamin/ui/components/badge";
+import { Skeleton } from "@umamin/ui/components/skeleton";
+import { Link2Icon } from "lucide-react";
+import { toast } from "sonner";
 
 const onCopy = (url: string) => {
   if (typeof window !== "undefined") {
@@ -29,6 +29,7 @@ export default function CopyLink({ username }: { username: string }) {
 
   return (
     <button
+      type="button"
       onClick={() => onCopy(url)}
       className="text-muted-foreground flex items-center cursor-pointer"
     >

@@ -1,4 +1,3 @@
-import { CircleUserIcon } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -6,6 +5,7 @@ import {
   CardHeader,
 } from "@umamin/ui/components/card";
 import { Skeleton } from "@umamin/ui/components/skeleton";
+import { CircleUserIcon } from "lucide-react";
 import { ChatListSkeleton } from "@/components/skeleton/chat-list-skeleton";
 
 export function SentMessageCardSkeleton() {

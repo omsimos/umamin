@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import TermsOfService from "@/markdown/terms.mdx";
 
 export const metadata: Metadata = {

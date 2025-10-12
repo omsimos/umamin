@@ -1,21 +1,20 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, useMemo } from "react";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
-
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import type { SelectNote } from "@umamin/db/schema/note";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { SelectNote } from "@umamin/db/schema/note";
+import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo } from "react";
+import type { PublicUser } from "@/types/user";
 import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
-import { PublicUser } from "@/types/user";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"), {
   ssr: false,
@@ -75,6 +74,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     return rowIndex - adsBefore;
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dep mismatch
   const totalRows = useMemo(() => {
     const rows = allPosts.length + adCountFor(allPosts.length);
     return hasNextPage ? rows + 1 : rows; // +1 for loader row at the end
@@ -131,9 +131,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   if (isLoading) {
     return (
       <div className="w-full mx-auto space-y-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <NoteCardSkeleton key={i} />
-        ))}
+        <NoteCardSkeleton />
+        <NoteCardSkeleton />
+        <NoteCardSkeleton />
       </div>
     );
   }

@@ -1,19 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-
-import { AccountSettings } from "./account-settings";
-import { PrivacySettings } from "./privacy-settings";
-import { GeneralSettings } from "./general-settings";
-
-import { getCurrentUserAction } from "@/app/actions/user";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
+import { useMemo } from "react";
+import { getCurrentUserAction } from "@/app/actions/user";
+import { AccountSettings } from "./account-settings";
+import { GeneralSettings } from "./general-settings";
+import { PrivacySettings } from "./privacy-settings";
 import { SettingsSkeleton } from "./settings-skeleton";
 
 export function SettingsTabs() {
@@ -25,7 +23,7 @@ export function SettingsTabs() {
   const userData = useMemo(() => {
     if (!data?.user) return null;
 
-    const { accounts, ...rest } = data?.user;
+    const { accounts, ...rest } = data.user;
 
     return {
       ...rest,

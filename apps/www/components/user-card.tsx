@@ -1,17 +1,20 @@
 "use client";
 
+import type { SelectUser } from "@umamin/db/schema/user";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@umamin/ui/components/avatar";
+import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
   BadgeCheckIcon,
   CalendarDaysIcon,
   MessageCircleOffIcon,
 } from "lucide-react";
-
-import { ShareButton } from "./share-button";
-import { cn } from "@umamin/ui/lib/utils";
-import { SelectUser } from "@umamin/db/schema/user";
-import { Avatar, AvatarFallback, AvatarImage } from "@umamin/ui/components/avatar";
 import dynamic from "next/dynamic";
+import { ShareButton } from "./share-button";
 
 const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
 
@@ -46,9 +49,7 @@ export function UserCard({ user }: { user: SelectUser }) {
 
             <ShareButton username={user.username} />
           </div>
-          <p className="text-muted-foreground text-sm">
-            @{user.username}
-          </p>
+          <p className="text-muted-foreground text-sm">@{user.username}</p>
         </div>
       </section>
 

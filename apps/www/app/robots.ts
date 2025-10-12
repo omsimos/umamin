@@ -1,4 +1,4 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
   const base = "https://www.umamin.link";
@@ -7,12 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: [
-          "/api/*",
-          "/auth/*",
-          "/inbox/*",
-          "/settings/*",
-        ],
+        disallow: ["/api/*", "/auth/*", "/inbox/*", "/settings/*"],
       },
     ],
     sitemap: `${base}/sitemap.xml`,

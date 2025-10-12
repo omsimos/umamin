@@ -94,12 +94,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -187,9 +183,7 @@
       "indexes": {
         "user_username_unique": {
           "name": "user_username_unique",
-          "columns": [
-            "username"
-          ],
+          "columns": ["username"],
           "isUnique": true
         }
       },
@@ -247,17 +241,12 @@
       "indexes": {
         "note_user_id_unique": {
           "name": "note_user_id_unique",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": true
         },
         "updated_at_id_idx": {
           "name": "updated_at_id_idx",
-          "columns": [
-            "updated_at",
-            "id"
-          ],
+          "columns": ["updated_at", "id"],
           "isUnique": false
         }
       },
@@ -329,20 +318,12 @@
       "indexes": {
         "receiver_id_created_at_id_idx": {
           "name": "receiver_id_created_at_id_idx",
-          "columns": [
-            "receiver_id",
-            "created_at",
-            "id"
-          ],
+          "columns": ["receiver_id", "created_at", "id"],
           "isUnique": false
         },
         "sender_id_created_at_id_idx": {
           "name": "sender_id_created_at_id_idx",
-          "columns": [
-            "sender_id",
-            "created_at",
-            "id"
-          ],
+          "columns": ["sender_id", "created_at", "id"],
           "isUnique": false
         }
       },

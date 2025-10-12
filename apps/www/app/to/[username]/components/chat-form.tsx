@@ -1,19 +1,18 @@
 "use client";
 
-import { toast } from "sonner";
-import { useState } from "react";
-import { SendIcon, Loader2Icon } from "lucide-react";
-
-import { formatContent } from "@/lib/utils";
-import { cn } from "@umamin/ui/lib/utils";
-import { Button } from "@umamin/ui/components/button";
-import { ChatList } from "@/components/chat-list";
-import { Textarea } from "@umamin/ui/components/textarea";
-import { sendMessageAction } from "@/app/actions/message";
-import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { useMutation } from "@tanstack/react-query";
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
-import { PublicUser } from "@/types/user";
+import { useMutation } from "@tanstack/react-query";
+import { Button } from "@umamin/ui/components/button";
+import { Textarea } from "@umamin/ui/components/textarea";
+import { cn } from "@umamin/ui/lib/utils";
+import { Loader2Icon, SendIcon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { sendMessageAction } from "@/app/actions/message";
+import { ChatList } from "@/components/chat-list";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { formatContent } from "@/lib/utils";
+import type { PublicUser } from "@/types/user";
 
 export function ChatForm({ user }: { user: PublicUser }) {
   const [content, setContent] = useState("");

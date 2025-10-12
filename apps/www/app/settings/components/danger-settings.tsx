@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
-
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@umamin/ui/components/alert";
+import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -11,11 +15,9 @@ import {
   DialogTrigger,
 } from "@umamin/ui/components/dialog";
 import { Input } from "@umamin/ui/components/input";
-
-import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
-import { Button } from "@umamin/ui/components/button";
-import { DeleteButton } from "./danger-button";
+import { useState } from "react";
 import { deleteAccountAction } from "@/app/actions/user";
+import { DeleteButton } from "./danger-button";
 
 export function DangerSettings() {
   const [confirmText, setConfirmText] = useState("");

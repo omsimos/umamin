@@ -1,19 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import Error from "next/error";
-import { cn } from "@umamin/ui/lib/utils";
 import { Button } from "@umamin/ui/components/button";
+import { cn } from "@umamin/ui/lib/utils";
+import type NextError from "next/error";
+import Link from "next/link";
 import { AnimatedShinyText } from "@/components/animated-shiny-text";
 
 export default function GlobalError({
   reset,
 }: {
-  error: Error & { digest?: string };
+  error: NextError & { digest?: string };
   reset: () => void;
 }) {
   return (
-    <html>
+    <html lang="en">
       <body>
         <div className="flex items-center flex-col min-h-screen lg:pt-44 py-36 md:gap-8 gap-6 container">
           <div

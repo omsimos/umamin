@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
 import { cn } from "@umamin/ui/lib/utils";
+import { useEffect } from "react";
 
 declare global {
   interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: google
     adsbygoogle: any;
   }
 }
@@ -23,6 +23,7 @@ const AdContainer = ({ slotId, className }: Props) => {
         typeof window !== "undefined" &&
         !window.location.hostname.includes("localhost")
       ) {
+        // biome-ignore lint/suspicious/noAssignInExpressions: google
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       }
     } catch (err) {

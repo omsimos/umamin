@@ -1,12 +1,12 @@
 "use server";
 
-import * as z from "zod";
-import { eq, sql } from "drizzle-orm";
 import { db } from "@umamin/db";
+import { noteTable } from "@umamin/db/schema/note";
+import { eq, sql } from "drizzle-orm";
 import { revalidateTag, unstable_cache } from "next/cache";
+import * as z from "zod";
 import { getSession } from "@/lib/auth";
 import { formatContent } from "@/lib/utils";
-import { noteTable } from "@umamin/db/schema/note";
 
 const createNoteSchema = z.object({
   isAnonymous: z.boolean().default(false),

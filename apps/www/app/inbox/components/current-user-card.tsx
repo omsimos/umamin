@@ -1,5 +1,5 @@
-import { getSession } from "@/lib/auth";
 import { UserCard } from "@/components/user-card";
+import { getSession } from "@/lib/auth";
 
 export async function CurrentUserCard() {
   const { user } = await getSession();

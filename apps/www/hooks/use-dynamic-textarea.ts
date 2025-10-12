@@ -14,6 +14,7 @@ export function useDynamicTextarea(content: string) {
     updateTextAreaSize(textArea);
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: updates height only when content changes
   useLayoutEffect(() => {
     updateTextAreaSize(textAreaRef.current);
   }, [content]);

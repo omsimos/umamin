@@ -1,8 +1,7 @@
-import { nanoid } from "nanoid";
-import { sql, relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { nanoid } from "nanoid";
 import { messageTable } from "./message";
-import { noteTable } from "./note";
 
 export const userTable = sqliteTable("user", {
   id: text("id")

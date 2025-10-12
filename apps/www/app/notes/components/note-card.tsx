@@ -1,22 +1,22 @@
+import type { SelectNote } from "@umamin/db/schema/note";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
-import { saveImage, shortTimeAgo } from "@/lib/utils";
-import { SelectNote } from "@umamin/db/schema/note";
-import { PublicUser } from "@/types/user";
 import {
-  ScanFaceIcon,
   BadgeCheckIcon,
   MessageCircleOffIcon,
   MessageSquareTextIcon,
+  ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { ReplyDrawer } from "./reply-drawer";
 import { useState } from "react";
 import { Menu } from "@/components/menu";
+import { saveImage, shortTimeAgo } from "@/lib/utils";
+import type { PublicUser } from "@/types/user";
+import { ReplyDrawer } from "./reply-drawer";
 
 type Props = {
   data: SelectNote & { user?: PublicUser };
@@ -103,7 +103,10 @@ export function NoteCard({ data, isAuthenticated }: Props) {
               {user?.quietMode && <MessageCircleOffIcon className="size-4" />}
 
               {isAuthenticated && !data.isAnonymous && !user?.quietMode && (
-                <button onClick={() => setReplyOpen((prev) => !prev)}>
+                <button
+                  type="button"
+                  onClick={() => setReplyOpen((prev) => !prev)}
+                >
                   <MessageSquareTextIcon className="size-5" />
                 </button>
               )}

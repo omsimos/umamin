@@ -1,12 +1,20 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { SelectUser } from "@umamin/db/schema/user";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@umamin/ui/components/avatar";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
+import { Skeleton } from "@umamin/ui/components/skeleton";
+import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
   BadgeCheckIcon,
@@ -14,18 +22,10 @@ import {
   MessageCircleMoreIcon,
   ScanFaceIcon,
 } from "lucide-react";
+import { toast } from "sonner";
+import { clearNoteAction, getCurrentNoteAction } from "@/app/actions/note";
 import { Menu } from "@/components/menu";
 import { saveImage } from "@/lib/utils";
-import { clearNoteAction, getCurrentNoteAction } from "@/app/actions/note";
-import { Skeleton } from "@umamin/ui/components/skeleton";
-import { toast } from "sonner";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
-import { SelectUser } from "@umamin/db/schema/user";
-import { cn } from "@umamin/ui/lib/utils";
 
 export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
   const queryClient = useQueryClient();
