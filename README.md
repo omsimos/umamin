@@ -102,6 +102,13 @@ $ pnpm db:migrate
 
 # open drizzle studio
 $ pnpm db:studio
+
+# optional: reset & seed the database with demo data
+$ pnpm db:seed
+
+# seeded test account
+# username: testuser
+# password: 12345
 ```
 
 ### Running Build
