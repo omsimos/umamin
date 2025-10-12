@@ -11,12 +11,14 @@
   "scripts": {
     "dev": "tsdown --watch ./src",
     "build": "tsdown",
+    "generate": "tsx ./src/generate-aes-key.ts",
     "clean": "rm -rf ./node_modules .turbo dist",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^22.18.8",
     "tsdown": "^0.15.6",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }

@@ -10,7 +10,7 @@
     "db:migrate": "pnpm --filter=@umamin/db migrate",
     "db:studio": "pnpm --filter=@umamin/db studio",
     "db:seed": "pnpm --filter=@umamin/db seed",
-    "aes:generate": "npx tsx ./scripts/generate-aes-key.ts",
+    "aes:generate": "pnpm --filter=@umamin/encryption generate",
     "lint": "turbo run lint",
     "check-types": "turbo run check-types",
     "format-and-lint": "biome check .",

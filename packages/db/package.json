@@ -19,7 +19,7 @@
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "studio": "drizzle-kit studio",
-    "seed": "tsx --env-file=.env src/seed.ts",
+    "seed": "tsx --env-file=.env ./src/seed.ts",
     "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {
