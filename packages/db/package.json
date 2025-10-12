@@ -19,6 +19,7 @@
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "studio": "drizzle-kit studio",
+    "seed": "tsx --env-file=.env src/seed.ts",
     "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {
@@ -27,9 +28,13 @@
     "nanoid": "^5.1.6"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.0.0",
     "@types/node": "^22.18.8",
+    "@umamin/encryption": "workspace:*",
     "drizzle-kit": "^0.31.5",
+    "drizzle-seed": "^0.3.1",
     "tsdown": "^0.15.6",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }
