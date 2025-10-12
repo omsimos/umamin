@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";

@@ -1,4 +1,3 @@
-/* eslint-disable react/no-children-prop */
 "use client";
 
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";

@@ -1,5 +1,3 @@
-/* eslint-disable react/no-children-prop */
-
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon, InfoIcon } from "lucide-react";
