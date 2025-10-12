@@ -1,5 +1,3 @@
-import React from "react";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,6 +5,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@umamin/ui/components/dropdown-menu";
+import React from "react";
 import { Icons } from "@/lib/icons";
 
 export type MenuItems = {

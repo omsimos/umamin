@@ -1,9 +1,5 @@
 "use client";
 
-import React from "react";
-import { toast } from "sonner";
-import { CopyIcon, LinkIcon } from "lucide-react";
-
 import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
@@ -15,8 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@umamin/ui/components/dialog";
-import { Label } from "@umamin/ui/components/label";
 import { Input } from "@umamin/ui/components/input";
+import { Label } from "@umamin/ui/components/label";
+import { CopyIcon, LinkIcon } from "lucide-react";
+import { toast } from "sonner";
 
 const onCopy = (url: string) => {
   if (typeof window !== "undefined") {

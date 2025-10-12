@@ -1,17 +1,16 @@
-import { Metadata } from "next";
-import { Suspense } from "react";
-import dynamic from "next/dynamic";
-import { getSession } from "@/lib/auth";
-import { redirect } from "next/navigation";
-
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import { CurrentUserCard } from "./components/current-user-card";
+import type { Metadata } from "next";
+import dynamic from "next/dynamic";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
+import { getSession } from "@/lib/auth";
+import { CurrentUserCard } from "./components/current-user-card";
 import { ReceivedMessages } from "./components/received/received-messages";
 import { SentMessages } from "./components/sent/sent-messages";
 

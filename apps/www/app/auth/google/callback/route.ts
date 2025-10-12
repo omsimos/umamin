@@ -1,20 +1,19 @@
-import * as z from "zod";
-import { nanoid } from "nanoid";
-import { and, eq } from "drizzle-orm";
 import { db } from "@umamin/db";
-import { cookies } from "next/headers";
-import { decodeIdToken, OAuth2RequestError, type OAuth2Tokens } from "arctic";
 import { accountTable, userTable } from "@umamin/db/schema/user";
-
+import { decodeIdToken, OAuth2RequestError, type OAuth2Tokens } from "arctic";
+import { and, eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
+import * as z from "zod";
+import { getSession } from "@/lib/auth";
+import { google } from "@/lib/oauth";
 import {
   createSession,
   generateSessionToken,
   setSessionTokenCookie,
 } from "@/lib/session";
-import { google } from "@/lib/oauth";
-import { getSession } from "@/lib/auth";
 import { generateUsernameId } from "@/lib/utils";
-import { NextRequest } from "next/server";
 
 const claimsSchema = z.object({
   sub: z.string(),

@@ -1,9 +1,9 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
-import { Loader2Icon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
+import { Loader2Icon } from "lucide-react";
+import { useFormStatus } from "react-dom";
 
 export function DeleteButton({ confirmText }: { confirmText: string }) {
   const { pending } = useFormStatus();

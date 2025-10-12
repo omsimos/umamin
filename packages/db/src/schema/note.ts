@@ -1,6 +1,6 @@
-import { nanoid } from "nanoid";
-import { sql, relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { nanoid } from "nanoid";
 
 import { userTable } from "./user";
 

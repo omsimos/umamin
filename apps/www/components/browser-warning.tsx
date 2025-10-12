@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { TriangleAlertIcon } from "lucide-react";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -17,6 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
+import { TriangleAlertIcon } from "lucide-react";
+import { useState } from "react";
 
 export default function BrowserWarning() {
   const isFbAgent = /FBAN|FBAV/i.test(navigator.userAgent);

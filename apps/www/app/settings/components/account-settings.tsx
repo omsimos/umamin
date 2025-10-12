@@ -1,27 +1,34 @@
 "use client";
 
-import Link from "next/link";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@umamin/ui/components/alert";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@umamin/ui/components/avatar";
+import { Button } from "@umamin/ui/components/button";
+import { Card, CardHeader } from "@umamin/ui/components/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@umamin/ui/components/collapsible";
+
+import { Label } from "@umamin/ui/components/label";
 import { formatDistanceToNow } from "date-fns";
 import {
   ChevronsUpDownIcon,
   ScanFaceIcon,
   ShieldAlertIcon,
 } from "lucide-react";
-
-import { PasswordForm } from "./password-form";
+import Link from "next/link";
+import type { UserWithAccount } from "@/types/user";
 import { DangerSettings } from "./danger-settings";
-
-import { Label } from "@umamin/ui/components/label";
-import { Button } from "@umamin/ui/components/button";
-import { Card, CardHeader } from "@umamin/ui/components/card";
-import { Alert, AlertDescription, AlertTitle } from "@umamin/ui/components/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@umamin/ui/components/avatar";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@umamin/ui/components/collapsible";
-import { UserWithAccount } from "@/types/user";
+import { PasswordForm } from "./password-form";
 
 export function AccountSettings({ user }: { user: UserWithAccount }) {
   return (

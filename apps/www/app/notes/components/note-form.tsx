@@ -1,14 +1,14 @@
 "use client";
 
-import { toast } from "sonner";
-import { useState } from "react";
-import { Loader2Icon, MessageSquareShareIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createNoteAction } from "@/app/actions/note";
 import { Button } from "@umamin/ui/components/button";
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
+import { Loader2Icon, MessageSquareShareIcon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createNoteAction } from "@/app/actions/note";
 
 export function NoteForm() {
   const queryClient = useQueryClient();

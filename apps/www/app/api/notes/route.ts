@@ -1,10 +1,9 @@
-import type { NextRequest } from "next/server";
-import { desc, lt, and, or, eq } from "drizzle-orm";
-import { unstable_cache } from "next/cache";
-
+import { db } from "@umamin/db";
 import { noteTable } from "@umamin/db/schema/note";
 import { userTable } from "@umamin/db/schema/user";
-import { db } from "@umamin/db";
+import { and, desc, eq, lt, or } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import type { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +12,9 @@ export async function GET(req: NextRequest) {
 
     const result = await unstable_cache(
       async () => {
+        // biome-ignore lint/suspicious/noImplicitAnyLet: temp
         let cursorCondition;
+
         if (cursor) {
           const sep = cursor.indexOf(".");
           if (sep > 0) {

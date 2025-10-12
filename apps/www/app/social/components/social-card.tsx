@@ -1,6 +1,8 @@
-import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@umamin/ui/components/avatar";
-import { shortTimeAgo } from "@/lib/utils";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@umamin/ui/components/avatar";
 import { cn } from "@umamin/ui/lib/utils";
 import {
   BadgeCheckIcon,
@@ -8,6 +10,8 @@ import {
   MessageCircleIcon,
   ScanFaceIcon,
 } from "lucide-react";
+import Link from "next/link";
+import { shortTimeAgo } from "@/lib/utils";
 
 type Props = {
   imageUrl: string;

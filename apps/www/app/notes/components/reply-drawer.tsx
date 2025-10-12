@@ -1,10 +1,6 @@
-import { toast } from "sonner";
-import { useState } from "react";
-import { Loader2Icon, SendIcon } from "lucide-react";
-
-import { useMediaQuery } from "@/hooks/use-media-query";
-import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { SelectNote } from "@umamin/db/schema/note";
+import { useMutation } from "@tanstack/react-query";
+import type { SelectNote } from "@umamin/db/schema/note";
+import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -15,14 +11,17 @@ import {
   DrawerContent,
   DrawerTitle,
 } from "@umamin/ui/components/drawer";
-import { formatContent } from "@/lib/utils";
-import { cn } from "@umamin/ui/lib/utils";
-import { ChatList } from "@/components/chat-list";
 import { Textarea } from "@umamin/ui/components/textarea";
-import { Button } from "@umamin/ui/components/button";
-import { PublicUser } from "@/types/user";
-import { useMutation } from "@tanstack/react-query";
+import { cn } from "@umamin/ui/lib/utils";
+import { Loader2Icon, SendIcon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { sendMessageAction } from "@/app/actions/message";
+import { ChatList } from "@/components/chat-list";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { formatContent } from "@/lib/utils";
+import type { PublicUser } from "@/types/user";
 
 type ChatFormProps = {
   note: SelectNote & { user: PublicUser };

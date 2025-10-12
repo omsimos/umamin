@@ -1,8 +1,8 @@
-import Link from "next/link";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import dynamic from "next/dynamic";
-import { getSession } from "@/lib/auth";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
 import { RegisterForm } from "./components/register-form";
 
 const BrowserWarning = dynamic(() => import("@/components/browser-warning"));

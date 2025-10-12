@@ -1,11 +1,14 @@
 "use client";
 
-import { BadgeCheckIcon, ScanFaceIcon, LockIcon } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@umamin/ui/components/avatar";
-
-import { GridPattern } from "./grid-pattern";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@umamin/ui/components/avatar";
 import { Card, CardHeader } from "@umamin/ui/components/card";
+import { BadgeCheckIcon, LockIcon, ScanFaceIcon } from "lucide-react";
 import { AnimatedShinyText } from "./animated-shiny-text";
+import { GridPattern } from "./grid-pattern";
 
 export function Demo() {
   return (

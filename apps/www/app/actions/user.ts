@@ -1,19 +1,18 @@
 "use server";
 
-import * as z from "zod";
-import { cache } from "react";
-import { eq } from "drizzle-orm";
+import { hash, verify } from "@node-rs/argon2";
 import { db } from "@umamin/db";
+import { messageTable } from "@umamin/db/schema/message";
+import { noteTable } from "@umamin/db/schema/note";
+import { accountTable, userTable } from "@umamin/db/schema/user";
+import { eq } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { hash, verify } from "@node-rs/argon2";
-
+import { cache } from "react";
+import type * as z from "zod";
 import { getSession } from "@/lib/auth";
-import { noteTable } from "@umamin/db/schema/note";
-import { messageTable } from "@umamin/db/schema/message";
-import { accountTable, userTable } from "@umamin/db/schema/user";
-import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
+import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 
 export const getCurrentUserAction = cache(async () => {
   try {

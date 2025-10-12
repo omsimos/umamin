@@ -1,4 +1,4 @@
-const { crypto } = globalThis as any;
+const { crypto } = globalThis;
 const { subtle } = crypto;
 
 function toUint8Array(base64: string): Uint8Array {

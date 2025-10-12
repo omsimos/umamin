@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Privacy from "@/markdown/privacy.mdx";
 
 export const metadata: Metadata = {

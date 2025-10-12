@@ -1,9 +1,9 @@
-import { ScanFaceIcon } from "lucide-react";
 import {
   Avatar,
-  AvatarImage,
   AvatarFallback,
+  AvatarImage,
 } from "@umamin/ui/components/avatar";
+import { ScanFaceIcon } from "lucide-react";
 
 type Props = {
   imageUrl?: string | null;

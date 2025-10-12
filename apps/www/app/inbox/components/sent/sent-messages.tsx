@@ -1,22 +1,20 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useEffect } from "react";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
-
-import { SentMessageCard } from "./sent-card";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import type { SelectMessage } from "@umamin/db/schema/message";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { SelectMessage } from "@umamin/db/schema/message";
-import { PublicUser } from "@/types/user";
-import { Cursor } from "@/types";
+import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
+import { useEffect } from "react";
 import { getMessagesAction } from "@/app/actions/message";
+import type { Cursor } from "@/types";
+import type { PublicUser } from "@/types/user";
+import { SentMessageCard } from "./sent-card";
 import { SentMessageCardSkeleton } from "./sent-message-card-skeleton";
 
 type MessagesResponse = {
@@ -73,6 +71,7 @@ export function SentMessages() {
     },
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: for virtualizer
   useEffect(() => {
     const [lastItem] = [...virtualizer.getVirtualItems()].reverse();
 
@@ -114,9 +113,9 @@ export function SentMessages() {
   if (isLoading) {
     return (
       <div className="w-full mx-auto space-y-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <SentMessageCardSkeleton key={i} />
-        ))}
+        <SentMessageCardSkeleton />
+        <SentMessageCardSkeleton />
+        <SentMessageCardSkeleton />
       </div>
     );
   }

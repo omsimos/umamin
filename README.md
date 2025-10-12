@@ -19,26 +19,31 @@
 If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you! Please review our [Code of Conduct](./CODE_OF_CONDUCT.md) before contributing.
 
 ### Monorepo Setup
-| Core Packages  | Description |
-| ------------- | ------------- |
-| `www` | **Umamin Q&A** & landing page (Next.js) |
-| `@umamin/db` | Database schema & migrations using Drizzle ORM + Turso/libSQL |
+
+| Core Packages        | Description                                                      |
+| -------------------- | ---------------------------------------------------------------- |
+| `www`                | **Umamin Q&A** & landing page (Next.js)                          |
+| `@umamin/db`         | Database schema & migrations using Drizzle ORM + Turso/libSQL    |
 | `@umamin/encryption` | AES-GCM encryption/decryption utilities (uses `AES_256_GCM_KEY`) |
-| `@umamin/ui` | Shared UI components and styling |
+| `@umamin/ui`         | Shared UI components and styling                                 |
 
 ### Prerequisites
+
 - [`Turso CLI`](https://docs.turso.tech/cli/installation) (for local libSQL server)
 - `Node.js` >= 20.19 or [`nvm`](https://github.com/nvm-sh/nvm)
 - `pnpm` >= 10
 
 ### Install Dependencies
+
 If you're using `nvm`, you can easily switch to the required Node.js version.
+
 ```sh
 $ nvm use 20 # ignore if you're already on Node.js >= 20
 $ pnpm install
 ```
 
 ### Environment Variables
+
 ```env
 # apps/www/.env
 # Database (used via @umamin/db)
@@ -59,6 +64,7 @@ TURSO_AUTH_TOKEN= # can be empty for local
 ```
 
 Generate an AES-256-GCM key using the helper script:
+
 ```sh
 $ pnpm aes:generate
 # copy the printed key into AES_256_GCM_KEY
@@ -67,18 +73,23 @@ $ pnpm aes:generate
 If you need to use Google OAuth, you must set up your own OAuth client. [Setting up OAuth 2.0 →](https://support.google.com/cloud/answer/6158849)
 
 ### Development Server
+
 Run the development servers with Turborepo:
+
 ```sh
 $ pnpm dev # runs app(s) and local db dev (if configured)
 ```
 
 Run a specific app only:
+
 ```sh
 $ pnpm dev --filter=www
 ```
 
 ### Setup Database
+
 Start a local libSQL server and run migrations.
+
 ```sh
 # optional: start local libSQL (turso dev) alongside type-checker
 $ pnpm --filter=@umamin/db dev
@@ -94,7 +105,9 @@ $ pnpm db:studio
 ```
 
 ### Running Build
+
 After making changes, build the project (runs lint and type checks via tasks).
+
 ```sh
 $ pnpm build # build all
 # or
@@ -104,6 +117,7 @@ $ pnpm build --filter=www
 Once ready, you can submit a pull request for review.
 
 ### Contributor List
+
 <a href="https://github.com/omsimos/umamin/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=omsimos/umamin" />
 </a>
@@ -113,6 +127,7 @@ Once ready, you can submit a pull request for review.
 We are committed to fostering a welcoming, respectful community. Please read and follow our [Code of Conduct](./CODE_OF_CONDUCT.md) when participating in this project.
 
 ## Security
+
 If you believe you have found a security vulnerability in Umamin, please do not open a public issue on this repository. Opening a public issue could expose sensitive information before it's addressed. Please read our [Security Policy](./SECURITY.md) for details on how to report a vulnerability.
 
 ## License

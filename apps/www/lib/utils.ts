@@ -1,7 +1,7 @@
-import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 import { domToPng } from "modern-screenshot";
 import { customAlphabet, nanoid } from "nanoid";
-import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 export function generateUsernameId(length = 12) {
   const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";

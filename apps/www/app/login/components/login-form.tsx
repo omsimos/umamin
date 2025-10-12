@@ -1,13 +1,12 @@
 "use client";
 
+import { Button } from "@umamin/ui/components/button";
+import { Input } from "@umamin/ui/components/input";
+import { Label } from "@umamin/ui/components/label";
+import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
-import { Loader2Icon } from "lucide-react";
-
 import { login } from "@/lib/auth";
-import { Label } from "@umamin/ui/components/label";
-import { Input } from "@umamin/ui/components/input";
-import { Button } from "@umamin/ui/components/button";
 
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(login, { error: "" });

@@ -1,5 +1,5 @@
-import { CSSProperties } from "react";
 import { cn } from "@umamin/ui/lib/utils";
+import type { CSSProperties } from "react";
 
 export const AnimatedShinyText = ({
   className,

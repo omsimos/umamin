@@ -1,17 +1,17 @@
 "use server";
 
-import * as z from "zod";
-import { cache } from "react";
 import { db } from "@umamin/db";
-import { and, desc, eq, lt, or } from "drizzle-orm";
-import { aesDecrypt, aesEncrypt } from "@umamin/encryption";
-import { messageTable, SelectMessage } from "@umamin/db/schema/message";
+import { messageTable, type SelectMessage } from "@umamin/db/schema/message";
 import { userTable } from "@umamin/db/schema/user";
-import { PublicUser } from "@/types/user";
+import { aesDecrypt, aesEncrypt } from "@umamin/encryption";
+import { and, desc, eq, lt, or } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
+import * as z from "zod";
 
 import { getSession } from "@/lib/auth";
 import { formatContent } from "@/lib/utils";
-import { unstable_cache } from "next/cache";
+import type { PublicUser } from "@/types/user";
 
 type GetMessagesParams = {
   cursor?: string;
@@ -29,6 +29,7 @@ export const getMessagesAction = cache(
 
       const getCachedData = unstable_cache(
         async () => {
+          // biome-ignore lint/suspicious/noImplicitAnyLet: drizzle
           let cursorCondition;
 
           if (cursor) {

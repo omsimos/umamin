@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/noSvgWithoutTitle: temp */
 type IconProps = React.HTMLAttributes<SVGElement>;
 
 export const Icons = {

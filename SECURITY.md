@@ -25,4 +25,3 @@ If you believe you have found a security vulnerability in Umamin, please follow 
 - Once the vulnerability has been addressed, we will disclose the issue publicly (and credit you with your consent).
 
 We appreciate your help in keeping Umamin secure and thank you for following these guidelines to report security vulnerabilities responsibly.
-

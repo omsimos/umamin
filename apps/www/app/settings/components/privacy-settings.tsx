@@ -1,16 +1,16 @@
 "use client";
 
-import { toast } from "sonner";
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Label } from "@umamin/ui/components/label";
+import { Switch } from "@umamin/ui/components/switch";
 import { CircleUserRoundIcon, MessageCircleOffIcon } from "lucide-react";
+import { toast } from "sonner";
 import {
   toggleDisplayPictureAction,
   toggleQuietModeAction,
 } from "@/app/actions/user";
-import { Label } from "@umamin/ui/components/label";
-import { Switch } from "@umamin/ui/components/switch";
-import { UserWithAccount } from "@/types/user";
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
+import type { UserWithAccount } from "@/types/user";
 
 export function PrivacySettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();

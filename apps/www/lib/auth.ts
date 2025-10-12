@@ -1,22 +1,22 @@
 "use server";
 
-import * as z from "zod";
-import { cache } from "react";
+import { hash, verify } from "@node-rs/argon2";
+import { db } from "@umamin/db";
+import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { hash, verify } from "@node-rs/argon2";
-import {
-  SessionValidationResult,
-  validateSessionToken,
-  deleteSessionTokenCookie,
-  invalidateSession,
-  generateSessionToken,
-  createSession,
-} from "./session";
-import { db } from "@umamin/db";
-import { userTable } from "@umamin/db/schema/user";
+import { cache } from "react";
+import type * as z from "zod";
 import { registerSchema } from "./schema";
+import {
+  createSession,
+  deleteSessionTokenCookie,
+  generateSessionToken,
+  invalidateSession,
+  type SessionValidationResult,
+  validateSessionToken,
+} from "./session";
 
 export const getSession = cache(async (): Promise<SessionValidationResult> => {
   const cookieStore = await cookies();

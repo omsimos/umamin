@@ -1,11 +1,10 @@
-import Link from "next/link";
-import { Metadata } from "next";
-import dynamic from "next/dynamic";
-import { notFound } from "next/navigation";
-import { MessageSquareMoreIcon, UserPlusIcon } from "lucide-react";
-
-import { UserCard } from "@/components/user-card";
 import { Button } from "@umamin/ui/components/button";
+import { MessageSquareMoreIcon, UserPlusIcon } from "lucide-react";
+import type { Metadata } from "next";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { UserCard } from "@/components/user-card";
 import { formatUsername, getBaseUrl } from "@/lib/utils";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"));
