@@ -7,6 +7,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import { Badge } from "@umamin/ui/components/badge";
 import {
   Card,
   CardContent,
@@ -20,6 +21,7 @@ import {
   BadgeCheckIcon,
   MessageCircleDashedIcon,
   MessageCircleMoreIcon,
+  MessageSquareXIcon,
   ScanFaceIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -95,17 +97,20 @@ export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
       <Card className="flex flex-col items-start justify-between">
         <CardHeader className="w-full flex items-center justify-between text-muted-foreground">
           <div className="flex items-center gap-1">
-            {data.isAnonymous ? (
-              <MessageCircleDashedIcon className="size-4" />
-            ) : (
-              <MessageCircleMoreIcon className="size-4" />
-            )}
-            <h3 className="font-medium">
+            <Badge variant="secondary" className="font-medium">
+              {data.isAnonymous ? (
+                <MessageCircleDashedIcon className="size-4" />
+              ) : (
+                <MessageCircleMoreIcon className="size-4" />
+              )}
               Your {data.isAnonymous ? "anonymous" : "shared"} note
-            </h3>
+            </Badge>
           </div>
 
-          <Menu menuItems={menuItems} />
+          <div className="flex gap-1 items-center">
+            {currentUser.quietMode && <MessageSquareXIcon className="size-5" />}
+            <Menu menuItems={menuItems} />
+          </div>
         </CardHeader>
 
         <CardContent className="w-full">

@@ -7,8 +7,8 @@ import {
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import {
   BadgeCheckIcon,
-  MessageCircleOffIcon,
   MessageSquareTextIcon,
+  MessageSquareXIcon,
   ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -100,7 +100,7 @@ export function NoteCard({ data, isAuthenticated }: Props) {
                 </span>
               )}
 
-              {user?.quietMode && <MessageCircleOffIcon className="size-4" />}
+              {user?.quietMode && <MessageSquareXIcon className="size-5" />}
 
               {isAuthenticated && !data.isAnonymous && !user?.quietMode && (
                 <button

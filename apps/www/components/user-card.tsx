@@ -6,12 +6,14 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import { Badge } from "@umamin/ui/components/badge";
 import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
   BadgeCheckIcon,
   CalendarDaysIcon,
-  MessageCircleOffIcon,
+  MessageSquareXIcon,
+  MoonIcon,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { ShareButton } from "./share-button";
@@ -42,9 +44,6 @@ export function UserCard({ user }: { user: SelectUser }) {
               {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
                 user.username,
               ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
-              {user.quietMode && (
-                <MessageCircleOffIcon className="h-4 w-4 mr-2 text-sm text-yellow-500" />
-              )}
             </div>
 
             <ShareButton username={user.username} />
@@ -63,10 +62,19 @@ export function UserCard({ user }: { user: SelectUser }) {
         </p>
 
         <div className="mt-4 space-y-1">
+          {user.quietMode && (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <MessageSquareXIcon className="size-4" />
+              <Badge variant="secondary">
+                <MoonIcon /> In quiet mode
+              </Badge>
+            </div>
+          )}
+
           <CopyLink username={user.username} />
 
-          <div className="text-muted-foreground text-sm flex items-center">
-            <CalendarDaysIcon className="h-4 w-4 mr-2" />
+          <div className="text-muted-foreground text-sm flex items-center gap-2">
+            <CalendarDaysIcon className="size-4" />
             Joined{" "}
             {formatDistanceToNow(user.createdAt, {
               addSuffix: true,

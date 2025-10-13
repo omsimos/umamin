@@ -70,5 +70,5 @@ export type SelectUser = typeof userTable.$inferSelect;
 export type SelectSession = typeof sessionTable.$inferSelect;
 export type SelectAccount = typeof accountTable.$inferSelect;
 
-export type InsertSession = typeof sessionTable.$inferInsert;
 export type InsertUser = typeof userTable.$inferInsert;
+export type InsertSession = typeof sessionTable.$inferInsert;

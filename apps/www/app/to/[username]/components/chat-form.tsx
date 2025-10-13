@@ -2,10 +2,11 @@
 
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation } from "@tanstack/react-query";
+import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { cn } from "@umamin/ui/lib/utils";
-import { Loader2Icon, SendIcon } from "lucide-react";
+import { Loader2Icon, MoonIcon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { sendMessageAction } from "@/app/actions/message";
@@ -68,9 +69,12 @@ export function ChatForm({ user }: { user: PublicUser }) {
       </div>
 
       {user?.quietMode ? (
-        <span className="text-muted-foreground text-center text-sm">
-          User has enabled quiet mode
-        </span>
+        <Badge
+          variant="secondary"
+          className="text-muted-foreground text-center text-sm mx-auto"
+        >
+          <MoonIcon className="size-4" /> User has enabled quiet mode
+        </Badge>
       ) : (
         <form
           onSubmit={(e) => {
