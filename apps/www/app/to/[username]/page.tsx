@@ -1,4 +1,4 @@
-import { BadgeCheckIcon, LockIcon, MessageCircleOffIcon } from "lucide-react";
+import { BadgeCheckIcon, LockIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ShareButton } from "@/components/share-button";
@@ -70,9 +70,6 @@ export default async function SendMessage({
             {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
               user.username,
             ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
-            {user.quietMode && (
-              <MessageCircleOffIcon className="h-4 w-4 text-yellow-500" />
-            )}
 
             <ShareButton username={user.username} />
           </div>
