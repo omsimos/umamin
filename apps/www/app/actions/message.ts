@@ -73,7 +73,7 @@ export const getMessagesAction = cache(
             .leftJoin(userTable, eq(messageTable.receiverId, userTable.id))
             .where(whereCondition)
             .orderBy(desc(messageTable.createdAt), desc(messageTable.id))
-            .limit(10);
+            .limit(20);
 
           const data = rows
             .filter((row) => row.receiver !== null)
@@ -116,7 +116,7 @@ export const getMessagesAction = cache(
               receiver: PublicUser;
             })[],
             nextCursor:
-              messagesData.length === 10
+              messagesData.length === 20
                 ? `${messagesData[messagesData.length - 1].createdAt?.getTime()}.${
                     messagesData[messagesData.length - 1].id
                   }`
