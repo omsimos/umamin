@@ -23,7 +23,7 @@
 }
 
 :root {
-  --radius: 0.65rem;
+  --radius: 0.525rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -132,7 +132,7 @@
 
 @utility container {
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 0.5rem;
 }
 
 @layer base {
