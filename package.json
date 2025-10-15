@@ -17,13 +17,19 @@
     "format-and-lint:fix": "biome check . --write"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.5",
+    "@biomejs/biome": "2.2.6",
     "@types/node": "^22.18.9",
+    "lefthook": "^1.13.6",
     "turbo": "^2.5.8",
     "typescript": "5.9.3"
   },
   "packageManager": "pnpm@10.18.2",
   "engines": {
     "node": ">=22"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "lefthook"
+    ]
   }
 }
