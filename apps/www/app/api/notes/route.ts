@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
               displayName: userTable.displayName,
               imageUrl: userTable.imageUrl,
               quietMode: userTable.quietMode,
+              createdAt: userTable.createdAt,
             },
           })
           .from(noteTable)
