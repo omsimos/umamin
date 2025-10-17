@@ -16,6 +16,7 @@ import {
   MoonIcon,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { isOlderThanOneYear } from "@/lib/utils";
 import { ShareButton } from "./share-button";
 
 const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
@@ -24,7 +25,11 @@ export function UserCard({ user }: { user: SelectUser }) {
   return (
     <div>
       <section className="flex gap-4">
-        <Avatar className="md:h-20 md:w-20 h-16 w-16">
+        <Avatar
+          className={cn("md:size-20 size-16", {
+            "avatar-shine": isOlderThanOneYear(user?.createdAt),
+          })}
+        >
           <AvatarImage
             className="rounded-full"
             src={user?.imageUrl ?? ""}

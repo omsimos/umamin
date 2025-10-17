@@ -112,7 +112,7 @@ export function SentMessages() {
 
   if (isLoading) {
     return (
-      <div className="w-full mx-auto space-y-3">
+      <div className="w-full mx-auto space-y-3 mb-8">
         <SentMessageCardSkeleton />
         <SentMessageCardSkeleton />
         <SentMessageCardSkeleton />

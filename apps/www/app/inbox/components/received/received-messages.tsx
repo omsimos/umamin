@@ -112,7 +112,7 @@ export function ReceivedMessages() {
 
   if (isLoading) {
     return (
-      <div className="w-full mx-auto space-y-4">
+      <div className="w-full mx-auto space-y-4 mb-8">
         <ReceivedMessageCardSkeleton />
         <ReceivedMessageCardSkeleton />
         <ReceivedMessageCardSkeleton />

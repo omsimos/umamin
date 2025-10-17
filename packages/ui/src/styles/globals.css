@@ -23,7 +23,7 @@
 }
 
 :root {
-  --radius: 0.65rem;
+  --radius: 0.525rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -132,7 +132,7 @@
 
 @utility container {
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 0.5rem;
 }
 
 @layer base {
@@ -146,4 +146,35 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+.avatar-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shine 3s infinite;
+  pointer-events: none;
 }

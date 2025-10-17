@@ -27,7 +27,7 @@ import {
 import { toast } from "sonner";
 import { clearNoteAction, getCurrentNoteAction } from "@/app/actions/note";
 import { Menu } from "@/components/menu";
-import { saveImage } from "@/lib/utils";
+import { isOlderThanOneYear, saveImage } from "@/lib/utils";
 
 export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
   const queryClient = useQueryClient();
@@ -119,7 +119,11 @@ export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
               "blur-xs": data.isAnonymous,
             })}
           >
-            <Avatar className="relative top-1">
+            <Avatar
+              className={cn("relative top-1", {
+                "avatar-shine": isOlderThanOneYear(currentUser?.createdAt),
+              })}
+            >
               <AvatarImage
                 className="rounded-full"
                 src={currentUser?.imageUrl ?? ""}

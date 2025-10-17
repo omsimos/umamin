@@ -40,12 +40,13 @@ export async function GET(req: NextRequest) {
               displayName: userTable.displayName,
               imageUrl: userTable.imageUrl,
               quietMode: userTable.quietMode,
+              createdAt: userTable.createdAt,
             },
           })
           .from(noteTable)
           .leftJoin(userTable, eq(noteTable.userId, userTable.id))
           .orderBy(desc(noteTable.updatedAt), desc(noteTable.id))
-          .limit(10);
+          .limit(40);
 
         const rows = await (cursorCondition
           ? baseQuery.where(cursorCondition)
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
         return {
           data: notesData,
           nextCursor:
-            notesData.length === 10
+            notesData.length === 40
               ? `${notesData[notesData.length - 1].updatedAt?.getTime()}.${
                   notesData[notesData.length - 1].id
                 }`

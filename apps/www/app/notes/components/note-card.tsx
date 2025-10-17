@@ -5,6 +5,7 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
+import { cn } from "@umamin/ui/lib/utils";
 import {
   BadgeCheckIcon,
   MessageSquareTextIcon,
@@ -14,7 +15,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { Menu } from "@/components/menu";
-import { saveImage, shortTimeAgo } from "@/lib/utils";
+import { isOlderThanOneYear, saveImage, shortTimeAgo } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 import { ReplyDrawer } from "./reply-drawer";
 
@@ -49,8 +50,15 @@ export function NoteCard({ data, isAuthenticated }: Props) {
                   </AvatarFallback>
                 </Avatar>
               ) : (
-                <Link href={`/user/${username}`} className="font-semibold">
-                  <Avatar className="relative top-1">
+                <Link
+                  href={`/user/${username}`}
+                  className="font-semibold relative"
+                >
+                  <Avatar
+                    className={cn({
+                      "avatar-shine": isOlderThanOneYear(user?.createdAt),
+                    })}
+                  >
                     <AvatarImage
                       className="rounded-full"
                       src={user?.imageUrl ?? ""}
