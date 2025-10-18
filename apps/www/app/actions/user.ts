@@ -9,10 +9,64 @@ import { eq } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import type * as z from "zod";
+import { z } from "zod";
 import { getSession } from "@/lib/auth";
+import {
+  getGravatarFinalUrl,
+  getGravatarPreviewUrl,
+  hashEmailForGravatar,
+  normaliseEmailForGravatar,
+} from "@/lib/avatar";
 import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
 import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
+
+const gravatarEmailSchema = z
+  .string()
+  .trim()
+  .min(1, { message: "Email is required" })
+  .email({ message: "Invalid email address" })
+  .transform((value) => normaliseEmailForGravatar(value));
+
+const updateAvatarSchema = z.discriminatedUnion("source", [
+  z.object({
+    source: z.literal("gravatar"),
+    email: z.string(),
+  }),
+  z.object({
+    source: z.literal("google"),
+  }),
+]);
+
+async function resolveGravatarUrl(email: string) {
+  const parsed = gravatarEmailSchema.safeParse(email);
+
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Invalid email address",
+    };
+  }
+
+  try {
+    const hash = hashEmailForGravatar(parsed.data);
+    const previewUrl = getGravatarPreviewUrl(hash);
+
+    const response = await fetch(previewUrl, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        error: "No Gravatar found for that email",
+      };
+    }
+
+    return { url: getGravatarFinalUrl(hash) };
+  } catch (error) {
+    console.log("Error resolving Gravatar:", error);
+    return { error: "Failed to reach Gravatar. Please try again later." };
+  }
+}
 
 export const getCurrentUserAction = cache(async () => {
   try {
@@ -206,6 +260,67 @@ export async function toggleQuietModeAction() {
     revalidateTag(`user:${user.username}`);
 
     return { quietMode };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occured" };
+  }
+}
+
+export async function previewGravatarAvatarAction(email: string) {
+  return resolveGravatarUrl(email);
+}
+
+export async function updateAvatarAction(
+  values: z.infer<typeof updateAvatarSchema>,
+) {
+  try {
+    const params = updateAvatarSchema.safeParse(values);
+
+    if (!params.success) {
+      return { error: "Invalid input" };
+    }
+
+    const { session, user } = await getSession();
+
+    if (!session || !user) {
+      throw new Error("Unauthorized");
+    }
+
+    if (params.data.source === "google") {
+      const [account] = await db
+        .select()
+        .from(accountTable)
+        .where(eq(accountTable.userId, session.userId))
+        .limit(1);
+
+      if (!account?.picture) {
+        return { error: "No Google account connected" };
+      }
+
+      await db
+        .update(userTable)
+        .set({ imageUrl: account.picture })
+        .where(eq(userTable.id, session.userId));
+
+      revalidateTag(`user:${user.username}`);
+
+      return { imageUrl: account.picture };
+    }
+
+    const result = await resolveGravatarUrl(params.data.email);
+
+    if ("error" in result) {
+      return result;
+    }
+
+    await db
+      .update(userTable)
+      .set({ imageUrl: result.url })
+      .where(eq(userTable.id, session.userId));
+
+    revalidateTag(`user:${user.username}`);
+
+    return { imageUrl: result.url };
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };
