@@ -26,16 +26,16 @@ export const getCurrentUserAction = cache(async () => {
       .select()
       .from(userTable)
       .where(eq(userTable.id, session.userId))
-      .limit(1)
-      .$withCache(false);
+      .limit(1);
+    // .$withCache(false);
 
     const accounts = userRecord
       ? await db
           .select()
           .from(accountTable)
           .where(eq(accountTable.userId, session.userId))
-          .$withCache(false)
-      : [];
+      : // .$withCache(false)
+        [];
 
     const data = userRecord ? { ...userRecord, accounts } : undefined;
 

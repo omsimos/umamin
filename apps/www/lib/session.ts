@@ -49,8 +49,8 @@ export async function validateSessionToken(
     .from(sessionTable)
     .leftJoin(userTable, eq(sessionTable.userId, userTable.id))
     .where(eq(sessionTable.id, sessionId))
-    .limit(1)
-    .$withCache(false);
+    .limit(1);
+  // .$withCache(false);
 
   if (!result || !result.user) {
     return { session: null, user: null };
