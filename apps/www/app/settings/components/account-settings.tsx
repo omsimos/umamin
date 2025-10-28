@@ -70,9 +70,11 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
         return;
       }
 
-      toast.success("Profile photo updated");
-      setGravatarPreview(res.imageUrl ?? null);
-      queryClient.invalidateQueries({ queryKey: ["current_user"] });
+      if ("imageUrl" in res) {
+        toast.success("Profile photo updated");
+        setGravatarPreview(res.imageUrl ?? null);
+        queryClient.invalidateQueries({ queryKey: ["current_user"] });
+      }
     },
     onError: (error) => {
       console.error(error);
@@ -89,8 +91,11 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
       }
 
       toast.success("Google profile photo restored");
-      setGravatarPreview(res.imageUrl ?? null);
-      queryClient.invalidateQueries({ queryKey: ["current_user"] });
+
+      if ("imageUrl" in res) {
+        setGravatarPreview(res.imageUrl ?? null);
+        queryClient.invalidateQueries({ queryKey: ["current_user"] });
+      }
     },
     onError: (error) => {
       console.error(error);
