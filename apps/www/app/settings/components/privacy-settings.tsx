@@ -8,6 +8,14 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@umamin/ui/components/dialog";
 import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
@@ -20,7 +28,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  previewGravatarAvatarAction,
+  getGravatarAction,
   toggleDisplayPictureAction,
   toggleQuietModeAction,
   updateAvatarAction,
@@ -30,19 +38,22 @@ import type { UserWithAccount } from "@/types/user";
 export function PrivacySettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
   const [gravatarEmail, setGravatarEmail] = useState("");
-  const [gravatarPreview, setGravatarPreview] = useState<string | null>(null);
+  const [avatarPreviewUrl, setAvatarPreview] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
-  const previewMutation = useMutation({
-    mutationFn: async (email: string) => previewGravatarAvatarAction(email),
+  const googlePicture = user.account?.picture;
+
+  const gravatarMutation = useMutation({
+    mutationFn: async (email: string) => getGravatarAction(email),
     onSuccess: (res) => {
       if (!res || "error" in res) {
         toast.error(res?.error ?? "Unable to find a Gravatar for that email.");
-        setGravatarPreview(null);
+        setAvatarPreview(null);
         return;
       }
 
-      setGravatarPreview(res.url);
-      toast.success("Gravatar preview updated");
+      setAvatarPreview(res.url);
+      setPreviewOpen(true);
     },
     onError: (error) => {
       console.error(error);
@@ -50,53 +61,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
   });
 
-  const applyGravatarMutation = useMutation({
-    mutationFn: async (email: string) =>
-      updateAvatarAction({ source: "gravatar", email }),
-    onSuccess: (res) => {
-      if (!res || "error" in res) {
-        toast.error(res?.error ?? "Failed to update profile photo.");
-        return;
-      }
-
-      if ("imageUrl" in res) {
-        toast.success("Profile photo updated");
-        setGravatarPreview(res.imageUrl ?? null);
-        queryClient.invalidateQueries({ queryKey: ["current_user"] });
-      }
-    },
-    onError: (error) => {
-      console.error(error);
-      toast.error("Failed to update profile photo");
-    },
-  });
-
-  const useGooglePhotoMutation = useMutation({
-    mutationFn: async () => updateAvatarAction({ source: "google" }),
-    onSuccess: (res) => {
-      if (!res || "error" in res) {
-        toast.error(res?.error ?? "Unable to use Google photo.");
-        return;
-      }
-
-      toast.success("Google profile photo restored");
-
-      if ("imageUrl" in res) {
-        setGravatarPreview(res.imageUrl ?? null);
-        queryClient.invalidateQueries({ queryKey: ["current_user"] });
-      }
-    },
-    onError: (error) => {
-      console.error(error);
-      toast.error("Failed to switch back to Google photo");
-    },
-  });
-
-  const isPreviewing = previewMutation.isPending;
-  const isUpdatingGravatar = applyGravatarMutation.isPending;
-  const isUsingGoogle = useGooglePhotoMutation.isPending;
-  const previewSrc =
-    gravatarPreview ?? user.imageUrl ?? user.account?.picture ?? "";
+  const isPreviewing = gravatarMutation.isPending;
 
   const rateLimitedToggleDisplay = useAsyncRateLimitedCallback(
     toggleDisplayPictureAction,
@@ -147,6 +112,24 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
   );
 
+  const updateAvatarMutation = useMutation({
+    mutationFn: async (url: string) => {
+      const res = await updateAvatarAction(url);
+      if (res.error) {
+        throw new Error(res.error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["current_user"] });
+      toast.success("Profile photo updated");
+      setAvatarPreview(null);
+      setPreviewOpen(false);
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+
   const quietModeMutation = useMutation({
     mutationFn: async () => {
       const res = await rateLimitedToggleQuiet();
@@ -175,7 +158,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             <Avatar className="h-16 w-16">
               <AvatarImage
                 className="rounded-full"
-                src={previewSrc}
+                src={user.imageUrl ?? ""}
                 alt="Profile avatar preview"
               />
               <AvatarFallback className="md:text-4xl text-xl">
@@ -184,7 +167,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             </Avatar>
 
             <div className="text-sm text-muted-foreground">
-              {gravatarPreview
+              {avatarPreviewUrl
                 ? "Previewing new Gravatar"
                 : "Current profile photo"}
             </div>
@@ -201,43 +184,31 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
               autoComplete="email"
             />
             <p className="text-xs text-muted-foreground">
-              Enter the email linked to your Gravatar account to preview and use
-              that avatar.
+              Enter the email linked to your Gravatar account to use that
+              avatar.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
-              variant="secondary"
               disabled={!gravatarEmail || isPreviewing}
-              onClick={() => previewMutation.mutate(gravatarEmail)}
+              onClick={() => gravatarMutation.mutate(gravatarEmail)}
             >
               {isPreviewing && <Loader2Icon className="h-4 w-4 animate-spin" />}
-              Preview
-            </Button>
-
-            <Button
-              type="button"
-              disabled={!gravatarEmail || isUpdatingGravatar}
-              onClick={() => applyGravatarMutation.mutate(gravatarEmail)}
-            >
-              {isUpdatingGravatar && (
-                <Loader2Icon className="h-4 w-4 animate-spin" />
-              )}
               Use Gravatar
             </Button>
 
-            {user.account?.picture && (
+            {googlePicture && (
               <Button
+                onClick={() => {
+                  setAvatarPreview(googlePicture);
+                  setPreviewOpen(true);
+                }}
                 type="button"
                 variant="outline"
-                disabled={isUsingGoogle}
-                onClick={() => useGooglePhotoMutation.mutate()}
               >
-                {isUsingGoogle && (
-                  <Loader2Icon className="h-4 w-4 animate-spin" />
-                )}
+                {/* <Loader2Icon className="h-4 w-4 animate-spin" /> */}
                 Use Google Photo
               </Button>
             )}
@@ -281,6 +252,42 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
           />
         </div>
       </section>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Preview Avatar</DialogTitle>
+          </DialogHeader>
+
+          {avatarPreviewUrl && (
+            <>
+              <Avatar className="w-full h-auto mx-auto mb-4 max-w-[300px]">
+                <AvatarImage
+                  className="rounded-full"
+                  src={avatarPreviewUrl}
+                  alt="Profile avatar preview"
+                />
+                <AvatarFallback className="md:text-4xl text-xl">
+                  <ScanFaceIcon />
+                </AvatarFallback>
+              </Avatar>
+
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button
+                  disabled={updateAvatarMutation.isPending}
+                  onClick={() => updateAvatarMutation.mutate(avatarPreviewUrl)}
+                  type="submit"
+                >
+                  Apply photo
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

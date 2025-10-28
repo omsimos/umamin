@@ -23,21 +23,11 @@ import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 const gravatarEmailSchema = z
   .string()
   .trim()
-  .min(1, { message: "Email is required" })
-  .email({ message: "Invalid email address" })
+  .min(1, { error: "Email is required" })
+  .email({ error: "Invalid email address" })
   .transform((value) => normaliseEmailForGravatar(value));
 
-const updateAvatarSchema = z.discriminatedUnion("source", [
-  z.object({
-    source: z.literal("gravatar"),
-    email: z.string(),
-  }),
-  z.object({
-    source: z.literal("google"),
-  }),
-]);
-
-async function resolveGravatarUrl(email: string) {
+export async function getGravatarAction(email: string) {
   const parsed = gravatarEmailSchema.safeParse(email);
 
   if (!parsed.success) {
@@ -266,61 +256,22 @@ export async function toggleQuietModeAction() {
   }
 }
 
-export async function previewGravatarAvatarAction(email: string) {
-  return resolveGravatarUrl(email);
-}
-
-export async function updateAvatarAction(
-  values: z.infer<typeof updateAvatarSchema>,
-) {
+export async function updateAvatarAction(imageUrl: string) {
   try {
-    const params = updateAvatarSchema.safeParse(values);
+    const { user } = await getSession();
 
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { session, user } = await getSession();
-
-    if (!session || !user) {
+    if (!user) {
       throw new Error("Unauthorized");
-    }
-
-    if (params.data.source === "google") {
-      const [account] = await db
-        .select()
-        .from(accountTable)
-        .where(eq(accountTable.userId, session.userId))
-        .limit(1);
-
-      if (!account?.picture) {
-        return { error: "No Google account connected" };
-      }
-
-      await db
-        .update(userTable)
-        .set({ imageUrl: account.picture })
-        .where(eq(userTable.id, session.userId));
-
-      revalidateTag(`user:${user.username}`);
-
-      return { imageUrl: account.picture };
-    }
-
-    const result = await resolveGravatarUrl(params.data.email);
-
-    if ("error" in result) {
-      return result;
     }
 
     await db
       .update(userTable)
-      .set({ imageUrl: result.url })
-      .where(eq(userTable.id, session.userId));
+      .set({ imageUrl })
+      .where(eq(userTable.id, user.id));
 
     revalidateTag(`user:${user.username}`);
 
-    return { imageUrl: result.url };
+    return { success: true };
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };
