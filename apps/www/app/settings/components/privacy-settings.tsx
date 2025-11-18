@@ -153,8 +153,8 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     <div className="space-y-8">
       <section>
         <Label htmlFor="gravatar-email">Profile Photo</Label>
-        <div className="space-y-4 bg-secondary p-4 rounded-lg border mt-2">
-          <div className="flex items-center gap-4">
+        <div className="space-y-4 p-4 rounded-lg border mt-2">
+          <div className="flex gap-4">
             <Avatar className="h-16 w-16">
               <AvatarImage
                 className="rounded-full"
@@ -166,27 +166,21 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
               </AvatarFallback>
             </Avatar>
 
-            <div className="text-sm text-muted-foreground">
-              {avatarPreviewUrl
-                ? "Previewing new Gravatar"
-                : "Current profile photo"}
+            <div className="space-y-2 w-full">
+              <Label htmlFor="gravatar-email">Gravatar Email</Label>
+              <Input
+                id="gravatar-email"
+                type="email"
+                placeholder="name@example.com"
+                className="w-full"
+                value={gravatarEmail}
+                onChange={(event) => setGravatarEmail(event.target.value)}
+                autoComplete="email"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter the email linked to your Gravatar account.
+              </p>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="gravatar-email">Gravatar Email</Label>
-            <Input
-              id="gravatar-email"
-              type="email"
-              placeholder="name@example.com"
-              value={gravatarEmail}
-              onChange={(event) => setGravatarEmail(event.target.value)}
-              autoComplete="email"
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter the email linked to your Gravatar account to use that
-              avatar.
-            </p>
           </div>
 
           <div className="flex justify-end gap-2">

@@ -105,7 +105,7 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
             <ChevronsUpDownIcon className="size-4" />
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="bg-secondary mt-2 rounded-lg p-4 pt-4 border">
+        <CollapsibleContent className="mt-2 rounded-lg p-4 pt-4 border">
           <PasswordForm passwordHash={user?.passwordHash} />
         </CollapsibleContent>
       </Collapsible>
