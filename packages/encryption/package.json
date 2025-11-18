@@ -16,8 +16,8 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^22.18.11",
-    "tsdown": "^0.15.9",
+    "@types/node": "^22.19.1",
+    "tsdown": "^0.15.12",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
