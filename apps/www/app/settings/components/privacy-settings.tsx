@@ -77,11 +77,11 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
 
   const displayPictureMutation = useMutation({
     mutationFn: async () => {
-      if (!user.account) {
-        throw new Error("Google account not connected");
+      if (!user.imageUrl) {
+        throw new Error("Gravatar or Google account not connected");
       }
 
-      const res = await rateLimitedToggleDisplay(user.account.picture);
+      const res = await rateLimitedToggleDisplay(user.account?.picture);
       if (res.error) {
         throw new Error(res.error);
       }
@@ -216,16 +216,18 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
           <CircleUserRoundIcon className="size-6" />
           <div className="flex-1 space-y-1">
             <p className="text-sm font-medium leading-none">Display Picture</p>
-            {user.account ? (
+            {user.imageUrl ? (
               <p className="text-sm text-muted-foreground">
                 Show picture from connected account
               </p>
             ) : (
-              <p className="text-sm text-yellow-600">Google account required</p>
+              <p className="text-sm text-yellow-600">
+                Gravatar or Google account required
+              </p>
             )}
           </div>
           <Switch
-            disabled={displayPictureMutation.isPending || !user.account}
+            disabled={displayPictureMutation.isPending || !user.imageUrl}
             checked={!!user?.imageUrl}
             onCheckedChange={() => displayPictureMutation.mutate()}
           />

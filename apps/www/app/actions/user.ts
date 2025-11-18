@@ -206,7 +206,7 @@ export async function updatePasswordAction(
   }
 }
 
-export async function toggleDisplayPictureAction(accountImgUrl: string) {
+export async function toggleDisplayPictureAction(accountImgUrl?: string) {
   try {
     const { user } = await getSession();
 
