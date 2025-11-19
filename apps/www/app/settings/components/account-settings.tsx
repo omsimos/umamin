@@ -17,11 +17,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@umamin/ui/components/collapsible";
-
 import { Label } from "@umamin/ui/components/label";
 import { formatDistanceToNow } from "date-fns";
 import {
   ChevronsUpDownIcon,
+  KeyIcon,
   ScanFaceIcon,
   ShieldAlertIcon,
 } from "lucide-react";
@@ -32,10 +32,10 @@ import { PasswordForm } from "./password-form";
 
 export function AccountSettings({ user }: { user: UserWithAccount }) {
   return (
-    <div>
+    <div className="space-y-8">
       {!!user.account && (
-        <>
-          <Label>Connected Account</Label>
+        <section>
+          <Label>Google Account</Label>
           <Card className="mt-2">
             <CardHeader className="flex flex-row space-x-4 items-center">
               <Avatar className="h-16 w-16">
@@ -61,11 +61,11 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
               </div>
             </CardHeader>
           </Card>
-        </>
+        </section>
       )}
 
       {!user?.passwordHash && (
-        <Alert className="mt-8">
+        <Alert>
           <ShieldAlertIcon className="h-5 w-5" />
           <AlertTitle>Password (optional)</AlertTitle>
           <AlertDescription>
@@ -95,14 +95,17 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
         <CollapsibleTrigger asChild className="w-full">
           <Button
             variant="secondary"
-            className="flex items-center justify-between text-muted-foreground mt-8 w-full"
+            className="flex items-center justify-between text-muted-foreground border w-full"
           >
-            <p>{user?.passwordHash ? "Change Password" : "Set a Password"}</p>
+            <span className="flex items-center gap-2">
+              <KeyIcon className="size-4" />
+              <p>{user?.passwordHash ? "Change Password" : "Set a Password"}</p>
+            </span>
 
             <ChevronsUpDownIcon className="size-4" />
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent>
+        <CollapsibleContent className="mt-2 rounded-lg p-4 pt-4 border">
           <PasswordForm passwordHash={user?.passwordHash} />
         </CollapsibleContent>
       </Collapsible>

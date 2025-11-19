@@ -22,7 +22,7 @@ import { DeleteButton } from "./danger-button";
 export function DangerSettings() {
   const [confirmText, setConfirmText] = useState("");
   return (
-    <div className="border-t-2 border-dashed border-muted pt-8 mt-8">
+    <div className="border-t-2 border-dashed border-muted pt-8">
       <Alert>
         <AlertTitle>Danger Zone</AlertTitle>
         <AlertDescription>

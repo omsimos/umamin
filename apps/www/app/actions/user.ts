@@ -9,10 +9,54 @@ import { eq } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import type * as z from "zod";
+import { z } from "zod";
 import { getSession } from "@/lib/auth";
+import {
+  getGravatarFinalUrl,
+  getGravatarPreviewUrl,
+  hashEmailForGravatar,
+  normaliseEmailForGravatar,
+} from "@/lib/avatar";
 import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
 import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
+
+const gravatarEmailSchema = z
+  .string()
+  .trim()
+  .min(1, { error: "Email is required" })
+  .email({ error: "Invalid email address" })
+  .transform((value) => normaliseEmailForGravatar(value));
+
+export async function getGravatarAction(email: string) {
+  const parsed = gravatarEmailSchema.safeParse(email);
+
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Invalid email address",
+    };
+  }
+
+  try {
+    const hash = hashEmailForGravatar(parsed.data);
+    const previewUrl = getGravatarPreviewUrl(hash);
+
+    const response = await fetch(previewUrl, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        error: "No Gravatar found for that email",
+      };
+    }
+
+    return { url: getGravatarFinalUrl(hash) };
+  } catch (error) {
+    console.log("Error resolving Gravatar:", error);
+    return { error: "Failed to reach Gravatar. Please try again later." };
+  }
+}
 
 export const getCurrentUserAction = cache(async () => {
   try {
@@ -162,7 +206,7 @@ export async function updatePasswordAction(
   }
 }
 
-export async function toggleDisplayPictureAction(accountImgUrl: string) {
+export async function toggleDisplayPictureAction(accountImgUrl?: string) {
   try {
     const { user } = await getSession();
 
@@ -206,6 +250,28 @@ export async function toggleQuietModeAction() {
     revalidateTag(`user:${user.username}`);
 
     return { quietMode };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occured" };
+  }
+}
+
+export async function updateAvatarAction(imageUrl: string) {
+  try {
+    const { user } = await getSession();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    await db
+      .update(userTable)
+      .set({ imageUrl })
+      .where(eq(userTable.id, user.id));
+
+    revalidateTag(`user:${user.username}`);
+
+    return { success: true };
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };
