@@ -117,10 +117,10 @@ export async function generalSettingsAction(
 
     // Invalidate API cache for old and new user tags
     if (oldUsername) {
-      revalidateTag(`user:${oldUsername}`);
+      revalidateTag(`user:${oldUsername}`, "max");
     }
     if (data.username && data.username !== oldUsername) {
-      revalidateTag(`user:${data.username}`);
+      revalidateTag(`user:${data.username}`, "max");
     }
   } catch (err) {
     console.log(err);
@@ -145,7 +145,7 @@ export async function deleteAccountAction() {
     await deleteSessionTokenCookie();
 
     // Invalidate user's cached data by tag
-    revalidateTag(`user:${user.username}`);
+    revalidateTag(`user:${user.username}`, "max");
   } catch (err) {
     console.log(err);
   }
@@ -222,7 +222,7 @@ export async function toggleDisplayPictureAction(accountImgUrl?: string) {
       .where(eq(userTable.id, user.id));
 
     // Invalidate user's cached data (imageUrl affects profile payload)
-    revalidateTag(`user:${user.username}`);
+    revalidateTag(`user:${user.username}`, "max");
 
     return { imageUrl };
   } catch (err) {
@@ -247,7 +247,7 @@ export async function toggleQuietModeAction() {
       .where(eq(userTable.id, user.id));
 
     // Invalidate user's cached data (quiet mode affects profile payload)
-    revalidateTag(`user:${user.username}`);
+    revalidateTag(`user:${user.username}`, "max");
 
     return { quietMode };
   } catch (err) {
@@ -269,7 +269,7 @@ export async function updateAvatarAction(imageUrl: string) {
       .set({ imageUrl })
       .where(eq(userTable.id, user.id));
 
-    revalidateTag(`user:${user.username}`);
+    revalidateTag(`user:${user.username}`, "max");
 
     return { success: true };
   } catch (err) {

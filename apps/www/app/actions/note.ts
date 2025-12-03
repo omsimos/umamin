@@ -52,7 +52,7 @@ export async function createNoteAction(
         },
       });
 
-    revalidateTag(`current-note:${session.userId}`);
+    revalidateTag(`current-note:${session.userId}`, "max");
   } catch (error) {
     console.log("Error creating note:", error);
     return { error: "Failed to create note" };
@@ -99,7 +99,7 @@ export const clearNoteAction = async () => {
       .set({ content: "" })
       .where(eq(noteTable.userId, session.userId));
 
-    revalidateTag(`current-note:${session.userId}`);
+    revalidateTag(`current-note:${session.userId}`, "max");
   } catch (error) {
     console.log("Error clearing note:", error);
     return { error: "Failed to clear note" };
