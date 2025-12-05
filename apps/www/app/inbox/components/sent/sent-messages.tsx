@@ -2,7 +2,7 @@
 
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import type { SelectMessage } from "@umamin/db/schema/message";
 import {
   Alert,
@@ -10,7 +10,7 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Cursor } from "@/types";
 import type { PublicUser } from "@/types/user";
 import { SentMessageCard } from "./sent-card";
@@ -22,6 +22,8 @@ type MessagesResponse = {
 };
 
 export function SentMessages() {
+  const parentRef = useRef<HTMLDivElement | null>(null);
+
   const {
     data,
     isLoading,
@@ -60,12 +62,18 @@ export function SentMessages() {
 
   const allPosts = data?.pages.flatMap((page) => page.messages) ?? [];
 
-  const virtualizer = useWindowVirtualizer({
+  const virtualizer = useVirtualizer({
     count: hasNextPage ? allPosts.length + 1 : allPosts.length,
-    estimateSize: () => 200,
+    // Chat bubbles are taller; use bigger estimate to prevent overlap before measure
+    estimateSize: () => 320,
     paddingEnd: 100,
-    gap: 16,
-    overscan: 6,
+    overscan: 8,
+    getScrollElement: () => parentRef.current,
+    getItemKey: (index) => {
+      if (hasNextPage && index === allPosts.length) return "loader";
+      const msg = allPosts[index];
+      return msg?.id ?? `row-${index}`;
+    },
   });
 
   const handleNextPage = useThrottledCallback(
@@ -127,7 +135,7 @@ export function SentMessages() {
   }
 
   return (
-    <div className="w-full overflow-auto">
+    <div ref={parentRef} className="w-full overflow-auto">
       {allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
@@ -147,13 +155,14 @@ export function SentMessages() {
           const isLoaderRow = virtualRow.index > allPosts.length - 1;
           const msg = allPosts[virtualRow.index];
 
-          if ((!isLoaderRow && !msg) || !msg) return null;
+          if (!isLoaderRow && !msg) return null;
 
           return (
             <div
               key={virtualRow.key}
               data-index={virtualRow.index}
               ref={virtualizer.measureElement}
+              className="pb-4"
               style={{
                 position: "absolute",
                 top: 0,
