@@ -7,6 +7,7 @@ import { Navbar } from "@/components/navbar";
 import Providers from "./providers";
 
 import "./globals.css";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -79,7 +80,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <Navbar />
+          <Suspense>
+            <Navbar />
+          </Suspense>
+
           <div className="pt-24">{children}</div>
           <Footer />
         </Providers>

@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@umamin/ui/lib/utils";
 import { AnimatedShinyText } from "@/components/animated-shiny-text";
 import { SocialCard } from "./components/social-card";
