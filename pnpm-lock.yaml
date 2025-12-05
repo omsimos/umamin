@@ -81,17 +81,17 @@ importers:
         specifier: ^1.1.13
         version: 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@tanstack/react-form':
-        specifier: ^1.27.0
-        version: 1.27.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: ^1.27.1
+        version: 1.27.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@tanstack/react-pacer':
-        specifier: ^0.16.4
-        version: 0.16.4(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: ^0.17.3
+        version: 0.17.3(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@tanstack/react-query':
-        specifier: ^5.90.11
-        version: 5.90.11(react@19.2.1)
+        specifier: ^5.90.12
+        version: 5.90.12(react@19.2.1)
       '@tanstack/react-query-devtools':
         specifier: ^5.91.1
-        version: 5.91.1(@tanstack/react-query@5.90.11(react@19.2.1))(react@19.2.1)
+        version: 5.91.1(@tanstack/react-query@5.90.12(react@19.2.1))(react@19.2.1)
       '@tanstack/react-virtual':
         specifier: ^3.13.12
         version: 3.13.12(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -150,8 +150,8 @@ importers:
         specifier: 19.2.1
         version: 19.2.1(react@19.2.1)
       react-intersection-observer:
-        specifier: ^9.16.0
-        version: 9.16.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: ^10.0.0
+        version: 10.0.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -1793,21 +1793,25 @@ packages:
     resolution: {integrity: sha512-RL1f5ZlfZMpghrCIdzl6mLOFLTuhqmPNblZgBaeKfdtk5rfbjykurv+VfYydOFXj0vxVIoA2d/zT7xfD7Ph8fw==}
     engines: {node: '>=18'}
 
-  '@tanstack/form-core@1.27.0':
-    resolution: {integrity: sha512-QFEhg9/VcrwtpbcN7Qpl8JVVfEm2UJ+dzfDFGGMYub2J9jsgrp2HmaY7LSLlnkpTJlCIDxQiWDkiOFYQtK6yzw==}
+  '@tanstack/form-core@1.27.1':
+    resolution: {integrity: sha512-hPM+0tUnZ2C2zb2TE1lar1JJ0S0cbnQHlUwFcCnVBpMV3rjtUzkoM766gUpWrlmTGCzNad0GbJ0aTxVsjT6J8g==}
 
   '@tanstack/pacer@0.15.4':
     resolution: {integrity: sha512-vGY+CWsFZeac3dELgB6UZ4c7OacwsLb8hvL2gLS6hTgy8Fl0Bm/aLokHaeDIP+q9F9HUZTnp360z9uv78eg8pg==}
     engines: {node: '>=18'}
 
-  '@tanstack/query-core@5.90.11':
-    resolution: {integrity: sha512-f9z/nXhCgWDF4lHqgIE30jxLe4sYv15QodfdPDKYAk7nAEjNcndy4dHz3ezhdUaR23BpWa4I2EH4/DZ0//Uf8A==}
+  '@tanstack/pacer@0.16.3':
+    resolution: {integrity: sha512-hJGPODkjuUEncwHsFacLY6W5E7lmEU2FMf4Mh0kuxqUx3UsuneQX6ctRpoHBLlgdb7sqDieIaslQnivG3OAZ+A==}
+    engines: {node: '>=18'}
+
+  '@tanstack/query-core@5.90.12':
+    resolution: {integrity: sha512-T1/8t5DhV/SisWjDnaiU2drl6ySvsHj1bHBCWNXd+/T+Hh1cf6JodyEYMd5sgwm+b/mETT4EV3H+zCVczCU5hg==}
 
   '@tanstack/query-devtools@5.91.1':
     resolution: {integrity: sha512-l8bxjk6BMsCaVQH6NzQEE/bEgFy1hAs5qbgXl0xhzezlaQbPk6Mgz9BqEg2vTLPOHD8N4k+w/gdgCbEzecGyNg==}
 
-  '@tanstack/react-form@1.27.0':
-    resolution: {integrity: sha512-7MBOtvjlUwkGpvA9TIOs3YdLoyfJWZYtxuAQIdkLDZ9HLrRaRbxWQIZ2H6sRVA35sPvx6uiQMunGHOPKip5AZA==}
+  '@tanstack/react-form@1.27.1':
+    resolution: {integrity: sha512-HKP0Ew2ae9AL5vU1PkJ+oAC2p+xBtA905u0fiNLzlfn1vLkBxenfg5L6TOA+rZITHpQsSo10tqwc5Yw6qn8Mpg==}
     peerDependencies:
       '@tanstack/react-start': '*'
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -1815,8 +1819,8 @@ packages:
       '@tanstack/react-start':
         optional: true
 
-  '@tanstack/react-pacer@0.16.4':
-    resolution: {integrity: sha512-nuQLE8bx0rYMiJau4jOTPZFp3XC/GnIHDKfKVVWeKUHNF4grRdVHPgTlJ8EV/nt/HJxSUnIcy+IIKX+Bj0bLSw==}
+  '@tanstack/react-pacer@0.17.3':
+    resolution: {integrity: sha512-eEJouwwjbON0jnz8lp0r1DUYTTFWEKj9tdJ6nNDCJYZpdapuoqSdLhiWSdlMBvFTCXOhR4VpVPzTxfen8nvRVw==}
     engines: {node: '>=18'}
     peerDependencies:
       react: '>=16.8'
@@ -1828,16 +1832,10 @@ packages:
       '@tanstack/react-query': ^5.90.10
       react: ^18 || ^19
 
-  '@tanstack/react-query@5.90.11':
-    resolution: {integrity: sha512-3uyzz01D1fkTLXuxF3JfoJoHQMU2fxsfJwE+6N5hHy0dVNoZOvwKP8Z2k7k1KDeD54N20apcJnG75TBAStIrBA==}
+  '@tanstack/react-query@5.90.12':
+    resolution: {integrity: sha512-graRZspg7EoEaw0a8faiUASCyJrqjKPdqJ9EwuDRUF9mEYJ1YPczI9H+/agJ0mOJkPCJDk0lsz5QTrLZ/jQ2rg==}
     peerDependencies:
       react: ^18 || ^19
-
-  '@tanstack/react-store@0.7.7':
-    resolution: {integrity: sha512-qqT0ufegFRDGSof9D/VqaZgjNgp4tRPHZIJq2+QIHkMUtHjaJ0lYrrXjeIUJvjnTbgPfSD1XgOMEt0lmANn6Zg==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   '@tanstack/react-store@0.8.0':
     resolution: {integrity: sha512-1vG9beLIuB7q69skxK9r5xiLN3ztzIPfSQSs0GfeqWGO2tGIyInZx0x1COhpx97RKaONSoAb8C3dxacWksm1ow==}
@@ -3275,8 +3273,8 @@ packages:
     peerDependencies:
       react: ^19.2.1
 
-  react-intersection-observer@9.16.0:
-    resolution: {integrity: sha512-w9nJSEp+DrW9KmQmeWHQyfaP6b03v+TdXynaoA964Wxt7mdR3An11z4NNCQgL4gKSK7y1ver2Fq+JKH6CWEzUA==}
+  react-intersection-observer@10.0.0:
+    resolution: {integrity: sha512-JJRgcnFQoVXmbE5+GXr1OS1NDD1gHk0HyfpLcRf0575IbJz+io8yzs4mWVlfaqOQq1FiVjLvuYAdEEcrrCfveg==}
     peerDependencies:
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -5016,7 +5014,7 @@ snapshots:
 
   '@tanstack/devtools-event-client@0.3.5': {}
 
-  '@tanstack/form-core@1.27.0':
+  '@tanstack/form-core@1.27.1':
     dependencies:
       '@tanstack/devtools-event-client': 0.3.5
       '@tanstack/pacer': 0.15.4
@@ -5027,42 +5025,40 @@ snapshots:
       '@tanstack/devtools-event-client': 0.3.5
       '@tanstack/store': 0.7.7
 
-  '@tanstack/query-core@5.90.11': {}
+  '@tanstack/pacer@0.16.3':
+    dependencies:
+      '@tanstack/devtools-event-client': 0.3.5
+      '@tanstack/store': 0.8.0
+
+  '@tanstack/query-core@5.90.12': {}
 
   '@tanstack/query-devtools@5.91.1': {}
 
-  '@tanstack/react-form@1.27.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@tanstack/react-form@1.27.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
     dependencies:
-      '@tanstack/form-core': 1.27.0
+      '@tanstack/form-core': 1.27.1
       '@tanstack/react-store': 0.8.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       react: 19.2.1
     transitivePeerDependencies:
       - react-dom
 
-  '@tanstack/react-pacer@0.16.4(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@tanstack/react-pacer@0.17.3(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
     dependencies:
-      '@tanstack/pacer': 0.15.4
-      '@tanstack/react-store': 0.7.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      '@tanstack/pacer': 0.16.3
+      '@tanstack/react-store': 0.8.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
 
-  '@tanstack/react-query-devtools@5.91.1(@tanstack/react-query@5.90.11(react@19.2.1))(react@19.2.1)':
+  '@tanstack/react-query-devtools@5.91.1(@tanstack/react-query@5.90.12(react@19.2.1))(react@19.2.1)':
     dependencies:
       '@tanstack/query-devtools': 5.91.1
-      '@tanstack/react-query': 5.90.11(react@19.2.1)
+      '@tanstack/react-query': 5.90.12(react@19.2.1)
       react: 19.2.1
 
-  '@tanstack/react-query@5.90.11(react@19.2.1)':
+  '@tanstack/react-query@5.90.12(react@19.2.1)':
     dependencies:
-      '@tanstack/query-core': 5.90.11
+      '@tanstack/query-core': 5.90.12
       react: 19.2.1
-
-  '@tanstack/react-store@0.7.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
-    dependencies:
-      '@tanstack/store': 0.7.7
-      react: 19.2.1
-      react-dom: 19.2.1(react@19.2.1)
-      use-sync-external-store: 1.6.0(react@19.2.1)
 
   '@tanstack/react-store@0.8.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
     dependencies:
@@ -6794,7 +6790,7 @@ snapshots:
       react: 19.2.1
       scheduler: 0.27.0
 
-  react-intersection-observer@9.16.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
+  react-intersection-observer@10.0.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
     dependencies:
       react: 19.2.1
     optionalDependencies:

@@ -11,15 +11,14 @@ import {
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useEffect } from "react";
-import { getMessagesAction } from "@/app/actions/message";
 import type { Cursor } from "@/types";
 import type { PublicUser } from "@/types/user";
 import { SentMessageCard } from "./sent-card";
 import { SentMessageCardSkeleton } from "./sent-message-card-skeleton";
 
 type MessagesResponse = {
-  messages?: (SelectMessage & { receiver: PublicUser })[];
-  nextCursor?: Cursor | null;
+  messages: (SelectMessage & { receiver: PublicUser })[];
+  nextCursor: Cursor | null;
 };
 
 export function SentMessages() {
@@ -34,14 +33,21 @@ export function SentMessages() {
   } = useInfiniteQuery<MessagesResponse>({
     queryKey: ["sent_messages"],
     queryFn: async ({ pageParam }) => {
-      const res = await getMessagesAction({
-        cursor: (pageParam as string) ?? "",
-        type: "sent",
+      const cursor = (pageParam as string) ?? "";
+      const url = cursor
+        ? `/api/messages?type=sent&cursor=${cursor}`
+        : "/api/messages?type=sent";
+
+      const res = await fetch(url, {
+        cache: "default",
+        credentials: "include",
       });
-      if ("error" in res) {
-        throw new Error(res.error);
+
+      if (!res.ok) {
+        throw new Error("Network response was not ok");
       }
-      return res as MessagesResponse;
+
+      return (await res.json()) as MessagesResponse;
     },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
