@@ -6,7 +6,7 @@ import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import { accountTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
-import { revalidateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { z } from "zod";
@@ -117,10 +117,10 @@ export async function generalSettingsAction(
 
     // Invalidate API cache for old and new user tags
     if (oldUsername) {
-      revalidateTag(`user:${oldUsername}`, "max");
+      updateTag(`user:${oldUsername}`);
     }
     if (data.username && data.username !== oldUsername) {
-      revalidateTag(`user:${data.username}`, "max");
+      updateTag(`user:${data.username}`);
     }
   } catch (err) {
     console.log(err);
@@ -145,7 +145,7 @@ export async function deleteAccountAction() {
     await deleteSessionTokenCookie();
 
     // Invalidate user's cached data by tag
-    revalidateTag(`user:${user.username}`, "max");
+    updateTag(`user:${user.username}`);
   } catch (err) {
     console.log(err);
   }
@@ -222,7 +222,7 @@ export async function toggleDisplayPictureAction(accountImgUrl?: string) {
       .where(eq(userTable.id, user.id));
 
     // Invalidate user's cached data (imageUrl affects profile payload)
-    revalidateTag(`user:${user.username}`, "max");
+    updateTag(`user:${user.username}`);
 
     return { imageUrl };
   } catch (err) {
@@ -247,7 +247,7 @@ export async function toggleQuietModeAction() {
       .where(eq(userTable.id, user.id));
 
     // Invalidate user's cached data (quiet mode affects profile payload)
-    revalidateTag(`user:${user.username}`, "max");
+    updateTag(`user:${user.username}`);
 
     return { quietMode };
   } catch (err) {
@@ -269,7 +269,7 @@ export async function updateAvatarAction(imageUrl: string) {
       .set({ imageUrl })
       .where(eq(userTable.id, user.id));
 
-    revalidateTag(`user:${user.username}`, "max");
+    updateTag(`user:${user.username}`);
 
     return { success: true };
   } catch (err) {

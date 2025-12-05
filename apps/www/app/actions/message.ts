@@ -5,10 +5,9 @@ import { messageTable, type SelectMessage } from "@umamin/db/schema/message";
 import { userTable } from "@umamin/db/schema/user";
 import { aesDecrypt, aesEncrypt } from "@umamin/encryption";
 import { and, desc, eq, lt, or } from "drizzle-orm";
-import { unstable_cache } from "next/cache";
+import { cacheLife } from "next/cache";
 import { cache } from "react";
 import * as z from "zod";
-
 import { getSession } from "@/lib/auth";
 import { formatContent } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
@@ -20,6 +19,11 @@ type GetMessagesParams = {
 
 export const getMessagesAction = cache(
   async ({ cursor, type }: GetMessagesParams) => {
+    "use cache: private";
+    cacheLife({
+      revalidate: 30,
+    });
+
     try {
       const { session } = await getSession();
 
@@ -27,109 +31,101 @@ export const getMessagesAction = cache(
         throw new Error("Unauthorized");
       }
 
-      const getCachedData = unstable_cache(
-        async () => {
-          // biome-ignore lint/suspicious/noImplicitAnyLet: drizzle
-          let cursorCondition;
+      const getData = async () => {
+        // biome-ignore lint/suspicious/noImplicitAnyLet: drizzle
+        let cursorCondition;
 
-          if (cursor) {
-            const sep = cursor.indexOf(".");
-            if (sep > 0) {
-              const ms = Number(cursor.slice(0, sep));
-              const cursorId = cursor.slice(sep + 1);
-              const cursorDate = new Date(ms);
-              cursorCondition = or(
-                lt(messageTable.createdAt, cursorDate),
-                and(
-                  eq(messageTable.createdAt, cursorDate),
-                  lt(messageTable.id, cursorId),
-                ),
-              );
-            }
+        if (cursor) {
+          const sep = cursor.indexOf(".");
+          if (sep > 0) {
+            const ms = Number(cursor.slice(0, sep));
+            const cursorId = cursor.slice(sep + 1);
+            const cursorDate = new Date(ms);
+            cursorCondition = or(
+              lt(messageTable.createdAt, cursorDate),
+              and(
+                eq(messageTable.createdAt, cursorDate),
+                lt(messageTable.id, cursorId),
+              ),
+            );
           }
+        }
 
-          const messageId =
-            type === "received"
-              ? messageTable.receiverId
-              : messageTable.senderId;
+        const messageId =
+          type === "received" ? messageTable.receiverId : messageTable.senderId;
 
-          const baseCondition = eq(messageId, session.userId);
-          const whereCondition = cursorCondition
-            ? and(cursorCondition, baseCondition)
-            : baseCondition;
+        const baseCondition = eq(messageId, session.userId);
+        const whereCondition = cursorCondition
+          ? and(cursorCondition, baseCondition)
+          : baseCondition;
 
-          const rows = await db
-            .select({
-              message: messageTable,
-              receiver: {
-                id: userTable.id,
-                username: userTable.username,
-                displayName: userTable.displayName,
-                imageUrl: userTable.imageUrl,
-                quietMode: userTable.quietMode,
-              },
-            })
-            .from(messageTable)
-            .leftJoin(userTable, eq(messageTable.receiverId, userTable.id))
-            .where(whereCondition)
-            .orderBy(desc(messageTable.createdAt), desc(messageTable.id))
-            .limit(20);
+        const rows = await db
+          .select({
+            message: messageTable,
+            receiver: {
+              id: userTable.id,
+              username: userTable.username,
+              displayName: userTable.displayName,
+              imageUrl: userTable.imageUrl,
+              quietMode: userTable.quietMode,
+            },
+          })
+          .from(messageTable)
+          .leftJoin(userTable, eq(messageTable.receiverId, userTable.id))
+          .where(whereCondition)
+          .orderBy(desc(messageTable.createdAt), desc(messageTable.id))
+          .limit(20);
 
-          const data = rows
-            .filter((row) => row.receiver !== null)
-            .map(({ message, receiver }) => ({
-              ...message,
-              receiver,
-            }));
+        const data = rows
+          .filter((row) => row.receiver !== null)
+          .map(({ message, receiver }) => ({
+            ...message,
+            receiver,
+          }));
 
-          const messagesData = await Promise.all(
-            data.map(async (msg) => {
-              let content: string;
-              let reply: string | null = null;
+        const messagesData = await Promise.all(
+          data.map(async (msg) => {
+            let content: string;
+            let reply: string | null = null;
 
+            try {
+              content = await aesDecrypt(msg.content);
+            } catch {
+              content = msg.content;
+            }
+
+            if (msg.reply) {
               try {
-                content = await aesDecrypt(msg.content);
-              } catch {
-                content = msg.content;
-              }
-
-              if (msg.reply) {
-                try {
-                  const decryptedReply = await aesDecrypt(msg.reply);
-                  if (decryptedReply) {
-                    reply = decryptedReply;
-                  }
-                } catch {
-                  reply = msg.reply;
+                const decryptedReply = await aesDecrypt(msg.reply);
+                if (decryptedReply) {
+                  reply = decryptedReply;
                 }
+              } catch {
+                reply = msg.reply;
               }
-              return {
-                ...msg,
-                content,
-                reply,
-              };
-            }),
-          );
+            }
+            return {
+              ...msg,
+              content,
+              reply,
+            };
+          }),
+        );
 
-          return {
-            messages: messagesData as (SelectMessage & {
-              receiver: PublicUser;
-            })[],
-            nextCursor:
-              messagesData.length === 20
-                ? `${messagesData[messagesData.length - 1].createdAt?.getTime()}.${
-                    messagesData[messagesData.length - 1].id
-                  }`
-                : null,
-          };
-        },
-        [`api-${type}-messages`, session.userId, cursor ?? ""],
-        {
-          revalidate: 30,
-        },
-      );
+        return {
+          messages: messagesData as (SelectMessage & {
+            receiver: PublicUser;
+          })[],
+          nextCursor:
+            messagesData.length === 20
+              ? `${messagesData[messagesData.length - 1].createdAt?.getTime()}.${
+                  messagesData[messagesData.length - 1].id
+                }`
+              : null,
+        };
+      };
 
-      const result = await getCachedData();
+      const result = await getData();
       return result;
     } catch (err) {
       console.log(err);
