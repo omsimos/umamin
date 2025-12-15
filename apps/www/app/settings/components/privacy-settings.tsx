@@ -21,10 +21,12 @@ import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
 import {
   CircleUserRoundIcon,
+  ExternalLinkIcon,
   Loader2Icon,
   MessageCircleOffIcon,
   ScanFaceIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -178,7 +180,14 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
                 autoComplete="email"
               />
               <p className="text-xs text-muted-foreground">
-                Enter the email linked to your Gravatar account.
+                Enter the email linked to your{" "}
+                <Link
+                  className="underline inline-flex items-center"
+                  href="https://gravatar.com/"
+                  target="_blank"
+                >
+                  Gravatar <ExternalLinkIcon className="size-3 ml-1" />
+                </Link>{" "}
               </p>
             </div>
           </div>
