@@ -102,7 +102,6 @@ export function SentMessages() {
     }
   }, [
     hasNextPage,
-    fetchNextPage,
     allPosts.length,
     isFetchingNextPage,
     handleNextPage,
