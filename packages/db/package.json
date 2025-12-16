@@ -24,17 +24,17 @@
   },
   "dependencies": {
     "@libsql/client": "^0.15.15",
-    "drizzle-orm": "^0.44.7",
+    "drizzle-orm": "^0.45.1",
     "nanoid": "^5.1.6"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",
-    "@types/node": "^22.19.1",
+    "@types/node": "^22.19.3",
     "@umamin/encryption": "workspace:*",
-    "drizzle-kit": "^0.31.7",
+    "drizzle-kit": "^0.31.8",
     "drizzle-seed": "^0.3.1",
-    "tsdown": "^0.15.12",
-    "tsx": "^4.20.6",
+    "tsdown": "^0.18.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }
