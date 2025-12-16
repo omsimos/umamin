@@ -102,7 +102,6 @@ export function ReceivedMessages() {
     }
   }, [
     hasNextPage,
-    fetchNextPage,
     allPosts.length,
     isFetchingNextPage,
     handleNextPage,
