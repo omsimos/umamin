@@ -11,12 +11,12 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { addLikeAction } from "@/app/actions/post";
 import { shortTimeAgo } from "@/lib/utils";
-import type { PostData } from "@/types/post";
+import type { CommentData, PostData } from "@/types/post";
 
 type Props = {
   isComment?: boolean;
   className?: string;
-  data: PostData;
+  data: PostData | CommentData;
 };
 
 export function PostCard({ data, isComment, className }: Props) {
