@@ -1,13 +1,15 @@
 "use client";
 
+import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { PostCard } from "@/app/feed/components/post-card";
 import type { CommentData } from "@/types/post";
 
@@ -57,27 +59,39 @@ export function CommentsList({ postId }: CommentsListProps) {
     return Array.from(map.values());
   }, [data]);
 
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const totalRows = useMemo(
+    () => (hasNextPage ? comments.length + 1 : comments.length),
+    [comments.length, hasNextPage],
+  );
+
+  const virtualizer = useWindowVirtualizer({
+    count: totalRows,
+    estimateSize: () => 180,
+    overscan: 12,
+    paddingEnd: 80,
+    getItemKey: (index) => {
+      if (hasNextPage && index === totalRows - 1) return "loader";
+      return comments[index]?.id ?? `row-${index}`;
+    },
+  });
+
+  const items = virtualizer.getVirtualItems();
+
+  const handleNextPage = useThrottledCallback(
+    () => {
+      fetchNextPage();
+    },
+    { wait: 2000 },
+  );
 
   useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { rootMargin: "320px 0px 320px 0px" },
-    );
-
-    observer.observe(sentinel);
-
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+    if (!hasNextPage || isFetchingNextPage || items.length === 0) return;
+    const lastItem = items[items.length - 1];
+    const lastIndex = totalRows - 1; // loader row index if hasNextPage
+    if (lastItem?.index >= lastIndex) {
+      handleNextPage();
+    }
+  }, [items, hasNextPage, isFetchingNextPage, totalRows, handleNextPage]);
 
   if (error) {
     return (
@@ -93,35 +107,62 @@ export function CommentsList({ postId }: CommentsListProps) {
     return <div className="space-y-6">Loading comments...</div>;
   }
 
+  if (comments.length === 0 && !hasNextPage && !isFetching) {
+    return (
+      <Alert>
+        <MessageCircleDashedIcon className="h-4 w-4" />
+        <AlertTitle>No comments yet</AlertTitle>
+        <AlertDescription>
+          Be the first to start the conversation.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {comments.length === 0 && !isFetching && (
-        <Alert>
-          <MessageCircleDashedIcon className="h-4 w-4" />
-          <AlertTitle>No comments yet</AlertTitle>
-          <AlertDescription>
-            Be the first to start the conversation.
-          </AlertDescription>
-        </Alert>
-      )}
+    <div
+      style={{
+        height: `${virtualizer.getTotalSize()}px`,
+        width: "100%",
+        position: "relative",
+      }}
+    >
+      {items.map((row) => {
+        const isLoaderRow = hasNextPage && row.index === totalRows - 1;
+        const comment = comments[row.index];
 
-      {comments.map((comment) => (
-        <PostCard
-          isComment
-          key={comment.id}
-          data={comment}
-          className="border-b"
-        />
-      ))}
-
-      {hasNextPage && (
-        <div
-          ref={sentinelRef}
-          className="flex items-center justify-center text-sm text-muted-foreground py-4"
-        >
-          {isFetchingNextPage ? "Loading more..." : "Loading more comments..."}
-        </div>
-      )}
+        return (
+          <div
+            key={row.key}
+            ref={virtualizer.measureElement}
+            className="pb-4"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              transform: `translateY(${row.start}px)`,
+            }}
+          >
+            {isLoaderRow ? (
+              <div className="flex items-center justify-center text-sm text-muted-foreground py-4">
+                {isFetchingNextPage
+                  ? "Loading more..."
+                  : "Loading more comments..."}
+              </div>
+            ) : (
+              comment && (
+                <PostCard
+                  isComment
+                  key={comment.id}
+                  data={comment}
+                  className="border-b"
+                />
+              )
+            )}
+          </div>
+        );
+      })}
 
       {!hasNextPage && comments.length > 0 && (
         <p className="text-sm text-muted-foreground text-center py-2">
