@@ -25,11 +25,6 @@ export async function getPostAction(id: string) {
   const res = await db.query.postTable.findFirst({
     with: {
       author: true,
-      comments: {
-        with: {
-          author: true,
-        },
-      },
     },
     where: eq(postTable.id, id),
   });

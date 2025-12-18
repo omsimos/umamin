@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { getPostAction } from "@/app/actions/post";
-import { PostCard } from "@/app/feed/components/post-card";
 import { PostCardMain } from "@/app/feed/components/post-card-main";
 import { getSession } from "@/lib/auth";
+import { CommentsList } from "../components/comments-list";
 import ReplyForm from "../components/reply-form";
 
 export default async function Post({
@@ -30,16 +30,7 @@ export default async function Post({
       )}
 
       <div className="space-y-6">
-        {data.comments.map((comment) => {
-          return (
-            <PostCard
-              isComment
-              key={comment.id}
-              data={comment}
-              className="border-b"
-            />
-          );
-        })}
+        <CommentsList postId={id} />
         {/* <PostCardWithComments sessionImage={user?.imageUrl} /> */}
         {/* {repliesData.map((comment) => { */}
         {/*   return ( */}

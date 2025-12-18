@@ -5,3 +5,7 @@ export type PostData = SelectPost & {
   author: PublicUser;
   comments?: SelectPostComment[];
 };
+
+export type CommentData = SelectPostComment & {
+  author: PublicUser;
+};

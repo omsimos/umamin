@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import type { SelectUser } from "@umamin/db/schema/user";
 import {
   Avatar,
@@ -23,6 +24,7 @@ export default function ReplyForm({ user, postId }: Props) {
   const [content, setContent] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const inputRef = useDynamicTextarea(content);
+  const queryClient = useQueryClient();
 
   const handleSubmit: React.FormEventHandler = async (e) => {
     e.preventDefault();
@@ -31,6 +33,7 @@ export default function ReplyForm({ user, postId }: Props) {
       setIsFetching(true);
       await createCommentAction({ content, postId });
       toast.success("Comment created successfully!");
+      queryClient.invalidateQueries({ queryKey: ["post-comments", postId] });
     } catch (err) {
       toast.error("Failed to create comment. Please try again.");
       console.log(err);
