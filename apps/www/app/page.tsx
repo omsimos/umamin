@@ -20,7 +20,7 @@ export default async function Home() {
         </Button>
 
         <Button variant="outline" size="lg" asChild className="md:text-base">
-          <Link href="/social">Umamin Social</Link>
+          <Link href="/feed">Umamin Social</Link>
         </Button>
       </div>
       <Demo />

@@ -10,15 +10,35 @@ import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, ScanFaceIcon, SendIcon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { createCommentAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 
-export default function ReplyForm({ user }: { user: SelectUser | null }) {
+type Props = {
+  user: SelectUser;
+  postId: string;
+};
+
+export default function ReplyForm({ user, postId }: Props) {
   const [content, setContent] = useState("");
-  // const [message, setMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const inputRef = useDynamicTextarea(content);
 
-  if (!user) return;
+  const handleSubmit: React.FormEventHandler = async (e) => {
+    e.preventDefault();
+
+    try {
+      setIsFetching(true);
+      await createCommentAction({ content, postId });
+      toast.success("Comment created successfully!");
+    } catch (err) {
+      toast.error("Failed to create comment. Please try again.");
+      console.log(err);
+    } finally {
+      setIsFetching(false);
+      setContent("");
+    }
+  };
 
   return (
     <div className="flex gap-3 w-full bg-background">
@@ -29,7 +49,7 @@ export default function ReplyForm({ user }: { user: SelectUser | null }) {
         </AvatarFallback>
       </Avatar>
       <form
-        //   onSubmit={handleSubmit}
+        onSubmit={handleSubmit}
         className="flex items-center space-x-2 w-full self-center"
       >
         <Textarea
@@ -49,9 +69,9 @@ export default function ReplyForm({ user }: { user: SelectUser | null }) {
           data-testid="note-send-reply-btn"
           type="submit"
           size="icon"
-          disabled={isSending}
+          disabled={isFetching}
         >
-          {isSending ? (
+          {isFetching ? (
             <Loader2Icon className="w-4 h-4 animate-spin" />
           ) : (
             <SendIcon className="h-4 w-4" />

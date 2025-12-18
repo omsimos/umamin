@@ -36,7 +36,7 @@ export const postTable = sqliteTable(
   ],
 );
 
-export const postUpvote = sqliteTable(
+export const postUpvoteTable = sqliteTable(
   "post_upvote",
   {
     id: text("id")
@@ -58,7 +58,7 @@ export const postUpvote = sqliteTable(
   ],
 );
 
-export const postComment = sqliteTable(
+export const postCommentTable = sqliteTable(
   "post_comment",
   {
     id: text("id")
@@ -78,6 +78,8 @@ export const postComment = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`)
       .$onUpdate(() => new Date()),
+    upvoteCount: integer("upvote_count").notNull().default(0),
+    commentCount: integer("comment_count").notNull().default(0),
   },
   (t) => [
     index("post_comment_post_created_idx").on(t.postId, t.createdAt, t.id),
@@ -90,35 +92,35 @@ export const PostRelations = relations(postTable, ({ one, many }) => ({
     fields: [postTable.authorId],
     references: [userTable.id],
   }),
-  comments: many(postComment),
-  upvotes: many(postUpvote),
+  comments: many(postCommentTable),
+  upvotes: many(postUpvoteTable),
 }));
 
-export const PostUpvoteRelations = relations(postUpvote, ({ one }) => ({
+export const PostUpvoteRelations = relations(postUpvoteTable, ({ one }) => ({
   postTable: one(postTable, {
-    fields: [postUpvote.postId],
+    fields: [postUpvoteTable.postId],
     references: [postTable.id],
   }),
   user: one(userTable, {
-    fields: [postUpvote.userId],
+    fields: [postUpvoteTable.userId],
     references: [userTable.id],
   }),
 }));
 
-export const PostCommentRelations = relations(postComment, ({ one }) => ({
+export const PostCommentRelations = relations(postCommentTable, ({ one }) => ({
   postTable: one(postTable, {
-    fields: [postComment.postId],
+    fields: [postCommentTable.postId],
     references: [postTable.id],
   }),
   author: one(userTable, {
-    fields: [postComment.authorId],
+    fields: [postCommentTable.authorId],
     references: [userTable.id],
   }),
 }));
 
 export type InsertPost = typeof postTable.$inferInsert;
 export type SelectPost = typeof postTable.$inferSelect;
-export type InsertPostUpvote = typeof postUpvote.$inferInsert;
-export type SelectPostUpvote = typeof postUpvote.$inferSelect;
-export type InsertPostComment = typeof postComment.$inferInsert;
-export type SelectPostComment = typeof postComment.$inferSelect;
+export type InsertPostUpvote = typeof postUpvoteTable.$inferInsert;
+export type SelectPostUpvote = typeof postUpvoteTable.$inferSelect;
+export type InsertPostComment = typeof postCommentTable.$inferInsert;
+export type SelectPostComment = typeof postCommentTable.$inferSelect;
