@@ -19,7 +19,7 @@ const AdContainer = dynamic(() => import("@/components/ad-container"), {
   ssr: false,
 });
 
-type PostItem = SelectPost & { author: PublicUser };
+type PostItem = SelectPost & { author: PublicUser; isLiked?: boolean };
 type NotesResponse = {
   data: PostItem[];
   nextCursor: string | null;
