@@ -164,11 +164,11 @@ export function CommentsList({ postId }: CommentsListProps) {
         );
       })}
 
-      {!hasNextPage && comments.length > 0 && (
-        <p className="text-sm text-muted-foreground text-center py-2">
-          You&apos;ve reached the end.
-        </p>
-      )}
+      {/* {!hasNextPage && comments.length > 0 && ( */}
+      {/*   <p className="text-sm text-muted-foreground text-center py-2"> */}
+      {/*     You&apos;ve reached the end. */}
+      {/*   </p> */}
+      {/* )} */}
     </div>
   );
 }

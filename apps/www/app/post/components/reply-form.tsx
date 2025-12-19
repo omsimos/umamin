@@ -1,6 +1,7 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SelectUser } from "@umamin/db/schema/user";
 import {
   Avatar,
@@ -10,37 +11,103 @@ import {
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, ScanFaceIcon, SendIcon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createCommentAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import type { CommentData } from "@/types/post";
 
 type Props = {
   user: SelectUser;
   postId: string;
 };
 
+type CommentsResponse = {
+  data: CommentData[];
+  nextCursor: string | null;
+};
+
 export default function ReplyForm({ user, postId }: Props) {
   const [content, setContent] = useState("");
-  const [isFetching, setIsFetching] = useState(false);
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
+  const author = useMemo(() => {
+    const { passwordHash: _passwordHash, ...rest } = user;
+    return rest;
+  }, [user]);
+
+  const mutation = useMutation({
+    mutationFn: (nextContent: string) =>
+      createCommentAction({ content: nextContent, postId }),
+    onMutate: async (nextContent) => {
+      await queryClient.cancelQueries({ queryKey: ["post-comments", postId] });
+
+      const previous = queryClient.getQueryData<InfiniteData<CommentsResponse>>(
+        ["post-comments", postId],
+      );
+
+      const optimistic: CommentData = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        postId,
+        authorId: user.id,
+        content: nextContent,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        upvoteCount: 0,
+        commentCount: 0,
+        author,
+      };
+
+      if (previous) {
+        queryClient.setQueryData<InfiniteData<CommentsResponse>>(
+          ["post-comments", postId],
+          {
+            ...previous,
+            pages: [
+              {
+                ...previous.pages[0],
+                data: [optimistic, ...previous.pages[0].data],
+              },
+              ...previous.pages.slice(1),
+            ],
+          },
+        );
+      } else {
+        queryClient.setQueryData<InfiniteData<CommentsResponse>>(
+          ["post-comments", postId],
+          {
+            pageParams: [null],
+            pages: [{ data: [optimistic], nextCursor: null }],
+          },
+        );
+      }
+
+      setContent("");
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(["post-comments", postId], ctx.previous);
+      }
+      toast.error("Failed to create comment. Please try again.");
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast.error(res.error);
+      } else {
+        toast.success("Comment created successfully!");
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["post-comments", postId] });
+    },
+  });
 
   const handleSubmit: React.FormEventHandler = async (e) => {
     e.preventDefault();
 
-    try {
-      setIsFetching(true);
-      await createCommentAction({ content, postId });
-      toast.success("Comment created successfully!");
-      queryClient.invalidateQueries({ queryKey: ["post-comments", postId] });
-    } catch (err) {
-      toast.error("Failed to create comment. Please try again.");
-      console.log(err);
-    } finally {
-      setIsFetching(false);
-      setContent("");
-    }
+    if (!content.trim()) return;
+    mutation.mutate(content);
   };
 
   return (
@@ -72,9 +139,9 @@ export default function ReplyForm({ user, postId }: Props) {
           data-testid="note-send-reply-btn"
           type="submit"
           size="icon"
-          disabled={isFetching}
+          disabled={mutation.isPending}
         >
-          {isFetching ? (
+          {mutation.isPending ? (
             <Loader2Icon className="w-4 h-4 animate-spin" />
           ) : (
             <SendIcon className="h-4 w-4" />
