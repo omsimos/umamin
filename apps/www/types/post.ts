@@ -6,3 +6,8 @@ export type PostData = SelectPost & {
   comments?: SelectPostComment[];
   isLiked?: boolean;
 };
+
+export type CommentData = SelectPostComment & {
+  author: PublicUser;
+  isLiked?: boolean;
+};

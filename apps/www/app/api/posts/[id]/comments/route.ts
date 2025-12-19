@@ -1,9 +1,13 @@
 import { db } from "@umamin/db";
-import { postCommentTable } from "@umamin/db/schema/post";
+import {
+  postCommentTable,
+  postCommentUpvoteTable,
+} from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, exists, lt, or, sql } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import type { NextRequest } from "next/server";
+import { getSession } from "@/lib/auth";
 
 const PAGE_SIZE = 20;
 
@@ -15,9 +19,10 @@ export async function GET(
     const postId = (await params).id;
     const searchParams = req.nextUrl.searchParams;
     const cursor = searchParams.get("cursor");
+    const { session } = await getSession();
 
     const result = await (async () => {
-      "use cache";
+      "use cache: private";
       cacheLife({ revalidate: 30 });
 
       // biome-ignore lint/suspicious/noImplicitAnyLet: temp
@@ -39,6 +44,20 @@ export async function GET(
         }
       }
 
+      const isLikedExpr = session
+        ? exists(
+            db
+              .select({ id: postCommentUpvoteTable.id })
+              .from(postCommentUpvoteTable)
+              .where(
+                and(
+                  eq(postCommentUpvoteTable.commentId, postCommentTable.id),
+                  eq(postCommentUpvoteTable.userId, session.userId),
+                ),
+              ),
+          )
+        : sql<boolean>`false`;
+
       const baseQuery = db
         .select({
           comment: postCommentTable,
@@ -50,6 +69,7 @@ export async function GET(
             quietMode: userTable.quietMode,
             createdAt: userTable.createdAt,
           },
+          isLiked: isLikedExpr,
         })
         .from(postCommentTable)
         .leftJoin(userTable, eq(postCommentTable.authorId, userTable.id))
@@ -62,9 +82,10 @@ export async function GET(
           : eq(postCommentTable.postId, postId),
       );
 
-      const commentsData = rows.map(({ comment, author }) => ({
+      const commentsData = rows.map(({ comment, author, isLiked }) => ({
         ...comment,
         author,
+        isLiked: Boolean(isLiked),
       }));
 
       return {

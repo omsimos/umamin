@@ -3,6 +3,7 @@
 import { db } from "@umamin/db";
 import {
   postCommentTable,
+  postCommentUpvoteTable,
   postTable,
   postUpvoteTable,
 } from "@umamin/db/schema/post";
@@ -211,6 +212,99 @@ export async function removeLikeAction({ postId }: { postId: string }) {
       .where(eq(postTable.id, postId));
 
     updateTag(`post:${postId}`);
+
+    return { success: true };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+export async function addCommentLikeAction({
+  commentId,
+}: {
+  commentId: string;
+}) {
+  try {
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    const existing = await db.query.postCommentUpvoteTable.findFirst({
+      columns: { id: true },
+      where: and(
+        eq(postCommentUpvoteTable.commentId, commentId),
+        eq(postCommentUpvoteTable.userId, session.userId),
+      ),
+    });
+
+    if (existing) {
+      return { success: true, alreadyLiked: true };
+    }
+
+    await db
+      .insert(postCommentUpvoteTable)
+      .values({
+        commentId,
+        userId: session.userId,
+      })
+      .onConflictDoNothing();
+
+    await db
+      .update(postCommentTable)
+      .set({
+        upvoteCount: sql`${postCommentTable.upvoteCount} + 1`,
+      })
+      .where(eq(postCommentTable.id, commentId));
+
+    return { success: true };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+export async function removeCommentLikeAction({
+  commentId,
+}: {
+  commentId: string;
+}) {
+  try {
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    const existing = await db.query.postCommentUpvoteTable.findFirst({
+      columns: { id: true },
+      where: and(
+        eq(postCommentUpvoteTable.commentId, commentId),
+        eq(postCommentUpvoteTable.userId, session.userId),
+      ),
+    });
+
+    if (!existing) {
+      return { success: true, alreadyRemoved: true };
+    }
+
+    await db
+      .delete(postCommentUpvoteTable)
+      .where(
+        and(
+          eq(postCommentUpvoteTable.commentId, commentId),
+          eq(postCommentUpvoteTable.userId, session.userId),
+        ),
+      );
+
+    await db
+      .update(postCommentTable)
+      .set({
+        upvoteCount: sql`CASE WHEN ${postCommentTable.upvoteCount} > 0 THEN ${postCommentTable.upvoteCount} - 1 ELSE 0 END`,
+      })
+      .where(eq(postCommentTable.id, commentId));
 
     return { success: true };
   } catch (err) {
