@@ -12,36 +12,8 @@
     {
       "idx": 1,
       "version": "6",
-      "when": 1765993195502,
-      "tag": "0001_lethal_loners",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1766059146313,
-      "tag": "0002_silky_marvel_apes",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1766161713149,
-      "tag": "0003_typical_onslaught",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1766162293337,
-      "tag": "0004_robust_thor_girl",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1766162555057,
-      "tag": "0005_breezy_doorman",
+      "when": 1766162742725,
+      "tag": "0001_overjoyed_korvac",
       "breakpoints": true
     }
   ]

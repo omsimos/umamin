@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "69c6fbda-8669-4355-9b1b-2b458615b427",
+  "id": "1a0b3882-49b0-4188-8c27-58b58b370ab0",
   "prevId": "8d585efc-818a-46bc-889d-7bcdda6cfc4e",
   "tables": {
     "message": {
@@ -192,6 +192,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": "(unixepoch())"
+        },
+        "upvote_count": {
+          "name": "upvote_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         }
       },
       "indexes": {
@@ -221,6 +229,75 @@
           "tableFrom": "post_comment",
           "tableTo": "user",
           "columnsFrom": ["author_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "post_comment_upvote": {
+      "name": "post_comment_upvote",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "comment_id": {
+          "name": "comment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "post_comment_upvote_comment_user_uidx": {
+          "name": "post_comment_upvote_comment_user_uidx",
+          "columns": ["comment_id", "user_id"],
+          "isUnique": true
+        },
+        "post_comment_upvote_user_created_idx": {
+          "name": "post_comment_upvote_user_created_idx",
+          "columns": ["user_id", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "post_comment_upvote_comment_id_post_comment_id_fk": {
+          "name": "post_comment_upvote_comment_id_post_comment_id_fk",
+          "tableFrom": "post_comment_upvote",
+          "tableTo": "post_comment",
+          "columnsFrom": ["comment_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "post_comment_upvote_user_id_user_id_fk": {
+          "name": "post_comment_upvote_user_id_user_id_fk",
+          "tableFrom": "post_comment_upvote",
+          "tableTo": "user",
+          "columnsFrom": ["user_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"

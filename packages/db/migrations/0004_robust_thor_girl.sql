@@ -1,1 +1,0 @@
-ALTER TABLE `postTable` DROP COLUMN `comment_count`;
