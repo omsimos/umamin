@@ -46,9 +46,13 @@ export async function getPostAction(id: string) {
           ),
       ),
     })
+    .from(postTable)
+    .where(eq(postTable.id, id))
     .limit(1);
 
-  return { ...res, isLiked: liked[0]?.liked ?? false };
+  const isLiked = Boolean(liked?.[0]?.liked);
+
+  return { ...res, isLiked };
 }
 
 export async function createPostAction(

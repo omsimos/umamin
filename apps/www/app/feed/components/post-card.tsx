@@ -12,12 +12,12 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { addLikeAction, removeLikeAction } from "@/app/actions/post";
 import { shortTimeAgo } from "@/lib/utils";
-import type { CommentData, PostData } from "@/types/post";
+import type { PostData } from "@/types/post";
 
 type Props = {
   isComment?: boolean;
   className?: string;
-  data: PostData | CommentData;
+  data: PostData;
 };
 
 export function PostCard({ data, isComment, className }: Props) {
