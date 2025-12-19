@@ -110,18 +110,20 @@ export async function createCommentAction(
       throw new Error("Unauthorized");
     }
 
-    await db.insert(postCommentTable).values({
-      postId,
-      content,
-      authorId: session.userId,
-    });
+    await db.transaction(async (tx) => {
+      await tx.insert(postCommentTable).values({
+        postId,
+        content,
+        authorId: session.userId,
+      });
 
-    await db
-      .update(postTable)
-      .set({
-        commentCount: sql`${postTable.commentCount} + 1`,
-      })
-      .where(eq(postTable.id, postId));
+      await tx
+        .update(postTable)
+        .set({
+          commentCount: sql`${postTable.commentCount} + 1`,
+        })
+        .where(eq(postTable.id, postId));
+    });
 
     updateTag(`post:${postId}`);
 
@@ -140,35 +142,39 @@ export async function addLikeAction({ postId }: { postId: string }) {
       throw new Error("Unauthorized");
     }
 
-    const existing = await db.query.postUpvoteTable.findFirst({
-      columns: { id: true },
-      where: and(
-        eq(postUpvoteTable.postId, postId),
-        eq(postUpvoteTable.userId, session.userId),
-      ),
+    const result = await db.transaction(async (tx) => {
+      const existing = await tx.query.postUpvoteTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(postUpvoteTable.postId, postId),
+          eq(postUpvoteTable.userId, session.userId),
+        ),
+      });
+
+      if (existing) {
+        return { success: true, alreadyLiked: true };
+      }
+
+      await tx
+        .insert(postUpvoteTable)
+        .values({
+          postId,
+          userId: session.userId,
+        })
+        .onConflictDoNothing();
+
+      await tx
+        .update(postTable)
+        .set({
+          upvoteCount: sql`${postTable.upvoteCount} + 1`,
+        })
+        .where(eq(postTable.id, postId));
+
+      return { success: true };
     });
 
-    if (existing) {
-      return { success: true, alreadyLiked: true };
-    }
-
-    await db
-      .insert(postUpvoteTable)
-      .values({
-        postId,
-        userId: session.userId,
-      })
-      .onConflictDoNothing();
-
-    await db
-      .update(postTable)
-      .set({
-        upvoteCount: sql`${postTable.upvoteCount} + 1`,
-      })
-      .where(eq(postTable.id, postId));
-
     updateTag(`post:${postId}`);
-    return { success: true };
+    return result;
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };
@@ -183,37 +189,41 @@ export async function removeLikeAction({ postId }: { postId: string }) {
       throw new Error("Unauthorized");
     }
 
-    const existing = await db.query.postUpvoteTable.findFirst({
-      columns: { id: true },
-      where: and(
-        eq(postUpvoteTable.postId, postId),
-        eq(postUpvoteTable.userId, session.userId),
-      ),
-    });
-
-    if (!existing) {
-      return { success: true, alreadyRemoved: true };
-    }
-
-    await db
-      .delete(postUpvoteTable)
-      .where(
-        and(
+    const result = await db.transaction(async (tx) => {
+      const existing = await tx.query.postUpvoteTable.findFirst({
+        columns: { id: true },
+        where: and(
           eq(postUpvoteTable.postId, postId),
           eq(postUpvoteTable.userId, session.userId),
         ),
-      );
+      });
 
-    await db
-      .update(postTable)
-      .set({
-        upvoteCount: sql`CASE WHEN ${postTable.upvoteCount} > 0 THEN ${postTable.upvoteCount} - 1 ELSE 0 END`,
-      })
-      .where(eq(postTable.id, postId));
+      if (!existing) {
+        return { success: true, alreadyRemoved: true };
+      }
+
+      await tx
+        .delete(postUpvoteTable)
+        .where(
+          and(
+            eq(postUpvoteTable.postId, postId),
+            eq(postUpvoteTable.userId, session.userId),
+          ),
+        );
+
+      await tx
+        .update(postTable)
+        .set({
+          upvoteCount: sql`CASE WHEN ${postTable.upvoteCount} > 0 THEN ${postTable.upvoteCount} - 1 ELSE 0 END`,
+        })
+        .where(eq(postTable.id, postId));
+
+      return { success: true };
+    });
 
     updateTag(`post:${postId}`);
 
-    return { success: true };
+    return result;
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };
@@ -232,34 +242,36 @@ export async function addCommentLikeAction({
       throw new Error("Unauthorized");
     }
 
-    const existing = await db.query.postCommentUpvoteTable.findFirst({
-      columns: { id: true },
-      where: and(
-        eq(postCommentUpvoteTable.commentId, commentId),
-        eq(postCommentUpvoteTable.userId, session.userId),
-      ),
+    return await db.transaction(async (tx) => {
+      const existing = await tx.query.postCommentUpvoteTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(postCommentUpvoteTable.commentId, commentId),
+          eq(postCommentUpvoteTable.userId, session.userId),
+        ),
+      });
+
+      if (existing) {
+        return { success: true, alreadyLiked: true };
+      }
+
+      await tx
+        .insert(postCommentUpvoteTable)
+        .values({
+          commentId,
+          userId: session.userId,
+        })
+        .onConflictDoNothing();
+
+      await tx
+        .update(postCommentTable)
+        .set({
+          upvoteCount: sql`${postCommentTable.upvoteCount} + 1`,
+        })
+        .where(eq(postCommentTable.id, commentId));
+
+      return { success: true };
     });
-
-    if (existing) {
-      return { success: true, alreadyLiked: true };
-    }
-
-    await db
-      .insert(postCommentUpvoteTable)
-      .values({
-        commentId,
-        userId: session.userId,
-      })
-      .onConflictDoNothing();
-
-    await db
-      .update(postCommentTable)
-      .set({
-        upvoteCount: sql`${postCommentTable.upvoteCount} + 1`,
-      })
-      .where(eq(postCommentTable.id, commentId));
-
-    return { success: true };
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };
@@ -278,35 +290,37 @@ export async function removeCommentLikeAction({
       throw new Error("Unauthorized");
     }
 
-    const existing = await db.query.postCommentUpvoteTable.findFirst({
-      columns: { id: true },
-      where: and(
-        eq(postCommentUpvoteTable.commentId, commentId),
-        eq(postCommentUpvoteTable.userId, session.userId),
-      ),
-    });
-
-    if (!existing) {
-      return { success: true, alreadyRemoved: true };
-    }
-
-    await db
-      .delete(postCommentUpvoteTable)
-      .where(
-        and(
+    return await db.transaction(async (tx) => {
+      const existing = await tx.query.postCommentUpvoteTable.findFirst({
+        columns: { id: true },
+        where: and(
           eq(postCommentUpvoteTable.commentId, commentId),
           eq(postCommentUpvoteTable.userId, session.userId),
         ),
-      );
+      });
 
-    await db
-      .update(postCommentTable)
-      .set({
-        upvoteCount: sql`CASE WHEN ${postCommentTable.upvoteCount} > 0 THEN ${postCommentTable.upvoteCount} - 1 ELSE 0 END`,
-      })
-      .where(eq(postCommentTable.id, commentId));
+      if (!existing) {
+        return { success: true, alreadyRemoved: true };
+      }
 
-    return { success: true };
+      await tx
+        .delete(postCommentUpvoteTable)
+        .where(
+          and(
+            eq(postCommentUpvoteTable.commentId, commentId),
+            eq(postCommentUpvoteTable.userId, session.userId),
+          ),
+        );
+
+      await tx
+        .update(postCommentTable)
+        .set({
+          upvoteCount: sql`CASE WHEN ${postCommentTable.upvoteCount} > 0 THEN ${postCommentTable.upvoteCount} - 1 ELSE 0 END`,
+        })
+        .where(eq(postCommentTable.id, commentId));
+
+      return { success: true };
+    });
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };

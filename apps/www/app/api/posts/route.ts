@@ -26,9 +26,9 @@ export async function GET(req: NextRequest) {
           const cursorId = cursor.slice(sep + 1);
           const cursorDate = new Date(ms);
           cursorCondition = or(
-            lt(postTable.updatedAt, cursorDate),
+            lt(postTable.createdAt, cursorDate),
             and(
-              eq(postTable.updatedAt, cursorDate),
+              eq(postTable.createdAt, cursorDate),
               lt(postTable.id, cursorId),
             ),
           );
