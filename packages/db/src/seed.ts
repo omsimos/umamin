@@ -37,7 +37,7 @@ type MessageSeed = Omit<
 };
 type PostSeed = Omit<
   InsertPost,
-  "authorId" | "id" | "commentCount" | "upvoteCount"
+  "authorId" | "id" | "commentCount" | "likeCount"
 > & { username: string };
 
 const DEFAULT_PROMPT = "Send me an anonymous message!";
@@ -478,7 +478,7 @@ async function main() {
               content: faker.lorem.sentences({ min: 1, max: 3 }),
               createdAt,
               updatedAt: createdAt,
-              upvoteCount: faker.number.int({ min: 0, max: 6 }),
+              likeCount: faker.number.int({ min: 0, max: 6 }),
             });
           }
         }

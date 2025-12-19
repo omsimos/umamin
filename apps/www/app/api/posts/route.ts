@@ -1,5 +1,5 @@
 import { db } from "@umamin/db";
-import { postTable, postUpvoteTable } from "@umamin/db/schema/post";
+import { postLikeTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { and, desc, eq, exists, lt, or, sql } from "drizzle-orm";
 import { cacheLife } from "next/cache";
@@ -38,12 +38,12 @@ export async function GET(req: NextRequest) {
       const isLikedExpr = session
         ? exists(
             db
-              .select({ id: postUpvoteTable.id })
-              .from(postUpvoteTable)
+              .select({ id: postLikeTable.id })
+              .from(postLikeTable)
               .where(
                 and(
-                  eq(postUpvoteTable.postId, postTable.id),
-                  eq(postUpvoteTable.userId, session.userId),
+                  eq(postLikeTable.postId, postTable.id),
+                  eq(postLikeTable.userId, session.userId),
                 ),
               ),
           )

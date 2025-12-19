@@ -1,8 +1,5 @@
 import { db } from "@umamin/db";
-import {
-  postCommentTable,
-  postCommentUpvoteTable,
-} from "@umamin/db/schema/post";
+import { postCommentLikeTable, postCommentTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { and, desc, eq, exists, lt, or, sql } from "drizzle-orm";
 import { cacheLife } from "next/cache";
@@ -47,12 +44,12 @@ export async function GET(
       const isLikedExpr = session
         ? exists(
             db
-              .select({ id: postCommentUpvoteTable.id })
-              .from(postCommentUpvoteTable)
+              .select({ id: postCommentLikeTable.id })
+              .from(postCommentLikeTable)
               .where(
                 and(
-                  eq(postCommentUpvoteTable.commentId, postCommentTable.id),
-                  eq(postCommentUpvoteTable.userId, session.userId),
+                  eq(postCommentLikeTable.commentId, postCommentTable.id),
+                  eq(postCommentLikeTable.userId, session.userId),
                 ),
               ),
           )

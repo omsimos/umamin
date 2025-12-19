@@ -73,7 +73,7 @@ export function PostCardWithComments({ data }: Props) {
                   "fill-pink-500": false,
                 })}
               />
-              <span>{data.upvoteCount}</span>
+              <span>{data.likeCount}</span>
             </div>
 
             <div className="flex space-x-1 items-center">

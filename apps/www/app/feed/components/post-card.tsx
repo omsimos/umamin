@@ -28,19 +28,19 @@ type Props = {
 export function PostCard({ data, isComment, className }: Props) {
   const author = data?.author;
   const [liked, setLiked] = useState<boolean>(data.isLiked === true);
-  const [upvotes, setUpvotes] = useState<number>(data.upvoteCount ?? 0);
+  const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
 
   useEffect(() => {
     setLiked(data.isLiked === true);
-    setUpvotes(data.upvoteCount ?? 0);
-  }, [data.isLiked, data.upvoteCount]);
+    setLikes(data.likeCount ?? 0);
+  }, [data.isLiked, data.likeCount]);
 
   const handleLike = async () => {
     const prevLiked = liked;
-    const prevUpvotes = upvotes;
+    const prevLikes = likes;
 
     setLiked(!prevLiked);
-    setUpvotes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
+    setLikes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
 
     try {
       if (isComment) {
@@ -62,7 +62,7 @@ export function PostCard({ data, isComment, className }: Props) {
       }
     } catch (err) {
       setLiked(prevLiked);
-      setUpvotes(prevUpvotes);
+      setLikes(prevLikes);
       toast.error("Failed to update like. Please try again.");
       console.log(err);
     }
@@ -120,7 +120,7 @@ export function PostCard({ data, isComment, className }: Props) {
                 "fill-pink-500": liked,
               })}
             />
-            <span>{upvotes}</span>
+            <span>{likes}</span>
           </button>
 
           {!isComment && (
