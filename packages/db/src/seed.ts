@@ -3,12 +3,19 @@ import process from "node:process";
 import { faker } from "@faker-js/faker";
 import { createClient } from "@libsql/client";
 import { aesEncrypt } from "@umamin/encryption";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { reset } from "drizzle-seed";
 
 import * as schema from "./schema";
 import { type InsertMessage, messageTable } from "./schema/message";
 import { type InsertNote, noteTable } from "./schema/note";
+import {
+  type InsertPost,
+  type InsertPostComment,
+  postCommentTable,
+  postTable,
+} from "./schema/post";
 import {
   type InsertSession,
   type InsertUser,
@@ -28,6 +35,10 @@ type MessageSeed = Omit<
   senderUsername?: string;
   question?: string;
 };
+type PostSeed = Omit<
+  InsertPost,
+  "authorId" | "id" | "commentCount" | "upvoteCount"
+> & { username: string };
 
 const DEFAULT_PROMPT = "Send me an anonymous message!";
 
@@ -214,6 +225,62 @@ const messageSeeds: MessageSeed[] = [
   },
 ];
 
+const postOverrides = new Map<string, string[]>([
+  [
+    "alex",
+    [
+      "Building in public: we just shipped threaded replies. Feedback welcome!",
+      "Question: what’s your favorite onboarding moment in a new app?",
+    ],
+  ],
+  [
+    "bailey",
+    [
+      "Trying a new daily shipping ritual. What helps you stay consistent?",
+      "Thinking about a small UI polish pass—anything feel rough right now?",
+    ],
+  ],
+  [
+    "casey",
+    [
+      "Testing a cozy food journaling flow. What should it include?",
+      "Hot take: breakfast for dinner always wins.",
+    ],
+  ],
+  [
+    "testuser",
+    [
+      "Seeded QA post: try liking, commenting, and infinite scroll.",
+      "If you find a bug, reply here with steps to reproduce.",
+    ],
+  ],
+]);
+
+const postSeeds: PostSeed[] = [];
+const additionalPostCount = Math.max(48, userSeeds.length * 2);
+
+for (const user of userSeeds) {
+  const overrides = postOverrides.get(user.username) ?? [];
+  for (const content of overrides) {
+    postSeeds.push({
+      username: user.username,
+      content,
+      createdAt: faker.date.recent({ days: 21 }),
+      updatedAt: faker.date.recent({ days: 7 }),
+    });
+  }
+}
+
+for (let i = 0; i < additionalPostCount; i += 1) {
+  const author = faker.helpers.arrayElement(userSeeds);
+  postSeeds.push({
+    username: author.username,
+    content: faker.lorem.paragraph({ min: 1, max: 2 }),
+    createdAt: faker.date.recent({ days: 30 }),
+    updatedAt: faker.date.recent({ days: 10 }),
+  });
+}
+
 const otherUsernames = userSeeds
   .map((user) => user.username)
   .filter((username) => username !== "testuser");
@@ -370,6 +437,66 @@ async function main() {
             userId: userIdOrThrow(username),
           })),
         );
+      }
+
+      const insertedPosts =
+        postSeeds.length > 0
+          ? await tx
+              .insert(postTable)
+              .values(
+                postSeeds.map(({ username, ...post }) => ({
+                  ...post,
+                  authorId: userIdOrThrow(username),
+                })),
+              )
+              .returning({
+                id: postTable.id,
+                authorId: postTable.authorId,
+                createdAt: postTable.createdAt,
+              })
+          : [];
+
+      if (insertedPosts.length > 0) {
+        const commentValues: InsertPostComment[] = [];
+        const commentCounts = new Map<string, number>();
+
+        for (const post of insertedPosts) {
+          const desiredCount = faker.number.int({ min: 0, max: 6 });
+          if (desiredCount === 0) continue;
+          commentCounts.set(post.id, desiredCount);
+
+          for (let i = 0; i < desiredCount; i += 1) {
+            const commenter = faker.helpers.arrayElement(userSeeds);
+            const createdAt = faker.date.between({
+              from: post.createdAt,
+              to: new Date(),
+            });
+
+            commentValues.push({
+              postId: post.id,
+              authorId: userIdOrThrow(commenter.username),
+              content: faker.lorem.sentences({ min: 1, max: 3 }),
+              createdAt,
+              updatedAt: createdAt,
+              upvoteCount: faker.number.int({ min: 0, max: 6 }),
+            });
+          }
+        }
+
+        if (commentValues.length > 0) {
+          await tx.insert(postCommentTable).values(commentValues);
+        }
+
+        if (commentCounts.size > 0) {
+          await Promise.all(
+            Array.from(commentCounts.entries()).map(([postId, count]) =>
+              tx
+                .update(postTable)
+                .set({ commentCount: count })
+                .where(eq(postTable.id, postId)),
+            ),
+          );
+        }
       }
 
       if (messageSeeds.length > 0) {
