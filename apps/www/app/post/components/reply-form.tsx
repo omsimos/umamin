@@ -54,7 +54,6 @@ export default function ReplyForm({ user, postId }: Props) {
         createdAt: new Date(),
         updatedAt: new Date(),
         upvoteCount: 0,
-        commentCount: 0,
         author,
       };
 

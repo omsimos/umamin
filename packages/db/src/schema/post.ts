@@ -57,7 +57,6 @@ export const postCommentTable = sqliteTable(
       .default(sql`(unixepoch())`)
       .$onUpdate(() => new Date()),
     upvoteCount: integer("upvote_count").notNull().default(0),
-    commentCount: integer("comment_count").notNull().default(0),
   },
   (t) => [
     index("post_comment_post_created_idx").on(t.postId, t.createdAt, t.id),
