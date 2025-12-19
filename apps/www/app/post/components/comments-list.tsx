@@ -11,10 +11,10 @@ import {
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { PostCard } from "@/app/feed/components/post-card";
-import type { CommentData } from "@/types/post";
+import type { PostData } from "@/types/post";
 
 type CommentsResponse = {
-  data: CommentData[];
+  data: PostData[];
   nextCursor: string | null;
 };
 
@@ -50,7 +50,7 @@ export function CommentsList({ postId }: CommentsListProps) {
 
   const comments = useMemo(() => {
     const flat = data?.pages.flatMap((page) => page.data) ?? [];
-    const map = new Map<string, CommentData>();
+    const map = new Map<string, PostData>();
     for (const item of flat) {
       if (!map.has(item.id)) {
         map.set(item.id, item);

@@ -4,8 +4,5 @@ import type { PublicUser } from "./user";
 export type PostData = SelectPost & {
   author: PublicUser;
   comments?: SelectPostComment[];
-};
-
-export type CommentData = SelectPostComment & {
-  author: PublicUser;
+  isLiked?: boolean;
 };

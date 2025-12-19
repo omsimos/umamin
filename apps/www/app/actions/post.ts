@@ -6,8 +6,8 @@ import {
   postTable,
   postUpvoteTable,
 } from "@umamin/db/schema/post";
-import { eq, sql } from "drizzle-orm";
-import { cacheTag, updateTag } from "next/cache";
+import { and, eq, exists, sql } from "drizzle-orm";
+import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
 
@@ -19,16 +19,36 @@ const createPostSchema = z.object({
 });
 
 export async function getPostAction(id: string) {
-  "use cache";
-  cacheTag(`post:${id}`);
-
   const res = await db.query.postTable.findFirst({
     with: {
       author: true,
     },
     where: eq(postTable.id, id),
   });
-  return res;
+
+  if (!res) return res;
+
+  const { session } = await getSession();
+
+  if (!session) return res;
+
+  const liked = await db
+    .select({
+      liked: exists(
+        db
+          .select({ id: postUpvoteTable.id })
+          .from(postUpvoteTable)
+          .where(
+            and(
+              eq(postUpvoteTable.postId, id),
+              eq(postUpvoteTable.userId, session.userId),
+            ),
+          ),
+      ),
+    })
+    .limit(1);
+
+  return { ...res, isLiked: liked[0]?.liked ?? false };
 }
 
 export async function createPostAction(

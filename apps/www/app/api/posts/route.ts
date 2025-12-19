@@ -1,17 +1,19 @@
 import { db } from "@umamin/db";
-import { postTable } from "@umamin/db/schema/post";
+import { postTable, postUpvoteTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, exists, lt, or, sql } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import type { NextRequest } from "next/server";
+import { getSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
+    const { session } = await getSession();
     const cursor = searchParams.get("cursor");
 
     const result = await (async () => {
-      "use cache";
+      "use cache: private";
       cacheLife({ revalidate: 30 });
 
       // biome-ignore lint/suspicious/noImplicitAnyLet: temp
@@ -33,6 +35,20 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      const isLikedExpr = session
+        ? exists(
+            db
+              .select({ id: postUpvoteTable.id })
+              .from(postUpvoteTable)
+              .where(
+                and(
+                  eq(postUpvoteTable.postId, postTable.id),
+                  eq(postUpvoteTable.userId, session.userId),
+                ),
+              ),
+          )
+        : sql<boolean>`false`;
+
       const baseQuery = db
         .select({
           post: postTable,
@@ -44,6 +60,7 @@ export async function GET(req: NextRequest) {
             quietMode: userTable.quietMode,
             createdAt: userTable.createdAt,
           },
+          isLiked: isLikedExpr,
         })
         .from(postTable)
         .leftJoin(userTable, eq(postTable.authorId, userTable.id))
@@ -54,7 +71,11 @@ export async function GET(req: NextRequest) {
         ? baseQuery.where(cursorCondition)
         : baseQuery);
 
-      const postsData = rows.map(({ post, author }) => ({ ...post, author }));
+      const postsData = rows.map(({ post, author, isLiked }) => ({
+        ...post,
+        author,
+        isLiked: Boolean(isLiked),
+      }));
 
       return {
         data: postsData,

@@ -8,6 +8,7 @@ import {
 import { cn } from "@umamin/ui/lib/utils";
 import { HeartIcon, MessageCircleIcon, ScanFaceIcon } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { addLikeAction } from "@/app/actions/post";
 import { shortTimeAgo } from "@/lib/utils";
@@ -19,10 +20,20 @@ type Props = {
 
 export function PostCardMain({ data }: Props) {
   const author = data.author;
+  const [liked, setLiked] = useState<boolean>(data.isLiked === true);
+  const [upvotes, setUpvotes] = useState<number>(data.upvoteCount ?? 0);
+
+  useEffect(() => {
+    setLiked(data.isLiked === true);
+    setUpvotes(data.upvoteCount ?? 0);
+  }, [data.isLiked, data.upvoteCount]);
 
   const handleLike = async () => {
     try {
+      if (liked) return;
       await addLikeAction({ postId: data.id });
+      setLiked(true);
+      setUpvotes((prev) => prev + 1);
       toast.success("Post liked successfully!");
     } catch (err) {
       toast.error("Failed to create comment. Please try again.");
@@ -69,17 +80,15 @@ export function PostCardMain({ data }: Props) {
             type="button"
             onClick={handleLike}
             className={cn("flex space-x-1 items-center", {
-              // "text-pink-500": author.isLiked,
-              "text-pink-500": false,
+              "text-pink-500": liked,
             })}
           >
             <HeartIcon
               className={cn("h-5 w-5", {
-                // "fill-pink-500": author.isLiked,
-                "fill-pink-500": false,
+                "fill-pink-500": liked,
               })}
             />
-            <span>{data.upvoteCount}</span>
+            <span>{upvotes}</span>
           </button>
 
           <div className="flex space-x-1 items-center">
