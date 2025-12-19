@@ -135,24 +135,79 @@ export async function addLikeAction({ postId }: { postId: string }) {
       throw new Error("Unauthorized");
     }
 
-    try {
-      await db
-        .insert(postUpvoteTable)
-        .values({
-          postId,
-          userId: session.userId,
-        })
-        .onConflictDoNothing();
+    const existing = await db.query.postUpvoteTable.findFirst({
+      columns: { id: true },
+      where: and(
+        eq(postUpvoteTable.postId, postId),
+        eq(postUpvoteTable.userId, session.userId),
+      ),
+    });
 
-      await db
-        .update(postTable)
-        .set({
-          upvoteCount: sql`${postTable.upvoteCount} + 1`,
-        })
-        .where(eq(postTable.id, postId));
+    if (existing) {
+      return { success: true, alreadyLiked: true };
+    }
 
-      updateTag(`post:${postId}`);
-    } catch {}
+    await db
+      .insert(postUpvoteTable)
+      .values({
+        postId,
+        userId: session.userId,
+      })
+      .onConflictDoNothing();
+
+    await db
+      .update(postTable)
+      .set({
+        upvoteCount: sql`${postTable.upvoteCount} + 1`,
+      })
+      .where(eq(postTable.id, postId));
+
+    updateTag(`post:${postId}`);
+    return { success: true };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+export async function removeLikeAction({ postId }: { postId: string }) {
+  try {
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    const existing = await db.query.postUpvoteTable.findFirst({
+      columns: { id: true },
+      where: and(
+        eq(postUpvoteTable.postId, postId),
+        eq(postUpvoteTable.userId, session.userId),
+      ),
+    });
+
+    if (!existing) {
+      return { success: true, alreadyRemoved: true };
+    }
+
+    await db
+      .delete(postUpvoteTable)
+      .where(
+        and(
+          eq(postUpvoteTable.postId, postId),
+          eq(postUpvoteTable.userId, session.userId),
+        ),
+      );
+
+    await db
+      .update(postTable)
+      .set({
+        upvoteCount: sql`CASE WHEN ${postTable.upvoteCount} > 0 THEN ${postTable.upvoteCount} - 1 ELSE 0 END`,
+      })
+      .where(eq(postTable.id, postId));
+
+    updateTag(`post:${postId}`);
+
     return { success: true };
   } catch (err) {
     console.log(err);
