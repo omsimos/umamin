@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "ui:add": "pnpm dlx shadcn@canary add",
     "build": "next build --turbopack",
+    "check-types": "tsc --noEmit",
     "start": "next start",
     "clean": "rm -rf .next .turbo node_modules"
   },
