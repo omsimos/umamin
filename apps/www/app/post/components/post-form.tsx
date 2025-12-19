@@ -1,5 +1,7 @@
 "use client";
 
+import type { InfiniteData } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { cn } from "@umamin/ui/lib/utils";
@@ -8,30 +10,92 @@ import { type FormEventHandler, useState } from "react";
 import { toast } from "sonner";
 import { createPostAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import type { PostData } from "@/types/post";
+import type { PublicUser } from "@/types/user";
 
-export default function PostForm() {
+type PostsResponse = {
+  data: PostData[];
+  nextCursor: string | null;
+};
+
+type Props = {
+  user: PublicUser | null;
+};
+
+export default function PostForm({ user }: Props) {
   const [content, setContent] = useState("");
-  const [isFetching, setIsFetching] = useState(false);
   const [textAreaCount, setTextAreaCount] = useState(0);
   const inputRef = useDynamicTextarea(content);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (nextContent: string) =>
+      createPostAction({ content: nextContent }),
+    onMutate: async (nextContent) => {
+      if (!user) return {};
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+
+      const previous = queryClient.getQueryData<InfiniteData<PostsResponse>>([
+        "posts",
+      ]);
+
+      const optimistic: PostData = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        content: nextContent,
+        authorId: user.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        upvoteCount: 0,
+        commentCount: 0,
+        author: user,
+        isLiked: false,
+      };
+
+      if (previous) {
+        queryClient.setQueryData<InfiniteData<PostsResponse>>(["posts"], {
+          ...previous,
+          pages: [
+            {
+              ...previous.pages[0],
+              data: [optimistic, ...previous.pages[0].data],
+            },
+            ...previous.pages.slice(1),
+          ],
+        });
+      } else {
+        queryClient.setQueryData<InfiniteData<PostsResponse>>(["posts"], {
+          pageParams: [null],
+          pages: [{ data: [optimistic], nextCursor: null }],
+        });
+      }
+
+      setContent("");
+      setTextAreaCount(0);
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(["posts"], ctx.previous);
+      }
+      toast.error("Failed to create post. Please try again.");
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast.error(res.error);
+      } else {
+        toast.success("Post created successfully!");
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
 
   const handleSubmit: FormEventHandler = async (e) => {
     e.preventDefault();
 
-    try {
-      setIsFetching(true);
-      const res = await createPostAction({ content });
-      if (res.error) {
-        throw new Error(res.error);
-      }
-      toast.success("Post created successfully!");
-    } catch (err) {
-      toast.error("Failed to create post. Please try again.");
-      console.log(err);
-    } finally {
-      setIsFetching(false);
-      setContent("");
-    }
+    if (!content.trim()) return;
+    mutation.mutate(content);
   };
 
   return (
@@ -66,7 +130,7 @@ export default function PostForm() {
           <Button
             data-testid="share-post-btn"
             disabled={
-              isFetching ||
+              mutation.isPending ||
               !content ||
               textAreaCount > 500 ||
               textAreaCount === 0
@@ -74,7 +138,7 @@ export default function PostForm() {
             type="submit"
           >
             <p>Publish Post</p>
-            {isFetching ? (
+            {mutation.isPending ? (
               <Loader2Icon className="h-4 w-4 animate-spin ml-2" />
             ) : (
               <SparklesIcon className="h-4 w-4 ml-2" />
