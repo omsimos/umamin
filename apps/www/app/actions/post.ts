@@ -2,10 +2,10 @@
 
 import { db } from "@umamin/db";
 import {
+  postCommentLikeTable,
   postCommentTable,
-  postCommentUpvoteTable,
+  postLikeTable,
   postTable,
-  postUpvoteTable,
 } from "@umamin/db/schema/post";
 import { and, eq, exists, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
@@ -37,12 +37,12 @@ export async function getPostAction(id: string) {
     .select({
       liked: exists(
         db
-          .select({ id: postUpvoteTable.id })
-          .from(postUpvoteTable)
+          .select({ id: postLikeTable.id })
+          .from(postLikeTable)
           .where(
             and(
-              eq(postUpvoteTable.postId, id),
-              eq(postUpvoteTable.userId, session.userId),
+              eq(postLikeTable.postId, id),
+              eq(postLikeTable.userId, session.userId),
             ),
           ),
       ),
@@ -143,11 +143,11 @@ export async function addLikeAction({ postId }: { postId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.postUpvoteTable.findFirst({
+      const existing = await tx.query.postLikeTable.findFirst({
         columns: { id: true },
         where: and(
-          eq(postUpvoteTable.postId, postId),
-          eq(postUpvoteTable.userId, session.userId),
+          eq(postLikeTable.postId, postId),
+          eq(postLikeTable.userId, session.userId),
         ),
       });
 
@@ -156,7 +156,7 @@ export async function addLikeAction({ postId }: { postId: string }) {
       }
 
       await tx
-        .insert(postUpvoteTable)
+        .insert(postLikeTable)
         .values({
           postId,
           userId: session.userId,
@@ -166,7 +166,7 @@ export async function addLikeAction({ postId }: { postId: string }) {
       await tx
         .update(postTable)
         .set({
-          upvoteCount: sql`${postTable.upvoteCount} + 1`,
+          likeCount: sql`${postTable.likeCount} + 1`,
         })
         .where(eq(postTable.id, postId));
 
@@ -190,11 +190,11 @@ export async function removeLikeAction({ postId }: { postId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.postUpvoteTable.findFirst({
+      const existing = await tx.query.postLikeTable.findFirst({
         columns: { id: true },
         where: and(
-          eq(postUpvoteTable.postId, postId),
-          eq(postUpvoteTable.userId, session.userId),
+          eq(postLikeTable.postId, postId),
+          eq(postLikeTable.userId, session.userId),
         ),
       });
 
@@ -203,18 +203,18 @@ export async function removeLikeAction({ postId }: { postId: string }) {
       }
 
       await tx
-        .delete(postUpvoteTable)
+        .delete(postLikeTable)
         .where(
           and(
-            eq(postUpvoteTable.postId, postId),
-            eq(postUpvoteTable.userId, session.userId),
+            eq(postLikeTable.postId, postId),
+            eq(postLikeTable.userId, session.userId),
           ),
         );
 
       await tx
         .update(postTable)
         .set({
-          upvoteCount: sql`CASE WHEN ${postTable.upvoteCount} > 0 THEN ${postTable.upvoteCount} - 1 ELSE 0 END`,
+          likeCount: sql`CASE WHEN ${postTable.likeCount} > 0 THEN ${postTable.likeCount} - 1 ELSE 0 END`,
         })
         .where(eq(postTable.id, postId));
 
@@ -243,11 +243,11 @@ export async function addCommentLikeAction({
     }
 
     return await db.transaction(async (tx) => {
-      const existing = await tx.query.postCommentUpvoteTable.findFirst({
+      const existing = await tx.query.postCommentLikeTable.findFirst({
         columns: { id: true },
         where: and(
-          eq(postCommentUpvoteTable.commentId, commentId),
-          eq(postCommentUpvoteTable.userId, session.userId),
+          eq(postCommentLikeTable.commentId, commentId),
+          eq(postCommentLikeTable.userId, session.userId),
         ),
       });
 
@@ -256,7 +256,7 @@ export async function addCommentLikeAction({
       }
 
       await tx
-        .insert(postCommentUpvoteTable)
+        .insert(postCommentLikeTable)
         .values({
           commentId,
           userId: session.userId,
@@ -266,7 +266,7 @@ export async function addCommentLikeAction({
       await tx
         .update(postCommentTable)
         .set({
-          upvoteCount: sql`${postCommentTable.upvoteCount} + 1`,
+          likeCount: sql`${postCommentTable.likeCount} + 1`,
         })
         .where(eq(postCommentTable.id, commentId));
 
@@ -291,11 +291,11 @@ export async function removeCommentLikeAction({
     }
 
     return await db.transaction(async (tx) => {
-      const existing = await tx.query.postCommentUpvoteTable.findFirst({
+      const existing = await tx.query.postCommentLikeTable.findFirst({
         columns: { id: true },
         where: and(
-          eq(postCommentUpvoteTable.commentId, commentId),
-          eq(postCommentUpvoteTable.userId, session.userId),
+          eq(postCommentLikeTable.commentId, commentId),
+          eq(postCommentLikeTable.userId, session.userId),
         ),
       });
 
@@ -304,18 +304,18 @@ export async function removeCommentLikeAction({
       }
 
       await tx
-        .delete(postCommentUpvoteTable)
+        .delete(postCommentLikeTable)
         .where(
           and(
-            eq(postCommentUpvoteTable.commentId, commentId),
-            eq(postCommentUpvoteTable.userId, session.userId),
+            eq(postCommentLikeTable.commentId, commentId),
+            eq(postCommentLikeTable.userId, session.userId),
           ),
         );
 
       await tx
         .update(postCommentTable)
         .set({
-          upvoteCount: sql`CASE WHEN ${postCommentTable.upvoteCount} > 0 THEN ${postCommentTable.upvoteCount} - 1 ELSE 0 END`,
+          likeCount: sql`CASE WHEN ${postCommentTable.likeCount} > 0 THEN ${postCommentTable.likeCount} - 1 ELSE 0 END`,
         })
         .where(eq(postCommentTable.id, commentId));
 

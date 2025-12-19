@@ -27,7 +27,7 @@ export const postTable = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`)
       .$onUpdate(() => new Date()),
-    upvoteCount: integer("upvote_count").notNull().default(0),
+    likeCount: integer("like_count").notNull().default(0),
     commentCount: integer("comment_count").notNull().default(0),
   },
   (t) => [
@@ -56,7 +56,7 @@ export const postCommentTable = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`)
       .$onUpdate(() => new Date()),
-    upvoteCount: integer("upvote_count").notNull().default(0),
+    likeCount: integer("like_count").notNull().default(0),
   },
   (t) => [
     index("post_comment_post_created_idx").on(t.postId, t.createdAt, t.id),
@@ -64,8 +64,8 @@ export const postCommentTable = sqliteTable(
   ],
 );
 
-export const postUpvoteTable = sqliteTable(
-  "post_upvote",
+export const postLikeTable = sqliteTable(
+  "post_like",
   {
     id: text("id")
       .primaryKey()
@@ -81,13 +81,13 @@ export const postUpvoteTable = sqliteTable(
       .default(sql`(unixepoch())`),
   },
   (t) => [
-    uniqueIndex("post_upvote_post_user_uidx").on(t.postId, t.userId),
-    index("post_upvote_user_created_idx").on(t.userId, t.createdAt),
+    uniqueIndex("post_like_post_user_uidx").on(t.postId, t.userId),
+    index("post_like_user_created_idx").on(t.userId, t.createdAt),
   ],
 );
 
-export const postCommentUpvoteTable = sqliteTable(
-  "post_comment_upvote",
+export const postCommentLikeTable = sqliteTable(
+  "post_comment_like",
   {
     id: text("id")
       .primaryKey()
@@ -103,11 +103,11 @@ export const postCommentUpvoteTable = sqliteTable(
       .default(sql`(unixepoch())`),
   },
   (t) => [
-    uniqueIndex("post_comment_upvote_comment_user_uidx").on(
+    uniqueIndex("post_comment_like_comment_user_uidx").on(
       t.commentId,
       t.userId,
     ),
-    index("post_comment_upvote_user_created_idx").on(t.userId, t.createdAt),
+    index("post_comment_like_user_created_idx").on(t.userId, t.createdAt),
   ],
 );
 
@@ -117,29 +117,29 @@ export const PostRelations = relations(postTable, ({ one, many }) => ({
     references: [userTable.id],
   }),
   comments: many(postCommentTable),
-  upvotes: many(postUpvoteTable),
+  likes: many(postLikeTable),
 }));
 
-export const PostUpvoteRelations = relations(postUpvoteTable, ({ one }) => ({
+export const PostLikeRelations = relations(postLikeTable, ({ one }) => ({
   postTable: one(postTable, {
-    fields: [postUpvoteTable.postId],
+    fields: [postLikeTable.postId],
     references: [postTable.id],
   }),
   user: one(userTable, {
-    fields: [postUpvoteTable.userId],
+    fields: [postLikeTable.userId],
     references: [userTable.id],
   }),
 }));
 
-export const PostCommentUpvoteRelations = relations(
-  postCommentUpvoteTable,
+export const PostCommentLikeRelations = relations(
+  postCommentLikeTable,
   ({ one }) => ({
     comment: one(postCommentTable, {
-      fields: [postCommentUpvoteTable.commentId],
+      fields: [postCommentLikeTable.commentId],
       references: [postCommentTable.id],
     }),
     user: one(userTable, {
-      fields: [postCommentUpvoteTable.userId],
+      fields: [postCommentLikeTable.userId],
       references: [userTable.id],
     }),
   }),
@@ -158,11 +158,9 @@ export const PostCommentRelations = relations(postCommentTable, ({ one }) => ({
 
 export type InsertPost = typeof postTable.$inferInsert;
 export type SelectPost = typeof postTable.$inferSelect;
-export type InsertPostUpvote = typeof postUpvoteTable.$inferInsert;
-export type SelectPostUpvote = typeof postUpvoteTable.$inferSelect;
-export type InsertPostCommentUpvote =
-  typeof postCommentUpvoteTable.$inferInsert;
-export type SelectPostCommentUpvote =
-  typeof postCommentUpvoteTable.$inferSelect;
+export type InsertPostLike = typeof postLikeTable.$inferInsert;
+export type SelectPostLike = typeof postLikeTable.$inferSelect;
+export type InsertPostCommentLike = typeof postCommentLikeTable.$inferInsert;
+export type SelectPostCommentLike = typeof postCommentLikeTable.$inferSelect;
 export type InsertPostComment = typeof postCommentTable.$inferInsert;
 export type SelectPostComment = typeof postCommentTable.$inferSelect;

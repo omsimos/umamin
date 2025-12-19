@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1a0b3882-49b0-4188-8c27-58b58b370ab0",
+  "id": "76b226a7-a139-4a95-8a56-cef703606065",
   "prevId": "8d585efc-818a-46bc-889d-7bcdda6cfc4e",
   "tables": {
     "message": {
@@ -146,6 +146,75 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "post_comment_like": {
+      "name": "post_comment_like",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "comment_id": {
+          "name": "comment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "post_comment_like_comment_user_uidx": {
+          "name": "post_comment_like_comment_user_uidx",
+          "columns": ["comment_id", "user_id"],
+          "isUnique": true
+        },
+        "post_comment_like_user_created_idx": {
+          "name": "post_comment_like_user_created_idx",
+          "columns": ["user_id", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "post_comment_like_comment_id_post_comment_id_fk": {
+          "name": "post_comment_like_comment_id_post_comment_id_fk",
+          "tableFrom": "post_comment_like",
+          "tableTo": "post_comment",
+          "columnsFrom": ["comment_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "post_comment_like_user_id_user_id_fk": {
+          "name": "post_comment_like_user_id_user_id_fk",
+          "tableFrom": "post_comment_like",
+          "tableTo": "user",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "post_comment": {
       "name": "post_comment",
       "columns": {
@@ -193,8 +262,8 @@
           "autoincrement": false,
           "default": "(unixepoch())"
         },
-        "upvote_count": {
-          "name": "upvote_count",
+        "like_count": {
+          "name": "like_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -238,8 +307,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "post_comment_upvote": {
-      "name": "post_comment_upvote",
+    "post_like": {
+      "name": "post_like",
       "columns": {
         "id": {
           "name": "id",
@@ -248,8 +317,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "comment_id": {
-          "name": "comment_id",
+        "post_id": {
+          "name": "post_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -272,30 +341,30 @@
         }
       },
       "indexes": {
-        "post_comment_upvote_comment_user_uidx": {
-          "name": "post_comment_upvote_comment_user_uidx",
-          "columns": ["comment_id", "user_id"],
+        "post_like_post_user_uidx": {
+          "name": "post_like_post_user_uidx",
+          "columns": ["post_id", "user_id"],
           "isUnique": true
         },
-        "post_comment_upvote_user_created_idx": {
-          "name": "post_comment_upvote_user_created_idx",
+        "post_like_user_created_idx": {
+          "name": "post_like_user_created_idx",
           "columns": ["user_id", "created_at"],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "post_comment_upvote_comment_id_post_comment_id_fk": {
-          "name": "post_comment_upvote_comment_id_post_comment_id_fk",
-          "tableFrom": "post_comment_upvote",
-          "tableTo": "post_comment",
-          "columnsFrom": ["comment_id"],
+        "post_like_post_id_postTable_id_fk": {
+          "name": "post_like_post_id_postTable_id_fk",
+          "tableFrom": "post_like",
+          "tableTo": "postTable",
+          "columnsFrom": ["post_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "post_comment_upvote_user_id_user_id_fk": {
-          "name": "post_comment_upvote_user_id_user_id_fk",
-          "tableFrom": "post_comment_upvote",
+        "post_like_user_id_user_id_fk": {
+          "name": "post_like_user_id_user_id_fk",
+          "tableFrom": "post_like",
           "tableTo": "user",
           "columnsFrom": ["user_id"],
           "columnsTo": ["id"],
@@ -347,8 +416,8 @@
           "autoincrement": false,
           "default": "(unixepoch())"
         },
-        "upvote_count": {
-          "name": "upvote_count",
+        "like_count": {
+          "name": "like_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -382,75 +451,6 @@
           "tableFrom": "postTable",
           "tableTo": "user",
           "columnsFrom": ["author_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "post_upvote": {
-      "name": "post_upvote",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "post_id": {
-          "name": "post_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch())"
-        }
-      },
-      "indexes": {
-        "post_upvote_post_user_uidx": {
-          "name": "post_upvote_post_user_uidx",
-          "columns": ["post_id", "user_id"],
-          "isUnique": true
-        },
-        "post_upvote_user_created_idx": {
-          "name": "post_upvote_user_created_idx",
-          "columns": ["user_id", "created_at"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "post_upvote_post_id_postTable_id_fk": {
-          "name": "post_upvote_post_id_postTable_id_fk",
-          "tableFrom": "post_upvote",
-          "tableTo": "postTable",
-          "columnsFrom": ["post_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "post_upvote_user_id_user_id_fk": {
-          "name": "post_upvote_user_id_user_id_fk",
-          "tableFrom": "post_upvote",
-          "tableTo": "user",
-          "columnsFrom": ["user_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"

@@ -45,7 +45,7 @@ export default function PostForm({ user }: Props) {
         authorId: user.id,
         createdAt: new Date(),
         updatedAt: new Date(),
-        upvoteCount: 0,
+        likeCount: 0,
         commentCount: 0,
         author: user,
         isLiked: false,

@@ -53,7 +53,7 @@ export default function ReplyForm({ user, postId }: Props) {
         content: nextContent,
         createdAt: new Date(),
         updatedAt: new Date(),
-        upvoteCount: 0,
+        likeCount: 0,
         author,
       };
 
