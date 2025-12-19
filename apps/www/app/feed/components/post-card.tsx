@@ -10,7 +10,12 @@ import { HeartIcon, MessageCircleIcon, ScanFaceIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { addLikeAction, removeLikeAction } from "@/app/actions/post";
+import {
+  addCommentLikeAction,
+  addLikeAction,
+  removeCommentLikeAction,
+  removeLikeAction,
+} from "@/app/actions/post";
 import { shortTimeAgo } from "@/lib/utils";
 import type { PostData } from "@/types/post";
 
@@ -38,12 +43,22 @@ export function PostCard({ data, isComment, className }: Props) {
     setUpvotes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
 
     try {
-      if (prevLiked) {
-        await removeLikeAction({ postId: data.id });
-        toast.success("Post unliked");
+      if (isComment) {
+        if (prevLiked) {
+          await removeCommentLikeAction({ commentId: data.id });
+          toast.success("Comment unliked");
+        } else {
+          await addCommentLikeAction({ commentId: data.id });
+          toast.success("Comment liked successfully!");
+        }
       } else {
-        await addLikeAction({ postId: data.id });
-        toast.success("Post liked successfully!");
+        if (prevLiked) {
+          await removeLikeAction({ postId: data.id });
+          toast.success("Post unliked");
+        } else {
+          await addLikeAction({ postId: data.id });
+          toast.success("Post liked successfully!");
+        }
       }
     } catch (err) {
       setLiked(prevLiked);

@@ -36,28 +36,6 @@ export const postTable = sqliteTable(
   ],
 );
 
-export const postUpvoteTable = sqliteTable(
-  "post_upvote",
-  {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => nanoid()),
-    postId: text("post_id")
-      .notNull()
-      .references(() => postTable.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => userTable.id, { onDelete: "cascade" }),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (t) => [
-    uniqueIndex("post_upvote_post_user_uidx").on(t.postId, t.userId),
-    index("post_upvote_user_created_idx").on(t.userId, t.createdAt),
-  ],
-);
-
 export const postCommentTable = sqliteTable(
   "post_comment",
   {
@@ -87,6 +65,53 @@ export const postCommentTable = sqliteTable(
   ],
 );
 
+export const postUpvoteTable = sqliteTable(
+  "post_upvote",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    postId: text("post_id")
+      .notNull()
+      .references(() => postTable.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("post_upvote_post_user_uidx").on(t.postId, t.userId),
+    index("post_upvote_user_created_idx").on(t.userId, t.createdAt),
+  ],
+);
+
+export const postCommentUpvoteTable = sqliteTable(
+  "post_comment_upvote",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => postCommentTable.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("post_comment_upvote_comment_user_uidx").on(
+      t.commentId,
+      t.userId,
+    ),
+    index("post_comment_upvote_user_created_idx").on(t.userId, t.createdAt),
+  ],
+);
+
 export const PostRelations = relations(postTable, ({ one, many }) => ({
   author: one(userTable, {
     fields: [postTable.authorId],
@@ -107,6 +132,20 @@ export const PostUpvoteRelations = relations(postUpvoteTable, ({ one }) => ({
   }),
 }));
 
+export const PostCommentUpvoteRelations = relations(
+  postCommentUpvoteTable,
+  ({ one }) => ({
+    comment: one(postCommentTable, {
+      fields: [postCommentUpvoteTable.commentId],
+      references: [postCommentTable.id],
+    }),
+    user: one(userTable, {
+      fields: [postCommentUpvoteTable.userId],
+      references: [userTable.id],
+    }),
+  }),
+);
+
 export const PostCommentRelations = relations(postCommentTable, ({ one }) => ({
   postTable: one(postTable, {
     fields: [postCommentTable.postId],
@@ -122,5 +161,9 @@ export type InsertPost = typeof postTable.$inferInsert;
 export type SelectPost = typeof postTable.$inferSelect;
 export type InsertPostUpvote = typeof postUpvoteTable.$inferInsert;
 export type SelectPostUpvote = typeof postUpvoteTable.$inferSelect;
+export type InsertPostCommentUpvote =
+  typeof postCommentUpvoteTable.$inferInsert;
+export type SelectPostCommentUpvote =
+  typeof postCommentUpvoteTable.$inferSelect;
 export type InsertPostComment = typeof postCommentTable.$inferInsert;
 export type SelectPostComment = typeof postCommentTable.$inferSelect;
