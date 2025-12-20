@@ -13,7 +13,7 @@ export default async function Feed() {
       <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
         {user && <PostForm user={publicUser} />}
 
-        <div className="border-y space-y-6 pt-6 bg-muted/20 sm:rounded-md sm:border-x">
+        <div className="border-y space-y-6 pt-6">
           <PostList isAuthenticated={!!user} />
         </div>
       </section>
