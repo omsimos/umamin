@@ -33,7 +33,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["current_note"],
-    queryFn: getCurrentNoteAction,
+    queryFn: async () => (await getCurrentNoteAction()) ?? null,
   });
 
   const clearNoteMutation = useMutation({
@@ -49,7 +49,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
   });
 
   if (!data || !data.content) {
-    return;
+    return null;
   }
 
   const menuItems = [
