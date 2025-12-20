@@ -4,8 +4,12 @@ import { hash, verify } from "@node-rs/argon2";
 import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
-import { accountTable, userTable } from "@umamin/db/schema/user";
-import { eq } from "drizzle-orm";
+import {
+  accountTable,
+  userFollowTable,
+  userTable,
+} from "@umamin/db/schema/user";
+import { and, eq, exists, sql } from "drizzle-orm";
 import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -99,6 +103,81 @@ export const getCurrentUserAction = cache(async () => {
     return { error: "An error occured" };
   }
 });
+
+const userProfileRevalidate = 604800; // 7 days
+
+export async function getUserProfileAction(username: string) {
+  try {
+    const getCached = async () => {
+      "use cache";
+      cacheTag(`user:${username}`);
+      cacheLife({ revalidate: userProfileRevalidate });
+
+      const [user] = await db
+        .select({
+          id: userTable.id,
+          username: userTable.username,
+          displayName: userTable.displayName,
+          imageUrl: userTable.imageUrl,
+          bio: userTable.bio,
+          question: userTable.question,
+          quietMode: userTable.quietMode,
+          followerCount: userTable.followerCount,
+          followingCount: userTable.followingCount,
+          createdAt: userTable.createdAt,
+          updatedAt: userTable.updatedAt,
+        })
+        .from(userTable)
+        .where(eq(userTable.username, username))
+        .limit(1);
+
+      return user;
+    };
+
+    const user = await getCached();
+
+    if (!user) {
+      return null;
+    }
+
+    const { session } = await getSession();
+
+    if (!session) {
+      return user;
+    }
+
+    const isFollowing = await (async () => {
+      "use cache: private";
+      cacheTag(`user:${username}:followed:${session.userId}`);
+      cacheLife({ revalidate: 30 });
+
+      const follow = await db
+        .select({
+          following: exists(
+            db
+              .select({ id: userFollowTable.id })
+              .from(userFollowTable)
+              .where(
+                and(
+                  eq(userFollowTable.followerId, session.userId),
+                  eq(userFollowTable.followingId, user.id),
+                ),
+              ),
+          ),
+        })
+        .from(userTable)
+        .where(eq(userTable.id, user.id))
+        .limit(1);
+
+      return Boolean(follow?.[0]?.following);
+    })();
+
+    return { ...user, isFollowing };
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
 
 export async function generalSettingsAction(
   values: z.infer<typeof generalSettingsSchema>,
@@ -216,6 +295,149 @@ export async function updatePasswordAction(
       .update(userTable)
       .set({ passwordHash })
       .where(eq(userTable.id, user.id));
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occured" };
+  }
+}
+
+export async function followUserAction({ userId }: { userId: string }) {
+  try {
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    if (session.userId === userId) {
+      return { error: "You cannot follow yourself." };
+    }
+
+    const [target] = await db
+      .select({ id: userTable.id, username: userTable.username })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+
+    if (!target) {
+      return { error: "User not found." };
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const existing = await tx.query.userFollowTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(userFollowTable.followerId, session.userId),
+          eq(userFollowTable.followingId, userId),
+        ),
+      });
+
+      if (existing) {
+        return { success: true, alreadyFollowing: true };
+      }
+
+      await tx
+        .insert(userFollowTable)
+        .values({
+          followerId: session.userId,
+          followingId: userId,
+        })
+        .onConflictDoNothing();
+
+      await tx
+        .update(userTable)
+        .set({
+          followingCount: sql`${userTable.followingCount} + 1`,
+        })
+        .where(eq(userTable.id, session.userId));
+
+      await tx
+        .update(userTable)
+        .set({
+          followerCount: sql`${userTable.followerCount} + 1`,
+        })
+        .where(eq(userTable.id, userId));
+
+      return { success: true };
+    });
+
+    updateTag(`user:${target.username}`);
+    updateTag(`user:${session.userId}`);
+    updateTag(`user:${target.username}:followed:${session.userId}`);
+
+    return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occured" };
+  }
+}
+
+export async function unfollowUserAction({ userId }: { userId: string }) {
+  try {
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    if (session.userId === userId) {
+      return { error: "You cannot unfollow yourself." };
+    }
+
+    const [target] = await db
+      .select({ id: userTable.id, username: userTable.username })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+
+    if (!target) {
+      return { error: "User not found." };
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const existing = await tx.query.userFollowTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(userFollowTable.followerId, session.userId),
+          eq(userFollowTable.followingId, userId),
+        ),
+      });
+
+      if (!existing) {
+        return { success: true, alreadyRemoved: true };
+      }
+
+      await tx
+        .delete(userFollowTable)
+        .where(
+          and(
+            eq(userFollowTable.followerId, session.userId),
+            eq(userFollowTable.followingId, userId),
+          ),
+        );
+
+      await tx
+        .update(userTable)
+        .set({
+          followingCount: sql`CASE WHEN ${userTable.followingCount} > 0 THEN ${userTable.followingCount} - 1 ELSE 0 END`,
+        })
+        .where(eq(userTable.id, session.userId));
+
+      await tx
+        .update(userTable)
+        .set({
+          followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
+        })
+        .where(eq(userTable.id, userId));
+
+      return { success: true };
+    });
+
+    updateTag(`user:${target.username}`);
+    updateTag(`user:${session.userId}`);
+    updateTag(`user:${target.username}:followed:${session.userId}`);
+
+    return result;
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };
