@@ -35,6 +35,7 @@ import { RepostDialog } from "./repost-dialog";
 
 type Props = {
   isComment?: boolean;
+  isRepost?: boolean;
   isAuthenticated: boolean;
   className?: string;
   data: PostData | CommentData;
@@ -43,6 +44,7 @@ type Props = {
 export function PostCard({
   data,
   isComment,
+  isRepost,
   isAuthenticated,
   className,
 }: Props) {
@@ -153,10 +155,10 @@ export function PostCard({
 
   return (
     <div
-      className={cn(
-        className,
-        "flex space-x-3 container pb-6 text-[15px] border-b",
-      )}
+      className={cn(className, "flex space-x-3 container text-[15px]", {
+        "border-b pb-6 ": !isRepost,
+        "border border-muted rounded-md px-2 py-3 sm:px-4": isRepost,
+      })}
     >
       <Avatar>
         <AvatarImage src={author?.imageUrl ?? ""} alt="User avatar" />
