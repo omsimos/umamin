@@ -124,6 +124,42 @@ export async function createPostAction(
   }
 }
 
+export async function deletePostAction({ postId }: { postId: string }) {
+  try {
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    const post = await db.query.postTable.findFirst({
+      columns: { id: true, authorId: true },
+      where: eq(postTable.id, postId),
+    });
+
+    if (!post) {
+      return { error: "Post not found" };
+    }
+
+    if (post.authorId !== session.userId) {
+      throw new Error("Unauthorized");
+    }
+
+    await db.delete(postTable).where(eq(postTable.id, postId));
+
+    updateTag("posts");
+    updateTag(`post:${postId}`);
+    updateTag(`post-comments:${postId}`);
+    updateTag(`post:${postId}:liked:${session.userId}`);
+    updateTag(`post:${postId}:reposted:${session.userId}`);
+
+    return { success: true };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
 const createCommentSchema = z.object({
   postId: z.string(),
   content: z

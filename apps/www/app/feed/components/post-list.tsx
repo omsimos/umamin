@@ -37,7 +37,13 @@ type NotesResponse = {
   nextCursor: string | null;
 };
 
-export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function PostList({
+  isAuthenticated,
+  currentUserId,
+}: {
+  isAuthenticated: boolean;
+  currentUserId?: string;
+}) {
   const {
     data,
     isLoading,
@@ -210,6 +216,7 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
                     return (
                       <PostCard
                         isAuthenticated={isAuthenticated}
+                        currentUserId={currentUserId}
                         key={item.post.id}
                         data={item.post}
                       />
@@ -280,6 +287,7 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
                         <PostCard
                           isRepost={!!repost.content}
                           isAuthenticated={isAuthenticated}
+                          currentUserId={currentUserId}
                           key={item.post.id}
                           data={item.post}
                         />

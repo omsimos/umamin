@@ -19,7 +19,7 @@ import {
   ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
   addLikeAction,
@@ -29,15 +29,19 @@ import {
 } from "@/app/actions/post";
 import { isAlreadyRemoved, isAlreadyReposted, shortTimeAgo } from "@/lib/utils";
 import type { PostData } from "@/types/post";
+import { PostMenu } from "./post-menu";
 import { RepostDialog } from "./repost-dialog";
 
 type Props = {
   data: PostData;
   isAuthenticated?: boolean;
+  currentUserId?: string;
 };
 
-export function PostCardMain({ data, isAuthenticated }: Props) {
+export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
   const author = data.author;
+  const imageId = useId();
+  const imageTargetId = `umamin-${imageId}`;
   const [liked, setLiked] = useState<boolean>(data.isLiked === true);
   const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
   const [reposted, setReposted] = useState<boolean>(data.isReposted === true);
@@ -138,7 +142,10 @@ export function PostCardMain({ data, isAuthenticated }: Props) {
   };
 
   return (
-    <div className="px-7 container border-x-0 sm:border-x border border-muted py-6 bg-muted/50 sm:rounded-md sm:px-6">
+    <div
+      id={imageTargetId}
+      className="px-7 container border-x-0 sm:border-x border border-muted py-6 bg-muted/50 sm:rounded-md sm:px-6"
+    >
       <div className="flex justify-center gap-3">
         <Avatar>
           <AvatarImage src={author.imageUrl ?? ""} alt="User avatar" />
@@ -162,9 +169,20 @@ export function PostCardMain({ data, isAuthenticated }: Props) {
             <span className="text-muted-foreground">@{author.username}</span>
           </div>
 
-          <p className="text-muted-foreground text-xs">
-            {shortTimeAgo(author.createdAt)}
-          </p>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
+              {shortTimeAgo(author.createdAt)}
+            </p>
+            {isAuthenticated && (
+              <PostMenu
+                postId={data.id}
+                authorId={author.id}
+                imageId={imageTargetId}
+                isAuthenticated={!!isAuthenticated}
+                currentUserId={currentUserId}
+              />
+            )}
+          </div>
         </div>
       </div>
 
