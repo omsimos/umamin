@@ -199,9 +199,17 @@ export async function GET(req: NextRequest) {
         });
       }
 
+      type FeedItem = (typeof postItems)[number] | (typeof repostItems)[number];
+
+      const getItemDate = (item: FeedItem) =>
+        item.type === "post" ? item.post.createdAt : item.repost.createdAt;
+
+      const getItemId = (item: FeedItem) =>
+        item.type === "post" ? item.post.id : item.repost.id;
+
       const allItems = [...postItems, ...repostItems].sort((a, b) => {
-        const aDate = a.type === "post" ? a.post.createdAt : a.repost.createdAt;
-        const bDate = b.type === "post" ? b.post.createdAt : b.repost.createdAt;
+        const aDate = getItemDate(a);
+        const bDate = getItemDate(b);
 
         if (aDate.getTime() !== bDate.getTime()) {
           return bDate.getTime() - aDate.getTime();
@@ -210,8 +218,8 @@ export async function GET(req: NextRequest) {
         const bOrder = b.type === "repost" ? 1 : 0;
         if (aOrder !== bOrder) return bOrder - aOrder;
 
-        const aId = a.type === "post" ? a.post.id : a.repost.id;
-        const bId = b.type === "post" ? b.post.id : b.repost.id;
+        const aId = getItemId(a);
+        const bId = getItemId(b);
         return bId.localeCompare(aId);
       });
 
