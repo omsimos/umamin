@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
             );
             cursorConditionPost = or(
               lt(postTable.createdAt, cursorDate),
-              eq(postTable.createdAt, cursorDate),
+              and(eq(postTable.createdAt, cursorDate), lt(postTable.id, idRaw)),
             );
           } else {
             cursorConditionPost = or(

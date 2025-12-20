@@ -113,3 +113,25 @@ export function isOlderThanOneYear(createdAt?: Date | string | null) {
 
   return createdDate <= oneYearAgo;
 }
+
+export function isAlreadyReposted(
+  res: unknown,
+): res is { alreadyReposted: true } {
+  return (
+    !!res &&
+    typeof res === "object" &&
+    "alreadyReposted" in res &&
+    (res as { alreadyReposted?: boolean }).alreadyReposted === true
+  );
+}
+
+export function isAlreadyRemoved(
+  res: unknown,
+): res is { alreadyRemoved: true } {
+  return (
+    !!res &&
+    typeof res === "object" &&
+    "alreadyRemoved" in res &&
+    (res as { alreadyRemoved?: boolean }).alreadyRemoved === true
+  );
+}

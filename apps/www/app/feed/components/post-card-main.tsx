@@ -27,7 +27,7 @@ import {
   removeLikeAction,
   removeRepostAction,
 } from "@/app/actions/post";
-import { shortTimeAgo } from "@/lib/utils";
+import { isAlreadyRemoved, isAlreadyReposted, shortTimeAgo } from "@/lib/utils";
 import type { PostData } from "@/types/post";
 import { RepostDialog } from "./repost-dialog";
 
@@ -84,10 +84,20 @@ export function PostCardMain({ data, isAuthenticated }: Props) {
 
     try {
       if (prevReposted) {
-        await removeRepostAction({ postId: data.id });
+        const res = await removeRepostAction({ postId: data.id });
+        if (isAlreadyRemoved(res)) {
+          setReposted(false);
+          setReposts((v) => Math.max(v - 1, 0));
+        }
         toast.success("Repost removed");
       } else {
-        await addRepostAction({ postId: data.id });
+        const res = await addRepostAction({ postId: data.id });
+        if (isAlreadyReposted(res)) {
+          setReposted(prevReposted);
+          setReposts(prevReposts);
+          toast.error("You already reposted this.");
+          return;
+        }
         toast.success("Reposted");
       }
     } catch (err) {
@@ -111,7 +121,13 @@ export function PostCardMain({ data, isAuthenticated }: Props) {
     setReposts((v) => v + 1);
 
     try {
-      await addRepostAction({ postId: data.id, content });
+      const res = await addRepostAction({ postId: data.id, content });
+      if (isAlreadyReposted(res)) {
+        setReposted(prevReposted);
+        setReposts(prevReposts);
+        toast.error("You already reposted this.");
+        return;
+      }
       toast.success("Quote reposted");
     } catch (err) {
       setReposted(prevReposted);
@@ -195,7 +211,7 @@ export function PostCardMain({ data, isAuthenticated }: Props) {
                   handleRepost();
                 }}
               >
-                Repost
+                {reposted ? "Remove repost" : "Repost"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
