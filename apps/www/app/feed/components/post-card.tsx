@@ -83,7 +83,7 @@ export function PostCard({
     <div
       className={cn(
         className,
-        "flex space-x-3 container last-of-type:border-b-0 border-muted pb-6 text-[15px]",
+        "flex space-x-3 container pb-6 text-[15px] border-b",
       )}
     >
       <Avatar>
