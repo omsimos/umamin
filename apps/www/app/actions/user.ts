@@ -6,6 +6,7 @@ import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import {
   accountTable,
+  userBlockTable,
   userFollowTable,
   userTable,
 } from "@umamin/db/schema/user";
@@ -64,7 +65,7 @@ export async function getGravatarAction(email: string) {
 
 export const getCurrentUserAction = cache(async () => {
   try {
-    const { session } = await getSession();
+    const { session, user } = await getSession();
 
     if (!session) {
       throw new Error("Unauthorized");
@@ -146,33 +147,85 @@ export async function getUserProfileAction(username: string) {
       return user;
     }
 
-    const isFollowing = await (async () => {
-      "use cache: private";
-      cacheTag(`user:${username}:followed:${session.userId}`);
-      cacheLife({ revalidate: 30 });
+    const [isFollowing, isBlocked, isBlockedBy] = await Promise.all([
+      (async () => {
+        "use cache: private";
+        cacheTag(`user:${username}:followed:${session.userId}`);
+        cacheLife({ revalidate: 30 });
 
-      const follow = await db
-        .select({
-          following: exists(
-            db
-              .select({ id: userFollowTable.id })
-              .from(userFollowTable)
-              .where(
-                and(
-                  eq(userFollowTable.followerId, session.userId),
-                  eq(userFollowTable.followingId, user.id),
+        const follow = await db
+          .select({
+            following: exists(
+              db
+                .select({ id: userFollowTable.id })
+                .from(userFollowTable)
+                .where(
+                  and(
+                    eq(userFollowTable.followerId, session.userId),
+                    eq(userFollowTable.followingId, user.id),
+                  ),
                 ),
-              ),
-          ),
-        })
-        .from(userTable)
-        .where(eq(userTable.id, user.id))
-        .limit(1);
+            ),
+          })
+          .from(userTable)
+          .where(eq(userTable.id, user.id))
+          .limit(1);
 
-      return Boolean(follow?.[0]?.following);
-    })();
+        return Boolean(follow?.[0]?.following);
+      })(),
+      (async () => {
+        "use cache: private";
+        cacheTag(`user:${username}:blocked:${session.userId}`);
+        cacheLife({ revalidate: 30 });
 
-    return { ...user, isFollowing };
+        const blocked = await db
+          .select({
+            blocked: exists(
+              db
+                .select({ id: userBlockTable.id })
+                .from(userBlockTable)
+                .where(
+                  and(
+                    eq(userBlockTable.blockerId, session.userId),
+                    eq(userBlockTable.blockedId, user.id),
+                  ),
+                ),
+            ),
+          })
+          .from(userTable)
+          .where(eq(userTable.id, user.id))
+          .limit(1);
+
+        return Boolean(blocked?.[0]?.blocked);
+      })(),
+      (async () => {
+        "use cache: private";
+        cacheTag(`user:${username}:blocked-by:${session.userId}`);
+        cacheLife({ revalidate: 30 });
+
+        const blockedBy = await db
+          .select({
+            blocked: exists(
+              db
+                .select({ id: userBlockTable.id })
+                .from(userBlockTable)
+                .where(
+                  and(
+                    eq(userBlockTable.blockerId, user.id),
+                    eq(userBlockTable.blockedId, session.userId),
+                  ),
+                ),
+            ),
+          })
+          .from(userTable)
+          .where(eq(userTable.id, user.id))
+          .limit(1);
+
+        return Boolean(blockedBy?.[0]?.blocked);
+      })(),
+    ]);
+
+    return { ...user, isFollowing, isBlocked, isBlockedBy };
   } catch (err) {
     console.log(err);
     return null;
@@ -436,6 +489,171 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     updateTag(`user:${target.username}`);
     updateTag(`user:${session.userId}`);
     updateTag(`user:${target.username}:followed:${session.userId}`);
+
+    return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occured" };
+  }
+}
+
+export async function blockUserAction({ userId }: { userId: string }) {
+  try {
+    const { session, user } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    if (session.userId === userId) {
+      return { error: "You cannot block yourself." };
+    }
+
+    const [target] = await db
+      .select({ id: userTable.id, username: userTable.username })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+
+    if (!target) {
+      return { error: "User not found." };
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const existing = await tx.query.userBlockTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(userBlockTable.blockerId, session.userId),
+          eq(userBlockTable.blockedId, userId),
+        ),
+      });
+
+      if (existing) {
+        return { success: true, alreadyBlocked: true };
+      }
+
+      await tx
+        .insert(userBlockTable)
+        .values({
+          blockerId: session.userId,
+          blockedId: userId,
+        })
+        .onConflictDoNothing();
+
+      const follow = await tx.query.userFollowTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(userFollowTable.followerId, session.userId),
+          eq(userFollowTable.followingId, userId),
+        ),
+      });
+
+      if (follow) {
+        await tx
+          .delete(userFollowTable)
+          .where(
+            and(
+              eq(userFollowTable.followerId, session.userId),
+              eq(userFollowTable.followingId, userId),
+            ),
+          );
+
+        await tx
+          .update(userTable)
+          .set({
+            followingCount: sql`CASE WHEN ${userTable.followingCount} > 0 THEN ${userTable.followingCount} - 1 ELSE 0 END`,
+          })
+          .where(eq(userTable.id, session.userId));
+
+        await tx
+          .update(userTable)
+          .set({
+            followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
+          })
+          .where(eq(userTable.id, userId));
+      }
+
+      return { success: true };
+    });
+
+    updateTag(`user:${target.username}`);
+    updateTag(`user:${target.username}:blocked:${session.userId}`);
+    updateTag(`user:${target.username}:followed:${session.userId}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}:blocked-by:${userId}`);
+    }
+    updateTag(`user-blocks:${session.userId}`);
+    updateTag(`user-blocks:${userId}`);
+    updateTag("posts");
+    updateTag("notes");
+    updateTag(`messages:received:${session.userId}`);
+    updateTag(`messages:received:${userId}`);
+
+    return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occured" };
+  }
+}
+
+export async function unblockUserAction({ userId }: { userId: string }) {
+  try {
+    const { session, user } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    if (session.userId === userId) {
+      return { error: "You cannot unblock yourself." };
+    }
+
+    const [target] = await db
+      .select({ id: userTable.id, username: userTable.username })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+
+    if (!target) {
+      return { error: "User not found." };
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const existing = await tx.query.userBlockTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(userBlockTable.blockerId, session.userId),
+          eq(userBlockTable.blockedId, userId),
+        ),
+      });
+
+      if (!existing) {
+        return { success: true, alreadyRemoved: true };
+      }
+
+      await tx
+        .delete(userBlockTable)
+        .where(
+          and(
+            eq(userBlockTable.blockerId, session.userId),
+            eq(userBlockTable.blockedId, userId),
+          ),
+        );
+
+      return { success: true };
+    });
+
+    updateTag(`user:${target.username}`);
+    updateTag(`user:${target.username}:blocked:${session.userId}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}:blocked-by:${userId}`);
+    }
+    updateTag(`user-blocks:${session.userId}`);
+    updateTag(`user-blocks:${userId}`);
+    updateTag("posts");
+    updateTag("notes");
+    updateTag(`messages:received:${session.userId}`);
+    updateTag(`messages:received:${userId}`);
 
     return result;
   } catch (err) {

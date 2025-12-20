@@ -1,7 +1,7 @@
 import { db } from "@umamin/db";
 import { postCommentLikeTable, postCommentTable } from "@umamin/db/schema/post";
-import { userTable } from "@umamin/db/schema/user";
-import { and, desc, eq, exists, lt, or, sql } from "drizzle-orm";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
+import { and, desc, eq, exists, lt, not, or, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
@@ -21,6 +21,9 @@ export async function GET(
     const result = await (async () => {
       "use cache: private";
       cacheTag(`post-comments:${postId}`);
+      if (session) {
+        cacheTag(`user-blocks:${session.userId}`);
+      }
       cacheLife({ revalidate: 30 });
 
       // biome-ignore lint/suspicious/noImplicitAnyLet: temp
@@ -56,6 +59,37 @@ export async function GET(
           )
         : sql<boolean>`false`;
 
+      const blockedAuthorCondition = session
+        ? and(
+            not(
+              exists(
+                db
+                  .select({ id: userBlockTable.id })
+                  .from(userBlockTable)
+                  .where(
+                    and(
+                      eq(userBlockTable.blockerId, session.userId),
+                      eq(userBlockTable.blockedId, postCommentTable.authorId),
+                    ),
+                  ),
+              ),
+            ),
+            not(
+              exists(
+                db
+                  .select({ id: userBlockTable.id })
+                  .from(userBlockTable)
+                  .where(
+                    and(
+                      eq(userBlockTable.blockerId, postCommentTable.authorId),
+                      eq(userBlockTable.blockedId, session.userId),
+                    ),
+                  ),
+              ),
+            ),
+          )
+        : undefined;
+
       const baseQuery = db
         .select({
           comment: postCommentTable,
@@ -74,11 +108,15 @@ export async function GET(
         .orderBy(desc(postCommentTable.createdAt), desc(postCommentTable.id))
         .limit(PAGE_SIZE);
 
-      const rows = await baseQuery.where(
-        cursorCondition
-          ? and(eq(postCommentTable.postId, postId), cursorCondition)
-          : eq(postCommentTable.postId, postId),
-      );
+      const baseCondition = cursorCondition
+        ? and(eq(postCommentTable.postId, postId), cursorCondition)
+        : eq(postCommentTable.postId, postId);
+
+      const whereCondition = blockedAuthorCondition
+        ? and(baseCondition, blockedAuthorCondition)
+        : baseCondition;
+
+      const rows = await baseQuery.where(whereCondition);
 
       const commentsData = rows.map(({ comment, author, isLiked }) => ({
         ...comment,

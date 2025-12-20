@@ -5,8 +5,8 @@ import {
   postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
-import { userTable } from "@umamin/db/schema/user";
-import { and, desc, eq, exists, lt, or, sql } from "drizzle-orm";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
+import { and, desc, eq, exists, lt, not, or, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
@@ -20,6 +20,9 @@ export async function GET(req: NextRequest) {
     const result = await (async () => {
       "use cache: private";
       cacheTag("posts");
+      if (session) {
+        cacheTag(`user-blocks:${session.userId}`);
+      }
       cacheLife({ revalidate: 30 });
 
       const PAGE_SIZE = 40;
@@ -83,6 +86,68 @@ export async function GET(req: NextRequest) {
           )
         : sql<boolean>`false`;
 
+      const blockedAuthorCondition = session
+        ? and(
+            not(
+              exists(
+                db
+                  .select({ id: userBlockTable.id })
+                  .from(userBlockTable)
+                  .where(
+                    and(
+                      eq(userBlockTable.blockerId, session.userId),
+                      eq(userBlockTable.blockedId, postTable.authorId),
+                    ),
+                  ),
+              ),
+            ),
+            not(
+              exists(
+                db
+                  .select({ id: userBlockTable.id })
+                  .from(userBlockTable)
+                  .where(
+                    and(
+                      eq(userBlockTable.blockerId, postTable.authorId),
+                      eq(userBlockTable.blockedId, session.userId),
+                    ),
+                  ),
+              ),
+            ),
+          )
+        : undefined;
+
+      const blockedReposterCondition = session
+        ? and(
+            not(
+              exists(
+                db
+                  .select({ id: userBlockTable.id })
+                  .from(userBlockTable)
+                  .where(
+                    and(
+                      eq(userBlockTable.blockerId, session.userId),
+                      eq(userBlockTable.blockedId, postRepostTable.userId),
+                    ),
+                  ),
+              ),
+            ),
+            not(
+              exists(
+                db
+                  .select({ id: userBlockTable.id })
+                  .from(userBlockTable)
+                  .where(
+                    and(
+                      eq(userBlockTable.blockerId, postRepostTable.userId),
+                      eq(userBlockTable.blockedId, session.userId),
+                    ),
+                  ),
+              ),
+            ),
+          )
+        : undefined;
+
       const basePostQuery = db
         .select({
           post: postTable,
@@ -101,8 +166,14 @@ export async function GET(req: NextRequest) {
         .leftJoin(userTable, eq(postTable.authorId, userTable.id))
         .orderBy(desc(postTable.createdAt), desc(postTable.id));
 
-      const postRows = await (cursorConditionPost
-        ? basePostQuery.where(cursorConditionPost)
+      const postWhere = cursorConditionPost
+        ? blockedAuthorCondition
+          ? and(cursorConditionPost, blockedAuthorCondition)
+          : cursorConditionPost
+        : blockedAuthorCondition;
+
+      const postRows = await (postWhere
+        ? basePostQuery.where(postWhere)
         : basePostQuery
       ).limit(PAGE_SIZE);
 
@@ -131,8 +202,24 @@ export async function GET(req: NextRequest) {
         .innerJoin(postTable, eq(postRepostTable.postId, postTable.id))
         .orderBy(desc(postRepostTable.createdAt), desc(postRepostTable.id));
 
-      const repostRows = await (cursorConditionRepost
-        ? baseRepostQuery.where(cursorConditionRepost)
+      const repostWhere = cursorConditionRepost
+        ? blockedAuthorCondition && blockedReposterCondition
+          ? and(
+              cursorConditionRepost,
+              blockedAuthorCondition,
+              blockedReposterCondition,
+            )
+          : blockedAuthorCondition
+            ? and(cursorConditionRepost, blockedAuthorCondition)
+            : blockedReposterCondition
+              ? and(cursorConditionRepost, blockedReposterCondition)
+              : cursorConditionRepost
+        : blockedAuthorCondition && blockedReposterCondition
+          ? and(blockedAuthorCondition, blockedReposterCondition)
+          : (blockedAuthorCondition ?? blockedReposterCondition);
+
+      const repostRows = await (repostWhere
+        ? baseRepostQuery.where(repostWhere)
         : baseRepostQuery
       ).limit(PAGE_SIZE);
 
