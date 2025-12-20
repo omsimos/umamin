@@ -139,9 +139,9 @@ export default function PostForm({ user }: Props) {
           >
             <p>Publish Post</p>
             {mutation.isPending ? (
-              <Loader2Icon className="h-4 w-4 animate-spin ml-2" />
+              <Loader2Icon className="animate-spin" />
             ) : (
-              <SparklesIcon className="h-4 w-4 ml-2" />
+              <SparklesIcon />
             )}
           </Button>
         </div>
