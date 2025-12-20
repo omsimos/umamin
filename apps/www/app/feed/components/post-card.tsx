@@ -17,13 +17,13 @@ import {
   removeLikeAction,
 } from "@/app/actions/post";
 import { shortTimeAgo } from "@/lib/utils";
-import type { PostData } from "@/types/post";
+import type { CommentData, PostData } from "@/types/post";
 
 type Props = {
   isComment?: boolean;
   isAuthenticated: boolean;
   className?: string;
-  data: PostData;
+  data: PostData | CommentData;
 };
 
 export function PostCard({
