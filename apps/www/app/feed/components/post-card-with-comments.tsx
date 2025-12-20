@@ -13,14 +13,19 @@ import { PostCard } from "./post-card";
 
 type Props = {
   data: PostData;
+  isAuthenticated: boolean;
 };
 
-export function PostCardWithComments({ data }: Props) {
+export function PostCardWithComments({ data, isAuthenticated }: Props) {
   const author = data.author;
 
   return (
     <div className="relative pb-6 border-b">
-      <PostCard data={data} className="border-b-0 z-10 relative" />
+      <PostCard
+        isAuthenticated={isAuthenticated}
+        data={data}
+        className="border-b-0 z-10 relative"
+      />
 
       {/* <PostCard {...author[1]!} className="mt-6" /> */}
       <div className="h-[85%] w-0.75 absolute top-0 left-9 bg-muted" />
