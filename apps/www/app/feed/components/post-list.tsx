@@ -14,6 +14,7 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { cn } from "@umamin/ui/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 import {
   AlertCircleIcon,
   MessageCircleDashedIcon,
@@ -217,49 +218,67 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
                   const repost = item.repost;
                   return (
-                    <div>
-                      <div
-                        className={cn(`flex items-start gap-3 px-7 sm:px-0`, {
-                          "items-center": !repost.content,
-                        })}
-                      >
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage
-                            src={repost.user.imageUrl ?? ""}
-                            alt="User avatar"
-                          />
-                          <AvatarFallback>
-                            <Repeat2Icon className="size-4" />
-                          </AvatarFallback>
-                        </Avatar>
+                    <div className="mt-2">
+                      {repost.content ? (
+                        <div className="flex items-start gap-3 px-7 sm:px-0">
+                          <Avatar className="size-9">
+                            <AvatarImage
+                              src={repost.user.imageUrl ?? ""}
+                              alt="User avatar"
+                            />
+                            <AvatarFallback>
+                              <Repeat2Icon className="size-4" />
+                            </AvatarFallback>
+                          </Avatar>
 
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between text-[15px]">
-                            <div className="flex items-center gap-2">
-                              <Link
-                                href={`/user/${repost.user.username}`}
-                                className="font-semibold hover:underline"
-                              >
-                                {repost.user.displayName ??
-                                  repost.user.username}
-                              </Link>
-                              <span className="text-muted-foreground">
-                                @{repost.user.username}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between text-[15px]">
+                              <div className="flex items-center gap-2">
+                                <Link
+                                  href={`/user/${repost.user.username}`}
+                                  className="font-semibold hover:underline"
+                                >
+                                  {repost.user.displayName ??
+                                    repost.user.username}
+                                </Link>
+                                <span className="text-muted-foreground">
+                                  @{repost.user.username}
+                                </span>
+                              </div>
+                              <span className="text-muted-foreground text-xs">
+                                {shortTimeAgo(repost.createdAt)}
                               </span>
                             </div>
-                            <span className="text-muted-foreground text-xs">
-                              {shortTimeAgo(repost.createdAt)}
-                            </span>
+                            {repost.content && (
+                              <p className="text-sm mt-2">{repost.content}</p>
+                            )}
                           </div>
-                          {repost.content && (
-                            <p className="text-sm mt-2">{repost.content}</p>
-                          )}
                         </div>
-                      </div>
+                      ) : (
+                        <div className="px-7 flex items-center sm:px-0 text-muted-foreground text-sm">
+                          <Repeat2Icon className="inline size-4 mr-1" />
+                          <Link
+                            href={`/user/${repost.user.username}`}
+                            className="hover:underline mr-1 font-semibold"
+                          >
+                            @{repost.user.username}
+                          </Link>
+                          <span>
+                            reposted{" "}
+                            {formatDistanceToNow(repost.createdAt, {
+                              addSuffix: true,
+                            })}
+                          </span>
+                        </div>
+                      )}
 
-                      <div className="mt-4 pl-8">
+                      <div
+                        className={cn(`mt-4 sm:pr-0`, {
+                          "pl-8 pr-2": repost.content,
+                        })}
+                      >
                         <PostCard
-                          isRepost
+                          isRepost={!!repost.content}
                           isAuthenticated={isAuthenticated}
                           key={item.post.id}
                           data={item.post}
