@@ -64,7 +64,6 @@ export function PostList({
     getNextPageParam: (lastPage) => lastPage.nextCursor,
 
     staleTime: 30_000,
-    refetchInterval: 30_000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,

@@ -1,10 +1,11 @@
 import { BadgeCheckIcon, LockIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getUserProfileAction } from "@/app/actions/user";
 import { ShareButton } from "@/components/share-button";
 import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { getSession } from "@/lib/auth";
-import { formatUsername, getBaseUrl } from "@/lib/utils";
+import { formatUsername } from "@/lib/utils";
 import { ChatForm } from "./components/chat-form";
 
 export async function generateMetadata({
@@ -49,13 +50,10 @@ export default async function SendMessage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const res = await fetch(`${getBaseUrl()}/api/users/${username}`);
-
-  if (!res.ok) {
+  const user = await getUserProfileAction(username);
+  if (!user) {
     notFound();
   }
-
-  const user = await res.json();
   const { session } = await getSession();
 
   return (

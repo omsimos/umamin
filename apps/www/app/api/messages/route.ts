@@ -3,7 +3,7 @@ import { messageTable, type SelectMessage } from "@umamin/db/schema/message";
 import { userTable } from "@umamin/db/schema/user";
 import { aesDecrypt } from "@umamin/encryption";
 import { and, desc, eq, lt, or } from "drizzle-orm";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import type { PublicUser } from "@/types/user";
@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
 
     const result = await (async () => {
       "use cache: private";
+      cacheTag(`messages:${type}:${session.userId}`);
       cacheLife({ revalidate: 30 });
 
       // biome-ignore lint/suspicious/noImplicitAnyLet: drizzle cursor condition
