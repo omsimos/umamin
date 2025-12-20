@@ -220,7 +220,7 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
                   return (
                     <div className="mt-2">
                       {repost.content ? (
-                        <div className="flex items-start gap-3 px-7 sm:px-0">
+                        <div className="flex items-start gap-3 px-2 sm:px-0">
                           <Avatar className="size-9">
                             <AvatarImage
                               src={repost.user.imageUrl ?? ""}
@@ -255,7 +255,7 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
                           </div>
                         </div>
                       ) : (
-                        <div className="px-7 flex items-center sm:px-0 text-muted-foreground text-sm">
+                        <div className="flex px-2 sm:px-0 items-center text-muted-foreground text-sm">
                           <Repeat2Icon className="inline size-4 mr-1" />
                           <Link
                             href={`/user/${repost.user.username}`}
@@ -274,7 +274,7 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
                       <div
                         className={cn(`mt-4 sm:pr-0`, {
-                          "pl-8 pr-2": repost.content,
+                          "pl-8 pr-2 border-b pb-6": repost.content,
                         })}
                       >
                         <PostCard
