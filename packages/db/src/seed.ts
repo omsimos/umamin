@@ -13,7 +13,9 @@ import { type InsertNote, noteTable } from "./schema/note";
 import {
   type InsertPost,
   type InsertPostComment,
+  type InsertPostRepost,
   postCommentTable,
+  postRepostTable,
   postTable,
 } from "./schema/post";
 import {
@@ -493,6 +495,66 @@ async function main() {
               tx
                 .update(postTable)
                 .set({ commentCount: count })
+                .where(eq(postTable.id, postId)),
+            ),
+          );
+        }
+      }
+
+      if (insertedPosts.length > 0) {
+        const repostValues: InsertPostRepost[] = [];
+        const repostCounts = new Map<string, number>();
+
+        for (const post of insertedPosts) {
+          const reposterCandidates = userSeeds.filter(
+            (user) => userIdOrThrow(user.username) !== post.authorId,
+          );
+          if (reposterCandidates.length === 0) continue;
+
+          const desiredCount = Math.min(
+            faker.number.int({ min: 0, max: 3 }),
+            reposterCandidates.length,
+          );
+          if (desiredCount === 0) continue;
+
+          const usedReposters = new Set<string>();
+
+          for (let i = 0; i < desiredCount; i += 1) {
+            let reposter = faker.helpers.arrayElement(reposterCandidates);
+            while (usedReposters.has(reposter.username)) {
+              reposter = faker.helpers.arrayElement(reposterCandidates);
+            }
+            usedReposters.add(reposter.username);
+            const createdAt = faker.date.between({
+              from: post.createdAt,
+              to: new Date(),
+            });
+            const isQuote = faker.datatype.boolean({ probability: 0.35 });
+
+            repostValues.push({
+              postId: post.id,
+              userId: userIdOrThrow(reposter.username),
+              content: isQuote
+                ? faker.lorem.sentences({ min: 1, max: 2 })
+                : null,
+              createdAt,
+              updatedAt: createdAt,
+            });
+          }
+
+          repostCounts.set(post.id, usedReposters.size);
+        }
+
+        if (repostValues.length > 0) {
+          await tx.insert(postRepostTable).values(repostValues);
+        }
+
+        if (repostCounts.size > 0) {
+          await Promise.all(
+            Array.from(repostCounts.entries()).map(([postId, count]) =>
+              tx
+                .update(postTable)
+                .set({ repostCount: count })
                 .where(eq(postTable.id, postId)),
             ),
           );
