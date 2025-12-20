@@ -3,7 +3,7 @@
 import { db } from "@umamin/db";
 import { noteTable } from "@umamin/db/schema/note";
 import { eq, sql } from "drizzle-orm";
-import { cacheTag, updateTag } from "next/cache";
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
 import { formatContent } from "@/lib/utils";
@@ -53,6 +53,7 @@ export async function createNoteAction(
       });
 
     updateTag(`current-note:${session.userId}`);
+    updateTag("notes");
   } catch (error) {
     console.log("Error creating note:", error);
     return { error: "Failed to create note" };
@@ -67,8 +68,9 @@ export const getCurrentNoteAction = async () => {
   }
 
   const getCachedData = async () => {
-    "use cache";
+    "use cache: private";
     cacheTag(`current-note:${session.userId}`);
+    cacheLife({ revalidate: 30 });
 
     const [data] = await db
       .select()
@@ -96,6 +98,7 @@ export const clearNoteAction = async () => {
       .where(eq(noteTable.userId, session.userId));
 
     updateTag(`current-note:${session.userId}`);
+    updateTag("notes");
   } catch (error) {
     console.log("Error clearing note:", error);
     return { error: "Failed to clear note" };

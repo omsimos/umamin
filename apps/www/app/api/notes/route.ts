@@ -2,7 +2,7 @@ import { db } from "@umamin/db";
 import { noteTable } from "@umamin/db/schema/note";
 import { userTable } from "@umamin/db/schema/user";
 import { and, desc, eq, lt, or } from "drizzle-orm";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import type { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
 
     const result = await (async () => {
       "use cache";
+      cacheTag("notes");
       cacheLife({ revalidate: 30 });
 
       // biome-ignore lint/suspicious/noImplicitAnyLet: temp

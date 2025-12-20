@@ -33,7 +33,7 @@
     "@tanstack/react-pacer": "^0.18.0",
     "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-query-devtools": "^5.91.1",
-    "@tanstack/react-virtual": "^3.13.13",
+    "@tanstack/react-virtual": "^3.13.12",
     "@types/mdx": "^2.0.13",
     "@umamin/db": "workspace:*",
     "@umamin/encryption": "workspace:*",
