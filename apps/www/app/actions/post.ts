@@ -8,7 +8,7 @@ import {
   postTable,
 } from "@umamin/db/schema/post";
 import { and, eq, exists, sql } from "drizzle-orm";
-import { updateTag } from "next/cache";
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
 
@@ -20,12 +20,18 @@ const createPostSchema = z.object({
 });
 
 export async function getPostAction(id: string) {
-  const res = await db.query.postTable.findFirst({
-    with: {
-      author: true,
-    },
-    where: eq(postTable.id, id),
-  });
+  const res = await (async () => {
+    "use cache: private";
+    cacheTag(`post:${id}`);
+    cacheLife({ revalidate: 30 });
+
+    return db.query.postTable.findFirst({
+      with: {
+        author: true,
+      },
+      where: eq(postTable.id, id),
+    });
+  })();
 
   if (!res) return res;
 
@@ -33,25 +39,31 @@ export async function getPostAction(id: string) {
 
   if (!session) return res;
 
-  const liked = await db
-    .select({
-      liked: exists(
-        db
-          .select({ id: postLikeTable.id })
-          .from(postLikeTable)
-          .where(
-            and(
-              eq(postLikeTable.postId, id),
-              eq(postLikeTable.userId, session.userId),
-            ),
-          ),
-      ),
-    })
-    .from(postTable)
-    .where(eq(postTable.id, id))
-    .limit(1);
+  const isLiked = await (async () => {
+    "use cache: private";
+    cacheTag(`post:${id}:liked:${session.userId}`);
+    cacheLife({ revalidate: 30 });
 
-  const isLiked = Boolean(liked?.[0]?.liked);
+    const liked = await db
+      .select({
+        liked: exists(
+          db
+            .select({ id: postLikeTable.id })
+            .from(postLikeTable)
+            .where(
+              and(
+                eq(postLikeTable.postId, id),
+                eq(postLikeTable.userId, session.userId),
+              ),
+            ),
+        ),
+      })
+      .from(postTable)
+      .where(eq(postTable.id, id))
+      .limit(1);
+
+    return Boolean(liked?.[0]?.liked);
+  })();
 
   return { ...res, isLiked };
 }
@@ -126,6 +138,8 @@ export async function createCommentAction(
     });
 
     updateTag(`post:${postId}`);
+    updateTag("posts");
+    updateTag(`post-comments:${postId}`);
 
     return { success: true };
   } catch (err) {
@@ -174,6 +188,8 @@ export async function addLikeAction({ postId }: { postId: string }) {
     });
 
     updateTag(`post:${postId}`);
+    updateTag("posts");
+    updateTag(`post:${postId}:liked:${session.userId}`);
     return result;
   } catch (err) {
     console.log(err);
@@ -222,6 +238,8 @@ export async function removeLikeAction({ postId }: { postId: string }) {
     });
 
     updateTag(`post:${postId}`);
+    updateTag("posts");
+    updateTag(`post:${postId}:liked:${session.userId}`);
 
     return result;
   } catch (err) {
@@ -232,8 +250,10 @@ export async function removeLikeAction({ postId }: { postId: string }) {
 
 export async function addCommentLikeAction({
   commentId,
+  postId,
 }: {
   commentId: string;
+  postId?: string;
 }) {
   try {
     const { session } = await getSession();
@@ -242,7 +262,7 @@ export async function addCommentLikeAction({
       throw new Error("Unauthorized");
     }
 
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const existing = await tx.query.postCommentLikeTable.findFirst({
         columns: { id: true },
         where: and(
@@ -272,6 +292,13 @@ export async function addCommentLikeAction({
 
       return { success: true };
     });
+
+    updateTag("posts");
+    updateTag(`comment:${commentId}`);
+    if (postId) {
+      updateTag(`post-comments:${postId}`);
+    }
+    return result;
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };
@@ -280,8 +307,10 @@ export async function addCommentLikeAction({
 
 export async function removeCommentLikeAction({
   commentId,
+  postId,
 }: {
   commentId: string;
+  postId?: string;
 }) {
   try {
     const { session } = await getSession();
@@ -290,7 +319,7 @@ export async function removeCommentLikeAction({
       throw new Error("Unauthorized");
     }
 
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const existing = await tx.query.postCommentLikeTable.findFirst({
         columns: { id: true },
         where: and(
@@ -321,6 +350,13 @@ export async function removeCommentLikeAction({
 
       return { success: true };
     });
+
+    updateTag("posts");
+    updateTag(`comment:${commentId}`);
+    if (postId) {
+      updateTag(`post-comments:${postId}`);
+    }
+    return result;
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };

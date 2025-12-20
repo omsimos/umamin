@@ -17,16 +17,18 @@ import {
   removeLikeAction,
 } from "@/app/actions/post";
 import { shortTimeAgo } from "@/lib/utils";
-import type { PostData } from "@/types/post";
+import type { CommentData, PostData } from "@/types/post";
 
 type Props = {
   isComment?: boolean;
   className?: string;
-  data: PostData;
+  data: PostData | CommentData;
 };
 
 export function PostCard({ data, isComment, className }: Props) {
   const author = data?.author;
+  const commentPostId = "postId" in data ? data.postId : undefined;
+  const commentCount = "commentCount" in data ? data.commentCount : undefined;
   const [liked, setLiked] = useState<boolean>(data.isLiked === true);
   const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
 
@@ -45,10 +47,16 @@ export function PostCard({ data, isComment, className }: Props) {
     try {
       if (isComment) {
         if (prevLiked) {
-          await removeCommentLikeAction({ commentId: data.id });
+          await removeCommentLikeAction({
+            commentId: data.id,
+            postId: commentPostId,
+          });
           toast.success("Comment unliked");
         } else {
-          await addCommentLikeAction({ commentId: data.id });
+          await addCommentLikeAction({
+            commentId: data.id,
+            postId: commentPostId,
+          });
           toast.success("Comment liked successfully!");
         }
       } else {
@@ -128,7 +136,7 @@ export function PostCard({ data, isComment, className }: Props) {
               <Link href={`/post/${data?.id}`}>
                 <MessageCircleIcon className="h-5 w-5" />
               </Link>
-              <span>{data.commentCount}</span>
+              <span>{commentCount ?? 0}</span>
             </div>
           )}
         </div>

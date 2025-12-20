@@ -6,7 +6,7 @@ import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import { accountTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
-import { updateTag } from "next/cache";
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { z } from "zod";
@@ -66,19 +66,29 @@ export const getCurrentUserAction = cache(async () => {
       throw new Error("Unauthorized");
     }
 
-    const [userRecord] = await db
-      .select()
-      .from(userTable)
-      .where(eq(userTable.id, session.userId))
-      .limit(1)
-      .$withCache(false);
+    const [userRecord] = await (async () => {
+      "use cache: private";
+      cacheTag(`user:${session.userId}`);
+      cacheLife({ revalidate: 30 });
+
+      return db
+        .select()
+        .from(userTable)
+        .where(eq(userTable.id, session.userId))
+        .limit(1);
+    })();
 
     const accounts = userRecord
-      ? await db
-          .select()
-          .from(accountTable)
-          .where(eq(accountTable.userId, session.userId))
-          .$withCache(false)
+      ? await (async () => {
+          "use cache: private";
+          cacheTag(`user:${session.userId}:accounts`);
+          cacheLife({ revalidate: 30 });
+
+          return db
+            .select()
+            .from(accountTable)
+            .where(eq(accountTable.userId, session.userId));
+        })()
       : [];
 
     const data = userRecord ? { ...userRecord, accounts } : undefined;
@@ -122,6 +132,8 @@ export async function generalSettingsAction(
     if (data.username && data.username !== oldUsername) {
       updateTag(`user:${data.username}`);
     }
+    updateTag(`user:${session.userId}`);
+    updateTag(`user:${session.userId}:accounts`);
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };
@@ -146,6 +158,10 @@ export async function deleteAccountAction() {
 
     // Invalidate user's cached data by tag
     updateTag(`user:${user.username}`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
   } catch (err) {
     console.log(err);
   }
@@ -223,6 +239,8 @@ export async function toggleDisplayPictureAction(accountImgUrl?: string) {
 
     // Invalidate user's cached data (imageUrl affects profile payload)
     updateTag(`user:${user.username}`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
 
     return { imageUrl };
   } catch (err) {
@@ -248,6 +266,8 @@ export async function toggleQuietModeAction() {
 
     // Invalidate user's cached data (quiet mode affects profile payload)
     updateTag(`user:${user.username}`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
 
     return { quietMode };
   } catch (err) {

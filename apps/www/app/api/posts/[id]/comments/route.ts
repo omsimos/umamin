@@ -2,7 +2,7 @@ import { db } from "@umamin/db";
 import { postCommentLikeTable, postCommentTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { and, desc, eq, exists, lt, or, sql } from "drizzle-orm";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 
@@ -20,6 +20,7 @@ export async function GET(
 
     const result = await (async () => {
       "use cache: private";
+      cacheTag(`post-comments:${postId}`);
       cacheLife({ revalidate: 30 });
 
       // biome-ignore lint/suspicious/noImplicitAnyLet: temp
