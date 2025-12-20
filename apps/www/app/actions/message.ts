@@ -5,7 +5,7 @@ import { messageTable, type SelectMessage } from "@umamin/db/schema/message";
 import { userTable } from "@umamin/db/schema/user";
 import { aesDecrypt, aesEncrypt } from "@umamin/encryption";
 import { and, desc, eq, lt, or } from "drizzle-orm";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { cache } from "react";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
@@ -20,17 +20,17 @@ type GetMessagesParams = {
 export const getMessagesAction = cache(
   async ({ cursor, type }: GetMessagesParams) => {
     "use cache: private";
+    const { session } = await getSession();
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    cacheTag(`messages:${type}:${session.userId}`);
     cacheLife({
       revalidate: 30,
     });
 
     try {
-      const { session } = await getSession();
-
-      if (!session) {
-        throw new Error("Unauthorized");
-      }
-
       const getData = async () => {
         // biome-ignore lint/suspicious/noImplicitAnyLet: drizzle
         let cursorCondition;
@@ -151,6 +151,8 @@ export async function deleteMessageAction(id: string) {
         ),
       );
 
+    updateTag(`messages:received:${session.userId}`);
+
     return { success: true };
   } catch (err) {
     console.log(err);
@@ -187,6 +189,8 @@ export async function createReplyAction({
           eq(messageTable.receiverId, session.userId),
         ),
       );
+
+    updateTag(`messages:received:${session.userId}`);
 
     return { success: true };
   } catch (err) {
@@ -229,6 +233,11 @@ export async function sendMessageAction(
       question,
       content: encryptedContent,
     });
+
+    if (senderId) {
+      updateTag(`messages:sent:${senderId}`);
+    }
+    updateTag(`messages:received:${receiverId}`);
 
     return { success: true };
   } catch (err) {
