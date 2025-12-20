@@ -1,7 +1,8 @@
 import { db } from "@umamin/db";
-import { userTable } from "@umamin/db/schema/user";
-import { eq } from "drizzle-orm";
+import { userFollowTable, userTable } from "@umamin/db/schema/user";
+import { and, eq, exists } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
+import { getSession } from "@/lib/auth";
 
 const revalidate = 604800; // 7 days
 
@@ -26,6 +27,8 @@ export async function GET(
           bio: userTable.bio,
           question: userTable.question,
           quietMode: userTable.quietMode,
+          followerCount: userTable.followerCount,
+          followingCount: userTable.followingCount,
           createdAt: userTable.createdAt,
           updatedAt: userTable.updatedAt,
         })
@@ -41,7 +44,39 @@ export async function GET(
       return Response.json({ error: "User not found" }, { status: 404 });
     }
 
-    return Response.json(user);
+    const { session } = await getSession();
+
+    if (!session) {
+      return Response.json(user);
+    }
+
+    const isFollowing = await (async () => {
+      "use cache: private";
+      cacheTag(`user:${username}:followed:${session.userId}`);
+      cacheLife({ revalidate: 30 });
+
+      const follow = await db
+        .select({
+          following: exists(
+            db
+              .select({ id: userFollowTable.id })
+              .from(userFollowTable)
+              .where(
+                and(
+                  eq(userFollowTable.followerId, session.userId),
+                  eq(userFollowTable.followingId, user.id),
+                ),
+              ),
+          ),
+        })
+        .from(userTable)
+        .where(eq(userTable.id, user.id))
+        .limit(1);
+
+      return Boolean(follow?.[0]?.following);
+    })();
+
+    return Response.json({ ...user, isFollowing });
   } catch (error) {
     console.error("Error fetching user:", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
