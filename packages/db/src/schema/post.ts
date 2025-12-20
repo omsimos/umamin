@@ -29,6 +29,7 @@ export const postTable = sqliteTable(
       .$onUpdate(() => new Date()),
     likeCount: integer("like_count").notNull().default(0),
     commentCount: integer("comment_count").notNull().default(0),
+    repostCount: integer("repost_count").notNull().default(0),
   },
   (t) => [
     index("post_created_at_id_idx").on(t.createdAt, t.id),
@@ -111,6 +112,34 @@ export const postCommentLikeTable = sqliteTable(
   ],
 );
 
+export const postRepostTable = sqliteTable(
+  "post_repost",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    postId: text("post_id")
+      .notNull()
+      .references(() => postTable.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    content: text("content"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`)
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex("post_repost_post_user_uidx").on(t.postId, t.userId),
+    index("post_repost_user_created_idx").on(t.userId, t.createdAt),
+    index("post_repost_post_created_idx").on(t.postId, t.createdAt),
+  ],
+);
+
 export const PostRelations = relations(postTable, ({ one, many }) => ({
   author: one(userTable, {
     fields: [postTable.authorId],
@@ -118,6 +147,7 @@ export const PostRelations = relations(postTable, ({ one, many }) => ({
   }),
   comments: many(postCommentTable),
   likes: many(postLikeTable),
+  reposts: many(postRepostTable),
 }));
 
 export const PostLikeRelations = relations(postLikeTable, ({ one }) => ({
@@ -145,6 +175,17 @@ export const PostCommentLikeRelations = relations(
   }),
 );
 
+export const PostRepostRelations = relations(postRepostTable, ({ one }) => ({
+  post: one(postTable, {
+    fields: [postRepostTable.postId],
+    references: [postTable.id],
+  }),
+  user: one(userTable, {
+    fields: [postRepostTable.userId],
+    references: [userTable.id],
+  }),
+}));
+
 export const PostCommentRelations = relations(postCommentTable, ({ one }) => ({
   postTable: one(postTable, {
     fields: [postCommentTable.postId],
@@ -162,5 +203,7 @@ export type InsertPostLike = typeof postLikeTable.$inferInsert;
 export type SelectPostLike = typeof postLikeTable.$inferSelect;
 export type InsertPostCommentLike = typeof postCommentLikeTable.$inferInsert;
 export type SelectPostCommentLike = typeof postCommentLikeTable.$inferSelect;
+export type InsertPostRepost = typeof postRepostTable.$inferInsert;
+export type SelectPostRepost = typeof postRepostTable.$inferSelect;
 export type InsertPostComment = typeof postCommentTable.$inferInsert;
 export type SelectPostComment = typeof postCommentTable.$inferSelect;

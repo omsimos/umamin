@@ -3,7 +3,6 @@
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import type { SelectPost } from "@umamin/db/schema/post";
 import {
   Alert,
   AlertDescription,
@@ -11,8 +10,10 @@ import {
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect, useMemo } from "react";
-import type { PublicUser } from "@/types/user";
+import { shortTimeAgo } from "@/lib/utils";
+import type { FeedItem } from "@/types/post";
 import { PostCard } from "./post-card";
 import { PostCardSkeleton } from "./post-card-skeleton";
 
@@ -20,9 +21,8 @@ const AdContainer = dynamic(() => import("@/components/ad-container"), {
   ssr: false,
 });
 
-type PostItem = SelectPost & { author: PublicUser; isLiked?: boolean };
 type NotesResponse = {
-  data: PostItem[];
+  data: FeedItem[];
   nextCursor: string | null;
 };
 
@@ -53,11 +53,17 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
     refetchOnMount: false,
   });
 
-  // De-duplicate posts by id across pages
-  const allPosts: PostItem[] = (() => {
+  // De-duplicate feed items across pages
+  const allItems: FeedItem[] = (() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
-    const map = new Map<string, PostItem>();
-    for (const item of flat) map.set(item.id, item);
+    const map = new Map<string, FeedItem>();
+    for (const item of flat) {
+      const key =
+        item.type === "post"
+          ? `post:${item.post.id}`
+          : `repost:${item.repost.id}`;
+      if (!map.has(key)) map.set(key, item);
+    }
     return Array.from(map.values());
   })();
 
@@ -76,9 +82,9 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: dep mismatch
   const totalRows = useMemo(() => {
-    const rows = allPosts.length + adCountFor(allPosts.length);
+    const rows = allItems.length + adCountFor(allItems.length);
     return hasNextPage ? rows + 1 : rows; // +1 for loader row at the end
-  }, [allPosts.length, hasNextPage]);
+  }, [allItems.length, hasNextPage]);
 
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
@@ -92,8 +98,9 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
         return `ad-${adIndex}`;
       }
       const dataIndex = dataIndexForRow(index);
-      const post = allPosts[dataIndex];
-      return post?.id ?? `row-${index}`;
+      const item = allItems[dataIndex];
+      if (!item) return `row-${index}`;
+      return item.type === "post" ? item.post.id : item.repost.id;
     },
   });
 
@@ -140,7 +147,7 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div className="w-full">
-      {allPosts.length === 0 && !isFetching && (
+      {allItems.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>
@@ -185,15 +192,42 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
               ) : (
                 (() => {
                   const dataIndex = dataIndexForRow(row.index);
-                  const post = allPosts[dataIndex];
-                  if (!post) return null;
+                  const item = allItems[dataIndex];
+                  if (!item) return null;
 
+                  if (item.type === "post") {
+                    return (
+                      <PostCard
+                        isAuthenticated={isAuthenticated}
+                        key={item.post.id}
+                        data={item.post}
+                      />
+                    );
+                  }
+
+                  const repost = item.repost;
                   return (
-                    <PostCard
-                      isAuthenticated={isAuthenticated}
-                      key={post.id}
-                      data={post}
-                    />
+                    <div className="space-y-2">
+                      <div className="text-xs text-muted-foreground flex items-center gap-2 px-7 sm:px-0">
+                        <span>↻</span>
+                        <Link
+                          href={`/user/${repost.user.username}`}
+                          className="font-medium hover:underline"
+                        >
+                          {repost.user.displayName ?? repost.user.username}
+                        </Link>
+                        <span>reposted</span>
+                        <span>{shortTimeAgo(repost.createdAt)}</span>
+                      </div>
+                      {repost.content && (
+                        <p className="px-7 sm:px-0 text-sm">{repost.content}</p>
+                      )}
+                      <PostCard
+                        isAuthenticated={isAuthenticated}
+                        key={item.post.id}
+                        data={item.post}
+                      />
+                    </div>
                   );
                 })()
               )}

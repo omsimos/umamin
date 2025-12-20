@@ -5,19 +5,33 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@umamin/ui/components/dropdown-menu";
 import { cn } from "@umamin/ui/lib/utils";
-import { HeartIcon, MessageCircleIcon, ScanFaceIcon } from "lucide-react";
+import {
+  HeartIcon,
+  MessageCircleIcon,
+  Repeat2Icon,
+  ScanFaceIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   addCommentLikeAction,
   addLikeAction,
+  addRepostAction,
   removeCommentLikeAction,
   removeLikeAction,
+  removeRepostAction,
 } from "@/app/actions/post";
 import { shortTimeAgo } from "@/lib/utils";
 import type { CommentData, PostData } from "@/types/post";
+import { RepostDialog } from "./repost-dialog";
 
 type Props = {
   isComment?: boolean;
@@ -33,14 +47,24 @@ export function PostCard({
   className,
 }: Props) {
   const author = data?.author;
+  const commentPostId = "postId" in data ? data.postId : undefined;
   const commentCount = "commentCount" in data ? data.commentCount : undefined;
   const [liked, setLiked] = useState<boolean>(data.isLiked === true);
   const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
+  const [reposted, setReposted] = useState<boolean>(
+    "isReposted" in data ? data.isReposted === true : false,
+  );
+  const [reposts, setReposts] = useState<number>(
+    "repostCount" in data ? (data.repostCount ?? 0) : 0,
+  );
+  const [repostDialogOpen, setRepostDialogOpen] = useState(false);
 
   useEffect(() => {
     setLiked(data.isLiked === true);
     setLikes(data.likeCount ?? 0);
-  }, [data.isLiked, data.likeCount]);
+    setReposted("isReposted" in data ? data.isReposted === true : false);
+    setReposts("repostCount" in data ? (data.repostCount ?? 0) : 0);
+  }, [data.isLiked, data.likeCount, data]);
 
   const handleLike = async () => {
     const prevLiked = liked;
@@ -54,11 +78,13 @@ export function PostCard({
         if (prevLiked) {
           await removeCommentLikeAction({
             commentId: data.id,
+            postId: commentPostId,
           });
           toast.success("Comment unliked");
         } else {
           await addCommentLikeAction({
             commentId: data.id,
+            postId: commentPostId,
           });
           toast.success("Comment liked successfully!");
         }
@@ -75,6 +101,52 @@ export function PostCard({
       setLiked(prevLiked);
       setLikes(prevLikes);
       toast.error("Failed to update like. Please try again.");
+      console.log(err);
+    }
+  };
+
+  const handleRepost = async () => {
+    const prevReposted = reposted;
+    const prevReposts = reposts;
+
+    setReposted(!prevReposted);
+    setReposts((v) => (prevReposted ? Math.max(v - 1, 0) : v + 1));
+
+    try {
+      if (prevReposted) {
+        await removeRepostAction({ postId: data.id });
+        toast.success("Repost removed");
+      } else {
+        await addRepostAction({ postId: data.id });
+        toast.success("Reposted");
+      }
+    } catch (err) {
+      setReposted(prevReposted);
+      setReposts(prevReposts);
+      toast.error("Failed to update repost. Please try again.");
+      console.log(err);
+    }
+  };
+
+  const handleQuoteRepost = async (content: string) => {
+    const prevReposted = reposted;
+    const prevReposts = reposts;
+
+    if (prevReposted) {
+      toast.error("Remove repost before quoting.");
+      return;
+    }
+
+    setReposted(true);
+    setReposts((v) => v + 1);
+
+    try {
+      await addRepostAction({ postId: data.id, content });
+      toast.success("Quote reposted");
+    } catch (err) {
+      setReposted(prevReposted);
+      setReposts(prevReposts);
+      toast.error("Failed to repost. Please try again.");
       console.log(err);
     }
   };
@@ -136,6 +208,44 @@ export function PostCard({
           </button>
 
           {!isComment && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={!isAuthenticated}
+                  className={cn("flex space-x-1 items-center", {
+                    "text-emerald-600": reposted,
+                  })}
+                >
+                  <Repeat2Icon
+                    className={cn("size-6", {
+                      "text-emerald-600": reposted,
+                    })}
+                  />
+                  <span>{reposts}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem
+                  onClick={() => {
+                    handleRepost();
+                  }}
+                >
+                  Repost
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setRepostDialogOpen(true);
+                  }}
+                  disabled={reposted}
+                >
+                  Quote
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {!isComment && (
             <div className="flex space-x-1 items-center">
               <Link href={`/post/${data?.id}`}>
                 <MessageCircleIcon className="h-5 w-5" />
@@ -145,6 +255,16 @@ export function PostCard({
           )}
         </div>
       </div>
+
+      {!isComment && (
+        <RepostDialog
+          open={repostDialogOpen}
+          onOpenChange={setRepostDialogOpen}
+          isAuthenticated={isAuthenticated}
+          isReposted={reposted}
+          onQuote={handleQuoteRepost}
+        />
+      )}
     </div>
   );
 }

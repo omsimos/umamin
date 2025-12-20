@@ -5,6 +5,7 @@ import {
   postCommentLikeTable,
   postCommentTable,
   postLikeTable,
+  postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
 import { and, eq, exists, sql } from "drizzle-orm";
@@ -65,7 +66,33 @@ export async function getPostAction(id: string) {
     return Boolean(liked?.[0]?.liked);
   })();
 
-  return { ...res, isLiked };
+  const isReposted = await (async () => {
+    "use cache: private";
+    cacheTag(`post:${id}:reposted:${session.userId}`);
+    cacheLife({ revalidate: 30 });
+
+    const reposted = await db
+      .select({
+        reposted: exists(
+          db
+            .select({ id: postRepostTable.id })
+            .from(postRepostTable)
+            .where(
+              and(
+                eq(postRepostTable.postId, id),
+                eq(postRepostTable.userId, session.userId),
+              ),
+            ),
+        ),
+      })
+      .from(postTable)
+      .where(eq(postTable.id, id))
+      .limit(1);
+
+    return Boolean(reposted?.[0]?.reposted);
+  })();
+
+  return { ...res, isLiked, isReposted };
 }
 
 export async function createPostAction(
@@ -356,6 +383,121 @@ export async function removeCommentLikeAction({
     if (postId) {
       updateTag(`post-comments:${postId}`);
     }
+    return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+const createRepostSchema = z.object({
+  postId: z.string(),
+  content: z
+    .string()
+    .max(500, { error: "Content cannot exceed 500 characters" })
+    .optional()
+    .or(z.literal("")),
+});
+
+export async function addRepostAction(
+  values: z.infer<typeof createRepostSchema>,
+) {
+  try {
+    const params = createRepostSchema.safeParse(values);
+
+    if (!params.success) {
+      return { error: "Invalid input" };
+    }
+
+    const { postId, content } = params.data;
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const existing = await tx.query.postRepostTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(postRepostTable.postId, postId),
+          eq(postRepostTable.userId, session.userId),
+        ),
+      });
+
+      if (existing) {
+        return { success: true, alreadyReposted: true };
+      }
+
+      await tx.insert(postRepostTable).values({
+        postId,
+        userId: session.userId,
+        content: content?.trim() ? content.trim() : null,
+      });
+
+      await tx
+        .update(postTable)
+        .set({
+          repostCount: sql`${postTable.repostCount} + 1`,
+        })
+        .where(eq(postTable.id, postId));
+
+      return { success: true };
+    });
+
+    updateTag(`post:${postId}`);
+    updateTag("posts");
+    updateTag(`post:${postId}:reposted:${session.userId}`);
+    return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+export async function removeRepostAction({ postId }: { postId: string }) {
+  try {
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const existing = await tx.query.postRepostTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(postRepostTable.postId, postId),
+          eq(postRepostTable.userId, session.userId),
+        ),
+      });
+
+      if (!existing) {
+        return { success: true, alreadyRemoved: true };
+      }
+
+      await tx
+        .delete(postRepostTable)
+        .where(
+          and(
+            eq(postRepostTable.postId, postId),
+            eq(postRepostTable.userId, session.userId),
+          ),
+        );
+
+      await tx
+        .update(postTable)
+        .set({
+          repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
+        })
+        .where(eq(postTable.id, postId));
+
+      return { success: true };
+    });
+
+    updateTag(`post:${postId}`);
+    updateTag("posts");
+    updateTag(`post:${postId}:reposted:${session.userId}`);
     return result;
   } catch (err) {
     console.log(err);

@@ -15,6 +15,13 @@
       "when": 1766163501129,
       "tag": "0001_shiny_starfox",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1766217503165,
+      "tag": "0002_swift_kat_farrell",
+      "breakpoints": true
     }
   ]
 }

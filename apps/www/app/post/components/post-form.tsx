@@ -10,11 +10,11 @@ import { type FormEventHandler, useState } from "react";
 import { toast } from "sonner";
 import { createPostAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import type { PostData } from "@/types/post";
+import type { FeedItem, PostData } from "@/types/post";
 import type { PublicUser } from "@/types/user";
 
 type PostsResponse = {
-  data: PostData[];
+  data: FeedItem[];
   nextCursor: string | null;
 };
 
@@ -39,7 +39,7 @@ export default function PostForm({ user }: Props) {
         "posts",
       ]);
 
-      const optimistic: PostData = {
+      const optimisticPost: PostData = {
         id: `optimistic-${crypto.randomUUID()}`,
         content: nextContent,
         authorId: user.id,
@@ -47,9 +47,12 @@ export default function PostForm({ user }: Props) {
         updatedAt: new Date(),
         likeCount: 0,
         commentCount: 0,
+        repostCount: 0,
         author: user,
         isLiked: false,
+        isReposted: false,
       };
+      const optimistic: FeedItem = { type: "post", post: optimisticPost };
 
       if (previous) {
         queryClient.setQueryData<InfiniteData<PostsResponse>>(["posts"], {
