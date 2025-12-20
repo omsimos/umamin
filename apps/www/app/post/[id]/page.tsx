@@ -20,16 +20,16 @@ export default async function Post({
   }
 
   return (
-    <main className="w-full sm:max-w-lg mx-auto bg-background pb-24">
+    <main className="w-full sm:max-w-lg mx-auto bg-background">
       <PostCardMain data={data} />
 
       {user && (
-        <div className="w-full py-4 border-b mb-6 font-medium text-muted-foreground px-7 sm:px-0">
+        <div className="w-full py-4 border-b font-medium text-muted-foreground px-7 sm:px-0">
           <ReplyForm user={user} postId={id} />
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-6 mt-6">
         <CommentsList isAuthenticated={!!user} postId={id} />
         {/* <PostCardWithComments sessionImage={user?.imageUrl} /> */}
         {/* {repliesData.map((comment) => { */}
