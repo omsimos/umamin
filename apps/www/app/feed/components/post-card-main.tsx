@@ -5,14 +5,31 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@umamin/ui/components/dropdown-menu";
 import { cn } from "@umamin/ui/lib/utils";
-import { HeartIcon, MessageCircleIcon, ScanFaceIcon } from "lucide-react";
+import {
+  HeartIcon,
+  MessageCircleIcon,
+  Repeat2Icon,
+  ScanFaceIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { addLikeAction, removeLikeAction } from "@/app/actions/post";
+import {
+  addLikeAction,
+  addRepostAction,
+  removeLikeAction,
+  removeRepostAction,
+} from "@/app/actions/post";
 import { shortTimeAgo } from "@/lib/utils";
 import type { PostData } from "@/types/post";
+import { RepostDialog } from "./repost-dialog";
 
 type Props = {
   data: PostData;
@@ -23,11 +40,16 @@ export function PostCardMain({ data, isAuthenticated }: Props) {
   const author = data.author;
   const [liked, setLiked] = useState<boolean>(data.isLiked === true);
   const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
+  const [reposted, setReposted] = useState<boolean>(data.isReposted === true);
+  const [reposts, setReposts] = useState<number>(data.repostCount ?? 0);
+  const [repostDialogOpen, setRepostDialogOpen] = useState(false);
 
   useEffect(() => {
     setLiked(data.isLiked === true);
     setLikes(data.likeCount ?? 0);
-  }, [data.isLiked, data.likeCount]);
+    setReposted(data.isReposted === true);
+    setReposts(data.repostCount ?? 0);
+  }, [data.isLiked, data.likeCount, data.isReposted, data.repostCount]);
 
   const handleLike = async () => {
     const prevLiked = liked;
@@ -49,6 +71,52 @@ export function PostCardMain({ data, isAuthenticated }: Props) {
       setLiked(prevLiked);
       setLikes(prevLikes);
       toast.error("Failed to update like. Please try again.");
+      console.log(err);
+    }
+  };
+
+  const handleRepost = async () => {
+    const prevReposted = reposted;
+    const prevReposts = reposts;
+
+    setReposted(!prevReposted);
+    setReposts((v) => (prevReposted ? Math.max(v - 1, 0) : v + 1));
+
+    try {
+      if (prevReposted) {
+        await removeRepostAction({ postId: data.id });
+        toast.success("Repost removed");
+      } else {
+        await addRepostAction({ postId: data.id });
+        toast.success("Reposted");
+      }
+    } catch (err) {
+      setReposted(prevReposted);
+      setReposts(prevReposts);
+      toast.error("Failed to update repost. Please try again.");
+      console.log(err);
+    }
+  };
+
+  const handleQuoteRepost = async (content: string) => {
+    const prevReposted = reposted;
+    const prevReposts = reposts;
+
+    if (prevReposted) {
+      toast.error("Remove repost before quoting.");
+      return;
+    }
+
+    setReposted(true);
+    setReposts((v) => v + 1);
+
+    try {
+      await addRepostAction({ postId: data.id, content });
+      toast.success("Quote reposted");
+    } catch (err) {
+      setReposted(prevReposted);
+      setReposts(prevReposts);
+      toast.error("Failed to repost. Please try again.");
       console.log(err);
     }
   };
@@ -104,12 +172,56 @@ export function PostCardMain({ data, isAuthenticated }: Props) {
             <span>{likes}</span>
           </button>
 
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={!isAuthenticated}
+                type="button"
+                className={cn("flex space-x-1 items-center", {
+                  "text-emerald-600": reposted,
+                })}
+              >
+                <Repeat2Icon
+                  className={cn("h-5 w-5", {
+                    "text-emerald-600": reposted,
+                  })}
+                />
+                <span>{reposts}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              <DropdownMenuItem
+                onClick={() => {
+                  handleRepost();
+                }}
+              >
+                Repost
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setRepostDialogOpen(true);
+                }}
+                disabled={reposted}
+              >
+                Quote
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <div className="flex space-x-1 items-center">
             <MessageCircleIcon className="h-5 w-5" />
             <span>{data.commentCount}</span>
           </div>
         </div>
       </div>
+
+      <RepostDialog
+        open={repostDialogOpen}
+        onOpenChange={setRepostDialogOpen}
+        isAuthenticated={!!isAuthenticated}
+        isReposted={reposted}
+        onQuote={handleQuoteRepost}
+      />
     </div>
   );
 }

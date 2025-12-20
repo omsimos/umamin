@@ -21,7 +21,7 @@ export default async function Post({
 
   return (
     <main className="w-full sm:max-w-lg mx-auto bg-background">
-      <PostCardMain data={data} />
+      <PostCardMain isAuthenticated={!!user} data={data} />
 
       {user && (
         <div className="w-full py-4 border-b font-medium text-muted-foreground px-7 sm:px-0">
