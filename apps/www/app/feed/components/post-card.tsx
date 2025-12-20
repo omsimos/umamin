@@ -19,7 +19,7 @@ import {
   ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
   addCommentLikeAction,
@@ -31,12 +31,14 @@ import {
 } from "@/app/actions/post";
 import { isAlreadyRemoved, isAlreadyReposted, shortTimeAgo } from "@/lib/utils";
 import type { CommentData, PostData } from "@/types/post";
+import { PostMenu } from "./post-menu";
 import { RepostDialog } from "./repost-dialog";
 
 type Props = {
   isComment?: boolean;
   isRepost?: boolean;
   isAuthenticated: boolean;
+  currentUserId?: string;
   className?: string;
   data: PostData | CommentData;
 };
@@ -46,11 +48,14 @@ export function PostCard({
   isComment,
   isRepost,
   isAuthenticated,
+  currentUserId,
   className,
 }: Props) {
   const author = data?.author;
   const commentPostId = "postId" in data ? data.postId : undefined;
   const commentCount = "commentCount" in data ? data.commentCount : undefined;
+  const imageId = useId();
+  const imageTargetId = `umamin-${imageId}`;
   const [liked, setLiked] = useState<boolean>(data.isLiked === true);
   const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
   const [reposted, setReposted] = useState<boolean>(
@@ -171,8 +176,9 @@ export function PostCard({
 
   return (
     <div
+      id={imageTargetId}
       className={cn(className, "flex space-x-3 container text-[15px]", {
-        "border-b pb-6 ": !isRepost,
+        "border-b pb-6": !isRepost,
         "border border-muted rounded-md px-2 py-3 sm:px-4": isRepost,
       })}
     >
@@ -199,11 +205,23 @@ export function PostCard({
             <span className="text-muted-foreground">@{author?.username}</span>
           </div>
 
-          {data?.createdAt && (
-            <p className="text-muted-foreground text-xs">
-              {shortTimeAgo(data.createdAt)}
-            </p>
-          )}
+          <div className="flex items-center gap-2 text-muted-foreground">
+            {data?.createdAt && (
+              <p className="text-muted-foreground text-xs">
+                {shortTimeAgo(data.createdAt)}
+              </p>
+            )}
+
+            {!isComment && isAuthenticated && (
+              <PostMenu
+                postId={data.id}
+                authorId={author?.id ?? ""}
+                imageId={imageTargetId}
+                isAuthenticated={isAuthenticated}
+                currentUserId={currentUserId}
+              />
+            )}
+          </div>
         </div>
 
         <p className=" mt-1">{data?.content}</p>

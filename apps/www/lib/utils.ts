@@ -66,7 +66,7 @@ export function formatContent(content: string) {
   return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
 }
 
-export const saveImage = (id: string) => {
+export const saveImage = (id: string, isPost?: boolean) => {
   const target = document.querySelector(`#${id}`);
 
   if (!target) {
@@ -80,9 +80,15 @@ export const saveImage = (id: string) => {
       scale: 4,
       backgroundColor: "#111113",
       style: {
-        scale: "0.9",
-        display: "grid",
-        placeItems: "center",
+        ...(isPost
+          ? {
+              paddingTop: "12px",
+            }
+          : {
+              scale: "0.9",
+              display: "grid",
+              placeItems: "center",
+            }),
       },
     })
       .then((dataUrl) => {
@@ -100,6 +106,26 @@ export const saveImage = (id: string) => {
       error: "An error occured!",
     },
   );
+};
+
+export const sharePost = (postId: string) => {
+  try {
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}/post/${postId}`;
+
+      if (
+        navigator.share &&
+        navigator.canShare?.({ url }) &&
+        process.env.NODE_ENV === "production"
+      ) {
+        navigator.share({ url });
+      } else {
+        navigator.clipboard.writeText(url);
+      }
+    }
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 export function isOlderThanOneYear(createdAt?: Date | string | null) {

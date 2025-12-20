@@ -14,7 +14,7 @@ export default async function Feed() {
         {user && <PostForm user={publicUser} />}
 
         <div className="border-y space-y-6 pt-6">
-          <PostList isAuthenticated={!!user} />
+          <PostList isAuthenticated={!!user} currentUserId={user?.id} />
         </div>
       </section>
     </main>
