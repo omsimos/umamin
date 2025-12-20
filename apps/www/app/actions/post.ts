@@ -130,6 +130,23 @@ export async function getPostAction(id: string) {
   return { ...res, isLiked, isReposted };
 }
 
+export async function getPostPublicAction(id: string) {
+  const res = await (async () => {
+    "use cache";
+    cacheTag(`post:${id}`);
+    cacheLife({ revalidate: 30 });
+
+    return db.query.postTable.findFirst({
+      with: {
+        author: true,
+      },
+      where: eq(postTable.id, id),
+    });
+  })();
+
+  return res ?? null;
+}
+
 export async function createPostAction(
   values: z.infer<typeof createPostSchema>,
 ) {
