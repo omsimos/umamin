@@ -25,7 +25,7 @@ type NotesResponse = {
   nextCursor: string | null;
 };
 
-export function PostList() {
+export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
   const {
     data,
     isLoading,
@@ -188,7 +188,13 @@ export function PostList() {
                   const post = allPosts[dataIndex];
                   if (!post) return null;
 
-                  return <PostCard key={post.id} data={post} />;
+                  return (
+                    <PostCard
+                      isAuthenticated={isAuthenticated}
+                      key={post.id}
+                      data={post}
+                    />
+                  );
                 })()
               )}
             </div>

@@ -17,17 +17,22 @@ import {
   removeLikeAction,
 } from "@/app/actions/post";
 import { shortTimeAgo } from "@/lib/utils";
-import type { CommentData, PostData } from "@/types/post";
+import type { PostData } from "@/types/post";
 
 type Props = {
   isComment?: boolean;
+  isAuthenticated: boolean;
   className?: string;
-  data: PostData | CommentData;
+  data: PostData;
 };
 
-export function PostCard({ data, isComment, className }: Props) {
+export function PostCard({
+  data,
+  isComment,
+  isAuthenticated,
+  className,
+}: Props) {
   const author = data?.author;
-  const commentPostId = "postId" in data ? data.postId : undefined;
   const commentCount = "commentCount" in data ? data.commentCount : undefined;
   const [liked, setLiked] = useState<boolean>(data.isLiked === true);
   const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
@@ -49,13 +54,11 @@ export function PostCard({ data, isComment, className }: Props) {
         if (prevLiked) {
           await removeCommentLikeAction({
             commentId: data.id,
-            postId: commentPostId,
           });
           toast.success("Comment unliked");
         } else {
           await addCommentLikeAction({
             commentId: data.id,
-            postId: commentPostId,
           });
           toast.success("Comment liked successfully!");
         }
@@ -118,6 +121,7 @@ export function PostCard({ data, isComment, className }: Props) {
         <div className="flex items-center space-x-4 text-muted-foreground mt-4">
           <button
             type="button"
+            disabled={!isAuthenticated}
             onClick={handleLike}
             className={cn("flex space-x-1 items-center", {
               "text-pink-500": liked,

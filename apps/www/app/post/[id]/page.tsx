@@ -30,7 +30,7 @@ export default async function Post({
       )}
 
       <div className="space-y-6">
-        <CommentsList postId={id} />
+        <CommentsList isAuthenticated={!!user} postId={id} />
         {/* <PostCardWithComments sessionImage={user?.imageUrl} /> */}
         {/* {repliesData.map((comment) => { */}
         {/*   return ( */}

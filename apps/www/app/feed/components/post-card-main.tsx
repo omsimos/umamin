@@ -16,9 +16,10 @@ import type { PostData } from "@/types/post";
 
 type Props = {
   data: PostData;
+  isAuthenticated?: boolean;
 };
 
-export function PostCardMain({ data }: Props) {
+export function PostCardMain({ data, isAuthenticated }: Props) {
   const author = data.author;
   const [liked, setLiked] = useState<boolean>(data.isLiked === true);
   const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
@@ -88,6 +89,7 @@ export function PostCardMain({ data }: Props) {
 
         <div className="flex items-center space-x-4 text-muted-foreground mt-4">
           <button
+            disabled={!isAuthenticated}
             type="button"
             onClick={handleLike}
             className={cn("flex space-x-1 items-center", {
@@ -103,9 +105,7 @@ export function PostCardMain({ data }: Props) {
           </button>
 
           <div className="flex space-x-1 items-center">
-            <Link href={`/post/${author.id}`}>
-              <MessageCircleIcon className="h-5 w-5" />
-            </Link>
+            <MessageCircleIcon className="h-5 w-5" />
             <span>{data.commentCount}</span>
           </div>
         </div>
