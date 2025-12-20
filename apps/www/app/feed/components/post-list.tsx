@@ -14,6 +14,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo } from "react";
 import type { PublicUser } from "@/types/user";
 import { PostCard } from "./post-card";
+import { PostCardSkeleton } from "./post-card-skeleton";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"), {
   ssr: false,
@@ -130,10 +131,9 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
   if (isLoading) {
     return (
       <div className="w-full mx-auto space-y-4">
-        loading
-        {/* <NoteCardSkeleton /> */}
-        {/* <NoteCardSkeleton /> */}
-        {/* <NoteCardSkeleton /> */}
+        <PostCardSkeleton />
+        <PostCardSkeleton />
+        <PostCardSkeleton />
       </div>
     );
   }
@@ -178,7 +178,7 @@ export function PostList({ isAuthenticated }: { isAuthenticated: boolean }) {
               }}
             >
               {isLoaderRow ? (
-                "loading..."
+                <PostCardSkeleton />
               ) : isAdRow(row.index) ? (
                 // v2-notes-list (inline ad row)
                 <AdContainer className="mb-4" slotId="9012650581" />

@@ -11,10 +11,11 @@ import {
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { PostCard } from "@/app/feed/components/post-card";
-import type { PostData } from "@/types/post";
+import { PostCardSkeleton } from "@/app/feed/components/post-card-skeleton";
+import type { CommentData } from "@/types/post";
 
 type CommentsResponse = {
-  data: PostData[];
+  data: CommentData[];
   nextCursor: string | null;
 };
 
@@ -51,7 +52,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
 
   const comments = useMemo(() => {
     const flat = data?.pages.flatMap((page) => page.data) ?? [];
-    const map = new Map<string, PostData>();
+    const map = new Map<string, CommentData>();
     for (const item of flat) {
       if (!map.has(item.id)) {
         map.set(item.id, item);
@@ -105,7 +106,13 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
   }
 
   if (isLoading) {
-    return <div className="space-y-6">Loading comments...</div>;
+    return (
+      <div className="space-y-6">
+        <PostCardSkeleton />
+        <PostCardSkeleton />
+        <PostCardSkeleton />
+      </div>
+    );
   }
 
   if (comments.length === 0 && !hasNextPage && !isFetching) {
@@ -146,11 +153,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
             }}
           >
             {isLoaderRow ? (
-              <div className="flex items-center justify-center text-sm text-muted-foreground py-4">
-                {isFetchingNextPage
-                  ? "Loading more..."
-                  : "Loading more comments..."}
-              </div>
+              <PostCardSkeleton />
             ) : (
               comment && (
                 <PostCard
