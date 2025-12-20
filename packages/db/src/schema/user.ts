@@ -94,12 +94,37 @@ export const userFollowTable = sqliteTable(
   ],
 );
 
+export const userBlockTable = sqliteTable(
+  "user_block",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    blockerId: text("blocker_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    blockedId: text("blocked_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("user_block_blocker_blocked_uidx").on(t.blockerId, t.blockedId),
+    index("user_block_blocker_created_idx").on(t.blockerId, t.createdAt),
+    index("user_block_blocked_created_idx").on(t.blockedId, t.createdAt),
+  ],
+);
+
 export const userRelations = relations(userTable, ({ many }) => ({
   sentMessages: many(messageTable, { relationName: "sender" }),
   receivedMessages: many(messageTable, { relationName: "receiver" }),
   accounts: many(accountTable),
   followers: many(userFollowTable, { relationName: "followers" }),
   following: many(userFollowTable, { relationName: "following" }),
+  blocked: many(userBlockTable, { relationName: "blocked" }),
+  blockers: many(userBlockTable, { relationName: "blockers" }),
 }));
 
 export const userFollowRelations = relations(userFollowTable, ({ one }) => ({
@@ -115,11 +140,26 @@ export const userFollowRelations = relations(userFollowTable, ({ one }) => ({
   }),
 }));
 
+export const userBlockRelations = relations(userBlockTable, ({ one }) => ({
+  blocker: one(userTable, {
+    fields: [userBlockTable.blockerId],
+    references: [userTable.id],
+    relationName: "blocked",
+  }),
+  blocked: one(userTable, {
+    fields: [userBlockTable.blockedId],
+    references: [userTable.id],
+    relationName: "blockers",
+  }),
+}));
+
 export type SelectUser = typeof userTable.$inferSelect;
 export type SelectSession = typeof sessionTable.$inferSelect;
 export type SelectAccount = typeof accountTable.$inferSelect;
 export type SelectUserFollow = typeof userFollowTable.$inferSelect;
+export type SelectUserBlock = typeof userBlockTable.$inferSelect;
 
 export type InsertUser = typeof userTable.$inferInsert;
 export type InsertSession = typeof sessionTable.$inferInsert;
 export type InsertUserFollow = typeof userFollowTable.$inferInsert;
+export type InsertUserBlock = typeof userBlockTable.$inferInsert;

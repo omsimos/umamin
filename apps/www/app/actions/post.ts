@@ -8,7 +8,8 @@ import {
   postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
-import { and, eq, exists, sql } from "drizzle-orm";
+import { userBlockTable } from "@umamin/db/schema/user";
+import { and, eq, exists, or, sql } from "drizzle-orm";
 import { cacheLife, cacheTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
@@ -39,6 +40,40 @@ export async function getPostAction(id: string) {
   const { session } = await getSession();
 
   if (!session) return res;
+
+  const isBlocked = await (async () => {
+    "use cache: private";
+    cacheTag(`user-blocks:${session.userId}`);
+    cacheLife({ revalidate: 30 });
+
+    const blocked = await db
+      .select({
+        blocked: exists(
+          db
+            .select({ id: userBlockTable.id })
+            .from(userBlockTable)
+            .where(
+              or(
+                and(
+                  eq(userBlockTable.blockerId, session.userId),
+                  eq(userBlockTable.blockedId, res.authorId),
+                ),
+                and(
+                  eq(userBlockTable.blockerId, res.authorId),
+                  eq(userBlockTable.blockedId, session.userId),
+                ),
+              ),
+            ),
+        ),
+      })
+      .from(postTable)
+      .where(eq(postTable.id, id))
+      .limit(1);
+
+    return Boolean(blocked?.[0]?.blocked);
+  })();
+
+  if (isBlocked) return null;
 
   const isLiked = await (async () => {
     "use cache: private";

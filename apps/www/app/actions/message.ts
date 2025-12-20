@@ -2,8 +2,9 @@
 
 import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
+import { userBlockTable } from "@umamin/db/schema/user";
 import { aesEncrypt } from "@umamin/encryption";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
@@ -101,6 +102,26 @@ export async function sendMessageAction(
     const encryptedContent = await aesEncrypt(formattedContent);
 
     const senderId = session?.userId ?? null;
+
+    if (senderId) {
+      const blocked = await db.query.userBlockTable.findFirst({
+        columns: { id: true },
+        where: or(
+          and(
+            eq(userBlockTable.blockerId, receiverId),
+            eq(userBlockTable.blockedId, senderId),
+          ),
+          and(
+            eq(userBlockTable.blockerId, senderId),
+            eq(userBlockTable.blockedId, receiverId),
+          ),
+        ),
+      });
+
+      if (blocked) {
+        return { success: true };
+      }
+    }
 
     await db.insert(messageTable).values({
       senderId,

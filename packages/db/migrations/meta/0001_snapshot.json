@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "76b226a7-a139-4a95-8a56-cef703606065",
+  "id": "4c570da9-1fc9-4356-a53f-ee1ea350f1e3",
   "prevId": "8d585efc-818a-46bc-889d-7bcdda6cfc4e",
   "tables": {
     "message": {
@@ -376,6 +376,95 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "post_repost": {
+      "name": "post_repost",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "post_id": {
+          "name": "post_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "post_repost_post_user_uidx": {
+          "name": "post_repost_post_user_uidx",
+          "columns": ["post_id", "user_id"],
+          "isUnique": true
+        },
+        "post_repost_user_created_idx": {
+          "name": "post_repost_user_created_idx",
+          "columns": ["user_id", "created_at"],
+          "isUnique": false
+        },
+        "post_repost_post_created_idx": {
+          "name": "post_repost_post_created_idx",
+          "columns": ["post_id", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "post_repost_post_id_postTable_id_fk": {
+          "name": "post_repost_post_id_postTable_id_fk",
+          "tableFrom": "post_repost",
+          "tableTo": "postTable",
+          "columnsFrom": ["post_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "post_repost_user_id_user_id_fk": {
+          "name": "post_repost_user_id_user_id_fk",
+          "tableFrom": "post_repost",
+          "tableTo": "user",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "postTable": {
       "name": "postTable",
       "columns": {
@@ -426,6 +515,14 @@
         },
         "comment_count": {
           "name": "comment_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "repost_count": {
+          "name": "repost_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -561,6 +658,154 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "user_block": {
+      "name": "user_block",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "blocker_id": {
+          "name": "blocker_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "blocked_id": {
+          "name": "blocked_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "user_block_blocker_blocked_uidx": {
+          "name": "user_block_blocker_blocked_uidx",
+          "columns": ["blocker_id", "blocked_id"],
+          "isUnique": true
+        },
+        "user_block_blocker_created_idx": {
+          "name": "user_block_blocker_created_idx",
+          "columns": ["blocker_id", "created_at"],
+          "isUnique": false
+        },
+        "user_block_blocked_created_idx": {
+          "name": "user_block_blocked_created_idx",
+          "columns": ["blocked_id", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "user_block_blocker_id_user_id_fk": {
+          "name": "user_block_blocker_id_user_id_fk",
+          "tableFrom": "user_block",
+          "tableTo": "user",
+          "columnsFrom": ["blocker_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_block_blocked_id_user_id_fk": {
+          "name": "user_block_blocked_id_user_id_fk",
+          "tableFrom": "user_block",
+          "tableTo": "user",
+          "columnsFrom": ["blocked_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "user_follow": {
+      "name": "user_follow",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "follower_id": {
+          "name": "follower_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "following_id": {
+          "name": "following_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "user_follow_follower_following_uidx": {
+          "name": "user_follow_follower_following_uidx",
+          "columns": ["follower_id", "following_id"],
+          "isUnique": true
+        },
+        "user_follow_follower_created_idx": {
+          "name": "user_follow_follower_created_idx",
+          "columns": ["follower_id", "created_at"],
+          "isUnique": false
+        },
+        "user_follow_following_created_idx": {
+          "name": "user_follow_following_created_idx",
+          "columns": ["following_id", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "user_follow_follower_id_user_id_fk": {
+          "name": "user_follow_follower_id_user_id_fk",
+          "tableFrom": "user_follow",
+          "tableTo": "user",
+          "columnsFrom": ["follower_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_follow_following_id_user_id_fk": {
+          "name": "user_follow_following_id_user_id_fk",
+          "tableFrom": "user_follow",
+          "tableTo": "user",
+          "columnsFrom": ["following_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "user": {
       "name": "user",
       "columns": {
@@ -621,6 +866,22 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'Send me an anonymous message!'"
+        },
+        "follower_count": {
+          "name": "follower_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "following_count": {
+          "name": "following_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
         "created_at": {
           "name": "created_at",

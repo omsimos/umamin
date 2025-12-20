@@ -14,6 +14,7 @@ export function ReceivedMessageCard({ data }: { data: SelectMessage }) {
         <div className="absolute top-4 right-4 text-muted-foreground">
           <ReceivedMessageMenu
             {...data}
+            senderId={data.senderId}
             reply={data.reply}
             updatedAt={data.updatedAt}
           />

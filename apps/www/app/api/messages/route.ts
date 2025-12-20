@@ -1,8 +1,8 @@
 import { db } from "@umamin/db";
 import { messageTable, type SelectMessage } from "@umamin/db/schema/message";
-import { userTable } from "@umamin/db/schema/user";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { aesDecrypt } from "@umamin/encryption";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, exists, isNull, lt, not, or } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     const result = await (async () => {
       "use cache: private";
       cacheTag(`messages:${type}:${session.userId}`);
+      cacheTag(`user-blocks:${session.userId}`);
       cacheLife({ revalidate: 30 });
 
       // biome-ignore lint/suspicious/noImplicitAnyLet: drizzle cursor condition
@@ -49,9 +50,73 @@ export async function GET(req: NextRequest) {
         type === "received" ? messageTable.receiverId : messageTable.senderId;
 
       const baseCondition = eq(messageId, session.userId);
+      const blockedCondition =
+        type === "received"
+          ? or(
+              isNull(messageTable.senderId),
+              and(
+                not(
+                  exists(
+                    db
+                      .select({ id: userBlockTable.id })
+                      .from(userBlockTable)
+                      .where(
+                        and(
+                          eq(userBlockTable.blockerId, session.userId),
+                          eq(userBlockTable.blockedId, messageTable.senderId),
+                        ),
+                      ),
+                  ),
+                ),
+                not(
+                  exists(
+                    db
+                      .select({ id: userBlockTable.id })
+                      .from(userBlockTable)
+                      .where(
+                        and(
+                          eq(userBlockTable.blockerId, messageTable.senderId),
+                          eq(userBlockTable.blockedId, session.userId),
+                        ),
+                      ),
+                  ),
+                ),
+              ),
+            )
+          : and(
+              not(
+                exists(
+                  db
+                    .select({ id: userBlockTable.id })
+                    .from(userBlockTable)
+                    .where(
+                      and(
+                        eq(userBlockTable.blockerId, session.userId),
+                        eq(userBlockTable.blockedId, messageTable.receiverId),
+                      ),
+                    ),
+                ),
+              ),
+              not(
+                exists(
+                  db
+                    .select({ id: userBlockTable.id })
+                    .from(userBlockTable)
+                    .where(
+                      and(
+                        eq(userBlockTable.blockerId, messageTable.receiverId),
+                        eq(userBlockTable.blockedId, session.userId),
+                      ),
+                    ),
+                ),
+              ),
+            );
+
+      const baseWhere = and(baseCondition, blockedCondition);
+
       const whereCondition = cursorCondition
-        ? and(cursorCondition, baseCondition)
-        : baseCondition;
+        ? and(cursorCondition, baseWhere)
+        : baseWhere;
 
       const rows = await db
         .select({
