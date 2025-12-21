@@ -15,6 +15,7 @@ import {
 } from "@umamin/ui/components/dropdown-menu";
 import { cn } from "@umamin/ui/lib/utils";
 import {
+  BadgeCheckIcon,
   HeartIcon,
   MessageCircleIcon,
   MessageSquareTextIcon,
@@ -32,7 +33,12 @@ import {
   removeLikeAction,
   removeRepostAction,
 } from "@/app/actions/post";
-import { isAlreadyRemoved, isAlreadyReposted, shortTimeAgo } from "@/lib/utils";
+import {
+  isAlreadyRemoved,
+  isAlreadyReposted,
+  isOlderThanOneYear,
+  shortTimeAgo,
+} from "@/lib/utils";
 import type { CommentData, PostData } from "@/types/post";
 import { PostMenu } from "./post-menu";
 import { RepostDialog } from "./repost-dialog";
@@ -224,7 +230,11 @@ export function PostCard({
         "border border-muted rounded-md px-2 py-3 sm:px-4": isRepost,
       })}
     >
-      <Avatar>
+      <Avatar
+        className={cn({
+          "avatar-shine": isOlderThanOneYear(author?.createdAt),
+        })}
+      >
         <AvatarImage src={author?.imageUrl ?? ""} alt="User avatar" />
         <AvatarFallback>
           <ScanFaceIcon />
@@ -241,9 +251,10 @@ export function PostCard({
               {author?.displayName}
             </Link>
 
-            {/* {author?.isVerified && ( */}
-            {/*   <BadgeCheckIcon className="w-4 h-4 text-pink-500" /> */}
-            {/* )} */}
+            {author?.username &&
+              process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
+                author.username,
+              ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
             <span className="text-muted-foreground">@{author?.username}</span>
           </div>
 
