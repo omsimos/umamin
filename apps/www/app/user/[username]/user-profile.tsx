@@ -3,6 +3,7 @@
 import { Button } from "@umamin/ui/components/button";
 import {
   MessageSquareMoreIcon,
+  MessageSquareXIcon,
   UserCheckIcon,
   UserPlusIcon,
 } from "lucide-react";
@@ -109,6 +110,7 @@ export function UserProfile({ user, currentUserId, isAuthenticated }: Props) {
       title: isBlocked ? "Unblock" : "Block",
       onClick: handleBlock,
       className: "text-red-500",
+      icon: <MessageSquareXIcon className="h-4 w-4" />,
       disabled: !isAuthenticated || isSelf,
     },
   ];

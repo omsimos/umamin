@@ -12,6 +12,12 @@ import {
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
 import { Button } from "@umamin/ui/components/button";
+import {
+  DownloadIcon,
+  MessageSquareTextIcon,
+  MessageSquareXIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteMessageAction } from "@/app/actions/message";
@@ -89,10 +95,12 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     {
       title: "Reply",
       onClick: () => setReplyDialogOpen(true),
+      icon: <MessageSquareTextIcon className="h-4 w-4" />,
     },
     {
       title: "Save Image",
       onClick: () => saveImage(`umamin-${id}`),
+      icon: <DownloadIcon className="h-4 w-4" />,
     },
     ...(canBlock
       ? [
@@ -100,6 +108,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
             title: "Block",
             onClick: () => setBlockOpen(true),
             className: "text-red-500",
+            icon: <MessageSquareXIcon className="h-4 w-4" />,
           },
         ]
       : []),
@@ -107,6 +116,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
       title: "Delete",
       onClick: () => setOpen(true),
       className: "text-red-500",
+      icon: <Trash2Icon className="h-4 w-4" />,
     },
   ];
 

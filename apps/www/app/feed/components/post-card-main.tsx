@@ -15,6 +15,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import {
   HeartIcon,
   MessageCircleIcon,
+  MessageSquareTextIcon,
   Repeat2Icon,
   ScanFaceIcon,
 } from "lucide-react";
@@ -229,7 +230,10 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
                   handleRepost();
                 }}
               >
-                {reposted ? "Remove repost" : "Repost"}
+                <span className="flex items-center gap-2">
+                  <Repeat2Icon className="h-4 w-4" />
+                  {reposted ? "Remove repost" : "Repost"}
+                </span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
@@ -237,7 +241,10 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
                 }}
                 disabled={reposted}
               >
-                Quote
+                <span className="flex items-center gap-2">
+                  <MessageSquareTextIcon className="h-4 w-4" />
+                  Quote
+                </span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -19,10 +19,12 @@ import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
   BadgeCheckIcon,
+  DownloadIcon,
   MessageCircleDashedIcon,
   MessageCircleMoreIcon,
   MessageSquareXIcon,
   ScanFaceIcon,
+  ScrollIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { clearNoteAction, getCurrentNoteAction } from "@/app/actions/note";
@@ -56,11 +58,13 @@ export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
     {
       title: "Save Image",
       onClick: () => saveImage(`umamin-${data.id}`),
+      icon: <DownloadIcon className="h-4 w-4" />,
     },
     {
       title: "Clear Note",
       onClick: () => clearNoteMutation.mutate(),
       className: "text-red-500",
+      icon: <ScrollIcon className="h-4 w-4" />,
     },
   ];
 
