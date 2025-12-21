@@ -1,5 +1,6 @@
 "use client";
 
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { Button } from "@umamin/ui/components/button";
 import {
   MessageSquareMoreIcon,
@@ -37,6 +38,21 @@ export function UserProfile({ user, currentUserId, isAuthenticated }: Props) {
   const isBlockedBy = user.isBlockedBy === true;
   const isSelf = currentUserId === user.id;
 
+  const rateLimitedFollow = useAsyncRateLimitedCallback(
+    async (prevFollowing: boolean) =>
+      prevFollowing
+        ? unfollowUserAction({ userId: user.id })
+        : followUserAction({ userId: user.id }),
+    {
+      limit: 4,
+      window: 10000,
+      windowType: "sliding",
+      onReject: () => {
+        throw new Error("You're following too fast. Please wait a moment.");
+      },
+    },
+  );
+
   const handleFollow = async () => {
     if (!isAuthenticated || isSelf) return;
 
@@ -47,15 +63,14 @@ export function UserProfile({ user, currentUserId, isAuthenticated }: Props) {
     setFollowerCount((v) => (prevFollowing ? Math.max(v - 1, 0) : v + 1));
 
     try {
+      const res = await rateLimitedFollow(prevFollowing);
       if (prevFollowing) {
-        const res = await unfollowUserAction({ userId: user.id });
         if (res && "alreadyRemoved" in res && res.alreadyRemoved) {
           setIsFollowing(false);
           setFollowerCount(Math.max(prevFollowerCount - 1, 0));
         }
         toast.success("Unfollowed");
       } else {
-        const res = await followUserAction({ userId: user.id });
         if (res && "alreadyFollowing" in res && res.alreadyFollowing) {
           setIsFollowing(prevFollowing);
           setFollowerCount(prevFollowerCount);
@@ -67,7 +82,11 @@ export function UserProfile({ user, currentUserId, isAuthenticated }: Props) {
     } catch (err) {
       setIsFollowing(prevFollowing);
       setFollowerCount(prevFollowerCount);
-      toast.error("Failed to update follow. Please try again.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to update follow. Please try again.",
+      );
       console.log(err);
     }
   };
