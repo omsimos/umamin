@@ -8,25 +8,14 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
 import { cn } from "@umamin/ui/lib/utils";
-import { formatDistanceToNow } from "date-fns";
-import {
-  AlertCircleIcon,
-  MessageCircleDashedIcon,
-  Repeat2Icon,
-} from "lucide-react";
+import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useEffect, useMemo } from "react";
-import { shortTimeAgo } from "@/lib/utils";
 import type { FeedItem } from "@/types/post";
 import { PostCard } from "./post-card";
 import { PostCardSkeleton } from "./post-card-skeleton";
+import { RepostHeader } from "./repost-header";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"), {
   ssr: false,
@@ -225,58 +214,11 @@ export function PostList({
                   const repost = item.repost;
                   return (
                     <div className="mt-2">
-                      {repost.content ? (
-                        <div className="flex items-start gap-3 px-2 sm:px-0">
-                          <Avatar className="size-9">
-                            <AvatarImage
-                              src={repost.user.imageUrl ?? ""}
-                              alt="User avatar"
-                            />
-                            <AvatarFallback>
-                              <Repeat2Icon className="size-4" />
-                            </AvatarFallback>
-                          </Avatar>
-
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between text-[15px]">
-                              <div className="flex items-center gap-2">
-                                <Link
-                                  href={`/user/${repost.user.username}`}
-                                  className="font-semibold hover:underline"
-                                >
-                                  {repost.user.displayName ??
-                                    repost.user.username}
-                                </Link>
-                                <span className="text-muted-foreground">
-                                  @{repost.user.username}
-                                </span>
-                              </div>
-                              <span className="text-muted-foreground text-xs">
-                                {shortTimeAgo(repost.createdAt)}
-                              </span>
-                            </div>
-                            {repost.content && (
-                              <p className="text-sm mt-2">{repost.content}</p>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex px-2 sm:px-0 items-center text-muted-foreground text-sm">
-                          <Repeat2Icon className="inline size-4 mr-1" />
-                          <Link
-                            href={`/user/${repost.user.username}`}
-                            className="hover:underline mr-1 font-semibold"
-                          >
-                            @{repost.user.username}
-                          </Link>
-                          <span>
-                            reposted{" "}
-                            {formatDistanceToNow(repost.createdAt, {
-                              addSuffix: true,
-                            })}
-                          </span>
-                        </div>
-                      )}
+                      <RepostHeader
+                        user={repost.user}
+                        createdAt={repost.createdAt}
+                        content={repost.content}
+                      />
 
                       <div
                         className={cn(`mt-4 sm:pr-0`, {
