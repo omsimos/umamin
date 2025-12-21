@@ -56,11 +56,14 @@ export async function logout() {
 export async function login(_initialState: unknown, formData: FormData) {
   const username = formData.get("username");
 
+  const normalizedUsername =
+    typeof username === "string" ? username.trim().toLowerCase() : "";
+
   if (
     typeof username !== "string" ||
-    username.length < 5 ||
-    username.length > 20 ||
-    !/^[a-zA-Z0-9_-]+$/.test(username)
+    normalizedUsername.length < 5 ||
+    normalizedUsername.length > 20 ||
+    !/^[a-zA-Z0-9_-]+$/.test(normalizedUsername)
   ) {
     return {
       error: "Incorrect username or password",
@@ -83,7 +86,7 @@ export async function login(_initialState: unknown, formData: FormData) {
     const [existingUser] = await db
       .select()
       .from(userTable)
-      .where(eq(userTable.username, username.toLowerCase()))
+      .where(eq(userTable.username, normalizedUsername))
       .limit(1);
 
     if (!existingUser || !existingUser.passwordHash) {
@@ -117,7 +120,10 @@ export async function login(_initialState: unknown, formData: FormData) {
 }
 
 export async function signup(data: z.infer<typeof registerSchema>) {
-  const validatedFields = registerSchema.safeParse(data);
+  const validatedFields = registerSchema.safeParse({
+    ...data,
+    username: data.username?.trim().toLowerCase(),
+  });
 
   if (!validatedFields.success) {
     return {

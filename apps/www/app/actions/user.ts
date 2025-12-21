@@ -23,6 +23,7 @@ import {
   normaliseEmailForGravatar,
 } from "@/lib/avatar";
 import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
+import { formatContent } from "@/lib/utils";
 import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 
 const gravatarEmailSchema = z
@@ -249,12 +250,19 @@ export async function generalSettingsAction(
     }
 
     const data = params.data;
+    const normalized = {
+      ...data,
+      bio: formatContent(data.bio ?? ""),
+      question: formatContent(data.question),
+      displayName: data.displayName?.trim() ?? null,
+      username: data.username?.trim().toLowerCase(),
+    };
 
     const oldUsername = user?.username;
 
     await db
       .update(userTable)
-      .set(data)
+      .set(normalized)
       .where(eq(userTable.id, session.userId));
 
     // Invalidate API cache for old and new user tags
@@ -356,6 +364,10 @@ export async function updatePasswordAction(
 
 export async function followUserAction({ userId }: { userId: string }) {
   try {
+    const parsed = z.string().min(1).safeParse(userId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session } = await getSession();
 
     if (!session) {
@@ -427,6 +439,10 @@ export async function followUserAction({ userId }: { userId: string }) {
 
 export async function unfollowUserAction({ userId }: { userId: string }) {
   try {
+    const parsed = z.string().min(1).safeParse(userId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session } = await getSession();
 
     if (!session) {
@@ -499,6 +515,10 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
 
 export async function blockUserAction({ userId }: { userId: string }) {
   try {
+    const parsed = z.string().min(1).safeParse(userId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session, user } = await getSession();
 
     if (!session) {
@@ -598,6 +618,10 @@ export async function blockUserAction({ userId }: { userId: string }) {
 
 export async function unblockUserAction({ userId }: { userId: string }) {
   try {
+    const parsed = z.string().min(1).safeParse(userId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session, user } = await getSession();
 
     if (!session) {

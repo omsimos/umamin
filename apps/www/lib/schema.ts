@@ -4,6 +4,7 @@ export const registerSchema = z
   .object({
     username: z
       .string()
+      .trim()
       .min(5, {
         message: "Username must be at least 5 characters",
       })

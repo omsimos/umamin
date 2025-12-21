@@ -88,6 +88,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
               label="Username"
               placeholder="umamin"
               isRequired
+              transform={(value) => value.toLowerCase()}
               disabled={!user.account || mutation.isPending}
             />
             {user.account ? (
