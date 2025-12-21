@@ -1,5 +1,6 @@
 "use client";
 
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SelectUser } from "@umamin/db/schema/user";
@@ -36,9 +37,23 @@ export default function ReplyForm({ user, postId }: Props) {
     return rest;
   }, [user]);
 
+  const rateLimitedComment = useAsyncRateLimitedCallback(createCommentAction, {
+    limit: 2,
+    window: 60000, // 1 minute
+    windowType: "sliding",
+    onReject: () => {
+      throw new Error("You're replying too fast. Please wait a bit.");
+    },
+  });
+
   const mutation = useMutation({
-    mutationFn: (nextContent: string) =>
-      createCommentAction({ content: nextContent, postId }),
+    mutationFn: async (nextContent: string) => {
+      const res = await rateLimitedComment({ content: nextContent, postId });
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+      return res;
+    },
     onMutate: async (nextContent) => {
       await queryClient.cancelQueries({ queryKey: ["post-comments", postId] });
 
@@ -84,11 +99,11 @@ export default function ReplyForm({ user, postId }: Props) {
       setContent("");
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
         queryClient.setQueryData(["post-comments", postId], ctx.previous);
       }
-      toast.error("Failed to create comment. Please try again.");
+      toast.error(err.message ?? "Failed to create comment. Please try again.");
     },
     onSuccess: (res) => {
       if (res?.error) {
