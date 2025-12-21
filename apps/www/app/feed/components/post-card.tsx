@@ -1,6 +1,7 @@
 "use client";
 
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Avatar,
   AvatarFallback,
@@ -67,6 +68,7 @@ export function PostCard({
     "repostCount" in data ? (data.repostCount ?? 0) : 0,
   );
   const [repostDialogOpen, setRepostDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setLiked(data.isLiked === true);
@@ -161,6 +163,7 @@ export function PostCard({
           setReposts((v) => Math.max(v - 1, 0));
         }
         toast.success("Repost removed");
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
       } else {
         if (isAlreadyReposted(res)) {
           setReposted(prevReposted);
@@ -169,6 +172,7 @@ export function PostCard({
           return;
         }
         toast.success("Reposted");
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
       }
     } catch (err) {
       setReposted(prevReposted);
@@ -203,6 +207,7 @@ export function PostCard({
         return;
       }
       toast.success("Quote reposted");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     } catch (err) {
       setReposted(prevReposted);
       setReposts(prevReposts);
