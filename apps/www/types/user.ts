@@ -8,18 +8,22 @@ export type PublicUser = Omit<SelectUser, "passwordHash">;
 export const generalSettingsSchema = z.object({
   question: z
     .string()
+    .trim()
     .min(1, { error: "Custom message must be at least 1 character." })
     .max(150, {
       error: "Custom message must not be longer than 150 characters.",
     }),
   bio: z
     .string()
+    .trim()
     .max(150, { error: "Bio must not be longer than 150 characters." }),
   displayName: z
     .string()
+    .trim()
     .max(20, { error: "Display name must not exceed 20 characters." }),
   username: z
     .string()
+    .trim()
     .min(5, { error: "Username must be at least 5 characters." })
     .max(20, { error: "Username must not exceed 20 characters." })
     .refine((v) => /^[a-zA-Z0-9_-]+$/.test(v), {

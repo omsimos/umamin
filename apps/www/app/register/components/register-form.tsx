@@ -38,7 +38,12 @@ export function RegisterForm() {
         <form.AppField
           name="username"
           children={(field) => (
-            <field.TextField isRequired label="Username" placeholder="umamin" />
+            <field.TextField
+              isRequired
+              label="Username"
+              placeholder="umamin"
+              transform={(value) => value.toLowerCase()}
+            />
           )}
         />
 

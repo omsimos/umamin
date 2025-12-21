@@ -12,6 +12,10 @@ import { formatContent } from "@/lib/utils";
 
 export async function deleteMessageAction(id: string) {
   try {
+    const parsed = z.string().min(1).safeParse(id);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session } = await getSession();
 
     if (!session) {
@@ -46,13 +50,28 @@ export async function createReplyAction({
   content,
 }: CreateReplyParams) {
   try {
+    const params = z
+      .object({
+        messageId: z.string().min(1),
+        content: z
+          .string()
+          .trim()
+          .min(1, { error: "Content cannot be empty" })
+          .max(500, { error: "Content cannot exceed 500 characters" }),
+      })
+      .safeParse({ messageId, content });
+
+    if (!params.success) {
+      return { error: "Invalid input" };
+    }
+
     const { session } = await getSession();
 
     if (!session) {
       throw new Error("Unauthorized");
     }
 
-    const encryptedReply = await aesEncrypt(content);
+    const encryptedReply = await aesEncrypt(params.data.content);
 
     await db
       .update(messageTable)
@@ -76,9 +95,9 @@ export async function createReplyAction({
 }
 
 const sendMessageSchema = z.object({
-  question: z.string().min(1).max(500),
-  content: z.string().min(1).max(500),
-  receiverId: z.string(),
+  question: z.string().trim().min(1).max(500),
+  content: z.string().trim().min(1).max(500),
+  receiverId: z.string().min(1),
 });
 
 export async function sendMessageAction(

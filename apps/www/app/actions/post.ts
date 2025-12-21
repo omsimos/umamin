@@ -13,10 +13,12 @@ import { and, eq, exists, or, sql } from "drizzle-orm";
 import { cacheLife, cacheTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import { formatContent } from "@/lib/utils";
 
 const createPostSchema = z.object({
   content: z
     .string()
+    .trim()
     .min(1, { error: "Content cannot be empty" })
     .max(500, { error: "Content cannot exceed 500 characters" }),
 });
@@ -165,7 +167,7 @@ export async function createPostAction(
     }
 
     await db.insert(postTable).values({
-      content,
+      content: formatContent(content),
       authorId: session.userId,
     });
 
@@ -189,12 +191,8 @@ export async function deletePostAction({ postId }: { postId: string }) {
       where: eq(postTable.id, postId),
     });
 
-    if (!post) {
+    if (!post || post.authorId !== session.userId) {
       return { error: "Post not found" };
-    }
-
-    if (post.authorId !== session.userId) {
-      throw new Error("Unauthorized");
     }
 
     await db.delete(postTable).where(eq(postTable.id, postId));
@@ -216,6 +214,7 @@ const createCommentSchema = z.object({
   postId: z.string(),
   content: z
     .string()
+    .trim()
     .min(1, { error: "Content cannot be empty" })
     .max(500, { error: "Content cannot exceed 500 characters" }),
 });
@@ -240,7 +239,7 @@ export async function createCommentAction(
     await db.transaction(async (tx) => {
       await tx.insert(postCommentTable).values({
         postId,
-        content,
+        content: formatContent(content),
         authorId: session.userId,
       });
 
@@ -263,8 +262,14 @@ export async function createCommentAction(
   }
 }
 
+const idSchema = z.string().min(1);
+
 export async function addLikeAction({ postId }: { postId: string }) {
   try {
+    const parsed = idSchema.safeParse(postId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session } = await getSession();
 
     if (!session) {
@@ -314,6 +319,10 @@ export async function addLikeAction({ postId }: { postId: string }) {
 
 export async function removeLikeAction({ postId }: { postId: string }) {
   try {
+    const parsed = idSchema.safeParse(postId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session } = await getSession();
 
     if (!session) {
@@ -371,6 +380,10 @@ export async function addCommentLikeAction({
   postId?: string;
 }) {
   try {
+    const parsed = idSchema.safeParse(commentId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session } = await getSession();
 
     if (!session) {
@@ -428,6 +441,10 @@ export async function removeCommentLikeAction({
   postId?: string;
 }) {
   try {
+    const parsed = idSchema.safeParse(commentId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session } = await getSession();
 
     if (!session) {
@@ -482,6 +499,7 @@ const createRepostSchema = z.object({
   postId: z.string(),
   content: z
     .string()
+    .trim()
     .max(500, { error: "Content cannot exceed 500 characters" })
     .optional()
     .or(z.literal("")),
@@ -517,10 +535,12 @@ export async function addRepostAction(
         return { success: true, alreadyReposted: true };
       }
 
+      const formatted = content?.trim() ? formatContent(content) : null;
+
       await tx.insert(postRepostTable).values({
         postId,
         userId: session.userId,
-        content: content?.trim() ? content.trim() : null,
+        content: formatted,
       });
 
       await tx
@@ -545,6 +565,10 @@ export async function addRepostAction(
 
 export async function removeRepostAction({ postId }: { postId: string }) {
   try {
+    const parsed = idSchema.safeParse(postId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
     const { session } = await getSession();
 
     if (!session) {

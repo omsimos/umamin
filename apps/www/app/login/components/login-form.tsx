@@ -21,6 +21,9 @@ export function LoginForm() {
           name="username"
           placeholder="umamin"
           className="mt-2"
+          onChange={(e) => {
+            e.currentTarget.value = e.currentTarget.value.toLowerCase();
+          }}
         />
       </div>
 

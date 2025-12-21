@@ -63,7 +63,7 @@ export function formatUsername(username: string) {
 }
 
 export function formatContent(content: string) {
-  return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n");
+  return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n").trim();
 }
 
 export const saveImage = (id: string, isPost?: boolean) => {
