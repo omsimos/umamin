@@ -1,5 +1,6 @@
 "use client";
 
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
@@ -28,9 +29,23 @@ export default function PostForm({ user }: Props) {
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
 
+  const rateLimitedPost = useAsyncRateLimitedCallback(createPostAction, {
+    limit: 2,
+    window: 60000, // 1 minute
+    windowType: "sliding",
+    onReject: () => {
+      throw new Error("You're posting too fast. Please wait a bit.");
+    },
+  });
+
   const mutation = useMutation({
-    mutationFn: (nextContent: string) =>
-      createPostAction({ content: nextContent }),
+    mutationFn: async (nextContent: string) => {
+      const res = await rateLimitedPost({ content: nextContent });
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+      return res;
+    },
     onMutate: async (nextContent) => {
       if (!user) return {};
       await queryClient.cancelQueries({ queryKey: ["posts"] });
@@ -76,11 +91,11 @@ export default function PostForm({ user }: Props) {
       setTextAreaCount(0);
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
         queryClient.setQueryData(["posts"], ctx.previous);
       }
-      toast.error("Failed to create post. Please try again.");
+      toast.error(err.message ?? "Failed to create post. Please try again.");
     },
     onSuccess: (res) => {
       if (res?.error) {

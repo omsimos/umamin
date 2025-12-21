@@ -1,3 +1,4 @@
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import {
@@ -28,9 +29,18 @@ export function ReplyDialog(props: Props) {
   const [reply, setReply] = useState(props.data.reply ?? "");
   const inputRef = useDynamicTextarea(content);
 
+  const rateLimitedReply = useAsyncRateLimitedCallback(createReplyAction, {
+    limit: 3,
+    window: 60000, // 1 minute
+    windowType: "sliding",
+    onReject: () => {
+      throw new Error("You're replying too fast. Please wait a bit.");
+    },
+  });
+
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await createReplyAction({
+      const res = await rateLimitedReply({
         messageId: props.data.id,
         content,
       });
