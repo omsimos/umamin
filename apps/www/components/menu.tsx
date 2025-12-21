@@ -11,6 +11,7 @@ import { Icons } from "@/lib/icons";
 export type MenuItems = {
   title: string;
   onClick: () => void;
+  icon?: React.ReactNode;
   className?: string;
   disabled?: boolean;
 }[];
@@ -29,7 +30,10 @@ export const Menu = ({ menuItems }: { menuItems: MenuItems }) => {
               onClick={item.onClick}
               className={item.className}
             >
-              {item.title}
+              <span className="flex items-center gap-2">
+                {item.icon}
+                {item.title}
+              </span>
             </DropdownMenuItem>
             {i + 1 !== menuItems.length && <DropdownMenuSeparator />}
           </React.Fragment>

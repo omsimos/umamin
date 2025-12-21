@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
 import { Button } from "@umamin/ui/components/button";
+import { DownloadIcon, Share2Icon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deletePostAction } from "@/app/actions/post";
@@ -66,10 +67,12 @@ export function PostMenu({
     {
       title: "Save Image",
       onClick: () => saveImage(imageId, true),
+      icon: <DownloadIcon className="h-4 w-4" />,
     },
     {
       title: "Share",
       onClick: () => sharePost(postId),
+      icon: <Share2Icon className="h-4 w-4" />,
     },
     ...(canDelete
       ? [
@@ -77,6 +80,7 @@ export function PostMenu({
             title: "Delete",
             onClick: () => setOpen(true),
             className: "text-red-500",
+            icon: <Trash2Icon className="h-4 w-4" />,
           },
         ]
       : []),
