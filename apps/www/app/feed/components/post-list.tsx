@@ -162,8 +162,8 @@ export function PostList({
         </Alert>
       )}
 
-      {/* v2-notes (top ad) */}
-      <AdContainer className="mb-5" slotId="1999152698" />
+      {/* social-top (top ad) */}
+      <AdContainer className="mb-5" slotId="9864130654" />
 
       <div
         style={{
@@ -192,8 +192,8 @@ export function PostList({
               {isLoaderRow ? (
                 <PostCardSkeleton />
               ) : isAdRow(row.index) ? (
-                // v2-notes-list (inline ad row)
-                <AdContainer className="mb-4" slotId="9012650581" />
+                // social-list (inline ad row)
+                <AdContainer className="mb-4" slotId="8551048984" />
               ) : (
                 (() => {
                   const dataIndex = dataIndexForRow(row.index);
