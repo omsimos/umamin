@@ -1,5 +1,6 @@
 "use client";
 
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import {
   Avatar,
   AvatarFallback,
@@ -74,6 +75,49 @@ export function PostCard({
     setReposts("repostCount" in data ? (data.repostCount ?? 0) : 0);
   }, [data.isLiked, data.likeCount, data]);
 
+  const rateLimitedLike = useAsyncRateLimitedCallback(
+    async (prevLiked: boolean) => {
+      if (isComment) {
+        return prevLiked
+          ? removeCommentLikeAction({
+              commentId: data.id,
+              postId: commentPostId,
+            })
+          : addCommentLikeAction({
+              commentId: data.id,
+              postId: commentPostId,
+            });
+      }
+
+      return prevLiked
+        ? removeLikeAction({ postId: data.id })
+        : addLikeAction({ postId: data.id });
+    },
+    {
+      limit: 4,
+      window: 10000,
+      windowType: "sliding",
+      onReject: () => {
+        throw new Error("You're tapping too fast. Please wait a moment.");
+      },
+    },
+  );
+
+  const rateLimitedRepost = useAsyncRateLimitedCallback(
+    async (prevReposted: boolean) =>
+      prevReposted
+        ? removeRepostAction({ postId: data.id })
+        : addRepostAction({ postId: data.id }),
+    {
+      limit: 4,
+      window: 10000,
+      windowType: "sliding",
+      onReject: () => {
+        throw new Error("You're reposting too fast. Please wait a moment.");
+      },
+    },
+  );
+
   const handleLike = async () => {
     const prevLiked = liked;
     const prevLikes = likes;
@@ -82,33 +126,22 @@ export function PostCard({
     setLikes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
 
     try {
+      await rateLimitedLike(prevLiked);
       if (isComment) {
-        if (prevLiked) {
-          await removeCommentLikeAction({
-            commentId: data.id,
-            postId: commentPostId,
-          });
-          toast.success("Comment unliked");
-        } else {
-          await addCommentLikeAction({
-            commentId: data.id,
-            postId: commentPostId,
-          });
-          toast.success("Comment liked successfully!");
-        }
+        toast.success(
+          prevLiked ? "Comment unliked" : "Comment liked successfully!",
+        );
       } else {
-        if (prevLiked) {
-          await removeLikeAction({ postId: data.id });
-          toast.success("Post unliked");
-        } else {
-          await addLikeAction({ postId: data.id });
-          toast.success("Post liked successfully!");
-        }
+        toast.success(prevLiked ? "Post unliked" : "Post liked successfully!");
       }
     } catch (err) {
       setLiked(prevLiked);
       setLikes(prevLikes);
-      toast.error("Failed to update like. Please try again.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to update like. Please try again.",
+      );
       console.log(err);
     }
   };
@@ -121,15 +154,14 @@ export function PostCard({
     setReposts((v) => (prevReposted ? Math.max(v - 1, 0) : v + 1));
 
     try {
+      const res = await rateLimitedRepost(prevReposted);
       if (prevReposted) {
-        const res = await removeRepostAction({ postId: data.id });
         if (isAlreadyRemoved(res)) {
           setReposted(false);
           setReposts((v) => Math.max(v - 1, 0));
         }
         toast.success("Repost removed");
       } else {
-        const res = await addRepostAction({ postId: data.id });
         if (isAlreadyReposted(res)) {
           setReposted(prevReposted);
           setReposts(prevReposts);
@@ -141,7 +173,11 @@ export function PostCard({
     } catch (err) {
       setReposted(prevReposted);
       setReposts(prevReposts);
-      toast.error("Failed to update repost. Please try again.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to update repost. Please try again.",
+      );
       console.log(err);
     }
   };
