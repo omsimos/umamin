@@ -27,12 +27,12 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
       }
     },
     onSuccess: () => {
-      toast.success("Settings updated");
+      toast.success("Settings updated.");
       queryClient.invalidateQueries({ queryKey: ["current_user"] });
     },
     onError: (error) => {
       console.error(error);
-      toast.error(error.message);
+      toast.error(error.message ?? "Couldn't update settings.");
     },
   });
 
@@ -53,7 +53,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
         value.question === user.question &&
         value.displayName === user.displayName
       ) {
-        toast.info("No changes made");
+        toast.info("No changes to save.");
         return;
       }
 
@@ -88,6 +88,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
               label="Username"
               placeholder="umamin"
               isRequired
+              transform={(value) => value.toLowerCase()}
               disabled={!user.account || mutation.isPending}
             />
             {user.account ? (

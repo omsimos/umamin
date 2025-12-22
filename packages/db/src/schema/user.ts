@@ -1,5 +1,11 @@
 import { relations, sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 import { messageTable } from "./message";
 
@@ -16,6 +22,8 @@ export const userTable = sqliteTable("user", {
     .notNull()
     .default(false),
   question: text("question").notNull().default("Send me an anonymous message!"),
+  followerCount: integer("follower_count").notNull().default(0),
+  followingCount: integer("following_count").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -60,15 +68,98 @@ export const accountRelations = relations(accountTable, ({ one }) => ({
   }),
 }));
 
+export const userFollowTable = sqliteTable(
+  "user_follow",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    followerId: text("follower_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    followingId: text("following_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("user_follow_follower_following_uidx").on(
+      t.followerId,
+      t.followingId,
+    ),
+    index("user_follow_follower_created_idx").on(t.followerId, t.createdAt),
+    index("user_follow_following_created_idx").on(t.followingId, t.createdAt),
+  ],
+);
+
+export const userBlockTable = sqliteTable(
+  "user_block",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    blockerId: text("blocker_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    blockedId: text("blocked_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("user_block_blocker_blocked_uidx").on(t.blockerId, t.blockedId),
+    index("user_block_blocker_created_idx").on(t.blockerId, t.createdAt),
+    index("user_block_blocked_created_idx").on(t.blockedId, t.createdAt),
+  ],
+);
+
 export const userRelations = relations(userTable, ({ many }) => ({
   sentMessages: many(messageTable, { relationName: "sender" }),
   receivedMessages: many(messageTable, { relationName: "receiver" }),
   accounts: many(accountTable),
+  followers: many(userFollowTable, { relationName: "followers" }),
+  following: many(userFollowTable, { relationName: "following" }),
+  blocked: many(userBlockTable, { relationName: "blocked" }),
+  blockers: many(userBlockTable, { relationName: "blockers" }),
+}));
+
+export const userFollowRelations = relations(userFollowTable, ({ one }) => ({
+  follower: one(userTable, {
+    fields: [userFollowTable.followerId],
+    references: [userTable.id],
+    relationName: "following",
+  }),
+  following: one(userTable, {
+    fields: [userFollowTable.followingId],
+    references: [userTable.id],
+    relationName: "followers",
+  }),
+}));
+
+export const userBlockRelations = relations(userBlockTable, ({ one }) => ({
+  blocker: one(userTable, {
+    fields: [userBlockTable.blockerId],
+    references: [userTable.id],
+    relationName: "blocked",
+  }),
+  blocked: one(userTable, {
+    fields: [userBlockTable.blockedId],
+    references: [userTable.id],
+    relationName: "blockers",
+  }),
 }));
 
 export type SelectUser = typeof userTable.$inferSelect;
 export type SelectSession = typeof sessionTable.$inferSelect;
 export type SelectAccount = typeof accountTable.$inferSelect;
+export type SelectUserFollow = typeof userFollowTable.$inferSelect;
+export type SelectUserBlock = typeof userBlockTable.$inferSelect;
 
 export type InsertUser = typeof userTable.$inferInsert;
 export type InsertSession = typeof sessionTable.$inferInsert;
+export type InsertUserFollow = typeof userFollowTable.$inferInsert;
+export type InsertUserBlock = typeof userBlockTable.$inferInsert;

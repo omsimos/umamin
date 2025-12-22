@@ -12,8 +12,13 @@ const { fieldContext, formContext, useFieldContext, useFormContext } =
 function TextField({
   label,
   isRequired,
+  transform,
   ...props
-}: { label: string; isRequired?: boolean } & React.ComponentProps<"input">) {
+}: {
+  label: string;
+  isRequired?: boolean;
+  transform?: (value: string) => string;
+} & React.ComponentProps<"input">) {
   const field = useFieldContext<string>();
 
   return (
@@ -27,7 +32,9 @@ function TextField({
         id={field.name}
         value={field.state.value}
         onChange={(e) =>
-          field.handleChange(e.target.value.replace(/\s+/g, " "))
+          field.handleChange(
+            (transform ?? ((v) => v))(e.target.value.replace(/\s+/g, " ")),
+          )
         }
       />
 

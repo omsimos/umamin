@@ -7,6 +7,7 @@ import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { cn } from "@umamin/ui/lib/utils";
 import { Loader2Icon, MoonIcon, SendIcon } from "lucide-react";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { sendMessageAction } from "@/app/actions/message";
@@ -44,12 +45,24 @@ export function ChatForm({ user }: { user: PublicUser }) {
     },
     onSuccess: () => {
       setMessage(formatContent(content));
-      toast.success("Message sent anonymously");
+      toast.success("Message sent.");
       setContent("");
+
+      // Track anonymous message sent
+      posthog.capture("anonymous_message_sent", {
+        recipient_username: user?.username,
+        message_length: content.length,
+      });
     },
     onError: (err) => {
       console.log(err);
-      toast.error(err.message);
+      toast.error(err.message ?? "Couldn't send message.");
+
+      // Track message send failure
+      posthog.capture("anonymous_message_failed", {
+        recipient_username: user?.username,
+        error: err.message,
+      });
     },
   });
 
@@ -93,7 +106,7 @@ export function ChatForm({ user }: { user: PublicUser }) {
               setContent(e.target.value);
             }}
             maxLength={500}
-            placeholder="Type your message..."
+            placeholder="Type your anonymous message..."
             className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
             autoComplete="off"
           />

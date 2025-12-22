@@ -19,10 +19,12 @@ import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
   BadgeCheckIcon,
+  DownloadIcon,
   MessageCircleDashedIcon,
   MessageCircleMoreIcon,
   MessageSquareXIcon,
   ScanFaceIcon,
+  ScrollIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { clearNoteAction, getCurrentNoteAction } from "@/app/actions/note";
@@ -33,34 +35,36 @@ export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["current_note"],
-    queryFn: getCurrentNoteAction,
+    queryFn: async () => (await getCurrentNoteAction()) ?? null,
   });
 
   const clearNoteMutation = useMutation({
     mutationFn: clearNoteAction,
     onSuccess: () => {
-      toast.success("Your note has been cleared.");
+      toast.success("Note cleared.");
       queryClient.invalidateQueries({ queryKey: ["current_note"] });
     },
     onError: (err) => {
       console.log(err);
-      toast.error("An error occurred while clearing your note.");
+      toast.error("Couldn't clear note.");
     },
   });
 
   if (!data || !data.content) {
-    return;
+    return null;
   }
 
   const menuItems = [
     {
       title: "Save Image",
       onClick: () => saveImage(`umamin-${data.id}`),
+      icon: <DownloadIcon className="h-4 w-4" />,
     },
     {
       title: "Clear Note",
       onClick: () => clearNoteMutation.mutate(),
       className: "text-red-500",
+      icon: <ScrollIcon className="h-4 w-4" />,
     },
   ];
 

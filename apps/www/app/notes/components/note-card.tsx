@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { cn } from "@umamin/ui/lib/utils";
 import {
   BadgeCheckIcon,
+  DownloadIcon,
   MessageSquareTextIcon,
   MessageSquareXIcon,
   ScanFaceIcon,
@@ -126,10 +127,12 @@ export function NoteCard({ data, isAuthenticated }: Props) {
                       title: "Reply",
                       onClick: () => setReplyOpen(true),
                       disabled: data.isAnonymous || !!user?.quietMode,
+                      icon: <MessageSquareTextIcon className="h-4 w-4" />,
                     },
                     {
                       title: "Save Image",
                       onClick: () => saveImage(`umamin-${data.id}`),
+                      icon: <DownloadIcon className="h-4 w-4" />,
                     },
                   ]}
                 />

@@ -1,3 +1,4 @@
+import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import {
@@ -9,6 +10,7 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2Icon, SendIcon } from "lucide-react";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createReplyAction } from "@/app/actions/message";
@@ -28,9 +30,18 @@ export function ReplyDialog(props: Props) {
   const [reply, setReply] = useState(props.data.reply ?? "");
   const inputRef = useDynamicTextarea(content);
 
+  const rateLimitedReply = useAsyncRateLimitedCallback(createReplyAction, {
+    limit: 3,
+    window: 60000, // 1 minute
+    windowType: "sliding",
+    onReject: () => {
+      throw new Error("You're replying too fast. Please wait a bit.");
+    },
+  });
+
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await createReplyAction({
+      const res = await rateLimitedReply({
         messageId: props.data.id,
         content,
       });
@@ -40,14 +51,26 @@ export function ReplyDialog(props: Props) {
       }
     },
     onSuccess: () => {
-      toast.success("Reply sent");
+      toast.success("Reply sent.");
       setReply(content);
       setContent("");
       setUpdatedAt(new Date());
+
+      // Track message reply sent
+      posthog.capture("message_reply_sent", {
+        message_id: props.data.id,
+        reply_length: content.length,
+      });
     },
     onError: (err) => {
       console.error(err);
-      toast.error("Failed to send reply. Please try again.");
+      toast.error("Couldn't send reply.");
+
+      // Track reply failure
+      posthog.capture("message_reply_failed", {
+        message_id: props.data.id,
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
     },
   });
 

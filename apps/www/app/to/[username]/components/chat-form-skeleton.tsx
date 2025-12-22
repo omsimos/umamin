@@ -21,7 +21,7 @@ export function ChatFormSkeleton() {
       <form className="px-5 sm:px-7 flex items-center space-x-2 w-full self-center pt-2 max-w-lg">
         <Textarea
           disabled
-          placeholder="Type your message..."
+          placeholder="Type your anonymous message..."
           className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
         />
         <Button type="button" size="icon" disabled>

@@ -19,7 +19,7 @@ import { toast } from "sonner";
 const onCopy = (url: string) => {
   if (typeof window !== "undefined") {
     navigator.clipboard.writeText(url);
-    toast.success("Copied to clipboard");
+    toast.success("Copied.");
   }
 };
 

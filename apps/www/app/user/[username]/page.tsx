@@ -1,11 +1,10 @@
-import { Button } from "@umamin/ui/components/button";
-import { MessageSquareMoreIcon, UserPlusIcon } from "lucide-react";
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { UserCard } from "@/components/user-card";
-import { formatUsername, getBaseUrl } from "@/lib/utils";
+import { getUserProfileAction } from "@/app/actions/user";
+import { getSession } from "@/lib/auth";
+import { formatUsername } from "@/lib/utils";
+import { UserProfile } from "./user-profile";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"));
 
@@ -55,31 +54,20 @@ export default async function Page({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const res = await fetch(`${getBaseUrl()}/api/users/${username}`);
+  const { session } = await getSession();
+  const user = await getUserProfileAction(username);
 
-  if (!res.ok) {
+  if (!user) {
     notFound();
   }
 
-  const user = await res.json();
-
   return (
     <section className="max-w-xl mx-auto min-h-screen container">
-      <UserCard user={user} />
-
-      <div className="flex gap-2 mt-6 w-full">
-        <Button variant="outline" disabled className="flex-1">
-          <UserPlusIcon />
-          Follow
-        </Button>
-
-        <Button asChild variant="outline" className="flex-1">
-          <Link href={`/to/${username}`}>
-            <MessageSquareMoreIcon />
-            Message
-          </Link>
-        </Button>
-      </div>
+      <UserProfile
+        user={user}
+        currentUserId={session?.userId}
+        isAuthenticated={!!session}
+      />
 
       {/* v2-user */}
       <AdContainer className="mt-5" slotId="4417432474" />

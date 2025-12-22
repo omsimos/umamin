@@ -1,17 +1,23 @@
 import { db } from "@umamin/db";
 import { noteTable } from "@umamin/db/schema/note";
-import { userTable } from "@umamin/db/schema/user";
-import { and, desc, eq, lt, or } from "drizzle-orm";
-import { cacheLife } from "next/cache";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
+import { and, desc, eq, exists, lt, not, or } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
 import type { NextRequest } from "next/server";
+import { getSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const cursor = searchParams.get("cursor");
+    const { session } = await getSession();
 
     const result = await (async () => {
-      "use cache";
+      "use cache: private";
+      cacheTag("notes");
+      if (session) {
+        cacheTag(`user-blocks:${session.userId}`);
+      }
       cacheLife({ revalidate: 30 });
 
       // biome-ignore lint/suspicious/noImplicitAnyLet: temp
@@ -33,6 +39,37 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      const blockedAuthorCondition = session
+        ? and(
+            not(
+              exists(
+                db
+                  .select({ id: userBlockTable.id })
+                  .from(userBlockTable)
+                  .where(
+                    and(
+                      eq(userBlockTable.blockerId, session.userId),
+                      eq(userBlockTable.blockedId, noteTable.userId),
+                    ),
+                  ),
+              ),
+            ),
+            not(
+              exists(
+                db
+                  .select({ id: userBlockTable.id })
+                  .from(userBlockTable)
+                  .where(
+                    and(
+                      eq(userBlockTable.blockerId, noteTable.userId),
+                      eq(userBlockTable.blockedId, session.userId),
+                    ),
+                  ),
+              ),
+            ),
+          )
+        : undefined;
+
       const baseQuery = db
         .select({
           note: noteTable,
@@ -50,8 +87,14 @@ export async function GET(req: NextRequest) {
         .orderBy(desc(noteTable.updatedAt), desc(noteTable.id))
         .limit(40);
 
-      const rows = await (cursorCondition
-        ? baseQuery.where(cursorCondition)
+      const whereCondition = cursorCondition
+        ? blockedAuthorCondition
+          ? and(cursorCondition, blockedAuthorCondition)
+          : cursorCondition
+        : blockedAuthorCondition;
+
+      const rows = await (whereCondition
+        ? baseQuery.where(whereCondition)
         : baseQuery);
 
       const notes = rows.map(({ note, user }) => ({

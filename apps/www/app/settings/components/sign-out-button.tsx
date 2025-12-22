@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { Loader2Icon, LogOutIcon } from "lucide-react";
+import posthog from "posthog-js";
 import { useFormStatus } from "react-dom";
 
 export function SignOutButton() {
@@ -15,6 +16,9 @@ export function SignOutButton() {
       disabled={pending}
       variant="outline"
       onClick={() => {
+        // Track sign out event
+        posthog.capture("user_signed_out");
+        posthog.reset();
         queryClient.clear();
       }}
     >
