@@ -71,7 +71,7 @@ export function RepostHeader({
             {shortTimeAgo(createdAt)}
           </span>
         </div>
-        {content && <p className="text-sm mt-2">{content}</p>}
+        {content && <p className="mt-2">{content}</p>}
       </div>
     </div>
   );
