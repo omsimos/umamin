@@ -4,14 +4,22 @@ import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import type NextError from "next/error";
 import Link from "next/link";
+import posthog from "posthog-js";
+import { useEffect } from "react";
 import { AnimatedShinyText } from "@/components/animated-shiny-text";
 
 export default function GlobalError({
+  error,
   reset,
 }: {
   error: NextError & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // Capture global error to PostHog
+    posthog.captureException(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body>

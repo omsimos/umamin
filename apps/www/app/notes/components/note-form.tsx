@@ -6,6 +6,7 @@ import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, MessageSquareShareIcon } from "lucide-react";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createNoteAction } from "@/app/actions/note";
@@ -20,16 +21,33 @@ export function NoteForm() {
     onSuccess: (data) => {
       if (data?.error) {
         toast.error(data.error ?? "Couldn't share note.");
+        posthog.capture("note_share_failed", {
+          error: data.error,
+          is_anonymous: isAnonymous,
+        });
         return;
       }
 
       toast.success("Note shared.");
       queryClient.invalidateQueries({ queryKey: ["current_note"] });
+
+      // Track note shared
+      posthog.capture("note_shared", {
+        note_length: content.length,
+        is_anonymous: isAnonymous,
+      });
+
       setContent("");
     },
     onError: (err) => {
       console.log(err);
       toast.error("Couldn't share note.");
+
+      // Track note share failure
+      posthog.capture("note_share_failed", {
+        error: err instanceof Error ? err.message : "Unknown error",
+        is_anonymous: isAnonymous,
+      });
     },
   });
 

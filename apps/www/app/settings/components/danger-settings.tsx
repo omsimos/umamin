@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@umamin/ui/components/dialog";
 import { Input } from "@umamin/ui/components/input";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { deleteAccountAction } from "@/app/actions/user";
 import { DeleteButton } from "./danger-button";
@@ -50,7 +51,14 @@ export function DangerSettings() {
                 </DialogDescription>
               </DialogHeader>
 
-              <form action={deleteAccountAction}>
+              <form
+                action={async () => {
+                  // Track account deletion before the action
+                  posthog.capture("account_deleted");
+                  posthog.reset();
+                  await deleteAccountAction();
+                }}
+              >
                 <Input
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}

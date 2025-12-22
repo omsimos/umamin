@@ -12,6 +12,7 @@ import {
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, ScanFaceIcon, SendIcon } from "lucide-react";
+import posthog from "posthog-js";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createCommentAction } from "@/app/actions/post";
@@ -104,12 +105,29 @@ export default function ReplyForm({ user, postId }: Props) {
         queryClient.setQueryData(["post-comments", postId], ctx.previous);
       }
       toast.error(err.message ?? "Couldn't add comment.");
+
+      // Track comment creation failure
+      posthog.capture("comment_creation_failed", {
+        post_id: postId,
+        error: err.message,
+      });
     },
-    onSuccess: (res) => {
+    onSuccess: (res, vars) => {
       if (res?.error) {
         toast.error(res.error);
+        posthog.capture("comment_creation_failed", {
+          post_id: postId,
+          error: res.error,
+        });
       } else {
         toast.success("Comment posted.");
+
+        // Track comment created
+        posthog.capture("comment_created", {
+          post_id: postId,
+          comment_length: vars.length,
+          author_username: user.username,
+        });
       }
     },
     onSettled: () => {

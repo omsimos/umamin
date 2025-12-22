@@ -12,6 +12,7 @@ import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { cn } from "@umamin/ui/lib/utils";
 import { GlobeIcon, Loader2Icon, SendIcon } from "lucide-react";
+import posthog from "posthog-js";
 import { type FormEventHandler, useState } from "react";
 import { toast } from "sonner";
 import { createPostAction } from "@/app/actions/post";
@@ -102,12 +103,26 @@ export default function PostForm({ user }: Props) {
         queryClient.setQueryData(["posts"], ctx.previous);
       }
       toast.error(err.message ?? "Couldn't post.");
+
+      // Track post creation failure
+      posthog.capture("post_creation_failed", {
+        error: err.message,
+      });
     },
-    onSuccess: (res) => {
+    onSuccess: (res, vars) => {
       if (res?.error) {
         toast.error(res.error);
+        posthog.capture("post_creation_failed", {
+          error: res.error,
+        });
       } else {
         toast.success("Post published.");
+
+        // Track post created
+        posthog.capture("post_created", {
+          post_length: vars.length,
+          author_username: user?.username,
+        });
       }
     },
     onSettled: () => {

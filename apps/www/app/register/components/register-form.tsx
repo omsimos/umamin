@@ -2,6 +2,7 @@
 
 import { Button } from "@umamin/ui/components/button";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { toast } from "sonner";
 import type * as z from "zod";
 import { useAppForm } from "@/hooks/form";
@@ -22,6 +23,19 @@ export function RegisterForm() {
       const res = await signup(value);
       if (res?.error) {
         toast.error(res.error ?? "Couldn't create account.");
+        posthog.capture("user_signup_failed", {
+          error: res.error,
+          username: value.username,
+        });
+      } else {
+        // Identify user with PostHog on successful signup
+        posthog.identify(value.username, {
+          username: value.username,
+        });
+        posthog.capture("user_signed_up", {
+          username: value.username,
+          signup_method: "credentials",
+        });
       }
     },
   });
