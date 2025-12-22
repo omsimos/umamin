@@ -1,8 +1,13 @@
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import PostForm from "../post/components/post-form";
 import { PostList } from "./components/post-list";
 
 export default async function Feed() {
+  if (process.env.NEXT_PUBLIC_SOCIAL_UNDER_MAINTENANCE === "true") {
+    redirect("/social");
+  }
+
   const { user } = await getSession();
   const publicUser = user
     ? (({ passwordHash: _pw, ...rest }) => rest)(user)
