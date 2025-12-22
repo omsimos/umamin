@@ -50,14 +50,14 @@ export function ReplyDialog(props: Props) {
       }
     },
     onSuccess: () => {
-      toast.success("Reply sent");
+      toast.success("Reply sent.");
       setReply(content);
       setContent("");
       setUpdatedAt(new Date());
     },
     onError: (err) => {
       console.error(err);
-      toast.error("Failed to send reply. Please try again.");
+      toast.error("Couldn't send reply.");
     },
   });
 

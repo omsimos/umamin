@@ -52,12 +52,12 @@ export function PostMenu({
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["post-comments", postId] });
       queryClient.invalidateQueries({ queryKey: ["post", postId] });
-      toast.success("Post deleted");
+      toast.success("Post deleted.");
       onDeleted?.();
     },
     onError: (err) => {
       console.error(err);
-      toast.error("Failed to delete post. Please try again.");
+      toast.error("Couldn't delete post.");
     },
   });
 

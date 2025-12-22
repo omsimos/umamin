@@ -41,12 +41,12 @@ export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
   const clearNoteMutation = useMutation({
     mutationFn: clearNoteAction,
     onSuccess: () => {
-      toast.success("Your note has been cleared.");
+      toast.success("Note cleared.");
       queryClient.invalidateQueries({ queryKey: ["current_note"] });
     },
     onError: (err) => {
       console.log(err);
-      toast.error("An error occurred while clearing your note.");
+      toast.error("Couldn't clear note.");
     },
   });
 

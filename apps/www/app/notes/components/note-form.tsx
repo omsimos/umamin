@@ -19,17 +19,17 @@ export function NoteForm() {
     mutationFn: createNoteAction,
     onSuccess: (data) => {
       if (data?.error) {
-        toast.error(data.error);
+        toast.error(data.error ?? "Couldn't share note.");
         return;
       }
 
-      toast.success("Your note has been shared with the community.");
+      toast.success("Note shared.");
       queryClient.invalidateQueries({ queryKey: ["current_note"] });
       setContent("");
     },
     onError: (err) => {
       console.log(err);
-      toast.error("An error occurred while sharing your note.");
+      toast.error("Couldn't share note.");
     },
   });
 

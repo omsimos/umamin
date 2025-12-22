@@ -95,13 +95,13 @@ export default function PostForm({ user }: Props) {
       if (ctx?.previous) {
         queryClient.setQueryData(["posts"], ctx.previous);
       }
-      toast.error(err.message ?? "Failed to create post. Please try again.");
+      toast.error(err.message ?? "Couldn't post.");
     },
     onSuccess: (res) => {
       if (res?.error) {
         toast.error(res.error);
       } else {
-        toast.success("Post created successfully!");
+        toast.success("Post published.");
       }
     },
     onSettled: () => {

@@ -103,13 +103,13 @@ export default function ReplyForm({ user, postId }: Props) {
       if (ctx?.previous) {
         queryClient.setQueryData(["post-comments", postId], ctx.previous);
       }
-      toast.error(err.message ?? "Failed to create comment. Please try again.");
+      toast.error(err.message ?? "Couldn't add comment.");
     },
     onSuccess: (res) => {
       if (res?.error) {
         toast.error(res.error);
       } else {
-        toast.success("Comment created successfully!");
+        toast.success("Comment posted.");
       }
     },
     onSettled: () => {

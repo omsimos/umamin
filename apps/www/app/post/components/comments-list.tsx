@@ -117,13 +117,15 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
 
   if (comments.length === 0 && !hasNextPage && !isFetching) {
     return (
-      <Alert>
-        <MessageCircleDashedIcon className="h-4 w-4" />
-        <AlertTitle>No comments yet</AlertTitle>
-        <AlertDescription>
-          Be the first to start the conversation.
-        </AlertDescription>
-      </Alert>
+      <div className="px-2">
+        <Alert>
+          <MessageCircleDashedIcon className="h-4 w-4" />
+          <AlertTitle>No comments yet</AlertTitle>
+          <AlertDescription>
+            Be the first to start the conversation.
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 

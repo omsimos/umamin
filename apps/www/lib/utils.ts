@@ -70,7 +70,7 @@ export const saveImage = (id: string, isPost?: boolean) => {
   const target = document.querySelector(`#${id}`);
 
   if (!target) {
-    toast.error("An error occured");
+    toast.error("Something went wrong.");
     return;
   }
 

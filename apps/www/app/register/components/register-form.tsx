@@ -21,7 +21,7 @@ export function RegisterForm() {
     onSubmit: async ({ value }) => {
       const res = await signup(value);
       if (res?.error) {
-        toast.error(res.error);
+        toast.error(res.error ?? "Couldn't create account.");
       }
     },
   });

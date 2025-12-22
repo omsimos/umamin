@@ -53,11 +53,11 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["received_messages"] });
-      toast.success("Message deleted");
+      toast.success("Message deleted.");
     },
     onError: (err) => {
       console.error(err);
-      toast.error("Failed to delete message. Please try again.");
+      toast.error("Couldn't delete message.");
     },
   });
 
@@ -72,7 +72,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["received_messages"] });
-      toast.success("User blocked", {
+      toast.success("User blocked.", {
         action: {
           label: "Undo",
           onClick: () => {
@@ -87,7 +87,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     },
     onError: (err) => {
       console.error(err);
-      toast.error("Failed to block user. Please try again.");
+      toast.error("Couldn't block user.");
     },
   });
 

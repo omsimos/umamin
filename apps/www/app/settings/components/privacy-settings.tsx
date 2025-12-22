@@ -49,7 +49,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     mutationFn: async (email: string) => getGravatarAction(email),
     onSuccess: (res) => {
       if (!res || "error" in res) {
-        toast.error(res?.error ?? "Unable to find a Gravatar for that email.");
+        toast.error(res?.error ?? "No Gravatar found for that email.");
         setAvatarPreview(null);
         return;
       }
@@ -59,7 +59,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
     onError: (error) => {
       console.error(error);
-      toast.error("Failed to preview Gravatar");
+      toast.error("Couldn't preview Gravatar.");
     },
   });
 
@@ -93,12 +93,12 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["current_user"] });
       toast.success(
-        data ? "Picture is now displaying" : "Picture is no longer displaying",
+        data ? "Profile photo displayed." : "Profile photo hidden.",
       );
     },
     onError: (err) => {
       console.error(err);
-      toast.error(err.message);
+      toast.error(err.message ?? "Couldn't update photo.");
     },
   });
 
@@ -123,12 +123,12 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["current_user"] });
-      toast.success("Profile photo updated");
+      toast.success("Profile photo updated.");
       setAvatarPreview(null);
       setPreviewOpen(false);
     },
     onError: (err) => {
-      toast.error(err.message);
+      toast.error(err.message ?? "Couldn't update photo.");
     },
   });
 
@@ -143,11 +143,11 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["current_user"] });
-      toast.success(data ? "Quiet mode enabled" : "Quiet mode disabled");
+      toast.success(data ? "Quiet mode enabled." : "Quiet mode disabled.");
     },
     onError: (err) => {
       console.error(err);
-      toast.error(err.message);
+      toast.error(err.message ?? "Couldn't update quiet mode.");
     },
   });
 

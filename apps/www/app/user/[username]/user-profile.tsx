@@ -69,23 +69,21 @@ export function UserProfile({ user, currentUserId, isAuthenticated }: Props) {
           setIsFollowing(false);
           setFollowerCount(Math.max(prevFollowerCount - 1, 0));
         }
-        toast.success("Unfollowed");
+        toast.success("Unfollowed.");
       } else {
         if (res && "alreadyFollowing" in res && res.alreadyFollowing) {
           setIsFollowing(prevFollowing);
           setFollowerCount(prevFollowerCount);
-          toast.error("You're already following this user.");
+          toast.error("Already following.");
           return;
         }
-        toast.success("Following");
+        toast.success("Following.");
       }
     } catch (err) {
       setIsFollowing(prevFollowing);
       setFollowerCount(prevFollowerCount);
       toast.error(
-        err instanceof Error
-          ? err.message
-          : "Failed to update follow. Please try again.",
+        err instanceof Error ? err.message : "Couldn't update follow.",
       );
       console.log(err);
     }
@@ -103,15 +101,15 @@ export function UserProfile({ user, currentUserId, isAuthenticated }: Props) {
         if (res && "alreadyRemoved" in res && res.alreadyRemoved) {
           setIsBlocked(false);
         }
-        toast.success("Unblocked");
+        toast.success("Unblocked.");
       } else {
         const res = await blockUserAction({ userId: user.id });
         if (res && "alreadyBlocked" in res && res.alreadyBlocked) {
           setIsBlocked(true);
-          toast.error("User already blocked.");
+          toast.error("Already blocked.");
           return;
         }
-        toast.success("User blocked");
+        toast.success("User blocked.");
         if (isFollowing) {
           setIsFollowing(false);
           setFollowerCount((v) => Math.max(v - 1, 0));
@@ -119,7 +117,7 @@ export function UserProfile({ user, currentUserId, isAuthenticated }: Props) {
       }
     } catch (err) {
       setIsBlocked(prevBlocked);
-      toast.error("Failed to update block. Please try again.");
+      toast.error("Couldn't update block.");
       console.log(err);
     }
   };

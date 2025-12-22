@@ -44,12 +44,12 @@ export function ChatForm({ user }: { user: PublicUser }) {
     },
     onSuccess: () => {
       setMessage(formatContent(content));
-      toast.success("Message sent anonymously");
+      toast.success("Message sent.");
       setContent("");
     },
     onError: (err) => {
       console.log(err);
-      toast.error(err.message);
+      toast.error(err.message ?? "Couldn't send message.");
     },
   });
 

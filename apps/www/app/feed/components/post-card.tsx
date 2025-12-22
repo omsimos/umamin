@@ -136,20 +136,14 @@ export function PostCard({
     try {
       await rateLimitedLike(prevLiked);
       if (isComment) {
-        toast.success(
-          prevLiked ? "Comment unliked" : "Comment liked successfully!",
-        );
+        toast.success(prevLiked ? "Comment unliked." : "Comment liked.");
       } else {
-        toast.success(prevLiked ? "Post unliked" : "Post liked successfully!");
+        toast.success(prevLiked ? "Post unliked." : "Post liked.");
       }
     } catch (err) {
       setLiked(prevLiked);
       setLikes(prevLikes);
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Failed to update like. Please try again.",
-      );
+      toast.error(err instanceof Error ? err.message : "Couldn't update like.");
       console.log(err);
     }
   };
@@ -168,25 +162,23 @@ export function PostCard({
           setReposted(false);
           setReposts((v) => Math.max(v - 1, 0));
         }
-        toast.success("Repost removed");
+        toast.success("Repost removed.");
         queryClient.invalidateQueries({ queryKey: ["posts"] });
       } else {
         if (isAlreadyReposted(res)) {
           setReposted(prevReposted);
           setReposts(prevReposts);
-          toast.error("You already reposted this.");
+          toast.error("Already reposted.");
           return;
         }
-        toast.success("Reposted");
+        toast.success("Reposted.");
         queryClient.invalidateQueries({ queryKey: ["posts"] });
       }
     } catch (err) {
       setReposted(prevReposted);
       setReposts(prevReposts);
       toast.error(
-        err instanceof Error
-          ? err.message
-          : "Failed to update repost. Please try again.",
+        err instanceof Error ? err.message : "Couldn't update repost.",
       );
       console.log(err);
     }
@@ -209,15 +201,15 @@ export function PostCard({
       if (isAlreadyReposted(res)) {
         setReposted(prevReposted);
         setReposts(prevReposts);
-        toast.error("You already reposted this.");
+        toast.error("Already reposted.");
         return;
       }
-      toast.success("Quote reposted");
+      toast.success("Quote reposted.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     } catch (err) {
       setReposted(prevReposted);
       setReposts(prevReposts);
-      toast.error("Failed to repost. Please try again.");
+      toast.error("Couldn't repost.");
       console.log(err);
     }
   };
