@@ -72,7 +72,7 @@ export function PostList({
     return Array.from(map.values());
   })();
 
-  const AD_FREQUENCY = 5; // show 1 ad *after* every 5 posts
+  const AD_FREQUENCY = 8; // show 1 ad *after* every 8 posts
 
   const adCountFor = (n: number) => Math.floor(n / AD_FREQUENCY);
 
