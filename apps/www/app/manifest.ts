@@ -6,9 +6,10 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Umamin",
     description:
       "Umamin is an open-source social platform for sending and receiving encrypted anonymous messages.",
-    start_url: "/",
+    start_url: "/inbox",
     scope: "/",
     display: "standalone",
+    orientation: "portrait",
     background_color: "#000000",
     theme_color: "#000000",
     icons: [
