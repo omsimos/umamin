@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
+import { PwaInstallButton } from "./pwa-install-button";
 import { ShareLinkDialog } from "./share-link-dialog";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -37,7 +38,8 @@ export async function Navbar() {
             </Link>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <PwaInstallButton />
             <ThemeToggle />
           </div>
         </div>
