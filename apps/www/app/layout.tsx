@@ -8,6 +8,7 @@ import Providers from "./providers";
 
 import "./globals.css";
 import { Suspense } from "react";
+import { Menubar } from "@/components/menu-bar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -90,6 +91,7 @@ export default function RootLayout({
         <Providers>
           <Suspense>
             <Navbar />
+            <Menubar />
           </Suspense>
 
           <div className="pt-24">{children}</div>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Demo } from "@/components/demo";
 import { PwaRedirect } from "@/components/pwa-redirect";
 
-export default async function Home() {
+export default function Home() {
   return (
     <main className="flex items-center flex-col min-h-screen lg:pt-24 pb-36 md:gap-8 gap-6 container mx-auto">
       <PwaRedirect />
