@@ -1,10 +1,12 @@
 import { Button } from "@umamin/ui/components/button";
 import Link from "next/link";
 import { Demo } from "@/components/demo";
+import { PwaRedirect } from "@/components/pwa-redirect";
 
-export default async function Home() {
+export default function Home() {
   return (
     <main className="flex items-center flex-col min-h-screen lg:pt-24 pb-36 md:gap-8 gap-6 container mx-auto">
+      <PwaRedirect />
       <div className="border-b-2 border-muted border-dashed md:pb-8 pb-6">
         <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none dark:bg-gradient-to-b from-foreground dark:to-zinc-400 bg-clip-text bg-zinc-800 text-transparent tracking-tighter text-center">
           The Platform for Anonymity

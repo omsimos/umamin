@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "@umamin/ui/components/sonner";
 import { ThemeProvider } from "next-themes";
+import { ServiceWorker } from "@/components/service-worker";
 import { getQueryClient } from "@/lib/get-query-client";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -28,6 +29,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </ProgressProvider>
+      <ServiceWorker />
       <Toaster position="top-right" />
     </ThemeProvider>
   );

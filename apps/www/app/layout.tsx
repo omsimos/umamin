@@ -8,6 +8,7 @@ import Providers from "./providers";
 
 import "./globals.css";
 import { Suspense } from "react";
+import { Menubar } from "@/components/menu-bar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,6 +23,9 @@ const geistMono = Geist_Mono({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
   themeColor: "black",
 };
 
@@ -67,6 +71,11 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Umamin",
+  },
 };
 
 export default function RootLayout({
@@ -82,6 +91,7 @@ export default function RootLayout({
         <Providers>
           <Suspense>
             <Navbar />
+            <Menubar />
           </Suspense>
 
           <div className="pt-24">{children}</div>
