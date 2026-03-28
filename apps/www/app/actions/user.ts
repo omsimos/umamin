@@ -276,6 +276,22 @@ export async function generalSettingsAction(
     updateTag(`user:${session.userId}:accounts`);
   } catch (err) {
     console.log(err);
+
+    if (
+      err instanceof Error &&
+      typeof err.cause === "object" &&
+      err.cause !== null
+    ) {
+      const cause = err.cause as { code?: string; message?: string };
+
+      if (
+        cause.code === "SQLITE_CONSTRAINT" &&
+        cause.message?.includes("user.username")
+      ) {
+        return { error: "Username already exists" };
+      }
+    }
+
     return { error: "An error occured" };
   }
 }
