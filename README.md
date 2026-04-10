@@ -30,7 +30,7 @@ If you like this project, please consider giving it a star! ✨ If you wish to s
 ### Prerequisites
 
 - [`Turso CLI`](https://docs.turso.tech/cli/installation) (for local libSQL server)
-- `Node.js` >= 20.19 or [`nvm`](https://github.com/nvm-sh/nvm)
+- `Node.js` >= 24 or [`nvm`](https://github.com/nvm-sh/nvm)
 - `pnpm` >= 10
 
 ### Install Dependencies
@@ -38,7 +38,7 @@ If you like this project, please consider giving it a star! ✨ If you wish to s
 If you're using `nvm`, you can easily switch to the required Node.js version.
 
 ```sh
-$ nvm use 20 # ignore if you're already on Node.js >= 20
+$ nvm use 24 # ignore if you're already on Node.js >= 24
 $ pnpm install
 ```
 
