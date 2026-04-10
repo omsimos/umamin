@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",
-    "@types/node": "^22.19.3",
+    "@types/node": "^24.12.2",
     "@umamin/encryption": "workspace:*",
     "drizzle-kit": "^0.31.8",
     "drizzle-seed": "^0.3.1",
