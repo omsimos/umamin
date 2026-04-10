@@ -23,17 +23,17 @@
     "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.15",
-    "drizzle-orm": "^0.45.1",
-    "nanoid": "^5.1.6"
+    "@libsql/client": "^0.17.2",
+    "drizzle-orm": "^0.45.2",
+    "nanoid": "^5.1.7"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.1.0",
+    "@faker-js/faker": "^10.4.0",
     "@types/node": "^24.12.2",
     "@umamin/encryption": "workspace:*",
-    "drizzle-kit": "^0.31.8",
+    "drizzle-kit": "^0.31.10",
     "drizzle-seed": "^0.3.1",
-    "tsdown": "^0.18.1",
+    "tsdown": "^0.21.7",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
