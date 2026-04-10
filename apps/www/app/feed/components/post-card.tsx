@@ -23,7 +23,6 @@ import {
   ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
-import posthog from "posthog-js";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -141,14 +140,6 @@ export function PostCard({
       } else {
         toast.success(prevLiked ? "Post unliked." : "Post liked.");
       }
-
-      // Track like/unlike action
-      posthog.capture("post_liked", {
-        post_id: data.id,
-        is_comment: isComment,
-        action: prevLiked ? "unliked" : "liked",
-        author_username: author?.username,
-      });
     } catch (err) {
       setLiked(prevLiked);
       setLikes(prevLikes);
@@ -173,13 +164,6 @@ export function PostCard({
         }
         toast.success("Repost removed.");
         queryClient.invalidateQueries({ queryKey: ["posts"] });
-
-        // Track repost removed
-        posthog.capture("post_reposted", {
-          post_id: data.id,
-          action: "removed",
-          author_username: author?.username,
-        });
       } else {
         if (isAlreadyReposted(res)) {
           setReposted(prevReposted);
@@ -189,14 +173,6 @@ export function PostCard({
         }
         toast.success("Reposted.");
         queryClient.invalidateQueries({ queryKey: ["posts"] });
-
-        // Track repost
-        posthog.capture("post_reposted", {
-          post_id: data.id,
-          action: "reposted",
-          repost_type: "standard",
-          author_username: author?.username,
-        });
       }
     } catch (err) {
       setReposted(prevReposted);
@@ -230,15 +206,6 @@ export function PostCard({
       }
       toast.success("Quote reposted.");
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-
-      // Track quote repost
-      posthog.capture("post_reposted", {
-        post_id: data.id,
-        action: "reposted",
-        repost_type: "quote",
-        quote_length: content.length,
-        author_username: author?.username,
-      });
     } catch (err) {
       setReposted(prevReposted);
       setReposts(prevReposts);

@@ -27,9 +27,6 @@ import { formatContent } from "@/lib/utils";
 import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 
 const gravatarEmailSchema = z
-  .string()
-  .trim()
-  .min(1, { error: "Email is required" })
   .email({ error: "Invalid email address" })
   .transform((value) => normaliseEmailForGravatar(value));
 
@@ -66,7 +63,7 @@ export async function getGravatarAction(email: string) {
 
 export const getCurrentUserAction = cache(async () => {
   try {
-    const { session, user } = await getSession();
+    const { session } = await getSession();
 
     if (!session) {
       throw new Error("Unauthorized");

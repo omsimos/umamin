@@ -50,7 +50,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
     },
   });
 
-  if (!data || !data.content) {
+  if (!data?.content) {
     return null;
   }
 

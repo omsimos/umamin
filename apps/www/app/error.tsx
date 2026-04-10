@@ -4,22 +4,14 @@ import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import type NextError from "next/error";
 import Link from "next/link";
-import posthog from "posthog-js";
-import { useEffect } from "react";
 import { AnimatedShinyText } from "@/components/animated-shiny-text";
 
 export default function GlobalError({
-  error,
   reset,
 }: {
   error: NextError & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    // Capture error to PostHog
-    posthog.captureException(error);
-  }, [error]);
-
   return (
     <div className="flex items-center flex-col min-h-screen lg:pt-44 py-36 md:gap-8 gap-6 container">
       <div
@@ -32,7 +24,7 @@ export default function GlobalError({
         </AnimatedShinyText>
       </div>
       <div className="border-b-2 border-muted border-dashed md:pb-8 pb-6">
-        <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none dark:bg-gradient-to-b from-foreground dark:to-zinc-400 bg-clip-text bg-zinc-800 text-transparent tracking-tighter text-center">
+        <h1 className="font-extrabold md:text-7xl text-[10vw] leading-none dark:bg-linear-to-b from-foreground dark:to-zinc-400 bg-clip-text bg-zinc-800 text-transparent tracking-tighter text-center">
           Something went wrong!
         </h1>
       </div>

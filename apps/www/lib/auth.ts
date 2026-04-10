@@ -89,7 +89,7 @@ export async function login(_initialState: unknown, formData: FormData) {
       .where(eq(userTable.username, normalizedUsername))
       .limit(1);
 
-    if (!existingUser || !existingUser.passwordHash) {
+    if (!existingUser?.passwordHash) {
       return {
         error: "Incorrect username or password",
       };

@@ -52,7 +52,7 @@ export async function validateSessionToken(
     .limit(1);
   // .$withCache(false);
 
-  if (!result || !result.user) {
+  if (!result?.user) {
     return { session: null, user: null };
   }
 
