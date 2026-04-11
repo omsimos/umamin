@@ -1,5 +1,5 @@
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
@@ -15,6 +15,9 @@ import { toast } from "sonner";
 import { createReplyAction } from "@/app/actions/message";
 import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { queryKeys } from "@/lib/query";
+import { patchMessage } from "@/lib/query-cache";
+import type { MessagesResponse } from "@/lib/query-types";
 import type { ReceivedMenuProps } from "./received-card-menu";
 
 type Props = {
@@ -24,6 +27,7 @@ type Props = {
 };
 
 export function ReplyDialog(props: Props) {
+  const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [updatedAt, setUpdatedAt] = useState(props.data.updatedAt);
   const [reply, setReply] = useState(props.data.reply ?? "");
@@ -48,8 +52,19 @@ export function ReplyDialog(props: Props) {
       if (res.error) {
         throw new Error(res.error);
       }
+
+      return res;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      queryClient.setQueryData<
+        import("@tanstack/react-query").InfiniteData<MessagesResponse>
+      >(queryKeys.receivedMessages(), (current) =>
+        patchMessage(current, props.data.id, (message) => ({
+          ...message,
+          reply: result.reply ?? content,
+          updatedAt: result.updatedAt ?? new Date(),
+        })),
+      );
       toast.success("Reply sent.");
       setReply(content);
       setContent("");

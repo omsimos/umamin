@@ -35,6 +35,9 @@ import {
   toggleQuietModeAction,
   updateAvatarAction,
 } from "@/app/actions/user";
+import { queryKeys } from "@/lib/query";
+import { patchCurrentUser } from "@/lib/query-cache";
+import type { CurrentUserResponse } from "@/lib/query-types";
 import type { UserWithAccount } from "@/types/user";
 
 export function PrivacySettings({ user }: { user: UserWithAccount }) {
@@ -91,7 +94,16 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       return !!res.imageUrl;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["current_user"] });
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (currentUser) => ({
+            ...currentUser,
+            imageUrl: data
+              ? (user.account?.picture ?? currentUser.imageUrl)
+              : null,
+          })),
+      );
       toast.success(
         data ? "Profile photo displayed." : "Profile photo hidden.",
       );
@@ -122,7 +134,14 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["current_user"] });
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (currentUser) => ({
+            ...currentUser,
+            imageUrl: avatarPreviewUrl ?? currentUser.imageUrl,
+          })),
+      );
       toast.success("Profile photo updated.");
       setAvatarPreview(null);
       setPreviewOpen(false);
@@ -142,7 +161,14 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       return res.quietMode;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["current_user"] });
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (currentUser) => ({
+            ...currentUser,
+            quietMode: data ?? currentUser.quietMode,
+          })),
+      );
       toast.success(data ? "Quiet mode enabled." : "Quiet mode disabled.");
     },
     onError: (err) => {

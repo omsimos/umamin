@@ -3,7 +3,6 @@
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import type { SelectNote } from "@umamin/db/schema/note";
 import {
   Alert,
   AlertDescription,
@@ -12,19 +11,19 @@ import {
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo } from "react";
-import type { PublicUser } from "@/types/user";
+import {
+  infiniteQueryDefaults,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+} from "@/lib/query";
+import { fetchNotesPage } from "@/lib/query-fetchers";
+import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
 
 const AdContainer = dynamic(() => import("@/components/ad-container"), {
   ssr: false,
 });
-
-type NoteItem = SelectNote & { user?: PublicUser };
-type NotesResponse = {
-  data: NoteItem[];
-  nextCursor: string | null;
-};
 
 export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   const {
@@ -36,21 +35,13 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<NotesResponse>({
-    queryKey: ["notes"],
-    queryFn: async ({ pageParam }) => {
-      const url = pageParam ? `/api/notes?cursor=${pageParam}` : "/api/notes";
-      const res = await fetch(url, { cache: "default" });
-      if (!res.ok) throw new Error("Network response was not ok");
-      return (await res.json()) as NotesResponse;
-    },
-    initialPageParam: null,
+    queryKey: queryKeys.notes(),
+    queryFn: ({ pageParam }) =>
+      fetchNotesPage((pageParam as string | null) ?? null),
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-
-    staleTime: 30_000,
-    refetchInterval: 30_000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
+    staleTime: PUBLIC_STALE_TIME,
+    ...infiniteQueryDefaults,
   });
 
   // De-duplicate posts by id across pages

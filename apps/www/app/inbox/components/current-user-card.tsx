@@ -1,9 +1,7 @@
 import { UserCard } from "@/components/user-card";
-import { getSession } from "@/lib/auth";
+import type { PublicUser } from "@/types/user";
 
-export async function CurrentUserCard() {
-  const { user } = await getSession();
-
+export async function CurrentUserCard({ user }: { user: PublicUser | null }) {
   if (!user) {
     return null;
   }

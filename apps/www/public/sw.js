@@ -8,6 +8,16 @@ const PRECACHE_URLS = [
   "/manifest.webmanifest",
 ];
 
+const DYNAMIC_NAVIGATION_PREFIXES = [
+  "/feed",
+  "/inbox",
+  "/notes",
+  "/post",
+  "/settings",
+  "/to",
+  "/user",
+];
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -45,6 +55,15 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
+    if (
+      DYNAMIC_NAVIGATION_PREFIXES.some(
+        (prefix) =>
+          url.pathname === prefix || url.pathname.startsWith(`${prefix}/`),
+      )
+    ) {
+      return;
+    }
+
     event.respondWith(
       fetch(request)
         .then((response) => {

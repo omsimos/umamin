@@ -3,9 +3,10 @@
 import { db } from "@umamin/db";
 import { noteTable } from "@umamin/db/schema/note";
 import { eq, sql } from "drizzle-orm";
-import { cacheLife, cacheTag, updateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import { getCurrentNoteData } from "@/lib/server/data";
 import { formatContent } from "@/lib/utils";
 
 const createNoteSchema = z.object({
@@ -54,6 +55,11 @@ export async function createNoteAction(
 
     updateTag(`current-note:${session.userId}`);
     updateTag("notes");
+
+    return {
+      success: true,
+      note: await getCurrentNoteData(session.userId),
+    };
   } catch (error) {
     console.log("Error creating note:", error);
     return { error: "Failed to create note" };
@@ -67,21 +73,7 @@ export const getCurrentNoteAction = async () => {
     throw new Error("User not authenticated");
   }
 
-  const getCachedData = async () => {
-    "use cache: private";
-    cacheTag(`current-note:${session.userId}`);
-    cacheLife({ revalidate: 30 });
-
-    const [data] = await db
-      .select()
-      .from(noteTable)
-      .where(eq(noteTable.userId, session.userId))
-      .limit(1);
-
-    return data;
-  };
-  const result = await getCachedData();
-  return result;
+  return getCurrentNoteData(session.userId);
 };
 
 export const clearNoteAction = async () => {
@@ -99,6 +91,8 @@ export const clearNoteAction = async () => {
 
     updateTag(`current-note:${session.userId}`);
     updateTag("notes");
+
+    return { success: true };
   } catch (error) {
     console.log("Error clearing note:", error);
     return { error: "Failed to clear note" };

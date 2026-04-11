@@ -8,7 +8,8 @@ import {
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
 import { useMemo } from "react";
-import { getCurrentUserAction } from "@/app/actions/user";
+import { pageQueryOptions, queryKeys } from "@/lib/query";
+import { fetchCurrentUser } from "@/lib/query-fetchers";
 import { AccountSettings } from "./account-settings";
 import { GeneralSettings } from "./general-settings";
 import { PrivacySettings } from "./privacy-settings";
@@ -16,8 +17,7 @@ import { SettingsSkeleton } from "./settings-skeleton";
 
 export function SettingsTabs() {
   const { data, isLoading } = useQuery({
-    queryKey: ["current_user"],
-    queryFn: getCurrentUserAction,
+    ...pageQueryOptions(queryKeys.currentUser(), fetchCurrentUser),
   });
 
   const userData = useMemo(() => {

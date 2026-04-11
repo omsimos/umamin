@@ -1,6 +1,7 @@
 "use client";
 
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
+import type { InfiniteData } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Avatar,
@@ -31,6 +32,9 @@ import {
   removeLikeAction,
   removeRepostAction,
 } from "@/app/actions/post";
+import { queryKeys } from "@/lib/query";
+import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
+import type { FeedResponse, PostResponse } from "@/lib/query-types";
 import {
   isAlreadyRemoved,
   isAlreadyReposted,
@@ -57,6 +61,34 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
   const [reposts, setReposts] = useState<number>(data.repostCount ?? 0);
   const [repostDialogOpen, setRepostDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const syncPostCache = (
+    nextLiked: boolean,
+    nextLikes: number,
+    nextReposted: boolean,
+    nextReposts: number,
+  ) => {
+    queryClient.setQueryData<InfiniteData<FeedResponse>>(
+      queryKeys.posts(),
+      (current) =>
+        patchPostAcrossFeed(current, data.id, (post) => ({
+          ...post,
+          isLiked: nextLiked,
+          likeCount: nextLikes,
+          isReposted: nextReposted,
+          repostCount: nextReposts,
+        })),
+    );
+    queryClient.setQueryData<PostResponse>(queryKeys.post(data.id), (current) =>
+      patchPostResponse(current, (post) => ({
+        ...post,
+        isLiked: nextLiked,
+        likeCount: nextLikes,
+        isReposted: nextReposted,
+        repostCount: nextReposts,
+      })),
+    );
+  };
 
   useEffect(() => {
     setLiked(data.isLiked === true);
@@ -104,6 +136,12 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
 
     try {
       await rateLimitedLike(prevLiked);
+      syncPostCache(
+        !prevLiked,
+        prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1,
+        reposted,
+        reposts,
+      );
       toast.success(prevLiked ? "Post unliked." : "Post liked.");
     } catch (err) {
       // rollback state
@@ -127,9 +165,10 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
         if (isAlreadyRemoved(res)) {
           setReposted(false);
           setReposts((v) => Math.max(v - 1, 0));
+          syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
         }
         toast.success("Repost removed.");
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
       } else {
         if (isAlreadyReposted(res)) {
           setReposted(prevReposted);
@@ -138,7 +177,7 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
           return;
         }
         toast.success("Reposted.");
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        syncPostCache(liked, likes, true, prevReposts + 1);
       }
     } catch (err) {
       setReposted(prevReposted);
@@ -171,7 +210,7 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
         return;
       }
       toast.success("Quote reposted.");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      syncPostCache(liked, likes, true, prevReposts + 1);
     } catch (err) {
       setReposted(prevReposted);
       setReposts(prevReposts);

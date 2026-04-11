@@ -87,7 +87,7 @@ export async function createReplyAction({
 
     updateTag(`messages:received:${session.userId}`);
 
-    return { success: true };
+    return { success: true, reply: params.data.content, updatedAt: new Date() };
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };

@@ -12,6 +12,13 @@ import { cn } from "@umamin/ui/lib/utils";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo } from "react";
+import {
+  infiniteQueryDefaults,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+} from "@/lib/query";
+import { fetchPostsPage } from "@/lib/query-fetchers";
+import type { FeedResponse } from "@/lib/query-types";
 import type { FeedItem } from "@/types/post";
 import { PostCard } from "./post-card";
 import { PostCardSkeleton } from "./post-card-skeleton";
@@ -20,11 +27,6 @@ import { RepostHeader } from "./repost-header";
 const AdContainer = dynamic(() => import("@/components/ad-container"), {
   ssr: false,
 });
-
-type NotesResponse = {
-  data: FeedItem[];
-  nextCursor: string | null;
-};
 
 export function PostList({
   isAuthenticated,
@@ -41,21 +43,14 @@ export function PostList({
     hasNextPage,
     isFetching,
     isFetchingNextPage,
-  } = useInfiniteQuery<NotesResponse>({
-    queryKey: ["posts"],
-    queryFn: async ({ pageParam }) => {
-      const url = pageParam ? `/api/posts?cursor=${pageParam}` : "/api/posts";
-      const res = await fetch(url, { cache: "default" });
-      if (!res.ok) throw new Error("Network response was not ok");
-      return (await res.json()) as NotesResponse;
-    },
-    initialPageParam: null,
+  } = useInfiniteQuery<FeedResponse>({
+    queryKey: queryKeys.posts(),
+    queryFn: ({ pageParam }) =>
+      fetchPostsPage((pageParam as string | null) ?? null),
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
+    staleTime: PUBLIC_STALE_TIME,
+    ...infiniteQueryDefaults,
   });
 
   // De-duplicate feed items across pages

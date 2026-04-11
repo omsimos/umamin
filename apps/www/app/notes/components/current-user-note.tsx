@@ -27,22 +27,32 @@ import {
   ScrollIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { clearNoteAction, getCurrentNoteAction } from "@/app/actions/note";
+import { clearNoteAction } from "@/app/actions/note";
 import { Menu } from "@/components/menu";
+import { pageQueryOptions, queryKeys } from "@/lib/query";
+import { patchNote } from "@/lib/query-cache";
+import { fetchCurrentNote } from "@/lib/query-fetchers";
+import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { isOlderThanOneYear, saveImage } from "@/lib/utils";
 
 export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["current_note"],
-    queryFn: async () => (await getCurrentNoteAction()) ?? null,
+  const { data, isLoading } = useQuery<NoteItem | null>({
+    ...pageQueryOptions(queryKeys.currentNote(), fetchCurrentNote),
   });
 
   const clearNoteMutation = useMutation({
     mutationFn: clearNoteAction,
     onSuccess: () => {
+      queryClient.setQueryData(queryKeys.currentNote(), null);
+      if (data?.id) {
+        queryClient.setQueryData<
+          import("@tanstack/react-query").InfiniteData<NotesResponse>
+        >(queryKeys.notes(), (current) =>
+          patchNote(current, data.id, () => null),
+        );
+      }
       toast.success("Note cleared.");
-      queryClient.invalidateQueries({ queryKey: ["current_note"] });
     },
     onError: (err) => {
       console.log(err);

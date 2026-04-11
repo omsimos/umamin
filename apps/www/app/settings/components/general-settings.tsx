@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import type * as z from "zod";
 import { generalSettingsAction } from "@/app/actions/user";
 import { useAppForm } from "@/hooks/form";
+import { queryKeys } from "@/lib/query";
+import { patchCurrentUser } from "@/lib/query-cache";
+import type { CurrentUserResponse } from "@/lib/query-types";
 import { generalSettingsSchema, type UserWithAccount } from "@/types/user";
 
 export function GeneralSettings({ user }: { user: UserWithAccount }) {
@@ -27,8 +30,15 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
       }
     },
     onSuccess: () => {
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (currentUser) => ({
+            ...currentUser,
+            ...form.state.values,
+          })),
+      );
       toast.success("Settings updated.");
-      queryClient.invalidateQueries({ queryKey: ["current_user"] });
     },
     onError: (error) => {
       console.error(error);

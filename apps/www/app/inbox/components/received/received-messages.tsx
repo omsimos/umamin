@@ -3,7 +3,6 @@
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { SelectMessage } from "@umamin/db/schema/message";
 import {
   Alert,
   AlertDescription,
@@ -11,15 +10,15 @@ import {
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
-import type { Cursor } from "@/types";
-import type { PublicUser } from "@/types/user";
+import {
+  infiniteQueryDefaults,
+  PRIVATE_STALE_TIME,
+  queryKeys,
+} from "@/lib/query";
+import { fetchMessagesPage } from "@/lib/query-fetchers";
+import type { MessagesResponse } from "@/lib/query-types";
 import { ReceivedMessageCard } from "./received-card";
 import { ReceivedMessageCardSkeleton } from "./received-message-card-skeleton";
-
-type MessagesResponse = {
-  messages: (SelectMessage & { receiver: PublicUser })[];
-  nextCursor: Cursor | null;
-};
 
 export function ReceivedMessages() {
   const parentRef = useRef<HTMLDivElement | null>(null);
@@ -33,31 +32,13 @@ export function ReceivedMessages() {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<MessagesResponse>({
-    queryKey: ["received_messages"],
-    queryFn: async ({ pageParam }) => {
-      const cursor = (pageParam as string) ?? "";
-      const url = cursor
-        ? `/api/messages?type=received&cursor=${cursor}`
-        : "/api/messages?type=received";
-
-      const res = await fetch(url, {
-        cache: "default",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      return (await res.json()) as MessagesResponse;
-    },
-    initialPageParam: null,
+    queryKey: queryKeys.receivedMessages(),
+    queryFn: ({ pageParam }) =>
+      fetchMessagesPage("received", (pageParam as string | null) ?? null),
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
+    staleTime: PRIVATE_STALE_TIME,
+    ...infiniteQueryDefaults,
   });
 
   const allPosts = data?.pages.flatMap((page) => page.messages) ?? [];

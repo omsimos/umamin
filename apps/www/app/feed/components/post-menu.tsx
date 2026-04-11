@@ -17,6 +17,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { deletePostAction } from "@/app/actions/post";
 import { Menu } from "@/components/menu";
+import { queryKeys } from "@/lib/query";
+import { removePostFromFeed } from "@/lib/query-cache";
+import type { FeedResponse } from "@/lib/query-types";
 import { saveImage, sharePost } from "@/lib/utils";
 
 type PostMenuProps = {
@@ -49,9 +52,11 @@ export function PostMenu({
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["post-comments", postId] });
-      queryClient.invalidateQueries({ queryKey: ["post", postId] });
+      queryClient.setQueryData<
+        import("@tanstack/react-query").InfiniteData<FeedResponse>
+      >(queryKeys.posts(), (current) => removePostFromFeed(current, postId));
+      queryClient.setQueryData(queryKeys.post(postId), null);
+      queryClient.removeQueries({ queryKey: queryKeys.postComments(postId) });
       toast.success("Post deleted.");
       onDeleted?.();
     },

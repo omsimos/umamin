@@ -16,14 +16,12 @@ import { type FormEventHandler, useState } from "react";
 import { toast } from "sonner";
 import { createPostAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { queryKeys } from "@/lib/query";
+import { prependFeedItem, replaceFeedItem } from "@/lib/query-cache";
+import type { FeedResponse } from "@/lib/query-types";
 import { isOlderThanOneYear } from "@/lib/utils";
 import type { FeedItem, PostData } from "@/types/post";
 import type { PublicUser } from "@/types/user";
-
-type PostsResponse = {
-  data: FeedItem[];
-  nextCursor: string | null;
-};
 
 type Props = {
   user: PublicUser | null;
@@ -54,11 +52,11 @@ export default function PostForm({ user }: Props) {
     },
     onMutate: async (nextContent) => {
       if (!user) return {};
-      await queryClient.cancelQueries({ queryKey: ["posts"] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.posts() });
 
-      const previous = queryClient.getQueryData<InfiniteData<PostsResponse>>([
-        "posts",
-      ]);
+      const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>(
+        queryKeys.posts(),
+      );
 
       const optimisticPost: PostData = {
         id: `optimistic-${crypto.randomUUID()}`,
@@ -75,43 +73,51 @@ export default function PostForm({ user }: Props) {
       };
       const optimistic: FeedItem = { type: "post", post: optimisticPost };
 
-      if (previous) {
-        queryClient.setQueryData<InfiniteData<PostsResponse>>(["posts"], {
-          ...previous,
-          pages: [
-            {
-              ...previous.pages[0],
-              data: [optimistic, ...previous.pages[0].data],
-            },
-            ...previous.pages.slice(1),
-          ],
-        });
-      } else {
-        queryClient.setQueryData<InfiniteData<PostsResponse>>(["posts"], {
-          pageParams: [null],
-          pages: [{ data: [optimistic], nextCursor: null }],
-        });
-      }
+      queryClient.setQueryData<InfiniteData<FeedResponse>>(
+        queryKeys.posts(),
+        prependFeedItem(previous, optimistic),
+      );
 
       setContent("");
       setTextAreaCount(0);
-      return { previous };
+      return { previous, optimisticId: optimisticPost.id };
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
-        queryClient.setQueryData(["posts"], ctx.previous);
+        queryClient.setQueryData(queryKeys.posts(), ctx.previous);
       }
       toast.error(err.message ?? "Couldn't post.");
     },
-    onSuccess: (res, _vars) => {
+    onSuccess: (res, _vars, ctx) => {
       if (res?.error) {
         toast.error(res.error);
-      } else {
-        toast.success("Post published.");
+        return;
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+
+      if (user && res?.post && ctx?.optimisticId) {
+        const nextItem: FeedItem = {
+          type: "post",
+          post: {
+            ...res.post,
+            author: user,
+            isLiked: false,
+            isReposted: false,
+          },
+        };
+
+        queryClient.setQueryData<InfiniteData<FeedResponse>>(
+          queryKeys.posts(),
+          (previous) =>
+            replaceFeedItem(
+              previous,
+              (item) =>
+                item.type === "post" && item.post.id === ctx.optimisticId,
+              nextItem,
+            ),
+        );
+      }
+
+      toast.success("Post published.");
     },
   });
 

@@ -1,8 +1,13 @@
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { SquarePenIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
+import { getQueryClient } from "@/lib/get-query-client";
+import { queryKeys } from "@/lib/query";
+import type { NotesResponse } from "@/lib/query-types";
+import { getCurrentNoteData, getNotesPage } from "@/lib/server/data";
 import { CurrentUserNote } from "./components/current-user-note";
 import { NoteForm } from "./components/note-form";
 import { NoteList } from "./components/note-list";
@@ -38,6 +43,27 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const { user } = await getSession();
+  const queryClient = getQueryClient();
+
+  await queryClient.prefetchInfiniteQuery({
+    queryKey: queryKeys.notes(),
+    queryFn: ({ pageParam }) =>
+      getNotesPage({
+        cursor: (pageParam as string | null) ?? null,
+        viewerId: user?.id,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage: NotesResponse) => lastPage.nextCursor ?? null,
+    staleTime: 120_000,
+  });
+
+  if (user) {
+    await queryClient.prefetchQuery({
+      queryKey: queryKeys.currentNote(),
+      queryFn: () => getCurrentNoteData(user.id),
+      staleTime: 30_000,
+    });
+  }
 
   return (
     <div className="container max-w-xl space-y-12">
@@ -46,10 +72,12 @@ export default async function Page() {
       </h1>
 
       {user ? (
-        <>
-          <NoteForm />
-          <CurrentUserNote currentUser={user} />
-        </>
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          <div className="space-y-12">
+            <NoteForm currentUser={user} />
+            <CurrentUserNote currentUser={user} />
+          </div>
+        </HydrationBoundary>
       ) : (
         <div className="flex items-center space-x-4 rounded-md border p-4 mb-5">
           <SquarePenIcon />
@@ -65,7 +93,9 @@ export default async function Page() {
           </Button>
         </div>
       )}
-      <NoteList isAuthenticated={!!user} />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <NoteList isAuthenticated={!!user} />
+      </HydrationBoundary>
     </div>
   );
 }

@@ -8,11 +8,11 @@ import {
   postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
-import { userBlockTable } from "@umamin/db/schema/user";
-import { and, eq, exists, or, sql } from "drizzle-orm";
-import { cacheLife, cacheTag, updateTag } from "next/cache";
+import { and, eq, sql } from "drizzle-orm";
+import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import { getPostById } from "@/lib/server/data";
 import { formatContent } from "@/lib/utils";
 
 const createPostSchema = z.object({
@@ -24,129 +24,12 @@ const createPostSchema = z.object({
 });
 
 export async function getPostAction(id: string) {
-  const res = await (async () => {
-    "use cache: private";
-    cacheTag(`post:${id}`);
-    cacheLife({ revalidate: 30 });
-
-    return db.query.postTable.findFirst({
-      with: {
-        author: true,
-      },
-      where: eq(postTable.id, id),
-    });
-  })();
-
-  if (!res) return res;
-
   const { session } = await getSession();
-
-  if (!session) return res;
-
-  const isBlocked = await (async () => {
-    "use cache: private";
-    cacheTag(`user-blocks:${session.userId}`);
-    cacheLife({ revalidate: 30 });
-
-    const blocked = await db
-      .select({
-        blocked: exists(
-          db
-            .select({ id: userBlockTable.id })
-            .from(userBlockTable)
-            .where(
-              or(
-                and(
-                  eq(userBlockTable.blockerId, session.userId),
-                  eq(userBlockTable.blockedId, res.authorId),
-                ),
-                and(
-                  eq(userBlockTable.blockerId, res.authorId),
-                  eq(userBlockTable.blockedId, session.userId),
-                ),
-              ),
-            ),
-        ),
-      })
-      .from(postTable)
-      .where(eq(postTable.id, id))
-      .limit(1);
-
-    return Boolean(blocked?.[0]?.blocked);
-  })();
-
-  if (isBlocked) return null;
-
-  const isLiked = await (async () => {
-    "use cache: private";
-    cacheTag(`post:${id}:liked:${session.userId}`);
-    cacheLife({ revalidate: 30 });
-
-    const liked = await db
-      .select({
-        liked: exists(
-          db
-            .select({ id: postLikeTable.id })
-            .from(postLikeTable)
-            .where(
-              and(
-                eq(postLikeTable.postId, id),
-                eq(postLikeTable.userId, session.userId),
-              ),
-            ),
-        ),
-      })
-      .from(postTable)
-      .where(eq(postTable.id, id))
-      .limit(1);
-
-    return Boolean(liked?.[0]?.liked);
-  })();
-
-  const isReposted = await (async () => {
-    "use cache: private";
-    cacheTag(`post:${id}:reposted:${session.userId}`);
-    cacheLife({ revalidate: 30 });
-
-    const reposted = await db
-      .select({
-        reposted: exists(
-          db
-            .select({ id: postRepostTable.id })
-            .from(postRepostTable)
-            .where(
-              and(
-                eq(postRepostTable.postId, id),
-                eq(postRepostTable.userId, session.userId),
-              ),
-            ),
-        ),
-      })
-      .from(postTable)
-      .where(eq(postTable.id, id))
-      .limit(1);
-
-    return Boolean(reposted?.[0]?.reposted);
-  })();
-
-  return { ...res, isLiked, isReposted };
+  return getPostById({ postId: id, viewerId: session?.userId });
 }
 
 export async function getPostPublicAction(id: string) {
-  const res = await (async () => {
-    "use cache";
-    cacheTag(`post:${id}`);
-    cacheLife({ revalidate: 30 });
-
-    return db.query.postTable.findFirst({
-      with: {
-        author: true,
-      },
-      where: eq(postTable.id, id),
-    });
-  })();
-
-  return res ?? null;
+  return getPostById({ postId: id });
 }
 
 export async function createPostAction(
@@ -166,12 +49,22 @@ export async function createPostAction(
       throw new Error("Unauthorized");
     }
 
-    await db.insert(postTable).values({
-      content: formatContent(content),
-      authorId: session.userId,
-    });
+    const formattedContent = formatContent(content);
 
-    return { success: true };
+    const [createdPost] = await db
+      .insert(postTable)
+      .values({
+        content: formattedContent,
+        authorId: session.userId,
+      })
+      .returning();
+
+    updateTag("posts");
+
+    return {
+      success: true,
+      post: createdPost,
+    };
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };
@@ -236,12 +129,19 @@ export async function createCommentAction(
       throw new Error("Unauthorized");
     }
 
+    let createdComment: typeof postCommentTable.$inferSelect | undefined;
+
     await db.transaction(async (tx) => {
-      await tx.insert(postCommentTable).values({
-        postId,
-        content: formatContent(content),
-        authorId: session.userId,
-      });
+      const [comment] = await tx
+        .insert(postCommentTable)
+        .values({
+          postId,
+          content: formatContent(content),
+          authorId: session.userId,
+        })
+        .returning();
+
+      createdComment = comment;
 
       await tx
         .update(postTable)
@@ -255,7 +155,7 @@ export async function createCommentAction(
     updateTag("posts");
     updateTag(`post-comments:${postId}`);
 
-    return { success: true };
+    return { success: true, comment: createdComment };
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };
@@ -423,6 +323,7 @@ export async function addCommentLikeAction({
 
     updateTag("posts");
     updateTag(`comment:${commentId}`);
+    updateTag(`comment:${commentId}:liked:${session.userId}`);
     if (postId) {
       updateTag(`post-comments:${postId}`);
     }
@@ -485,6 +386,7 @@ export async function removeCommentLikeAction({
 
     updateTag("posts");
     updateTag(`comment:${commentId}`);
+    updateTag(`comment:${commentId}:liked:${session.userId}`);
     if (postId) {
       updateTag(`post-comments:${postId}`);
     }

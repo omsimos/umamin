@@ -23,6 +23,9 @@ import { toast } from "sonner";
 import { deleteMessageAction } from "@/app/actions/message";
 import { blockUserAction, unblockUserAction } from "@/app/actions/user";
 import { Menu } from "@/components/menu";
+import { queryKeys } from "@/lib/query";
+import { removeMessage } from "@/lib/query-cache";
+import type { MessagesResponse } from "@/lib/query-types";
 import { saveImage } from "@/lib/utils";
 import { ReplyDialog } from "./reply-dialog";
 
@@ -52,7 +55,9 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["received_messages"] });
+      queryClient.setQueryData<
+        import("@tanstack/react-query").InfiniteData<MessagesResponse>
+      >(queryKeys.receivedMessages(), (current) => removeMessage(current, id));
       toast.success("Message deleted.");
     },
     onError: (err) => {
@@ -71,7 +76,23 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["received_messages"] });
+      queryClient.setQueryData<
+        import("@tanstack/react-query").InfiniteData<MessagesResponse>
+      >(queryKeys.receivedMessages(), (current) => {
+        if (!props.senderId || !current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          pages: current.pages.map((page) => ({
+            ...page,
+            messages: page.messages.filter(
+              (message) => message.senderId !== props.senderId,
+            ),
+          })),
+        };
+      });
       toast.success("User blocked.", {
         action: {
           label: "Undo",

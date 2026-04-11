@@ -12,12 +12,14 @@ import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { PostCard } from "@/app/feed/components/post-card";
 import { PostCardSkeleton } from "@/app/feed/components/post-card-skeleton";
+import {
+  infiniteQueryDefaults,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+} from "@/lib/query";
+import { fetchPostCommentsPage } from "@/lib/query-fetchers";
+import type { CommentsResponse } from "@/lib/query-types";
 import type { CommentData } from "@/types/post";
-
-type CommentsResponse = {
-  data: CommentData[];
-  nextCursor: string | null;
-};
 
 type CommentsListProps = {
   postId: string;
@@ -34,20 +36,13 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     isFetchingNextPage,
     isFetching,
   } = useInfiniteQuery<CommentsResponse>({
-    queryKey: ["post-comments", postId],
-    queryFn: async ({ pageParam }) => {
-      const url = pageParam
-        ? `/api/posts/${postId}/comments?cursor=${pageParam}`
-        : `/api/posts/${postId}/comments`;
-      const res = await fetch(url, { cache: "default" });
-      if (!res.ok) throw new Error("Failed to load comments");
-      return (await res.json()) as CommentsResponse;
-    },
-    initialPageParam: null,
+    queryKey: queryKeys.postComments(postId),
+    queryFn: ({ pageParam }) =>
+      fetchPostCommentsPage(postId, (pageParam as string | null) ?? null),
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: 30_000,
+    staleTime: PUBLIC_STALE_TIME,
+    ...infiniteQueryDefaults,
   });
 
   const comments = useMemo(() => {

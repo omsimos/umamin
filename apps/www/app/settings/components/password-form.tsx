@@ -7,6 +7,9 @@ import { toast } from "sonner";
 import type * as z from "zod";
 import { updatePasswordAction } from "@/app/actions/user";
 import { useAppForm } from "@/hooks/form";
+import { queryKeys } from "@/lib/query";
+import { patchCurrentUser } from "@/lib/query-cache";
+import type { CurrentUserResponse } from "@/lib/query-types";
 import { passwordFormSchema } from "@/types/user";
 
 export function PasswordForm({
@@ -36,7 +39,14 @@ export function PasswordForm({
     onSuccess: async () => {
       form.reset();
       toast.success("Password updated.");
-      await queryClient.invalidateQueries({ queryKey: ["current_user"] });
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (currentUser) => ({
+            ...currentUser,
+            passwordHash: currentUser.passwordHash ?? "__set__",
+          })),
+      );
     },
     onError: (err) => {
       console.error(err);
