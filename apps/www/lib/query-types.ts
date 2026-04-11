@@ -37,3 +37,13 @@ export type CurrentUserData = SelectUser & {
 export type CurrentUserResponse = {
   user?: CurrentUserData;
 };
+
+export type UserProfileResponse = PublicUser | null;
+
+export type UserProfileViewerResponse = {
+  currentUserId: string | null;
+  isAuthenticated: boolean;
+  isFollowing: boolean;
+  isBlocked: boolean;
+  isBlockedBy: boolean;
+};

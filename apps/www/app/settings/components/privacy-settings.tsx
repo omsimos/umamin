@@ -36,8 +36,11 @@ import {
   updateAvatarAction,
 } from "@/app/actions/user";
 import { queryKeys } from "@/lib/query";
-import { patchCurrentUser } from "@/lib/query-cache";
-import type { CurrentUserResponse } from "@/lib/query-types";
+import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
+import type {
+  CurrentUserResponse,
+  UserProfileResponse,
+} from "@/lib/query-types";
 import type { UserWithAccount } from "@/types/user";
 
 export function PrivacySettings({ user }: { user: UserWithAccount }) {
@@ -47,6 +50,16 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const googlePicture = user.account?.picture;
+  const patchOwnProfile = (updates: Partial<UserWithAccount>) => {
+    queryClient.setQueryData<UserProfileResponse>(
+      queryKeys.userProfile(user.username),
+      (current) =>
+        patchUserProfile(current, (currentUser) => ({
+          ...currentUser,
+          ...updates,
+        })),
+    );
+  };
 
   const gravatarMutation = useMutation({
     mutationFn: async (email: string) => getGravatarAction(email),
@@ -94,16 +107,17 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       return !!res.imageUrl;
     },
     onSuccess: (data) => {
+      const imageUrl = data ? (user.account?.picture ?? user.imageUrl) : null;
+
       queryClient.setQueryData<CurrentUserResponse>(
         queryKeys.currentUser(),
         (current) =>
           patchCurrentUser(current, (currentUser) => ({
             ...currentUser,
-            imageUrl: data
-              ? (user.account?.picture ?? currentUser.imageUrl)
-              : null,
+            imageUrl,
           })),
       );
+      patchOwnProfile({ imageUrl });
       toast.success(
         data ? "Profile photo displayed." : "Profile photo hidden.",
       );
@@ -132,16 +146,21 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       if (res.error) {
         throw new Error(res.error);
       }
+
+      return res;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const imageUrl = result.imageUrl ?? avatarPreviewUrl ?? user.imageUrl;
+
       queryClient.setQueryData<CurrentUserResponse>(
         queryKeys.currentUser(),
         (current) =>
           patchCurrentUser(current, (currentUser) => ({
             ...currentUser,
-            imageUrl: avatarPreviewUrl ?? currentUser.imageUrl,
+            imageUrl,
           })),
       );
+      patchOwnProfile({ imageUrl });
       toast.success("Profile photo updated.");
       setAvatarPreview(null);
       setPreviewOpen(false);
@@ -169,6 +188,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             quietMode: data ?? currentUser.quietMode,
           })),
       );
+      patchOwnProfile({ quietMode: data ?? user.quietMode });
       toast.success(data ? "Quiet mode enabled." : "Quiet mode disabled.");
     },
     onError: (err) => {

@@ -6,6 +6,8 @@ import type {
   MessagesResponse,
   NotesResponse,
   PostResponse,
+  UserProfileResponse,
+  UserProfileViewerResponse,
 } from "@/lib/query-types";
 
 async function fetchJson<T>(input: string): Promise<T> {
@@ -51,6 +53,30 @@ export async function fetchCurrentNote() {
 
 export async function fetchCurrentUser() {
   return fetchJson<CurrentUserResponse>("/api/me");
+}
+
+export async function fetchCurrentUserOptional() {
+  const response = await fetch("/api/me", {
+    credentials: "include",
+  });
+
+  if (response.status === 401) {
+    return {} as CurrentUserResponse;
+  }
+
+  if (!response.ok) {
+    throw new Error("Request failed for /api/me");
+  }
+
+  return (await response.json()) as CurrentUserResponse;
+}
+
+export async function fetchUserProfile(username: string) {
+  return fetchJson<UserProfileResponse>(`/api/user/${username}`);
+}
+
+export async function fetchUserProfileViewer(username: string) {
+  return fetchJson<UserProfileViewerResponse>(`/api/user/${username}/viewer`);
 }
 
 export async function fetchMessagesPage(

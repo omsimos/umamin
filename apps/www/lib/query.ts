@@ -17,6 +17,9 @@ export const queryKeys = {
   notes: () => ["notes"] as const,
   currentNote: () => ["current_note"] as const,
   currentUser: () => ["current_user"] as const,
+  userProfile: (username: string) => ["user-profile", username] as const,
+  userProfileViewer: (username: string) =>
+    ["user-profile-viewer", username] as const,
   receivedMessages: () => ["received_messages"] as const,
   sentMessages: () => ["sent_messages"] as const,
 };

@@ -244,7 +244,7 @@ export async function followUserAction({ userId }: { userId: string }) {
     if (!parsed.success) {
       return { error: "Invalid input" };
     }
-    const { session } = await getSession();
+    const { session, user } = await getSession();
 
     if (!session) {
       throw new Error("Unauthorized");
@@ -305,6 +305,9 @@ export async function followUserAction({ userId }: { userId: string }) {
     updateTag(`user:${target.username}`);
     updateTag(`user:${session.userId}`);
     updateTag(`user:${target.username}:followed:${session.userId}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}`);
+    }
 
     return result;
   } catch (err) {
@@ -319,7 +322,7 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     if (!parsed.success) {
       return { error: "Invalid input" };
     }
-    const { session } = await getSession();
+    const { session, user } = await getSession();
 
     if (!session) {
       throw new Error("Unauthorized");
@@ -381,6 +384,9 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     updateTag(`user:${target.username}`);
     updateTag(`user:${session.userId}`);
     updateTag(`user:${target.username}:followed:${session.userId}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}`);
+    }
 
     return result;
   } catch (err) {
@@ -473,6 +479,9 @@ export async function blockUserAction({ userId }: { userId: string }) {
     });
 
     updateTag(`user:${target.username}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}`);
+    }
     updateTag(`user:${target.username}:blocked:${session.userId}`);
     updateTag(`user:${target.username}:followed:${session.userId}`);
     if (user?.username) {
@@ -544,6 +553,9 @@ export async function unblockUserAction({ userId }: { userId: string }) {
     });
 
     updateTag(`user:${target.username}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}`);
+    }
     updateTag(`user:${target.username}:blocked:${session.userId}`);
     if (user?.username) {
       updateTag(`user:${user.username}:blocked-by:${userId}`);
@@ -630,6 +642,8 @@ export async function updateAvatarAction(imageUrl: string) {
       .where(eq(userTable.id, user.id));
 
     updateTag(`user:${user.username}`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
 
     return { success: true, imageUrl };
   } catch (err) {

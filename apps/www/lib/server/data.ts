@@ -37,6 +37,8 @@ import type {
   NoteItem,
   NotesResponse,
   PostResponse,
+  UserProfileResponse,
+  UserProfileViewerResponse,
 } from "@/lib/query-types";
 import type { CommentData, FeedItem } from "@/types/post";
 import type { PublicUser } from "@/types/user";
@@ -830,7 +832,9 @@ export async function getCurrentUserData(
   };
 }
 
-async function getPublicUserProfile(username: string) {
+export async function getPublicUserProfileData(
+  username: string,
+): Promise<UserProfileResponse> {
   "use cache";
   cacheTag(`user:${username}`);
   cacheLife({ revalidate: 604800 });
@@ -928,14 +932,24 @@ async function getUserProfileViewerOverlay(
   };
 }
 
-export async function getUserProfileData(
+export async function getUserProfileViewerData(
   username: string,
   viewerId?: string | null,
-) {
-  const user = await getPublicUserProfile(username);
+): Promise<UserProfileViewerResponse | null> {
+  const user = await getPublicUserProfileData(username);
 
-  if (!user || !viewerId) {
-    return user;
+  if (!user) {
+    return null;
+  }
+
+  if (!viewerId) {
+    return {
+      currentUserId: null,
+      isAuthenticated: false,
+      isFollowing: false,
+      isBlocked: false,
+      isBlockedBy: false,
+    };
   }
 
   const overlay = await getUserProfileViewerOverlay(
@@ -945,8 +959,27 @@ export async function getUserProfileData(
   );
 
   return {
-    ...user,
+    currentUserId: viewerId,
+    isAuthenticated: true,
     ...overlay,
+  };
+}
+
+export async function getUserProfileData(
+  username: string,
+  viewerId?: string | null,
+) {
+  const user = await getPublicUserProfileData(username);
+
+  if (!user || !viewerId) {
+    return user;
+  }
+
+  const overlay = await getUserProfileViewerData(username, viewerId);
+
+  return {
+    ...user,
+    ...(overlay ?? {}),
   };
 }
 

@@ -6,8 +6,11 @@ import type * as z from "zod";
 import { generalSettingsAction } from "@/app/actions/user";
 import { useAppForm } from "@/hooks/form";
 import { queryKeys } from "@/lib/query";
-import { patchCurrentUser } from "@/lib/query-cache";
-import type { CurrentUserResponse } from "@/lib/query-types";
+import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
+import type {
+  CurrentUserResponse,
+  UserProfileResponse,
+} from "@/lib/query-types";
 import { generalSettingsSchema, type UserWithAccount } from "@/types/user";
 
 export function GeneralSettings({ user }: { user: UserWithAccount }) {
@@ -28,16 +31,45 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
       if (res?.error) {
         throw new Error(res.error);
       }
+
+      return res;
     },
-    onSuccess: () => {
+    onSuccess: (result, values) => {
+      const nextUsername = result?.user?.username ?? values.username;
+      const nextProfile = {
+        ...user,
+        ...result?.user,
+      };
+
       queryClient.setQueryData<CurrentUserResponse>(
         queryKeys.currentUser(),
         (current) =>
           patchCurrentUser(current, (currentUser) => ({
             ...currentUser,
-            ...form.state.values,
+            ...result?.user,
           })),
       );
+
+      queryClient.removeQueries({
+        queryKey: queryKeys.userProfile(user.username),
+        exact: true,
+      });
+      queryClient.removeQueries({
+        queryKey: queryKeys.userProfileViewer(user.username),
+        exact: true,
+      });
+
+      queryClient.setQueryData<UserProfileResponse>(
+        queryKeys.userProfile(nextUsername),
+        (current) =>
+          patchUserProfile(current, () => nextProfile) ?? nextProfile,
+      );
+
+      queryClient.removeQueries({
+        queryKey: queryKeys.userProfileViewer(nextUsername),
+        exact: true,
+      });
+
       toast.success("Settings updated.");
     },
     onError: (error) => {

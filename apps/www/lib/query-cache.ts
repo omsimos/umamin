@@ -7,6 +7,8 @@ import type {
   NoteItem,
   NotesResponse,
   PostResponse,
+  UserProfileResponse,
+  UserProfileViewerResponse,
 } from "@/lib/query-types";
 import type { CommentData, FeedItem, PostData } from "@/types/post";
 
@@ -237,6 +239,23 @@ export function removeMessage(
   };
 }
 
+export function removeMessagesBySender(
+  previous: InfiniteData<MessagesResponse> | undefined,
+  senderId: string,
+) {
+  if (!previous) return previous;
+
+  return {
+    ...previous,
+    pages: previous.pages.map((page) => ({
+      ...page,
+      messages: page.messages.filter(
+        (message) => message.senderId !== senderId,
+      ),
+    })),
+  };
+}
+
 export function patchMessage(
   previous: InfiniteData<MessagesResponse> | undefined,
   messageId: string,
@@ -269,4 +288,24 @@ export function patchCurrentUser(
     ...previous,
     user: updater(previous.user),
   };
+}
+
+export function patchUserProfile(
+  previous: UserProfileResponse | undefined,
+  updater: (
+    user: NonNullable<UserProfileResponse>,
+  ) => NonNullable<UserProfileResponse>,
+) {
+  if (!previous) return previous;
+
+  return updater(previous);
+}
+
+export function patchUserProfileViewer(
+  previous: UserProfileViewerResponse | undefined,
+  updater: (viewer: UserProfileViewerResponse) => UserProfileViewerResponse,
+) {
+  if (!previous) return previous;
+
+  return updater(previous);
 }

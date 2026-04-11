@@ -1,10 +1,9 @@
 import { BadgeCheckIcon, LockIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getUserProfileAction } from "@/app/actions/user";
 import { ShareButton } from "@/components/share-button";
 import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
-import { getSession } from "@/lib/auth";
+import { getPublicUserProfileData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 import { ChatForm } from "./components/chat-form";
 
@@ -50,11 +49,11 @@ export default async function SendMessage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const user = await getUserProfileAction(username);
+  const formattedUsername = formatUsername(username);
+  const user = await getPublicUserProfileData(formattedUsername);
   if (!user) {
     notFound();
   }
-  const { session } = await getSession();
 
   return (
     <div className="w-full max-w-xl container min-h-screen">
@@ -84,7 +83,7 @@ export default async function SendMessage({
         <LockIcon className="h-4 w-4 ml-2" />
       </div>
 
-      <UnauthenticatedDialog isLoggedIn={!!session} />
+      <UnauthenticatedDialog />
     </div>
   );
 }
