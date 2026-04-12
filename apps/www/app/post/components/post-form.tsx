@@ -1,6 +1,5 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -16,6 +15,7 @@ import { type FormEventHandler, useState } from "react";
 import { toast } from "sonner";
 import { createPostAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { queryKeys } from "@/lib/query";
 import { prependFeedItem, replaceFeedItem } from "@/lib/query-cache";
 import type { FeedResponse } from "@/lib/query-types";
@@ -32,19 +32,11 @@ export default function PostForm({ user }: Props) {
   const [textAreaCount, setTextAreaCount] = useState(0);
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
-
-  const rateLimitedPost = useAsyncRateLimitedCallback(createPostAction, {
-    limit: 2,
-    window: 60000, // 1 minute
-    windowType: "sliding",
-    onReject: () => {
-      throw new Error("You're posting too fast. Please wait a bit.");
-    },
-  });
+  const submitPost = useSingleFlightAction(createPostAction);
 
   const mutation = useMutation({
     mutationFn: async (nextContent: string) => {
-      const res = await rateLimitedPost({ content: nextContent });
+      const res = await submitPost({ content: nextContent });
       if (res?.error) {
         throw new Error(res.error);
       }

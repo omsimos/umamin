@@ -1,6 +1,5 @@
 "use client";
 
-import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
@@ -10,6 +9,7 @@ import {
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -57,15 +57,6 @@ export function SentMessages() {
     },
   });
 
-  const handleNextPage = useThrottledCallback(
-    () => {
-      fetchNextPage();
-    },
-    {
-      wait: 3000,
-    },
-  );
-
   useEffect(() => {
     if (hasInteracted) {
       return;
@@ -84,31 +75,17 @@ export function SentMessages() {
   }, [hasInteracted]);
 
   const items = virtualizer.getVirtualItems();
+  const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
 
-  useEffect(() => {
-    if (
-      !hasInteracted ||
-      !hasNextPage ||
-      isFetchingNextPage ||
-      items.length === 0
-    ) {
-      return;
-    }
-
-    const lastItem = items[items.length - 1];
-    const lastIndex = totalRows - 1;
-
-    if (lastItem?.index >= lastIndex) {
-      handleNextPage();
-    }
-  }, [
-    hasInteracted,
-    items,
-    hasNextPage,
+  useInfiniteBoundaryLoader({
+    boundaryIndex: totalRows - 1,
+    enabled: hasInteracted,
+    hasNextPage: Boolean(hasNextPage),
     isFetchingNextPage,
-    totalRows,
-    handleNextPage,
-  ]);
+    items,
+    loadMoreKey: nextCursor,
+    onLoadMore: fetchNextPage,
+  });
 
   if (error) {
     return (

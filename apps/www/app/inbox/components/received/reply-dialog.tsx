@@ -1,4 +1,3 @@
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import {
@@ -15,6 +14,7 @@ import { toast } from "sonner";
 import { createReplyAction } from "@/app/actions/message";
 import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { queryKeys } from "@/lib/query";
 import { patchMessage } from "@/lib/query-cache";
 import type { MessagesResponse } from "@/lib/query-types";
@@ -32,19 +32,11 @@ export function ReplyDialog(props: Props) {
   const [updatedAt, setUpdatedAt] = useState(props.data.updatedAt);
   const [reply, setReply] = useState(props.data.reply ?? "");
   const inputRef = useDynamicTextarea(content);
-
-  const rateLimitedReply = useAsyncRateLimitedCallback(createReplyAction, {
-    limit: 3,
-    window: 60000, // 1 minute
-    windowType: "sliding",
-    onReject: () => {
-      throw new Error("You're replying too fast. Please wait a bit.");
-    },
-  });
+  const submitReply = useSingleFlightAction(createReplyAction);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await rateLimitedReply({
+      const res = await submitReply({
         messageId: props.data.id,
         content,
       });

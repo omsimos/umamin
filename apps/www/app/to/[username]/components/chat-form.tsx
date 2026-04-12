@@ -1,6 +1,5 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation } from "@tanstack/react-query";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
@@ -12,6 +11,7 @@ import { toast } from "sonner";
 import { sendMessageAction } from "@/app/actions/message";
 import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { formatContent } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
@@ -20,19 +20,11 @@ export function ChatForm({ user }: { user: PublicUser }) {
   const [message, setMessage] = useState("");
 
   const inputRef = useDynamicTextarea(content);
-
-  const rateLimitedMessage = useAsyncRateLimitedCallback(sendMessageAction, {
-    limit: 3,
-    window: 60000, // 1 minute
-    windowType: "sliding",
-    onReject: () => {
-      throw new Error("Limit reached. Please wait before trying again.");
-    },
-  });
+  const sendMessage = useSingleFlightAction(sendMessageAction);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await rateLimitedMessage({
+      const res = await sendMessage({
         receiverId: user?.id,
         question: user?.question,
         content,

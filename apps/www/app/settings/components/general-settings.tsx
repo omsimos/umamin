@@ -1,10 +1,10 @@
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon, InfoIcon } from "lucide-react";
 import { toast } from "sonner";
 import type * as z from "zod";
 import { generalSettingsAction } from "@/app/actions/user";
 import { useAppForm } from "@/hooks/form";
+import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
 import type {
@@ -15,19 +15,11 @@ import { generalSettingsSchema, type UserWithAccount } from "@/types/user";
 
 export function GeneralSettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
-
-  const rateLimitedAction = useAsyncRateLimitedCallback(generalSettingsAction, {
-    limit: 3,
-    window: 60000, // 1 minute
-    windowType: "sliding",
-    onReject: () => {
-      throw new Error("Limit reached. Please wait before trying again.");
-    },
-  });
+  const submitSettings = useSingleFlightAction(generalSettingsAction);
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof generalSettingsSchema>) => {
-      const res = await rateLimitedAction(values);
+      const res = await submitSettings(values);
       if (res?.error) {
         throw new Error(res.error);
       }

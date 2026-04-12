@@ -1,6 +1,5 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Avatar,
@@ -35,6 +34,7 @@ import {
   toggleQuietModeAction,
   updateAvatarAction,
 } from "@/app/actions/user";
+import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
 import type {
@@ -80,18 +80,11 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
   });
 
   const isPreviewing = gravatarMutation.isPending;
-
-  const rateLimitedToggleDisplay = useAsyncRateLimitedCallback(
+  const toggleDisplayPicture = useSingleFlightAction(
     toggleDisplayPictureAction,
-    {
-      limit: 3,
-      window: 60000, // 1 minute
-      windowType: "sliding",
-      onReject: () => {
-        throw new Error("Limit reached. Please wait before trying again.");
-      },
-    },
   );
+  const toggleQuietMode = useSingleFlightAction(toggleQuietModeAction);
+  const applyAvatarUpdate = useSingleFlightAction(updateAvatarAction);
 
   const displayPictureMutation = useMutation({
     mutationFn: async () => {
@@ -99,7 +92,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
         throw new Error("Gravatar or Google account not connected");
       }
 
-      const res = await rateLimitedToggleDisplay(user.account?.picture);
+      const res = await toggleDisplayPicture(user.account?.picture);
       if (res.error) {
         throw new Error(res.error);
       }
@@ -128,21 +121,9 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
   });
 
-  const rateLimitedToggleQuiet = useAsyncRateLimitedCallback(
-    toggleQuietModeAction,
-    {
-      limit: 3,
-      window: 60000, // 1 minute
-      windowType: "sliding",
-      onReject: () => {
-        throw new Error("Limit reached. Please wait before trying again.");
-      },
-    },
-  );
-
   const updateAvatarMutation = useMutation({
     mutationFn: async (url: string) => {
-      const res = await updateAvatarAction(url);
+      const res = await applyAvatarUpdate(url);
       if (res.error) {
         throw new Error(res.error);
       }
@@ -172,7 +153,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
 
   const quietModeMutation = useMutation({
     mutationFn: async () => {
-      const res = await rateLimitedToggleQuiet();
+      const res = await toggleQuietMode();
       if (res.error) {
         throw new Error(res.error);
       }

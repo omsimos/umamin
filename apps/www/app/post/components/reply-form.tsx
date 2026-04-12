@@ -1,6 +1,5 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,6 +14,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createCommentAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { queryKeys } from "@/lib/query";
 import {
   patchPostAcrossFeed,
@@ -40,19 +40,11 @@ export default function ReplyForm({ user, postId }: Props) {
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
   const author = useMemo(() => user, [user]);
-
-  const rateLimitedComment = useAsyncRateLimitedCallback(createCommentAction, {
-    limit: 2,
-    window: 60000, // 1 minute
-    windowType: "sliding",
-    onReject: () => {
-      throw new Error("You're replying too fast. Please wait a bit.");
-    },
-  });
+  const submitComment = useSingleFlightAction(createCommentAction);
 
   const mutation = useMutation({
     mutationFn: async (nextContent: string) => {
-      const res = await rateLimitedComment({ content: nextContent, postId });
+      const res = await submitComment({ content: nextContent, postId });
       if (res?.error) {
         throw new Error(res.error);
       }

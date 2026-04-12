@@ -1,6 +1,5 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
@@ -120,24 +119,11 @@ export function UserProfile({ username, initialUser }: Props) {
     }
   };
 
-  const rateLimitedFollow = useAsyncRateLimitedCallback(
-    async (prevFollowing: boolean) =>
+  const followMutation = useMutation({
+    mutationFn: async (prevFollowing: boolean) =>
       prevFollowing
         ? unfollowUserAction({ userId: profile.id })
         : followUserAction({ userId: profile.id }),
-    {
-      limit: 4,
-      window: 10000,
-      windowType: "sliding",
-      onReject: () => {
-        throw new Error("You're following too fast. Please wait a moment.");
-      },
-    },
-  );
-
-  const followMutation = useMutation({
-    mutationFn: async (prevFollowing: boolean) =>
-      rateLimitedFollow(prevFollowing),
     onMutate: async (prevFollowing) => {
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
@@ -328,12 +314,12 @@ export function UserProfile({ username, initialUser }: Props) {
     {
       title: isBlocked ? "Unblock" : "Block",
       onClick: () => {
-        if (!isAuthenticated || isSelf) return;
+        if (!isAuthenticated || isSelf || blockMutation.isPending) return;
         blockMutation.mutate(isBlocked);
       },
       className: "text-red-500",
       icon: <MessageSquareXIcon className="h-4 w-4" />,
-      disabled: !isAuthenticated || isSelf,
+      disabled: !isAuthenticated || isSelf || blockMutation.isPending,
     },
   ];
 
@@ -344,10 +330,17 @@ export function UserProfile({ username, initialUser }: Props) {
       <div className="flex gap-2 mt-6 w-full">
         <Button
           variant="outline"
-          disabled={!isAuthenticated || isSelf || isBlocked || isBlockedBy}
+          disabled={
+            !isAuthenticated ||
+            isSelf ||
+            isBlocked ||
+            isBlockedBy ||
+            followMutation.isPending ||
+            blockMutation.isPending
+          }
           className="flex-1"
           onClick={() => {
-            if (!isAuthenticated || isSelf) return;
+            if (!isAuthenticated || isSelf || blockMutation.isPending) return;
             followMutation.mutate(isFollowing);
           }}
         >
@@ -359,7 +352,14 @@ export function UserProfile({ username, initialUser }: Props) {
           asChild
           variant="outline"
           className="flex-1"
-          disabled={!isAuthenticated || isSelf || isBlocked || isBlockedBy}
+          disabled={
+            !isAuthenticated ||
+            isSelf ||
+            isBlocked ||
+            isBlockedBy ||
+            followMutation.isPending ||
+            blockMutation.isPending
+          }
         >
           <Link href={`/to/${profile.username}`}>
             <MessageSquareMoreIcon />

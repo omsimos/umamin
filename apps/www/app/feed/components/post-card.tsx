@@ -1,6 +1,5 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -34,6 +33,10 @@ import {
   removeLikeAction,
   removeRepostAction,
 } from "@/app/actions/post";
+import {
+  BURST_ACTION_REJECT_MESSAGE,
+  useBurstAction,
+} from "@/hooks/use-burst-action";
 import { queryKeys } from "@/lib/query";
 import {
   patchComment,
@@ -137,7 +140,7 @@ export function PostCard({
     setReposts("repostCount" in data ? (data.repostCount ?? 0) : 0);
   }, [data.isLiked, data.likeCount, data]);
 
-  const rateLimitedLike = useAsyncRateLimitedCallback(
+  const handleLikeAction = useBurstAction(
     async (prevLiked: boolean) => {
       if (isComment) {
         return prevLiked
@@ -157,26 +160,18 @@ export function PostCard({
     },
     {
       limit: 4,
-      window: 10000,
-      windowType: "sliding",
-      onReject: () => {
-        throw new Error("You're tapping too fast. Please wait a moment.");
-      },
+      rejectMessage: BURST_ACTION_REJECT_MESSAGE,
     },
   );
 
-  const rateLimitedRepost = useAsyncRateLimitedCallback(
+  const handleRepostAction = useBurstAction(
     async (prevReposted: boolean) =>
       prevReposted
         ? removeRepostAction({ postId: data.id })
         : addRepostAction({ postId: data.id }),
     {
       limit: 4,
-      window: 10000,
-      windowType: "sliding",
-      onReject: () => {
-        throw new Error("You're reposting too fast. Please wait a moment.");
-      },
+      rejectMessage: BURST_ACTION_REJECT_MESSAGE,
     },
   );
 
@@ -188,7 +183,7 @@ export function PostCard({
     setLikes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
 
     try {
-      await rateLimitedLike(prevLiked);
+      await handleLikeAction(prevLiked);
       syncPostCache(
         !prevLiked,
         prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1,
@@ -216,7 +211,7 @@ export function PostCard({
     setReposts((v) => (prevReposted ? Math.max(v - 1, 0) : v + 1));
 
     try {
-      const res = await rateLimitedRepost(prevReposted);
+      const res = await handleRepostAction(prevReposted);
       if (prevReposted) {
         if (isAlreadyRemoved(res)) {
           setReposted(false);
