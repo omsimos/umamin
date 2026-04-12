@@ -8,7 +8,9 @@ import { getPublicUserProfileData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 import { UserProfile } from "./user-profile";
 
-const AdContainer = dynamic(() => import("@/components/ad-container"));
+const AdContainer = dynamic(() => import("@/components/ad-container"), {
+  ssr: false,
+});
 
 export async function generateMetadata({
   params,
@@ -73,7 +75,7 @@ export default async function Page({
       </HydrationBoundary>
 
       {/* v2-user */}
-      <AdContainer className="mt-5" slotId="4417432474" />
+      <AdContainer className="mt-5" placement="profile_bottom" />
     </section>
   );
 }

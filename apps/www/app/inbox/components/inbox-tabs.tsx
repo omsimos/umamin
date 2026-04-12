@@ -6,11 +6,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import dynamic from "next/dynamic";
 import { ReceivedMessages } from "./received/received-messages";
 import { SentMessages } from "./sent/sent-messages";
-
-const AdContainer = dynamic(() => import("@/components/ad-container"));
 
 export function InboxTabs() {
   return (
@@ -29,9 +26,6 @@ export function InboxTabs() {
           Sent
         </TabsTrigger>
       </TabsList>
-
-      {/* v2-inbox */}
-      <AdContainer className="mb-4" slotId="7047998078" />
 
       <TabsContent value="received">
         <ReceivedMessages />

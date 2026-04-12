@@ -8,7 +8,6 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { cn } from "@umamin/ui/lib/utils";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo } from "react";
@@ -68,23 +67,8 @@ export function PostList({
     return Array.from(map.values());
   })();
 
-  const AD_FREQUENCY = 8; // show 1 ad *after* every 8 posts
-
-  const adCountFor = (n: number) => Math.floor(n / AD_FREQUENCY);
-
-  const isAdRow = (rowIndex: number) =>
-    (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
-
-  const dataIndexForRow = (rowIndex: number) => {
-    const adsAtOrBefore = Math.floor((rowIndex + 1) / (AD_FREQUENCY + 1));
-    const adsBefore = isAdRow(rowIndex) ? adsAtOrBefore - 1 : adsAtOrBefore;
-    return rowIndex - adsBefore;
-  };
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dep mismatch
   const totalRows = useMemo(() => {
-    const rows = allItems.length + adCountFor(allItems.length);
-    return hasNextPage ? rows + 1 : rows; // +1 for loader row at the end
+    return hasNextPage ? allItems.length + 1 : allItems.length;
   }, [allItems.length, hasNextPage]);
 
   const virtualizer = useWindowVirtualizer({
@@ -94,12 +78,7 @@ export function PostList({
     overscan: 12,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
-      if (isAdRow(index)) {
-        const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
-        return `ad-${adIndex}`;
-      }
-      const dataIndex = dataIndexForRow(index);
-      const item = allItems[dataIndex];
+      const item = allItems[index];
       if (!item) return `row-${index}`;
       return item.type === "post" ? item.post.id : item.repost.id;
     },
@@ -159,7 +138,7 @@ export function PostList({
       )}
 
       {/* social-top (top ad) */}
-      <AdContainer className="mb-5" slotId="9864130654" />
+      <AdContainer className="mb-5" placement="feed_top" />
 
       <div
         style={{
@@ -187,13 +166,9 @@ export function PostList({
             >
               {isLoaderRow ? (
                 <PostCardSkeleton />
-              ) : isAdRow(row.index) ? (
-                // social-list (inline ad row)
-                <AdContainer className="mb-4" slotId="8551048984" />
               ) : (
                 (() => {
-                  const dataIndex = dataIndexForRow(row.index);
-                  const item = allItems[dataIndex];
+                  const item = allItems[row.index];
                   if (!item) return null;
 
                   if (item.type === "post") {
@@ -217,9 +192,9 @@ export function PostList({
                       />
 
                       <div
-                        className={cn(`mt-4 sm:pr-0`, {
-                          "pl-8 pr-2 border-b pb-6": repost.content,
-                        })}
+                        className={`mt-4 sm:pr-0 ${
+                          repost.content ? "pl-8 pr-2 border-b pb-6" : ""
+                        }`}
                       >
                         <PostCard
                           isRepost={!!repost.content}

@@ -53,23 +53,8 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     return Array.from(map.values());
   })();
 
-  const AD_FREQUENCY = 8; // show 1 ad *after* every 8 posts
-
-  const adCountFor = (n: number) => Math.floor(n / AD_FREQUENCY);
-
-  const isAdRow = (rowIndex: number) =>
-    (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
-
-  const dataIndexForRow = (rowIndex: number) => {
-    const adsAtOrBefore = Math.floor((rowIndex + 1) / (AD_FREQUENCY + 1));
-    const adsBefore = isAdRow(rowIndex) ? adsAtOrBefore - 1 : adsAtOrBefore;
-    return rowIndex - adsBefore;
-  };
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dep mismatch
   const totalRows = useMemo(() => {
-    const rows = allPosts.length + adCountFor(allPosts.length);
-    return hasNextPage ? rows + 1 : rows; // +1 for loader row at the end
+    return hasNextPage ? allPosts.length + 1 : allPosts.length;
   }, [allPosts.length, hasNextPage]);
 
   const virtualizer = useWindowVirtualizer({
@@ -79,12 +64,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     overscan: 12,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
-      if (isAdRow(index)) {
-        const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
-        return `ad-${adIndex}`;
-      }
-      const dataIndex = dataIndexForRow(index);
-      const post = allPosts[dataIndex];
+      const post = allPosts[index];
       return post?.id ?? `row-${index}`;
     },
   });
@@ -143,7 +123,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
       )}
 
       {/* v2-notes (top ad) */}
-      <AdContainer className="mb-5" slotId="1999152698" />
+      <AdContainer className="mb-5" placement="notes_top" />
 
       <div
         style={{
@@ -171,13 +151,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
             >
               {isLoaderRow ? (
                 <NoteCardSkeleton />
-              ) : isAdRow(row.index) ? (
-                // v2-notes-list (inline ad row)
-                <AdContainer className="mb-4" slotId="9012650581" />
               ) : (
                 (() => {
-                  const dataIndex = dataIndexForRow(row.index);
-                  const post = allPosts[dataIndex];
+                  const post = allPosts[row.index];
                   if (!post) return null;
 
                   return (
