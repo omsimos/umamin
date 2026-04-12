@@ -24,13 +24,13 @@
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
+    "@umamin/encryption": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "nanoid": "^5.1.7"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
     "@types/node": "^24.12.2",
-    "@umamin/encryption": "workspace:*",
     "drizzle-kit": "^0.31.10",
     "drizzle-seed": "^0.3.1",
     "tsdown": "^0.21.7",
