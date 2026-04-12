@@ -43,6 +43,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     staleTime: PUBLIC_STALE_TIME,
     ...infiniteQueryDefaults,
   });
+  const hasResolvedData = data !== undefined;
 
   // De-duplicate posts by id across pages
   const allPosts: NoteItem[] = (() => {
@@ -119,7 +120,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     );
   }
 
-  if (isLoading) {
+  if (!hasResolvedData || isLoading) {
     return (
       <div className="w-full mx-auto space-y-4">
         <NoteCardSkeleton />
@@ -131,7 +132,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div className="w-full">
-      {allPosts.length === 0 && !isFetching && (
+      {hasResolvedData && allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>

@@ -38,6 +38,7 @@ export function ReceivedMessages() {
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
   });
+  const hasResolvedData = data !== undefined;
 
   const allPosts = data?.pages.flatMap((page) => page.messages) ?? [];
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -122,7 +123,7 @@ export function ReceivedMessages() {
     );
   }
 
-  if (isLoading) {
+  if (!hasResolvedData || isLoading) {
     return (
       <div className="w-full mx-auto space-y-4 mb-8">
         <ReceivedMessageCardSkeleton />
@@ -134,7 +135,7 @@ export function ReceivedMessages() {
 
   return (
     <div className="w-full">
-      {allPosts.length === 0 && !isFetching && (
+      {hasResolvedData && allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No messages yet</AlertTitle>

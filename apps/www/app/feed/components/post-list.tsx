@@ -52,6 +52,7 @@ export function PostList({
     staleTime: PUBLIC_STALE_TIME,
     ...infiniteQueryDefaults,
   });
+  const hasResolvedData = data !== undefined;
 
   // De-duplicate feed items across pages
   const allItems: FeedItem[] = (() => {
@@ -135,7 +136,7 @@ export function PostList({
     );
   }
 
-  if (isLoading) {
+  if (!hasResolvedData || isLoading) {
     return (
       <div className="w-full mx-auto space-y-4">
         <PostCardSkeleton />
@@ -147,7 +148,7 @@ export function PostList({
 
   return (
     <div className="w-full">
-      {allItems.length === 0 && !isFetching && (
+      {hasResolvedData && allItems.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>

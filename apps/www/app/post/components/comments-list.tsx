@@ -44,6 +44,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     staleTime: PUBLIC_STALE_TIME,
     ...infiniteQueryDefaults,
   });
+  const hasResolvedData = data !== undefined;
 
   const comments = useMemo(() => {
     const flat = data?.pages.flatMap((page) => page.data) ?? [];
@@ -100,7 +101,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     );
   }
 
-  if (isLoading) {
+  if (!hasResolvedData || isLoading) {
     return (
       <div className="space-y-6">
         <PostCardSkeleton />
@@ -110,7 +111,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     );
   }
 
-  if (comments.length === 0 && !hasNextPage && !isFetching) {
+  if (hasResolvedData && comments.length === 0 && !hasNextPage && !isFetching) {
     return (
       <div className="px-2">
         <Alert>
