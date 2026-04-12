@@ -9,8 +9,8 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useEffect, useMemo } from "react";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import {
   infiniteQueryDefaults,
   PUBLIC_STALE_TIME,
@@ -20,10 +20,6 @@ import { fetchNotesPage } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
-
-const AdContainer = dynamic(() => import("@/components/ad-container"), {
-  ssr: false,
-});
 
 export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   const {
@@ -123,7 +119,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
       )}
 
       {/* v2-notes (top ad) */}
-      <AdContainer className="mb-5" placement="notes_top" />
+      <ClientOnlyAdContainer className="mb-5" placement="notes_top" />
 
       <div
         style={{

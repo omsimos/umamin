@@ -9,8 +9,8 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useEffect, useMemo } from "react";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import {
   infiniteQueryDefaults,
   PUBLIC_STALE_TIME,
@@ -22,10 +22,6 @@ import type { FeedItem } from "@/types/post";
 import { PostCard } from "./post-card";
 import { PostCardSkeleton } from "./post-card-skeleton";
 import { RepostHeader } from "./repost-header";
-
-const AdContainer = dynamic(() => import("@/components/ad-container"), {
-  ssr: false,
-});
 
 export function PostList({
   isAuthenticated,
@@ -138,7 +134,7 @@ export function PostList({
       )}
 
       {/* social-top (top ad) */}
-      <AdContainer className="mb-5" placement="feed_top" />
+      <ClientOnlyAdContainer className="mb-5" placement="feed_top" />
 
       <div
         style={{
