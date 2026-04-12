@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { SelectUser } from "@umamin/db/schema/user";
 import {
   Avatar,
   AvatarFallback,
@@ -34,8 +33,9 @@ import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { isOlderThanOneYear, saveImage } from "@/lib/utils";
+import type { PublicUser } from "@/types/user";
 
-export function CurrentUserNote({ currentUser }: { currentUser: SelectUser }) {
+export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<NoteItem | null>({
     ...pageQueryOptions(queryKeys.currentNote(), fetchCurrentNote),

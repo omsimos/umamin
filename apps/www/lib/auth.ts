@@ -8,6 +8,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import type * as z from "zod";
+import {
+  LEGACY_SESSION_COOKIE_NAME,
+  readCookieValue,
+  SESSION_COOKIE_NAME,
+} from "./cookies";
 import { registerSchema } from "./schema";
 import {
   createSession,
@@ -20,7 +25,11 @@ import {
 
 export const getSession = cache(async (): Promise<SessionValidationResult> => {
   const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value ?? null;
+  const token = readCookieValue(
+    cookieStore,
+    SESSION_COOKIE_NAME,
+    LEGACY_SESSION_COOKIE_NAME,
+  );
   if (token === null) {
     return { session: null, user: null };
   }
@@ -32,13 +41,23 @@ async function setSession(userId: string) {
   const sessionToken = generateSessionToken();
   const session = await createSession(sessionToken, userId);
   const cookieStore = await cookies();
-  cookieStore.set("session", sessionToken, {
+  cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     expires: new Date(session.expiresAt),
     path: "/",
   });
+
+  if (LEGACY_SESSION_COOKIE_NAME !== SESSION_COOKIE_NAME) {
+    cookieStore.set(LEGACY_SESSION_COOKIE_NAME, "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 0,
+      path: "/",
+    });
+  }
 }
 
 export async function logout() {

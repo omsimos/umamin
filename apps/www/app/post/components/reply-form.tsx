@@ -3,7 +3,6 @@
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { SelectUser } from "@umamin/db/schema/user";
 import {
   Avatar,
   AvatarFallback,
@@ -29,9 +28,10 @@ import type {
   PostResponse,
 } from "@/lib/query-types";
 import type { CommentData } from "@/types/post";
+import type { PublicUser } from "@/types/user";
 
 type Props = {
-  user: SelectUser;
+  user: PublicUser;
   postId: string;
 };
 
@@ -39,10 +39,7 @@ export default function ReplyForm({ user, postId }: Props) {
   const [content, setContent] = useState("");
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
-  const author = useMemo(() => {
-    const { passwordHash: _passwordHash, ...rest } = user;
-    return rest;
-  }, [user]);
+  const author = useMemo(() => user, [user]);
 
   const rateLimitedComment = useAsyncRateLimitedCallback(createCommentAction, {
     limit: 2,

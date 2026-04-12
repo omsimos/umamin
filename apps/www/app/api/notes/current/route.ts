@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { privateJson } from "@/lib/private-json";
 import { getCurrentNoteData } from "@/lib/server/data";
 
 export async function GET() {
@@ -6,13 +7,13 @@ export async function GET() {
     const { session } = await getSession();
 
     if (!session?.userId) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return privateJson({ error: "Unauthorized" }, { status: 401 });
     }
 
     const result = await getCurrentNoteData(session.userId);
-    return Response.json(result);
+    return privateJson(result);
   } catch (error) {
     console.error("Error fetching current note:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return privateJson({ error: "Internal server error" }, { status: 500 });
   }
 }

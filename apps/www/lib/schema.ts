@@ -16,8 +16,8 @@ export const registerSchema = z
       }),
     password: z
       .string()
-      .min(5, {
-        message: "Password must be at least 5 characters",
+      .min(10, {
+        message: "Password must be at least 10 characters",
       })
       .max(255, {
         message: "Password must not exceed 255 characters",

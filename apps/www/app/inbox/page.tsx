@@ -8,6 +8,7 @@ import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
 import type { MessagesResponse } from "@/lib/query-types";
 import { getMessagesPage } from "@/lib/server/data";
+import { toPublicUser } from "@/types/user";
 import { CurrentUserCard } from "./components/current-user-card";
 import { InboxTabs } from "./components/inbox-tabs";
 
@@ -60,7 +61,7 @@ export default async function InboxPage() {
   return (
     <main className="max-w-xl mx-auto min-h-screen container">
       <Suspense fallback={<UserCardSkeleton />}>
-        <CurrentUserCard user={user} />
+        <CurrentUserCard user={user ? toPublicUser(user) : null} />
       </Suspense>
 
       <HydrationBoundary state={dehydrate(queryClient)}>

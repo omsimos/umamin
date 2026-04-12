@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
+import { privateJson } from "@/lib/private-json";
 import { getMessagesPage } from "@/lib/server/data";
 
 export async function GET(req: NextRequest) {
@@ -7,7 +8,7 @@ export async function GET(req: NextRequest) {
     const { session } = await getSession();
 
     if (!session) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return privateJson({ error: "Unauthorized" }, { status: 401 });
     }
 
     const searchParams = req.nextUrl.searchParams;
@@ -21,9 +22,9 @@ export async function GET(req: NextRequest) {
       userId: session.userId,
     });
 
-    return Response.json(result);
+    return privateJson(result);
   } catch (error) {
     console.error("Error fetching messages:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return privateJson({ error: "Internal server error" }, { status: 500 });
   }
 }

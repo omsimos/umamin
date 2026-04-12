@@ -112,15 +112,14 @@ export async function sendMessageAction(
 
     const { question, content, receiverId } = params.data;
     const { session } = await getSession();
+    const senderId = session?.userId ?? null;
 
-    if (receiverId === session?.userId) {
+    if (receiverId === senderId) {
       return { error: "You can't send a message to yourself" };
     }
 
     const formattedContent = formatContent(content);
     const encryptedContent = await aesEncrypt(formattedContent);
-
-    const senderId = session?.userId ?? null;
 
     if (senderId) {
       const blocked = await db.query.userBlockTable.findFirst({

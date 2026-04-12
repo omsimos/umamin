@@ -9,6 +9,7 @@ import { queryKeys } from "@/lib/query";
 import type { CommentsResponse } from "@/lib/query-types";
 import { getPostCommentsPage } from "@/lib/server/data";
 import { getBaseUrl } from "@/lib/utils";
+import { toPublicUser } from "@/types/user";
 import { CommentsList } from "../components/comments-list";
 import ReplyForm from "../components/reply-form";
 
@@ -72,6 +73,7 @@ export default async function Post({
 }) {
   const { user } = await getSession();
   const { id } = await params;
+  const currentUser = user ? toPublicUser(user) : null;
 
   const data = await getPostAction(id);
   const queryClient = getQueryClient();
@@ -105,9 +107,9 @@ export default async function Post({
           data={data}
         />
 
-        {user && (
+        {currentUser && (
           <div className="w-full py-4 border-b font-medium text-muted-foreground px-7 sm:px-0">
-            <ReplyForm user={user} postId={id} />
+            <ReplyForm user={currentUser} postId={id} />
           </div>
         )}
 

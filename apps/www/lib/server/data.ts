@@ -43,7 +43,7 @@ import type {
   UserProfileViewerResponse,
 } from "@/lib/query-types";
 import type { CommentData, FeedItem } from "@/types/post";
-import type { PublicUser } from "@/types/user";
+import type { CurrentUserClient, PublicUser } from "@/types/user";
 
 const PUBLIC_REVALIDATE_SECONDS = 120;
 const PRIVATE_REVALIDATE_SECONDS = 30;
@@ -866,7 +866,13 @@ export async function getCurrentUserData(
     cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
     const [userRecord] = await db
-      .select()
+      .select({
+        ...publicUserColumns,
+        hasPassword:
+          sql<number>`CASE WHEN ${userTable.passwordHash} IS NOT NULL THEN 1 ELSE 0 END`.as(
+            "hasPassword",
+          ),
+      })
       .from(userTable)
       .where(eq(userTable.id, userId))
       .limit(1);
@@ -895,7 +901,8 @@ export async function getCurrentUserData(
 
   return {
     user: {
-      ...userRecord,
+      ...(userRecord as Omit<CurrentUserClient, "hasPassword">),
+      hasPassword: Boolean(userRecord.hasPassword),
       accounts,
     },
   };
@@ -1166,41 +1173,45 @@ export async function getMessagesPage(params: {
       }));
 
     const { hasMore, pageRows } = getPageRows(data, MESSAGES_PAGE_SIZE);
-    const messagesData = await Promise.all(
-      pageRows.map(async (message) => {
-        let content = message.content;
-        let reply = message.reply ?? null;
-
-        try {
-          content = await aesDecrypt(message.content);
-        } catch {}
-
-        if (message.reply) {
-          try {
-            reply = await aesDecrypt(message.reply);
-          } catch {
-            reply = message.reply;
-          }
-        }
-
-        return {
-          ...message,
-          content,
-          reply,
-        };
-      }),
-    );
-
     return {
-      messages: messagesData,
+      messages: pageRows,
       nextCursor:
-        hasMore && messagesData.length > 0
-          ? `${messagesData[messagesData.length - 1].createdAt?.getTime()}.${
-              messagesData[messagesData.length - 1].id
+        hasMore && pageRows.length > 0
+          ? `${pageRows[pageRows.length - 1].createdAt?.getTime()}.${
+              pageRows[pageRows.length - 1].id
             }`
           : null,
     };
   };
 
-  return getCachedData();
+  const cachedData = await getCachedData();
+  const messages = await Promise.all(
+    cachedData.messages.map(async (message) => {
+      let content = message.content;
+      let reply = message.reply ?? null;
+
+      try {
+        content = await aesDecrypt(message.content);
+      } catch {}
+
+      if (message.reply) {
+        try {
+          reply = await aesDecrypt(message.reply);
+        } catch {
+          reply = message.reply;
+        }
+      }
+
+      return {
+        ...message,
+        content,
+        reply,
+      };
+    }),
+  );
+
+  return {
+    ...cachedData,
+    messages,
+  };
 }

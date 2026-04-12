@@ -2,7 +2,6 @@
 
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { SelectUser } from "@umamin/db/schema/user";
 import { Button } from "@umamin/ui/components/button";
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
@@ -14,8 +13,9 @@ import { createNoteAction } from "@/app/actions/note";
 import { queryKeys } from "@/lib/query";
 import { upsertNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
+import type { PublicUser } from "@/types/user";
 
-export function NoteForm({ currentUser }: { currentUser: SelectUser }) {
+export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -41,9 +41,7 @@ export function NoteForm({ currentUser }: { currentUser: SelectUser }) {
           (previousNote as NoteItem | null | undefined)?.createdAt ??
           new Date(),
         updatedAt: new Date(),
-        user: nextValues.isAnonymous
-          ? undefined
-          : (({ passwordHash: _passwordHash, ...rest }) => rest)(currentUser),
+        user: nextValues.isAnonymous ? undefined : currentUser,
       };
 
       queryClient.setQueryData<NoteItem | null>(
@@ -76,11 +74,7 @@ export function NoteForm({ currentUser }: { currentUser: SelectUser }) {
           (current) =>
             upsertNote(current, {
               ...data.note,
-              user: data.note.isAnonymous
-                ? undefined
-                : (({ passwordHash: _passwordHash, ...rest }) => rest)(
-                    currentUser,
-                  ),
+              user: data.note.isAnonymous ? undefined : currentUser,
             }),
         );
       }

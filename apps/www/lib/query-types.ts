@@ -1,8 +1,8 @@
 import type { SelectMessage } from "@umamin/db/schema/message";
 import type { SelectNote } from "@umamin/db/schema/note";
-import type { SelectAccount, SelectUser } from "@umamin/db/schema/user";
+import type { SelectAccount } from "@umamin/db/schema/user";
 import type { CommentData, FeedItem, PostData } from "@/types/post";
-import type { PublicUser } from "@/types/user";
+import type { CurrentUserClient, PublicUser } from "@/types/user";
 
 export type CursorPage<T> = {
   data: T[];
@@ -30,7 +30,7 @@ export type MessagesResponse = {
   nextCursor: string | null;
 };
 
-export type CurrentUserData = SelectUser & {
+export type CurrentUserData = CurrentUserClient & {
   accounts: SelectAccount[];
 };
 

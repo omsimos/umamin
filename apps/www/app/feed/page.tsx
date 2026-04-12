@@ -5,6 +5,7 @@ import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
 import type { FeedResponse } from "@/lib/query-types";
 import { getPostsPage } from "@/lib/server/data";
+import { toPublicUser } from "@/types/user";
 import PostForm from "../post/components/post-form";
 import { PostList } from "./components/post-list";
 
@@ -15,9 +16,7 @@ export default async function Feed() {
 
   const { user } = await getSession();
   const queryClient = getQueryClient();
-  const publicUser = user
-    ? (({ passwordHash: _pw, ...rest }) => rest)(user)
-    : null;
+  const publicUser = user ? toPublicUser(user) : null;
 
   await queryClient.prefetchInfiniteQuery({
     queryKey: queryKeys.posts(),

@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { privateJson } from "@/lib/private-json";
 import { getUserProfileViewerData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 
@@ -13,12 +14,12 @@ export async function GET(
     const result = await getUserProfileViewerData(username, session?.userId);
 
     if (!result) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return privateJson({ error: "Not found" }, { status: 404 });
     }
 
-    return Response.json(result);
+    return privateJson(result);
   } catch (error) {
     console.error("Error fetching user profile viewer overlay:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return privateJson({ error: "Internal server error" }, { status: 500 });
   }
 }

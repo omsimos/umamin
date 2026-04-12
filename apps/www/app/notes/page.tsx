@@ -8,6 +8,7 @@ import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
 import type { NotesResponse } from "@/lib/query-types";
 import { getCurrentNoteData, getNotesPage } from "@/lib/server/data";
+import { toPublicUser } from "@/types/user";
 import { CurrentUserNote } from "./components/current-user-note";
 import { NoteForm } from "./components/note-form";
 import { NoteList } from "./components/note-list";
@@ -44,6 +45,7 @@ export const metadata: Metadata = {
 export default async function Page() {
   const { user } = await getSession();
   const queryClient = getQueryClient();
+  const currentUser = user ? toPublicUser(user) : null;
 
   await queryClient.prefetchInfiniteQuery({
     queryKey: queryKeys.notes(),
@@ -71,11 +73,11 @@ export default async function Page() {
         Umamin Notes
       </h1>
 
-      {user ? (
+      {currentUser ? (
         <HydrationBoundary state={dehydrate(queryClient)}>
           <div className="space-y-12">
-            <NoteForm currentUser={user} />
-            <CurrentUserNote currentUser={user} />
+            <NoteForm currentUser={currentUser} />
+            <CurrentUserNote currentUser={currentUser} />
           </div>
         </HydrationBoundary>
       ) : (

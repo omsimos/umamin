@@ -12,11 +12,7 @@ import { patchCurrentUser } from "@/lib/query-cache";
 import type { CurrentUserResponse } from "@/lib/query-types";
 import { passwordFormSchema } from "@/types/user";
 
-export function PasswordForm({
-  passwordHash,
-}: {
-  passwordHash?: string | null;
-}) {
+export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
   const queryClient = useQueryClient();
 
   const rateLimitedAction = useAsyncRateLimitedCallback(updatePasswordAction, {
@@ -44,7 +40,7 @@ export function PasswordForm({
         (current) =>
           patchCurrentUser(current, (currentUser) => ({
             ...currentUser,
-            passwordHash: currentUser.passwordHash ?? "__set__",
+            hasPassword: true,
           })),
       );
     },
@@ -76,7 +72,7 @@ export function PasswordForm({
         form.handleSubmit();
       }}
     >
-      {passwordHash && (
+      {hasPassword && (
         <form.AppField
           name="currentPassword"
           children={(field) => (
@@ -119,7 +115,7 @@ export function PasswordForm({
           <form.SubmitButton
             icon={KeyIcon}
             disabled={mutation.isPending}
-            label={passwordHash ? "Update Password" : "Set Password"}
+            label={hasPassword ? "Update Password" : "Set Password"}
           />
         </form.AppForm>
       </div>

@@ -1,16 +1,12 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
 import { getPublicUserProfileData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 import { UserProfile } from "./user-profile";
-
-const AdContainer = dynamic(() => import("@/components/ad-container"), {
-  ssr: false,
-});
 
 export async function generateMetadata({
   params,
@@ -75,7 +71,7 @@ export default async function Page({
       </HydrationBoundary>
 
       {/* v2-user */}
-      <AdContainer className="mt-5" placement="profile_bottom" />
+      <ClientOnlyAdContainer className="mt-5" placement="profile_bottom" />
     </section>
   );
 }

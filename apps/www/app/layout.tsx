@@ -1,4 +1,3 @@
-import { GoogleTagManager } from "@next/third-parties/google";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
@@ -9,6 +8,7 @@ import Providers from "./providers";
 import "./globals.css";
 import { Suspense } from "react";
 import { Menubar } from "@/components/menu-bar";
+import { getGtmInlineScript } from "@/lib/gtm";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -83,6 +83,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gtmId = process.env.GOOGLE_TAG_ID;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -97,9 +99,25 @@ export default function RootLayout({
           <div className="pt-24">{children}</div>
           <Footer />
         </Providers>
+
+        {gtmId && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        )}
       </body>
 
-      <GoogleTagManager gtmId={process.env.GOOGLE_TAG_ID ?? ""} />
+      {gtmId && (
+        <Script id="gtm-loader" strategy="afterInteractive">
+          {getGtmInlineScript(gtmId)}
+        </Script>
+      )}
 
       {process.env.NODE_ENV === "production" && (
         <Script
