@@ -27,7 +27,9 @@ import {
   lt,
   not,
   or,
+  sql,
 } from "drizzle-orm";
+import { unionAll } from "drizzle-orm/sqlite-core";
 import { cacheLife, cacheTag } from "next/cache";
 import type {
   CommentsResponse,
@@ -49,6 +51,23 @@ const FEED_PAGE_SIZE = 40;
 const COMMENTS_PAGE_SIZE = 20;
 const MESSAGES_PAGE_SIZE = 20;
 
+type FeedCursor = {
+  createdAt: Date;
+  edgeId: string;
+  kindPriority: 0 | 1;
+};
+
+type FeedEdgeRow = {
+  kind: "post" | "repost";
+  kindPriority: 0 | 1;
+  edgeId: string;
+  createdAt: Date;
+  postId: string;
+  authorId: string;
+  reposterId: string | null;
+  repostContent: string | null;
+};
+
 const publicUserColumns = {
   id: userTable.id,
   username: userTable.username,
@@ -63,44 +82,26 @@ const publicUserColumns = {
   updatedAt: userTable.updatedAt,
 };
 
-function parseFeedCursor(cursor: string | null) {
-  let cursorConditionPost: ReturnType<typeof or> | undefined;
-  let cursorConditionRepost: ReturnType<typeof or> | undefined;
-
+function parseFeedCursor(cursor: string | null): FeedCursor | null {
   if (!cursor) {
-    return { cursorConditionPost, cursorConditionRepost };
+    return null;
   }
 
-  const [msRaw, typeRaw, idRaw] = cursor.split(".");
+  const [msRaw, kindPriorityRaw, edgeId] = cursor.split(".");
   const ms = Number(msRaw);
-  const cursorDate = Number.isNaN(ms) ? null : new Date(ms);
-  const isRepostCursor = typeRaw === "repost";
+  const kindPriority =
+    kindPriorityRaw === "1" ? 1 : kindPriorityRaw === "0" ? 0 : null;
+  const createdAt = Number.isNaN(ms) ? null : new Date(ms);
 
-  if (!cursorDate || !idRaw) {
-    return { cursorConditionPost, cursorConditionRepost };
+  if (!createdAt || !edgeId || kindPriority === null) {
+    return null;
   }
 
-  if (isRepostCursor) {
-    cursorConditionRepost = or(
-      lt(postRepostTable.createdAt, cursorDate),
-      and(
-        eq(postRepostTable.createdAt, cursorDate),
-        lt(postRepostTable.id, idRaw),
-      ),
-    );
-    cursorConditionPost = or(
-      lt(postTable.createdAt, cursorDate),
-      and(eq(postTable.createdAt, cursorDate), lt(postTable.id, idRaw)),
-    );
-  } else {
-    cursorConditionPost = or(
-      lt(postTable.createdAt, cursorDate),
-      and(eq(postTable.createdAt, cursorDate), lt(postTable.id, idRaw)),
-    );
-    cursorConditionRepost = lt(postRepostTable.createdAt, cursorDate);
-  }
-
-  return { cursorConditionPost, cursorConditionRepost };
+  return {
+    createdAt,
+    edgeId,
+    kindPriority,
+  };
 }
 
 function parseCursor(cursor: string | null) {
@@ -119,35 +120,44 @@ function parseCursor(cursor: string | null) {
   };
 }
 
-function getFeedNextCursor(item?: FeedItem) {
-  if (!item) return null;
+function getFeedNextCursor(edge?: FeedEdgeRow) {
+  if (!edge) return null;
 
-  return `${
-    item.type === "post"
-      ? item.post.createdAt.getTime()
-      : item.repost.createdAt.getTime()
-  }.${item.type}.${item.type === "post" ? item.post.id : item.repost.id}`;
+  return `${edge.createdAt.getTime()}.${edge.kindPriority}.${edge.edgeId}`;
 }
 
-function mergeAndSortFeedItems(postItems: FeedItem[], repostItems: FeedItem[]) {
-  return [...postItems, ...repostItems].sort((a, b) => {
-    const aDate = a.type === "post" ? a.post.createdAt : a.repost.createdAt;
-    const bDate = b.type === "post" ? b.post.createdAt : b.repost.createdAt;
+function getPageRows<T>(rows: T[], pageSize: number) {
+  const hasMore = rows.length > pageSize;
 
-    if (aDate.getTime() !== bDate.getTime()) {
-      return bDate.getTime() - aDate.getTime();
-    }
+  return {
+    hasMore,
+    pageRows: hasMore ? rows.slice(0, pageSize) : rows,
+  };
+}
 
-    const aOrder = a.type === "repost" ? 1 : 0;
-    const bOrder = b.type === "repost" ? 1 : 0;
-    if (aOrder !== bOrder) {
-      return bOrder - aOrder;
-    }
+function getFeedCursorCondition(
+  createdAtColumn:
+    | typeof postTable.createdAt
+    | typeof postRepostTable.createdAt,
+  idColumn: typeof postTable.id | typeof postRepostTable.id,
+  kindPriority: 0 | 1,
+  cursor: FeedCursor | null,
+) {
+  if (!cursor) {
+    return undefined;
+  }
 
-    const aId = a.type === "post" ? a.post.id : a.repost.id;
-    const bId = b.type === "post" ? b.post.id : b.repost.id;
-    return bId.localeCompare(aId);
-  });
+  const sameTimestampCondition =
+    kindPriority < cursor.kindPriority
+      ? sql`1 = 1`
+      : kindPriority > cursor.kindPriority
+        ? sql`0 = 1`
+        : lt(idColumn, cursor.edgeId);
+
+  return or(
+    lt(createdAtColumn, cursor.createdAt),
+    and(eq(createdAtColumn, cursor.createdAt), sameTimestampCondition),
+  );
 }
 
 async function getPublicPostsPage(
@@ -157,111 +167,163 @@ async function getPublicPostsPage(
   cacheTag("posts");
   cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
 
-  const { cursorConditionPost, cursorConditionRepost } =
-    parseFeedCursor(cursor);
+  const parsedCursor = parseFeedCursor(cursor);
+  const postCursorCondition = getFeedCursorCondition(
+    postTable.createdAt,
+    postTable.id,
+    0,
+    parsedCursor,
+  );
+  const repostCursorCondition = getFeedCursorCondition(
+    postRepostTable.createdAt,
+    postRepostTable.id,
+    1,
+    parsedCursor,
+  );
 
-  const basePostQuery = db
-    .select({
-      post: postTable,
-      author: publicUserColumns,
-    })
-    .from(postTable)
-    .leftJoin(userTable, eq(postTable.authorId, userTable.id))
-    .orderBy(desc(postTable.createdAt), desc(postTable.id));
+  const postEdgeQuery = (
+    postCursorCondition
+      ? db
+          .select({
+            kind: sql<string>`'post'`.as("kind"),
+            kindPriority: sql<number>`0`.as("kindPriority"),
+            edgeId: postTable.id,
+            createdAt: postTable.createdAt,
+            postId: postTable.id,
+            authorId: postTable.authorId,
+            reposterId: sql<string | null>`null`.as("reposterId"),
+            repostContent: sql<string | null>`null`.as("repostContent"),
+          })
+          .from(postTable)
+          .where(postCursorCondition)
+      : db
+          .select({
+            kind: sql<string>`'post'`.as("kind"),
+            kindPriority: sql<number>`0`.as("kindPriority"),
+            edgeId: postTable.id,
+            createdAt: postTable.createdAt,
+            postId: postTable.id,
+            authorId: postTable.authorId,
+            reposterId: sql<string | null>`null`.as("reposterId"),
+            repostContent: sql<string | null>`null`.as("repostContent"),
+          })
+          .from(postTable)
+  ).$dynamic();
 
-  const postRows = await (cursorConditionPost
-    ? basePostQuery.where(cursorConditionPost)
-    : basePostQuery
-  ).limit(FEED_PAGE_SIZE);
+  const repostEdgeQuery = (
+    repostCursorCondition
+      ? db
+          .select({
+            kind: sql<string>`'repost'`.as("kind"),
+            kindPriority: sql<number>`1`.as("kindPriority"),
+            edgeId: postRepostTable.id,
+            createdAt: postRepostTable.createdAt,
+            postId: postRepostTable.postId,
+            authorId: postTable.authorId,
+            reposterId: postRepostTable.userId,
+            repostContent: postRepostTable.content,
+          })
+          .from(postRepostTable)
+          .innerJoin(postTable, eq(postRepostTable.postId, postTable.id))
+          .where(repostCursorCondition)
+      : db
+          .select({
+            kind: sql<string>`'repost'`.as("kind"),
+            kindPriority: sql<number>`1`.as("kindPriority"),
+            edgeId: postRepostTable.id,
+            createdAt: postRepostTable.createdAt,
+            postId: postRepostTable.postId,
+            authorId: postTable.authorId,
+            reposterId: postRepostTable.userId,
+            repostContent: postRepostTable.content,
+          })
+          .from(postRepostTable)
+          .innerJoin(postTable, eq(postRepostTable.postId, postTable.id))
+  ).$dynamic();
 
-  const postItems: FeedItem[] = postRows.flatMap(({ post, author }) => {
-    if (!author) {
-      return [];
-    }
+  const feedEdges = unionAll(postEdgeQuery, repostEdgeQuery).as("feed_edges");
+  const edgeRows = await db
+    .select()
+    .from(feedEdges)
+    .orderBy(
+      desc(feedEdges.createdAt),
+      desc(feedEdges.kindPriority),
+      desc(feedEdges.edgeId),
+    )
+    .limit(FEED_PAGE_SIZE + 1);
 
-    return [
-      {
-        type: "post" as const,
-        post: {
-          ...post,
-          author,
-          isLiked: false,
-          isReposted: false,
-        },
-      },
-    ];
-  });
-
-  const baseRepostQuery = db
-    .select({
-      repost: postRepostTable,
-      post: postTable,
-      authorId: postTable.authorId,
-      reposterId: postRepostTable.userId,
-    })
-    .from(postRepostTable)
-    .innerJoin(postTable, eq(postRepostTable.postId, postTable.id))
-    .orderBy(desc(postRepostTable.createdAt), desc(postRepostTable.id));
-
-  const repostRows = await (cursorConditionRepost
-    ? baseRepostQuery.where(cursorConditionRepost)
-    : baseRepostQuery
-  ).limit(FEED_PAGE_SIZE);
-
+  const { hasMore, pageRows } = getPageRows(
+    edgeRows as FeedEdgeRow[],
+    FEED_PAGE_SIZE,
+  );
+  const postIds = Array.from(new Set(pageRows.map((edge) => edge.postId)));
   const userIds = Array.from(
     new Set(
-      repostRows.flatMap(
-        (row) => [row.authorId, row.reposterId].filter(Boolean) as string[],
+      pageRows.flatMap(
+        (edge) => [edge.authorId, edge.reposterId].filter(Boolean) as string[],
       ),
     ),
   );
 
-  const users =
+  const [posts, users] = await Promise.all([
+    postIds.length > 0
+      ? db.select().from(postTable).where(inArray(postTable.id, postIds))
+      : [],
     userIds.length > 0
-      ? await db
+      ? db
           .select(publicUserColumns)
           .from(userTable)
           .where(inArray(userTable.id, userIds))
-      : [];
+      : [],
+  ]);
 
+  const postMap = new Map(posts.map((post) => [post.id, post] as const));
   const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const data: FeedItem[] = pageRows.flatMap<FeedItem>((edge) => {
+    const post = postMap.get(edge.postId);
+    const author = userMap.get(edge.authorId);
 
-  const repostItems: FeedItem[] = repostRows.flatMap((row) => {
-    const author = userMap.get(row.authorId);
-    const reposter = userMap.get(row.reposterId);
+    if (!post || !author) {
+      return [];
+    }
 
-    if (!author || !reposter) {
+    const feedPost = {
+      ...post,
+      author,
+      isLiked: false,
+      isReposted: false,
+    };
+
+    if (edge.kind === "post") {
+      return [{ type: "post" as const, post: feedPost }];
+    }
+
+    const reposter = edge.reposterId ? userMap.get(edge.reposterId) : null;
+
+    if (!reposter) {
       return [];
     }
 
     return [
       {
         type: "repost" as const,
-        post: {
-          ...row.post,
-          author,
-          isLiked: false,
-          isReposted: false,
-        },
+        post: feedPost,
         repost: {
-          id: row.repost.id,
-          postId: row.repost.postId,
-          content: row.repost.content ?? undefined,
-          createdAt: row.repost.createdAt,
+          id: edge.edgeId,
+          postId: edge.postId,
+          content: edge.repostContent ?? undefined,
+          createdAt: edge.createdAt,
           user: reposter,
         },
       },
     ];
   });
 
-  const pageItems = mergeAndSortFeedItems(postItems, repostItems).slice(
-    0,
-    FEED_PAGE_SIZE,
-  );
-
   return {
-    data: pageItems,
-    nextCursor: getFeedNextCursor(pageItems[pageItems.length - 1]),
+    data,
+    nextCursor: hasMore
+      ? getFeedNextCursor(pageRows[pageRows.length - 1])
+      : null,
   };
 }
 
@@ -388,6 +450,7 @@ export async function getPostsPage(params: {
 
   return {
     ...publicData,
+    // Preserve the shared public page window; viewer overlays may shorten it.
     data: applyPostFeedViewerOverlay(publicData.data, overlay),
   };
 }
@@ -533,7 +596,7 @@ async function getPublicCommentsPage(
     .leftJoin(userTable, eq(postCommentTable.authorId, userTable.id))
     .where(baseCondition)
     .orderBy(desc(postCommentTable.createdAt), desc(postCommentTable.id))
-    .limit(COMMENTS_PAGE_SIZE);
+    .limit(COMMENTS_PAGE_SIZE + 1);
 
   const data: CommentData[] = rows.flatMap(({ comment, author }) => {
     if (!author) {
@@ -549,13 +612,15 @@ async function getPublicCommentsPage(
     ];
   });
 
-  const lastItem = data[data.length - 1];
+  const { hasMore, pageRows } = getPageRows(data, COMMENTS_PAGE_SIZE);
+  const lastItem = pageRows[pageRows.length - 1];
 
   return {
-    data,
-    nextCursor: lastItem
-      ? `${lastItem.createdAt.getTime()}.${lastItem.id}`
-      : null,
+    data: pageRows,
+    nextCursor:
+      hasMore && lastItem
+        ? `${lastItem.createdAt.getTime()}.${lastItem.id}`
+        : null,
   };
 }
 
@@ -642,6 +707,7 @@ export async function getPostCommentsPage(params: {
 
   return {
     ...publicData,
+    // Preserve the shared public page window; viewer overlays may shorten it.
     data: publicData.data.flatMap((comment) => {
       if (overlay.blockedUserIds.has(comment.author.id)) {
         return [];
@@ -684,7 +750,7 @@ async function getPublicNotesPage(
     .from(noteTable)
     .leftJoin(userTable, eq(noteTable.userId, userTable.id))
     .orderBy(desc(noteTable.updatedAt), desc(noteTable.id))
-    .limit(FEED_PAGE_SIZE);
+    .limit(FEED_PAGE_SIZE + 1);
 
   const rows = await (cursorCondition
     ? baseQuery.where(cursorCondition)
@@ -699,13 +765,15 @@ async function getPublicNotesPage(
         } as NoteItem),
   );
 
-  const lastItem = data[data.length - 1];
+  const { hasMore, pageRows } = getPageRows(data, FEED_PAGE_SIZE);
+  const lastItem = pageRows[pageRows.length - 1];
 
   return {
-    data,
-    nextCursor: lastItem
-      ? `${lastItem.updatedAt?.getTime()}.${lastItem.id}`
-      : null,
+    data: pageRows,
+    nextCursor:
+      hasMore && lastItem
+        ? `${lastItem.updatedAt?.getTime()}.${lastItem.id}`
+        : null,
   };
 }
 
@@ -764,6 +832,7 @@ export async function getNotesPage(params: {
 
   return {
     ...publicData,
+    // Preserve the shared public page window; viewer overlays may shorten it.
     data: publicData.data.flatMap((note) =>
       note.user?.id && blockedUserIds.has(note.user.id) ? [] : [note],
     ),
@@ -1087,7 +1156,7 @@ export async function getMessagesPage(params: {
       .innerJoin(userTable, eq(messageTable.receiverId, userTable.id))
       .where(whereCondition)
       .orderBy(desc(messageTable.createdAt), desc(messageTable.id))
-      .limit(MESSAGES_PAGE_SIZE);
+      .limit(MESSAGES_PAGE_SIZE + 1);
 
     const data = rows
       .filter((row) => row.receiver !== null)
@@ -1096,8 +1165,9 @@ export async function getMessagesPage(params: {
         receiver,
       }));
 
+    const { hasMore, pageRows } = getPageRows(data, MESSAGES_PAGE_SIZE);
     const messagesData = await Promise.all(
-      data.map(async (message) => {
+      pageRows.map(async (message) => {
         let content = message.content;
         let reply = message.reply ?? null;
 
@@ -1124,7 +1194,7 @@ export async function getMessagesPage(params: {
     return {
       messages: messagesData,
       nextCursor:
-        messagesData.length === MESSAGES_PAGE_SIZE
+        hasMore && messagesData.length > 0
           ? `${messagesData[messagesData.length - 1].createdAt?.getTime()}.${
               messagesData[messagesData.length - 1].id
             }`

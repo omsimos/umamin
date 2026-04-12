@@ -2,14 +2,14 @@
 
 import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -21,8 +21,6 @@ import { ReceivedMessageCard } from "./received-card";
 import { ReceivedMessageCardSkeleton } from "./received-message-card-skeleton";
 
 export function ReceivedMessages() {
-  const parentRef = useRef<HTMLDivElement | null>(null);
-
   const {
     data,
     isLoading,
@@ -42,16 +40,17 @@ export function ReceivedMessages() {
   });
 
   const allPosts = data?.pages.flatMap((page) => page.messages) ?? [];
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const totalRows = hasNextPage ? allPosts.length + 1 : allPosts.length;
 
-  const virtualizer = useVirtualizer({
-    count: hasNextPage ? allPosts.length + 1 : allPosts.length,
+  const virtualizer = useWindowVirtualizer({
+    count: totalRows,
     // slightly above real card height to avoid initial gaps; remeasured on mount
     estimateSize: () => 240,
     paddingEnd: 100,
     overscan: 8,
-    getScrollElement: () => parentRef.current,
     getItemKey: (index) => {
-      if (hasNextPage && index === allPosts.length) return "loader";
+      if (hasNextPage && index === totalRows - 1) return "loader";
       const msg = allPosts[index];
       return msg?.id ?? `row-${index}`;
     },
@@ -66,30 +65,49 @@ export function ReceivedMessages() {
     },
   );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: for virtualizer
   useEffect(() => {
-    const [lastItem] = [...virtualizer.getVirtualItems()].reverse();
-
-    if (!lastItem) {
+    if (hasInteracted) {
       return;
     }
 
+    const handleScroll = () => {
+      if (window.scrollY > 0) {
+        setHasInteracted(true);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [hasInteracted]);
+
+  const items = virtualizer.getVirtualItems();
+
+  useEffect(() => {
     if (
-      lastItem.index >= allPosts.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
+      !hasInteracted ||
+      !hasNextPage ||
+      isFetchingNextPage ||
+      items.length === 0
     ) {
+      return;
+    }
+
+    const lastItem = items[items.length - 1];
+    const lastIndex = totalRows - 1;
+
+    if (lastItem?.index >= lastIndex) {
       handleNextPage();
     }
   }, [
+    hasInteracted,
+    items,
     hasNextPage,
-    allPosts.length,
     isFetchingNextPage,
+    totalRows,
     handleNextPage,
-    virtualizer.getVirtualItems(),
   ]);
-
-  const items = virtualizer.getVirtualItems();
 
   if (error) {
     return (
@@ -97,7 +115,7 @@ export function ReceivedMessages() {
         <Alert variant="destructive">
           <AlertCircleIcon className="h-4 w-4" />
           <AlertDescription>
-            Failed to load posts. Please try again later.
+            Failed to load messages. Please try again later.
           </AlertDescription>
         </Alert>
       </div>
@@ -115,7 +133,7 @@ export function ReceivedMessages() {
   }
 
   return (
-    <div ref={parentRef} className="w-full overflow-auto">
+    <div className="w-full">
       {allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />

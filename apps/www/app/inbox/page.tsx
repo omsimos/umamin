@@ -43,34 +43,19 @@ export default async function InboxPage() {
 
   const queryClient = getQueryClient();
 
-  await Promise.all([
-    queryClient.prefetchInfiniteQuery({
-      queryKey: queryKeys.receivedMessages(),
-      queryFn: ({ pageParam }) =>
-        getMessagesPage({
-          type: "received",
-          cursor: (pageParam as string | null) ?? null,
-          userId: session.userId,
-        }),
-      initialPageParam: null as string | null,
-      getNextPageParam: (lastPage: MessagesResponse) =>
-        lastPage.nextCursor ?? null,
-      staleTime: 30_000,
-    }),
-    queryClient.prefetchInfiniteQuery({
-      queryKey: queryKeys.sentMessages(),
-      queryFn: ({ pageParam }) =>
-        getMessagesPage({
-          type: "sent",
-          cursor: (pageParam as string | null) ?? null,
-          userId: session.userId,
-        }),
-      initialPageParam: null as string | null,
-      getNextPageParam: (lastPage: MessagesResponse) =>
-        lastPage.nextCursor ?? null,
-      staleTime: 30_000,
-    }),
-  ]);
+  await queryClient.prefetchInfiniteQuery({
+    queryKey: queryKeys.receivedMessages(),
+    queryFn: ({ pageParam }) =>
+      getMessagesPage({
+        type: "received",
+        cursor: (pageParam as string | null) ?? null,
+        userId: session.userId,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage: MessagesResponse) =>
+      lastPage.nextCursor ?? null,
+    staleTime: 30_000,
+  });
 
   return (
     <main className="max-w-xl mx-auto min-h-screen container">
