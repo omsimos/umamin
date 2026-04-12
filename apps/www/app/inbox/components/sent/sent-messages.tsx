@@ -10,6 +10,7 @@ import {
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
+import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -43,6 +44,8 @@ export function SentMessages() {
   const allPosts = data?.pages.flatMap((page) => page.messages) ?? [];
   const [hasInteracted, setHasInteracted] = useState(false);
   const totalRows = hasNextPage ? allPosts.length + 1 : allPosts.length;
+  const { containerRef, scrollMargin } =
+    useWindowVirtualizerOffset<HTMLDivElement>();
 
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
@@ -50,6 +53,7 @@ export function SentMessages() {
     estimateSize: () => 320,
     paddingEnd: 100,
     overscan: 8,
+    scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
       const msg = allPosts[index];
@@ -121,6 +125,7 @@ export function SentMessages() {
       )}
 
       <div
+        ref={containerRef}
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           width: "100%",
@@ -144,7 +149,7 @@ export function SentMessages() {
                 top: 0,
                 left: 0,
                 width: "100%",
-                transform: `translateY(${virtualRow.start}px)`,
+                transform: `translateY(${virtualRow.start - scrollMargin}px)`,
               }}
             >
               {isLoaderRow ? (

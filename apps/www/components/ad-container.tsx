@@ -19,9 +19,15 @@ type Props = {
 const AdContainer = ({ placement, className }: Props) => {
   const config = adPlacements[placement];
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const adRef = useRef<HTMLModElement | null>(null);
   const pushedRef = useRef(false);
   const [isVisible, setIsVisible] = useState(!config.lazy);
   const shouldInitialize = isVisible || process.env.NODE_ENV !== "production";
+
+  useEffect(() => {
+    pushedRef.current = false;
+    setIsVisible(!config.lazy);
+  }, [config.lazy]);
 
   useEffect(() => {
     if (!config.lazy || isVisible || !containerRef.current) {
@@ -47,21 +53,52 @@ const AdContainer = ({ placement, className }: Props) => {
   }, [config.lazy, isVisible]);
 
   useEffect(() => {
-    try {
-      if (
-        shouldInitialize &&
-        process.env.NODE_ENV === "production" &&
-        typeof window !== "undefined" &&
-        !window.location.hostname.includes("localhost") &&
-        !pushedRef.current
-      ) {
+    if (
+      !shouldInitialize ||
+      process.env.NODE_ENV !== "production" ||
+      typeof window === "undefined" ||
+      window.location.hostname.includes("localhost")
+    ) {
+      return;
+    }
+
+    let timeoutId: number | null = null;
+    let disposed = false;
+
+    const initializeAd = () => {
+      if (disposed || pushedRef.current) {
+        return;
+      }
+
+      const adElement = adRef.current;
+      if (!adElement) {
+        timeoutId = window.setTimeout(initializeAd, 150);
+        return;
+      }
+
+      if (adElement.getAttribute("data-adsbygoogle-status") === "done") {
+        pushedRef.current = true;
+        return;
+      }
+
+      try {
         // biome-ignore lint/suspicious/noAssignInExpressions: google
         (window.adsbygoogle = window.adsbygoogle || []).push({});
         pushedRef.current = true;
+      } catch (err) {
+        console.log(err);
+        timeoutId = window.setTimeout(initializeAd, 250);
       }
-    } catch (err) {
-      console.log(err);
-    }
+    };
+
+    initializeAd();
+
+    return () => {
+      disposed = true;
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, [shouldInitialize]);
 
   return (
@@ -80,6 +117,7 @@ const AdContainer = ({ placement, className }: Props) => {
       ) : (
         shouldInitialize && (
           <ins
+            ref={adRef}
             className="adsbygoogle"
             style={{ display: "block", minHeight: config.minHeight }}
             data-ad-client="ca-pub-4274133898976040"

@@ -12,6 +12,7 @@ import { useMemo } from "react";
 import { PostCard } from "@/app/feed/components/post-card";
 import { PostCardSkeleton } from "@/app/feed/components/post-card-skeleton";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
+import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
   infiniteQueryDefaults,
   PUBLIC_STALE_TIME,
@@ -62,11 +63,15 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     [comments.length, hasNextPage],
   );
 
+  const { containerRef, scrollMargin } =
+    useWindowVirtualizerOffset<HTMLDivElement>();
+
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
     estimateSize: () => 180,
     overscan: 12,
     paddingEnd: 80,
+    scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
       return comments[index]?.id ?? `row-${index}`;
@@ -121,6 +126,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
 
   return (
     <div
+      ref={containerRef}
       style={{
         height: `${virtualizer.getTotalSize()}px`,
         width: "100%",
@@ -141,7 +147,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
               top: 0,
               left: 0,
               width: "100%",
-              transform: `translateY(${row.start}px)`,
+              transform: `translateY(${row.start - scrollMargin}px)`,
             }}
           >
             {isLoaderRow ? (

@@ -11,6 +11,7 @@ import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useMemo } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
+import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
   infiniteQueryDefaults,
   PUBLIC_STALE_TIME,
@@ -63,18 +64,39 @@ export function PostList({
     return Array.from(map.values());
   })();
 
+  const AD_FREQUENCY = 8;
+
+  const isAdRow = (rowIndex: number) =>
+    (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
+
+  const dataIndexForRow = (rowIndex: number) => {
+    const adsAtOrBefore = Math.floor((rowIndex + 1) / (AD_FREQUENCY + 1));
+    const adsBefore = isAdRow(rowIndex) ? adsAtOrBefore - 1 : adsAtOrBefore;
+    return rowIndex - adsBefore;
+  };
+
   const totalRows = useMemo(() => {
-    return hasNextPage ? allItems.length + 1 : allItems.length;
+    const contentRows =
+      allItems.length + Math.floor(allItems.length / AD_FREQUENCY);
+    return hasNextPage ? contentRows + 1 : contentRows;
   }, [allItems.length, hasNextPage]);
+
+  const { containerRef, scrollMargin } =
+    useWindowVirtualizerOffset<HTMLDivElement>();
 
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
     estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
     paddingEnd: 100,
     overscan: 12,
+    scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
-      const item = allItems[index];
+      if (isAdRow(index)) {
+        const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
+        return `feed-inline-ad-${adIndex}`;
+      }
+      const item = allItems[dataIndexForRow(index)];
       if (!item) return `row-${index}`;
       return item.type === "post" ? item.post.id : item.repost.id;
     },
@@ -131,6 +153,7 @@ export function PostList({
       <ClientOnlyAdContainer className="mb-5" placement="feed_top" />
 
       <div
+        ref={containerRef}
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           width: "100%",
@@ -139,6 +162,7 @@ export function PostList({
       >
         {items.map((row) => {
           const isLoaderRow = hasNextPage && row.index === totalRows - 1;
+          const isInlineAdRow = !isLoaderRow && isAdRow(row.index);
 
           return (
             <div
@@ -151,14 +175,19 @@ export function PostList({
                 top: 0,
                 left: 0,
                 width: "100%",
-                transform: `translateY(${row.start}px)`,
+                transform: `translateY(${row.start - scrollMargin}px)`,
               }}
             >
               {isLoaderRow ? (
                 <PostCardSkeleton />
+              ) : isInlineAdRow ? (
+                <ClientOnlyAdContainer
+                  className="mb-4"
+                  placement="feed_inline"
+                />
               ) : (
                 (() => {
-                  const item = allItems[row.index];
+                  const item = allItems[dataIndexForRow(row.index)];
                   if (!item) return null;
 
                   if (item.type === "post") {
