@@ -18,19 +18,21 @@ type Props = {
 
 const AdContainer = ({ placement, className }: Props) => {
   const config = adPlacements[placement];
+  const isLazy = config?.lazy ?? true;
+  const minHeight = config?.minHeight ?? 0;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const adRef = useRef<HTMLModElement | null>(null);
   const pushedRef = useRef(false);
-  const [isVisible, setIsVisible] = useState(!config.lazy);
+  const [isVisible, setIsVisible] = useState(!isLazy);
   const shouldInitialize = isVisible || process.env.NODE_ENV !== "production";
 
   useEffect(() => {
     pushedRef.current = false;
-    setIsVisible(!config.lazy);
-  }, [config.lazy]);
+    setIsVisible(!isLazy);
+  }, [isLazy]);
 
   useEffect(() => {
-    if (!config.lazy || isVisible || !containerRef.current) {
+    if (!config || !isLazy || isVisible || !containerRef.current) {
       return;
     }
 
@@ -50,10 +52,19 @@ const AdContainer = ({ placement, className }: Props) => {
     observer.observe(containerRef.current);
 
     return () => observer.disconnect();
-  }, [config.lazy, isVisible]);
+  }, [config, isLazy, isVisible]);
+
+  useEffect(() => {
+    if (config || process.env.NODE_ENV === "production") {
+      return;
+    }
+
+    console.warn(`Unknown ad placement: ${String(placement)}`);
+  }, [config, placement]);
 
   useEffect(() => {
     if (
+      !config ||
       !shouldInitialize ||
       process.env.NODE_ENV !== "production" ||
       typeof window === "undefined" ||
@@ -99,7 +110,7 @@ const AdContainer = ({ placement, className }: Props) => {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [shouldInitialize]);
+  }, [config, shouldInitialize]);
 
   return (
     <div
@@ -108,9 +119,9 @@ const AdContainer = ({ placement, className }: Props) => {
         "border border-yellow-500 rounded":
           process.env.NODE_ENV === "development",
       })}
-      style={{ minHeight: config.minHeight }}
+      style={{ minHeight }}
     >
-      {process.env.NODE_ENV === "development" ? (
+      {!config ? null : process.env.NODE_ENV === "development" ? (
         <div className="flex h-full min-h-full items-center justify-center rounded text-sm text-yellow-700">
           ad: {placement}
         </div>
@@ -119,7 +130,7 @@ const AdContainer = ({ placement, className }: Props) => {
           <ins
             ref={adRef}
             className="adsbygoogle"
-            style={{ display: "block", minHeight: config.minHeight }}
+            style={{ display: "block", minHeight }}
             data-ad-client="ca-pub-4274133898976040"
             data-ad-slot={config.slotId}
             data-ad-format="auto"

@@ -1,13 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import { Footer } from "@/components/footer";
-import { Navbar } from "@/components/navbar";
 import Providers from "./providers";
 
 import "./globals.css";
-import { Suspense } from "react";
-import { Menubar } from "@/components/menu-bar";
 import { getGtmInlineScript } from "@/lib/gtm";
 
 const geistSans = Geist({
@@ -90,15 +86,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>
-          <Suspense>
-            <Navbar />
-            <Menubar />
-          </Suspense>
-
-          <div className="pt-24">{children}</div>
-          <Footer />
-        </Providers>
+        <Providers>{children}</Providers>
 
         {gtmId && (
           <noscript>

@@ -22,28 +22,45 @@ async function fetchJson<T>(input: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function fetchPostsPage(cursor: string | null) {
-  const url = cursor ? `/api/posts?cursor=${cursor}` : "/api/posts";
+function appendCursor(baseUrl: string, cursor: string | null) {
+  return cursor ? `${baseUrl}?cursor=${cursor}` : baseUrl;
+}
+
+export async function fetchPostsPage(
+  cursor: string | null,
+  isAuthenticated: boolean,
+) {
+  const baseUrl = isAuthenticated ? "/api/posts" : "/api/public/posts";
+  const url = appendCursor(baseUrl, cursor);
   return fetchJson<FeedResponse>(url);
 }
 
-export async function fetchPost(postId: string) {
-  return fetchJson<PostResponse>(`/api/posts/${postId}`);
+export async function fetchPost(postId: string, isAuthenticated: boolean) {
+  const baseUrl = isAuthenticated
+    ? `/api/posts/${postId}`
+    : `/api/public/posts/${postId}`;
+  return fetchJson<PostResponse>(baseUrl);
 }
 
 export async function fetchPostCommentsPage(
   postId: string,
   cursor: string | null,
+  isAuthenticated: boolean,
 ) {
-  const url = cursor
-    ? `/api/posts/${postId}/comments?cursor=${cursor}`
-    : `/api/posts/${postId}/comments`;
+  const baseUrl = isAuthenticated
+    ? `/api/posts/${postId}/comments`
+    : `/api/public/posts/${postId}/comments`;
+  const url = appendCursor(baseUrl, cursor);
 
   return fetchJson<CommentsResponse>(url);
 }
 
-export async function fetchNotesPage(cursor: string | null) {
-  const url = cursor ? `/api/notes?cursor=${cursor}` : "/api/notes";
+export async function fetchNotesPage(
+  cursor: string | null,
+  isAuthenticated: boolean,
+) {
+  const baseUrl = isAuthenticated ? "/api/notes" : "/api/public/notes";
+  const url = appendCursor(baseUrl, cursor);
   return fetchJson<NotesResponse>(url);
 }
 
@@ -72,7 +89,7 @@ export async function fetchCurrentUserOptional() {
 }
 
 export async function fetchUserProfile(username: string) {
-  return fetchJson<UserProfileResponse>(`/api/user/${username}`);
+  return fetchJson<UserProfileResponse>(`/api/public/user/${username}`);
 }
 
 export async function fetchUserProfileViewer(username: string) {

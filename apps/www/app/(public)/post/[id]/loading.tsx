@@ -1,5 +1,5 @@
 import { Skeleton } from "@umamin/ui/components/skeleton";
-import { PostCardSkeleton } from "@/app/feed/components/post-card-skeleton";
+import { PostCardSkeleton } from "@/app/(public)/feed/components/post-card-skeleton";
 
 export default function Loading() {
   return (
