@@ -78,7 +78,7 @@ export function RegisterForm() {
         </form.AppForm>
 
         <Button variant="outline" asChild>
-          <Link href="/auth/google" className="w-full">
+          <Link prefetch={false} href="/auth/google" className="w-full">
             Continue with Google
           </Link>
         </Button>

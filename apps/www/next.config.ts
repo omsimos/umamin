@@ -11,6 +11,8 @@ function buildContentSecurityPolicy() {
     "https://www.google-analytics.com",
     "https://pagead2.googlesyndication.com",
     "https://partner.googleadservices.com",
+    "https://fundingchoicesmessages.google.com",
+    "https://vercel.live",
   ];
 
   const directives: Array<[string, string[]]> = [
@@ -28,6 +30,7 @@ function buildContentSecurityPolicy() {
         "https://www.google-analytics.com",
         "https://pagead2.googlesyndication.com",
         "https://googleads.g.doubleclick.net",
+        "https://ep1.adtrafficquality.google",
       ],
     ],
     ["img-src", ["'self'", "data:", "blob:", "https:"]],

@@ -83,7 +83,7 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
               You can still login with your credentials.
             </span>
             <Button variant="secondary" asChild className="mt-6">
-              <Link href="/auth/google" className="w-full">
+              <Link prefetch={false} href="/auth/google" className="w-full">
                 Connect with Google
               </Link>
             </Button>
