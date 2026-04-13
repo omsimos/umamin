@@ -1,9 +1,16 @@
 import type { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 import * as z from "zod";
 
-export type UserWithAccount = SelectUser & { account: SelectAccount | null };
-
 export type PublicUser = Omit<SelectUser, "passwordHash">;
+export type CurrentUserClient = PublicUser & { hasPassword: boolean };
+export type UserWithAccount = CurrentUserClient & {
+  account: SelectAccount | null;
+};
+
+export function toPublicUser(user: SelectUser): PublicUser {
+  const { passwordHash: _passwordHash, ...rest } = user;
+  return rest;
+}
 
 export const generalSettingsSchema = z.object({
   question: z
@@ -33,7 +40,7 @@ export const generalSettingsSchema = z.object({
 
 const passwordSchema = z
   .string()
-  .min(5, { error: "Password must be at least 5 characters" })
+  .min(10, { error: "Password must be at least 10 characters" })
   .max(128, { error: "Password must not exceed 128 characters" });
 
 export const passwordFormSchema = z

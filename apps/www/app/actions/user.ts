@@ -10,10 +10,9 @@ import {
   userFollowTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { and, eq, exists, sql } from "drizzle-orm";
-import { cacheLife, cacheTag, updateTag } from "next/cache";
+import { and, eq, sql } from "drizzle-orm";
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { cache } from "react";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import {
@@ -22,14 +21,12 @@ import {
   hashEmailForGravatar,
   normaliseEmailForGravatar,
 } from "@/lib/avatar";
+import { getCurrentUserData, getUserProfileData } from "@/lib/server/data";
 import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
 import { formatContent } from "@/lib/utils";
 import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 
 const gravatarEmailSchema = z
-  .string()
-  .trim()
-  .min(1, { error: "Email is required" })
   .email({ error: "Invalid email address" })
   .transform((value) => normaliseEmailForGravatar(value));
 
@@ -64,169 +61,25 @@ export async function getGravatarAction(email: string) {
   }
 }
 
-export const getCurrentUserAction = cache(async () => {
+export async function getCurrentUserAction() {
   try {
-    const { session, user } = await getSession();
+    const { session } = await getSession();
 
     if (!session) {
       throw new Error("Unauthorized");
     }
 
-    const [userRecord] = await (async () => {
-      "use cache: private";
-      cacheTag(`user:${session.userId}`);
-      cacheLife({ revalidate: 30 });
-
-      return db
-        .select()
-        .from(userTable)
-        .where(eq(userTable.id, session.userId))
-        .limit(1);
-    })();
-
-    const accounts = userRecord
-      ? await (async () => {
-          "use cache: private";
-          cacheTag(`user:${session.userId}:accounts`);
-          cacheLife({ revalidate: 30 });
-
-          return db
-            .select()
-            .from(accountTable)
-            .where(eq(accountTable.userId, session.userId));
-        })()
-      : [];
-
-    const data = userRecord ? { ...userRecord, accounts } : undefined;
-
-    return { user: data };
+    return getCurrentUserData(session.userId);
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };
   }
-});
-
-const userProfileRevalidate = 604800; // 7 days
+}
 
 export async function getUserProfileAction(username: string) {
   try {
-    const getCached = async () => {
-      "use cache";
-      cacheTag(`user:${username}`);
-      cacheLife({ revalidate: userProfileRevalidate });
-
-      const [user] = await db
-        .select({
-          id: userTable.id,
-          username: userTable.username,
-          displayName: userTable.displayName,
-          imageUrl: userTable.imageUrl,
-          bio: userTable.bio,
-          question: userTable.question,
-          quietMode: userTable.quietMode,
-          followerCount: userTable.followerCount,
-          followingCount: userTable.followingCount,
-          createdAt: userTable.createdAt,
-          updatedAt: userTable.updatedAt,
-        })
-        .from(userTable)
-        .where(eq(userTable.username, username))
-        .limit(1);
-
-      return user;
-    };
-
-    const user = await getCached();
-
-    if (!user) {
-      return null;
-    }
-
     const { session } = await getSession();
-
-    if (!session) {
-      return user;
-    }
-
-    const [isFollowing, isBlocked, isBlockedBy] = await Promise.all([
-      (async () => {
-        "use cache: private";
-        cacheTag(`user:${username}:followed:${session.userId}`);
-        cacheLife({ revalidate: 30 });
-
-        const follow = await db
-          .select({
-            following: exists(
-              db
-                .select({ id: userFollowTable.id })
-                .from(userFollowTable)
-                .where(
-                  and(
-                    eq(userFollowTable.followerId, session.userId),
-                    eq(userFollowTable.followingId, user.id),
-                  ),
-                ),
-            ),
-          })
-          .from(userTable)
-          .where(eq(userTable.id, user.id))
-          .limit(1);
-
-        return Boolean(follow?.[0]?.following);
-      })(),
-      (async () => {
-        "use cache: private";
-        cacheTag(`user:${username}:blocked:${session.userId}`);
-        cacheLife({ revalidate: 30 });
-
-        const blocked = await db
-          .select({
-            blocked: exists(
-              db
-                .select({ id: userBlockTable.id })
-                .from(userBlockTable)
-                .where(
-                  and(
-                    eq(userBlockTable.blockerId, session.userId),
-                    eq(userBlockTable.blockedId, user.id),
-                  ),
-                ),
-            ),
-          })
-          .from(userTable)
-          .where(eq(userTable.id, user.id))
-          .limit(1);
-
-        return Boolean(blocked?.[0]?.blocked);
-      })(),
-      (async () => {
-        "use cache: private";
-        cacheTag(`user:${username}:blocked-by:${session.userId}`);
-        cacheLife({ revalidate: 30 });
-
-        const blockedBy = await db
-          .select({
-            blocked: exists(
-              db
-                .select({ id: userBlockTable.id })
-                .from(userBlockTable)
-                .where(
-                  and(
-                    eq(userBlockTable.blockerId, user.id),
-                    eq(userBlockTable.blockedId, session.userId),
-                  ),
-                ),
-            ),
-          })
-          .from(userTable)
-          .where(eq(userTable.id, user.id))
-          .limit(1);
-
-        return Boolean(blockedBy?.[0]?.blocked);
-      })(),
-    ]);
-
-    return { ...user, isFollowing, isBlocked, isBlockedBy };
+    return getUserProfileData(username, session?.userId);
   } catch (err) {
     console.log(err);
     return null;
@@ -274,8 +127,29 @@ export async function generalSettingsAction(
     }
     updateTag(`user:${session.userId}`);
     updateTag(`user:${session.userId}:accounts`);
+
+    return {
+      success: true,
+      user: normalized,
+    };
   } catch (err) {
     console.log(err);
+
+    if (
+      err instanceof Error &&
+      typeof err.cause === "object" &&
+      err.cause !== null
+    ) {
+      const cause = err.cause as { code?: string; message?: string };
+
+      if (
+        cause.code === "SQLITE_CONSTRAINT" &&
+        cause.message?.includes("user.username")
+      ) {
+        return { error: "Username already exists" };
+      }
+    }
+
     return { error: "An error occured" };
   }
 }
@@ -356,6 +230,8 @@ export async function updatePasswordAction(
       .update(userTable)
       .set({ passwordHash })
       .where(eq(userTable.id, user.id));
+
+    return { success: true };
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };
@@ -368,7 +244,7 @@ export async function followUserAction({ userId }: { userId: string }) {
     if (!parsed.success) {
       return { error: "Invalid input" };
     }
-    const { session } = await getSession();
+    const { session, user } = await getSession();
 
     if (!session) {
       throw new Error("Unauthorized");
@@ -429,6 +305,9 @@ export async function followUserAction({ userId }: { userId: string }) {
     updateTag(`user:${target.username}`);
     updateTag(`user:${session.userId}`);
     updateTag(`user:${target.username}:followed:${session.userId}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}`);
+    }
 
     return result;
   } catch (err) {
@@ -443,7 +322,7 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     if (!parsed.success) {
       return { error: "Invalid input" };
     }
-    const { session } = await getSession();
+    const { session, user } = await getSession();
 
     if (!session) {
       throw new Error("Unauthorized");
@@ -505,6 +384,9 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     updateTag(`user:${target.username}`);
     updateTag(`user:${session.userId}`);
     updateTag(`user:${target.username}:followed:${session.userId}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}`);
+    }
 
     return result;
   } catch (err) {
@@ -597,6 +479,9 @@ export async function blockUserAction({ userId }: { userId: string }) {
     });
 
     updateTag(`user:${target.username}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}`);
+    }
     updateTag(`user:${target.username}:blocked:${session.userId}`);
     updateTag(`user:${target.username}:followed:${session.userId}`);
     if (user?.username) {
@@ -668,6 +553,9 @@ export async function unblockUserAction({ userId }: { userId: string }) {
     });
 
     updateTag(`user:${target.username}`);
+    if (user?.username) {
+      updateTag(`user:${user.username}`);
+    }
     updateTag(`user:${target.username}:blocked:${session.userId}`);
     if (user?.username) {
       updateTag(`user:${user.username}:blocked-by:${userId}`);
@@ -754,8 +642,10 @@ export async function updateAvatarAction(imageUrl: string) {
       .where(eq(userTable.id, user.id));
 
     updateTag(`user:${user.username}`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
 
-    return { success: true };
+    return { success: true, imageUrl };
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };

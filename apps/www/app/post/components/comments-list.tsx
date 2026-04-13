@@ -1,6 +1,5 @@
 "use client";
 
-import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
@@ -9,15 +8,19 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { PostCard } from "@/app/feed/components/post-card";
 import { PostCardSkeleton } from "@/app/feed/components/post-card-skeleton";
+import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
+import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
+import {
+  infiniteQueryDefaults,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+} from "@/lib/query";
+import { fetchPostCommentsPage } from "@/lib/query-fetchers";
+import type { CommentsResponse } from "@/lib/query-types";
 import type { CommentData } from "@/types/post";
-
-type CommentsResponse = {
-  data: CommentData[];
-  nextCursor: string | null;
-};
 
 type CommentsListProps = {
   postId: string;
@@ -34,21 +37,15 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     isFetchingNextPage,
     isFetching,
   } = useInfiniteQuery<CommentsResponse>({
-    queryKey: ["post-comments", postId],
-    queryFn: async ({ pageParam }) => {
-      const url = pageParam
-        ? `/api/posts/${postId}/comments?cursor=${pageParam}`
-        : `/api/posts/${postId}/comments`;
-      const res = await fetch(url, { cache: "default" });
-      if (!res.ok) throw new Error("Failed to load comments");
-      return (await res.json()) as CommentsResponse;
-    },
-    initialPageParam: null,
+    queryKey: queryKeys.postComments(postId),
+    queryFn: ({ pageParam }) =>
+      fetchPostCommentsPage(postId, (pageParam as string | null) ?? null),
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: 30_000,
+    staleTime: PUBLIC_STALE_TIME,
+    ...infiniteQueryDefaults,
   });
+  const hasResolvedData = data !== undefined;
 
   const comments = useMemo(() => {
     const flat = data?.pages.flatMap((page) => page.data) ?? [];
@@ -66,11 +63,15 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     [comments.length, hasNextPage],
   );
 
+  const { containerRef, scrollMargin } =
+    useWindowVirtualizerOffset<HTMLDivElement>();
+
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
     estimateSize: () => 180,
     overscan: 12,
     paddingEnd: 80,
+    scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
       return comments[index]?.id ?? `row-${index}`;
@@ -78,22 +79,16 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
   });
 
   const items = virtualizer.getVirtualItems();
+  const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
 
-  const handleNextPage = useThrottledCallback(
-    () => {
-      fetchNextPage();
-    },
-    { wait: 2000 },
-  );
-
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage || items.length === 0) return;
-    const lastItem = items[items.length - 1];
-    const lastIndex = totalRows - 1; // loader row index if hasNextPage
-    if (lastItem?.index >= lastIndex) {
-      handleNextPage();
-    }
-  }, [items, hasNextPage, isFetchingNextPage, totalRows, handleNextPage]);
+  useInfiniteBoundaryLoader({
+    boundaryIndex: totalRows - 1,
+    hasNextPage: Boolean(hasNextPage),
+    isFetchingNextPage,
+    items,
+    loadMoreKey: nextCursor,
+    onLoadMore: fetchNextPage,
+  });
 
   if (error) {
     return (
@@ -105,7 +100,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     );
   }
 
-  if (isLoading) {
+  if (!hasResolvedData || isLoading) {
     return (
       <div className="space-y-6">
         <PostCardSkeleton />
@@ -115,7 +110,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     );
   }
 
-  if (comments.length === 0 && !hasNextPage && !isFetching) {
+  if (hasResolvedData && comments.length === 0 && !hasNextPage && !isFetching) {
     return (
       <div className="px-2">
         <Alert>
@@ -131,6 +126,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
 
   return (
     <div
+      ref={containerRef}
       style={{
         height: `${virtualizer.getTotalSize()}px`,
         width: "100%",
@@ -151,7 +147,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
               top: 0,
               left: 0,
               width: "100%",
-              transform: `translateY(${row.start}px)`,
+              transform: `translateY(${row.start - scrollMargin}px)`,
             }}
           >
             {isLoaderRow ? (

@@ -1,5 +1,11 @@
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { getQueryClient } from "@/lib/get-query-client";
+import { queryKeys } from "@/lib/query";
+import type { FeedResponse } from "@/lib/query-types";
+import { getPostsPage } from "@/lib/server/data";
+import { toPublicUser } from "@/types/user";
 import PostForm from "../post/components/post-form";
 import { PostList } from "./components/post-list";
 
@@ -9,9 +15,20 @@ export default async function Feed() {
   }
 
   const { user } = await getSession();
-  const publicUser = user
-    ? (({ passwordHash: _pw, ...rest }) => rest)(user)
-    : null;
+  const queryClient = getQueryClient();
+  const publicUser = user ? toPublicUser(user) : null;
+
+  await queryClient.prefetchInfiniteQuery({
+    queryKey: queryKeys.posts(),
+    queryFn: ({ pageParam }) =>
+      getPostsPage({
+        cursor: (pageParam as string | null) ?? null,
+        viewerId: user?.id,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage: FeedResponse) => lastPage.nextCursor ?? null,
+    staleTime: 120_000,
+  });
 
   return (
     <main className="pb-40">
@@ -19,7 +36,9 @@ export default async function Feed() {
         {user && <PostForm user={publicUser} />}
 
         <div className="border-y space-y-6 pt-6">
-          <PostList isAuthenticated={!!user} currentUserId={user?.id} />
+          <HydrationBoundary state={dehydrate(queryClient)}>
+            <PostList isAuthenticated={!!user} currentUserId={user?.id} />
+          </HydrationBoundary>
         </div>
       </section>
     </main>

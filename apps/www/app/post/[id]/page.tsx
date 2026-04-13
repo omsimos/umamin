@@ -1,9 +1,15 @@
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPostAction, getPostPublicAction } from "@/app/actions/post";
 import { PostCardMain } from "@/app/feed/components/post-card-main";
 import { getSession } from "@/lib/auth";
+import { getQueryClient } from "@/lib/get-query-client";
+import { queryKeys } from "@/lib/query";
+import type { CommentsResponse } from "@/lib/query-types";
+import { getPostCommentsPage } from "@/lib/server/data";
 import { getBaseUrl } from "@/lib/utils";
+import { toPublicUser } from "@/types/user";
 import { CommentsList } from "../components/comments-list";
 import ReplyForm from "../components/reply-form";
 
@@ -67,40 +73,50 @@ export default async function Post({
 }) {
   const { user } = await getSession();
   const { id } = await params;
+  const currentUser = user ? toPublicUser(user) : null;
 
   const data = await getPostAction(id);
+  const queryClient = getQueryClient();
 
   if (!data) {
     notFound();
   }
 
+  queryClient.setQueryData(queryKeys.post(id), data);
+
+  await queryClient.prefetchInfiniteQuery({
+    queryKey: queryKeys.postComments(id),
+    queryFn: ({ pageParam }) =>
+      getPostCommentsPage({
+        postId: id,
+        cursor: (pageParam as string | null) ?? null,
+        viewerId: user?.id,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage: CommentsResponse) =>
+      lastPage.nextCursor ?? null,
+    staleTime: 120_000,
+  });
+
   return (
     <main className="w-full sm:max-w-lg mx-auto bg-background">
-      <PostCardMain
-        isAuthenticated={!!user}
-        currentUserId={user?.id}
-        data={data}
-      />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <PostCardMain
+          isAuthenticated={!!user}
+          currentUserId={user?.id}
+          data={data}
+        />
 
-      {user && (
-        <div className="w-full py-4 border-b font-medium text-muted-foreground px-7 sm:px-0">
-          <ReplyForm user={user} postId={id} />
+        {currentUser && (
+          <div className="w-full py-4 border-b font-medium text-muted-foreground px-7 sm:px-0">
+            <ReplyForm user={currentUser} postId={id} />
+          </div>
+        )}
+
+        <div className="space-y-6 my-6">
+          <CommentsList isAuthenticated={!!user} postId={id} />
         </div>
-      )}
-
-      <div className="space-y-6 my-6">
-        <CommentsList isAuthenticated={!!user} postId={id} />
-        {/* <PostCardWithComments sessionImage={user?.imageUrl} /> */}
-        {/* {repliesData.map((comment) => { */}
-        {/*   return ( */}
-        {/*     <PostCard */}
-        {/*       key={comment.createdAt.toString()} */}
-        {/*       {...comment} */}
-        {/*       className="border-b" */}
-        {/*     /> */}
-        {/*   ); */}
-        {/* })} */}
-      </div>
+      </HydrationBoundary>
     </main>
   );
 }

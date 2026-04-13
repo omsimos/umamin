@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,14 +13,25 @@ import {
 } from "@umamin/ui/components/alert-dialog";
 import { TriangleAlertIcon } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { privateQueryDefaults, queryKeys } from "@/lib/query";
+import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 
-export default function UnauthenticatedDialog({
-  isLoggedIn,
-}: {
-  isLoggedIn: boolean;
-}) {
-  const [open, onOpenChange] = useState(!isLoggedIn);
+export default function UnauthenticatedDialog() {
+  const [open, onOpenChange] = useState(false);
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.currentUser(),
+    queryFn: fetchCurrentUserOptional,
+    ...privateQueryDefaults,
+  });
+
+  const isLoggedIn = !!data?.user;
+
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      onOpenChange(true);
+    }
+  }, [isLoading, isLoggedIn]);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

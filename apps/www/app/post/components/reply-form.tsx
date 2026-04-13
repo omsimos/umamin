@@ -1,9 +1,7 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { SelectUser } from "@umamin/db/schema/user";
 import {
   Avatar,
   AvatarFallback,
@@ -12,54 +10,59 @@ import {
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, ScanFaceIcon, SendIcon } from "lucide-react";
-import posthog from "posthog-js";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createCommentAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { queryKeys } from "@/lib/query";
+import {
+  patchPostAcrossFeed,
+  patchPostResponse,
+  prependComment,
+  replaceComment,
+} from "@/lib/query-cache";
+import type {
+  CommentsResponse,
+  FeedResponse,
+  PostResponse,
+} from "@/lib/query-types";
 import type { CommentData } from "@/types/post";
+import type { PublicUser } from "@/types/user";
 
 type Props = {
-  user: SelectUser;
+  user: PublicUser;
   postId: string;
-};
-
-type CommentsResponse = {
-  data: CommentData[];
-  nextCursor: string | null;
 };
 
 export default function ReplyForm({ user, postId }: Props) {
   const [content, setContent] = useState("");
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
-  const author = useMemo(() => {
-    const { passwordHash: _passwordHash, ...rest } = user;
-    return rest;
-  }, [user]);
-
-  const rateLimitedComment = useAsyncRateLimitedCallback(createCommentAction, {
-    limit: 2,
-    window: 60000, // 1 minute
-    windowType: "sliding",
-    onReject: () => {
-      throw new Error("You're replying too fast. Please wait a bit.");
-    },
-  });
+  const author = useMemo(() => user, [user]);
+  const submitComment = useSingleFlightAction(createCommentAction);
 
   const mutation = useMutation({
     mutationFn: async (nextContent: string) => {
-      const res = await rateLimitedComment({ content: nextContent, postId });
+      const res = await submitComment({ content: nextContent, postId });
       if (res?.error) {
         throw new Error(res.error);
       }
       return res;
     },
     onMutate: async (nextContent) => {
-      await queryClient.cancelQueries({ queryKey: ["post-comments", postId] });
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.postComments(postId),
+      });
 
       const previous = queryClient.getQueryData<InfiniteData<CommentsResponse>>(
-        ["post-comments", postId],
+        queryKeys.postComments(postId),
+      );
+      const previousPosts = queryClient.getQueryData<
+        InfiniteData<FeedResponse>
+      >(queryKeys.posts());
+      const previousPost = queryClient.getQueryData<PostResponse>(
+        queryKeys.post(postId),
       );
 
       const optimistic: CommentData = {
@@ -73,65 +76,68 @@ export default function ReplyForm({ user, postId }: Props) {
         author,
       };
 
-      if (previous) {
-        queryClient.setQueryData<InfiniteData<CommentsResponse>>(
-          ["post-comments", postId],
-          {
-            ...previous,
-            pages: [
-              {
-                ...previous.pages[0],
-                data: [optimistic, ...previous.pages[0].data],
-              },
-              ...previous.pages.slice(1),
-            ],
-          },
-        );
-      } else {
-        queryClient.setQueryData<InfiniteData<CommentsResponse>>(
-          ["post-comments", postId],
-          {
-            pageParams: [null],
-            pages: [{ data: [optimistic], nextCursor: null }],
-          },
-        );
-      }
+      queryClient.setQueryData<InfiniteData<CommentsResponse>>(
+        queryKeys.postComments(postId),
+        prependComment(previous, optimistic),
+      );
+      queryClient.setQueryData<InfiniteData<FeedResponse>>(
+        queryKeys.posts(),
+        (current) =>
+          patchPostAcrossFeed(current, postId, (post) => ({
+            ...post,
+            commentCount: post.commentCount + 1,
+          })),
+      );
+      queryClient.setQueryData<PostResponse>(
+        queryKeys.post(postId),
+        (current) =>
+          patchPostResponse(current, (post) => ({
+            ...post,
+            commentCount: post.commentCount + 1,
+          })),
+      );
 
       setContent("");
-      return { previous };
+      return {
+        previous,
+        previousPost,
+        previousPosts,
+        optimisticId: optimistic.id,
+      };
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
-        queryClient.setQueryData(["post-comments", postId], ctx.previous);
+        queryClient.setQueryData(queryKeys.postComments(postId), ctx.previous);
       }
+      queryClient.setQueryData(queryKeys.posts(), ctx?.previousPosts);
+      queryClient.setQueryData(queryKeys.post(postId), ctx?.previousPost);
       toast.error(err.message ?? "Couldn't add comment.");
-
-      // Track comment creation failure
-      posthog.capture("comment_creation_failed", {
-        post_id: postId,
-        error: err.message,
-      });
     },
-    onSuccess: (res, vars) => {
+    onSuccess: (res, _vars, ctx) => {
       if (res?.error) {
         toast.error(res.error);
-        posthog.capture("comment_creation_failed", {
-          post_id: postId,
-          error: res.error,
-        });
-      } else {
-        toast.success("Comment posted.");
-
-        // Track comment created
-        posthog.capture("comment_created", {
-          post_id: postId,
-          comment_length: vars.length,
-          author_username: user.username,
-        });
+        return;
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["post-comments", postId] });
+
+      if (res?.comment && ctx?.optimisticId) {
+        const nextComment: CommentData = {
+          ...res.comment,
+          author,
+          isLiked: false,
+        };
+
+        queryClient.setQueryData<InfiniteData<CommentsResponse>>(
+          queryKeys.postComments(postId),
+          (previous) =>
+            replaceComment(
+              previous,
+              (comment) => comment.id === ctx.optimisticId,
+              nextComment,
+            ),
+        );
+      }
+
+      toast.success("Comment posted.");
     },
   });
 

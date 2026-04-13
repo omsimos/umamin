@@ -1,30 +1,26 @@
 "use client";
 
-import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import type { SelectNote } from "@umamin/db/schema/note";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useEffect, useMemo } from "react";
-import type { PublicUser } from "@/types/user";
+import { useMemo } from "react";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
+import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
+import {
+  infiniteQueryDefaults,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+} from "@/lib/query";
+import { fetchNotesPage } from "@/lib/query-fetchers";
+import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
-
-const AdContainer = dynamic(() => import("@/components/ad-container"), {
-  ssr: false,
-});
-
-type NoteItem = SelectNote & { user?: PublicUser };
-type NotesResponse = {
-  data: NoteItem[];
-  nextCursor: string | null;
-};
 
 export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   const {
@@ -36,22 +32,15 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<NotesResponse>({
-    queryKey: ["notes"],
-    queryFn: async ({ pageParam }) => {
-      const url = pageParam ? `/api/notes?cursor=${pageParam}` : "/api/notes";
-      const res = await fetch(url, { cache: "default" });
-      if (!res.ok) throw new Error("Network response was not ok");
-      return (await res.json()) as NotesResponse;
-    },
-    initialPageParam: null,
+    queryKey: queryKeys.notes(),
+    queryFn: ({ pageParam }) =>
+      fetchNotesPage((pageParam as string | null) ?? null),
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-
-    staleTime: 30_000,
-    refetchInterval: 30_000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
+    staleTime: PUBLIC_STALE_TIME,
+    ...infiniteQueryDefaults,
   });
+  const hasResolvedData = data !== undefined;
 
   // De-duplicate posts by id across pages
   const allPosts: NoteItem[] = (() => {
@@ -61,9 +50,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     return Array.from(map.values());
   })();
 
-  const AD_FREQUENCY = 8; // show 1 ad *after* every 8 posts
-
-  const adCountFor = (n: number) => Math.floor(n / AD_FREQUENCY);
+  const AD_FREQUENCY = 8;
 
   const isAdRow = (rowIndex: number) =>
     (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
@@ -74,46 +61,43 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     return rowIndex - adsBefore;
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dep mismatch
   const totalRows = useMemo(() => {
-    const rows = allPosts.length + adCountFor(allPosts.length);
-    return hasNextPage ? rows + 1 : rows; // +1 for loader row at the end
+    const contentRows =
+      allPosts.length + Math.floor(allPosts.length / AD_FREQUENCY);
+    return hasNextPage ? contentRows + 1 : contentRows;
   }, [allPosts.length, hasNextPage]);
+
+  const { containerRef, scrollMargin } =
+    useWindowVirtualizerOffset<HTMLDivElement>();
 
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
     estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
     paddingEnd: 100,
     overscan: 12,
+    scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
       if (isAdRow(index)) {
         const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
-        return `ad-${adIndex}`;
+        return `notes-inline-ad-${adIndex}`;
       }
-      const dataIndex = dataIndexForRow(index);
-      const post = allPosts[dataIndex];
+      const post = allPosts[dataIndexForRow(index)];
       return post?.id ?? `row-${index}`;
     },
   });
 
   const items = virtualizer.getVirtualItems();
+  const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
 
-  const handleNextPage = useThrottledCallback(
-    () => {
-      fetchNextPage();
-    },
-    { wait: 3000 },
-  );
-
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage || items.length === 0) return;
-    const lastItem = items[items.length - 1];
-    const lastIndex = totalRows - 1; // loader row index if hasNextPage
-    if (lastItem?.index >= lastIndex) {
-      handleNextPage();
-    }
-  }, [items, hasNextPage, isFetchingNextPage, totalRows, handleNextPage]);
+  useInfiniteBoundaryLoader({
+    boundaryIndex: totalRows - 1,
+    hasNextPage: Boolean(hasNextPage),
+    isFetchingNextPage,
+    items,
+    loadMoreKey: nextCursor,
+    onLoadMore: fetchNextPage,
+  });
 
   if (error) {
     return (
@@ -128,7 +112,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     );
   }
 
-  if (isLoading) {
+  if (!hasResolvedData || isLoading) {
     return (
       <div className="w-full mx-auto space-y-4">
         <NoteCardSkeleton />
@@ -140,7 +124,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div className="w-full">
-      {allPosts.length === 0 && !isFetching && (
+      {hasResolvedData && allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>
@@ -151,9 +135,10 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
       )}
 
       {/* v2-notes (top ad) */}
-      <AdContainer className="mb-5" slotId="1999152698" />
+      <ClientOnlyAdContainer className="mb-5" placement="notes_top" />
 
       <div
+        ref={containerRef}
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           width: "100%",
@@ -162,6 +147,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
       >
         {items.map((row) => {
           const isLoaderRow = hasNextPage && row.index === totalRows - 1;
+          const isInlineAdRow = !isLoaderRow && isAdRow(row.index);
 
           return (
             <div
@@ -174,18 +160,19 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
                 top: 0,
                 left: 0,
                 width: "100%",
-                transform: `translateY(${row.start}px)`,
+                transform: `translateY(${row.start - scrollMargin}px)`,
               }}
             >
               {isLoaderRow ? (
                 <NoteCardSkeleton />
-              ) : isAdRow(row.index) ? (
-                // v2-notes-list (inline ad row)
-                <AdContainer className="mb-4" slotId="9012650581" />
+              ) : isInlineAdRow ? (
+                <ClientOnlyAdContainer
+                  className="mb-4"
+                  placement="notes_inline"
+                />
               ) : (
                 (() => {
-                  const dataIndex = dataIndexForRow(row.index);
-                  const post = allPosts[dataIndex];
+                  const post = allPosts[dataIndexForRow(row.index)];
                   if (!post) return null;
 
                   return (

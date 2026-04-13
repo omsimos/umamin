@@ -1,7 +1,6 @@
 "use client";
 
 import { Share2Icon } from "lucide-react";
-import posthog from "posthog-js";
 
 const onShare = (username: string) => {
   try {
@@ -19,16 +18,6 @@ const onShare = (username: string) => {
           `${window.location.origin}/user/${username}`,
         );
       }
-
-      // Track profile shared
-      const canNativeShare =
-        typeof navigator.share === "function" &&
-        typeof navigator.canShare === "function" &&
-        navigator.canShare({ url });
-      posthog.capture("profile_shared", {
-        shared_username: username,
-        share_method: canNativeShare ? "native_share" : "clipboard",
-      });
     }
   } catch (err) {
     console.log(err);

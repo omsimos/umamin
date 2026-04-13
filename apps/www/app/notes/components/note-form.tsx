@@ -1,53 +1,99 @@
 "use client";
 
+import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, MessageSquareShareIcon } from "lucide-react";
-import posthog from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createNoteAction } from "@/app/actions/note";
+import { queryKeys } from "@/lib/query";
+import { upsertNote } from "@/lib/query-cache";
+import type { NoteItem, NotesResponse } from "@/lib/query-types";
+import type { PublicUser } from "@/types/user";
 
-export function NoteForm() {
+export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
 
   const updateNoteMutation = useMutation({
     mutationFn: createNoteAction,
+    onMutate: async (nextValues) => {
+      const previousNote = queryClient.getQueryData<NoteItem | null>(
+        queryKeys.currentNote(),
+      );
+      const previousNotes = queryClient.getQueryData<
+        InfiniteData<NotesResponse>
+      >(queryKeys.notes());
+
+      const optimisticNote: NoteItem = {
+        id:
+          (previousNote as NoteItem | null | undefined)?.id ??
+          `optimistic-${crypto.randomUUID()}`,
+        userId: currentUser.id,
+        content: nextValues.content,
+        isAnonymous: nextValues.isAnonymous,
+        createdAt:
+          (previousNote as NoteItem | null | undefined)?.createdAt ??
+          new Date(),
+        updatedAt: new Date(),
+        user: nextValues.isAnonymous ? undefined : currentUser,
+      };
+
+      queryClient.setQueryData<NoteItem | null>(
+        queryKeys.currentNote(),
+        optimisticNote,
+      );
+      queryClient.setQueryData<InfiniteData<NotesResponse>>(
+        queryKeys.notes(),
+        (current) => upsertNote(current, optimisticNote),
+      );
+
+      return {
+        previousNote,
+        previousNotes,
+      };
+    },
     onSuccess: (data) => {
       if (data?.error) {
         toast.error(data.error ?? "Couldn't share note.");
-        posthog.capture("note_share_failed", {
-          error: data.error,
-          is_anonymous: isAnonymous,
-        });
         return;
       }
 
-      toast.success("Note shared.");
-      queryClient.invalidateQueries({ queryKey: ["current_note"] });
+      if (data?.note) {
+        queryClient.setQueryData<NoteItem | null>(
+          queryKeys.currentNote(),
+          data.note,
+        );
+        queryClient.setQueryData<InfiniteData<NotesResponse>>(
+          queryKeys.notes(),
+          (current) =>
+            upsertNote(current, {
+              ...data.note,
+              user: data.note.isAnonymous ? undefined : currentUser,
+            }),
+        );
+      }
 
-      // Track note shared
-      posthog.capture("note_shared", {
-        note_length: content.length,
-        is_anonymous: isAnonymous,
-      });
+      toast.success("Note shared.");
 
       setContent("");
     },
-    onError: (err) => {
+    onError: (err, _values, ctx) => {
       console.log(err);
+      queryClient.setQueryData<NoteItem | null>(
+        queryKeys.currentNote(),
+        ctx?.previousNote,
+      );
+      queryClient.setQueryData<InfiniteData<NotesResponse>>(
+        queryKeys.notes(),
+        ctx?.previousNotes,
+      );
       toast.error("Couldn't share note.");
-
-      // Track note share failure
-      posthog.capture("note_share_failed", {
-        error: err instanceof Error ? err.message : "Unknown error",
-        is_anonymous: isAnonymous,
-      });
     },
   });
 

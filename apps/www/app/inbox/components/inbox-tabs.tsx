@@ -1,22 +1,17 @@
 "use client";
 
-import { Tabs, TabsList, TabsTrigger } from "@umamin/ui/components/tabs";
-import dynamic from "next/dynamic";
-import { Activity, useState } from "react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@umamin/ui/components/tabs";
 import { ReceivedMessages } from "./received/received-messages";
 import { SentMessages } from "./sent/sent-messages";
 
-const AdContainer = dynamic(() => import("@/components/ad-container"));
-
 export function InboxTabs() {
-  const [selected, setSelected] = useState<"received" | "sent">("received");
-
   return (
-    <Tabs
-      defaultValue="received"
-      onValueChange={(val) => setSelected(val as "received" | "sent")}
-      className="w-full mt-4"
-    >
+    <Tabs defaultValue="received" className="w-full mt-4">
       <TabsList className="w-full bg-transparent flex mb-5">
         <TabsTrigger
           value="received"
@@ -32,16 +27,13 @@ export function InboxTabs() {
         </TabsTrigger>
       </TabsList>
 
-      {/* v2-inbox */}
-      <AdContainer className="mb-4" slotId="7047998078" />
-
-      <Activity mode={selected === "received" ? "visible" : "hidden"}>
+      <TabsContent value="received">
         <ReceivedMessages />
-      </Activity>
+      </TabsContent>
 
-      <Activity mode={selected === "sent" ? "visible" : "hidden"}>
+      <TabsContent value="sent">
         <SentMessages />
-      </Activity>
+      </TabsContent>
     </Tabs>
   );
 }

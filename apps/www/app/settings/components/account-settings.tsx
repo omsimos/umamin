@@ -64,7 +64,7 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
         </section>
       )}
 
-      {!user?.passwordHash && (
+      {!user.hasPassword && (
         <Alert>
           <ShieldAlertIcon className="h-5 w-5" />
           <AlertTitle>Password (optional)</AlertTitle>
@@ -83,7 +83,7 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
               You can still login with your credentials.
             </span>
             <Button variant="secondary" asChild className="mt-6">
-              <Link href="/auth/google" className="w-full">
+              <Link prefetch={false} href="/auth/google" className="w-full">
                 Connect with Google
               </Link>
             </Button>
@@ -99,14 +99,14 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
           >
             <span className="flex items-center gap-2">
               <KeyIcon className="size-4" />
-              <p>{user?.passwordHash ? "Change Password" : "Set a Password"}</p>
+              <p>{user.hasPassword ? "Change Password" : "Set a Password"}</p>
             </span>
 
             <ChevronsUpDownIcon className="size-4" />
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2 rounded-lg p-4 pt-4 border">
-          <PasswordForm passwordHash={user?.passwordHash} />
+          <PasswordForm hasPassword={user.hasPassword} />
         </CollapsibleContent>
       </Collapsible>
 

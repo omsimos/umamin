@@ -1,29 +1,27 @@
 "use client";
 
-import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import type { SelectMessage } from "@umamin/db/schema/message";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
-import type { Cursor } from "@/types";
-import type { PublicUser } from "@/types/user";
+import { useEffect, useState } from "react";
+import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
+import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
+import {
+  infiniteQueryDefaults,
+  PRIVATE_STALE_TIME,
+  queryKeys,
+} from "@/lib/query";
+import { fetchMessagesPage } from "@/lib/query-fetchers";
+import type { MessagesResponse } from "@/lib/query-types";
 import { SentMessageCard } from "./sent-card";
 import { SentMessageCardSkeleton } from "./sent-message-card-skeleton";
 
-type MessagesResponse = {
-  messages: (SelectMessage & { receiver: PublicUser })[];
-  nextCursor: Cursor | null;
-};
-
 export function SentMessages() {
-  const parentRef = useRef<HTMLDivElement | null>(null);
-
   const {
     data,
     isLoading,
@@ -33,82 +31,65 @@ export function SentMessages() {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<MessagesResponse>({
-    queryKey: ["sent_messages"],
-    queryFn: async ({ pageParam }) => {
-      const cursor = (pageParam as string) ?? "";
-      const url = cursor
-        ? `/api/messages?type=sent&cursor=${cursor}`
-        : "/api/messages?type=sent";
-
-      const res = await fetch(url, {
-        cache: "default",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      return (await res.json()) as MessagesResponse;
-    },
-    initialPageParam: null,
+    queryKey: queryKeys.sentMessages(),
+    queryFn: ({ pageParam }) =>
+      fetchMessagesPage("sent", (pageParam as string | null) ?? null),
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
+    staleTime: PRIVATE_STALE_TIME,
+    ...infiniteQueryDefaults,
   });
+  const hasResolvedData = data !== undefined;
 
   const allPosts = data?.pages.flatMap((page) => page.messages) ?? [];
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const totalRows = hasNextPage ? allPosts.length + 1 : allPosts.length;
+  const { containerRef, scrollMargin } =
+    useWindowVirtualizerOffset<HTMLDivElement>();
 
-  const virtualizer = useVirtualizer({
-    count: hasNextPage ? allPosts.length + 1 : allPosts.length,
+  const virtualizer = useWindowVirtualizer({
+    count: totalRows,
     // Chat bubbles are taller; use bigger estimate to prevent overlap before measure
     estimateSize: () => 320,
     paddingEnd: 100,
     overscan: 8,
-    getScrollElement: () => parentRef.current,
+    scrollMargin,
     getItemKey: (index) => {
-      if (hasNextPage && index === allPosts.length) return "loader";
+      if (hasNextPage && index === totalRows - 1) return "loader";
       const msg = allPosts[index];
       return msg?.id ?? `row-${index}`;
     },
   });
 
-  const handleNextPage = useThrottledCallback(
-    () => {
-      fetchNextPage();
-    },
-    {
-      wait: 3000,
-    },
-  );
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: for virtualizer
   useEffect(() => {
-    const [lastItem] = [...virtualizer.getVirtualItems()].reverse();
-
-    if (!lastItem) {
+    if (hasInteracted) {
       return;
     }
 
-    if (
-      lastItem.index >= allPosts.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
-      handleNextPage();
-    }
-  }, [
-    hasNextPage,
-    allPosts.length,
-    isFetchingNextPage,
-    handleNextPage,
-    virtualizer.getVirtualItems(),
-  ]);
+    const handleScroll = () => {
+      if (window.scrollY > 0) {
+        setHasInteracted(true);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [hasInteracted]);
 
   const items = virtualizer.getVirtualItems();
+  const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
+
+  useInfiniteBoundaryLoader({
+    boundaryIndex: totalRows - 1,
+    enabled: hasInteracted,
+    hasNextPage: Boolean(hasNextPage),
+    isFetchingNextPage,
+    items,
+    loadMoreKey: nextCursor,
+    onLoadMore: fetchNextPage,
+  });
 
   if (error) {
     return (
@@ -116,14 +97,14 @@ export function SentMessages() {
         <Alert variant="destructive">
           <AlertCircleIcon className="h-4 w-4" />
           <AlertDescription>
-            Failed to load posts. Please try again later.
+            Failed to load messages. Please try again later.
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  if (isLoading) {
+  if (!hasResolvedData || isLoading) {
     return (
       <div className="w-full mx-auto space-y-3 mb-8">
         <SentMessageCardSkeleton />
@@ -134,8 +115,8 @@ export function SentMessages() {
   }
 
   return (
-    <div ref={parentRef} className="w-full overflow-auto">
-      {allPosts.length === 0 && !isFetching && (
+    <div className="w-full">
+      {hasResolvedData && allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No messages yet</AlertTitle>
@@ -144,6 +125,7 @@ export function SentMessages() {
       )}
 
       <div
+        ref={containerRef}
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           width: "100%",
@@ -167,7 +149,7 @@ export function SentMessages() {
                 top: 0,
                 left: 0,
                 width: "100%",
-                transform: `translateY(${virtualRow.start}px)`,
+                transform: `translateY(${virtualRow.start - scrollMargin}px)`,
               }}
             >
               {isLoaderRow ? (

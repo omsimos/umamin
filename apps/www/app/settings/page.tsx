@@ -1,3 +1,4 @@
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import {
   Alert,
   AlertDescription,
@@ -7,6 +8,9 @@ import { Link2OffIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSession, logout } from "@/lib/auth";
+import { getQueryClient } from "@/lib/get-query-client";
+import { queryKeys } from "@/lib/query";
+import { getCurrentUserData } from "@/lib/server/data";
 import { SettingsTabs } from "./components/settings-tabs";
 import { SignOutButton } from "./components/sign-out-button";
 
@@ -45,6 +49,14 @@ export default async function Settings({
     redirect("/login");
   }
 
+  const queryClient = getQueryClient();
+
+  await queryClient.prefetchQuery({
+    queryKey: queryKeys.currentUser(),
+    queryFn: () => getCurrentUserData(session.userId),
+    staleTime: 30_000,
+  });
+
   return (
     <div className="w-full mx-auto max-w-lg container min-h-screen pb-24">
       <div className="flex items-center justify-between">
@@ -68,7 +80,9 @@ export default async function Settings({
         </Alert>
       )}
 
-      <SettingsTabs />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <SettingsTabs />
+      </HydrationBoundary>
     </div>
   );
 }

@@ -1,5 +1,9 @@
 import { generateCodeVerifier, generateState } from "arctic";
 import { cookies } from "next/headers";
+import {
+  GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME,
+  GOOGLE_OAUTH_STATE_COOKIE_NAME,
+} from "@/lib/cookies";
 import { google } from "@/lib/oauth";
 
 export async function GET() {
@@ -10,7 +14,7 @@ export async function GET() {
 
   const cookieStore = await cookies();
 
-  cookieStore.set("google_oauth_state", state, {
+  cookieStore.set(GOOGLE_OAUTH_STATE_COOKIE_NAME, state, {
     path: "/",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -18,7 +22,7 @@ export async function GET() {
     sameSite: "lax",
   });
 
-  cookieStore.set("google_code_verifier", codeVerifier, {
+  cookieStore.set(GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME, codeVerifier, {
     path: "/",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

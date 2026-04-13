@@ -7,6 +7,10 @@ import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import {
+  GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME,
+  GOOGLE_OAUTH_STATE_COOKIE_NAME,
+} from "@/lib/cookies";
 import { google } from "@/lib/oauth";
 import {
   createSession,
@@ -28,8 +32,27 @@ export async function GET(req: NextRequest) {
 
   const cookieStore = await cookies();
 
-  const storedState = cookieStore.get("google_oauth_state")?.value ?? null;
-  const codeVerifier = cookieStore.get("google_code_verifier")?.value ?? null;
+  const storedState =
+    cookieStore.get(GOOGLE_OAUTH_STATE_COOKIE_NAME)?.value ?? null;
+  const codeVerifier =
+    cookieStore.get(GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME)?.value ?? null;
+
+  const clearOauthCookies = () => {
+    cookieStore.set(GOOGLE_OAUTH_STATE_COOKIE_NAME, "", {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 0,
+      sameSite: "lax",
+    });
+    cookieStore.set(GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME, "", {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 0,
+      sameSite: "lax",
+    });
+  };
 
   if (
     code === null ||
@@ -41,6 +64,8 @@ export async function GET(req: NextRequest) {
       status: 400,
     });
   }
+
+  clearOauthCookies();
 
   if (state !== storedState) {
     return new Response(null, {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
+import type { InfiniteData } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Avatar,
@@ -23,7 +23,6 @@ import {
   ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
-import posthog from "posthog-js";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -34,6 +33,21 @@ import {
   removeLikeAction,
   removeRepostAction,
 } from "@/app/actions/post";
+import {
+  BURST_ACTION_REJECT_MESSAGE,
+  useBurstAction,
+} from "@/hooks/use-burst-action";
+import { queryKeys } from "@/lib/query";
+import {
+  patchComment,
+  patchPostAcrossFeed,
+  patchPostResponse,
+} from "@/lib/query-cache";
+import type {
+  CommentsResponse,
+  FeedResponse,
+  PostResponse,
+} from "@/lib/query-types";
 import {
   isAlreadyRemoved,
   isAlreadyReposted,
@@ -77,6 +91,48 @@ export function PostCard({
   const [repostDialogOpen, setRepostDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  const syncPostCache = (
+    nextLiked: boolean,
+    nextLikes: number,
+    nextReposted: boolean,
+    nextReposts: number,
+  ) => {
+    if ("commentCount" in data) {
+      queryClient.setQueryData<InfiniteData<FeedResponse>>(
+        queryKeys.posts(),
+        (current) =>
+          patchPostAcrossFeed(current, data.id, (post) => ({
+            ...post,
+            isLiked: nextLiked,
+            likeCount: nextLikes,
+            isReposted: nextReposted,
+            repostCount: nextReposts,
+          })),
+      );
+      queryClient.setQueryData<PostResponse>(
+        queryKeys.post(data.id),
+        (current) =>
+          patchPostResponse(current, (post) => ({
+            ...post,
+            isLiked: nextLiked,
+            likeCount: nextLikes,
+            isReposted: nextReposted,
+            repostCount: nextReposts,
+          })),
+      );
+    } else if (commentPostId) {
+      queryClient.setQueryData<InfiniteData<CommentsResponse>>(
+        queryKeys.postComments(commentPostId),
+        (current) =>
+          patchComment(current, data.id, (comment) => ({
+            ...comment,
+            isLiked: nextLiked,
+            likeCount: nextLikes,
+          })),
+      );
+    }
+  };
+
   useEffect(() => {
     setLiked(data.isLiked === true);
     setLikes(data.likeCount ?? 0);
@@ -84,7 +140,7 @@ export function PostCard({
     setReposts("repostCount" in data ? (data.repostCount ?? 0) : 0);
   }, [data.isLiked, data.likeCount, data]);
 
-  const rateLimitedLike = useAsyncRateLimitedCallback(
+  const handleLikeAction = useBurstAction(
     async (prevLiked: boolean) => {
       if (isComment) {
         return prevLiked
@@ -104,26 +160,18 @@ export function PostCard({
     },
     {
       limit: 4,
-      window: 10000,
-      windowType: "sliding",
-      onReject: () => {
-        throw new Error("You're tapping too fast. Please wait a moment.");
-      },
+      rejectMessage: BURST_ACTION_REJECT_MESSAGE,
     },
   );
 
-  const rateLimitedRepost = useAsyncRateLimitedCallback(
+  const handleRepostAction = useBurstAction(
     async (prevReposted: boolean) =>
       prevReposted
         ? removeRepostAction({ postId: data.id })
         : addRepostAction({ postId: data.id }),
     {
       limit: 4,
-      window: 10000,
-      windowType: "sliding",
-      onReject: () => {
-        throw new Error("You're reposting too fast. Please wait a moment.");
-      },
+      rejectMessage: BURST_ACTION_REJECT_MESSAGE,
     },
   );
 
@@ -135,20 +183,18 @@ export function PostCard({
     setLikes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
 
     try {
-      await rateLimitedLike(prevLiked);
+      await handleLikeAction(prevLiked);
+      syncPostCache(
+        !prevLiked,
+        prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1,
+        reposted,
+        reposts,
+      );
       if (isComment) {
         toast.success(prevLiked ? "Comment unliked." : "Comment liked.");
       } else {
         toast.success(prevLiked ? "Post unliked." : "Post liked.");
       }
-
-      // Track like/unlike action
-      posthog.capture("post_liked", {
-        post_id: data.id,
-        is_comment: isComment,
-        action: prevLiked ? "unliked" : "liked",
-        author_username: author?.username,
-      });
     } catch (err) {
       setLiked(prevLiked);
       setLikes(prevLikes);
@@ -165,21 +211,15 @@ export function PostCard({
     setReposts((v) => (prevReposted ? Math.max(v - 1, 0) : v + 1));
 
     try {
-      const res = await rateLimitedRepost(prevReposted);
+      const res = await handleRepostAction(prevReposted);
       if (prevReposted) {
         if (isAlreadyRemoved(res)) {
           setReposted(false);
           setReposts((v) => Math.max(v - 1, 0));
+          syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
         }
         toast.success("Repost removed.");
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-
-        // Track repost removed
-        posthog.capture("post_reposted", {
-          post_id: data.id,
-          action: "removed",
-          author_username: author?.username,
-        });
+        syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
       } else {
         if (isAlreadyReposted(res)) {
           setReposted(prevReposted);
@@ -188,15 +228,7 @@ export function PostCard({
           return;
         }
         toast.success("Reposted.");
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-
-        // Track repost
-        posthog.capture("post_reposted", {
-          post_id: data.id,
-          action: "reposted",
-          repost_type: "standard",
-          author_username: author?.username,
-        });
+        syncPostCache(liked, likes, true, prevReposts + 1);
       }
     } catch (err) {
       setReposted(prevReposted);
@@ -229,16 +261,7 @@ export function PostCard({
         return;
       }
       toast.success("Quote reposted.");
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-
-      // Track quote repost
-      posthog.capture("post_reposted", {
-        post_id: data.id,
-        action: "reposted",
-        repost_type: "quote",
-        quote_length: content.length,
-        author_username: author?.username,
-      });
+      syncPostCache(liked, likes, true, prevReposts + 1);
     } catch (err) {
       setReposted(prevReposted);
       setReposts(prevReposts);

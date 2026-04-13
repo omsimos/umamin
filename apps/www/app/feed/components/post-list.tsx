@@ -1,6 +1,5 @@
 "use client";
 
-import { useThrottledCallback } from "@tanstack/react-pacer/throttler";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
@@ -8,23 +7,22 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { cn } from "@umamin/ui/lib/utils";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
+import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
+import {
+  infiniteQueryDefaults,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+} from "@/lib/query";
+import { fetchPostsPage } from "@/lib/query-fetchers";
+import type { FeedResponse } from "@/lib/query-types";
 import type { FeedItem } from "@/types/post";
 import { PostCard } from "./post-card";
 import { PostCardSkeleton } from "./post-card-skeleton";
 import { RepostHeader } from "./repost-header";
-
-const AdContainer = dynamic(() => import("@/components/ad-container"), {
-  ssr: false,
-});
-
-type NotesResponse = {
-  data: FeedItem[];
-  nextCursor: string | null;
-};
 
 export function PostList({
   isAuthenticated,
@@ -41,22 +39,16 @@ export function PostList({
     hasNextPage,
     isFetching,
     isFetchingNextPage,
-  } = useInfiniteQuery<NotesResponse>({
-    queryKey: ["posts"],
-    queryFn: async ({ pageParam }) => {
-      const url = pageParam ? `/api/posts?cursor=${pageParam}` : "/api/posts";
-      const res = await fetch(url, { cache: "default" });
-      if (!res.ok) throw new Error("Network response was not ok");
-      return (await res.json()) as NotesResponse;
-    },
-    initialPageParam: null,
+  } = useInfiniteQuery<FeedResponse>({
+    queryKey: queryKeys.posts(),
+    queryFn: ({ pageParam }) =>
+      fetchPostsPage((pageParam as string | null) ?? null),
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
+    staleTime: PUBLIC_STALE_TIME,
+    ...infiniteQueryDefaults,
   });
+  const hasResolvedData = data !== undefined;
 
   // De-duplicate feed items across pages
   const allItems: FeedItem[] = (() => {
@@ -72,9 +64,7 @@ export function PostList({
     return Array.from(map.values());
   })();
 
-  const AD_FREQUENCY = 8; // show 1 ad *after* every 8 posts
-
-  const adCountFor = (n: number) => Math.floor(n / AD_FREQUENCY);
+  const AD_FREQUENCY = 8;
 
   const isAdRow = (rowIndex: number) =>
     (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
@@ -85,47 +75,44 @@ export function PostList({
     return rowIndex - adsBefore;
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: dep mismatch
   const totalRows = useMemo(() => {
-    const rows = allItems.length + adCountFor(allItems.length);
-    return hasNextPage ? rows + 1 : rows; // +1 for loader row at the end
+    const contentRows =
+      allItems.length + Math.floor(allItems.length / AD_FREQUENCY);
+    return hasNextPage ? contentRows + 1 : contentRows;
   }, [allItems.length, hasNextPage]);
+
+  const { containerRef, scrollMargin } =
+    useWindowVirtualizerOffset<HTMLDivElement>();
 
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
     estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
     paddingEnd: 100,
     overscan: 12,
+    scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
       if (isAdRow(index)) {
         const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
-        return `ad-${adIndex}`;
+        return `feed-inline-ad-${adIndex}`;
       }
-      const dataIndex = dataIndexForRow(index);
-      const item = allItems[dataIndex];
+      const item = allItems[dataIndexForRow(index)];
       if (!item) return `row-${index}`;
       return item.type === "post" ? item.post.id : item.repost.id;
     },
   });
 
   const items = virtualizer.getVirtualItems();
+  const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
 
-  const handleNextPage = useThrottledCallback(
-    () => {
-      fetchNextPage();
-    },
-    { wait: 3000 },
-  );
-
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage || items.length === 0) return;
-    const lastItem = items[items.length - 1];
-    const lastIndex = totalRows - 1; // loader row index if hasNextPage
-    if (lastItem?.index >= lastIndex) {
-      handleNextPage();
-    }
-  }, [items, hasNextPage, isFetchingNextPage, totalRows, handleNextPage]);
+  useInfiniteBoundaryLoader({
+    boundaryIndex: totalRows - 1,
+    hasNextPage: Boolean(hasNextPage),
+    isFetchingNextPage,
+    items,
+    loadMoreKey: nextCursor,
+    onLoadMore: fetchNextPage,
+  });
 
   if (error) {
     return (
@@ -140,7 +127,7 @@ export function PostList({
     );
   }
 
-  if (isLoading) {
+  if (!hasResolvedData || isLoading) {
     return (
       <div className="w-full mx-auto space-y-4">
         <PostCardSkeleton />
@@ -152,7 +139,7 @@ export function PostList({
 
   return (
     <div className="w-full">
-      {allItems.length === 0 && !isFetching && (
+      {hasResolvedData && allItems.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>
@@ -163,9 +150,10 @@ export function PostList({
       )}
 
       {/* social-top (top ad) */}
-      <AdContainer className="mb-5" slotId="9864130654" />
+      <ClientOnlyAdContainer className="mb-5" placement="feed_top" />
 
       <div
+        ref={containerRef}
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           width: "100%",
@@ -174,6 +162,7 @@ export function PostList({
       >
         {items.map((row) => {
           const isLoaderRow = hasNextPage && row.index === totalRows - 1;
+          const isInlineAdRow = !isLoaderRow && isAdRow(row.index);
 
           return (
             <div
@@ -186,18 +175,19 @@ export function PostList({
                 top: 0,
                 left: 0,
                 width: "100%",
-                transform: `translateY(${row.start}px)`,
+                transform: `translateY(${row.start - scrollMargin}px)`,
               }}
             >
               {isLoaderRow ? (
                 <PostCardSkeleton />
-              ) : isAdRow(row.index) ? (
-                // social-list (inline ad row)
-                <AdContainer className="mb-4" slotId="8551048984" />
+              ) : isInlineAdRow ? (
+                <ClientOnlyAdContainer
+                  className="mb-4"
+                  placement="feed_inline"
+                />
               ) : (
                 (() => {
-                  const dataIndex = dataIndexForRow(row.index);
-                  const item = allItems[dataIndex];
+                  const item = allItems[dataIndexForRow(row.index)];
                   if (!item) return null;
 
                   if (item.type === "post") {
@@ -221,9 +211,9 @@ export function PostList({
                       />
 
                       <div
-                        className={cn(`mt-4 sm:pr-0`, {
-                          "pl-8 pr-2 border-b pb-6": repost.content,
-                        })}
+                        className={`mt-4 sm:pr-0 ${
+                          repost.content ? "pl-8 pr-2 border-b pb-6" : ""
+                        }`}
                       >
                         <PostCard
                           isRepost={!!repost.content}

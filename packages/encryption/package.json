@@ -4,8 +4,9 @@
   "private": true,
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
-      "default": "./dist/index.mjs"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "scripts": {
@@ -16,8 +17,8 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^22.19.3",
-    "tsdown": "^0.18.1",
+    "@types/node": "^24.12.2",
+    "tsdown": "^0.21.7",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

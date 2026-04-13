@@ -1,33 +1,24 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { KeyIcon } from "lucide-react";
 import { toast } from "sonner";
 import type * as z from "zod";
 import { updatePasswordAction } from "@/app/actions/user";
 import { useAppForm } from "@/hooks/form";
+import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { queryKeys } from "@/lib/query";
+import { patchCurrentUser } from "@/lib/query-cache";
+import type { CurrentUserResponse } from "@/lib/query-types";
 import { passwordFormSchema } from "@/types/user";
 
-export function PasswordForm({
-  passwordHash,
-}: {
-  passwordHash?: string | null;
-}) {
+export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
   const queryClient = useQueryClient();
-
-  const rateLimitedAction = useAsyncRateLimitedCallback(updatePasswordAction, {
-    limit: 2,
-    window: 60000, // 1 minute
-    windowType: "sliding",
-    onReject: () => {
-      throw new Error("Limit reached. Please wait before trying again.");
-    },
-  });
+  const submitPasswordUpdate = useSingleFlightAction(updatePasswordAction);
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof passwordFormSchema>) => {
-      const res = await rateLimitedAction(values);
+      const res = await submitPasswordUpdate(values);
 
       if (res?.error) {
         throw new Error(res.error);
@@ -36,7 +27,14 @@ export function PasswordForm({
     onSuccess: async () => {
       form.reset();
       toast.success("Password updated.");
-      await queryClient.invalidateQueries({ queryKey: ["current_user"] });
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (currentUser) => ({
+            ...currentUser,
+            hasPassword: true,
+          })),
+      );
     },
     onError: (err) => {
       console.error(err);
@@ -66,7 +64,7 @@ export function PasswordForm({
         form.handleSubmit();
       }}
     >
-      {passwordHash && (
+      {hasPassword && (
         <form.AppField
           name="currentPassword"
           children={(field) => (
@@ -109,7 +107,7 @@ export function PasswordForm({
           <form.SubmitButton
             icon={KeyIcon}
             disabled={mutation.isPending}
-            label={passwordHash ? "Update Password" : "Set Password"}
+            label={hasPassword ? "Update Password" : "Set Password"}
           />
         </form.AppForm>
       </div>

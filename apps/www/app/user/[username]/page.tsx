@@ -1,12 +1,12 @@
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
-import { getUserProfileAction } from "@/app/actions/user";
-import { getSession } from "@/lib/auth";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { getQueryClient } from "@/lib/get-query-client";
+import { queryKeys } from "@/lib/query";
+import { getPublicUserProfileData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 import { UserProfile } from "./user-profile";
-
-const AdContainer = dynamic(() => import("@/components/ad-container"));
 
 export async function generateMetadata({
   params,
@@ -54,23 +54,24 @@ export default async function Page({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const { session } = await getSession();
-  const user = await getUserProfileAction(username);
+  const formattedUsername = formatUsername(username);
+  const user = await getPublicUserProfileData(formattedUsername);
 
   if (!user) {
     notFound();
   }
 
+  const queryClient = getQueryClient();
+  queryClient.setQueryData(queryKeys.userProfile(formattedUsername), user);
+
   return (
     <section className="max-w-xl mx-auto min-h-screen container">
-      <UserProfile
-        user={user}
-        currentUserId={session?.userId}
-        isAuthenticated={!!session}
-      />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <UserProfile username={formattedUsername} initialUser={user} />
+      </HydrationBoundary>
 
       {/* v2-user */}
-      <AdContainer className="mt-5" slotId="4417432474" />
+      <ClientOnlyAdContainer className="mt-5" placement="profile_bottom" />
     </section>
   );
 }

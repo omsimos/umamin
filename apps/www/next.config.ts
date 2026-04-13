@@ -2,6 +2,37 @@ import createMDX from "@next/mdx";
 
 import type { NextConfig } from "next";
 
+function buildSecurityHeaders() {
+  const headers = [
+    {
+      key: "Referrer-Policy",
+      value: "strict-origin-when-cross-origin",
+    },
+    {
+      key: "X-Content-Type-Options",
+      value: "nosniff",
+    },
+    {
+      key: "Permissions-Policy",
+      value:
+        "accelerometer=(), autoplay=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()",
+    },
+    {
+      key: "Cross-Origin-Opener-Policy",
+      value: "same-origin",
+    },
+  ];
+
+  if (process.env.NODE_ENV === "production") {
+    headers.push({
+      key: "Strict-Transport-Security",
+      value: "max-age=31536000; includeSubDomains; preload",
+    });
+  }
+
+  return headers;
+}
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   cacheComponents: true,
@@ -18,6 +49,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/(.*)",
+        headers: buildSecurityHeaders(),
+      },
+      {
         source: "/sw.js",
         headers: [
           {
@@ -28,29 +63,10 @@ const nextConfig: NextConfig = {
             key: "Cache-Control",
             value: "no-cache, no-store, must-revalidate",
           },
-          {
-            key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self'",
-          },
         ],
       },
     ];
   },
-  // PostHog reverse proxy configuration
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
-      },
-    ];
-  },
-  // Required for PostHog trailing slash API requests
-  skipTrailingSlashRedirect: true,
 };
 
 const withMDX = createMDX({

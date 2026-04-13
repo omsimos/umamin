@@ -1,18 +1,17 @@
 "use client";
 
-import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 import { useMutation } from "@tanstack/react-query";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { cn } from "@umamin/ui/lib/utils";
 import { Loader2Icon, MoonIcon, SendIcon } from "lucide-react";
-import posthog from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { sendMessageAction } from "@/app/actions/message";
 import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { formatContent } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
@@ -21,19 +20,11 @@ export function ChatForm({ user }: { user: PublicUser }) {
   const [message, setMessage] = useState("");
 
   const inputRef = useDynamicTextarea(content);
-
-  const rateLimitedMessage = useAsyncRateLimitedCallback(sendMessageAction, {
-    limit: 3,
-    window: 60000, // 1 minute
-    windowType: "sliding",
-    onReject: () => {
-      throw new Error("Limit reached. Please wait before trying again.");
-    },
-  });
+  const sendMessage = useSingleFlightAction(sendMessageAction);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await rateLimitedMessage({
+      const res = await sendMessage({
         receiverId: user?.id,
         question: user?.question,
         content,
@@ -47,22 +38,10 @@ export function ChatForm({ user }: { user: PublicUser }) {
       setMessage(formatContent(content));
       toast.success("Message sent.");
       setContent("");
-
-      // Track anonymous message sent
-      posthog.capture("anonymous_message_sent", {
-        recipient_username: user?.username,
-        message_length: content.length,
-      });
     },
     onError: (err) => {
       console.log(err);
       toast.error(err.message ?? "Couldn't send message.");
-
-      // Track message send failure
-      posthog.capture("anonymous_message_failed", {
-        recipient_username: user?.username,
-        error: err.message,
-      });
     },
   });
 

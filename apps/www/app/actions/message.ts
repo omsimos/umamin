@@ -87,7 +87,7 @@ export async function createReplyAction({
 
     updateTag(`messages:received:${session.userId}`);
 
-    return { success: true };
+    return { success: true, reply: params.data.content, updatedAt: new Date() };
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };
@@ -112,15 +112,14 @@ export async function sendMessageAction(
 
     const { question, content, receiverId } = params.data;
     const { session } = await getSession();
+    const senderId = session?.userId ?? null;
 
-    if (receiverId === session?.userId) {
+    if (receiverId === senderId) {
       return { error: "You can't send a message to yourself" };
     }
 
     const formattedContent = formatContent(content);
     const encryptedContent = await aesEncrypt(formattedContent);
-
-    const senderId = session?.userId ?? null;
 
     if (senderId) {
       const blocked = await db.query.userBlockTable.findFirst({
