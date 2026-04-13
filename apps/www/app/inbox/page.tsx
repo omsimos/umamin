@@ -2,6 +2,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
@@ -67,6 +68,9 @@ export default async function InboxPage() {
       <HydrationBoundary state={dehydrate(queryClient)}>
         <InboxTabs />
       </HydrationBoundary>
+
+      {/* v2-user */}
+      <ClientOnlyAdContainer className="mt-5" placement="profile_bottom" />
     </main>
   );
 }
