@@ -2,71 +2,8 @@ import createMDX from "@next/mdx";
 
 import type { NextConfig } from "next";
 
-function buildContentSecurityPolicy() {
-  const scriptSrc = [
-    "'self'",
-    "'unsafe-inline'",
-    "'unsafe-eval'",
-    "https://www.googletagmanager.com",
-    "https://www.google-analytics.com",
-    "https://pagead2.googlesyndication.com",
-    "https://partner.googleadservices.com",
-    "https://fundingchoicesmessages.google.com",
-    "https://vercel.live",
-  ];
-
-  const directives: Array<[string, string[]]> = [
-    ["default-src", ["'self'"]],
-    ["base-uri", ["'self'"]],
-    ["form-action", ["'self'"]],
-    ["frame-ancestors", ["'self'"]],
-    ["object-src", ["'none'"]],
-    ["script-src", scriptSrc],
-    [
-      "connect-src",
-      [
-        "'self'",
-        "https://www.googletagmanager.com",
-        "https://www.google-analytics.com",
-        "https://pagead2.googlesyndication.com",
-        "https://googleads.g.doubleclick.net",
-        "https://ep1.adtrafficquality.google",
-      ],
-    ],
-    ["img-src", ["'self'", "data:", "blob:", "https:"]],
-    ["style-src", ["'self'", "'unsafe-inline'"]],
-    ["font-src", ["'self'", "data:"]],
-    [
-      "frame-src",
-      [
-        "https://www.googletagmanager.com",
-        "https://googleads.g.doubleclick.net",
-        "https://tpc.googlesyndication.com",
-        "https://*.googlesyndication.com",
-      ],
-    ],
-    ["manifest-src", ["'self'"]],
-    ["media-src", ["'self'"]],
-    ["worker-src", ["'self'", "blob:"]],
-  ];
-
-  if (process.env.NODE_ENV === "production") {
-    directives.push(["upgrade-insecure-requests", []]);
-  }
-
-  return directives
-    .map(([name, values]) =>
-      values.length > 0 ? `${name} ${values.join(" ")}` : name,
-    )
-    .join("; ");
-}
-
 function buildSecurityHeaders() {
   const headers = [
-    {
-      key: "Content-Security-Policy",
-      value: buildContentSecurityPolicy(),
-    },
     {
       key: "Referrer-Policy",
       value: "strict-origin-when-cross-origin",
