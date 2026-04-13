@@ -9,12 +9,13 @@ import {
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useMemo } from "react";
-import { PostCard } from "@/app/feed/components/post-card";
-import { PostCardSkeleton } from "@/app/feed/components/post-card-skeleton";
+import { PostCard } from "@/app/(public)/feed/components/post-card";
+import { PostCardSkeleton } from "@/app/(public)/feed/components/post-card-skeleton";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
   infiniteQueryDefaults,
+  PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
@@ -39,10 +40,14 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
   } = useInfiniteQuery<CommentsResponse>({
     queryKey: queryKeys.postComments(postId),
     queryFn: ({ pageParam }) =>
-      fetchPostCommentsPage(postId, (pageParam as string | null) ?? null),
+      fetchPostCommentsPage(
+        postId,
+        (pageParam as string | null) ?? null,
+        isAuthenticated,
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    staleTime: PUBLIC_STALE_TIME,
+    staleTime: isAuthenticated ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME,
     ...infiniteQueryDefaults,
   });
   const hasResolvedData = data !== undefined;

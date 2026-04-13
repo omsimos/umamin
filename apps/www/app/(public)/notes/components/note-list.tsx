@@ -14,23 +14,16 @@ import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader"
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
   infiniteQueryDefaults,
+  PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
-import { fetchPostsPage } from "@/lib/query-fetchers";
-import type { FeedResponse } from "@/lib/query-types";
-import type { FeedItem } from "@/types/post";
-import { PostCard } from "./post-card";
-import { PostCardSkeleton } from "./post-card-skeleton";
-import { RepostHeader } from "./repost-header";
+import { fetchNotesPage } from "@/lib/query-fetchers";
+import type { NoteItem, NotesResponse } from "@/lib/query-types";
+import { NoteCard } from "./note-card";
+import { NoteCardSkeleton } from "./note-card-skeleton";
 
-export function PostList({
-  isAuthenticated,
-  currentUserId,
-}: {
-  isAuthenticated: boolean;
-  currentUserId?: string;
-}) {
+export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   const {
     data,
     isLoading,
@@ -39,28 +32,22 @@ export function PostList({
     hasNextPage,
     isFetching,
     isFetchingNextPage,
-  } = useInfiniteQuery<FeedResponse>({
-    queryKey: queryKeys.posts(),
+  } = useInfiniteQuery<NotesResponse>({
+    queryKey: queryKeys.notes(),
     queryFn: ({ pageParam }) =>
-      fetchPostsPage((pageParam as string | null) ?? null),
+      fetchNotesPage((pageParam as string | null) ?? null, isAuthenticated),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    staleTime: PUBLIC_STALE_TIME,
+    staleTime: isAuthenticated ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME,
     ...infiniteQueryDefaults,
   });
   const hasResolvedData = data !== undefined;
 
-  // De-duplicate feed items across pages
-  const allItems: FeedItem[] = (() => {
+  // De-duplicate posts by id across pages
+  const allPosts: NoteItem[] = (() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
-    const map = new Map<string, FeedItem>();
-    for (const item of flat) {
-      const key =
-        item.type === "post"
-          ? `post:${item.post.id}`
-          : `repost:${item.repost.id}`;
-      if (!map.has(key)) map.set(key, item);
-    }
+    const map = new Map<string, NoteItem>();
+    for (const item of flat) map.set(item.id, item);
     return Array.from(map.values());
   })();
 
@@ -77,9 +64,9 @@ export function PostList({
 
   const totalRows = useMemo(() => {
     const contentRows =
-      allItems.length + Math.floor(allItems.length / AD_FREQUENCY);
+      allPosts.length + Math.floor(allPosts.length / AD_FREQUENCY);
     return hasNextPage ? contentRows + 1 : contentRows;
-  }, [allItems.length, hasNextPage]);
+  }, [allPosts.length, hasNextPage]);
 
   const { containerRef, scrollMargin } =
     useWindowVirtualizerOffset<HTMLDivElement>();
@@ -94,11 +81,10 @@ export function PostList({
       if (hasNextPage && index === totalRows - 1) return "loader";
       if (isAdRow(index)) {
         const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
-        return `feed-inline-ad-${adIndex}`;
+        return `notes-inline-ad-${adIndex}`;
       }
-      const item = allItems[dataIndexForRow(index)];
-      if (!item) return `row-${index}`;
-      return item.type === "post" ? item.post.id : item.repost.id;
+      const post = allPosts[dataIndexForRow(index)];
+      return post?.id ?? `row-${index}`;
     },
   });
 
@@ -130,16 +116,16 @@ export function PostList({
   if (!hasResolvedData || isLoading) {
     return (
       <div className="w-full mx-auto space-y-4">
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
+        <NoteCardSkeleton />
+        <NoteCardSkeleton />
+        <NoteCardSkeleton />
       </div>
     );
   }
 
   return (
     <div className="w-full">
-      {hasResolvedData && allItems.length === 0 && !isFetching && (
+      {hasResolvedData && allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>
@@ -149,8 +135,8 @@ export function PostList({
         </Alert>
       )}
 
-      {/* social-top (top ad) */}
-      <ClientOnlyAdContainer className="mb-5" placement="feed_top" />
+      {/* v2-notes (top ad) */}
+      <ClientOnlyAdContainer className="mb-5" placement="notes_top" />
 
       <div
         ref={containerRef}
@@ -179,51 +165,23 @@ export function PostList({
               }}
             >
               {isLoaderRow ? (
-                <PostCardSkeleton />
+                <NoteCardSkeleton />
               ) : isInlineAdRow ? (
                 <ClientOnlyAdContainer
                   className="mb-4"
-                  placement="feed_inline"
+                  placement="notes_inline"
                 />
               ) : (
                 (() => {
-                  const item = allItems[dataIndexForRow(row.index)];
-                  if (!item) return null;
+                  const post = allPosts[dataIndexForRow(row.index)];
+                  if (!post) return null;
 
-                  if (item.type === "post") {
-                    return (
-                      <PostCard
-                        isAuthenticated={isAuthenticated}
-                        currentUserId={currentUserId}
-                        key={item.post.id}
-                        data={item.post}
-                      />
-                    );
-                  }
-
-                  const repost = item.repost;
                   return (
-                    <div className="mt-2">
-                      <RepostHeader
-                        user={repost.user}
-                        createdAt={repost.createdAt}
-                        content={repost.content}
-                      />
-
-                      <div
-                        className={`mt-4 sm:pr-0 ${
-                          repost.content ? "pl-8 pr-2 border-b pb-6" : ""
-                        }`}
-                      >
-                        <PostCard
-                          isRepost={!!repost.content}
-                          isAuthenticated={isAuthenticated}
-                          currentUserId={currentUserId}
-                          key={item.post.id}
-                          data={item.post}
-                        />
-                      </div>
-                    </div>
+                    <NoteCard
+                      isAuthenticated={isAuthenticated}
+                      key={post.id}
+                      data={post}
+                    />
                   );
                 })()
               )}

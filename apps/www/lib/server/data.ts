@@ -328,7 +328,7 @@ async function getPublicPostsPage(
 }
 
 async function getPostFeedViewerOverlay(viewerId: string, items: FeedItem[]) {
-  "use cache: private";
+  "use cache";
   cacheTag(`user-blocks:${viewerId}`);
 
   const postIds = Array.from(
@@ -484,7 +484,7 @@ async function getPostViewerOverlay(
   postId: string,
   authorId: string,
 ) {
-  "use cache: private";
+  "use cache";
   cacheTag(`user-blocks:${viewerId}`);
   cacheTag(`post:${postId}:liked:${viewerId}`);
   cacheTag(`post:${postId}:reposted:${viewerId}`);
@@ -628,7 +628,7 @@ async function getCommentViewerOverlay(
   viewerId: string,
   comments: CommentData[],
 ) {
-  "use cache: private";
+  "use cache";
   cacheTag(`user-blocks:${viewerId}`);
 
   const commentIds = comments.map((comment) => comment.id);
@@ -778,7 +778,7 @@ async function getPublicNotesPage(
 }
 
 async function getNoteViewerOverlay(viewerId: string, notes: NoteItem[]) {
-  "use cache: private";
+  "use cache";
   cacheTag(`user-blocks:${viewerId}`);
   cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
@@ -841,7 +841,7 @@ export async function getNotesPage(params: {
 
 export async function getCurrentNoteData(userId: string) {
   const getCachedData = async () => {
-    "use cache: private";
+    "use cache";
     cacheTag(`current-note:${userId}`);
     cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
@@ -861,7 +861,7 @@ export async function getCurrentUserData(
   userId: string,
 ): Promise<CurrentUserResponse> {
   const getUserRecord = async () => {
-    "use cache: private";
+    "use cache";
     cacheTag(`user:${userId}`);
     cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
@@ -887,7 +887,7 @@ export async function getCurrentUserData(
   }
 
   const getAccounts = async () => {
-    "use cache: private";
+    "use cache";
     cacheTag(`user:${userId}:accounts`);
     cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
@@ -941,7 +941,7 @@ async function getUserProfileViewerOverlay(
   username: string,
   targetId: string,
 ) {
-  "use cache: private";
+  "use cache";
   cacheTag(`user:${username}:followed:${viewerId}`);
   cacheTag(`user:${username}:blocked:${viewerId}`);
   cacheTag(`user:${username}:blocked-by:${viewerId}`);
@@ -1065,7 +1065,7 @@ export async function getMessagesPage(params: {
   userId: string;
 }): Promise<MessagesResponse> {
   const getCachedData = async () => {
-    "use cache: private";
+    "use cache";
     cacheTag(`messages:${params.type}:${params.userId}`);
     cacheTag(`user-blocks:${params.userId}`);
     cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });

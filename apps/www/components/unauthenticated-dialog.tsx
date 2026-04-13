@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,28 +10,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
+import { Button } from "@umamin/ui/components/button";
 import { TriangleAlertIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { privateQueryDefaults, queryKeys } from "@/lib/query";
-import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 
-export default function UnauthenticatedDialog() {
-  const [open, onOpenChange] = useState(false);
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.currentUser(),
-    queryFn: fetchCurrentUserOptional,
-    ...privateQueryDefaults,
-  });
-
-  const isLoggedIn = !!data?.user;
-
-  useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      onOpenChange(true);
-    }
-  }, [isLoading, isLoggedIn]);
-
+export default function UnauthenticatedDialog({
+  isPending = false,
+  onConfirm,
+  onOpenChange,
+  open,
+}: {
+  isPending?: boolean;
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -47,9 +39,12 @@ export default function UnauthenticatedDialog() {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Continue</AlertDialogCancel>
-          <AlertDialogAction asChild>
+          <AlertDialogCancel>Back</AlertDialogCancel>
+          <Button asChild variant="outline">
             <Link href="/login">Login</Link>
+          </Button>
+          <AlertDialogAction disabled={isPending} onClick={onConfirm}>
+            Continue
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

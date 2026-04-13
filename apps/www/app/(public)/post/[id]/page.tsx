@@ -1,8 +1,8 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PostCardMain } from "@/app/(public)/feed/components/post-card-main";
 import { getPostAction, getPostPublicAction } from "@/app/actions/post";
-import { PostCardMain } from "@/app/feed/components/post-card-main";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";

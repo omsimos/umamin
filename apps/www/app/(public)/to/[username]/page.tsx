@@ -2,7 +2,6 @@ import { BadgeCheckIcon, LockIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ShareButton } from "@/components/share-button";
-import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { getPublicUserProfileData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 import { ChatForm } from "./components/chat-form";
@@ -82,8 +81,6 @@ export default async function SendMessage({
         Advanced Encryption Standard
         <LockIcon className="h-4 w-4 ml-2" />
       </div>
-
-      <UnauthenticatedDialog />
     </div>
   );
 }

@@ -9,7 +9,7 @@ import {
   UserCheckIcon,
   UserPlusIcon,
 } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   blockUserAction,
@@ -47,6 +47,7 @@ type Props = {
 
 export function UserProfile({ username, initialUser }: Props) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { data: user } = useQuery({
     ...pageQueryOptions(
       queryKeys.userProfile(username),
@@ -55,21 +56,51 @@ export function UserProfile({ username, initialUser }: Props) {
     ),
     initialData: initialUser,
   });
+  const viewerQueryOptions = pageQueryOptions(
+    queryKeys.userProfileViewer(username),
+    () => fetchUserProfileViewer(username),
+    PRIVATE_STALE_TIME,
+  );
   const { data: viewer } = useQuery({
-    ...pageQueryOptions(
-      queryKeys.userProfileViewer(username),
-      () => fetchUserProfileViewer(username),
-      PRIVATE_STALE_TIME,
-    ),
+    ...viewerQueryOptions,
+    enabled: false,
   });
 
   const profile = user ?? initialUser;
 
-  const isAuthenticated = viewer?.isAuthenticated === true;
   const isFollowing = viewer?.isFollowing === true;
   const isBlocked = viewer?.isBlocked === true;
   const isBlockedBy = viewer?.isBlockedBy === true;
   const isSelf = viewer?.currentUserId === profile.id;
+
+  const resolveViewer = async () => {
+    const cached = queryClient.getQueryData<UserProfileViewerResponse>(
+      queryKeys.userProfileViewer(username),
+    );
+
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      return await queryClient.fetchQuery(viewerQueryOptions);
+    } catch (error) {
+      console.log(error);
+      toast.error("Couldn't load profile actions.");
+      return null;
+    }
+  };
+
+  const requireAuthenticatedViewer = async () => {
+    const resolvedViewer = await resolveViewer();
+
+    if (!resolvedViewer?.isAuthenticated) {
+      router.push("/login");
+      return null;
+    }
+
+    return resolvedViewer;
+  };
 
   const patchProfileCaches = ({
     followerCount,
@@ -313,13 +344,19 @@ export function UserProfile({ username, initialUser }: Props) {
   const menuItems = [
     {
       title: isBlocked ? "Unblock" : "Block",
-      onClick: () => {
-        if (!isAuthenticated || isSelf || blockMutation.isPending) return;
-        blockMutation.mutate(isBlocked);
+      onClick: async () => {
+        if (blockMutation.isPending) return;
+
+        const resolvedViewer = await requireAuthenticatedViewer();
+        if (!resolvedViewer || resolvedViewer.currentUserId === profile.id) {
+          return;
+        }
+
+        blockMutation.mutate(resolvedViewer.isBlocked);
       },
       className: "text-red-500",
       icon: <MessageSquareXIcon className="h-4 w-4" />,
-      disabled: !isAuthenticated || isSelf || blockMutation.isPending,
+      disabled: isSelf || blockMutation.isPending,
     },
   ];
 
@@ -331,7 +368,6 @@ export function UserProfile({ username, initialUser }: Props) {
         <Button
           variant="outline"
           disabled={
-            !isAuthenticated ||
             isSelf ||
             isBlocked ||
             isBlockedBy ||
@@ -339,9 +375,20 @@ export function UserProfile({ username, initialUser }: Props) {
             blockMutation.isPending
           }
           className="flex-1"
-          onClick={() => {
-            if (!isAuthenticated || isSelf || blockMutation.isPending) return;
-            followMutation.mutate(isFollowing);
+          onClick={async () => {
+            if (blockMutation.isPending) return;
+
+            const resolvedViewer = await requireAuthenticatedViewer();
+            if (
+              !resolvedViewer ||
+              resolvedViewer.currentUserId === profile.id ||
+              resolvedViewer.isBlocked ||
+              resolvedViewer.isBlockedBy
+            ) {
+              return;
+            }
+
+            followMutation.mutate(resolvedViewer.isFollowing);
           }}
         >
           {isFollowing ? <UserCheckIcon /> : <UserPlusIcon />}
@@ -349,22 +396,31 @@ export function UserProfile({ username, initialUser }: Props) {
         </Button>
 
         <Button
-          asChild
           variant="outline"
           className="flex-1"
           disabled={
-            !isAuthenticated ||
             isSelf ||
             isBlocked ||
             isBlockedBy ||
             followMutation.isPending ||
             blockMutation.isPending
           }
+          onClick={async () => {
+            const resolvedViewer = await requireAuthenticatedViewer();
+            if (
+              !resolvedViewer ||
+              resolvedViewer.currentUserId === profile.id ||
+              resolvedViewer.isBlocked ||
+              resolvedViewer.isBlockedBy
+            ) {
+              return;
+            }
+
+            router.push(`/to/${profile.username}`);
+          }}
         >
-          <Link href={`/to/${profile.username}`}>
-            <MessageSquareMoreIcon />
-            Message
-          </Link>
+          <MessageSquareMoreIcon />
+          Message
         </Button>
 
         <Menu menuItems={menuItems} />
