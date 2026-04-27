@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   AlertDescription,
@@ -15,12 +16,31 @@ import {
   DialogTrigger,
 } from "@umamin/ui/components/dialog";
 import { Input } from "@umamin/ui/components/input";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { deleteAccountAction } from "@/app/actions/user";
+import { toast } from "sonner";
+import { deleteAccount } from "@/lib/api-mutations";
 import { DeleteButton } from "./danger-button";
 
 export function DangerSettings() {
   const [confirmText, setConfirmText] = useState("");
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: deleteAccount,
+    onSuccess: () => {
+      queryClient.clear();
+      toast.success("Account deleted.");
+      router.push("/login");
+      router.refresh();
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Couldn't delete account.");
+    },
+  });
+
   return (
     <div className="border-t-2 border-dashed border-muted pt-8">
       <Alert>
@@ -51,8 +71,9 @@ export function DangerSettings() {
               </DialogHeader>
 
               <form
-                action={async () => {
-                  await deleteAccountAction();
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  mutation.mutate();
                 }}
               >
                 <Input
@@ -60,7 +81,10 @@ export function DangerSettings() {
                   onChange={(e) => setConfirmText(e.target.value)}
                   placeholder="Enter confirmation text"
                 />
-                <DeleteButton confirmText={confirmText} />
+                <DeleteButton
+                  confirmText={confirmText}
+                  isPending={mutation.isPending}
+                />
               </form>
             </DialogContent>
           </Dialog>

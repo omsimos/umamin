@@ -11,14 +11,14 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  blockUserAction,
-  followUserAction,
-  unblockUserAction,
-  unfollowUserAction,
-} from "@/app/actions/user";
 import { Menu } from "@/components/menu";
 import { UserCard } from "@/components/user-card";
+import {
+  blockUser,
+  followUser,
+  unblockUser,
+  unfollowUser,
+} from "@/lib/api-mutations";
 import {
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
@@ -153,8 +153,8 @@ export function UserProfile({ username, initialUser }: Props) {
   const followMutation = useMutation({
     mutationFn: async (prevFollowing: boolean) =>
       prevFollowing
-        ? unfollowUserAction({ userId: profile.id })
-        : followUserAction({ userId: profile.id }),
+        ? unfollowUser({ userId: profile.id })
+        : followUser({ userId: profile.id }),
     onMutate: async (prevFollowing) => {
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
@@ -242,8 +242,8 @@ export function UserProfile({ username, initialUser }: Props) {
   const blockMutation = useMutation({
     mutationFn: async (prevBlocked: boolean) =>
       prevBlocked
-        ? unblockUserAction({ userId: profile.id })
-        : blockUserAction({ userId: profile.id }),
+        ? unblockUser({ userId: profile.id })
+        : blockUser({ userId: profile.id }),
     onMutate: async (prevBlocked) => {
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),

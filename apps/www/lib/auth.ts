@@ -1,198 +1,52 @@
 "use server";
 
-import { hash, verify } from "@node-rs/argon2";
-import { db } from "@umamin/db";
-import { userTable } from "@umamin/db/schema/user";
-import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
+import type { SessionValidationResult } from "@umamin/core/session";
 import { redirect } from "next/navigation";
-import { cache } from "react";
 import type * as z from "zod";
-import {
-  LEGACY_SESSION_COOKIE_NAME,
-  readCookieValue,
-  SESSION_COOKIE_NAME,
-} from "./cookies";
-import { registerSchema } from "./schema";
-import {
-  createSession,
-  deleteSessionTokenCookie,
-  generateSessionToken,
-  invalidateSession,
-  type SessionValidationResult,
-  validateSessionToken,
-} from "./session";
+import { apiFetch, apiJson, jsonBody } from "./api";
+import type { registerSchema } from "./schema";
 
-export const getSession = cache(async (): Promise<SessionValidationResult> => {
-  const cookieStore = await cookies();
-  const token = readCookieValue(
-    cookieStore,
-    SESSION_COOKIE_NAME,
-    LEGACY_SESSION_COOKIE_NAME,
-  );
-  if (token === null) {
-    return { session: null, user: null };
-  }
-  const result = await validateSessionToken(token);
-  return result;
-});
-
-async function setSession(userId: string) {
-  const sessionToken = generateSessionToken();
-  const session = await createSession(sessionToken, userId);
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    expires: new Date(session.expiresAt),
-    path: "/",
-  });
-
-  if (LEGACY_SESSION_COOKIE_NAME !== SESSION_COOKIE_NAME) {
-    cookieStore.set(LEGACY_SESSION_COOKIE_NAME, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 0,
-      path: "/",
-    });
-  }
+export async function getSession(): Promise<SessionValidationResult> {
+  return apiJson<SessionValidationResult>("/api/auth/session");
 }
 
 export async function logout() {
-  const { session } = await getSession();
+  const response = await apiFetch("/api/auth/logout", { method: "POST" });
 
-  if (!session) {
+  if (!response.ok) {
     throw new Error("Unauthorized");
   }
 
-  await invalidateSession(session.id);
-  await deleteSessionTokenCookie();
   redirect("/login");
 }
 
 export async function login(_initialState: unknown, formData: FormData) {
-  const username = formData.get("username");
+  const response = await apiFetch("/api/auth/login", {
+    method: "POST",
+    body: formData,
+  });
 
-  const normalizedUsername =
-    typeof username === "string" ? username.trim().toLowerCase() : "";
-
-  if (
-    typeof username !== "string" ||
-    normalizedUsername.length < 5 ||
-    normalizedUsername.length > 20 ||
-    !/^[a-zA-Z0-9_-]+$/.test(normalizedUsername)
-  ) {
-    return {
-      error: "Incorrect username or password",
-    };
-  }
-
-  const password = formData.get("password");
-
-  if (
-    typeof password !== "string" ||
-    password.length < 5 ||
-    password.length > 255
-  ) {
-    return {
-      error: "Incorrect username or password",
-    };
-  }
-
-  try {
-    const [existingUser] = await db
-      .select()
-      .from(userTable)
-      .where(eq(userTable.username, normalizedUsername))
-      .limit(1);
-
-    if (!existingUser?.passwordHash) {
-      return {
-        error: "Incorrect username or password",
-      };
-    }
-
-    const validPassword = await verify(existingUser.passwordHash, password, {
-      memoryCost: 19456,
-      timeCost: 2,
-      outputLen: 32,
-      parallelism: 1,
-    });
-
-    if (!validPassword) {
-      return {
-        error: "Incorrect username or password",
-      };
-    }
-
-    await setSession(existingUser.id);
-  } catch (err) {
-    console.error("Login error:", err);
-    return {
-      error: "An unexpected error occurred",
-    };
+  if (!response.ok) {
+    const result = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    return { error: result?.error ?? "An unexpected error occurred" };
   }
 
   redirect("/inbox");
 }
 
 export async function signup(data: z.infer<typeof registerSchema>) {
-  const validatedFields = registerSchema.safeParse({
-    ...data,
-    username: data.username?.trim().toLowerCase(),
+  const response = await apiFetch("/api/auth/signup", {
+    method: "POST",
+    body: jsonBody(data),
   });
 
-  if (!validatedFields.success) {
-    return {
-      error: "Invalid input",
-    };
-  }
-
-  const passwordHash = await hash(validatedFields.data.password, {
-    memoryCost: 19456,
-    timeCost: 2,
-    outputLen: 32,
-    parallelism: 1,
-  });
-
-  let userId = "";
-
-  try {
-    const res = await db
-      .insert(userTable)
-      .values({
-        username: validatedFields.data.username.toLowerCase(),
-        passwordHash,
-      })
-      .returning({ id: userTable.id });
-
-    userId = res[0].id;
-    await setSession(userId);
-  } catch (err) {
-    console.log(err);
-
-    if (
-      err instanceof Error &&
-      typeof err.cause === "object" &&
-      err.cause !== null
-    ) {
-      const cause = err.cause as { code?: string; message?: string };
-
-      if (
-        cause.code === "SQLITE_CONSTRAINT" &&
-        cause.message?.includes("user.username")
-      ) {
-        return {
-          error: "Username already exists",
-        };
-      }
-    }
-
-    return {
-      error: "An unexpected error occurred",
-    };
+  if (!response.ok) {
+    const result = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    return { error: result?.error ?? "An unexpected error occurred" };
   }
 
   redirect("/inbox");

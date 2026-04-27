@@ -9,7 +9,8 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, MessageSquareShareIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { createNoteAction } from "@/app/actions/note";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { createNote } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import { upsertNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
@@ -21,7 +22,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
   const [isAnonymous, setIsAnonymous] = useState(false);
 
   const updateNoteMutation = useMutation({
-    mutationFn: createNoteAction,
+    mutationFn: createNote,
     onMutate: async (nextValues) => {
       const previousNote = queryClient.getQueryData<NoteItem | null>(
         queryKeys.currentNote(),
@@ -59,11 +60,6 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       };
     },
     onSuccess: (data) => {
-      if (data?.error) {
-        toast.error(data.error ?? "Couldn't share note.");
-        return;
-      }
-
       if (data?.note) {
         queryClient.setQueryData<NoteItem | null>(
           queryKeys.currentNote(),
@@ -84,7 +80,6 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       setContent("");
     },
     onError: (err, _values, ctx) => {
-      console.log(err);
       queryClient.setQueryData<NoteItem | null>(
         queryKeys.currentNote(),
         ctx?.previousNote,
@@ -93,7 +88,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         queryKeys.notes(),
         ctx?.previousNotes,
       );
-      toast.error("Couldn't share note.");
+      toast.error(apiClientErrorMessage(err, "Couldn't share note."));
     },
   });
 

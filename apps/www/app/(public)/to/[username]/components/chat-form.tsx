@@ -8,11 +8,11 @@ import { cn } from "@umamin/ui/lib/utils";
 import { Loader2Icon, MoonIcon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { sendMessageAction } from "@/app/actions/message";
 import { ChatList } from "@/components/chat-list";
 import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { sendMessage } from "@/lib/api-mutations";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import { formatContent } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
@@ -24,29 +24,22 @@ export function ChatForm({ user }: { user: PublicUser }) {
     useState(false);
 
   const inputRef = useDynamicTextarea(content);
-  const sendMessage = useSingleFlightAction(sendMessageAction);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await sendMessage({
+      await sendMessage({
         receiverId: user?.id,
         question: user?.question,
         content,
       });
-
-      if (res.error) {
-        throw new Error(res.error);
-      }
     },
     onSuccess: () => {
       setMessage(formatContent(content));
       toast.success("Message sent.");
       setContent("");
     },
-    onError: (err) => {
-      console.log(err);
-      toast.error(err.message ?? "Couldn't send message.");
-    },
+    onError: (err) =>
+      toast.error(apiClientErrorMessage(err, "Couldn't send message.")),
   });
 
   const submitMessage = async () => {

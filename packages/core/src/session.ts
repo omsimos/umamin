@@ -11,16 +11,39 @@ import {
   sessionTable,
   userTable,
 } from "@umamin/db/schema/user";
-
 import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
-import { LEGACY_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME } from "./cookies";
+import {
+  LEGACY_SESSION_COOKIE_NAME,
+  readCookieValue,
+  SESSION_COOKIE_NAME,
+} from "./cookies";
+
+export type CookieReader = {
+  get(name: string): string | undefined;
+};
+
+export type CookieWriter = {
+  set(name: string, value: string, options: SessionCookieOptions): void;
+};
+
+export type SessionCookieOptions = {
+  httpOnly: boolean;
+  sameSite: "lax";
+  secure: boolean;
+  expires?: Date;
+  maxAge?: number;
+  path: string;
+  domain?: string;
+};
+
+export type SessionValidationResult =
+  | { session: SelectSession; user: SelectUser }
+  | { session: null; user: null };
 
 export function generateSessionToken(): string {
   const bytes = new Uint8Array(20);
   crypto.getRandomValues(bytes);
-  const token = encodeBase32LowerCaseNoPadding(bytes);
-  return token;
+  return encodeBase32LowerCaseNoPadding(bytes);
 }
 
 export async function createSession(
@@ -51,7 +74,6 @@ export async function validateSessionToken(
     .leftJoin(userTable, eq(sessionTable.userId, userTable.id))
     .where(eq(sessionTable.id, sessionId))
     .limit(1);
-  // .$withCache(false);
 
   if (!result?.user) {
     return { session: null, user: null };
@@ -62,69 +84,96 @@ export async function validateSessionToken(
     await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
     return { session: null, user: null };
   }
+
   if (Date.now() >= session.expiresAt - 1000 * 60 * 60 * 24 * 15) {
     session.expiresAt = Date.now() + 1000 * 60 * 60 * 24 * 30;
 
     await db
       .update(sessionTable)
-      .set({
-        expiresAt: session.expiresAt,
-      })
+      .set({ expiresAt: session.expiresAt })
       .where(eq(sessionTable.id, sessionId));
   }
 
   return { session, user };
 }
 
-export async function setSessionTokenCookie(
+export async function validateSessionFromCookies(
+  cookies: CookieReader,
+): Promise<SessionValidationResult> {
+  const token = readCookieValue(
+    {
+      get: (name) =>
+        cookies.get(name) ? { value: cookies.get(name) ?? "" } : undefined,
+    },
+    SESSION_COOKIE_NAME,
+    LEGACY_SESSION_COOKIE_NAME,
+  );
+
+  if (!token) {
+    return { session: null, user: null };
+  }
+
+  return validateSessionToken(token);
+}
+
+export function setSessionTokenCookie(
+  cookies: CookieWriter,
   token: string,
   expiresAt: Date,
-): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
+) {
+  const domain =
+    process.env.NODE_ENV === "production"
+      ? process.env.SESSION_COOKIE_DOMAIN
+      : undefined;
+
+  cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     expires: expiresAt,
     path: "/",
+    domain,
   });
 
-  if (LEGACY_SESSION_COOKIE_NAME !== SESSION_COOKIE_NAME) {
-    cookieStore.set(LEGACY_SESSION_COOKIE_NAME, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 0,
-      path: "/",
-    });
-  }
+  clearLegacySessionCookie(cookies);
 }
 
-export async function deleteSessionTokenCookie(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, "", {
+export function deleteSessionTokenCookie(cookies: CookieWriter) {
+  const domain =
+    process.env.NODE_ENV === "production"
+      ? process.env.SESSION_COOKIE_DOMAIN
+      : undefined;
+
+  cookies.set(SESSION_COOKIE_NAME, "", {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     maxAge: 0,
     path: "/",
+    domain,
   });
 
-  if (LEGACY_SESSION_COOKIE_NAME !== SESSION_COOKIE_NAME) {
-    cookieStore.set(LEGACY_SESSION_COOKIE_NAME, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 0,
-      path: "/",
-    });
+  clearLegacySessionCookie(cookies);
+}
+
+function clearLegacySessionCookie(cookies: CookieWriter) {
+  if (LEGACY_SESSION_COOKIE_NAME === SESSION_COOKIE_NAME) {
+    return;
   }
+
+  cookies.set(LEGACY_SESSION_COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 0,
+    path: "/",
+    domain:
+      process.env.NODE_ENV === "production"
+        ? process.env.SESSION_COOKIE_DOMAIN
+        : undefined,
+  });
 }
 
 export async function invalidateSession(sessionId: string) {
   await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
 }
-
-export type SessionValidationResult =
-  | { session: SelectSession; user: SelectUser }
-  | { session: null; user: null };

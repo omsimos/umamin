@@ -26,17 +26,17 @@ import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
-  addCommentLikeAction,
-  addLikeAction,
-  addRepostAction,
-  removeCommentLikeAction,
-  removeLikeAction,
-  removeRepostAction,
-} from "@/app/actions/post";
-import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import {
+  addCommentLike,
+  addLike,
+  addRepost,
+  removeCommentLike,
+  removeLike,
+  removeRepost,
+} from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import {
   patchComment,
@@ -144,19 +144,19 @@ export function PostCard({
     async (prevLiked: boolean) => {
       if (isComment) {
         return prevLiked
-          ? removeCommentLikeAction({
+          ? removeCommentLike({
               commentId: data.id,
               postId: commentPostId,
             })
-          : addCommentLikeAction({
+          : addCommentLike({
               commentId: data.id,
               postId: commentPostId,
             });
       }
 
       return prevLiked
-        ? removeLikeAction({ postId: data.id })
-        : addLikeAction({ postId: data.id });
+        ? removeLike({ postId: data.id })
+        : addLike({ postId: data.id });
     },
     {
       limit: 4,
@@ -167,8 +167,8 @@ export function PostCard({
   const handleRepostAction = useBurstAction(
     async (prevReposted: boolean) =>
       prevReposted
-        ? removeRepostAction({ postId: data.id })
-        : addRepostAction({ postId: data.id }),
+        ? removeRepost({ postId: data.id })
+        : addRepost({ postId: data.id }),
     {
       limit: 4,
       rejectMessage: BURST_ACTION_REJECT_MESSAGE,
@@ -253,7 +253,7 @@ export function PostCard({
     setReposts((v) => v + 1);
 
     try {
-      const res = await addRepostAction({ postId: data.id, content });
+      const res = await addRepost({ postId: data.id, content });
       if (isAlreadyReposted(res)) {
         setReposted(prevReposted);
         setReposts(prevReposts);

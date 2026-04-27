@@ -26,8 +26,9 @@ import {
   ScrollIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { clearNoteAction } from "@/app/actions/note";
 import { Menu } from "@/components/menu";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { clearNote } from "@/lib/api-mutations";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
@@ -42,7 +43,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
   });
 
   const clearNoteMutation = useMutation({
-    mutationFn: clearNoteAction,
+    mutationFn: clearNote,
     onSuccess: () => {
       queryClient.setQueryData(queryKeys.currentNote(), null);
       if (data?.id) {
@@ -54,10 +55,8 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
       }
       toast.success("Note cleared.");
     },
-    onError: (err) => {
-      console.log(err);
-      toast.error("Couldn't clear note.");
-    },
+    onError: (err) =>
+      toast.error(apiClientErrorMessage(err, "Couldn't clear note.")),
   });
 
   if (!data?.content) {

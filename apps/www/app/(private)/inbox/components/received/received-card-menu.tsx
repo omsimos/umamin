@@ -20,9 +20,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { deleteMessageAction } from "@/app/actions/message";
-import { blockUserAction, unblockUserAction } from "@/app/actions/user";
 import { Menu } from "@/components/menu";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { blockUser, deleteMessage, unblockUser } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import { removeMessage } from "@/lib/query-cache";
 import type { MessagesResponse } from "@/lib/query-types";
@@ -47,13 +47,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
   const canBlock = !!props.senderId;
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const res = await deleteMessageAction(id);
-
-      if (res.error) {
-        throw new Error(res.error);
-      }
-    },
+    mutationFn: () => deleteMessage(id),
     onSuccess: () => {
       queryClient.setQueryData<
         import("@tanstack/react-query").InfiniteData<MessagesResponse>
@@ -61,19 +55,14 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
       toast.success("Message deleted.");
     },
     onError: (err) => {
-      console.error(err);
-      toast.error("Couldn't delete message.");
+      toast.error(apiClientErrorMessage(err, "Couldn't delete message."));
     },
   });
 
   const blockMutation = useMutation({
     mutationFn: async () => {
       if (!props.senderId) return;
-      const res = await blockUserAction({ userId: props.senderId });
-
-      if (res && "error" in res && res.error) {
-        throw new Error(res.error);
-      }
+      return blockUser({ userId: props.senderId });
     },
     onSuccess: () => {
       queryClient.setQueryData<
@@ -98,7 +87,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
           label: "Undo",
           onClick: () => {
             if (props.senderId) {
-              unblockUserAction({ userId: props.senderId }).catch((err) =>
+              unblockUser({ userId: props.senderId }).catch((err) =>
                 console.error(err),
               );
             }
@@ -107,8 +96,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
       });
     },
     onError: (err) => {
-      console.error(err);
-      toast.error("Couldn't block user.");
+      toast.error(apiClientErrorMessage(err, "Couldn't block user."));
     },
   });
 

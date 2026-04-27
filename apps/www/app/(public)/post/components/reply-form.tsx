@@ -12,9 +12,9 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, ScanFaceIcon, SendIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { createCommentAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { createComment } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import {
   patchPostAcrossFeed,
@@ -40,16 +40,10 @@ export default function ReplyForm({ user, postId }: Props) {
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
   const author = useMemo(() => user, [user]);
-  const submitComment = useSingleFlightAction(createCommentAction);
 
   const mutation = useMutation({
-    mutationFn: async (nextContent: string) => {
-      const res = await submitComment({ content: nextContent, postId });
-      if (res?.error) {
-        throw new Error(res.error);
-      }
-      return res;
-    },
+    mutationFn: (nextContent: string) =>
+      createComment({ content: nextContent, postId }),
     onMutate: async (nextContent) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.postComments(postId),
@@ -111,14 +105,9 @@ export default function ReplyForm({ user, postId }: Props) {
       }
       queryClient.setQueryData(queryKeys.posts(), ctx?.previousPosts);
       queryClient.setQueryData(queryKeys.post(postId), ctx?.previousPost);
-      toast.error(err.message ?? "Couldn't add comment.");
+      toast.error(apiClientErrorMessage(err, "Couldn't add comment."));
     },
     onSuccess: (res, _vars, ctx) => {
-      if (res?.error) {
-        toast.error(res.error);
-        return;
-      }
-
       if (res?.comment && ctx?.optimisticId) {
         const nextComment: CommentData = {
           ...res.comment,

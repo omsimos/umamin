@@ -2,12 +2,11 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PostCardMain } from "@/app/(public)/feed/components/post-card-main";
-import { getPostAction, getPostPublicAction } from "@/app/actions/post";
+import { apiJson } from "@/lib/api";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
-import type { CommentsResponse } from "@/lib/query-types";
-import { getPostCommentsPage } from "@/lib/server/data";
+import type { CommentsResponse, PostResponse } from "@/lib/query-types";
 import { getBaseUrl } from "@/lib/utils";
 import { toPublicUser } from "@/types/user";
 import { CommentsList } from "../components/comments-list";
@@ -22,7 +21,9 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const post = await getPostPublicAction(id);
+  const post = await apiJson<PostResponse>(`/api/public/posts/${id}`).catch(
+    () => null,
+  );
 
   if (!post) {
     return {
@@ -75,7 +76,9 @@ export default async function Post({
   const { id } = await params;
   const currentUser = user ? toPublicUser(user) : null;
 
-  const data = await getPostAction(id);
+  const data = await apiJson<PostResponse>(
+    user ? `/api/posts/${id}` : `/api/public/posts/${id}`,
+  ).catch(() => null);
   const queryClient = getQueryClient();
 
   if (!data) {
@@ -87,11 +90,15 @@ export default async function Post({
   await queryClient.prefetchInfiniteQuery({
     queryKey: queryKeys.postComments(id),
     queryFn: ({ pageParam }) =>
-      getPostCommentsPage({
-        postId: id,
-        cursor: (pageParam as string | null) ?? null,
-        viewerId: user?.id,
-      }),
+      apiJson<CommentsResponse>(
+        `${
+          user
+            ? `/api/posts/${id}/comments`
+            : `/api/public/posts/${id}/comments`
+        }${
+          pageParam ? `?cursor=${encodeURIComponent(String(pageParam))}` : ""
+        }`,
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage: CommentsResponse) =>
       lastPage.nextCursor ?? null,

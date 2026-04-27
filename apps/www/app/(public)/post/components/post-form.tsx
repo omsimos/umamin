@@ -13,9 +13,9 @@ import { cn } from "@umamin/ui/lib/utils";
 import { GlobeIcon, Loader2Icon, SendIcon } from "lucide-react";
 import { type FormEventHandler, useState } from "react";
 import { toast } from "sonner";
-import { createPostAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { createPost } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import { prependFeedItem, replaceFeedItem } from "@/lib/query-cache";
 import type { FeedResponse } from "@/lib/query-types";
@@ -32,16 +32,9 @@ export default function PostForm({ user }: Props) {
   const [textAreaCount, setTextAreaCount] = useState(0);
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
-  const submitPost = useSingleFlightAction(createPostAction);
 
   const mutation = useMutation({
-    mutationFn: async (nextContent: string) => {
-      const res = await submitPost({ content: nextContent });
-      if (res?.error) {
-        throw new Error(res.error);
-      }
-      return res;
-    },
+    mutationFn: (nextContent: string) => createPost({ content: nextContent }),
     onMutate: async (nextContent) => {
       if (!user) return {};
       await queryClient.cancelQueries({ queryKey: queryKeys.posts() });
@@ -78,14 +71,9 @@ export default function PostForm({ user }: Props) {
       if (ctx?.previous) {
         queryClient.setQueryData(queryKeys.posts(), ctx.previous);
       }
-      toast.error(err.message ?? "Couldn't post.");
+      toast.error(apiClientErrorMessage(err, "Couldn't post."));
     },
     onSuccess: (res, _vars, ctx) => {
-      if (res?.error) {
-        toast.error(res.error);
-        return;
-      }
-
       if (user && res?.post && ctx?.optimisticId) {
         const nextItem: FeedItem = {
           type: "post",

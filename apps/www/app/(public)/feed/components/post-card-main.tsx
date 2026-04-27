@@ -26,15 +26,15 @@ import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
-  addLikeAction,
-  addRepostAction,
-  removeLikeAction,
-  removeRepostAction,
-} from "@/app/actions/post";
-import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import {
+  addLike,
+  addRepost,
+  removeLike,
+  removeRepost,
+} from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
 import type { FeedResponse, PostResponse } from "@/lib/query-types";
@@ -103,8 +103,8 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
   const handleLikeAction = useBurstAction(
     async (prevLiked: boolean) =>
       prevLiked
-        ? removeLikeAction({ postId: data.id })
-        : addLikeAction({ postId: data.id }),
+        ? removeLike({ postId: data.id })
+        : addLike({ postId: data.id }),
     {
       limit: 6,
       rejectMessage: BURST_ACTION_REJECT_MESSAGE,
@@ -114,8 +114,8 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
   const handleRepostAction = useBurstAction(
     async (prevReposted: boolean) =>
       prevReposted
-        ? removeRepostAction({ postId: data.id })
-        : addRepostAction({ postId: data.id }),
+        ? removeRepost({ postId: data.id })
+        : addRepost({ postId: data.id }),
     {
       limit: 4,
       rejectMessage: BURST_ACTION_REJECT_MESSAGE,
@@ -197,7 +197,7 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
     setReposts((v) => v + 1);
 
     try {
-      const res = await addRepostAction({ postId: data.id, content });
+      const res = await addRepost({ postId: data.id, content });
       if (isAlreadyReposted(res)) {
         setReposted(prevReposted);
         setReposts(prevReposts);

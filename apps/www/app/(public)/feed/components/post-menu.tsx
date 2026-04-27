@@ -15,8 +15,9 @@ import { Button } from "@umamin/ui/components/button";
 import { DownloadIcon, Share2Icon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { deletePostAction } from "@/app/actions/post";
 import { Menu } from "@/components/menu";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { deletePost } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import { removePostFromFeed } from "@/lib/query-cache";
 import type { FeedResponse } from "@/lib/query-types";
@@ -44,13 +45,7 @@ export function PostMenu({
   const canDelete = !!currentUserId && currentUserId === authorId;
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const res = await deletePostAction({ postId });
-
-      if (res.error) {
-        throw new Error(res.error);
-      }
-    },
+    mutationFn: () => deletePost({ postId }),
     onSuccess: () => {
       queryClient.setQueryData<
         import("@tanstack/react-query").InfiniteData<FeedResponse>
@@ -61,8 +56,7 @@ export function PostMenu({
       onDeleted?.();
     },
     onError: (err) => {
-      console.error(err);
-      toast.error("Couldn't delete post.");
+      toast.error(apiClientErrorMessage(err, "Couldn't delete post."));
     },
   });
 

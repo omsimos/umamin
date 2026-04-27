@@ -1,0 +1,30 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../packages/db/.env src/server.ts",
+    "build": "tsc --noEmit",
+    "check-types": "tsc --noEmit",
+    "start": "tsx src/server.ts",
+    "start:local": "tsx --env-file=../../packages/db/.env src/server.ts",
+    "clean": "rm -rf .turbo dist node_modules"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.7",
+    "@umamin/core": "workspace:*",
+    "@umamin/db": "workspace:*",
+    "@umamin/encryption": "workspace:*",
+    "arctic": "^3.7.0",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.10.6",
+    "nanoid": "^5.1.9",
+    "tsx": "^4.21.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.2",
+    "typescript": "^5.9.3"
+  }
+}

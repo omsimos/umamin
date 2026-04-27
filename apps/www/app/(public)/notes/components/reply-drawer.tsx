@@ -16,10 +16,11 @@ import { cn } from "@umamin/ui/lib/utils";
 import { Loader2Icon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { sendMessageAction } from "@/app/actions/message";
 import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { sendMessage } from "@/lib/api-mutations";
 import { formatContent } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
@@ -65,25 +66,19 @@ const ChatForm = ({ note }: ChatFormProps) => {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await sendMessageAction({
+      await sendMessage({
         receiverId: user?.id,
         question: note.content ?? "",
         content,
       });
-
-      if (res.error) {
-        throw new Error(res.error);
-      }
     },
     onSuccess: () => {
       setMessage(formatContent(content));
       toast.success("Message sent.");
       setContent("");
     },
-    onError: (err) => {
-      console.log(err);
-      toast.error(err.message ?? "Couldn't send message.");
-    },
+    onError: (err) =>
+      toast.error(apiClientErrorMessage(err, "Couldn't send message.")),
   });
 
   return (

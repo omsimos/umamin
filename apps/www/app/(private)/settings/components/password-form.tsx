@@ -4,9 +4,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { KeyIcon } from "lucide-react";
 import { toast } from "sonner";
 import type * as z from "zod";
-import { updatePasswordAction } from "@/app/actions/user";
 import { useAppForm } from "@/hooks/form";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { updatePassword } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser } from "@/lib/query-cache";
 import type { CurrentUserResponse } from "@/lib/query-types";
@@ -14,15 +14,10 @@ import { passwordFormSchema } from "@/types/user";
 
 export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
   const queryClient = useQueryClient();
-  const submitPasswordUpdate = useSingleFlightAction(updatePasswordAction);
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof passwordFormSchema>) => {
-      const res = await submitPasswordUpdate(values);
-
-      if (res?.error) {
-        throw new Error(res.error);
-      }
+      await updatePassword(values);
     },
     onSuccess: async () => {
       form.reset();
@@ -37,8 +32,7 @@ export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
       );
     },
     onError: (err) => {
-      console.error(err);
-      toast.error(err.message ?? "Couldn't update password.");
+      toast.error(apiClientErrorMessage(err, "Couldn't update password."));
     },
   });
 

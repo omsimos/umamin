@@ -7,7 +7,7 @@ import {
 import { Link2OffIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getSession, logout } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
 import { getCurrentUserData } from "@/lib/server/data";
@@ -61,9 +61,7 @@ export default async function Settings({
     <div className="w-full mx-auto max-w-lg container min-h-screen pb-24">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl tracking-tight font-semibold">Settings</h2>
-        <form action={logout}>
-          <SignOutButton />
-        </form>
+        <SignOutButton />
       </div>
 
       <p className="text-sm text-muted-foreground mb-12">

@@ -11,10 +11,10 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2Icon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { createReplyAction } from "@/app/actions/message";
 import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { createReply } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import { patchMessage } from "@/lib/query-cache";
 import type { MessagesResponse } from "@/lib/query-types";
@@ -32,20 +32,13 @@ export function ReplyDialog(props: Props) {
   const [updatedAt, setUpdatedAt] = useState(props.data.updatedAt);
   const [reply, setReply] = useState(props.data.reply ?? "");
   const inputRef = useDynamicTextarea(content);
-  const submitReply = useSingleFlightAction(createReplyAction);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await submitReply({
+      return createReply({
         messageId: props.data.id,
         content,
       });
-
-      if (res.error) {
-        throw new Error(res.error);
-      }
-
-      return res;
     },
     onSuccess: (result) => {
       queryClient.setQueryData<
@@ -63,8 +56,7 @@ export function ReplyDialog(props: Props) {
       setUpdatedAt(new Date());
     },
     onError: (err) => {
-      console.error(err);
-      toast.error("Couldn't send reply.");
+      toast.error(apiClientErrorMessage(err, "Couldn't send reply."));
     },
   });
 

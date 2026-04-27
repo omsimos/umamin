@@ -35,6 +35,7 @@
     "@tanstack/react-query-devtools": "^5.99.2",
     "@tanstack/react-virtual": "^3.13.24",
     "@types/mdx": "^2.0.13",
+    "@umamin/core": "workspace:*",
     "@umamin/db": "workspace:*",
     "@umamin/encryption": "workspace:*",
     "@umamin/ui": "workspace:*",

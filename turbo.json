@@ -13,7 +13,14 @@
         "TURSO_*",
         "GOOGLE_*",
         "UPSTASH_REDIS_*",
-        "AES_256_GCM_KEY"
+        "AES_256_GCM_KEY",
+        "API_ORIGIN",
+        "HONO_API_ORIGIN",
+        "NEXT_PUBLIC_API_ORIGIN",
+        "CORS_ORIGINS",
+        "WEB_ORIGIN",
+        "SESSION_COOKIE_DOMAIN",
+        "PORT"
       ]
     },
     "lint": {
