@@ -30,7 +30,9 @@ export function applyGlobalMiddleware(app: Hono<AppEnv>) {
     await next();
   });
 
-  app.use("*", logger());
+  if (process.env.NODE_ENV !== "test") {
+    app.use("*", logger());
+  }
   app.use("*", bodyLimit({ maxSize: 1024 * 32 }));
 
   if (allowedOrigins.length > 0) {
@@ -45,17 +47,17 @@ export function applyGlobalMiddleware(app: Hono<AppEnv>) {
 
   app.use("*", async (c, next) => {
     const origin = c.req.header("Origin");
+    if (unsafeMethods.has(c.req.method)) {
+      c.header("Cache-Control", "private, no-store, max-age=0");
+      c.header("Vary", "Origin, Cookie");
+    }
+
     if (
       origin &&
       unsafeMethods.has(c.req.method) &&
       !allowedOrigins.includes(origin)
     ) {
       throw new ApiError(403, "FORBIDDEN", "Origin not allowed");
-    }
-
-    if (unsafeMethods.has(c.req.method)) {
-      c.header("Cache-Control", "private, no-store, max-age=0");
-      c.header("Vary", "Origin, Cookie");
     }
 
     await next();

@@ -12,6 +12,7 @@
     "db:seed": "pnpm --filter=@umamin/db seed",
     "aes:generate": "pnpm --filter=@umamin/encryption generate",
     "lint": "turbo run lint",
+    "test": "turbo run test",
     "check-types": "turbo run check-types",
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check . --write"
