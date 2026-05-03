@@ -26,6 +26,7 @@ import {
   ShieldAlertIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { googleAuthUrl } from "@/lib/api-mutations";
 import type { UserWithAccount } from "@/types/user";
 import { DangerSettings } from "./danger-settings";
 import { PasswordForm } from "./password-form";
@@ -83,7 +84,7 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
               You can still login with your credentials.
             </span>
             <Button variant="secondary" asChild className="mt-6">
-              <Link prefetch={false} href="/auth/google" className="w-full">
+              <Link prefetch={false} href={googleAuthUrl()} className="w-full">
                 Connect with Google
               </Link>
             </Button>
