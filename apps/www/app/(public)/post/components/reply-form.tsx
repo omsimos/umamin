@@ -46,17 +46,17 @@ export default function ReplyForm({ user, postId }: Props) {
       createComment({ content: nextContent, postId }),
     onMutate: async (nextContent) => {
       await queryClient.cancelQueries({
-        queryKey: queryKeys.postComments(postId),
+        queryKey: queryKeys.postComments(postId, "viewer"),
       });
 
       const previous = queryClient.getQueryData<InfiniteData<CommentsResponse>>(
-        queryKeys.postComments(postId),
+        queryKeys.postComments(postId, "viewer"),
       );
       const previousPosts = queryClient.getQueryData<
         InfiniteData<FeedResponse>
-      >(queryKeys.posts());
+      >(queryKeys.posts("viewer"));
       const previousPost = queryClient.getQueryData<PostResponse>(
-        queryKeys.post(postId),
+        queryKeys.post(postId, "viewer"),
       );
 
       const optimistic: CommentData = {
@@ -71,11 +71,11 @@ export default function ReplyForm({ user, postId }: Props) {
       };
 
       queryClient.setQueryData<InfiniteData<CommentsResponse>>(
-        queryKeys.postComments(postId),
+        queryKeys.postComments(postId, "viewer"),
         prependComment(previous, optimistic),
       );
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        queryKeys.posts(),
+        queryKeys.posts("viewer"),
         (current) =>
           patchPostAcrossFeed(current, postId, (post) => ({
             ...post,
@@ -83,7 +83,7 @@ export default function ReplyForm({ user, postId }: Props) {
           })),
       );
       queryClient.setQueryData<PostResponse>(
-        queryKeys.post(postId),
+        queryKeys.post(postId, "viewer"),
         (current) =>
           patchPostResponse(current, (post) => ({
             ...post,
@@ -101,10 +101,16 @@ export default function ReplyForm({ user, postId }: Props) {
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
-        queryClient.setQueryData(queryKeys.postComments(postId), ctx.previous);
+        queryClient.setQueryData(
+          queryKeys.postComments(postId, "viewer"),
+          ctx.previous,
+        );
       }
-      queryClient.setQueryData(queryKeys.posts(), ctx?.previousPosts);
-      queryClient.setQueryData(queryKeys.post(postId), ctx?.previousPost);
+      queryClient.setQueryData(queryKeys.posts("viewer"), ctx?.previousPosts);
+      queryClient.setQueryData(
+        queryKeys.post(postId, "viewer"),
+        ctx?.previousPost,
+      );
       toast.error(apiClientErrorMessage(err, "Couldn't add comment."));
     },
     onSuccess: (res, _vars, ctx) => {
@@ -116,7 +122,7 @@ export default function ReplyForm({ user, postId }: Props) {
         };
 
         queryClient.setQueryData<InfiniteData<CommentsResponse>>(
-          queryKeys.postComments(postId),
+          queryKeys.postComments(postId, "viewer"),
           (previous) =>
             replaceComment(
               previous,

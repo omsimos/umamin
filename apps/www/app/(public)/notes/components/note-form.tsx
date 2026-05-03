@@ -29,7 +29,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       );
       const previousNotes = queryClient.getQueryData<
         InfiniteData<NotesResponse>
-      >(queryKeys.notes());
+      >(queryKeys.notes("viewer"));
 
       const optimisticNote: NoteItem = {
         id:
@@ -50,7 +50,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         optimisticNote,
       );
       queryClient.setQueryData<InfiniteData<NotesResponse>>(
-        queryKeys.notes(),
+        queryKeys.notes("viewer"),
         (current) => upsertNote(current, optimisticNote),
       );
 
@@ -66,7 +66,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
           data.note,
         );
         queryClient.setQueryData<InfiniteData<NotesResponse>>(
-          queryKeys.notes(),
+          queryKeys.notes("viewer"),
           (current) =>
             upsertNote(current, {
               ...data.note,
@@ -85,7 +85,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         ctx?.previousNote,
       );
       queryClient.setQueryData<InfiniteData<NotesResponse>>(
-        queryKeys.notes(),
+        queryKeys.notes("viewer"),
         ctx?.previousNotes,
       );
       toast.error(apiClientErrorMessage(err, "Couldn't share note."));

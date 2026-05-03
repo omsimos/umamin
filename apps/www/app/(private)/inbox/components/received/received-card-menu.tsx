@@ -1,6 +1,10 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  type InfiniteData,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +28,7 @@ import { Menu } from "@/components/menu";
 import { apiClientErrorMessage } from "@/lib/api-client";
 import { blockUser, deleteMessage, unblockUser } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
-import { removeMessage } from "@/lib/query-cache";
+import { removeMessage, removeMessagesBySender } from "@/lib/query-cache";
 import type { MessagesResponse } from "@/lib/query-types";
 import { saveImage } from "@/lib/utils";
 import { ReplyDialog } from "./reply-dialog";
@@ -48,14 +52,33 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteMessage(id),
+    onMutate: async () => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.receivedMessages(),
+      });
+      const previous = queryClient.getQueryData<InfiniteData<MessagesResponse>>(
+        queryKeys.receivedMessages(),
+      );
+
+      queryClient.setQueryData<InfiniteData<MessagesResponse>>(
+        queryKeys.receivedMessages(),
+        (current) => removeMessage(current, id),
+      );
+      setOpen(false);
+
+      return { previous };
+    },
+    onError: (err, _variables, ctx) => {
+      queryClient.setQueryData(queryKeys.receivedMessages(), ctx?.previous);
+      toast.error(apiClientErrorMessage(err, "Couldn't delete message."));
+    },
     onSuccess: () => {
-      queryClient.setQueryData<
-        import("@tanstack/react-query").InfiniteData<MessagesResponse>
-      >(queryKeys.receivedMessages(), (current) => removeMessage(current, id));
       toast.success("Message deleted.");
     },
-    onError: (err) => {
-      toast.error(apiClientErrorMessage(err, "Couldn't delete message."));
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.receivedMessages(),
+      });
     },
   });
 
@@ -64,39 +87,61 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
       if (!props.senderId) return;
       return blockUser({ userId: props.senderId });
     },
-    onSuccess: () => {
-      queryClient.setQueryData<
-        import("@tanstack/react-query").InfiniteData<MessagesResponse>
-      >(queryKeys.receivedMessages(), (current) => {
-        if (!props.senderId || !current) {
-          return current;
-        }
-
-        return {
-          ...current,
-          pages: current.pages.map((page) => ({
-            ...page,
-            messages: page.messages.filter(
-              (message) => message.senderId !== props.senderId,
-            ),
-          })),
-        };
+    onMutate: async () => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.receivedMessages(),
       });
+      const previous = queryClient.getQueryData<InfiniteData<MessagesResponse>>(
+        queryKeys.receivedMessages(),
+      );
+
+      const senderId = props.senderId;
+
+      if (senderId) {
+        queryClient.setQueryData<InfiniteData<MessagesResponse>>(
+          queryKeys.receivedMessages(),
+          (current) => removeMessagesBySender(current, senderId),
+        );
+      }
+      setBlockOpen(false);
+
+      return { previous };
+    },
+    onSuccess: (_result, _variables, ctx) => {
       toast.success("User blocked.", {
         action: {
           label: "Undo",
           onClick: () => {
             if (props.senderId) {
-              unblockUser({ userId: props.senderId }).catch((err) =>
-                console.error(err),
+              queryClient.setQueryData(
+                queryKeys.receivedMessages(),
+                ctx?.previous,
               );
+              unblockUser({ userId: props.senderId })
+                .then(() =>
+                  queryClient.invalidateQueries({
+                    queryKey: queryKeys.receivedMessages(),
+                  }),
+                )
+                .catch((err) => {
+                  console.error(err);
+                  toast.error(
+                    apiClientErrorMessage(err, "Couldn't unblock user."),
+                  );
+                });
             }
           },
         },
       });
     },
-    onError: (err) => {
+    onError: (err, _variables, ctx) => {
+      queryClient.setQueryData(queryKeys.receivedMessages(), ctx?.previous);
       toast.error(apiClientErrorMessage(err, "Couldn't block user."));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.receivedMessages(),
+      });
     },
   });
 

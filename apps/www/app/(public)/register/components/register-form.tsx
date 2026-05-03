@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,9 +13,11 @@ import { registerSchema } from "@/lib/schema";
 
 export function RegisterForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: signup,
     onSuccess: () => {
+      queryClient.clear();
       toast.success("Account created.");
       router.push("/inbox");
       router.refresh();

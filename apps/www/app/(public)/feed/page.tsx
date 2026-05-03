@@ -2,7 +2,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys } from "@/lib/query";
+import { queryKeys, queryScope } from "@/lib/query";
 import type { FeedResponse } from "@/lib/query-types";
 import { getPostsPage } from "@/lib/server/data";
 import { toPublicUser } from "@/types/user";
@@ -19,7 +19,7 @@ export default async function Feed() {
   const publicUser = user ? toPublicUser(user) : null;
 
   await queryClient.prefetchInfiniteQuery({
-    queryKey: queryKeys.posts(),
+    queryKey: queryKeys.posts(queryScope(!!user)),
     queryFn: ({ pageParam }) =>
       getPostsPage({
         cursor: (pageParam as string | null) ?? null,

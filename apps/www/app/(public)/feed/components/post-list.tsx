@@ -17,7 +17,9 @@ import {
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
   queryKeys,
+  queryScope,
 } from "@/lib/query";
+import { queryErrorMessage } from "@/lib/query-errors";
 import { fetchPostsPage } from "@/lib/query-fetchers";
 import type { FeedResponse } from "@/lib/query-types";
 import type { FeedItem } from "@/types/post";
@@ -38,10 +40,9 @@ export function PostList({
     error,
     fetchNextPage,
     hasNextPage,
-    isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<FeedResponse>({
-    queryKey: queryKeys.posts(),
+    queryKey: queryKeys.posts(queryScope(isAuthenticated)),
     queryFn: ({ pageParam }) =>
       fetchPostsPage((pageParam as string | null) ?? null, isAuthenticated),
     initialPageParam: null as string | null,
@@ -120,8 +121,9 @@ export function PostList({
       <div className="w-full mx-auto">
         <Alert variant="destructive">
           <AlertCircleIcon className="h-4 w-4" />
+          <AlertTitle>Couldn't load posts</AlertTitle>
           <AlertDescription>
-            Failed to load data. Please try again later.
+            {queryErrorMessage(error, "Please try again later.")}
           </AlertDescription>
         </Alert>
       </div>
@@ -140,7 +142,7 @@ export function PostList({
 
   return (
     <div className="w-full">
-      {hasResolvedData && allItems.length === 0 && !isFetching && (
+      {hasResolvedData && allItems.length === 0 && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>

@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys } from "@/lib/query";
+import { queryKeys, queryScope } from "@/lib/query";
 import type { NotesResponse } from "@/lib/query-types";
 import { getCurrentNoteData, getNotesPage } from "@/lib/server/data";
 import { toPublicUser } from "@/types/user";
@@ -48,7 +48,7 @@ export default async function Page() {
   const currentUser = user ? toPublicUser(user) : null;
 
   await queryClient.prefetchInfiniteQuery({
-    queryKey: queryKeys.notes(),
+    queryKey: queryKeys.notes(queryScope(!!user)),
     queryFn: ({ pageParam }) =>
       getNotesPage({
         cursor: (pageParam as string | null) ?? null,

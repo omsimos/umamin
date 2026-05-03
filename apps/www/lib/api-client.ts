@@ -1,5 +1,3 @@
-"use client";
-
 export type ApiErrorEnvelope = {
   error?: {
     code?: string;
@@ -119,5 +117,25 @@ export async function deleteJson<T>(path: string) {
 }
 
 export function apiClientErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiClientError) {
+    if (error.status === 401) {
+      return "Please sign in again to continue.";
+    }
+
+    if (error.status === 403) {
+      return "You do not have permission to do that.";
+    }
+
+    if (error.status === 404) {
+      return "That item could not be found.";
+    }
+
+    return error.message || fallback;
+  }
+
+  if (error instanceof TypeError) {
+    return "Could not reach the API. Check your connection and try again.";
+  }
+
   return error instanceof Error && error.message ? error.message : fallback;
 }

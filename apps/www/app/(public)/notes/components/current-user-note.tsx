@@ -49,7 +49,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
       if (data?.id) {
         queryClient.setQueryData<
           import("@tanstack/react-query").InfiniteData<NotesResponse>
-        >(queryKeys.notes(), (current) =>
+        >(queryKeys.notes("viewer"), (current) =>
           patchNote(current, data.id, () => null),
         );
       }

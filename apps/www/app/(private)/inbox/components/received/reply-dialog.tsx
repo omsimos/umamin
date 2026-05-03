@@ -1,4 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  type InfiniteData,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
@@ -40,23 +44,58 @@ export function ReplyDialog(props: Props) {
         content,
       });
     },
+    onMutate: async () => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.receivedMessages(),
+      });
+
+      const previous = queryClient.getQueryData<InfiniteData<MessagesResponse>>(
+        queryKeys.receivedMessages(),
+      );
+      const previousReply = reply;
+      const previousUpdatedAt = updatedAt;
+      const optimisticUpdatedAt = new Date();
+
+      queryClient.setQueryData<InfiniteData<MessagesResponse>>(
+        queryKeys.receivedMessages(),
+        (current) =>
+          patchMessage(current, props.data.id, (message) => ({
+            ...message,
+            reply: content,
+            updatedAt: optimisticUpdatedAt,
+          })),
+      );
+      setReply(content);
+      setUpdatedAt(optimisticUpdatedAt);
+
+      return { previous, previousReply, previousUpdatedAt };
+    },
     onSuccess: (result) => {
-      queryClient.setQueryData<
-        import("@tanstack/react-query").InfiniteData<MessagesResponse>
-      >(queryKeys.receivedMessages(), (current) =>
-        patchMessage(current, props.data.id, (message) => ({
-          ...message,
-          reply: result.reply ?? content,
-          updatedAt: result.updatedAt ?? new Date(),
-        })),
+      const nextUpdatedAt = result.updatedAt ?? new Date();
+
+      queryClient.setQueryData<InfiniteData<MessagesResponse>>(
+        queryKeys.receivedMessages(),
+        (current) =>
+          patchMessage(current, props.data.id, (message) => ({
+            ...message,
+            reply: result.reply ?? content,
+            updatedAt: nextUpdatedAt,
+          })),
       );
       toast.success("Reply sent.");
-      setReply(content);
       setContent("");
-      setUpdatedAt(new Date());
+      setUpdatedAt(nextUpdatedAt);
     },
-    onError: (err) => {
+    onError: (err, _variables, ctx) => {
+      queryClient.setQueryData(queryKeys.receivedMessages(), ctx?.previous);
+      setReply(ctx?.previousReply ?? props.data.reply ?? "");
+      setUpdatedAt(ctx?.previousUpdatedAt);
       toast.error(apiClientErrorMessage(err, "Couldn't send reply."));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.receivedMessages(),
+      });
     },
   });
 

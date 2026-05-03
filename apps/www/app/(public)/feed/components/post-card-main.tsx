@@ -72,7 +72,7 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
     nextReposts: number,
   ) => {
     queryClient.setQueryData<InfiniteData<FeedResponse>>(
-      queryKeys.posts(),
+      queryKeys.posts("viewer"),
       (current) =>
         patchPostAcrossFeed(current, data.id, (post) => ({
           ...post,
@@ -82,14 +82,16 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
           repostCount: nextReposts,
         })),
     );
-    queryClient.setQueryData<PostResponse>(queryKeys.post(data.id), (current) =>
-      patchPostResponse(current, (post) => ({
-        ...post,
-        isLiked: nextLiked,
-        likeCount: nextLikes,
-        isReposted: nextReposted,
-        repostCount: nextReposts,
-      })),
+    queryClient.setQueryData<PostResponse>(
+      queryKeys.post(data.id, "viewer"),
+      (current) =>
+        patchPostResponse(current, (post) => ({
+          ...post,
+          isLiked: nextLiked,
+          likeCount: nextLikes,
+          isReposted: nextReposted,
+          repostCount: nextReposts,
+        })),
     );
   };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
@@ -13,10 +13,12 @@ import { googleAuthUrl, login } from "@/lib/api-mutations";
 
 export function LoginForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [error, setError] = useState("");
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: () => {
+      queryClient.clear();
       router.push("/inbox");
       router.refresh();
     },

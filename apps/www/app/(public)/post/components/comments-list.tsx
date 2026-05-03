@@ -18,7 +18,9 @@ import {
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
   queryKeys,
+  queryScope,
 } from "@/lib/query";
+import { queryErrorMessage } from "@/lib/query-errors";
 import { fetchPostCommentsPage } from "@/lib/query-fetchers";
 import type { CommentsResponse } from "@/lib/query-types";
 import type { CommentData } from "@/types/post";
@@ -38,7 +40,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
     isFetchingNextPage,
     isFetching,
   } = useInfiniteQuery<CommentsResponse>({
-    queryKey: queryKeys.postComments(postId),
+    queryKey: queryKeys.postComments(postId, queryScope(isAuthenticated)),
     queryFn: ({ pageParam }) =>
       fetchPostCommentsPage(
         postId,
@@ -100,7 +102,9 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
       <Alert variant="destructive">
         <AlertCircleIcon className="h-4 w-4" />
         <AlertTitle>Failed to load comments</AlertTitle>
-        <AlertDescription>Please try again later.</AlertDescription>
+        <AlertDescription>
+          {queryErrorMessage(error, "Please try again later.")}
+        </AlertDescription>
       </Alert>
     );
   }

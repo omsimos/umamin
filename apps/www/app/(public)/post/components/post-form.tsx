@@ -37,10 +37,10 @@ export default function PostForm({ user }: Props) {
     mutationFn: (nextContent: string) => createPost({ content: nextContent }),
     onMutate: async (nextContent) => {
       if (!user) return {};
-      await queryClient.cancelQueries({ queryKey: queryKeys.posts() });
+      await queryClient.cancelQueries({ queryKey: queryKeys.posts("viewer") });
 
       const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>(
-        queryKeys.posts(),
+        queryKeys.posts("viewer"),
       );
 
       const optimisticPost: PostData = {
@@ -59,7 +59,7 @@ export default function PostForm({ user }: Props) {
       const optimistic: FeedItem = { type: "post", post: optimisticPost };
 
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        queryKeys.posts(),
+        queryKeys.posts("viewer"),
         prependFeedItem(previous, optimistic),
       );
 
@@ -69,7 +69,7 @@ export default function PostForm({ user }: Props) {
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
-        queryClient.setQueryData(queryKeys.posts(), ctx.previous);
+        queryClient.setQueryData(queryKeys.posts("viewer"), ctx.previous);
       }
       toast.error(apiClientErrorMessage(err, "Couldn't post."));
     },
@@ -86,7 +86,7 @@ export default function PostForm({ user }: Props) {
         };
 
         queryClient.setQueryData<InfiniteData<FeedResponse>>(
-          queryKeys.posts(),
+          queryKeys.posts("viewer"),
           (previous) =>
             replaceFeedItem(
               previous,

@@ -3,6 +3,13 @@ import { queryOptions } from "@tanstack/react-query";
 
 export const PUBLIC_STALE_TIME = 120_000;
 export const PRIVATE_STALE_TIME = 30_000;
+export const QUERY_GC_TIME = 1000 * 60 * 15;
+
+export type QueryScope = "public" | "viewer";
+
+export function queryScope(isAuthenticated: boolean): QueryScope {
+  return isAuthenticated ? "viewer" : "public";
+}
 
 const stableRefetchOptions = {
   refetchOnMount: false as const,
@@ -11,10 +18,16 @@ const stableRefetchOptions = {
 };
 
 export const queryKeys = {
-  posts: () => ["posts"] as const,
-  post: (postId: string) => ["post", postId] as const,
-  postComments: (postId: string) => ["post-comments", postId] as const,
-  notes: () => ["notes"] as const,
+  posts: (scope: QueryScope = "viewer") => ["posts", scope] as const,
+  postsAll: () => ["posts"] as const,
+  post: (postId: string, scope: QueryScope = "viewer") =>
+    ["post", postId, scope] as const,
+  postAll: (postId: string) => ["post", postId] as const,
+  postComments: (postId: string, scope: QueryScope = "viewer") =>
+    ["post-comments", postId, scope] as const,
+  postCommentsAll: (postId: string) => ["post-comments", postId] as const,
+  notes: (scope: QueryScope = "viewer") => ["notes", scope] as const,
+  notesAll: () => ["notes"] as const,
   currentNote: () => ["current_note"] as const,
   currentUser: () => ["current_user"] as const,
   userProfile: (username: string) => ["user-profile", username] as const,
@@ -26,16 +39,19 @@ export const queryKeys = {
 
 export const infiniteQueryDefaults = {
   ...stableRefetchOptions,
+  gcTime: QUERY_GC_TIME,
 };
 
 export const privateQueryDefaults = {
   ...stableRefetchOptions,
   staleTime: PRIVATE_STALE_TIME,
+  gcTime: QUERY_GC_TIME,
 };
 
 export const publicQueryDefaults = {
   ...stableRefetchOptions,
   staleTime: PUBLIC_STALE_TIME,
+  gcTime: QUERY_GC_TIME,
 };
 
 export function pageQueryOptions<TData>(
@@ -47,6 +63,7 @@ export function pageQueryOptions<TData>(
     queryKey,
     queryFn,
     staleTime,
+    gcTime: QUERY_GC_TIME,
     ...stableRefetchOptions,
   });
 }

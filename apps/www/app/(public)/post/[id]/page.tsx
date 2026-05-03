@@ -5,7 +5,7 @@ import { PostCardMain } from "@/app/(public)/feed/components/post-card-main";
 import { apiJson } from "@/lib/api";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys } from "@/lib/query";
+import { queryKeys, queryScope } from "@/lib/query";
 import type { CommentsResponse, PostResponse } from "@/lib/query-types";
 import { getBaseUrl } from "@/lib/utils";
 import { toPublicUser } from "@/types/user";
@@ -75,6 +75,7 @@ export default async function Post({
   const { user } = await getSession();
   const { id } = await params;
   const currentUser = user ? toPublicUser(user) : null;
+  const scope = queryScope(!!user);
 
   const data = await apiJson<PostResponse>(
     user ? `/api/posts/${id}` : `/api/public/posts/${id}`,
@@ -85,10 +86,10 @@ export default async function Post({
     notFound();
   }
 
-  queryClient.setQueryData(queryKeys.post(id), data);
+  queryClient.setQueryData(queryKeys.post(id, scope), data);
 
   await queryClient.prefetchInfiniteQuery({
-    queryKey: queryKeys.postComments(id),
+    queryKey: queryKeys.postComments(id, scope),
     queryFn: ({ pageParam }) =>
       apiJson<CommentsResponse>(
         `${

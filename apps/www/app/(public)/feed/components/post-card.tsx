@@ -99,7 +99,7 @@ export function PostCard({
   ) => {
     if ("commentCount" in data) {
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        queryKeys.posts(),
+        queryKeys.posts("viewer"),
         (current) =>
           patchPostAcrossFeed(current, data.id, (post) => ({
             ...post,
@@ -110,7 +110,7 @@ export function PostCard({
           })),
       );
       queryClient.setQueryData<PostResponse>(
-        queryKeys.post(data.id),
+        queryKeys.post(data.id, "viewer"),
         (current) =>
           patchPostResponse(current, (post) => ({
             ...post,
@@ -122,7 +122,7 @@ export function PostCard({
       );
     } else if (commentPostId) {
       queryClient.setQueryData<InfiniteData<CommentsResponse>>(
-        queryKeys.postComments(commentPostId),
+        queryKeys.postComments(commentPostId, "viewer"),
         (current) =>
           patchComment(current, data.id, (comment) => ({
             ...comment,

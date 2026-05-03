@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Menu } from "@/components/menu";
 import { UserCard } from "@/components/user-card";
+import { apiClientErrorMessage } from "@/lib/api-client";
 import {
   blockUser,
   followUser,
@@ -86,7 +87,9 @@ export function UserProfile({ username, initialUser }: Props) {
       return await queryClient.fetchQuery(viewerQueryOptions);
     } catch (error) {
       console.log(error);
-      toast.error("Couldn't load profile actions.");
+      toast.error(
+        apiClientErrorMessage(error, "Couldn't load profile actions."),
+      );
       return null;
     }
   };
@@ -156,6 +159,16 @@ export function UserProfile({ username, initialUser }: Props) {
         ? unfollowUser({ userId: profile.id })
         : followUser({ userId: profile.id }),
     onMutate: async (prevFollowing) => {
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfile(username),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfileViewer(username),
+        }),
+        queryClient.cancelQueries({ queryKey: queryKeys.currentUser() }),
+      ]);
+
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
       );
@@ -198,9 +211,7 @@ export function UserProfile({ username, initialUser }: Props) {
         queryKeys.currentUser(),
         ctx?.previousCurrentUser,
       );
-      toast.error(
-        err instanceof Error ? err.message : "Couldn't update follow.",
-      );
+      toast.error(apiClientErrorMessage(err, "Couldn't update follow."));
       console.log(err);
     },
     onSuccess: (res, prevFollowing, ctx) => {
@@ -245,6 +256,17 @@ export function UserProfile({ username, initialUser }: Props) {
         ? unblockUser({ userId: profile.id })
         : blockUser({ userId: profile.id }),
     onMutate: async (prevBlocked) => {
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfile(username),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfileViewer(username),
+        }),
+        queryClient.cancelQueries({ queryKey: queryKeys.currentUser() }),
+        queryClient.cancelQueries({ queryKey: queryKeys.receivedMessages() }),
+      ]);
+
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
       );
@@ -304,7 +326,7 @@ export function UserProfile({ username, initialUser }: Props) {
         queryKeys.receivedMessages(),
         ctx?.previousMessages,
       );
-      toast.error("Couldn't update block.");
+      toast.error(apiClientErrorMessage(err, "Couldn't update block."));
       console.log(err);
     },
     onSuccess: (res, prevBlocked, ctx) => {

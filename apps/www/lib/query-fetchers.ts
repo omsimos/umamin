@@ -12,7 +12,7 @@ import type {
 import { ApiClientError, getJson } from "./api-client";
 
 function appendCursor(baseUrl: string, cursor: string | null) {
-  return cursor ? `${baseUrl}?cursor=${cursor}` : baseUrl;
+  return cursor ? `${baseUrl}?cursor=${encodeURIComponent(cursor)}` : baseUrl;
 }
 
 export async function fetchPostsPage(
@@ -73,20 +73,24 @@ export async function fetchCurrentUserOptional() {
 }
 
 export async function fetchUserProfile(username: string) {
-  return getJson<UserProfileResponse>(`/api/public/user/${username}`);
+  return getJson<UserProfileResponse>(
+    `/api/public/user/${encodeURIComponent(username)}`,
+  );
 }
 
 export async function fetchUserProfileViewer(username: string) {
-  return getJson<UserProfileViewerResponse>(`/api/user/${username}/viewer`);
+  return getJson<UserProfileViewerResponse>(
+    `/api/user/${encodeURIComponent(username)}/viewer`,
+  );
 }
 
 export async function fetchMessagesPage(
   type: "received" | "sent",
   cursor: string | null,
 ) {
-  const url = cursor
-    ? `/api/messages?type=${type}&cursor=${cursor}`
-    : `/api/messages?type=${type}`;
+  const searchParams = new URLSearchParams({ type });
+  if (cursor) searchParams.set("cursor", cursor);
+  const url = `/api/messages?${searchParams}`;
 
   return getJson<MessagesResponse>(url);
 }

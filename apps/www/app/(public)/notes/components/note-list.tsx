@@ -17,7 +17,9 @@ import {
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
   queryKeys,
+  queryScope,
 } from "@/lib/query";
+import { queryErrorMessage } from "@/lib/query-errors";
 import { fetchNotesPage } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { NoteCard } from "./note-card";
@@ -30,10 +32,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     error,
     fetchNextPage,
     hasNextPage,
-    isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<NotesResponse>({
-    queryKey: queryKeys.notes(),
+    queryKey: queryKeys.notes(queryScope(isAuthenticated)),
     queryFn: ({ pageParam }) =>
       fetchNotesPage((pageParam as string | null) ?? null, isAuthenticated),
     initialPageParam: null as string | null,
@@ -105,8 +106,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
       <div className="w-full mx-auto">
         <Alert variant="destructive">
           <AlertCircleIcon className="h-4 w-4" />
+          <AlertTitle>Couldn't load notes</AlertTitle>
           <AlertDescription>
-            Failed to load data. Please try again later.
+            {queryErrorMessage(error, "Please try again later.")}
           </AlertDescription>
         </Alert>
       </div>
@@ -125,12 +127,12 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div className="w-full">
-      {hasResolvedData && allPosts.length === 0 && !isFetching && (
+      {hasResolvedData && allPosts.length === 0 && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>
           <AlertDescription>
-            Start the conversation by creating a new post!
+            Start the conversation by sharing a note.
           </AlertDescription>
         </Alert>
       )}
