@@ -7,9 +7,9 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { reset } from "drizzle-seed";
 
-import * as schema from "./schema";
-import { type InsertMessage, messageTable } from "./schema/message";
-import { type InsertNote, noteTable } from "./schema/note";
+import * as schema from "./schema/index.js";
+import { type InsertMessage, messageTable } from "./schema/message.js";
+import { type InsertNote, noteTable } from "./schema/note.js";
 import {
   type InsertPost,
   type InsertPostComment,
@@ -17,13 +17,13 @@ import {
   postCommentTable,
   postRepostTable,
   postTable,
-} from "./schema/post";
+} from "./schema/post.js";
 import {
   type InsertSession,
   type InsertUser,
   sessionTable,
   userTable,
-} from "./schema/user";
+} from "./schema/user.js";
 
 type ClientOptions = Parameters<typeof createClient>[0];
 type UserSeed = Omit<InsertUser, "id">;

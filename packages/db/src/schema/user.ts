@@ -7,7 +7,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
-import { messageTable } from "./message";
+import { messageTable } from "./message.js";
 
 export const userTable = sqliteTable("user", {
   id: text("id")
