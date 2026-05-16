@@ -1115,12 +1115,21 @@ export async function getMessagesPage(params: {
 
       try {
         content = await aesDecrypt(message.content);
-      } catch {}
+      } catch (err) {
+        console.error("Failed to decrypt message content", {
+          messageId: message.id,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
 
       if (message.reply) {
         try {
           reply = await aesDecrypt(message.reply);
-        } catch {
+        } catch (err) {
+          console.error("Failed to decrypt message reply", {
+            messageId: message.id,
+            error: err instanceof Error ? err.message : err,
+          });
           reply = message.reply;
         }
       }

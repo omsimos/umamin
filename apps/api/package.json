@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=../../packages/db/.env src/server.ts",
+    "dev": "tsx watch --env-file=.env src/server.ts",
     "build": "tsc --noEmit",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
     "start": "tsx src/server.ts",
-    "start:local": "tsx --env-file=../../packages/db/.env src/server.ts",
+    "start:local": "tsx --env-file=.env src/server.ts",
     "clean": "rm -rf .turbo dist node_modules"
   },
   "dependencies": {

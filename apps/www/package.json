@@ -40,7 +40,6 @@
     "@umamin/encryption": "workspace:*",
     "@umamin/ui": "workspace:*",
     "@upstash/redis": "^1.37.0",
-    "arctic": "^3.7.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

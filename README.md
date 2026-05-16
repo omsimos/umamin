@@ -18,11 +18,24 @@
 
 If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you! Please review our [Code of Conduct](./CODE_OF_CONDUCT.md) before contributing.
 
+### Architecture
+
+Umamin is split into a Next.js frontend and a Hono backend, deployed independently:
+
+```
+Browser ──► apps/www (Next.js, Vercel) ──► apps/api (Hono, Railway) ──► Turso / libSQL
+```
+
+- The frontend never talks to the database directly. All reads and writes — including AES decryption of message content — happen server-side in the Hono API.
+- Sessions are issued by the api as cookies; in production they're scoped to a shared parent domain via `SESSION_COOKIE_DOMAIN`.
+
 ### Monorepo Setup
 
-| Core Packages        | Description                                                      |
+| Package              | Description                                                      |
 | -------------------- | ---------------------------------------------------------------- |
-| `www`                | **Umamin Q&A** & landing page (Next.js)                          |
+| `apps/www`           | **Umamin Q&A** & landing page (Next.js, deploys to Vercel)       |
+| `apps/api`           | Hono API server (deploys to Railway)                             |
+| `@umamin/core`       | Shared data access, mutations, validation                        |
 | `@umamin/db`         | Database schema & migrations using Drizzle ORM + Turso/libSQL    |
 | `@umamin/encryption` | AES-GCM encryption/decryption utilities (uses `AES_256_GCM_KEY`) |
 | `@umamin/ui`         | Shared UI components and styling                                 |
@@ -44,46 +57,43 @@ $ pnpm install
 
 ### Environment Variables
 
-```env
-# apps/www/.env
-# Database (used via @umamin/db)
-TURSO_CONNECTION_URL=http://127.0.0.1:8080
-TURSO_AUTH_TOKEN= # can be empty for local
+Each package has its own `.env.example`. Copy them to `.env` and fill in:
 
-# Encryption
-AES_256_GCM_KEY=REPLACE_WITH_BASE64_KEY
-
-# Google OAuth (optional)
-GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
-GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
-GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
-
-# packages/db/.env (for drizzle-kit CLI)
-TURSO_CONNECTION_URL=http://127.0.0.1:8080
-TURSO_AUTH_TOKEN= # can be empty for local
+```sh
+$ cp apps/api/.env.example apps/api/.env
+$ cp apps/www/.env.example apps/www/.env
+$ cp packages/db/.env.example packages/db/.env
 ```
 
-Generate an AES-256-GCM key using the helper script:
+| File                    | Purpose                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `apps/api/.env`         | Hono server: Turso, AES key, Google OAuth, CORS, session cookie domain                    |
+| `apps/www/.env`         | Next.js frontend: `NEXT_PUBLIC_API_ORIGIN` and a few feature flags                        |
+| `packages/db/.env`      | `pnpm db:seed` (needs `AES_256_GCM_KEY`); drizzle-kit also reads it for remote migrations |
+
+Locally, `TURSO_CONNECTION_URL` defaults to `http://127.0.0.1:8080` and the auth token is unused, so you can leave those blank.
+
+Generate an AES-256-GCM key with the helper script and copy the same value into **both** `apps/api/.env` and `packages/db/.env` — if they drift, seeded messages won't decrypt:
 
 ```sh
 $ pnpm aes:generate
-# copy the printed key into AES_256_GCM_KEY
 ```
 
-If you need to use Google OAuth, you must set up your own OAuth client. [Setting up OAuth 2.0 →](https://support.google.com/cloud/answer/6158849)
+If you need Google OAuth, set up your own OAuth client and point the redirect URI at the api (`http://localhost:8787/auth/google/callback` in dev). [Setting up OAuth 2.0 →](https://support.google.com/cloud/answer/6158849)
 
 ### Development Server
 
-Run the development servers with Turborepo:
+Run all dev servers with Turborepo:
 
 ```sh
-$ pnpm dev # runs app(s) and local db dev (if configured)
+$ pnpm dev # starts www (3000), api (8787), and the local libSQL server (8080)
 ```
 
 Run a specific app only:
 
 ```sh
 $ pnpm dev --filter=www
+$ pnpm dev --filter=api
 ```
 
 ### Setup Database
@@ -91,7 +101,7 @@ $ pnpm dev --filter=www
 Start a local libSQL server and run migrations.
 
 ```sh
-# optional: start local libSQL (turso dev) alongside type-checker
+# start the local libSQL server (turso dev) — also started automatically by `pnpm dev`
 $ pnpm --filter=@umamin/db dev
 
 # generate migrations from schema changes
@@ -103,13 +113,18 @@ $ pnpm db:migrate
 # open drizzle studio
 $ pnpm db:studio
 
-# optional: reset & seed the database with demo data
+# reset & seed the database with demo data (requires AES_256_GCM_KEY in packages/db/.env)
 $ pnpm db:seed
 
 # seeded test account
 # username: testuser
 # password: 12345
 ```
+
+### Deployment
+
+- **`apps/www` → Vercel.** Set `NEXT_PUBLIC_API_ORIGIN` to your Railway API URL and `SESSION_COOKIE_DOMAIN` to a leading-dot parent domain shared with the api.
+- **`apps/api` → Railway.** Service root stays at the repo root; `railway.json` at the root scopes builds via `watchPatterns` so pushes that only touch `apps/www` don't redeploy the api.
 
 ### Running Build
 
