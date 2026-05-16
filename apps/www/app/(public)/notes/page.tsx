@@ -1,13 +1,7 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
-import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys } from "@/lib/query";
-import { fetchPublicNotesPageServer } from "@/lib/server-fetchers";
+import { getDehydratedPublicNotes } from "@/lib/server-fetchers";
 import { NotesContent } from "./components/notes-content";
-
-// ISR: regenerate the static HTML + dehydrated cache at most once per minute.
-// Keeps Vercel function invocations at zero for the steady-state cached path.
-export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Umamin — Notes",
@@ -39,16 +33,13 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const queryClient = getQueryClient();
-
+  // The prefetch is wrapped in `use cache` with a 5-minute revalidate, so this
+  // page stays prerendered and only hits Hono on cache revalidation.
+  let dehydratedState = null;
   try {
-    const firstPage = await fetchPublicNotesPageServer(60);
-    queryClient.setQueryData(queryKeys.notes("public"), {
-      pages: [firstPage],
-      pageParams: [null],
-    });
+    dehydratedState = await getDehydratedPublicNotes();
   } catch {
-    // Fall through to client-side fetch on the rare Hono outage during ISR.
+    // Fall through to client-side fetch on the rare Hono outage.
   }
 
   return (
@@ -57,7 +48,7 @@ export default async function Page() {
         Umamin Notes
       </h1>
 
-      <HydrationBoundary state={dehydrate(queryClient)}>
+      <HydrationBoundary state={dehydratedState}>
         <NotesContent />
       </HydrationBoundary>
     </div>

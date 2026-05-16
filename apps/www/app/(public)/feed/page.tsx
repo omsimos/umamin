@@ -1,35 +1,26 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { HydrationBoundary } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
-import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys } from "@/lib/query";
-import { fetchPublicPostsPageServer } from "@/lib/server-fetchers";
+import { getDehydratedPublicFeed } from "@/lib/server-fetchers";
 import { FeedContent } from "./components/feed-content";
-
-// ISR: regenerate the static HTML + dehydrated cache at most once per minute.
-// Keeps Vercel function invocations at zero for the steady-state cached path.
-export const revalidate = 60;
 
 export default async function Feed() {
   if (process.env.NEXT_PUBLIC_SOCIAL_UNDER_MAINTENANCE === "true") {
     redirect("/social");
   }
 
-  const queryClient = getQueryClient();
-
+  // The prefetch is wrapped in `use cache` with a 5-minute revalidate, so this
+  // page stays prerendered and only hits Hono on cache revalidation.
+  let dehydratedState = null;
   try {
-    const firstPage = await fetchPublicPostsPageServer(60);
-    queryClient.setQueryData(queryKeys.posts("public"), {
-      pages: [firstPage],
-      pageParams: [null],
-    });
+    dehydratedState = await getDehydratedPublicFeed();
   } catch {
-    // Fall through to client-side fetch on the rare Hono outage during ISR.
+    // Fall through to client-side fetch on the rare Hono outage.
   }
 
   return (
     <main className="pb-40">
       <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
-        <HydrationBoundary state={dehydrate(queryClient)}>
+        <HydrationBoundary state={dehydratedState}>
           <FeedContent />
         </HydrationBoundary>
       </section>

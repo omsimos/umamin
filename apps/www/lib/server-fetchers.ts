@@ -1,21 +1,28 @@
+"use cache";
+
 /**
- * Server-only fetchers used by RSC pages that prefetch the public variant
- * of an infinite query and dehydrate it for client hydration.
+ * Server-only prefetchers used by RSC pages. They return a dehydrated React
+ * Query state ready to feed into <HydrationBoundary>.
  *
- * These hit the Hono API directly with ISR caching (`next.revalidate`), so the
- * page can keep `export const revalidate = N` semantics — every cached HTML
- * gen calls Hono once, then serves the result to every visitor in the window.
+ * Each function is wrapped in `use cache` with a 5-minute revalidate so the
+ * page stays prerendered under `cacheComponents` and only hits Hono on cache
+ * revalidation, not per request. Both the network fetch and the QueryClient
+ * timestamp work happen inside the cache scope, so the result is a pure
+ * serializable object suitable for prerendering.
  *
- * Auth-scoped variants are intentionally absent: those would need a per-request
- * cookie forward and would convert pages to dynamic Vercel functions.
+ * Auth-scoped variants are intentionally absent: those would need a per-
+ * request cookie forward and would convert pages to dynamic functions.
  */
+import { type DehydratedState, dehydrate } from "@tanstack/react-query";
+import { cacheLife } from "next/cache";
+import { getQueryClient } from "./get-query-client";
+import { queryKeys } from "./query";
 import type { FeedResponse, NotesResponse } from "./query-types";
 import { getHonoApiOrigin } from "./server-metadata";
 
-async function getJsonCached<T>(path: string, revalidate: number): Promise<T> {
+async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${getHonoApiOrigin()}${path}`, {
     headers: { accept: "application/json" },
-    next: { revalidate },
   });
 
   if (!response.ok) {
@@ -24,10 +31,24 @@ async function getJsonCached<T>(path: string, revalidate: number): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function fetchPublicPostsPageServer(revalidate = 60) {
-  return getJsonCached<FeedResponse>("/api/public/posts", revalidate);
+export async function getDehydratedPublicFeed(): Promise<DehydratedState> {
+  cacheLife({ revalidate: 300, expire: 3600 });
+  const firstPage = await getJson<FeedResponse>("/api/public/posts");
+  const queryClient = getQueryClient();
+  queryClient.setQueryData(queryKeys.posts("public"), {
+    pages: [firstPage],
+    pageParams: [null],
+  });
+  return dehydrate(queryClient);
 }
 
-export function fetchPublicNotesPageServer(revalidate = 60) {
-  return getJsonCached<NotesResponse>("/api/public/notes", revalidate);
+export async function getDehydratedPublicNotes(): Promise<DehydratedState> {
+  cacheLife({ revalidate: 300, expire: 3600 });
+  const firstPage = await getJson<NotesResponse>("/api/public/notes");
+  const queryClient = getQueryClient();
+  queryClient.setQueryData(queryKeys.notes("public"), {
+    pages: [firstPage],
+    pageParams: [null],
+  });
+  return dehydrate(queryClient);
 }
