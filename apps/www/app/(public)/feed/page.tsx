@@ -9,13 +9,10 @@ export default async function Feed() {
   }
 
   // The prefetch is wrapped in `use cache` with a 5-minute revalidate, so this
-  // page stays prerendered and only hits Hono on cache revalidation.
-  let dehydratedState = null;
-  try {
-    dehydratedState = await getDehydratedPublicFeed();
-  } catch {
-    // Fall through to client-side fetch on the rare Hono outage.
-  }
+  // page stays prerendered and only hits Hono on cache revalidation. Returns
+  // null (no dehydrated state) if HONO_API_ORIGIN is unset or unreachable —
+  // the client then falls back to a normal infinite query fetch.
+  const dehydratedState = await getDehydratedPublicFeed();
 
   return (
     <main className="pb-40">

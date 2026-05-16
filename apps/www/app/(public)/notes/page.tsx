@@ -34,13 +34,10 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   // The prefetch is wrapped in `use cache` with a 5-minute revalidate, so this
-  // page stays prerendered and only hits Hono on cache revalidation.
-  let dehydratedState = null;
-  try {
-    dehydratedState = await getDehydratedPublicNotes();
-  } catch {
-    // Fall through to client-side fetch on the rare Hono outage.
-  }
+  // page stays prerendered and only hits Hono on cache revalidation. Returns
+  // null (no dehydrated state) if HONO_API_ORIGIN is unset or unreachable —
+  // the client then falls back to a normal infinite query fetch.
+  const dehydratedState = await getDehydratedPublicNotes();
 
   return (
     <div className="container max-w-xl space-y-12">
