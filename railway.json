@@ -3,12 +3,12 @@
   "build": {
     "buildCommand": "pnpm --filter api build",
     "watchPatterns": [
-      "/apps/api/**",
-      "/packages/core/**",
-      "/packages/db/**",
-      "/packages/encryption/**",
-      "/pnpm-lock.yaml",
-      "/pnpm-workspace.yaml"
+      "apps/api/**",
+      "packages/core/**",
+      "packages/db/**",
+      "packages/encryption/**",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml"
     ]
   },
   "deploy": {
