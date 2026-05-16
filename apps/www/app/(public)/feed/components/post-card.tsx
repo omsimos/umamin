@@ -23,7 +23,7 @@ import {
   ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import {
   BURST_ACTION_REJECT_MESSAGE,
@@ -88,14 +88,10 @@ export function PostCard({
   const commentCount = "commentCount" in data ? data.commentCount : undefined;
   const imageId = useId();
   const imageTargetId = `umamin-${imageId}`;
-  const [liked, setLiked] = useState<boolean>(data.isLiked === true);
-  const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
-  const [reposted, setReposted] = useState<boolean>(
-    "isReposted" in data ? data.isReposted === true : false,
-  );
-  const [reposts, setReposts] = useState<number>(
-    "repostCount" in data ? (data.repostCount ?? 0) : 0,
-  );
+  const liked = data.isLiked === true;
+  const likes = data.likeCount ?? 0;
+  const reposted = "isReposted" in data ? data.isReposted === true : false;
+  const reposts = "repostCount" in data ? (data.repostCount ?? 0) : 0;
   const [repostDialogOpen, setRepostDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -141,13 +137,6 @@ export function PostCard({
     }
   };
 
-  useEffect(() => {
-    setLiked(data.isLiked === true);
-    setLikes(data.likeCount ?? 0);
-    setReposted("isReposted" in data ? data.isReposted === true : false);
-    setReposts("repostCount" in data ? (data.repostCount ?? 0) : 0);
-  }, [data.isLiked, data.likeCount, data]);
-
   const handleLikeAction = useBurstAction(
     async (prevLiked: boolean) => {
       if (isComment) {
@@ -186,26 +175,20 @@ export function PostCard({
   const handleLike = async () => {
     const prevLiked = liked;
     const prevLikes = likes;
+    const nextLiked = !prevLiked;
+    const nextLikes = prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1;
 
-    setLiked(!prevLiked);
-    setLikes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
+    syncPostCache(nextLiked, nextLikes, reposted, reposts);
 
     try {
       await handleLikeAction(prevLiked);
-      syncPostCache(
-        !prevLiked,
-        prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1,
-        reposted,
-        reposts,
-      );
       if (isComment) {
         toast.success(prevLiked ? "Comment unliked." : "Comment liked.");
       } else {
         toast.success(prevLiked ? "Post unliked." : "Post liked.");
       }
     } catch (err) {
-      setLiked(prevLiked);
-      setLikes(prevLikes);
+      syncPostCache(prevLiked, prevLikes, reposted, reposts);
       toast.error(err instanceof Error ? err.message : "Couldn't update like.");
       console.log(err);
     }
@@ -214,33 +197,29 @@ export function PostCard({
   const handleRepost = async () => {
     const prevReposted = reposted;
     const prevReposts = reposts;
+    const nextReposts = prevReposted
+      ? Math.max(prevReposts - 1, 0)
+      : prevReposts + 1;
 
-    setReposted(!prevReposted);
-    setReposts((v) => (prevReposted ? Math.max(v - 1, 0) : v + 1));
+    syncPostCache(liked, likes, !prevReposted, nextReposts);
 
     try {
       const res = await handleRepostAction(prevReposted);
       if (prevReposted) {
         if (isAlreadyRemoved(res)) {
-          setReposted(false);
-          setReposts((v) => Math.max(v - 1, 0));
           syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
         }
         toast.success("Repost removed.");
-        syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
       } else {
         if (isAlreadyReposted(res)) {
-          setReposted(prevReposted);
-          setReposts(prevReposts);
+          syncPostCache(liked, likes, prevReposted, prevReposts);
           toast.error("Already reposted.");
           return;
         }
         toast.success("Reposted.");
-        syncPostCache(liked, likes, true, prevReposts + 1);
       }
     } catch (err) {
-      setReposted(prevReposted);
-      setReposts(prevReposts);
+      syncPostCache(liked, likes, prevReposted, prevReposts);
       toast.error(
         err instanceof Error ? err.message : "Couldn't update repost.",
       );
@@ -275,22 +254,18 @@ export function PostCard({
       return;
     }
 
-    setReposted(true);
-    setReposts((v) => v + 1);
+    syncPostCache(liked, likes, true, prevReposts + 1);
 
     try {
       const res = await addRepost({ postId: data.id, content });
       if (isAlreadyReposted(res)) {
-        setReposted(prevReposted);
-        setReposts(prevReposts);
+        syncPostCache(liked, likes, prevReposted, prevReposts);
         toast.error("Already reposted.");
         return;
       }
       toast.success("Quote reposted.");
-      syncPostCache(liked, likes, true, prevReposts + 1);
     } catch (err) {
-      setReposted(prevReposted);
-      setReposts(prevReposts);
+      syncPostCache(liked, likes, prevReposted, prevReposts);
       toast.error("Couldn't repost.");
       console.log(err);
     }
