@@ -8,6 +8,7 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
+import { useMemo } from "react";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
@@ -40,7 +41,10 @@ export function ReceivedMessages() {
   });
   const hasResolvedData = data !== undefined;
 
-  const allMessages = data?.pages.flatMap((page) => page.messages) ?? [];
+  const allMessages = useMemo(
+    () => data?.pages.flatMap((page) => page.messages) ?? [],
+    [data],
+  );
   const totalRows = hasNextPage ? allMessages.length + 1 : allMessages.length;
   const { containerRef, scrollMargin } =
     useWindowVirtualizerOffset<HTMLDivElement>();

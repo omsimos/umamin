@@ -53,7 +53,7 @@ export function PostList({
   const hasResolvedData = data !== undefined;
 
   // De-duplicate feed items across pages
-  const allItems: FeedItem[] = (() => {
+  const allItems = useMemo<FeedItem[]>(() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
     const map = new Map<string, FeedItem>();
     for (const item of flat) {
@@ -64,7 +64,7 @@ export function PostList({
       if (!map.has(key)) map.set(key, item);
     }
     return Array.from(map.values());
-  })();
+  }, [data]);
 
   const AD_FREQUENCY = 8;
 

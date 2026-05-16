@@ -45,12 +45,12 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   const hasResolvedData = data !== undefined;
 
   // De-duplicate posts by id across pages
-  const allPosts: NoteItem[] = (() => {
+  const allPosts = useMemo<NoteItem[]>(() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
     const map = new Map<string, NoteItem>();
     for (const item of flat) map.set(item.id, item);
     return Array.from(map.values());
-  })();
+  }, [data]);
 
   const AD_FREQUENCY = 8;
 
