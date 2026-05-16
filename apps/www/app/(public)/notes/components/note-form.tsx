@@ -24,6 +24,11 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
   const updateNoteMutation = useMutation({
     mutationFn: createNote,
     onMutate: async (nextValues) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: queryKeys.currentNote() }),
+        queryClient.cancelQueries({ queryKey: queryKeys.notes("viewer") }),
+      ]);
+
       const previousNote = queryClient.getQueryData<NoteItem | null>(
         queryKeys.currentNote(),
       );
