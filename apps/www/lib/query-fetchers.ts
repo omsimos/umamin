@@ -66,12 +66,12 @@ export async function fetchCurrentUser() {
   return getJson<CurrentUserResponse>("/api/me");
 }
 
-export async function fetchCurrentUserOptional() {
+export async function fetchCurrentUserOptional(): Promise<CurrentUserResponse> {
   try {
     return await getJson<CurrentUserResponse>("/api/me");
   } catch (error) {
     if (error instanceof ApiClientError && error.status === 401) {
-      return {} as CurrentUserResponse;
+      return { user: undefined };
     }
     throw error;
   }
