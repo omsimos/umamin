@@ -13,6 +13,12 @@ import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
+  adIndexForRow,
+  dataIndexForRow,
+  isAdRow,
+  totalRowsWithAds,
+} from "@/lib/ad-rows";
+import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
@@ -66,22 +72,10 @@ export function PostList({
     return Array.from(map.values());
   }, [data]);
 
-  const AD_FREQUENCY = 8;
-
-  const isAdRow = (rowIndex: number) =>
-    (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
-
-  const dataIndexForRow = (rowIndex: number) => {
-    const adsAtOrBefore = Math.floor((rowIndex + 1) / (AD_FREQUENCY + 1));
-    const adsBefore = isAdRow(rowIndex) ? adsAtOrBefore - 1 : adsAtOrBefore;
-    return rowIndex - adsBefore;
-  };
-
-  const totalRows = useMemo(() => {
-    const contentRows =
-      allItems.length + Math.floor(allItems.length / AD_FREQUENCY);
-    return hasNextPage ? contentRows + 1 : contentRows;
-  }, [allItems.length, hasNextPage]);
+  const totalRows = useMemo(
+    () => totalRowsWithAds(allItems.length, Boolean(hasNextPage)),
+    [allItems.length, hasNextPage],
+  );
 
   const { containerRef, scrollMargin } =
     useWindowVirtualizerOffset<HTMLDivElement>();
@@ -95,8 +89,7 @@ export function PostList({
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
       if (isAdRow(index)) {
-        const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
-        return `feed-inline-ad-${adIndex}`;
+        return `feed-inline-ad-${adIndexForRow(index)}`;
       }
       const item = allItems[dataIndexForRow(index)];
       if (!item) return `row-${index}`;
