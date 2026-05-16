@@ -89,7 +89,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
   const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
 
   useInfiniteBoundaryLoader({
-    boundaryIndex: totalRows - 1,
+    boundaryIndex: Math.max(0, totalRows - 4),
     hasNextPage: Boolean(hasNextPage),
     isFetchingNextPage,
     items,
