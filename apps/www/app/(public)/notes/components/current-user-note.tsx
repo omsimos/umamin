@@ -34,6 +34,7 @@ import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { isOlderThanOneYear, saveImage } from "@/lib/utils";
+import { isVerifiedUser } from "@/lib/verified-users";
 import type { PublicUser } from "@/types/user";
 
 export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
@@ -154,9 +155,9 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
                     ? currentUser.displayName
                     : currentUser.username}
                 </span>
-                {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                  currentUser.username,
-                ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+                {isVerifiedUser(currentUser.username) && (
+                  <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
+                )}
               </div>
 
               <span className="text-muted-foreground truncate">

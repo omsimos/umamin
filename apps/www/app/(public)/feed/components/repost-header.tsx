@@ -9,6 +9,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { BadgeCheckIcon, Repeat2Icon } from "lucide-react";
 import Link from "next/link";
 import { isOlderThanOneYear, shortTimeAgo } from "@/lib/utils";
+import { isVerifiedUser } from "@/lib/verified-users";
 import type { PublicUser } from "@/types/user";
 
 export function RepostHeader({
@@ -20,9 +21,7 @@ export function RepostHeader({
   createdAt: Date;
   content?: string | null;
 }) {
-  const verified =
-    !!user.username &&
-    process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(user.username);
+  const verified = isVerifiedUser(user.username);
 
   if (!content) {
     return (

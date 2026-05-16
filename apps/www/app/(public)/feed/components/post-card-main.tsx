@@ -44,6 +44,7 @@ import {
   isOlderThanOneYear,
   shortTimeAgo,
 } from "@/lib/utils";
+import { isVerifiedUser } from "@/lib/verified-users";
 import type { PostData } from "@/types/post";
 import { PostMenu } from "./post-menu";
 import { RepostDialog } from "./repost-dialog";
@@ -242,10 +243,9 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
               {author.displayName}
             </Link>
 
-            {author.username &&
-              process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                author.username,
-              ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+            {isVerifiedUser(author.username) && (
+              <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
+            )}
             <span className="text-muted-foreground">@{author.username}</span>
           </div>
 

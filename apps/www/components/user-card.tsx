@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { isOlderThanOneYear } from "@/lib/utils";
+import { isVerifiedUser } from "@/lib/verified-users";
 import type { PublicUser } from "@/types/user";
 import { ShareButton } from "./share-button";
 
@@ -46,9 +47,9 @@ export function UserCard({ user }: { user: PublicUser }) {
               <p className="font-semibold md:text-xl">
                 {user.displayName ? user.displayName : user.username}
               </p>
-              {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                user.username,
-              ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+              {isVerifiedUser(user.username) && (
+                <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
+              )}
             </div>
 
             <ShareButton username={user.username} />

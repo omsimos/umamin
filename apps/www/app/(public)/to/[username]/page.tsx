@@ -5,6 +5,7 @@ import { ShareButton } from "@/components/share-button";
 import type { UserProfileResponse } from "@/lib/query-types";
 import { fetchMetadataJson } from "@/lib/server-metadata";
 import { formatUsername } from "@/lib/utils";
+import { isVerifiedUser } from "@/lib/verified-users";
 import { ChatForm } from "./components/chat-form";
 
 export async function generateMetadata({
@@ -65,9 +66,9 @@ export default async function SendMessage({
             <p className="font-semibold text-sm">
               {user?.displayName ? user?.displayName : user?.username}
             </p>
-            {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-              user.username,
-            ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+            {isVerifiedUser(user.username) && (
+              <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
+            )}
 
             <ShareButton username={user.username} />
           </div>
