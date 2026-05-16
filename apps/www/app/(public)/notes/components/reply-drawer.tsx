@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SelectNote } from "@umamin/db/schema/note";
 import { Button } from "@umamin/ui/components/button";
 import {
@@ -21,6 +21,7 @@ import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { apiClientErrorMessage } from "@/lib/api-client";
 import { sendMessage } from "@/lib/api-mutations";
+import { queryKeys } from "@/lib/query";
 import { formatContent } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
@@ -58,6 +59,7 @@ export function ReplyDrawer({ isOpen, setIsOpen, note }: ReplyDrawerProps) {
 }
 
 const ChatForm = ({ note }: ChatFormProps) => {
+  const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const inputRef = useDynamicTextarea(content);
@@ -76,6 +78,10 @@ const ChatForm = ({ note }: ChatFormProps) => {
       setMessage(formatContent(content));
       toast.success("Message sent.");
       setContent("");
+      // Sender's sent inbox isn't reachable optimistically because the API
+      // doesn't return the inserted row — refetch only that key, the user
+      // is unlikely to be deep-scrolled into Sent at this moment.
+      queryClient.invalidateQueries({ queryKey: queryKeys.sentMessages() });
     },
     onError: (err) =>
       toast.error(apiClientErrorMessage(err, "Couldn't send message.")),

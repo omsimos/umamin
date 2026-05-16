@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
@@ -13,11 +13,13 @@ import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { apiClientErrorMessage } from "@/lib/api-client";
 import { sendMessage } from "@/lib/api-mutations";
+import { queryKeys } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import { formatContent } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
 export function ChatForm({ user }: { user: PublicUser }) {
+  const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const [showUnauthenticatedDialog, setShowUnauthenticatedDialog] =
@@ -37,6 +39,7 @@ export function ChatForm({ user }: { user: PublicUser }) {
       setMessage(formatContent(content));
       toast.success("Message sent.");
       setContent("");
+      queryClient.invalidateQueries({ queryKey: queryKeys.sentMessages() });
     },
     onError: (err) =>
       toast.error(apiClientErrorMessage(err, "Couldn't send message.")),
