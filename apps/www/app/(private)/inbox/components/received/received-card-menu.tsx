@@ -75,11 +75,6 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     onSuccess: () => {
       toast.success("Message deleted.");
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.receivedMessages(),
-      });
-    },
   });
 
   const blockMutation = useMutation({
@@ -117,18 +112,12 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
                 queryKeys.receivedMessages(),
                 ctx?.previous,
               );
-              unblockUser({ userId: props.senderId })
-                .then(() =>
-                  queryClient.invalidateQueries({
-                    queryKey: queryKeys.receivedMessages(),
-                  }),
-                )
-                .catch((err) => {
-                  console.error(err);
-                  toast.error(
-                    apiClientErrorMessage(err, "Couldn't unblock user."),
-                  );
-                });
+              unblockUser({ userId: props.senderId }).catch((err) => {
+                console.error(err);
+                toast.error(
+                  apiClientErrorMessage(err, "Couldn't unblock user."),
+                );
+              });
             }
           },
         },
@@ -137,11 +126,6 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     onError: (err, _variables, ctx) => {
       queryClient.setQueryData(queryKeys.receivedMessages(), ctx?.previous);
       toast.error(apiClientErrorMessage(err, "Couldn't block user."));
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.receivedMessages(),
-      });
     },
   });
 

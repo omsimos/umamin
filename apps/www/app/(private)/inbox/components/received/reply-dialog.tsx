@@ -92,11 +92,6 @@ export function ReplyDialog(props: Props) {
       setUpdatedAt(ctx?.previousUpdatedAt);
       toast.error(apiClientErrorMessage(err, "Couldn't send reply."));
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.receivedMessages(),
-      });
-    },
   });
 
   return (
