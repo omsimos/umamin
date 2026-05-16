@@ -37,12 +37,19 @@ import {
   removeLike,
   removeRepost,
 } from "@/lib/api-mutations";
-import { queryKeys } from "@/lib/query";
+import {
+  infiniteQueryDefaults,
+  PRIVATE_STALE_TIME,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+  queryScope,
+} from "@/lib/query";
 import {
   patchComment,
   patchPostAcrossFeed,
   patchPostResponse,
 } from "@/lib/query-cache";
+import { fetchPost, fetchPostCommentsPage } from "@/lib/query-fetchers";
 import type {
   CommentsResponse,
   FeedResponse,
@@ -241,6 +248,24 @@ export function PostCard({
     }
   };
 
+  const prefetchPostDetail = () => {
+    if (isComment || !data?.id) return;
+    const scope = queryScope(isAuthenticated);
+    const staleTime = isAuthenticated ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME;
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.post(data.id, scope),
+      queryFn: () => fetchPost(data.id, isAuthenticated),
+      staleTime,
+    });
+    void queryClient.prefetchInfiniteQuery({
+      queryKey: queryKeys.postComments(data.id, scope),
+      queryFn: () => fetchPostCommentsPage(data.id, null, isAuthenticated),
+      initialPageParam: null as string | null,
+      staleTime,
+      ...infiniteQueryDefaults,
+    });
+  };
+
   const handleQuoteRepost = async (content: string) => {
     const prevReposted = reposted;
     const prevReposts = reposts;
@@ -390,7 +415,12 @@ export function PostCard({
 
           {!isComment && (
             <div className="flex space-x-1 items-center">
-              <Link href={`/post/${data?.id}`}>
+              <Link
+                href={`/post/${data?.id}`}
+                onMouseEnter={prefetchPostDetail}
+                onFocus={prefetchPostDetail}
+                onTouchStart={prefetchPostDetail}
+              >
                 <MessageCircleIcon className="h-5 w-5" />
               </Link>
               <span>{commentCount ?? 0}</span>
