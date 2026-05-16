@@ -1,8 +1,8 @@
 import type { QueryKey } from "@tanstack/react-query";
 import { queryOptions } from "@tanstack/react-query";
 
-export const PUBLIC_STALE_TIME = 120_000;
-export const PRIVATE_STALE_TIME = 30_000;
+export const PUBLIC_STALE_TIME = 300_000;
+export const PRIVATE_STALE_TIME = 60_000;
 export const QUERY_GC_TIME = 1000 * 60 * 15;
 
 export type QueryScope = "public" | "viewer";
