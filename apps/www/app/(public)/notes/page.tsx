@@ -1,17 +1,5 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { Button } from "@umamin/ui/components/button";
-import { SquarePenIcon } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { getSession } from "@/lib/auth";
-import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys, queryScope } from "@/lib/query";
-import type { NotesResponse } from "@/lib/query-types";
-import { getCurrentNoteData, getNotesPage } from "@/lib/server/data";
-import { toPublicUser } from "@/types/user";
-import { CurrentUserNote } from "./components/current-user-note";
-import { NoteForm } from "./components/note-form";
-import { NoteList } from "./components/note-list";
+import { NotesContent } from "./components/notes-content";
 
 export const metadata: Metadata = {
   title: "Umamin — Notes",
@@ -42,62 +30,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Page() {
-  const { user } = await getSession();
-  const queryClient = getQueryClient();
-  const currentUser = user ? toPublicUser(user) : null;
-
-  await queryClient.prefetchInfiniteQuery({
-    queryKey: queryKeys.notes(queryScope(!!user)),
-    queryFn: ({ pageParam }) =>
-      getNotesPage({
-        cursor: (pageParam as string | null) ?? null,
-        viewerId: user?.id,
-      }),
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage: NotesResponse) => lastPage.nextCursor ?? null,
-    staleTime: 120_000,
-  });
-
-  if (user) {
-    await queryClient.prefetchQuery({
-      queryKey: queryKeys.currentNote(),
-      queryFn: () => getCurrentNoteData(user.id),
-      staleTime: 30_000,
-    });
-  }
-
+export default function Page() {
   return (
     <div className="container max-w-xl space-y-12">
       <h1 className="font-extrabold sm:text-5xl text-[9vw] leading-none dark:bg-gradient-to-b from-foreground dark:to-zinc-400 bg-zinc-800 bg-clip-text text-transparent tracking-tighter text-center my-6">
         Umamin Notes
       </h1>
 
-      {currentUser ? (
-        <HydrationBoundary state={dehydrate(queryClient)}>
-          <div className="space-y-12">
-            <NoteForm currentUser={currentUser} />
-            <CurrentUserNote currentUser={currentUser} />
-          </div>
-        </HydrationBoundary>
-      ) : (
-        <div className="flex items-center space-x-4 rounded-md border p-4 mb-5">
-          <SquarePenIcon />
-          <div className="flex-1 space-y-1">
-            <p className="text-sm font-medium leading-none">Umamin Notes</p>
-            <p className="text-sm text-muted-foreground">
-              Login to start writing notes
-            </p>
-          </div>
-
-          <Button asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-        </div>
-      )}
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <NoteList isAuthenticated={!!user} />
-      </HydrationBoundary>
+      <NotesContent />
     </div>
   );
 }

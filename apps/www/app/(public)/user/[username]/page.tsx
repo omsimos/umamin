@@ -1,10 +1,7 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
-import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys } from "@/lib/query";
-import { getPublicUserProfileData } from "@/lib/server/data";
+import type { UserProfileResponse } from "@/lib/query-types";
+import { fetchMetadataJson } from "@/lib/server-metadata";
 import { formatUsername } from "@/lib/utils";
 import { UserProfile } from "./user-profile";
 
@@ -16,12 +13,16 @@ export async function generateMetadata({
   const param = await params;
   const username = formatUsername(param.username);
 
-  const title = username
-    ? `(@${username}) on Umamin`
+  const user = await fetchMetadataJson<UserProfileResponse>(
+    `/api/public/user/${encodeURIComponent(username)}`,
+  );
+
+  const title = user
+    ? `(@${user.username}) on Umamin`
     : "Umamin — User not found";
 
-  const description = username
-    ? `Profile of @${username} on Umamin. Join Umamin to connect with @${username} and engage in anonymous messaging.`
+  const description = user
+    ? `Profile of @${user.username} on Umamin. Join Umamin to connect with @${user.username} and engage in anonymous messaging.`
     : "This user does not exist on Umamin.";
 
   return {
@@ -55,20 +56,10 @@ export default async function Page({
 }) {
   const { username } = await params;
   const formattedUsername = formatUsername(username);
-  const user = await getPublicUserProfileData(formattedUsername);
-
-  if (!user) {
-    notFound();
-  }
-
-  const queryClient = getQueryClient();
-  queryClient.setQueryData(queryKeys.userProfile(formattedUsername), user);
 
   return (
     <section className="max-w-xl mx-auto min-h-screen container">
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <UserProfile username={formattedUsername} initialUser={user} />
-      </HydrationBoundary>
+      <UserProfile username={formattedUsername} />
 
       {/* v2-user */}
       <ClientOnlyAdContainer className="mt-5" placement="profile_bottom" />

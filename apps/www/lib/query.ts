@@ -35,6 +35,7 @@ export const queryKeys = {
     ["user-profile-viewer", username] as const,
   receivedMessages: () => ["received_messages"] as const,
   sentMessages: () => ["sent_messages"] as const,
+  session: () => ["session"] as const,
 };
 
 export const infiniteQueryDefaults = {

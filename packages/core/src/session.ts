@@ -28,13 +28,18 @@ export type CookieWriter = {
 
 export type SessionCookieOptions = {
   httpOnly: boolean;
-  sameSite: "lax";
+  sameSite: "lax" | "none";
   secure: boolean;
   expires?: Date;
   maxAge?: number;
   path: string;
   domain?: string;
 };
+
+function sessionCookieSameSite(): "lax" | "none" {
+  if (process.env.NODE_ENV !== "production") return "lax";
+  return process.env.SESSION_COOKIE_SAMESITE === "none" ? "none" : "lax";
+}
 
 export type SessionValidationResult =
   | { session: SelectSession; user: SelectUser }
@@ -128,7 +133,7 @@ export function setSessionTokenCookie(
 
   cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: sessionCookieSameSite(),
     secure: process.env.NODE_ENV === "production",
     expires: expiresAt,
     path: "/",
@@ -146,7 +151,7 @@ export function deleteSessionTokenCookie(cookies: CookieWriter) {
 
   cookies.set(SESSION_COOKIE_NAME, "", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: sessionCookieSameSite(),
     secure: process.env.NODE_ENV === "production",
     maxAge: 0,
     path: "/",
@@ -163,7 +168,7 @@ function clearLegacySessionCookie(cookies: CookieWriter) {
 
   cookies.set(LEGACY_SESSION_COOKIE_NAME, "", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: sessionCookieSameSite(),
     secure: process.env.NODE_ENV === "production",
     maxAge: 0,
     path: "/",

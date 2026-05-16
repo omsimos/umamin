@@ -1,16 +1,8 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { PostCardMain } from "@/app/(public)/feed/components/post-card-main";
-import { apiJson } from "@/lib/api";
-import { getSession } from "@/lib/auth";
-import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys, queryScope } from "@/lib/query";
-import type { CommentsResponse, PostResponse } from "@/lib/query-types";
+import type { PostResponse } from "@/lib/query-types";
+import { fetchMetadataJson } from "@/lib/server-metadata";
 import { getBaseUrl } from "@/lib/utils";
-import { toPublicUser } from "@/types/user";
-import { CommentsList } from "../components/comments-list";
-import ReplyForm from "../components/reply-form";
+import { PostView } from "./post-view";
 
 const truncate = (text: string, max = 160) =>
   text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
@@ -21,9 +13,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const post = await apiJson<PostResponse>(`/api/public/posts/${id}`).catch(
-    () => null,
-  );
+  const post = await fetchMetadataJson<PostResponse>(`/api/public/posts/${id}`);
 
   if (!post) {
     return {
@@ -72,59 +62,10 @@ export default async function Post({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { user } = await getSession();
   const { id } = await params;
-  const currentUser = user ? toPublicUser(user) : null;
-  const scope = queryScope(!!user);
-
-  const data = await apiJson<PostResponse>(
-    user ? `/api/posts/${id}` : `/api/public/posts/${id}`,
-  ).catch(() => null);
-  const queryClient = getQueryClient();
-
-  if (!data) {
-    notFound();
-  }
-
-  queryClient.setQueryData(queryKeys.post(id, scope), data);
-
-  await queryClient.prefetchInfiniteQuery({
-    queryKey: queryKeys.postComments(id, scope),
-    queryFn: ({ pageParam }) =>
-      apiJson<CommentsResponse>(
-        `${
-          user
-            ? `/api/posts/${id}/comments`
-            : `/api/public/posts/${id}/comments`
-        }${
-          pageParam ? `?cursor=${encodeURIComponent(String(pageParam))}` : ""
-        }`,
-      ),
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage: CommentsResponse) =>
-      lastPage.nextCursor ?? null,
-    staleTime: 120_000,
-  });
-
   return (
     <main className="w-full sm:max-w-lg mx-auto bg-background">
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <PostCardMain
-          isAuthenticated={!!user}
-          currentUserId={user?.id}
-          data={data}
-        />
-
-        {currentUser && (
-          <div className="w-full py-4 border-b font-medium text-muted-foreground px-7 sm:px-0">
-            <ReplyForm user={currentUser} postId={id} />
-          </div>
-        )}
-
-        <div className="space-y-6 my-6">
-          <CommentsList isAuthenticated={!!user} postId={id} />
-        </div>
-      </HydrationBoundary>
+      <PostView id={id} />
     </main>
   );
 }

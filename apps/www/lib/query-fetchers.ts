@@ -1,3 +1,4 @@
+import type { SessionValidationResult } from "@umamin/core/session";
 import type { SelectNote } from "@umamin/db/schema/note";
 import type {
   CommentsResponse,
@@ -10,6 +11,10 @@ import type {
   UserProfileViewerResponse,
 } from "@/lib/query-types";
 import { ApiClientError, getJson } from "./api-client";
+
+export async function fetchSession(): Promise<SessionValidationResult> {
+  return getJson<SessionValidationResult>("/api/auth/session");
+}
 
 function appendCursor(baseUrl: string, cursor: string | null) {
   return cursor ? `${baseUrl}?cursor=${encodeURIComponent(cursor)}` : baseUrl;

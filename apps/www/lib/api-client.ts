@@ -26,6 +26,8 @@ function getBrowserApiOrigin() {
     return "http://localhost:8787";
   }
 
+  // In production we require a direct API origin so requests go to Hono on
+  // Railway and never proxy through Vercel (no function invocations incurred).
   return "";
 }
 
@@ -34,7 +36,7 @@ function apiUrl(path: string) {
   const origin = getBrowserApiOrigin();
   if (!origin) {
     throw new ApiClientError(
-      "NEXT_PUBLIC_API_ORIGIN is not configured",
+      "NEXT_PUBLIC_API_ORIGIN is not configured. Point it at your Hono API on Railway.",
       0,
       "CONFIGURATION_ERROR",
     );

@@ -2,7 +2,8 @@ import { BadgeCheckIcon, LockIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ShareButton } from "@/components/share-button";
-import { getPublicUserProfileData } from "@/lib/server/data";
+import type { UserProfileResponse } from "@/lib/query-types";
+import { fetchMetadataJson } from "@/lib/server-metadata";
 import { formatUsername } from "@/lib/utils";
 import { ChatForm } from "./components/chat-form";
 
@@ -15,7 +16,6 @@ export async function generateMetadata({
   const username = formatUsername(param.username);
 
   const title = `Send Encrypted Anonymous Message to @${username} | Umamin`;
-
   const description = `Send an encrypted anonymous message to @${username} on Umamin. Protect your identity while communicating securely and privately.`;
 
   return {
@@ -49,7 +49,9 @@ export default async function SendMessage({
 }) {
   const { username } = await params;
   const formattedUsername = formatUsername(username);
-  const user = await getPublicUserProfileData(formattedUsername);
+  const user = await fetchMetadataJson<UserProfileResponse>(
+    `/api/public/user/${encodeURIComponent(formattedUsername)}`,
+  );
   if (!user) {
     notFound();
   }

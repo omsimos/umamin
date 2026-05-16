@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { AuthGuard } from "@/components/auth-guard";
 import { RegisterForm } from "./components/register-form";
 
 const BrowserWarning = dynamic(() => import("@/components/browser-warning"));
@@ -35,41 +34,37 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Register() {
-  const { session } = await getSession();
-
-  if (session) {
-    redirect("/inbox");
-  }
-
+export default function Register() {
   return (
     <section className="max-w-lg md:max-w-md container min-h-screen">
-      <BrowserWarning />
+      <AuthGuard requireAuth={false} redirectTo="/inbox">
+        <BrowserWarning />
 
-      <div className="mb-6">
-        <h2 className="text-2xl tracking-tight font-semibold">
-          Umamin Account
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          By creating an account, you agree to our{" "}
-          <Link href="/privacy" className="font-medium">
-            Privacy Policy
-          </Link>{" "}
-          and{" "}
-          <Link href="/terms" className="font-medium">
-            Terms of Service
+        <div className="mb-6">
+          <h2 className="text-2xl tracking-tight font-semibold">
+            Umamin Account
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            By creating an account, you agree to our{" "}
+            <Link href="/privacy" className="font-medium">
+              Privacy Policy
+            </Link>{" "}
+            and{" "}
+            <Link href="/terms" className="font-medium">
+              Terms of Service
+            </Link>
+          </p>
+        </div>
+
+        <RegisterForm />
+
+        <div className="mt-4 text-center text-sm w-full">
+          Already have an account?{" "}
+          <Link href="/login" className="underline">
+            Login
           </Link>
-        </p>
-      </div>
-
-      <RegisterForm />
-
-      <div className="mt-4 text-center text-sm w-full">
-        Already have an account?{" "}
-        <Link href="/login" className="underline">
-          Login
-        </Link>
-      </div>
+        </div>
+      </AuthGuard>
     </section>
   );
 }

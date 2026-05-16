@@ -46,30 +46,6 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === "production",
   },
   transpilePackages: ["@umamin/db", "@umamin/encryption", "@umamin/ui"],
-  async rewrites() {
-    const apiOrigin = process.env.HONO_API_ORIGIN ?? process.env.API_ORIGIN;
-
-    if (!apiOrigin) {
-      return [];
-    }
-
-    return {
-      beforeFiles: [
-        {
-          source: "/api/:path*",
-          destination: `${apiOrigin}/api/:path*`,
-        },
-        {
-          source: "/auth/google",
-          destination: `${apiOrigin}/auth/google`,
-        },
-        {
-          source: "/auth/google/callback",
-          destination: `${apiOrigin}/auth/google/callback`,
-        },
-      ],
-    };
-  },
   async headers() {
     return [
       {

@@ -9,7 +9,7 @@ import {
   UserCheckIcon,
   UserPlusIcon,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Menu } from "@/components/menu";
 import { UserCard } from "@/components/user-card";
@@ -43,19 +43,40 @@ import type { PublicUser } from "@/types/user";
 
 type Props = {
   username: string;
-  initialUser: PublicUser;
 };
 
-export function UserProfile({ username, initialUser }: Props) {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-  const { data: user } = useQuery({
+export function UserProfile({ username }: Props) {
+  const { data: user, isPending } = useQuery({
     ...pageQueryOptions(
       queryKeys.userProfile(username),
       () => fetchUserProfile(username),
       PUBLIC_STALE_TIME,
     ),
-    initialData: initialUser,
+  });
+
+  if (isPending) return null;
+  if (!user) {
+    notFound();
+  }
+
+  return <UserProfileContent username={username} initialProfile={user} />;
+}
+
+function UserProfileContent({
+  username,
+  initialProfile,
+}: {
+  username: string;
+  initialProfile: PublicUser;
+}) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { data: liveProfile } = useQuery({
+    ...pageQueryOptions(
+      queryKeys.userProfile(username),
+      () => fetchUserProfile(username),
+      PUBLIC_STALE_TIME,
+    ),
   });
   const viewerQueryOptions = pageQueryOptions(
     queryKeys.userProfileViewer(username),
@@ -67,7 +88,7 @@ export function UserProfile({ username, initialUser }: Props) {
     enabled: false,
   });
 
-  const profile = user ?? initialUser;
+  const profile: PublicUser = liveProfile ?? initialProfile;
 
   const isFollowing = viewer?.isFollowing === true;
   const isBlocked = viewer?.isBlocked === true;

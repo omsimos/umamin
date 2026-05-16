@@ -2,38 +2,59 @@ import type { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { nanoid } from "nanoid";
+import { requestId } from "hono/request-id";
+import { secureHeaders } from "hono/secure-headers";
 import { getAllowedOrigins } from "./config";
 import { ApiError, errorJson, mapError } from "./http";
 import type { AppEnv } from "./types";
 
 const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const isProduction = process.env.NODE_ENV === "production";
 
 export function applyGlobalMiddleware(app: Hono<AppEnv>) {
   const allowedOrigins = getAllowedOrigins();
 
+  app.use(
+    "*",
+    requestId({
+      headerName: "X-Request-Id",
+    }),
+  );
+
+  app.use(
+    "*",
+    secureHeaders({
+      crossOriginResourcePolicy: "cross-origin",
+      referrerPolicy: "strict-origin-when-cross-origin",
+      strictTransportSecurity: isProduction
+        ? "max-age=31536000; includeSubDomains; preload"
+        : false,
+    }),
+  );
+
   app.use("*", async (c, next) => {
-    c.set("requestId", c.req.header("x-request-id") ?? nanoid(10));
-    c.header("X-Request-Id", c.get("requestId"));
-    c.header("X-Content-Type-Options", "nosniff");
-    c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+    await next();
     c.header(
       "Permissions-Policy",
       "accelerometer=(), autoplay=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()",
     );
-    if (process.env.NODE_ENV === "production") {
-      c.header(
-        "Strict-Transport-Security",
-        "max-age=31536000; includeSubDomains; preload",
-      );
-    }
-    await next();
   });
 
   if (process.env.NODE_ENV !== "test") {
     app.use("*", logger());
   }
-  app.use("*", bodyLimit({ maxSize: 1024 * 32 }));
+
+  app.use(
+    "*",
+    bodyLimit({
+      maxSize: 1024 * 32,
+      onError: (c) =>
+        errorJson(
+          c,
+          new ApiError(413, "BAD_REQUEST", "Request body too large"),
+        ),
+    }),
+  );
 
   if (allowedOrigins.length > 0) {
     app.use(
@@ -41,6 +62,10 @@ export function applyGlobalMiddleware(app: Hono<AppEnv>) {
       cors({
         origin: allowedOrigins,
         credentials: true,
+        allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allowHeaders: ["Content-Type", "X-Request-Id"],
+        exposeHeaders: ["X-Request-Id"],
+        maxAge: 600,
       }),
     );
   }
