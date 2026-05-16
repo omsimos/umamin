@@ -1,22 +1,44 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
-import { useActionState } from "react";
-import { login } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import { type FormEventHandler, useState } from "react";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { googleAuthUrl, login } from "@/lib/api-mutations";
 
 export function LoginForm() {
-  const [state, formAction, pending] = useActionState(login, { error: "" });
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState("");
+  const mutation = useMutation({
+    mutationFn: login,
+    onSuccess: () => {
+      queryClient.clear();
+      router.push("/inbox");
+      router.refresh();
+    },
+    onError: (error) => {
+      setError(apiClientErrorMessage(error, "An unexpected error occurred"));
+    },
+  });
 
-  const handleFormAction = async (formData: FormData) => {
-    formAction(formData);
+  const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
+    setError("");
+    const formData = new FormData(event.currentTarget);
+    mutation.mutate({
+      username: String(formData.get("username") ?? ""),
+      password: String(formData.get("password") ?? ""),
+    });
   };
 
   return (
-    <form action={handleFormAction} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8">
       <div>
         <Label htmlFor="username">Username</Label>
         <Input
@@ -40,19 +62,21 @@ export function LoginForm() {
           type="password"
           className="mt-2"
         />
-        {state?.error && (
-          <p className="text-red-500 text-sm mt-2 font-medium">{state.error}</p>
+        {error && (
+          <p className="text-red-500 text-sm mt-2 font-medium">{error}</p>
         )}
       </div>
 
       <div>
-        <Button disabled={pending} type="submit" className="w-full">
-          {pending && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+        <Button disabled={mutation.isPending} type="submit" className="w-full">
+          {mutation.isPending && (
+            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+          )}
           Login
         </Button>
 
-        <Button disabled={pending} variant="outline" asChild>
-          <Link prefetch={false} href="/auth/google" className="mt-4 w-full">
+        <Button disabled={mutation.isPending} variant="outline" asChild>
+          <Link prefetch={false} href={googleAuthUrl()} className="mt-4 w-full">
             Continue with Google
           </Link>
         </Button>

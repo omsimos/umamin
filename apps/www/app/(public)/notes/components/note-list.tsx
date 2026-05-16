@@ -13,11 +13,19 @@ import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
+  adIndexForRow,
+  dataIndexForRow,
+  isAdRow,
+  totalRowsWithAds,
+} from "@/lib/ad-rows";
+import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
   queryKeys,
+  queryScope,
 } from "@/lib/query";
+import { queryErrorMessage } from "@/lib/query-errors";
 import { fetchNotesPage } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { NoteCard } from "./note-card";
@@ -30,10 +38,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     error,
     fetchNextPage,
     hasNextPage,
-    isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<NotesResponse>({
-    queryKey: queryKeys.notes(),
+    queryKey: queryKeys.notes(queryScope(isAuthenticated)),
     queryFn: ({ pageParam }) =>
       fetchNotesPage((pageParam as string | null) ?? null, isAuthenticated),
     initialPageParam: null as string | null,
@@ -44,29 +51,17 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   const hasResolvedData = data !== undefined;
 
   // De-duplicate posts by id across pages
-  const allPosts: NoteItem[] = (() => {
+  const allPosts = useMemo<NoteItem[]>(() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
     const map = new Map<string, NoteItem>();
     for (const item of flat) map.set(item.id, item);
     return Array.from(map.values());
-  })();
+  }, [data]);
 
-  const AD_FREQUENCY = 8;
-
-  const isAdRow = (rowIndex: number) =>
-    (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
-
-  const dataIndexForRow = (rowIndex: number) => {
-    const adsAtOrBefore = Math.floor((rowIndex + 1) / (AD_FREQUENCY + 1));
-    const adsBefore = isAdRow(rowIndex) ? adsAtOrBefore - 1 : adsAtOrBefore;
-    return rowIndex - adsBefore;
-  };
-
-  const totalRows = useMemo(() => {
-    const contentRows =
-      allPosts.length + Math.floor(allPosts.length / AD_FREQUENCY);
-    return hasNextPage ? contentRows + 1 : contentRows;
-  }, [allPosts.length, hasNextPage]);
+  const totalRows = useMemo(
+    () => totalRowsWithAds(allPosts.length, Boolean(hasNextPage)),
+    [allPosts.length, hasNextPage],
+  );
 
   const { containerRef, scrollMargin } =
     useWindowVirtualizerOffset<HTMLDivElement>();
@@ -80,8 +75,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
       if (isAdRow(index)) {
-        const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
-        return `notes-inline-ad-${adIndex}`;
+        return `notes-inline-ad-${adIndexForRow(index)}`;
       }
       const post = allPosts[dataIndexForRow(index)];
       return post?.id ?? `row-${index}`;
@@ -92,7 +86,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
   const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
 
   useInfiniteBoundaryLoader({
-    boundaryIndex: totalRows - 1,
+    boundaryIndex: Math.max(0, totalRows - 4),
     hasNextPage: Boolean(hasNextPage),
     isFetchingNextPage,
     items,
@@ -105,8 +99,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
       <div className="w-full mx-auto">
         <Alert variant="destructive">
           <AlertCircleIcon className="h-4 w-4" />
+          <AlertTitle>Couldn't load notes</AlertTitle>
           <AlertDescription>
-            Failed to load data. Please try again later.
+            {queryErrorMessage(error, "Please try again later.")}
           </AlertDescription>
         </Alert>
       </div>
@@ -125,12 +120,12 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <div className="w-full">
-      {hasResolvedData && allPosts.length === 0 && !isFetching && (
+      {hasResolvedData && allPosts.length === 0 && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>
           <AlertDescription>
-            Start the conversation by creating a new post!
+            Start the conversation by sharing a note.
           </AlertDescription>
         </Alert>
       )}

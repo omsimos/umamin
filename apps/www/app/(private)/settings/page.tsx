@@ -1,18 +1,6 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@umamin/ui/components/alert";
-import { Link2OffIcon } from "lucide-react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { getSession, logout } from "@/lib/auth";
-import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys } from "@/lib/query";
-import { getCurrentUserData } from "@/lib/server/data";
-import { SettingsTabs } from "./components/settings-tabs";
-import { SignOutButton } from "./components/sign-out-button";
+import { AuthGuard } from "@/components/auth-guard";
+import { SettingsContent } from "./components/settings-content";
 
 export const metadata: Metadata = {
   title: "Umamin — Settings",
@@ -37,52 +25,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Settings({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { session } = await getSession();
-  const error = (await searchParams).error;
-
-  if (!session) {
-    redirect("/login");
-  }
-
-  const queryClient = getQueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: queryKeys.currentUser(),
-    queryFn: () => getCurrentUserData(session.userId),
-    staleTime: 30_000,
-  });
-
+export default function Settings() {
   return (
     <div className="w-full mx-auto max-w-lg container min-h-screen pb-24">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl tracking-tight font-semibold">Settings</h2>
-        <form action={logout}>
-          <SignOutButton />
-        </form>
-      </div>
-
-      <p className="text-sm text-muted-foreground mb-12">
-        Manage your account settings
-      </p>
-
-      {error === "already_linked" && (
-        <Alert variant="destructive" className="mb-4">
-          <Link2OffIcon />
-          <AlertTitle>Failed to link account</AlertTitle>
-          <AlertDescription>
-            Google account already connected to a different profile.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <SettingsTabs />
-      </HydrationBoundary>
+      <AuthGuard>
+        <SettingsContent />
+      </AuthGuard>
     </div>
   );
 }

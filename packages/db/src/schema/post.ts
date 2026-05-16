@@ -8,7 +8,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 
-import { userTable } from "./user";
+import { userTable } from "./user.js";
 
 export const postTable = sqliteTable(
   "postTable",

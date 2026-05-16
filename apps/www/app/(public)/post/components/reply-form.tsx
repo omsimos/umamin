@@ -12,9 +12,9 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, ScanFaceIcon, SendIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { createCommentAction } from "@/app/actions/post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { createComment } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import {
   patchPostAcrossFeed,
@@ -40,29 +40,23 @@ export default function ReplyForm({ user, postId }: Props) {
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
   const author = useMemo(() => user, [user]);
-  const submitComment = useSingleFlightAction(createCommentAction);
 
   const mutation = useMutation({
-    mutationFn: async (nextContent: string) => {
-      const res = await submitComment({ content: nextContent, postId });
-      if (res?.error) {
-        throw new Error(res.error);
-      }
-      return res;
-    },
+    mutationFn: (nextContent: string) =>
+      createComment({ content: nextContent, postId }),
     onMutate: async (nextContent) => {
       await queryClient.cancelQueries({
-        queryKey: queryKeys.postComments(postId),
+        queryKey: queryKeys.postComments(postId, "viewer"),
       });
 
       const previous = queryClient.getQueryData<InfiniteData<CommentsResponse>>(
-        queryKeys.postComments(postId),
+        queryKeys.postComments(postId, "viewer"),
       );
       const previousPosts = queryClient.getQueryData<
         InfiniteData<FeedResponse>
-      >(queryKeys.posts());
+      >(queryKeys.posts("viewer"));
       const previousPost = queryClient.getQueryData<PostResponse>(
-        queryKeys.post(postId),
+        queryKeys.post(postId, "viewer"),
       );
 
       const optimistic: CommentData = {
@@ -77,11 +71,11 @@ export default function ReplyForm({ user, postId }: Props) {
       };
 
       queryClient.setQueryData<InfiniteData<CommentsResponse>>(
-        queryKeys.postComments(postId),
+        queryKeys.postComments(postId, "viewer"),
         prependComment(previous, optimistic),
       );
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        queryKeys.posts(),
+        queryKeys.posts("viewer"),
         (current) =>
           patchPostAcrossFeed(current, postId, (post) => ({
             ...post,
@@ -89,7 +83,7 @@ export default function ReplyForm({ user, postId }: Props) {
           })),
       );
       queryClient.setQueryData<PostResponse>(
-        queryKeys.post(postId),
+        queryKeys.post(postId, "viewer"),
         (current) =>
           patchPostResponse(current, (post) => ({
             ...post,
@@ -107,18 +101,19 @@ export default function ReplyForm({ user, postId }: Props) {
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
-        queryClient.setQueryData(queryKeys.postComments(postId), ctx.previous);
+        queryClient.setQueryData(
+          queryKeys.postComments(postId, "viewer"),
+          ctx.previous,
+        );
       }
-      queryClient.setQueryData(queryKeys.posts(), ctx?.previousPosts);
-      queryClient.setQueryData(queryKeys.post(postId), ctx?.previousPost);
-      toast.error(err.message ?? "Couldn't add comment.");
+      queryClient.setQueryData(queryKeys.posts("viewer"), ctx?.previousPosts);
+      queryClient.setQueryData(
+        queryKeys.post(postId, "viewer"),
+        ctx?.previousPost,
+      );
+      toast.error(apiClientErrorMessage(err, "Couldn't add comment."));
     },
     onSuccess: (res, _vars, ctx) => {
-      if (res?.error) {
-        toast.error(res.error);
-        return;
-      }
-
       if (res?.comment && ctx?.optimisticId) {
         const nextComment: CommentData = {
           ...res.comment,
@@ -127,7 +122,7 @@ export default function ReplyForm({ user, postId }: Props) {
         };
 
         queryClient.setQueryData<InfiniteData<CommentsResponse>>(
-          queryKeys.postComments(postId),
+          queryKeys.postComments(postId, "viewer"),
           (previous) =>
             replaceComment(
               previous,

@@ -23,26 +23,33 @@ import {
   ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
-import {
-  addCommentLikeAction,
-  addLikeAction,
-  addRepostAction,
-  removeCommentLikeAction,
-  removeLikeAction,
-  removeRepostAction,
-} from "@/app/actions/post";
 import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
-import { queryKeys } from "@/lib/query";
+import {
+  addCommentLike,
+  addLike,
+  addRepost,
+  removeCommentLike,
+  removeLike,
+  removeRepost,
+} from "@/lib/api-mutations";
+import {
+  infiniteQueryDefaults,
+  PRIVATE_STALE_TIME,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+  queryScope,
+} from "@/lib/query";
 import {
   patchComment,
   patchPostAcrossFeed,
   patchPostResponse,
 } from "@/lib/query-cache";
+import { fetchPost, fetchPostCommentsPage } from "@/lib/query-fetchers";
 import type {
   CommentsResponse,
   FeedResponse,
@@ -54,6 +61,7 @@ import {
   isOlderThanOneYear,
   shortTimeAgo,
 } from "@/lib/utils";
+import { isVerifiedUser } from "@/lib/verified-users";
 import type { CommentData, PostData } from "@/types/post";
 import { PostMenu } from "./post-menu";
 import { RepostDialog } from "./repost-dialog";
@@ -80,14 +88,10 @@ export function PostCard({
   const commentCount = "commentCount" in data ? data.commentCount : undefined;
   const imageId = useId();
   const imageTargetId = `umamin-${imageId}`;
-  const [liked, setLiked] = useState<boolean>(data.isLiked === true);
-  const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
-  const [reposted, setReposted] = useState<boolean>(
-    "isReposted" in data ? data.isReposted === true : false,
-  );
-  const [reposts, setReposts] = useState<number>(
-    "repostCount" in data ? (data.repostCount ?? 0) : 0,
-  );
+  const liked = data.isLiked === true;
+  const likes = data.likeCount ?? 0;
+  const reposted = "isReposted" in data ? data.isReposted === true : false;
+  const reposts = "repostCount" in data ? (data.repostCount ?? 0) : 0;
   const [repostDialogOpen, setRepostDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -99,7 +103,7 @@ export function PostCard({
   ) => {
     if ("commentCount" in data) {
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        queryKeys.posts(),
+        queryKeys.posts("viewer"),
         (current) =>
           patchPostAcrossFeed(current, data.id, (post) => ({
             ...post,
@@ -110,7 +114,7 @@ export function PostCard({
           })),
       );
       queryClient.setQueryData<PostResponse>(
-        queryKeys.post(data.id),
+        queryKeys.post(data.id, "viewer"),
         (current) =>
           patchPostResponse(current, (post) => ({
             ...post,
@@ -122,7 +126,7 @@ export function PostCard({
       );
     } else if (commentPostId) {
       queryClient.setQueryData<InfiniteData<CommentsResponse>>(
-        queryKeys.postComments(commentPostId),
+        queryKeys.postComments(commentPostId, "viewer"),
         (current) =>
           patchComment(current, data.id, (comment) => ({
             ...comment,
@@ -133,30 +137,23 @@ export function PostCard({
     }
   };
 
-  useEffect(() => {
-    setLiked(data.isLiked === true);
-    setLikes(data.likeCount ?? 0);
-    setReposted("isReposted" in data ? data.isReposted === true : false);
-    setReposts("repostCount" in data ? (data.repostCount ?? 0) : 0);
-  }, [data.isLiked, data.likeCount, data]);
-
   const handleLikeAction = useBurstAction(
     async (prevLiked: boolean) => {
       if (isComment) {
         return prevLiked
-          ? removeCommentLikeAction({
+          ? removeCommentLike({
               commentId: data.id,
               postId: commentPostId,
             })
-          : addCommentLikeAction({
+          : addCommentLike({
               commentId: data.id,
               postId: commentPostId,
             });
       }
 
       return prevLiked
-        ? removeLikeAction({ postId: data.id })
-        : addLikeAction({ postId: data.id });
+        ? removeLike({ postId: data.id })
+        : addLike({ postId: data.id });
     },
     {
       limit: 4,
@@ -167,8 +164,8 @@ export function PostCard({
   const handleRepostAction = useBurstAction(
     async (prevReposted: boolean) =>
       prevReposted
-        ? removeRepostAction({ postId: data.id })
-        : addRepostAction({ postId: data.id }),
+        ? removeRepost({ postId: data.id })
+        : addRepost({ postId: data.id }),
     {
       limit: 4,
       rejectMessage: BURST_ACTION_REJECT_MESSAGE,
@@ -178,26 +175,20 @@ export function PostCard({
   const handleLike = async () => {
     const prevLiked = liked;
     const prevLikes = likes;
+    const nextLiked = !prevLiked;
+    const nextLikes = prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1;
 
-    setLiked(!prevLiked);
-    setLikes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
+    syncPostCache(nextLiked, nextLikes, reposted, reposts);
 
     try {
       await handleLikeAction(prevLiked);
-      syncPostCache(
-        !prevLiked,
-        prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1,
-        reposted,
-        reposts,
-      );
       if (isComment) {
         toast.success(prevLiked ? "Comment unliked." : "Comment liked.");
       } else {
         toast.success(prevLiked ? "Post unliked." : "Post liked.");
       }
     } catch (err) {
-      setLiked(prevLiked);
-      setLikes(prevLikes);
+      syncPostCache(prevLiked, prevLikes, reposted, reposts);
       toast.error(err instanceof Error ? err.message : "Couldn't update like.");
       console.log(err);
     }
@@ -206,38 +197,52 @@ export function PostCard({
   const handleRepost = async () => {
     const prevReposted = reposted;
     const prevReposts = reposts;
+    const nextReposts = prevReposted
+      ? Math.max(prevReposts - 1, 0)
+      : prevReposts + 1;
 
-    setReposted(!prevReposted);
-    setReposts((v) => (prevReposted ? Math.max(v - 1, 0) : v + 1));
+    syncPostCache(liked, likes, !prevReposted, nextReposts);
 
     try {
       const res = await handleRepostAction(prevReposted);
       if (prevReposted) {
         if (isAlreadyRemoved(res)) {
-          setReposted(false);
-          setReposts((v) => Math.max(v - 1, 0));
           syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
         }
         toast.success("Repost removed.");
-        syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
       } else {
         if (isAlreadyReposted(res)) {
-          setReposted(prevReposted);
-          setReposts(prevReposts);
+          syncPostCache(liked, likes, prevReposted, prevReposts);
           toast.error("Already reposted.");
           return;
         }
         toast.success("Reposted.");
-        syncPostCache(liked, likes, true, prevReposts + 1);
       }
     } catch (err) {
-      setReposted(prevReposted);
-      setReposts(prevReposts);
+      syncPostCache(liked, likes, prevReposted, prevReposts);
       toast.error(
         err instanceof Error ? err.message : "Couldn't update repost.",
       );
       console.log(err);
     }
+  };
+
+  const prefetchPostDetail = () => {
+    if (isComment || !data?.id) return;
+    const scope = queryScope(isAuthenticated);
+    const staleTime = isAuthenticated ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME;
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.post(data.id, scope),
+      queryFn: () => fetchPost(data.id, isAuthenticated),
+      staleTime,
+    });
+    void queryClient.prefetchInfiniteQuery({
+      queryKey: queryKeys.postComments(data.id, scope),
+      queryFn: () => fetchPostCommentsPage(data.id, null, isAuthenticated),
+      initialPageParam: null as string | null,
+      staleTime,
+      ...infiniteQueryDefaults,
+    });
   };
 
   const handleQuoteRepost = async (content: string) => {
@@ -249,22 +254,18 @@ export function PostCard({
       return;
     }
 
-    setReposted(true);
-    setReposts((v) => v + 1);
+    syncPostCache(liked, likes, true, prevReposts + 1);
 
     try {
-      const res = await addRepostAction({ postId: data.id, content });
+      const res = await addRepost({ postId: data.id, content });
       if (isAlreadyReposted(res)) {
-        setReposted(prevReposted);
-        setReposts(prevReposts);
+        syncPostCache(liked, likes, prevReposted, prevReposts);
         toast.error("Already reposted.");
         return;
       }
       toast.success("Quote reposted.");
-      syncPostCache(liked, likes, true, prevReposts + 1);
     } catch (err) {
-      setReposted(prevReposted);
-      setReposts(prevReposts);
+      syncPostCache(liked, likes, prevReposted, prevReposts);
       toast.error("Couldn't repost.");
       console.log(err);
     }
@@ -299,10 +300,9 @@ export function PostCard({
               {author?.displayName}
             </Link>
 
-            {author?.username &&
-              process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                author.username,
-              ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+            {isVerifiedUser(author?.username) && (
+              <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
+            )}
             <span className="text-muted-foreground">@{author?.username}</span>
           </div>
 
@@ -390,7 +390,12 @@ export function PostCard({
 
           {!isComment && (
             <div className="flex space-x-1 items-center">
-              <Link href={`/post/${data?.id}`}>
+              <Link
+                href={`/post/${data?.id}`}
+                onMouseEnter={prefetchPostDetail}
+                onFocus={prefetchPostDetail}
+                onTouchStart={prefetchPostDetail}
+              >
                 <MessageCircleIcon className="h-5 w-5" />
               </Link>
               <span>{commentCount ?? 0}</span>

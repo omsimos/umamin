@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
@@ -8,45 +8,41 @@ import { cn } from "@umamin/ui/lib/utils";
 import { Loader2Icon, MoonIcon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { sendMessageAction } from "@/app/actions/message";
 import { ChatList } from "@/components/chat-list";
 import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { sendMessage } from "@/lib/api-mutations";
+import { queryKeys } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import { formatContent } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
 export function ChatForm({ user }: { user: PublicUser }) {
+  const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const [showUnauthenticatedDialog, setShowUnauthenticatedDialog] =
     useState(false);
 
   const inputRef = useDynamicTextarea(content);
-  const sendMessage = useSingleFlightAction(sendMessageAction);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await sendMessage({
+      await sendMessage({
         receiverId: user?.id,
         question: user?.question,
         content,
       });
-
-      if (res.error) {
-        throw new Error(res.error);
-      }
     },
     onSuccess: () => {
       setMessage(formatContent(content));
       toast.success("Message sent.");
       setContent("");
+      queryClient.invalidateQueries({ queryKey: queryKeys.sentMessages() });
     },
-    onError: (err) => {
-      console.log(err);
-      toast.error(err.message ?? "Couldn't send message.");
-    },
+    onError: (err) =>
+      toast.error(apiClientErrorMessage(err, "Couldn't send message.")),
   });
 
   const submitMessage = async () => {

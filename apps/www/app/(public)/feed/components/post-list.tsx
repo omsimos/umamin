@@ -13,11 +13,19 @@ import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
+  adIndexForRow,
+  dataIndexForRow,
+  isAdRow,
+  totalRowsWithAds,
+} from "@/lib/ad-rows";
+import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
   queryKeys,
+  queryScope,
 } from "@/lib/query";
+import { queryErrorMessage } from "@/lib/query-errors";
 import { fetchPostsPage } from "@/lib/query-fetchers";
 import type { FeedResponse } from "@/lib/query-types";
 import type { FeedItem } from "@/types/post";
@@ -38,10 +46,9 @@ export function PostList({
     error,
     fetchNextPage,
     hasNextPage,
-    isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<FeedResponse>({
-    queryKey: queryKeys.posts(),
+    queryKey: queryKeys.posts(queryScope(isAuthenticated)),
     queryFn: ({ pageParam }) =>
       fetchPostsPage((pageParam as string | null) ?? null, isAuthenticated),
     initialPageParam: null as string | null,
@@ -52,7 +59,7 @@ export function PostList({
   const hasResolvedData = data !== undefined;
 
   // De-duplicate feed items across pages
-  const allItems: FeedItem[] = (() => {
+  const allItems = useMemo<FeedItem[]>(() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
     const map = new Map<string, FeedItem>();
     for (const item of flat) {
@@ -63,24 +70,12 @@ export function PostList({
       if (!map.has(key)) map.set(key, item);
     }
     return Array.from(map.values());
-  })();
+  }, [data]);
 
-  const AD_FREQUENCY = 8;
-
-  const isAdRow = (rowIndex: number) =>
-    (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
-
-  const dataIndexForRow = (rowIndex: number) => {
-    const adsAtOrBefore = Math.floor((rowIndex + 1) / (AD_FREQUENCY + 1));
-    const adsBefore = isAdRow(rowIndex) ? adsAtOrBefore - 1 : adsAtOrBefore;
-    return rowIndex - adsBefore;
-  };
-
-  const totalRows = useMemo(() => {
-    const contentRows =
-      allItems.length + Math.floor(allItems.length / AD_FREQUENCY);
-    return hasNextPage ? contentRows + 1 : contentRows;
-  }, [allItems.length, hasNextPage]);
+  const totalRows = useMemo(
+    () => totalRowsWithAds(allItems.length, Boolean(hasNextPage)),
+    [allItems.length, hasNextPage],
+  );
 
   const { containerRef, scrollMargin } =
     useWindowVirtualizerOffset<HTMLDivElement>();
@@ -94,8 +89,7 @@ export function PostList({
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
       if (isAdRow(index)) {
-        const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
-        return `feed-inline-ad-${adIndex}`;
+        return `feed-inline-ad-${adIndexForRow(index)}`;
       }
       const item = allItems[dataIndexForRow(index)];
       if (!item) return `row-${index}`;
@@ -107,7 +101,7 @@ export function PostList({
   const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
 
   useInfiniteBoundaryLoader({
-    boundaryIndex: totalRows - 1,
+    boundaryIndex: Math.max(0, totalRows - 4),
     hasNextPage: Boolean(hasNextPage),
     isFetchingNextPage,
     items,
@@ -120,8 +114,9 @@ export function PostList({
       <div className="w-full mx-auto">
         <Alert variant="destructive">
           <AlertCircleIcon className="h-4 w-4" />
+          <AlertTitle>Couldn't load posts</AlertTitle>
           <AlertDescription>
-            Failed to load data. Please try again later.
+            {queryErrorMessage(error, "Please try again later.")}
           </AlertDescription>
         </Alert>
       </div>
@@ -140,7 +135,7 @@ export function PostList({
 
   return (
     <div className="w-full">
-      {hasResolvedData && allItems.length === 0 && !isFetching && (
+      {hasResolvedData && allItems.length === 0 && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No data yet</AlertTitle>

@@ -26,13 +26,15 @@ import {
   ScrollIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { clearNoteAction } from "@/app/actions/note";
 import { Menu } from "@/components/menu";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { clearNote } from "@/lib/api-mutations";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { isOlderThanOneYear, saveImage } from "@/lib/utils";
+import { isVerifiedUser } from "@/lib/verified-users";
 import type { PublicUser } from "@/types/user";
 
 export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
@@ -42,22 +44,20 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
   });
 
   const clearNoteMutation = useMutation({
-    mutationFn: clearNoteAction,
+    mutationFn: clearNote,
     onSuccess: () => {
       queryClient.setQueryData(queryKeys.currentNote(), null);
       if (data?.id) {
         queryClient.setQueryData<
           import("@tanstack/react-query").InfiniteData<NotesResponse>
-        >(queryKeys.notes(), (current) =>
+        >(queryKeys.notes("viewer"), (current) =>
           patchNote(current, data.id, () => null),
         );
       }
       toast.success("Note cleared.");
     },
-    onError: (err) => {
-      console.log(err);
-      toast.error("Couldn't clear note.");
-    },
+    onError: (err) =>
+      toast.error(apiClientErrorMessage(err, "Couldn't clear note.")),
   });
 
   if (!data?.content) {
@@ -155,9 +155,9 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
                     ? currentUser.displayName
                     : currentUser.username}
                 </span>
-                {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                  currentUser.username,
-                ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+                {isVerifiedUser(currentUser.username) && (
+                  <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
+                )}
               </div>
 
               <span className="text-muted-foreground truncate">

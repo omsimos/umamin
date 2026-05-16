@@ -1,0 +1,21 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "pnpm --filter api build",
+    "watchPatterns": [
+      "apps/api/**",
+      "packages/core/**",
+      "packages/db/**",
+      "packages/encryption/**",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml"
+    ]
+  },
+  "deploy": {
+    "startCommand": "pnpm --filter api start",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 90,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  }
+}

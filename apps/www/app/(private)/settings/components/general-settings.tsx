@@ -2,9 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckIcon, InfoIcon } from "lucide-react";
 import { toast } from "sonner";
 import type * as z from "zod";
-import { generalSettingsAction } from "@/app/actions/user";
 import { useAppForm } from "@/hooks/form";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { updateGeneralSettings } from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
 import type {
@@ -15,16 +15,10 @@ import { generalSettingsSchema, type UserWithAccount } from "@/types/user";
 
 export function GeneralSettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
-  const submitSettings = useSingleFlightAction(generalSettingsAction);
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof generalSettingsSchema>) => {
-      const res = await submitSettings(values);
-      if (res?.error) {
-        throw new Error(res.error);
-      }
-
-      return res;
+      return updateGeneralSettings(values);
     },
     onSuccess: (result, values) => {
       const nextUsername = result?.user?.username ?? values.username;
@@ -65,8 +59,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
       toast.success("Settings updated.");
     },
     onError: (error) => {
-      console.error(error);
-      toast.error(error.message ?? "Couldn't update settings.");
+      toast.error(apiClientErrorMessage(error, "Couldn't update settings."));
     },
   });
 

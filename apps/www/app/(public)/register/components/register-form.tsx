@@ -1,14 +1,32 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type * as z from "zod";
 import { useAppForm } from "@/hooks/form";
-import { signup } from "@/lib/auth";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import { googleAuthUrl, signup } from "@/lib/api-mutations";
 import { registerSchema } from "@/lib/schema";
 
 export function RegisterForm() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: signup,
+    onSuccess: () => {
+      queryClient.clear();
+      toast.success("Account created.");
+      router.push("/inbox");
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(apiClientErrorMessage(error, "Couldn't create account."));
+    },
+  });
+
   const form = useAppForm({
     defaultValues: {
       username: "",
@@ -19,12 +37,7 @@ export function RegisterForm() {
       onSubmit: registerSchema,
     },
     onSubmit: async ({ value }) => {
-      const res = await signup(value);
-      if (res?.error) {
-        toast.error(res.error ?? "Couldn't create account.");
-      } else {
-        toast.success("Account created.");
-      }
+      await mutation.mutateAsync(value);
     },
   });
 
@@ -78,7 +91,7 @@ export function RegisterForm() {
         </form.AppForm>
 
         <Button variant="outline" asChild>
-          <Link prefetch={false} href="/auth/google" className="w-full">
+          <Link prefetch={false} href={googleAuthUrl()} className="w-full">
             Continue with Google
           </Link>
         </Button>

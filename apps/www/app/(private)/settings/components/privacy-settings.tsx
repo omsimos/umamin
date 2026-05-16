@@ -28,13 +28,13 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { apiClientErrorMessage } from "@/lib/api-client";
 import {
-  getGravatarAction,
-  toggleDisplayPictureAction,
-  toggleQuietModeAction,
-  updateAvatarAction,
-} from "@/app/actions/user";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+  getGravatar,
+  toggleDisplayPicture,
+  toggleQuietMode,
+  updateAvatar,
+} from "@/lib/api-mutations";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
 import type {
@@ -62,29 +62,18 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
   };
 
   const gravatarMutation = useMutation({
-    mutationFn: async (email: string) => getGravatarAction(email),
+    mutationFn: getGravatar,
     onSuccess: (res) => {
-      if (!res || "error" in res) {
-        toast.error(res?.error ?? "No Gravatar found for that email.");
-        setAvatarPreview(null);
-        return;
-      }
-
       setAvatarPreview(res.url);
       setPreviewOpen(true);
     },
     onError: (error) => {
-      console.error(error);
-      toast.error("Couldn't preview Gravatar.");
+      setAvatarPreview(null);
+      toast.error(apiClientErrorMessage(error, "Couldn't preview Gravatar."));
     },
   });
 
   const isPreviewing = gravatarMutation.isPending;
-  const toggleDisplayPicture = useSingleFlightAction(
-    toggleDisplayPictureAction,
-  );
-  const toggleQuietMode = useSingleFlightAction(toggleQuietModeAction);
-  const applyAvatarUpdate = useSingleFlightAction(updateAvatarAction);
 
   const displayPictureMutation = useMutation({
     mutationFn: async () => {
@@ -93,10 +82,6 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       }
 
       const res = await toggleDisplayPicture(user.account?.picture);
-      if (res.error) {
-        throw new Error(res.error);
-      }
-
       return !!res.imageUrl;
     },
     onSuccess: (data) => {
@@ -116,19 +101,13 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       );
     },
     onError: (err) => {
-      console.error(err);
-      toast.error(err.message ?? "Couldn't update photo.");
+      toast.error(apiClientErrorMessage(err, "Couldn't update photo."));
     },
   });
 
   const updateAvatarMutation = useMutation({
     mutationFn: async (url: string) => {
-      const res = await applyAvatarUpdate(url);
-      if (res.error) {
-        throw new Error(res.error);
-      }
-
-      return res;
+      return updateAvatar(url);
     },
     onSuccess: (result) => {
       const imageUrl = result.imageUrl ?? avatarPreviewUrl ?? user.imageUrl;
@@ -147,17 +126,13 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       setPreviewOpen(false);
     },
     onError: (err) => {
-      toast.error(err.message ?? "Couldn't update photo.");
+      toast.error(apiClientErrorMessage(err, "Couldn't update photo."));
     },
   });
 
   const quietModeMutation = useMutation({
     mutationFn: async () => {
       const res = await toggleQuietMode();
-      if (res.error) {
-        throw new Error(res.error);
-      }
-
       return res.quietMode;
     },
     onSuccess: (data) => {
@@ -173,8 +148,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       toast.success(data ? "Quiet mode enabled." : "Quiet mode disabled.");
     },
     onError: (err) => {
-      console.error(err);
-      toast.error(err.message ?? "Couldn't update quiet mode.");
+      toast.error(apiClientErrorMessage(err, "Couldn't update quiet mode."));
     },
   });
 

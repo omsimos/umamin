@@ -8,7 +8,7 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
@@ -16,6 +16,7 @@ import {
   PRIVATE_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
+import { queryErrorMessage } from "@/lib/query-errors";
 import { fetchMessagesPage } from "@/lib/query-fetchers";
 import type { MessagesResponse } from "@/lib/query-types";
 import { SentMessageCard } from "./sent-card";
@@ -28,7 +29,6 @@ export function SentMessages() {
     error,
     fetchNextPage,
     hasNextPage,
-    isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<MessagesResponse>({
     queryKey: queryKeys.sentMessages(),
@@ -41,9 +41,11 @@ export function SentMessages() {
   });
   const hasResolvedData = data !== undefined;
 
-  const allPosts = data?.pages.flatMap((page) => page.messages) ?? [];
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const totalRows = hasNextPage ? allPosts.length + 1 : allPosts.length;
+  const allMessages = useMemo(
+    () => data?.pages.flatMap((page) => page.messages) ?? [],
+    [data],
+  );
+  const totalRows = hasNextPage ? allMessages.length + 1 : allMessages.length;
   const { containerRef, scrollMargin } =
     useWindowVirtualizerOffset<HTMLDivElement>();
 
@@ -56,34 +58,16 @@ export function SentMessages() {
     scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
-      const msg = allPosts[index];
+      const msg = allMessages[index];
       return msg?.id ?? `row-${index}`;
     },
   });
-
-  useEffect(() => {
-    if (hasInteracted) {
-      return;
-    }
-
-    const handleScroll = () => {
-      if (window.scrollY > 0) {
-        setHasInteracted(true);
-      }
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [hasInteracted]);
 
   const items = virtualizer.getVirtualItems();
   const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
 
   useInfiniteBoundaryLoader({
-    boundaryIndex: totalRows - 1,
-    enabled: hasInteracted,
+    boundaryIndex: Math.max(0, totalRows - 4),
     hasNextPage: Boolean(hasNextPage),
     isFetchingNextPage,
     items,
@@ -96,8 +80,9 @@ export function SentMessages() {
       <div className="w-full mx-auto">
         <Alert variant="destructive">
           <AlertCircleIcon className="h-4 w-4" />
+          <AlertTitle>Couldn't load sent messages</AlertTitle>
           <AlertDescription>
-            Failed to load messages. Please try again later.
+            {queryErrorMessage(error, "Please try again later.")}
           </AlertDescription>
         </Alert>
       </div>
@@ -116,7 +101,7 @@ export function SentMessages() {
 
   return (
     <div className="w-full">
-      {hasResolvedData && allPosts.length === 0 && !isFetching && (
+      {hasResolvedData && allMessages.length === 0 && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>No messages yet</AlertTitle>
@@ -133,8 +118,8 @@ export function SentMessages() {
         }}
       >
         {items.map((virtualRow) => {
-          const isLoaderRow = virtualRow.index > allPosts.length - 1;
-          const msg = allPosts[virtualRow.index];
+          const isLoaderRow = virtualRow.index > allMessages.length - 1;
+          const msg = allMessages[virtualRow.index];
 
           if (!isLoaderRow && !msg) return null;
 

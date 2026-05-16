@@ -1,9 +1,9 @@
 import { drizzle } from "drizzle-orm/libsql";
-import * as schema from "./schema";
+import * as schema from "./schema/index.js";
 
 export const db = drizzle({
   connection: {
-    url: process.env.TURSO_CONNECTION_URL ?? "",
+    url: process.env.TURSO_CONNECTION_URL ?? "http://127.0.0.1:8080",
     authToken: process.env.TURSO_AUTH_TOKEN ?? "",
   },
   // cache:

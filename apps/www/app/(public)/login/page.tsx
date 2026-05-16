@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { AuthGuard } from "@/components/auth-guard";
 import { LoginForm } from "./components/login-form";
 
 const BrowserWarning = dynamic(() => import("@/components/browser-warning"));
@@ -35,34 +34,30 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Login() {
-  const { session } = await getSession();
-
-  if (session) {
-    redirect("/inbox");
-  }
-
+export default function Login() {
   return (
     <section className="max-w-lg md:max-w-md container min-h-screen">
-      <BrowserWarning />
+      <AuthGuard requireAuth={false} redirectTo="/inbox">
+        <BrowserWarning />
 
-      <div className="mb-6">
-        <h2 className="text-2xl tracking-tight font-semibold">
-          Umamin Account
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Proceed with your Umamin profile
-        </p>
-      </div>
+        <div className="mb-6">
+          <h2 className="text-2xl tracking-tight font-semibold">
+            Umamin Account
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Proceed with your Umamin profile
+          </p>
+        </div>
 
-      <LoginForm />
+        <LoginForm />
 
-      <div className="mt-4 text-center text-sm w-full">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="underline">
-          Sign up
-        </Link>
-      </div>
+        <div className="mt-4 text-center text-sm w-full">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="underline">
+            Sign up
+          </Link>
+        </div>
+      </AuthGuard>
     </section>
   );
 }

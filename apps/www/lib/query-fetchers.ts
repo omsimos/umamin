@@ -1,3 +1,4 @@
+import type { SessionValidationResult } from "@umamin/core/session";
 import type { SelectNote } from "@umamin/db/schema/note";
 import type {
   CommentsResponse,
@@ -9,21 +10,14 @@ import type {
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "@/lib/query-types";
+import { ApiClientError, getJson } from "./api-client";
 
-async function fetchJson<T>(input: string): Promise<T> {
-  const response = await fetch(input, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed for ${input}`);
-  }
-
-  return (await response.json()) as T;
+export async function fetchSession(): Promise<SessionValidationResult> {
+  return getJson<SessionValidationResult>("/api/auth/session");
 }
 
 function appendCursor(baseUrl: string, cursor: string | null) {
-  return cursor ? `${baseUrl}?cursor=${cursor}` : baseUrl;
+  return cursor ? `${baseUrl}?cursor=${encodeURIComponent(cursor)}` : baseUrl;
 }
 
 export async function fetchPostsPage(
@@ -32,14 +26,14 @@ export async function fetchPostsPage(
 ) {
   const baseUrl = isAuthenticated ? "/api/posts" : "/api/public/posts";
   const url = appendCursor(baseUrl, cursor);
-  return fetchJson<FeedResponse>(url);
+  return getJson<FeedResponse>(url);
 }
 
 export async function fetchPost(postId: string, isAuthenticated: boolean) {
   const baseUrl = isAuthenticated
     ? `/api/posts/${postId}`
     : `/api/public/posts/${postId}`;
-  return fetchJson<PostResponse>(baseUrl);
+  return getJson<PostResponse>(baseUrl);
 }
 
 export async function fetchPostCommentsPage(
@@ -52,7 +46,7 @@ export async function fetchPostCommentsPage(
     : `/api/public/posts/${postId}/comments`;
   const url = appendCursor(baseUrl, cursor);
 
-  return fetchJson<CommentsResponse>(url);
+  return getJson<CommentsResponse>(url);
 }
 
 export async function fetchNotesPage(
@@ -61,48 +55,47 @@ export async function fetchNotesPage(
 ) {
   const baseUrl = isAuthenticated ? "/api/notes" : "/api/public/notes";
   const url = appendCursor(baseUrl, cursor);
-  return fetchJson<NotesResponse>(url);
+  return getJson<NotesResponse>(url);
 }
 
 export async function fetchCurrentNote() {
-  return fetchJson<SelectNote | null>(`/api/notes/current`);
+  return getJson<SelectNote | null>(`/api/notes/current`);
 }
 
 export async function fetchCurrentUser() {
-  return fetchJson<CurrentUserResponse>("/api/me");
+  return getJson<CurrentUserResponse>("/api/me");
 }
 
-export async function fetchCurrentUserOptional() {
-  const response = await fetch("/api/me", {
-    credentials: "include",
-  });
-
-  if (response.status === 401) {
-    return {} as CurrentUserResponse;
+export async function fetchCurrentUserOptional(): Promise<CurrentUserResponse> {
+  try {
+    return await getJson<CurrentUserResponse>("/api/me");
+  } catch (error) {
+    if (error instanceof ApiClientError && error.status === 401) {
+      return { user: undefined };
+    }
+    throw error;
   }
-
-  if (!response.ok) {
-    throw new Error("Request failed for /api/me");
-  }
-
-  return (await response.json()) as CurrentUserResponse;
 }
 
 export async function fetchUserProfile(username: string) {
-  return fetchJson<UserProfileResponse>(`/api/public/user/${username}`);
+  return getJson<UserProfileResponse>(
+    `/api/public/user/${encodeURIComponent(username)}`,
+  );
 }
 
 export async function fetchUserProfileViewer(username: string) {
-  return fetchJson<UserProfileViewerResponse>(`/api/user/${username}/viewer`);
+  return getJson<UserProfileViewerResponse>(
+    `/api/user/${encodeURIComponent(username)}/viewer`,
+  );
 }
 
 export async function fetchMessagesPage(
   type: "received" | "sent",
   cursor: string | null,
 ) {
-  const url = cursor
-    ? `/api/messages?type=${type}&cursor=${cursor}`
-    : `/api/messages?type=${type}`;
+  const searchParams = new URLSearchParams({ type });
+  if (cursor) searchParams.set("cursor", cursor);
+  const url = `/api/messages?${searchParams}`;
 
-  return fetchJson<MessagesResponse>(url);
+  return getJson<MessagesResponse>(url);
 }

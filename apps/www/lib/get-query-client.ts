@@ -4,11 +4,29 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 
+const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+
 function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 0,
+        retry: (failureCount, error) => {
+          const status =
+            typeof error === "object" && error !== null && "status" in error
+              ? Number((error as { status?: number }).status)
+              : null;
+
+          if (status && !RETRYABLE_STATUSES.has(status)) {
+            return false;
+          }
+
+          return failureCount < 2;
+        },
+        staleTime: 30_000,
+        gcTime: 1000 * 60 * 15,
+      },
+      mutations: {
+        retry: false,
       },
       dehydrate: {
         // include pending queries in dehydration

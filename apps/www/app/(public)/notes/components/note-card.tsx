@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu } from "@/components/menu";
 import { isOlderThanOneYear, saveImage, shortTimeAgo } from "@/lib/utils";
+import { isVerifiedUser } from "@/lib/verified-users";
 import type { PublicUser } from "@/types/user";
 import { ReplyDrawer } from "./reply-drawer";
 
@@ -85,12 +86,9 @@ export function NoteCard({ data, isAuthenticated }: Props) {
                     <span className="font-semibold flex-none text-base leading-none">
                       {user?.displayName ? user.displayName : user?.username}
                     </span>
-                    {username &&
-                      process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
-                        ",",
-                      ).includes(username) && (
-                        <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
-                      )}
+                    {isVerifiedUser(username) && (
+                      <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
+                    )}
                   </Link>
                 )}
 

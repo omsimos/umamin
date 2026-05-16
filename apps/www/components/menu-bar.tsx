@@ -1,3 +1,5 @@
+"use client";
+
 import {
   LayoutDashboardIcon,
   LinkIcon,
@@ -7,11 +9,13 @@ import {
   UserCogIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { getSession } from "@/lib/auth";
+import { useSession } from "@/hooks/use-session";
 import { ShareLinkDialog } from "./share-link-dialog";
 
-export async function Menubar() {
-  const { user, session } = await getSession();
+export function Menubar() {
+  const { data } = useSession();
+  const user = data?.user ?? null;
+  const session = data?.session ?? null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto flex max-w-screen-sm items-center justify-center gap-3 bg-bg bg-opacity-40 bg-clip-padding p-2 text-3xl backdrop-blur-xl backdrop-filter sm:px-10 lg:bottom-auto lg:top-0 lg:z-50 lg:bg-transparent lg:px-14 lg:text-[1.75rem] lg:backdrop-blur-none [&>*:hover]:bg-muted *:flex *:w-full *:justify-center *:rounded-lg *:py-5 *:text-center *:text-muted-foreground *:transition-colors *:duration-300">

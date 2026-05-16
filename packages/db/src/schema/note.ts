@@ -2,7 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 
-import { userTable } from "./user";
+import { userTable } from "./user.js";
 
 export const noteTable = sqliteTable(
   "note",

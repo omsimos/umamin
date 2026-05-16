@@ -9,16 +9,17 @@ import {
   UserCheckIcon,
   UserPlusIcon,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  blockUserAction,
-  followUserAction,
-  unblockUserAction,
-  unfollowUserAction,
-} from "@/app/actions/user";
 import { Menu } from "@/components/menu";
 import { UserCard } from "@/components/user-card";
+import { apiClientErrorMessage } from "@/lib/api-client";
+import {
+  blockUser,
+  followUser,
+  unblockUser,
+  unfollowUser,
+} from "@/lib/api-mutations";
 import {
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
@@ -42,19 +43,40 @@ import type { PublicUser } from "@/types/user";
 
 type Props = {
   username: string;
-  initialUser: PublicUser;
 };
 
-export function UserProfile({ username, initialUser }: Props) {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-  const { data: user } = useQuery({
+export function UserProfile({ username }: Props) {
+  const { data: user, isPending } = useQuery({
     ...pageQueryOptions(
       queryKeys.userProfile(username),
       () => fetchUserProfile(username),
       PUBLIC_STALE_TIME,
     ),
-    initialData: initialUser,
+  });
+
+  if (isPending) return null;
+  if (!user) {
+    notFound();
+  }
+
+  return <UserProfileContent username={username} initialProfile={user} />;
+}
+
+function UserProfileContent({
+  username,
+  initialProfile,
+}: {
+  username: string;
+  initialProfile: PublicUser;
+}) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { data: liveProfile } = useQuery({
+    ...pageQueryOptions(
+      queryKeys.userProfile(username),
+      () => fetchUserProfile(username),
+      PUBLIC_STALE_TIME,
+    ),
   });
   const viewerQueryOptions = pageQueryOptions(
     queryKeys.userProfileViewer(username),
@@ -66,7 +88,7 @@ export function UserProfile({ username, initialUser }: Props) {
     enabled: false,
   });
 
-  const profile = user ?? initialUser;
+  const profile: PublicUser = liveProfile ?? initialProfile;
 
   const isFollowing = viewer?.isFollowing === true;
   const isBlocked = viewer?.isBlocked === true;
@@ -86,7 +108,9 @@ export function UserProfile({ username, initialUser }: Props) {
       return await queryClient.fetchQuery(viewerQueryOptions);
     } catch (error) {
       console.log(error);
-      toast.error("Couldn't load profile actions.");
+      toast.error(
+        apiClientErrorMessage(error, "Couldn't load profile actions."),
+      );
       return null;
     }
   };
@@ -153,9 +177,19 @@ export function UserProfile({ username, initialUser }: Props) {
   const followMutation = useMutation({
     mutationFn: async (prevFollowing: boolean) =>
       prevFollowing
-        ? unfollowUserAction({ userId: profile.id })
-        : followUserAction({ userId: profile.id }),
+        ? unfollowUser({ userId: profile.id })
+        : followUser({ userId: profile.id }),
     onMutate: async (prevFollowing) => {
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfile(username),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfileViewer(username),
+        }),
+        queryClient.cancelQueries({ queryKey: queryKeys.currentUser() }),
+      ]);
+
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
       );
@@ -198,9 +232,7 @@ export function UserProfile({ username, initialUser }: Props) {
         queryKeys.currentUser(),
         ctx?.previousCurrentUser,
       );
-      toast.error(
-        err instanceof Error ? err.message : "Couldn't update follow.",
-      );
+      toast.error(apiClientErrorMessage(err, "Couldn't update follow."));
       console.log(err);
     },
     onSuccess: (res, prevFollowing, ctx) => {
@@ -242,9 +274,20 @@ export function UserProfile({ username, initialUser }: Props) {
   const blockMutation = useMutation({
     mutationFn: async (prevBlocked: boolean) =>
       prevBlocked
-        ? unblockUserAction({ userId: profile.id })
-        : blockUserAction({ userId: profile.id }),
+        ? unblockUser({ userId: profile.id })
+        : blockUser({ userId: profile.id }),
     onMutate: async (prevBlocked) => {
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfile(username),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfileViewer(username),
+        }),
+        queryClient.cancelQueries({ queryKey: queryKeys.currentUser() }),
+        queryClient.cancelQueries({ queryKey: queryKeys.receivedMessages() }),
+      ]);
+
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
       );
@@ -304,7 +347,7 @@ export function UserProfile({ username, initialUser }: Props) {
         queryKeys.receivedMessages(),
         ctx?.previousMessages,
       );
-      toast.error("Couldn't update block.");
+      toast.error(apiClientErrorMessage(err, "Couldn't update block."));
       console.log(err);
     },
     onSuccess: (res, prevBlocked, ctx) => {
