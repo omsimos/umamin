@@ -1,22 +1,14 @@
 import "server-only";
 
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
+import { redis } from "./redis";
 
 export const RATE_LIMIT_ERROR =
   "Too many requests. Please try again in a minute.";
 
-// Build the client only when both env vars are present. We deliberately avoid
-// Redis.fromEnv() because it throws when they are unset — here a missing config
-// must degrade to a no-op so local dev needs no Redis (see the rate-limit plan).
-//
-// KV_REST_API_URL / KV_REST_API_TOKEN are injected by Vercel's Upstash/KV
-// marketplace integration. Use the REST endpoint + read-write token — NOT
-// REDIS_URL / KV_URL, which are TCP connection strings the HTTP client can't use.
-const url = process.env.KV_REST_API_URL;
-const token = process.env.KV_REST_API_TOKEN;
-const redis = url && token ? new Redis({ url, token }) : null;
+// `redis` is the shared Upstash client (lib/redis.ts), built only when the KV
+// integration env is present; otherwise null so the limiter no-ops (local dev).
 
 type LimiterName = "auth" | "message" | "write";
 

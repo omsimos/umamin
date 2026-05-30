@@ -13,7 +13,6 @@ import {
 } from "@umamin/db/schema/post";
 import {
   accountTable,
-  sessionTable,
   userBlockTable,
   userFollowTable,
   userTable,
@@ -36,6 +35,7 @@ import {
   deleteSessionTokenCookie,
   generateSessionToken,
   invalidateSession,
+  invalidateUserSessions,
   setSessionTokenCookie,
 } from "@/lib/session";
 import { formatContent } from "@/lib/utils";
@@ -406,9 +406,10 @@ export async function updatePasswordAction(
       .where(eq(userTable.id, user.id));
 
     // Changing the password revokes all existing sessions (standard account
-    // security — locks out a hijacked/old device), then re-mints one for the
-    // current request so the user stays signed in here.
-    await db.delete(sessionTable).where(eq(sessionTable.userId, user.id));
+    // security — locks out a hijacked/old device) and drops their cached
+    // entries, then re-mints one for the current request so the user stays
+    // signed in here.
+    await invalidateUserSessions(user.id);
     const token = generateSessionToken();
     const newSession = await createSession(token, user.id);
     await setSessionTokenCookie(token, new Date(newSession.expiresAt));
