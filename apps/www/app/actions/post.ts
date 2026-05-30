@@ -65,6 +65,7 @@ export async function createPostAction(
       .returning();
 
     updateTag("posts");
+    updateTag(`user-posts:${session.userId}`);
 
     return {
       success: true,
@@ -100,6 +101,7 @@ export async function deletePostAction({ postId }: { postId: string }) {
     await db.delete(postTable).where(eq(postTable.id, postId));
 
     updateTag("posts");
+    updateTag(`user-posts:${session.userId}`);
     updateTag(`post:${postId}`);
     updateTag(`post-comments:${postId}`);
     updateTag(`post:${postId}:liked:${session.userId}`);

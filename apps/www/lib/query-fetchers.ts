@@ -64,6 +64,17 @@ export async function fetchNotesPage(
   return fetchJson<NotesResponse>(url);
 }
 
+// Always uses the public CDN-cached route so the profile page stays static and
+// cheap. isLiked/isReposted are eventually-consistent on the profile card; the
+// post-detail/feed views carry the live per-viewer state.
+export async function fetchUserPostsPage(
+  username: string,
+  cursor: string | null,
+) {
+  const url = appendCursor(`/api/public/user/${username}/posts`, cursor);
+  return fetchJson<FeedResponse>(url);
+}
+
 export async function fetchCurrentNote() {
   return fetchJson<SelectNote | null>(`/api/notes/current`);
 }
