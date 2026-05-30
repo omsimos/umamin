@@ -12,7 +12,8 @@
         "VERCEL_URL",
         "TURSO_*",
         "GOOGLE_*",
-        "UPSTASH_REDIS_*",
+        "KV_REST_API_*",
+        "CRON_SECRET",
         "AES_256_GCM_KEY"
       ]
     },

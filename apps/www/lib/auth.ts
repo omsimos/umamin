@@ -13,6 +13,7 @@ import {
   readCookieValue,
   SESSION_COOKIE_NAME,
 } from "./cookies";
+import { checkRateLimit, getClientIp, RATE_LIMIT_ERROR } from "./ratelimit";
 import { registerSchema } from "./schema";
 import {
   createSession,
@@ -101,6 +102,13 @@ export async function login(_initialState: unknown, formData: FormData) {
     };
   }
 
+  // Throttle before the DB lookup + Argon2 verify so brute force can't burn
+  // CPU. No-ops until Redis is configured (e.g. local dev).
+  const ip = await getClientIp();
+  if (!(await checkRateLimit("auth", `login:${ip}`))) {
+    return { error: RATE_LIMIT_ERROR };
+  }
+
   try {
     const [existingUser] = await db
       .select()
@@ -148,6 +156,13 @@ export async function signup(data: z.infer<typeof registerSchema>) {
     return {
       error: "Invalid input",
     };
+  }
+
+  // Throttle before Argon2 hashing so mass signups can't burn CPU.
+  // No-ops until Redis is configured (e.g. local dev).
+  const ip = await getClientIp();
+  if (!(await checkRateLimit("auth", `signup:${ip}`))) {
+    return { error: RATE_LIMIT_ERROR };
   }
 
   const passwordHash = await hash(validatedFields.data.password, {

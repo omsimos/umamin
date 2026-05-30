@@ -5,12 +5,19 @@ import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import {
+  postCommentLikeTable,
+  postCommentTable,
+  postLikeTable,
+  postRepostTable,
+  postTable,
+} from "@umamin/db/schema/post";
+import {
   accountTable,
   userBlockTable,
   userFollowTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -162,10 +169,118 @@ export async function deleteAccountAction() {
   }
 
   try {
-    await db.delete(messageTable).where(eq(messageTable.receiverId, user.id));
-    await db.delete(accountTable).where(eq(accountTable.userId, user.id));
-    await db.delete(noteTable).where(eq(noteTable.userId, user.id));
-    await db.delete(userTable).where(eq(userTable.id, user.id));
+    const uid = user.id;
+
+    await db.transaction(async (tx) => {
+      // FK CASCADE removes this user's follow/like/comment/repost rows when the
+      // user row is deleted, but the app-maintained counters on the *surviving*
+      // rows are not touched. Decrement them first (while the join rows still
+      // exist) so other users' counts don't drift upward permanently.
+
+      // Users I follow -> their follower_count.
+      await tx
+        .update(userTable)
+        .set({
+          followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            userTable.id,
+            tx
+              .select({ id: userFollowTable.followingId })
+              .from(userFollowTable)
+              .where(eq(userFollowTable.followerId, uid)),
+          ),
+        );
+
+      // Users who follow me -> their following_count.
+      await tx
+        .update(userTable)
+        .set({
+          followingCount: sql`CASE WHEN ${userTable.followingCount} > 0 THEN ${userTable.followingCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            userTable.id,
+            tx
+              .select({ id: userFollowTable.followerId })
+              .from(userFollowTable)
+              .where(eq(userFollowTable.followingId, uid)),
+          ),
+        );
+
+      // Posts I liked -> their like_count.
+      await tx
+        .update(postTable)
+        .set({
+          likeCount: sql`CASE WHEN ${postTable.likeCount} > 0 THEN ${postTable.likeCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: postLikeTable.postId })
+              .from(postLikeTable)
+              .where(eq(postLikeTable.userId, uid)),
+          ),
+        );
+
+      // Posts I reposted -> their repost_count.
+      await tx
+        .update(postTable)
+        .set({
+          repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: postRepostTable.postId })
+              .from(postRepostTable)
+              .where(eq(postRepostTable.userId, uid)),
+          ),
+        );
+
+      // Posts I commented on -> their comment_count (I may have several comments
+      // on a single post, so subtract the actual count per post).
+      await tx
+        .update(postTable)
+        .set({
+          commentCount: sql`MAX(0, ${postTable.commentCount} - (SELECT COUNT(*) FROM ${postCommentTable} WHERE ${postCommentTable.postId} = ${postTable.id} AND ${postCommentTable.authorId} = ${uid}))`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: postCommentTable.postId })
+              .from(postCommentTable)
+              .where(eq(postCommentTable.authorId, uid)),
+          ),
+        );
+
+      // Comments I liked -> their like_count.
+      await tx
+        .update(postCommentTable)
+        .set({
+          likeCount: sql`CASE WHEN ${postCommentTable.likeCount} > 0 THEN ${postCommentTable.likeCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            postCommentTable.id,
+            tx
+              .select({ id: postCommentLikeTable.commentId })
+              .from(postCommentLikeTable)
+              .where(eq(postCommentLikeTable.userId, uid)),
+          ),
+        );
+
+      // Remove the user's own data. Deleting the user row cascades the join
+      // and authored-post rows; messages/accounts/notes have no FK cascade.
+      await tx.delete(messageTable).where(eq(messageTable.receiverId, uid));
+      await tx.delete(accountTable).where(eq(accountTable.userId, uid));
+      await tx.delete(noteTable).where(eq(noteTable.userId, uid));
+      await tx.delete(userTable).where(eq(userTable.id, uid));
+    });
 
     await invalidateSession(session.id);
     await deleteSessionTokenCookie();

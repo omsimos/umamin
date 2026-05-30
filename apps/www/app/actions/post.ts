@@ -208,7 +208,10 @@ export async function addLikeAction({ postId }: { postId: string }) {
     });
 
     updateTag(`post:${postId}`);
-    updateTag("posts");
+    // Note: intentionally not invalidating the "posts" feed tag here. A like
+    // only changes likeCount, which the public feed shows as eventually
+    // consistent (<=120s). The per-viewer liked tag below keeps the viewer's
+    // own like state fresh. This avoids a full feed-cache miss on every like.
     updateTag(`post:${postId}:liked:${session.userId}`);
     return result;
   } catch (err) {
@@ -262,7 +265,8 @@ export async function removeLikeAction({ postId }: { postId: string }) {
     });
 
     updateTag(`post:${postId}`);
-    updateTag("posts");
+    // See addLikeAction: skip the "posts" feed tag; likeCount is eventually
+    // consistent in the feed, and the per-viewer tag below stays fresh.
     updateTag(`post:${postId}:liked:${session.userId}`);
 
     return result;
@@ -321,7 +325,7 @@ export async function addCommentLikeAction({
       return { success: true };
     });
 
-    updateTag("posts");
+    // Comment likes don't appear in the feed, so no "posts" invalidation.
     updateTag(`comment:${commentId}`);
     updateTag(`comment:${commentId}:liked:${session.userId}`);
     if (postId) {
@@ -384,7 +388,7 @@ export async function removeCommentLikeAction({
       return { success: true };
     });
 
-    updateTag("posts");
+    // Comment likes don't appear in the feed, so no "posts" invalidation.
     updateTag(`comment:${commentId}`);
     updateTag(`comment:${commentId}:liked:${session.userId}`);
     if (postId) {

@@ -47,19 +47,29 @@ export const sessionRelations = relations(sessionTable, ({ one }) => ({
   }),
 }));
 
-export const accountTable = sqliteTable("oauth_account", {
-  providerUserId: text("provider_user_id").primaryKey(),
-  email: text("email").notNull(),
-  picture: text("picture").notNull(),
-  userId: text("user_id").notNull(),
-  providerId: text("provider_id").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
-    () => new Date(),
-  ),
-});
+export const accountTable = sqliteTable(
+  "oauth_account",
+  {
+    providerUserId: text("provider_user_id").primaryKey(),
+    email: text("email").notNull(),
+    picture: text("picture").notNull(),
+    userId: text("user_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
+      () => new Date(),
+    ),
+  },
+  (t) => [
+    // OAuth sign-in looks up by (providerId, providerUserId); without this the
+    // query falls back to scanning oauth_account (Turso bills every row read).
+    index("oauth_account_provider_idx").on(t.providerId, t.providerUserId),
+    // getCurrentUserData fetches a user's linked accounts by userId.
+    index("oauth_account_user_idx").on(t.userId),
+  ],
+);
 
 export const accountRelations = relations(accountTable, ({ one }) => ({
   user: one(userTable, {
