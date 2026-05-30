@@ -1,5 +1,4 @@
 import { formatDistanceToNow } from "date-fns";
-import { domToPng } from "modern-screenshot";
 import { customAlphabet, nanoid } from "nanoid";
 import { toast } from "sonner";
 
@@ -66,13 +65,17 @@ export function formatContent(content: string) {
   return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n").trim();
 }
 
-export const saveImage = (id: string, isPost?: boolean) => {
+export const saveImage = async (id: string, isPost?: boolean) => {
   const target = document.querySelector(`#${id}`);
 
   if (!target) {
     toast.error("Something went wrong.");
     return;
   }
+
+  // Loaded on demand so the ~212KB modern-screenshot lib never ships in the hot
+  // feed/profile/chat client bundles — it's only needed for this download.
+  const { domToPng } = await import("modern-screenshot");
 
   toast.promise(
     domToPng(target, {

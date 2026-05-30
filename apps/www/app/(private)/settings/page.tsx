@@ -80,6 +80,13 @@ export default async function Settings({
         </Alert>
       )}
 
+      {error === "rate_limited" && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Too many requests</AlertTitle>
+          <AlertDescription>Please try again in a minute.</AlertDescription>
+        </Alert>
+      )}
+
       <HydrationBoundary state={dehydrate(queryClient)}>
         <SettingsTabs />
       </HydrationBoundary>

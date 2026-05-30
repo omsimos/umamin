@@ -772,7 +772,7 @@ async function getPublicNotesPage(
     data: pageRows,
     nextCursor:
       hasMore && lastItem
-        ? `${lastItem.updatedAt?.getTime()}.${lastItem.id}`
+        ? `${(lastItem.updatedAt ?? lastItem.createdAt).getTime()}.${lastItem.id}`
         : null,
   };
 }

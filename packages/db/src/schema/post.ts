@@ -137,6 +137,10 @@ export const postRepostTable = sqliteTable(
     uniqueIndex("post_repost_post_user_uidx").on(t.postId, t.userId),
     index("post_repost_user_created_idx").on(t.userId, t.createdAt),
     index("post_repost_post_created_idx").on(t.postId, t.createdAt),
+    // Backs the public feed's repost branch (ORDER BY created_at DESC, id DESC
+    // LIMIT). Without it that branch full-scans post_repost on every feed cache
+    // miss (Turso bills every row scanned).
+    index("post_repost_created_idx").on(t.createdAt, t.id),
   ],
 );
 

@@ -23,6 +23,10 @@ export async function deleteMessageAction(id: string) {
       throw new Error("Unauthorized");
     }
 
+    if (!(await checkRateLimit("write", `delmsg:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
     await db
       .delete(messageTable)
       .where(
@@ -70,6 +74,10 @@ export async function createReplyAction({
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("message", `reply:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const encryptedReply = await aesEncrypt(params.data.content);

@@ -186,8 +186,7 @@ export async function signup(data: z.infer<typeof registerSchema>) {
     userId = res[0].id;
     await setSession(userId);
   } catch (err) {
-    console.log(err);
-
+    // Avoid logging the raw error (it can include the attempted username + SQL).
     if (
       err instanceof Error &&
       typeof err.cause === "object" &&

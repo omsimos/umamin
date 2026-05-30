@@ -32,13 +32,19 @@ export const userTable = sqliteTable("user", {
   ),
 });
 
-export const sessionTable = sqliteTable("session", {
-  id: text("id").notNull().primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => userTable.id, { onDelete: "cascade" }),
-  expiresAt: integer("expires_at").notNull(),
-});
+export const sessionTable = sqliteTable(
+  "session",
+  {
+    id: text("id").notNull().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    expiresAt: integer("expires_at").notNull(),
+  },
+  // Backs DELETE ... WHERE user_id = ? (password-change session revocation) and
+  // the user-delete FK cascade lookup.
+  (t) => [index("session_user_idx").on(t.userId)],
+);
 
 export const sessionRelations = relations(sessionTable, ({ one }) => ({
   user: one(userTable, {
@@ -63,10 +69,10 @@ export const accountTable = sqliteTable(
     ),
   },
   (t) => [
-    // OAuth sign-in looks up by (providerId, providerUserId); without this the
-    // query falls back to scanning oauth_account (Turso bills every row read).
-    index("oauth_account_provider_idx").on(t.providerId, t.providerUserId),
-    // getCurrentUserData fetches a user's linked accounts by userId.
+    // getCurrentUserData / account deletion look up accounts by userId.
+    // (The OAuth sign-in lookup by (providerId, providerUserId) is already a
+    // point query served by the providerUserId PRIMARY KEY autoindex, so a
+    // separate composite index is redundant.)
     index("oauth_account_user_idx").on(t.userId),
   ],
 );

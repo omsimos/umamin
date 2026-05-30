@@ -6,6 +6,7 @@ import { eq, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getCurrentNoteData } from "@/lib/server/data";
 import { formatContent } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ const createNoteSchema = z.object({
   isAnonymous: z.boolean().default(false),
   content: z
     .string()
+    .trim()
     .min(1, { error: "Content cannot be empty" })
     .max(500, { error: "Content cannot exceed 500 characters" }),
 });
@@ -35,6 +37,10 @@ export async function createNoteAction(
       return { error: "User not authenticated" };
     }
 
+    if (!(await checkRateLimit("write", `note:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
     const formattedContent = formatContent(content);
 
     await db
@@ -43,6 +49,10 @@ export async function createNoteAction(
         userId: session?.userId,
         content: formattedContent,
         isAnonymous,
+        // updated_at is the notes-feed sort key + pagination cursor. Set it on
+        // insert (it has no SQL default) so new notes sort to the top and never
+        // produce a NULL -> NaN cursor.
+        updatedAt: sql`(unixepoch())`,
       })
       .onConflictDoUpdate({
         target: noteTable.userId,
@@ -82,6 +92,10 @@ export const clearNoteAction = async () => {
 
     if (!session?.userId) {
       return { error: "User not authenticated" };
+    }
+
+    if (!(await checkRateLimit("write", `note:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     await db
