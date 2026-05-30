@@ -13,8 +13,17 @@ import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
+import { redis } from "@/lib/redis";
 import { getPostById } from "@/lib/server/data";
 import { formatContent } from "@/lib/utils";
+
+// Records the newest feed-edge timestamp so the client can show a "new posts"
+// pill without polling Turso. No-ops when Redis isn't configured.
+async function bumpFeedLatest(createdAt: Date) {
+  if (redis) {
+    await redis.set("feed:latest", createdAt.getTime());
+  }
+}
 
 const createPostSchema = z.object({
   content: z
@@ -66,6 +75,7 @@ export async function createPostAction(
 
     updateTag("posts");
     updateTag(`user-posts:${session.userId}`);
+    await bumpFeedLatest(createdPost.createdAt);
 
     return {
       success: true,
@@ -481,11 +491,14 @@ export async function addRepostAction(
 
       const formatted = content?.trim() ? formatContent(content) : null;
 
-      await tx.insert(postRepostTable).values({
-        postId,
-        userId: session.userId,
-        content: formatted,
-      });
+      const [repost] = await tx
+        .insert(postRepostTable)
+        .values({
+          postId,
+          userId: session.userId,
+          content: formatted,
+        })
+        .returning();
 
       await tx
         .update(postTable)
@@ -494,12 +507,15 @@ export async function addRepostAction(
         })
         .where(eq(postTable.id, postId));
 
-      return { success: true };
+      return { success: true, repost };
     });
 
     updateTag(`post:${postId}`);
     updateTag("posts");
     updateTag(`post:${postId}:reposted:${session.userId}`);
+    if ("repost" in result && result.repost) {
+      await bumpFeedLatest(result.repost.createdAt);
+    }
     return result;
   } catch (err) {
     console.log(err);

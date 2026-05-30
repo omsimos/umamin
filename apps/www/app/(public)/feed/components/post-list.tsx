@@ -1,13 +1,22 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
+import {
+  AlertCircleIcon,
+  ArrowUpIcon,
+  MessageCircleDashedIcon,
+} from "lucide-react";
 import { useMemo } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
@@ -18,7 +27,7 @@ import {
   PUBLIC_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
-import { fetchPostsPage } from "@/lib/query-fetchers";
+import { fetchFeedHead, fetchPostsPage } from "@/lib/query-fetchers";
 import type { FeedResponse } from "@/lib/query-types";
 import type { FeedItem } from "@/types/post";
 import { PostCard } from "./post-card";
@@ -40,6 +49,7 @@ export function PostList({
     hasNextPage,
     isFetching,
     isFetchingNextPage,
+    refetch,
   } = useInfiniteQuery<FeedResponse>({
     queryKey: queryKeys.posts(),
     queryFn: ({ pageParam }) =>
@@ -50,6 +60,18 @@ export function PostList({
     ...infiniteQueryDefaults,
   });
   const hasResolvedData = data !== undefined;
+
+  const queryClient = useQueryClient();
+
+  // Cheap "new posts" head-check: a Redis-backed (or CDN-cached) timestamp,
+  // polled while the tab is visible (refetchInterval pauses when hidden). Never
+  // touches Turso. Inactive when Redis is unset (latest === null).
+  const { data: head } = useQuery({
+    queryKey: ["feed-head"],
+    queryFn: fetchFeedHead,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
 
   // De-duplicate feed items across pages
   const allItems: FeedItem[] = (() => {
@@ -64,6 +86,37 @@ export function PostList({
     }
     return Array.from(map.values());
   })();
+
+  const topItem = allItems[0];
+  const topCreatedAtMs = topItem
+    ? new Date(
+        topItem.type === "post"
+          ? topItem.post.createdAt
+          : topItem.repost.createdAt,
+      ).getTime()
+    : 0;
+  const showNewPosts =
+    !!head?.latest && topCreatedAtMs > 0 && head.latest > topCreatedAtMs;
+
+  // Refetch only page 1 (drop later pages — we're scrolling back to top anyway)
+  // so the cost stays bounded; the dedupe map above absorbs any overlap.
+  const handleShowNewPosts = async () => {
+    queryClient.setQueryData<InfiniteData<FeedResponse>>(
+      queryKeys.posts(),
+      (old) =>
+        old
+          ? {
+              ...old,
+              pages: old.pages.slice(0, 1),
+              pageParams: old.pageParams.slice(0, 1),
+            }
+          : old,
+    );
+    await refetch();
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   const AD_FREQUENCY = 8;
 
@@ -89,7 +142,7 @@ export function PostList({
     count: totalRows,
     estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
     paddingEnd: 100,
-    overscan: 12,
+    overscan: 5,
     scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
@@ -140,6 +193,19 @@ export function PostList({
 
   return (
     <div className="w-full">
+      {showNewPosts && (
+        <div className="sticky top-2 z-20 mb-4 flex justify-center">
+          <button
+            type="button"
+            onClick={handleShowNewPosts}
+            className="flex items-center gap-1.5 rounded-full bg-pink-500 px-4 py-1.5 text-sm font-medium text-white shadow-lg transition-colors hover:bg-pink-600"
+          >
+            <ArrowUpIcon className="h-4 w-4" />
+            Show new posts
+          </button>
+        </div>
+      )}
+
       {hasResolvedData && allItems.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />

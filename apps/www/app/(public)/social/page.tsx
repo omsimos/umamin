@@ -1,39 +1,15 @@
-"use client";
-
 import { cn } from "@umamin/ui/lib/utils";
+import { redirect } from "next/navigation";
 import { AnimatedShinyText } from "@/components/animated-shiny-text";
-import { SocialCard } from "./components/social-card";
 
-const data = [
-  {
-    imageUrl:
-      "https://lh3.googleusercontent.com/a/ACg8ocK4CtuGuDZlPy9H_DMb3EQIue9Hrd5bqYcMZOY-Xb8LcuyqsBI=s96-c",
-    username: "umamin",
-    displayName: "Umamin Official",
-    createdAt: new Date(1718604131 * 1000), // Fri Jun 17 2024 ...
-    content:
-      "An open-source social platform built exclusively for the Umamin community.",
-    isLiked: true,
-    isVerified: true,
-    likes: 24,
-    comments: 9,
-  },
-  {
-    imageUrl:
-      "https://lh3.googleusercontent.com/a/ACg8ocJf40m8VVe3wNxhgBe11Bm7ukLSPeR0SDPPg6q8wq6NYRZtCYk=s96-c",
-    username: "josh",
-    displayName: "Josh Daniel",
-    createdAt: new Date(1718342984 * 1000), // Tue Jun 14 2024 ...
-    content:
-      "We're building Umamin Social, a new platform to connect the community. Coming soon! 🚀",
-    isLiked: false,
-    isVerified: false,
-    likes: 7,
-    comments: 4,
-  },
-];
-
+// /social is the maintenance fallback for the live feed: feed/page.tsx redirects
+// here only when NEXT_PUBLIC_SOCIAL_UNDER_MAINTENANCE === "true". Otherwise the
+// real feed is live, so send visitors there instead of showing a stale teaser.
 export default function Social() {
+  if (process.env.NEXT_PUBLIC_SOCIAL_UNDER_MAINTENANCE !== "true") {
+    redirect("/feed");
+  }
+
   return (
     <main className="pb-24">
       <div className="flex flex-col items-center container">
@@ -51,12 +27,6 @@ export default function Social() {
           Umamin Social
         </h1>
       </div>
-
-      <section className="mt-12 pt-6 w-full max-w-lg mx-auto space-y-6 bg-background rounded-md border-t border-t-muted">
-        {data.map((props) => (
-          <SocialCard key={props.username} {...props} />
-        ))}
-      </section>
     </main>
   );
 }

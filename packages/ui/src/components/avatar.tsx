@@ -27,6 +27,10 @@ function AvatarImage({
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
+      loading="lazy"
+      decoding="async"
+      // Don't leak the umamin URL to the avatar host (Google / Gravatar).
+      referrerPolicy="no-referrer"
       className={cn("aspect-square size-full", className)}
       {...props}
     />

@@ -31,6 +31,8 @@ import {
   removeLikeAction,
   removeRepostAction,
 } from "@/app/actions/post";
+import { PostBody } from "@/components/post-body";
+import { TimeAgo } from "@/components/time-ago";
 import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
@@ -40,10 +42,8 @@ import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
 import type { FeedResponse, PostResponse } from "@/lib/query-types";
 import {
   getActionError,
-  isAlreadyRemoved,
   isAlreadyReposted,
   isOlderThanOneYear,
-  shortTimeAgo,
 } from "@/lib/utils";
 import type { PostData } from "@/types/post";
 import { PostMenu } from "./post-menu";
@@ -166,11 +166,8 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
         throw new Error(actionError);
       }
       if (prevReposted) {
-        if (isAlreadyRemoved(res)) {
-          setReposted(false);
-          setReposts((v) => Math.max(v - 1, 0));
-          syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
-        }
+        // Optimistic update already applied -1; server doesn't further decrement
+        // on alreadyRemoved, so sync once (no undercount).
         toast.success("Repost removed.");
         syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
       } else {
@@ -261,9 +258,10 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
           </div>
 
           <div className="flex items-center gap-2 text-muted-foreground">
-            <p className="text-muted-foreground text-xs">
-              {shortTimeAgo(author.createdAt)}
-            </p>
+            <TimeAgo
+              date={author.createdAt}
+              className="text-muted-foreground text-xs"
+            />
             {isAuthenticated && (
               <PostMenu
                 postId={data.id}
@@ -278,13 +276,15 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
       </div>
 
       <div className="text-[15px] w-full">
-        <p className="mt-1">{data.content}</p>
+        <PostBody content={data.content} className="mt-1" />
 
         <div className="flex items-center space-x-4 text-muted-foreground mt-4">
           <button
             disabled={!isAuthenticated}
             type="button"
             onClick={handleLike}
+            aria-label={liked ? "Unlike post" : "Like post"}
+            aria-pressed={liked}
             className={cn("flex space-x-1 items-center", {
               "text-pink-500": liked,
             })}
@@ -302,6 +302,7 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
               <button
                 disabled={!isAuthenticated}
                 type="button"
+                aria-label="Repost options"
                 className={cn("flex space-x-1 items-center", {
                   "text-emerald-600": reposted,
                 })}

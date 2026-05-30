@@ -33,6 +33,8 @@ import {
   removeLikeAction,
   removeRepostAction,
 } from "@/app/actions/post";
+import { PostBody } from "@/components/post-body";
+import { TimeAgo } from "@/components/time-ago";
 import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
@@ -50,10 +52,8 @@ import type {
 } from "@/lib/query-types";
 import {
   getActionError,
-  isAlreadyRemoved,
   isAlreadyReposted,
   isOlderThanOneYear,
-  shortTimeAgo,
 } from "@/lib/utils";
 import type { CommentData, PostData } from "@/types/post";
 import { PostMenu } from "./post-menu";
@@ -134,12 +134,19 @@ export function PostCard({
     }
   };
 
+  const dataIsReposted =
+    "isReposted" in data ? data.isReposted === true : false;
+  const dataRepostCount = "repostCount" in data ? (data.repostCount ?? 0) : 0;
+
+  // Scalar deps only — depending on the `data` object (a fresh reference on most
+  // parent renders) re-ran this effect constantly and could clobber optimistic
+  // like/repost state mid-flight. Now it resyncs only when a value truly changes.
   useEffect(() => {
     setLiked(data.isLiked === true);
     setLikes(data.likeCount ?? 0);
-    setReposted("isReposted" in data ? data.isReposted === true : false);
-    setReposts("repostCount" in data ? (data.repostCount ?? 0) : 0);
-  }, [data.isLiked, data.likeCount, data]);
+    setReposted(dataIsReposted);
+    setReposts(dataRepostCount);
+  }, [data.isLiked, data.likeCount, dataIsReposted, dataRepostCount]);
 
   const handleLikeAction = useBurstAction(
     async (prevLiked: boolean) => {
@@ -222,11 +229,9 @@ export function PostCard({
         throw new Error(actionError);
       }
       if (prevReposted) {
-        if (isAlreadyRemoved(res)) {
-          setReposted(false);
-          setReposts((v) => Math.max(v - 1, 0));
-          syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
-        }
+        // The optimistic update at the top already set reposted=false and -1;
+        // the server doesn't further decrement on the alreadyRemoved path, so
+        // sync the cache once (no extra local decrement → no undercount).
         toast.success("Repost removed.");
         syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
       } else {
@@ -286,11 +291,27 @@ export function PostCard({
   return (
     <div
       id={imageTargetId}
-      className={cn(className, "flex space-x-3 container text-[15px]", {
-        "border-b pb-6": !isRepost,
-        "border border-muted rounded-md px-2 py-3 sm:px-4": isRepost,
-      })}
+      className={cn(
+        className,
+        "relative flex space-x-3 container text-[15px]",
+        {
+          "border-b pb-6": !isRepost,
+          "border border-muted rounded-md px-2 py-3 sm:px-4": isRepost,
+          "transition-colors hover:bg-muted/30": !isComment,
+        },
+      )}
     >
+      {/* Whole-card open-thread target. A real <a> (keyboard + prefetch); the
+          interactive children below are raised (z-10) so they keep their own
+          behavior. Inline @mentions/links in the body open the thread too. */}
+      {!isComment && (
+        <Link
+          href={`/post/${data.id}`}
+          aria-label="Open post"
+          className="absolute inset-0"
+        />
+      )}
+
       <Avatar
         className={cn({
           "avatar-shine": isOlderThanOneYear(author?.createdAt),
@@ -307,7 +328,7 @@ export function PostCard({
           <div className="flex items-center space-x-1">
             <Link
               href={`/user/${author?.username}`}
-              className="font-semibold hover:underline"
+              className="relative z-10 font-semibold hover:underline"
             >
               {author?.displayName}
             </Link>
@@ -319,11 +340,12 @@ export function PostCard({
             <span className="text-muted-foreground">@{author?.username}</span>
           </div>
 
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="relative z-10 flex items-center gap-2 text-muted-foreground">
             {data?.createdAt && (
-              <p className="text-muted-foreground text-xs">
-                {shortTimeAgo(data.createdAt)}
-              </p>
+              <TimeAgo
+                date={data.createdAt}
+                className="text-muted-foreground text-xs"
+              />
             )}
 
             {!isComment && isAuthenticated && (
@@ -338,13 +360,15 @@ export function PostCard({
           </div>
         </div>
 
-        <p className=" mt-1">{data?.content}</p>
+        <PostBody content={data?.content ?? ""} className="mt-1" />
 
-        <div className="flex items-center space-x-4 text-muted-foreground mt-4">
+        <div className="relative z-10 flex items-center space-x-4 text-muted-foreground mt-4">
           <button
             type="button"
             disabled={!isAuthenticated}
             onClick={handleLike}
+            aria-label={`${liked ? "Unlike" : "Like"} ${isComment ? "comment" : "post"}`}
+            aria-pressed={liked}
             className={cn("flex space-x-1 items-center", {
               "text-pink-500": liked,
             })}
@@ -363,6 +387,7 @@ export function PostCard({
                 <button
                   type="button"
                   disabled={!isAuthenticated}
+                  aria-label="Repost options"
                   className={cn("flex space-x-1 items-center", {
                     "text-emerald-600": reposted,
                   })}
@@ -403,7 +428,10 @@ export function PostCard({
 
           {!isComment && (
             <div className="flex space-x-1 items-center">
-              <Link href={`/post/${data?.id}`}>
+              <Link
+                href={`/post/${data?.id}`}
+                aria-label={`View ${commentCount ?? 0} comments`}
+              >
                 <MessageCircleIcon className="h-5 w-5" />
               </Link>
               <span>{commentCount ?? 0}</span>

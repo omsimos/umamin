@@ -74,7 +74,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
     estimateSize: () => 180,
-    overscan: 12,
+    overscan: 5,
     paddingEnd: 80,
     scrollMargin,
     getItemKey: (index) => {
