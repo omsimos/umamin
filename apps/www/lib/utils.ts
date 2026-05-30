@@ -143,6 +143,24 @@ export function isOlderThanOneYear(createdAt?: Date | string | null) {
   return createdDate <= oneYearAgo;
 }
 
+/**
+ * Extracts a server-action error message from a result, if present. Mutations
+ * return `{ error: string }` on failure (incl. rate limiting / validation) WITHOUT
+ * throwing, so optimistic-UI call sites must check this and throw to trigger
+ * rollback — otherwise a throttled action shows a false success.
+ */
+export function getActionError(res: unknown): string | undefined {
+  if (
+    res &&
+    typeof res === "object" &&
+    "error" in res &&
+    typeof (res as { error?: unknown }).error === "string"
+  ) {
+    return (res as { error: string }).error || undefined;
+  }
+  return undefined;
+}
+
 export function isAlreadyReposted(
   res: unknown,
 ): res is { alreadyReposted: true } {
