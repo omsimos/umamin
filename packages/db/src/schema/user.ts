@@ -32,13 +32,19 @@ export const userTable = sqliteTable("user", {
   ),
 });
 
-export const sessionTable = sqliteTable("session", {
-  id: text("id").notNull().primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => userTable.id, { onDelete: "cascade" }),
-  expiresAt: integer("expires_at").notNull(),
-});
+export const sessionTable = sqliteTable(
+  "session",
+  {
+    id: text("id").notNull().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    expiresAt: integer("expires_at").notNull(),
+  },
+  // Backs DELETE ... WHERE user_id = ? (password-change session revocation) and
+  // the user-delete FK cascade lookup.
+  (t) => [index("session_user_idx").on(t.userId)],
+);
 
 export const sessionRelations = relations(sessionTable, ({ one }) => ({
   user: one(userTable, {
@@ -47,19 +53,29 @@ export const sessionRelations = relations(sessionTable, ({ one }) => ({
   }),
 }));
 
-export const accountTable = sqliteTable("oauth_account", {
-  providerUserId: text("provider_user_id").primaryKey(),
-  email: text("email").notNull(),
-  picture: text("picture").notNull(),
-  userId: text("user_id").notNull(),
-  providerId: text("provider_id").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
-    () => new Date(),
-  ),
-});
+export const accountTable = sqliteTable(
+  "oauth_account",
+  {
+    providerUserId: text("provider_user_id").primaryKey(),
+    email: text("email").notNull(),
+    picture: text("picture").notNull(),
+    userId: text("user_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
+      () => new Date(),
+    ),
+  },
+  (t) => [
+    // getCurrentUserData / account deletion look up accounts by userId.
+    // (The OAuth sign-in lookup by (providerId, providerUserId) is already a
+    // point query served by the providerUserId PRIMARY KEY autoindex, so a
+    // separate composite index is redundant.)
+    index("oauth_account_user_idx").on(t.userId),
+  ],
+);
 
 export const accountRelations = relations(accountTable, ({ one }) => ({
   user: one(userTable, {

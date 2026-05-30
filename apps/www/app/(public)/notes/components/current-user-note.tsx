@@ -32,7 +32,7 @@ import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
-import { isOlderThanOneYear, saveImage } from "@/lib/utils";
+import { getActionError, isOlderThanOneYear, saveImage } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
 export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
@@ -42,7 +42,17 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
   });
 
   const clearNoteMutation = useMutation({
-    mutationFn: clearNoteAction,
+    // Throw on a server error ({error} from rate limiting / auth / failure) so
+    // onError fires instead of onSuccess optimistically clearing a note that
+    // wasn't actually cleared.
+    mutationFn: async () => {
+      const res = await clearNoteAction();
+      const actionError = getActionError(res);
+      if (actionError) {
+        throw new Error(actionError);
+      }
+      return res;
+    },
     onSuccess: () => {
       queryClient.setQueryData(queryKeys.currentNote(), null);
       if (data?.id) {
@@ -56,7 +66,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
     },
     onError: (err) => {
       console.log(err);
-      toast.error("Couldn't clear note.");
+      toast.error(err instanceof Error ? err.message : "Couldn't clear note.");
     },
   });
 

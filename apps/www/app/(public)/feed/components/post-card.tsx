@@ -49,6 +49,7 @@ import type {
   PostResponse,
 } from "@/lib/query-types";
 import {
+  getActionError,
   isAlreadyRemoved,
   isAlreadyReposted,
   isOlderThanOneYear,
@@ -183,7 +184,11 @@ export function PostCard({
     setLikes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
 
     try {
-      await handleLikeAction(prevLiked);
+      const res = await handleLikeAction(prevLiked);
+      const actionError = getActionError(res);
+      if (actionError) {
+        throw new Error(actionError);
+      }
       syncPostCache(
         !prevLiked,
         prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1,
@@ -212,6 +217,10 @@ export function PostCard({
 
     try {
       const res = await handleRepostAction(prevReposted);
+      const actionError = getActionError(res);
+      if (actionError) {
+        throw new Error(actionError);
+      }
       if (prevReposted) {
         if (isAlreadyRemoved(res)) {
           setReposted(false);
@@ -254,6 +263,10 @@ export function PostCard({
 
     try {
       const res = await addRepostAction({ postId: data.id, content });
+      const actionError = getActionError(res);
+      if (actionError) {
+        throw new Error(actionError);
+      }
       if (isAlreadyReposted(res)) {
         setReposted(prevReposted);
         setReposts(prevReposts);

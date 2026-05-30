@@ -12,6 +12,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getPostById } from "@/lib/server/data";
 import { formatContent } from "@/lib/utils";
 
@@ -49,6 +50,10 @@ export async function createPostAction(
       throw new Error("Unauthorized");
     }
 
+    if (!(await checkRateLimit("write", `post:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
     const formattedContent = formatContent(content);
 
     const [createdPost] = await db
@@ -77,6 +82,10 @@ export async function deletePostAction({ postId }: { postId: string }) {
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `delpost:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const post = await db.query.postTable.findFirst({
@@ -129,6 +138,10 @@ export async function createCommentAction(
       throw new Error("Unauthorized");
     }
 
+    if (!(await checkRateLimit("write", `comment:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
     let createdComment: typeof postCommentTable.$inferSelect | undefined;
 
     await db.transaction(async (tx) => {
@@ -151,8 +164,11 @@ export async function createCommentAction(
         .where(eq(postTable.id, postId));
     });
 
+    // Note: not invalidating the "posts" feed tag — a new comment only bumps
+    // commentCount, which the feed shows as eventually consistent (<=120s),
+    // matching the like-count behavior. The single-post + comment-thread tags
+    // below refresh immediately. Avoids a full feed re-scan on every comment.
     updateTag(`post:${postId}`);
-    updateTag("posts");
     updateTag(`post-comments:${postId}`);
 
     return { success: true, comment: createdComment };
@@ -174,6 +190,10 @@ export async function addLikeAction({ postId }: { postId: string }) {
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `like:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const result = await db.transaction(async (tx) => {
@@ -208,7 +228,10 @@ export async function addLikeAction({ postId }: { postId: string }) {
     });
 
     updateTag(`post:${postId}`);
-    updateTag("posts");
+    // Note: intentionally not invalidating the "posts" feed tag here. A like
+    // only changes likeCount, which the public feed shows as eventually
+    // consistent (<=120s). The per-viewer liked tag below keeps the viewer's
+    // own like state fresh. This avoids a full feed-cache miss on every like.
     updateTag(`post:${postId}:liked:${session.userId}`);
     return result;
   } catch (err) {
@@ -227,6 +250,10 @@ export async function removeLikeAction({ postId }: { postId: string }) {
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `like:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const result = await db.transaction(async (tx) => {
@@ -262,7 +289,8 @@ export async function removeLikeAction({ postId }: { postId: string }) {
     });
 
     updateTag(`post:${postId}`);
-    updateTag("posts");
+    // See addLikeAction: skip the "posts" feed tag; likeCount is eventually
+    // consistent in the feed, and the per-viewer tag below stays fresh.
     updateTag(`post:${postId}:liked:${session.userId}`);
 
     return result;
@@ -288,6 +316,10 @@ export async function addCommentLikeAction({
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `commentlike:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const result = await db.transaction(async (tx) => {
@@ -321,7 +353,7 @@ export async function addCommentLikeAction({
       return { success: true };
     });
 
-    updateTag("posts");
+    // Comment likes don't appear in the feed, so no "posts" invalidation.
     updateTag(`comment:${commentId}`);
     updateTag(`comment:${commentId}:liked:${session.userId}`);
     if (postId) {
@@ -350,6 +382,10 @@ export async function removeCommentLikeAction({
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `commentlike:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const result = await db.transaction(async (tx) => {
@@ -384,7 +420,7 @@ export async function removeCommentLikeAction({
       return { success: true };
     });
 
-    updateTag("posts");
+    // Comment likes don't appear in the feed, so no "posts" invalidation.
     updateTag(`comment:${commentId}`);
     updateTag(`comment:${commentId}:liked:${session.userId}`);
     if (postId) {
@@ -422,6 +458,10 @@ export async function addRepostAction(
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `repost:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const result = await db.transaction(async (tx) => {
@@ -475,6 +515,10 @@ export async function removeRepostAction({ postId }: { postId: string }) {
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `repost:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const result = await db.transaction(async (tx) => {

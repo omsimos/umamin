@@ -181,67 +181,67 @@ async function getPublicPostsPage(
     parsedCursor,
   );
 
-  const postEdgeQuery = (
+  // Bound each branch to the page window *before* the union, so a cache miss
+  // reads ~PAGE_SIZE rows per table instead of scanning every post + repost
+  // (Turso bills every row scanned). Taking the top (PAGE_SIZE + 1) from each
+  // branch and re-sorting the merged set yields the same global page.
+  // edge_id / post_id get distinct SQL aliases to avoid an ambiguous "id"/"id"
+  // collision once each branch is wrapped as a subquery for the union.
+  const postEdgesBase = db
+    .select({
+      kind: sql<string>`'post'`.as("kind"),
+      kindPriority: sql<number>`0`.as("kindPriority"),
+      edgeId: sql<string>`${postTable.id}`.as("edge_id"),
+      createdAt: postTable.createdAt,
+      postId: sql<string>`${postTable.id}`.as("post_id"),
+      authorId: postTable.authorId,
+      reposterId: sql<string | null>`null`.as("reposter_id"),
+      repostContent: sql<string | null>`null`.as("repost_content"),
+    })
+    .from(postTable)
+    .$dynamic();
+
+  const postEdges = (
     postCursorCondition
-      ? db
-          .select({
-            kind: sql<string>`'post'`.as("kind"),
-            kindPriority: sql<number>`0`.as("kindPriority"),
-            edgeId: postTable.id,
-            createdAt: postTable.createdAt,
-            postId: postTable.id,
-            authorId: postTable.authorId,
-            reposterId: sql<string | null>`null`.as("reposterId"),
-            repostContent: sql<string | null>`null`.as("repostContent"),
-          })
-          .from(postTable)
-          .where(postCursorCondition)
-      : db
-          .select({
-            kind: sql<string>`'post'`.as("kind"),
-            kindPriority: sql<number>`0`.as("kindPriority"),
-            edgeId: postTable.id,
-            createdAt: postTable.createdAt,
-            postId: postTable.id,
-            authorId: postTable.authorId,
-            reposterId: sql<string | null>`null`.as("reposterId"),
-            repostContent: sql<string | null>`null`.as("repostContent"),
-          })
-          .from(postTable)
-  ).$dynamic();
+      ? postEdgesBase.where(postCursorCondition)
+      : postEdgesBase
+  )
+    .orderBy(desc(postTable.createdAt), desc(postTable.id))
+    .limit(FEED_PAGE_SIZE + 1)
+    .as("post_edges");
 
-  const repostEdgeQuery = (
+  const repostEdgesBase = db
+    .select({
+      kind: sql<string>`'repost'`.as("kind"),
+      kindPriority: sql<number>`1`.as("kindPriority"),
+      edgeId: sql<string>`${postRepostTable.id}`.as("edge_id"),
+      createdAt: postRepostTable.createdAt,
+      postId: sql<string>`${postRepostTable.postId}`.as("post_id"),
+      authorId: postTable.authorId,
+      reposterId: sql<string | null>`${postRepostTable.userId}`.as(
+        "reposter_id",
+      ),
+      repostContent: sql<string | null>`${postRepostTable.content}`.as(
+        "repost_content",
+      ),
+    })
+    .from(postRepostTable)
+    .innerJoin(postTable, eq(postRepostTable.postId, postTable.id))
+    .$dynamic();
+
+  const repostEdges = (
     repostCursorCondition
-      ? db
-          .select({
-            kind: sql<string>`'repost'`.as("kind"),
-            kindPriority: sql<number>`1`.as("kindPriority"),
-            edgeId: postRepostTable.id,
-            createdAt: postRepostTable.createdAt,
-            postId: postRepostTable.postId,
-            authorId: postTable.authorId,
-            reposterId: postRepostTable.userId,
-            repostContent: postRepostTable.content,
-          })
-          .from(postRepostTable)
-          .innerJoin(postTable, eq(postRepostTable.postId, postTable.id))
-          .where(repostCursorCondition)
-      : db
-          .select({
-            kind: sql<string>`'repost'`.as("kind"),
-            kindPriority: sql<number>`1`.as("kindPriority"),
-            edgeId: postRepostTable.id,
-            createdAt: postRepostTable.createdAt,
-            postId: postRepostTable.postId,
-            authorId: postTable.authorId,
-            reposterId: postRepostTable.userId,
-            repostContent: postRepostTable.content,
-          })
-          .from(postRepostTable)
-          .innerJoin(postTable, eq(postRepostTable.postId, postTable.id))
-  ).$dynamic();
+      ? repostEdgesBase.where(repostCursorCondition)
+      : repostEdgesBase
+  )
+    .orderBy(desc(postRepostTable.createdAt), desc(postRepostTable.id))
+    .limit(FEED_PAGE_SIZE + 1)
+    .as("repost_edges");
 
-  const feedEdges = unionAll(postEdgeQuery, repostEdgeQuery).as("feed_edges");
+  const feedEdges = unionAll(
+    db.select().from(postEdges),
+    db.select().from(repostEdges),
+  ).as("feed_edges");
   const edgeRows = await db
     .select()
     .from(feedEdges)
@@ -772,7 +772,7 @@ async function getPublicNotesPage(
     data: pageRows,
     nextCursor:
       hasMore && lastItem
-        ? `${lastItem.updatedAt?.getTime()}.${lastItem.id}`
+        ? `${(lastItem.updatedAt ?? lastItem.createdAt).getTime()}.${lastItem.id}`
         : null,
   };
 }

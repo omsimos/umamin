@@ -38,6 +38,7 @@
     "@umamin/db": "workspace:*",
     "@umamin/encryption": "workspace:*",
     "@umamin/ui": "workspace:*",
+    "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "arctic": "^3.7.0",
     "babel-plugin-react-compiler": "^1.0.0",

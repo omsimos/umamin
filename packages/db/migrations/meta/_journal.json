@@ -15,6 +15,20 @@
       "when": 1766252980572,
       "tag": "0001_bent_the_initiative",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780144767831,
+      "tag": "0002_loud_daredevil",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1780156734335,
+      "tag": "0003_daily_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }

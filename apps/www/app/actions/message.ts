@@ -8,6 +8,7 @@ import { and, eq, or } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import { checkRateLimit, getClientIp, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { formatContent } from "@/lib/utils";
 
 export async function deleteMessageAction(id: string) {
@@ -20,6 +21,10 @@ export async function deleteMessageAction(id: string) {
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `delmsg:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     await db
@@ -71,6 +76,10 @@ export async function createReplyAction({
       throw new Error("Unauthorized");
     }
 
+    if (!(await checkRateLimit("message", `reply:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
     const encryptedReply = await aesEncrypt(params.data.content);
 
     await db
@@ -111,15 +120,20 @@ export async function sendMessageAction(
     }
 
     const { question, content, receiverId } = params.data;
+
+    // Throttle anonymous/unauthenticated spam before any DB work or AES.
+    // No-ops until Redis is configured (e.g. local dev).
+    const ip = await getClientIp();
+    if (!(await checkRateLimit("message", `msg:${ip}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
     const { session } = await getSession();
     const senderId = session?.userId ?? null;
 
     if (receiverId === senderId) {
       return { error: "You can't send a message to yourself" };
     }
-
-    const formattedContent = formatContent(content);
-    const encryptedContent = await aesEncrypt(formattedContent);
 
     if (senderId) {
       const blocked = await db.query.userBlockTable.findFirst({
@@ -140,6 +154,9 @@ export async function sendMessageAction(
         return { success: true };
       }
     }
+
+    // Encrypt only after the block check so a blocked send does no crypto work.
+    const encryptedContent = await aesEncrypt(formatContent(content));
 
     await db.insert(messageTable).values({
       senderId,
