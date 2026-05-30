@@ -5,12 +5,20 @@ import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import {
+  postCommentLikeTable,
+  postCommentTable,
+  postLikeTable,
+  postRepostTable,
+  postTable,
+} from "@umamin/db/schema/post";
+import {
   accountTable,
+  sessionTable,
   userBlockTable,
   userFollowTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -21,14 +29,39 @@ import {
   hashEmailForGravatar,
   normaliseEmailForGravatar,
 } from "@/lib/avatar";
+import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getCurrentUserData, getUserProfileData } from "@/lib/server/data";
-import { deleteSessionTokenCookie, invalidateSession } from "@/lib/session";
+import {
+  createSession,
+  deleteSessionTokenCookie,
+  generateSessionToken,
+  invalidateSession,
+  setSessionTokenCookie,
+} from "@/lib/session";
 import { formatContent } from "@/lib/utils";
 import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 
 const gravatarEmailSchema = z
   .email({ error: "Invalid email address" })
   .transform((value) => normaliseEmailForGravatar(value));
+
+// Avatars are rendered as raw <img src> across the app (not next/image), so an
+// arbitrary stored URL would load from every viewer's browser (tracking-beacon /
+// deanonymization / abusive image vector). Only allow the two hosts the UI ever
+// supplies: Gravatar and Google profile pictures, over https.
+const ALLOWED_AVATAR_HOSTS = new Set([
+  "www.gravatar.com",
+  "lh3.googleusercontent.com",
+]);
+
+function isAllowedAvatarUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && ALLOWED_AVATAR_HOSTS.has(url.hostname);
+  } catch {
+    return false;
+  }
+}
 
 export async function getGravatarAction(email: string) {
   const parsed = gravatarEmailSchema.safeParse(email);
@@ -39,14 +72,35 @@ export async function getGravatarAction(email: string) {
     };
   }
 
+  // Settings-only feature: require a session (the action carried none before)
+  // and throttle the outbound fetch so it can't be looped as a cost/egress
+  // amplifier or a Gravatar-enumeration oracle. No-ops locally (Redis unset).
+  const { session } = await getSession();
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+  if (!(await checkRateLimit("write", `gravatar:${session.userId}`))) {
+    return { error: RATE_LIMIT_ERROR };
+  }
+
   try {
     const hash = hashEmailForGravatar(parsed.data);
     const previewUrl = getGravatarPreviewUrl(hash);
 
-    const response = await fetch(previewUrl, {
-      method: "GET",
-      cache: "no-store",
-    });
+    // Bound the upstream call so a slow Gravatar response can't pin the
+    // serverless function open (Active-CPU / hung-invocation cost).
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    let response: Response;
+    try {
+      response = await fetch(previewUrl, {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       return {
@@ -100,6 +154,10 @@ export async function generalSettingsAction(
 
     if (!session) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `settings:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const data = params.data;
@@ -161,19 +219,131 @@ export async function deleteAccountAction() {
     throw new Error("Unauthorized");
   }
 
+  // Throttle this destructive ~10-statement transaction. Placed OUTSIDE the try
+  // so the redirect's NEXT_REDIRECT isn't swallowed by the catch below.
+  if (!(await checkRateLimit("auth", `delete-account:${user.id}`))) {
+    redirect("/settings?error=rate_limited");
+  }
+
   try {
-    await db.delete(messageTable).where(eq(messageTable.receiverId, user.id));
-    await db.delete(accountTable).where(eq(accountTable.userId, user.id));
-    await db.delete(noteTable).where(eq(noteTable.userId, user.id));
-    await db.delete(userTable).where(eq(userTable.id, user.id));
+    const uid = user.id;
+
+    await db.transaction(async (tx) => {
+      // FK CASCADE removes this user's follow/like/comment/repost rows when the
+      // user row is deleted, but the app-maintained counters on the *surviving*
+      // rows are not touched. Decrement them first (while the join rows still
+      // exist) so other users' counts don't drift upward permanently.
+
+      // Users I follow -> their follower_count.
+      await tx
+        .update(userTable)
+        .set({
+          followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            userTable.id,
+            tx
+              .select({ id: userFollowTable.followingId })
+              .from(userFollowTable)
+              .where(eq(userFollowTable.followerId, uid)),
+          ),
+        );
+
+      // Users who follow me -> their following_count.
+      await tx
+        .update(userTable)
+        .set({
+          followingCount: sql`CASE WHEN ${userTable.followingCount} > 0 THEN ${userTable.followingCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            userTable.id,
+            tx
+              .select({ id: userFollowTable.followerId })
+              .from(userFollowTable)
+              .where(eq(userFollowTable.followingId, uid)),
+          ),
+        );
+
+      // Posts I liked -> their like_count.
+      await tx
+        .update(postTable)
+        .set({
+          likeCount: sql`CASE WHEN ${postTable.likeCount} > 0 THEN ${postTable.likeCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: postLikeTable.postId })
+              .from(postLikeTable)
+              .where(eq(postLikeTable.userId, uid)),
+          ),
+        );
+
+      // Posts I reposted -> their repost_count.
+      await tx
+        .update(postTable)
+        .set({
+          repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: postRepostTable.postId })
+              .from(postRepostTable)
+              .where(eq(postRepostTable.userId, uid)),
+          ),
+        );
+
+      // Posts I commented on -> their comment_count (I may have several comments
+      // on a single post, so subtract the actual count per post).
+      await tx
+        .update(postTable)
+        .set({
+          commentCount: sql`MAX(0, ${postTable.commentCount} - (SELECT COUNT(*) FROM ${postCommentTable} WHERE ${postCommentTable.postId} = ${postTable.id} AND ${postCommentTable.authorId} = ${uid}))`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: postCommentTable.postId })
+              .from(postCommentTable)
+              .where(eq(postCommentTable.authorId, uid)),
+          ),
+        );
+
+      // Comments I liked -> their like_count.
+      await tx
+        .update(postCommentTable)
+        .set({
+          likeCount: sql`CASE WHEN ${postCommentTable.likeCount} > 0 THEN ${postCommentTable.likeCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            postCommentTable.id,
+            tx
+              .select({ id: postCommentLikeTable.commentId })
+              .from(postCommentLikeTable)
+              .where(eq(postCommentLikeTable.userId, uid)),
+          ),
+        );
+
+      // Remove the user's own data. Deleting the user row cascades the join
+      // and authored-post rows; messages/accounts/notes have no FK cascade.
+      await tx.delete(messageTable).where(eq(messageTable.receiverId, uid));
+      await tx.delete(accountTable).where(eq(accountTable.userId, uid));
+      await tx.delete(noteTable).where(eq(noteTable.userId, uid));
+      await tx.delete(userTable).where(eq(userTable.id, uid));
+    });
 
     await invalidateSession(session.id);
     await deleteSessionTokenCookie();
 
     // Invalidate user's cached data by tag
     updateTag(`user:${user.username}`);
-    updateTag(`user:${user.id}`);
-    updateTag(`user:${user.id}:accounts`);
     updateTag(`user:${user.id}`);
     updateTag(`user:${user.id}:accounts`);
   } catch (err) {
@@ -197,6 +367,10 @@ export async function updatePasswordAction(
 
     if (!params.success) {
       return { error: "Invalid input" };
+    }
+
+    if (!(await checkRateLimit("auth", `pwd:${user.id}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const { currentPassword, newPassword } = params.data;
@@ -231,6 +405,14 @@ export async function updatePasswordAction(
       .set({ passwordHash })
       .where(eq(userTable.id, user.id));
 
+    // Changing the password revokes all existing sessions (standard account
+    // security — locks out a hijacked/old device), then re-mints one for the
+    // current request so the user stays signed in here.
+    await db.delete(sessionTable).where(eq(sessionTable.userId, user.id));
+    const token = generateSessionToken();
+    const newSession = await createSession(token, user.id);
+    await setSessionTokenCookie(token, new Date(newSession.expiresAt));
+
     return { success: true };
   } catch (err) {
     console.log(err);
@@ -252,6 +434,10 @@ export async function followUserAction({ userId }: { userId: string }) {
 
     if (session.userId === userId) {
       return { error: "You cannot follow yourself." };
+    }
+
+    if (!(await checkRateLimit("write", `follow:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const [target] = await db
@@ -332,6 +518,10 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
       return { error: "You cannot unfollow yourself." };
     }
 
+    if (!(await checkRateLimit("write", `follow:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
     const [target] = await db
       .select({ id: userTable.id, username: userTable.username })
       .from(userTable)
@@ -409,6 +599,10 @@ export async function blockUserAction({ userId }: { userId: string }) {
 
     if (session.userId === userId) {
       return { error: "You cannot block yourself." };
+    }
+
+    if (!(await checkRateLimit("write", `block:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const [target] = await db
@@ -517,6 +711,10 @@ export async function unblockUserAction({ userId }: { userId: string }) {
       return { error: "You cannot unblock yourself." };
     }
 
+    if (!(await checkRateLimit("write", `block:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
     const [target] = await db
       .select({ id: userTable.id, username: userTable.username })
       .from(userTable)
@@ -582,6 +780,19 @@ export async function toggleDisplayPictureAction(accountImgUrl?: string) {
       throw new Error("Unauthorized");
     }
 
+    if (!(await checkRateLimit("write", `displaypic:${user.id}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    // When setting (not clearing) the picture, validate the incoming URL host —
+    // it is rendered as a raw <img src> for every viewer.
+    if (
+      !user.imageUrl &&
+      (!accountImgUrl || !isAllowedAvatarUrl(accountImgUrl))
+    ) {
+      return { error: "Invalid input" };
+    }
+
     const imageUrl = user.imageUrl ? null : accountImgUrl;
 
     await db
@@ -609,6 +820,10 @@ export async function toggleQuietModeAction() {
       throw new Error("Unauthorized");
     }
 
+    if (!(await checkRateLimit("write", `quiet:${user.id}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
     const quietMode = !user.quietMode;
 
     await db
@@ -634,6 +849,16 @@ export async function updateAvatarAction(imageUrl: string) {
 
     if (!user) {
       throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `avatar:${user.id}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    // imageUrl is rendered as a raw <img src> for every viewer — only allow the
+    // Gravatar / Google hosts the UI supplies, over https.
+    if (!isAllowedAvatarUrl(imageUrl)) {
+      return { error: "Invalid input" };
     }
 
     await db

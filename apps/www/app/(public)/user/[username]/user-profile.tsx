@@ -38,6 +38,7 @@ import type {
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "@/lib/query-types";
+import { getActionError } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
 type Props = {
@@ -151,10 +152,16 @@ export function UserProfile({ username, initialUser }: Props) {
   };
 
   const followMutation = useMutation({
-    mutationFn: async (prevFollowing: boolean) =>
-      prevFollowing
-        ? unfollowUserAction({ userId: profile.id })
-        : followUserAction({ userId: profile.id }),
+    mutationFn: async (prevFollowing: boolean) => {
+      const res = prevFollowing
+        ? await unfollowUserAction({ userId: profile.id })
+        : await followUserAction({ userId: profile.id });
+      const actionError = getActionError(res);
+      if (actionError) {
+        throw new Error(actionError);
+      }
+      return res;
+    },
     onMutate: async (prevFollowing) => {
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
@@ -240,10 +247,16 @@ export function UserProfile({ username, initialUser }: Props) {
   });
 
   const blockMutation = useMutation({
-    mutationFn: async (prevBlocked: boolean) =>
-      prevBlocked
-        ? unblockUserAction({ userId: profile.id })
-        : blockUserAction({ userId: profile.id }),
+    mutationFn: async (prevBlocked: boolean) => {
+      const res = prevBlocked
+        ? await unblockUserAction({ userId: profile.id })
+        : await blockUserAction({ userId: profile.id });
+      const actionError = getActionError(res);
+      if (actionError) {
+        throw new Error(actionError);
+      }
+      return res;
+    },
     onMutate: async (prevBlocked) => {
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
@@ -304,7 +317,9 @@ export function UserProfile({ username, initialUser }: Props) {
         queryKeys.receivedMessages(),
         ctx?.previousMessages,
       );
-      toast.error("Couldn't update block.");
+      toast.error(
+        err instanceof Error ? err.message : "Couldn't update block.",
+      );
       console.log(err);
     },
     onSuccess: (res, prevBlocked, ctx) => {

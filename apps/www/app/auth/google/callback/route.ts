@@ -3,6 +3,7 @@ import { accountTable, userTable } from "@umamin/db/schema/user";
 import { decodeIdToken, OAuth2RequestError, type OAuth2Tokens } from "arctic";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import * as z from "zod";
@@ -12,6 +13,7 @@ import {
   GOOGLE_OAUTH_STATE_COOKIE_NAME,
 } from "@/lib/cookies";
 import { google } from "@/lib/oauth";
+import { checkRateLimit, getClientIp } from "@/lib/ratelimit";
 import {
   createSession,
   generateSessionToken,
@@ -21,7 +23,9 @@ import { generateUsernameId } from "@/lib/utils";
 
 const claimsSchema = z.object({
   sub: z.string(),
-  picture: z.string(),
+  // Optional so a missing picture never breaks sign-in; validated as a URL so we
+  // don't persist garbage. (Value is Google-sourced over the TLS code exchange.)
+  picture: z.url().optional(),
   email: z.email(),
 });
 
@@ -73,6 +77,14 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Throttle the outbound Google token exchange + DB writes per IP. State/PKCE
+  // already gate CSRF; this stops floods of forged callbacks burning egress and
+  // invocations before the expensive validateAuthorizationCode call.
+  const ip = await getClientIp();
+  if (!(await checkRateLimit("auth", `oauth:google:${ip}`))) {
+    return new Response(null, { status: 429 });
+  }
+
   let tokens: OAuth2Tokens;
 
   try {
@@ -115,21 +127,29 @@ export async function GET(req: NextRequest) {
         },
       });
     } else if (user) {
-      // TODO: batch operation
-      await db
-        .update(userTable)
-        .set({
-          imageUrl: googleUser.picture,
-        })
-        .where(eq(userTable.id, user.id));
+      await db.transaction(async (tx) => {
+        // Only set the avatar if the user hasn't already chosen one — don't
+        // clobber an existing Gravatar/custom picture on link.
+        if (!user.imageUrl && googleUser.picture) {
+          await tx
+            .update(userTable)
+            .set({ imageUrl: googleUser.picture })
+            .where(eq(userTable.id, user.id));
+        }
 
-      await db.insert(accountTable).values({
-        providerId: "google",
-        providerUserId: googleUser.sub,
-        userId: user.id,
-        picture: googleUser.picture,
-        email: googleUser.email,
+        await tx.insert(accountTable).values({
+          providerId: "google",
+          providerUserId: googleUser.sub,
+          userId: user.id,
+          picture: googleUser.picture ?? "",
+          email: googleUser.email,
+        });
       });
+
+      // imageUrl/accounts may have changed -> refresh cached profile payloads.
+      updateTag(`user:${user.username}`);
+      updateTag(`user:${user.id}`);
+      updateTag(`user:${user.id}:accounts`);
 
       return new Response(null, {
         status: 302,
@@ -155,18 +175,20 @@ export async function GET(req: NextRequest) {
     const usernameId = generateUsernameId();
     const userId = nanoid();
 
-    await db.insert(userTable).values({
-      id: userId,
-      imageUrl: googleUser.picture,
-      username: `user_${usernameId}`,
-    });
+    await db.transaction(async (tx) => {
+      await tx.insert(userTable).values({
+        id: userId,
+        imageUrl: googleUser.picture,
+        username: `user_${usernameId}`,
+      });
 
-    await db.insert(accountTable).values({
-      providerId: "google",
-      providerUserId: googleUser.sub,
-      userId,
-      picture: googleUser.picture,
-      email: googleUser.email,
+      await tx.insert(accountTable).values({
+        providerId: "google",
+        providerUserId: googleUser.sub,
+        userId,
+        picture: googleUser.picture ?? "",
+        email: googleUser.email,
+      });
     });
 
     const sessionToken = generateSessionToken();
@@ -180,7 +202,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.log(err);
+    console.error("oauth_callback_failed");
     if (err instanceof OAuth2RequestError) {
       return new Response(null, {
         status: 400,

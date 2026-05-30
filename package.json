@@ -17,9 +17,9 @@
     "format-and-lint:fix": "biome check . --write"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.11",
+    "@biomejs/biome": "2.4.12",
     "@types/node": "^24.12.2",
-    "lefthook": "^2.1.5",
+    "lefthook": "^2.1.6",
     "turbo": "^2.9.6",
     "typescript": "5.9.3"
   },

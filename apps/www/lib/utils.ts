@@ -1,5 +1,4 @@
 import { formatDistanceToNow } from "date-fns";
-import { domToPng } from "modern-screenshot";
 import { customAlphabet, nanoid } from "nanoid";
 import { toast } from "sonner";
 
@@ -66,13 +65,17 @@ export function formatContent(content: string) {
   return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n").trim();
 }
 
-export const saveImage = (id: string, isPost?: boolean) => {
+export const saveImage = async (id: string, isPost?: boolean) => {
   const target = document.querySelector(`#${id}`);
 
   if (!target) {
     toast.error("Something went wrong.");
     return;
   }
+
+  // Loaded on demand so the ~212KB modern-screenshot lib never ships in the hot
+  // feed/profile/chat client bundles — it's only needed for this download.
+  const { domToPng } = await import("modern-screenshot");
 
   toast.promise(
     domToPng(target, {
@@ -138,6 +141,24 @@ export function isOlderThanOneYear(createdAt?: Date | string | null) {
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
   return createdDate <= oneYearAgo;
+}
+
+/**
+ * Extracts a server-action error message from a result, if present. Mutations
+ * return `{ error: string }` on failure (incl. rate limiting / validation) WITHOUT
+ * throwing, so optimistic-UI call sites must check this and throw to trigger
+ * rollback — otherwise a throttled action shows a false success.
+ */
+export function getActionError(res: unknown): string | undefined {
+  if (
+    res &&
+    typeof res === "object" &&
+    "error" in res &&
+    typeof (res as { error?: unknown }).error === "string"
+  ) {
+    return (res as { error: string }).error || undefined;
+  }
+  return undefined;
 }
 
 export function isAlreadyReposted(
