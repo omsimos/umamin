@@ -31,7 +31,8 @@ export function Demo() {
             <Avatar>
               <AvatarImage
                 className="rounded-full"
-                src="https://lh3.googleusercontent.com/a/ACg8ocK4CtuGuDZlPy9H_DMb3EQIue9Hrd5bqYcMZOY-Xb8LcuyqsBI=s96-c"
+                src="/icon-192x192.png"
+                alt="Umamin"
               />
               <AvatarFallback>
                 <ScanFaceIcon />

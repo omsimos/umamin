@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@umamin/ui/components/badge";
+import { Button } from "@umamin/ui/components/button";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { Link2Icon } from "lucide-react";
 import { toast } from "sonner";
@@ -28,13 +29,16 @@ export default function CopyLink({ username }: { username: string }) {
   }
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={() => onCopy(url)}
-      className="text-muted-foreground flex items-center cursor-pointer"
+      // Neutralize Button's size/padding/gap/hover so it keeps the original
+      // inline icon+badge look; we only want the focus-visible ring it adds.
+      className="h-auto justify-start gap-0 p-0 hover:bg-transparent text-muted-foreground flex items-center cursor-pointer"
     >
-      <Link2Icon className="h-4 w-4 mr-2" />
+      <Link2Icon className="size-4 mr-2" />
       <Badge variant="secondary">{url.replace(/(^\w+:|^)\/\//, "")}</Badge>
-    </button>
+    </Button>
   );
 }

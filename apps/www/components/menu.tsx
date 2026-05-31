@@ -19,7 +19,7 @@ export type MenuItems = {
 export const Menu = ({ menuItems }: { menuItems: MenuItems }) => {
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger>
+      <DropdownMenuTrigger aria-label="More options">
         <Icons.elipsisVertical />
       </DropdownMenuTrigger>
       <DropdownMenuContent>

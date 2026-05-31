@@ -21,7 +21,10 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteMessageAction } from "@/app/actions/message";
-import { blockUserAction, unblockUserAction } from "@/app/actions/user";
+import {
+  blockMessageSenderAction,
+  unblockMessageSenderAction,
+} from "@/app/actions/user";
 import { Menu } from "@/components/menu";
 import { queryKeys } from "@/lib/query";
 import { removeMessage } from "@/lib/query-cache";
@@ -31,7 +34,9 @@ import { ReplyDialog } from "./reply-dialog";
 
 export type ReceivedMenuProps = {
   id: string;
-  senderId?: string | null;
+  // Whether the sender can be blocked (i.e. the message had a logged-in sender).
+  // The sender's account id is intentionally NOT sent to the client. [audit #22]
+  canBlock?: boolean;
   question: string;
   content: string;
   reply?: string | null;
@@ -44,7 +49,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
-  const canBlock = !!props.senderId;
+  const canBlock = !!props.canBlock;
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -68,40 +73,33 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
 
   const blockMutation = useMutation({
     mutationFn: async () => {
-      if (!props.senderId) return;
-      const res = await blockUserAction({ userId: props.senderId });
+      const res = await blockMessageSenderAction({ messageId: id });
 
       if (res && "error" in res && res.error) {
         throw new Error(res.error);
       }
     },
     onSuccess: () => {
+      // Remove this message immediately, then refetch: the sender's other
+      // messages are now filtered server-side and we have no sender id
+      // client-side to filter them ourselves. [audit #22]
       queryClient.setQueryData<
         import("@tanstack/react-query").InfiniteData<MessagesResponse>
-      >(queryKeys.receivedMessages(), (current) => {
-        if (!props.senderId || !current) {
-          return current;
-        }
-
-        return {
-          ...current,
-          pages: current.pages.map((page) => ({
-            ...page,
-            messages: page.messages.filter(
-              (message) => message.senderId !== props.senderId,
-            ),
-          })),
-        };
+      >(queryKeys.receivedMessages(), (current) => removeMessage(current, id));
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.receivedMessages(),
       });
       toast.success("User blocked.", {
         action: {
           label: "Undo",
           onClick: () => {
-            if (props.senderId) {
-              unblockUserAction({ userId: props.senderId }).catch((err) =>
-                console.error(err),
-              );
-            }
+            unblockMessageSenderAction({ messageId: id })
+              .then(() =>
+                queryClient.invalidateQueries({
+                  queryKey: queryKeys.receivedMessages(),
+                }),
+              )
+              .catch((err) => console.error(err));
           },
         },
       });

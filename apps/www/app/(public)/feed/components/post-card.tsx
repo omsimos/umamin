@@ -7,6 +7,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import { Button } from "@umamin/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,10 +53,13 @@ import type {
 } from "@/lib/query-types";
 import {
   getActionError,
+  isAlreadyLiked,
+  isAlreadyRemoved,
   isAlreadyReposted,
   isOlderThanOneYear,
 } from "@/lib/utils";
 import type { CommentData, PostData } from "@/types/post";
+import { CommentMenu } from "./comment-menu";
 import { PostMenu } from "./post-menu";
 import { RepostDialog } from "./repost-dialog";
 
@@ -92,12 +96,11 @@ export function PostCard({
   const [repostDialogOpen, setRepostDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const syncPostCache = (
-    nextLiked: boolean,
-    nextLikes: number,
-    nextReposted: boolean,
-    nextReposts: number,
-  ) => {
+  // Like and repost writes are field-scoped (each patches ONLY its own pair and
+  // leaves the rest of the cached entry untouched). Writing all four fields at
+  // once let a concurrent like + repost clobber each other with stale closure
+  // values; scoping the patch removes that race.
+  const syncLikeCache = (nextLiked: boolean, nextLikes: number) => {
     if ("commentCount" in data) {
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
         queryKeys.posts(),
@@ -106,8 +109,6 @@ export function PostCard({
             ...post,
             isLiked: nextLiked,
             likeCount: nextLikes,
-            isReposted: nextReposted,
-            repostCount: nextReposts,
           })),
       );
       queryClient.setQueryData<PostResponse>(
@@ -117,8 +118,6 @@ export function PostCard({
             ...post,
             isLiked: nextLiked,
             likeCount: nextLikes,
-            isReposted: nextReposted,
-            repostCount: nextReposts,
           })),
       );
     } else if (commentPostId) {
@@ -132,6 +131,26 @@ export function PostCard({
           })),
       );
     }
+  };
+
+  // Reposts only exist on posts (never comments), so patch the feed + post caches.
+  const syncRepostCache = (nextReposted: boolean, nextReposts: number) => {
+    queryClient.setQueryData<InfiniteData<FeedResponse>>(
+      queryKeys.posts(),
+      (current) =>
+        patchPostAcrossFeed(current, data.id, (post) => ({
+          ...post,
+          isReposted: nextReposted,
+          repostCount: nextReposts,
+        })),
+    );
+    queryClient.setQueryData<PostResponse>(queryKeys.post(data.id), (current) =>
+      patchPostResponse(current, (post) => ({
+        ...post,
+        isReposted: nextReposted,
+        repostCount: nextReposts,
+      })),
+    );
   };
 
   const dataIsReposted =
@@ -152,14 +171,8 @@ export function PostCard({
     async (prevLiked: boolean) => {
       if (isComment) {
         return prevLiked
-          ? removeCommentLikeAction({
-              commentId: data.id,
-              postId: commentPostId,
-            })
-          : addCommentLikeAction({
-              commentId: data.id,
-              postId: commentPostId,
-            });
+          ? removeCommentLikeAction({ commentId: data.id })
+          : addCommentLikeAction({ commentId: data.id });
       }
 
       return prevLiked
@@ -186,9 +199,11 @@ export function PostCard({
   const handleLike = async () => {
     const prevLiked = liked;
     const prevLikes = likes;
+    const nextLiked = !prevLiked;
+    const nextLikes = prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1;
 
-    setLiked(!prevLiked);
-    setLikes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
+    setLiked(nextLiked);
+    setLikes(nextLikes);
 
     try {
       const res = await handleLikeAction(prevLiked);
@@ -196,12 +211,17 @@ export function PostCard({
       if (actionError) {
         throw new Error(actionError);
       }
-      syncPostCache(
-        !prevLiked,
-        prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1,
-        reposted,
-        reposts,
-      );
+
+      // Server no-op (the like row was already in the target state): the DB
+      // count never moved, so drop our optimistic ±1 — keep the target flag but
+      // restore the previous count — to avoid permanently drifting the cache.
+      if (isAlreadyLiked(res) || isAlreadyRemoved(res)) {
+        setLikes(prevLikes);
+        syncLikeCache(nextLiked, prevLikes);
+        return;
+      }
+
+      syncLikeCache(nextLiked, nextLikes);
       if (isComment) {
         toast.success(prevLiked ? "Comment unliked." : "Comment liked.");
       } else {
@@ -229,11 +249,16 @@ export function PostCard({
         throw new Error(actionError);
       }
       if (prevReposted) {
-        // The optimistic update at the top already set reposted=false and -1;
-        // the server doesn't further decrement on the alreadyRemoved path, so
-        // sync the cache once (no extra local decrement → no undercount).
+        // Remove branch. If the row was already gone, the DB count never moved,
+        // so restore our optimistic -1 instead of persisting an undercount.
+        if (isAlreadyRemoved(res)) {
+          setReposts(prevReposts);
+          syncRepostCache(false, prevReposts);
+          toast.success("Repost removed.");
+          return;
+        }
         toast.success("Repost removed.");
-        syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
+        syncRepostCache(false, Math.max(prevReposts - 1, 0));
       } else {
         if (isAlreadyReposted(res)) {
           setReposted(prevReposted);
@@ -242,7 +267,7 @@ export function PostCard({
           return;
         }
         toast.success("Reposted.");
-        syncPostCache(liked, likes, true, prevReposts + 1);
+        syncRepostCache(true, prevReposts + 1);
       }
     } catch (err) {
       setReposted(prevReposted);
@@ -279,7 +304,7 @@ export function PostCard({
         return;
       }
       toast.success("Quote reposted.");
-      syncPostCache(liked, likes, true, prevReposts + 1);
+      syncRepostCache(true, prevReposts + 1);
     } catch (err) {
       setReposted(prevReposted);
       setReposts(prevReposts);
@@ -357,40 +382,60 @@ export function PostCard({
                 currentUserId={currentUserId}
               />
             )}
+
+            {isComment && isAuthenticated && commentPostId && (
+              <CommentMenu
+                commentId={data.id}
+                postId={commentPostId}
+                authorId={author?.id ?? ""}
+                isAuthenticated={isAuthenticated}
+                currentUserId={currentUserId}
+              />
+            )}
           </div>
         </div>
 
         <PostBody content={data?.content ?? ""} className="mt-1" />
 
         <div className="relative z-10 flex items-center space-x-4 text-muted-foreground mt-4">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             disabled={!isAuthenticated}
             onClick={handleLike}
             aria-label={`${liked ? "Unlike" : "Like"} ${isComment ? "comment" : "post"}`}
             aria-pressed={liked}
-            className={cn("flex space-x-1 items-center", {
-              "text-pink-500": liked,
-            })}
+            // Ghost + neutralizers preserve the bare inline look (no box/fade/
+            // hover-bg); we only want the focus-visible ring Button adds.
+            className={cn(
+              "h-auto gap-0 p-0 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
+              liked
+                ? "text-pink-500 hover:text-pink-500"
+                : "hover:text-muted-foreground",
+            )}
           >
             <HeartIcon
-              className={cn("h-5 w-5", {
+              className={cn("size-5", {
                 "fill-pink-500": liked,
               })}
             />
             <span>{likes}</span>
-          </button>
+          </Button>
 
           {!isComment && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   disabled={!isAuthenticated}
                   aria-label="Repost options"
-                  className={cn("flex space-x-1 items-center", {
-                    "text-emerald-600": reposted,
-                  })}
+                  className={cn(
+                    "h-auto gap-0 p-0 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
+                    reposted
+                      ? "text-emerald-600 hover:text-emerald-600"
+                      : "hover:text-muted-foreground",
+                  )}
                 >
                   <Repeat2Icon
                     className={cn("size-6", {
@@ -398,7 +443,7 @@ export function PostCard({
                     })}
                   />
                   <span>{reposts}</span>
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center">
                 <DropdownMenuItem

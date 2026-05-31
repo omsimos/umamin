@@ -1,43 +1,35 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const currentDate = new Date();
   const base = "https://www.umamin.link";
 
+  // lastModified intentionally omitted: it was `new Date()`, which restamped
+  // every route as "just modified" on every build — a meaningless freshness
+  // signal. We don't track real per-route mtimes, so we send none. /login and
+  // /register are dropped (now noindex utility pages). [audit #39, #41]
   return [
     {
-      url: `${base}`,
-      lastModified: currentDate,
+      url: base,
       changeFrequency: "monthly",
       priority: 1.0,
     },
     {
-      url: `${base}/login`,
-      lastModified: currentDate,
-      changeFrequency: "yearly",
-      priority: 0.6,
-    },
-    {
-      url: `${base}/register`,
-      lastModified: currentDate,
-      changeFrequency: "yearly",
-      priority: 0.6,
-    },
-    {
       url: `${base}/notes`,
-      lastModified: currentDate,
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/feed`,
       changeFrequency: "daily",
       priority: 0.8,
     },
     {
       url: `${base}/privacy`,
-      lastModified: currentDate,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${base}/terms`,
-      lastModified: currentDate,
       changeFrequency: "yearly",
       priority: 0.3,
     },

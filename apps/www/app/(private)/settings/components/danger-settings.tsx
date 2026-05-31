@@ -52,7 +52,7 @@ export function DangerSettings() {
 
               <form
                 action={async () => {
-                  await deleteAccountAction();
+                  await deleteAccountAction(confirmText);
                 }}
               >
                 <Input

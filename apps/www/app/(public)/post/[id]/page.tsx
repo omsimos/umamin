@@ -8,7 +8,6 @@ import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
 import type { CommentsResponse } from "@/lib/query-types";
 import { getPostCommentsPage } from "@/lib/server/data";
-import { getBaseUrl } from "@/lib/utils";
 import { toPublicUser } from "@/types/user";
 import { CommentsList } from "../components/comments-list";
 import ReplyForm from "../components/reply-form";
@@ -28,6 +27,8 @@ export async function generateMetadata({
     return {
       title: "Post not found",
       description: "This post does not exist on Umamin.",
+      // Don't let soft-404s (deleted/never-existed posts) get indexed. [audit #40]
+      robots: { index: false },
     };
   }
 
@@ -35,11 +36,13 @@ export async function generateMetadata({
     post.author?.displayName ?? post.author?.username ?? "User";
   const content = truncate(post.content, 160);
   const title = truncate(`${authorName}: ${post.content}`, 70);
-  const url = `${getBaseUrl()}/post/${id}`;
 
   return {
     title,
     description: content,
+    // Relative — resolved against metadataBase (www.umamin.link). Was built
+    // from getBaseUrl()/VERCEL_URL, i.e. the throwaway per-deploy host. [#36/#37]
+    alternates: { canonical: `/post/${id}` },
     keywords: [
       "Umamin",
       "post",
@@ -53,9 +56,9 @@ export async function generateMetadata({
       type: "article",
       title,
       description: content,
-      url,
+      url: `/post/${id}`,
       authors: post.author?.username
-        ? [`${getBaseUrl()}/user/${post.author.username}`]
+        ? [`https://www.umamin.link/user/${post.author.username}`]
         : undefined,
     },
     twitter: {
@@ -114,7 +117,11 @@ export default async function Post({
         )}
 
         <div className="space-y-6 my-6">
-          <CommentsList isAuthenticated={!!user} postId={id} />
+          <CommentsList
+            isAuthenticated={!!user}
+            currentUserId={user?.id}
+            postId={id}
+          />
         </div>
       </HydrationBoundary>
     </main>

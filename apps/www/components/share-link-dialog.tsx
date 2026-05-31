@@ -32,7 +32,11 @@ export function ShareLinkDialog({ username }: { username: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button type="button" title="Share Link">
+        {/* Plain <button> on purpose: this is one item in the menu-bar, whose
+            layout/hover/sizing come from the parent's `*:` child selectors —
+            its siblings are plain <Link>s. A <Button> here fights those rules
+            (inline-flex vs flex, its own box model) and broke the bar. */}
+        <button type="button" aria-label="Share link" title="Share link">
           <LinkIcon className="h-6 w-6" />
         </button>
       </DialogTrigger>

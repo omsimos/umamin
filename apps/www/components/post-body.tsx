@@ -37,7 +37,10 @@ export function PostBody({
           href={cleanUrl}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="text-pink-500 hover:underline break-all"
+          // relative z-10 lifts the link above the post-card's full-card open
+          // overlay so it's clickable by mouse (it was already keyboard
+          // focusable) — body text stays below to still open the thread. [#29]
+          className="relative z-10 text-pink-500 hover:underline break-all"
         >
           {cleanUrl}
         </a>,
@@ -48,7 +51,7 @@ export function PostBody({
         <Link
           key={key++}
           href={`/user/${mention}`}
-          className="text-pink-500 hover:underline"
+          className="relative z-10 text-pink-500 hover:underline"
         >
           @{mention}
         </Link>,

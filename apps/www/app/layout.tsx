@@ -27,9 +27,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.umamin.link"),
-  alternates: {
-    canonical: "/",
-  },
+  // No global canonical — it was inherited by every route, telling Google that
+  // /post/[id], /user/[username], etc. are all duplicates of the homepage.
+  // Each page now sets its own self-referential canonical. [audit #36]
   title: "Umamin — The Platform for Anonymity",
   authors: [{ name: "Omsimos Collective" }],
   description:

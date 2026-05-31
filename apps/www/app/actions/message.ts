@@ -2,7 +2,7 @@
 
 import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
-import { userBlockTable } from "@umamin/db/schema/user";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { aesEncrypt } from "@umamin/encryption";
 import { and, eq, or } from "drizzle-orm";
 import { updateTag } from "next/cache";
@@ -82,7 +82,10 @@ export async function createReplyAction({
 
     const encryptedReply = await aesEncrypt(params.data.content);
 
-    await db
+    // Scope to the viewer's own messages (prevents IDOR) AND confirm a row was
+    // actually updated — otherwise a missing/non-owned messageId would return
+    // success and the optimistic UI would show a reply that was never saved.
+    const updated = await db
       .update(messageTable)
       .set({
         reply: encryptedReply,
@@ -92,7 +95,12 @@ export async function createReplyAction({
           eq(messageTable.id, messageId),
           eq(messageTable.receiverId, session.userId),
         ),
-      );
+      )
+      .returning({ id: messageTable.id });
+
+    if (updated.length === 0) {
+      return { error: "Message not found" };
+    }
 
     updateTag(`messages:received:${session.userId}`);
 
@@ -135,27 +143,39 @@ export async function sendMessageAction(
       return { error: "You can't send a message to yourself" };
     }
 
-    if (senderId) {
-      const blocked = await db.query.userBlockTable.findFirst({
-        columns: { id: true },
-        where: or(
-          and(
-            eq(userBlockTable.blockerId, receiverId),
-            eq(userBlockTable.blockedId, senderId),
-          ),
-          and(
-            eq(userBlockTable.blockerId, senderId),
-            eq(userBlockTable.blockedId, receiverId),
-          ),
-        ),
-      });
+    // Two independent reads — run them together (async-parallel). The block
+    // lookup only applies to a logged-in sender; quiet mode always applies.
+    const [blocked, receiver] = await Promise.all([
+      senderId
+        ? db.query.userBlockTable.findFirst({
+            columns: { id: true },
+            where: or(
+              and(
+                eq(userBlockTable.blockerId, receiverId),
+                eq(userBlockTable.blockedId, senderId),
+              ),
+              and(
+                eq(userBlockTable.blockerId, senderId),
+                eq(userBlockTable.blockedId, receiverId),
+              ),
+            ),
+          })
+        : Promise.resolve(undefined),
+      db.query.userTable.findFirst({
+        columns: { quietMode: true },
+        where: eq(userTable.id, receiverId),
+      }),
+    ]);
 
-      if (blocked) {
-        return { success: true };
-      }
+    // Both gates fail silently (don't reveal block/quiet state, and cover a
+    // non-existent receiverId) — the client can't distinguish a dropped send
+    // from a delivered one. Quiet mode is enforced server-side because the
+    // client toggle is a UI hint, not a security boundary.
+    if (blocked || !receiver || receiver.quietMode) {
+      return { success: true };
     }
 
-    // Encrypt only after the block check so a blocked send does no crypto work.
+    // Encrypt only after the above checks so a dropped send does no crypto work.
     const encryptedContent = await aesEncrypt(formatContent(content));
 
     await db.insert(messageTable).values({
