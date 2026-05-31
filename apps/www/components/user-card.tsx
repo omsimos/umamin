@@ -15,7 +15,6 @@ import {
   MoonIcon,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import type { ReactNode } from "react";
 import { isOlderThanOneYear } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 import { FollowListDrawer } from "./follow-list-drawer";
@@ -23,15 +22,7 @@ import { ShareButton } from "./share-button";
 
 const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
 
-export function UserCard({
-  user,
-  // Optional top-right slot in the header (e.g. an "Edit profile" button on
-  // your own profile). Other contexts (inbox, other people's profiles) omit it.
-  action,
-}: {
-  user: PublicUser;
-  action?: ReactNode;
-}) {
+export function UserCard({ user }: { user: PublicUser }) {
   return (
     <div>
       <section className="flex gap-4">
@@ -50,7 +41,7 @@ export function UserCard({
           </AvatarFallback>
         </Avatar>
 
-        <div className="min-w-0">
+        <div>
           <div className="flex items-center gap-2">
             <div className="flex items-center space-x-1">
               <p className="font-semibold md:text-xl">
@@ -65,10 +56,6 @@ export function UserCard({
           </div>
           <p className="text-muted-foreground text-sm">@{user.username}</p>
         </div>
-
-        {action ? (
-          <div className="ml-auto shrink-0 self-start">{action}</div>
-        ) : null}
       </section>
 
       <section className="mt-4">

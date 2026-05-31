@@ -7,7 +7,6 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { cn } from "@umamin/ui/lib/utils";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { PostCard } from "@/app/(public)/feed/components/post-card";
 import { PostCardSkeleton } from "@/app/(public)/feed/components/post-card-skeleton";
@@ -26,15 +25,7 @@ import {
 import type { FeedResponse } from "@/lib/query-types";
 import type { FeedItem } from "@/types/post";
 
-export function ProfilePostList({
-  username,
-  // When YouTabs is shown above (own profile) it already provides the divider,
-  // so skip the top border to avoid a double line.
-  showDivider = true,
-}: {
-  username: string;
-  showDivider?: boolean;
-}) {
+export function ProfilePostList({ username }: { username: string }) {
   // Client-side auth (does not make the profile page dynamic). Shares the
   // app-wide currentUser cache, so it's usually a cache hit. Drives button
   // enablement + own-post menu on the cards.
@@ -146,7 +137,7 @@ export function ProfilePostList({
   }
 
   return (
-    <div className={cn("w-full", showDivider ? "mt-6 border-t pt-6" : "mt-4")}>
+    <div className="w-full mt-6 border-t pt-6">
       <div
         ref={containerRef}
         style={{
