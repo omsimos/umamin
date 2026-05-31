@@ -3,8 +3,6 @@ import type {
   CommentsResponse,
   CurrentUserResponse,
   FeedResponse,
-  FollowListResponse,
-  FollowListUser,
   MessagesResponse,
   NoteItem,
   NotesResponse,
@@ -308,22 +306,4 @@ export function patchUserProfileViewer(
   if (!previous) return previous;
 
   return updater(previous);
-}
-
-export function patchFollowListUser(
-  previous: InfiniteData<FollowListResponse> | undefined,
-  userId: string,
-  updater: (user: FollowListUser) => FollowListUser,
-) {
-  if (!previous) return previous;
-
-  return {
-    ...previous,
-    pages: previous.pages.map((page) => ({
-      ...page,
-      data: page.data.map((user) =>
-        user.id === userId ? updater(user) : user,
-      ),
-    })),
-  };
 }

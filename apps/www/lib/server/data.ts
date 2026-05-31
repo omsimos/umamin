@@ -35,7 +35,6 @@ import type {
   CommentsResponse,
   CurrentUserResponse,
   FeedResponse,
-  FollowListResponse,
   MessagesResponse,
   NoteItem,
   NotesResponse,
@@ -53,7 +52,6 @@ const PRIVATE_REVALIDATE_SECONDS = 30;
 const FEED_PAGE_SIZE = 20;
 const COMMENTS_PAGE_SIZE = 20;
 const MESSAGES_PAGE_SIZE = 20;
-const FOLLOW_LIST_PAGE_SIZE = 20;
 
 type FeedCursor = {
   createdAt: Date;
@@ -1070,54 +1068,64 @@ async function getUserProfileViewerOverlay(
   cacheTag(`user:${username}:blocked-by:${viewerId}`);
   cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
-  // All three flags are independent `exists(...)` index probes against the same
-  // target row — fold them into a single round-trip instead of three (Turso
-  // bills per query). This runs on every cache-missed authenticated profile
-  // view, so 3 -> 1 network hits is a real saving.
-  const [row] = await db
-    .select({
-      isFollowing: exists(
-        db
-          .select({ id: userFollowTable.id })
-          .from(userFollowTable)
-          .where(
-            and(
-              eq(userFollowTable.followerId, viewerId),
-              eq(userFollowTable.followingId, targetId),
+  const [follow, blocked, blockedBy] = await Promise.all([
+    db
+      .select({
+        following: exists(
+          db
+            .select({ id: userFollowTable.id })
+            .from(userFollowTable)
+            .where(
+              and(
+                eq(userFollowTable.followerId, viewerId),
+                eq(userFollowTable.followingId, targetId),
+              ),
             ),
-          ),
-      ),
-      isBlocked: exists(
-        db
-          .select({ id: userBlockTable.id })
-          .from(userBlockTable)
-          .where(
-            and(
-              eq(userBlockTable.blockerId, viewerId),
-              eq(userBlockTable.blockedId, targetId),
+        ),
+      })
+      .from(userTable)
+      .where(eq(userTable.id, targetId))
+      .limit(1),
+    db
+      .select({
+        blocked: exists(
+          db
+            .select({ id: userBlockTable.id })
+            .from(userBlockTable)
+            .where(
+              and(
+                eq(userBlockTable.blockerId, viewerId),
+                eq(userBlockTable.blockedId, targetId),
+              ),
             ),
-          ),
-      ),
-      isBlockedBy: exists(
-        db
-          .select({ id: userBlockTable.id })
-          .from(userBlockTable)
-          .where(
-            and(
-              eq(userBlockTable.blockerId, targetId),
-              eq(userBlockTable.blockedId, viewerId),
+        ),
+      })
+      .from(userTable)
+      .where(eq(userTable.id, targetId))
+      .limit(1),
+    db
+      .select({
+        blocked: exists(
+          db
+            .select({ id: userBlockTable.id })
+            .from(userBlockTable)
+            .where(
+              and(
+                eq(userBlockTable.blockerId, targetId),
+                eq(userBlockTable.blockedId, viewerId),
+              ),
             ),
-          ),
-      ),
-    })
-    .from(userTable)
-    .where(eq(userTable.id, targetId))
-    .limit(1);
+        ),
+      })
+      .from(userTable)
+      .where(eq(userTable.id, targetId))
+      .limit(1),
+  ]);
 
   return {
-    isFollowing: Boolean(row?.isFollowing),
-    isBlocked: Boolean(row?.isBlocked),
-    isBlockedBy: Boolean(row?.isBlockedBy),
+    isFollowing: Boolean(follow?.[0]?.following),
+    isBlocked: Boolean(blocked?.[0]?.blocked),
+    isBlockedBy: Boolean(blockedBy?.[0]?.blocked),
   };
 }
 
@@ -1169,185 +1177,6 @@ export async function getUserProfileData(
   return {
     ...user,
     ...(overlay ?? {}),
-  };
-}
-
-type FollowDirection = "followers" | "following";
-
-// Public, cached page of a user's followers / following. Keyset-paginated on
-// the existing (anchor_id, created_at) composite indexes so a cache miss reads
-// ~PAGE_SIZE follow rows + one batched user fetch — never a full-table scan.
-async function getPublicFollowListPage(
-  userId: string,
-  cursor: string | null,
-  direction: FollowDirection,
-): Promise<{ users: PublicUser[]; nextCursor: string | null }> {
-  "use cache";
-  cacheTag(
-    direction === "followers"
-      ? `user-followers:${userId}`
-      : `user-following:${userId}`,
-  );
-  cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
-
-  // followers list: page over rows where this user is *followed*, surface the
-  // follower as the listed user. following list: the mirror image.
-  const anchorColumn =
-    direction === "followers"
-      ? userFollowTable.followingId
-      : userFollowTable.followerId;
-  const listedColumn =
-    direction === "followers"
-      ? userFollowTable.followerId
-      : userFollowTable.followingId;
-
-  const parsedCursor = parseCursor(cursor);
-  const cursorCondition = parsedCursor
-    ? or(
-        lt(userFollowTable.createdAt, parsedCursor.cursorDate),
-        and(
-          eq(userFollowTable.createdAt, parsedCursor.cursorDate),
-          lt(userFollowTable.id, parsedCursor.cursorId),
-        ),
-      )
-    : undefined;
-
-  const baseCondition = eq(anchorColumn, userId);
-  const whereCondition = cursorCondition
-    ? and(baseCondition, cursorCondition)
-    : baseCondition;
-
-  const edgeRows = await db
-    .select({
-      id: userFollowTable.id,
-      createdAt: userFollowTable.createdAt,
-      listedUserId: listedColumn,
-    })
-    .from(userFollowTable)
-    .where(whereCondition)
-    .orderBy(desc(userFollowTable.createdAt), desc(userFollowTable.id))
-    .limit(FOLLOW_LIST_PAGE_SIZE + 1);
-
-  const { hasMore, pageRows } = getPageRows(edgeRows, FOLLOW_LIST_PAGE_SIZE);
-  const listedIds = pageRows.map((row) => row.listedUserId);
-
-  const users =
-    listedIds.length > 0
-      ? await db
-          .select(publicUserColumns)
-          .from(userTable)
-          .where(inArray(userTable.id, listedIds))
-      : [];
-
-  // Preserve the follow-edge order (newest first); a missing user row (e.g. a
-  // mid-flight delete) just drops out.
-  const userMap = new Map(users.map((user) => [user.id, user] as const));
-  const orderedUsers = pageRows.flatMap((row) => {
-    const user = userMap.get(row.listedUserId);
-    return user ? [user] : [];
-  });
-
-  const lastEdge = pageRows[pageRows.length - 1];
-
-  return {
-    users: orderedUsers,
-    nextCursor:
-      hasMore && lastEdge
-        ? `${lastEdge.createdAt.getTime()}.${lastEdge.id}`
-        : null,
-  };
-}
-
-// Per-viewer overlay for a follow list: which of the listed users does the
-// viewer follow, and which are blocked (either direction, to hide them).
-// Keyed on (viewerId, sorted listed ids); refreshes via the viewer's
-// user-following / user-blocks tags — see getPostFeedViewerOverlay.
-async function getFollowListViewerOverlay(
-  viewerId: string,
-  listedUserIds: string[],
-) {
-  "use cache";
-  cacheTag(`user-following:${viewerId}`);
-  cacheTag(`user-blocks:${viewerId}`);
-  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
-
-  const [followRows, blockRows] =
-    listedUserIds.length > 0
-      ? await Promise.all([
-          db
-            .select({ followingId: userFollowTable.followingId })
-            .from(userFollowTable)
-            .where(
-              and(
-                eq(userFollowTable.followerId, viewerId),
-                inArray(userFollowTable.followingId, listedUserIds),
-              ),
-            ),
-          db
-            .select({
-              blockerId: userBlockTable.blockerId,
-              blockedId: userBlockTable.blockedId,
-            })
-            .from(userBlockTable)
-            .where(
-              or(
-                and(
-                  eq(userBlockTable.blockerId, viewerId),
-                  inArray(userBlockTable.blockedId, listedUserIds),
-                ),
-                and(
-                  inArray(userBlockTable.blockerId, listedUserIds),
-                  eq(userBlockTable.blockedId, viewerId),
-                ),
-              ),
-            ),
-        ])
-      : [[], []];
-
-  return {
-    followingIds: new Set(followRows.map((row) => row.followingId)),
-    blockedUserIds: new Set(
-      blockRows.flatMap((row) =>
-        row.blockerId === viewerId ? [row.blockedId] : [row.blockerId],
-      ),
-    ),
-  };
-}
-
-export async function getFollowListPage(params: {
-  userId: string;
-  direction: FollowDirection;
-  cursor?: string | null;
-  viewerId?: string | null;
-}): Promise<FollowListResponse> {
-  const publicData = await getPublicFollowListPage(
-    params.userId,
-    params.cursor ?? null,
-    params.direction,
-  );
-
-  if (!params.viewerId) {
-    return {
-      data: publicData.users.map((user) => ({ ...user, isFollowing: false })),
-      nextCursor: publicData.nextCursor,
-      viewerId: null,
-    };
-  }
-
-  const listedIds = Array.from(
-    new Set(publicData.users.map((user) => user.id)),
-  ).sort();
-  const overlay = await getFollowListViewerOverlay(params.viewerId, listedIds);
-
-  return {
-    // Preserve the shared public page window; blocked users drop out.
-    data: publicData.users.flatMap((user) =>
-      overlay.blockedUserIds.has(user.id)
-        ? []
-        : [{ ...user, isFollowing: overlay.followingIds.has(user.id) }],
-    ),
-    nextCursor: publicData.nextCursor,
-    viewerId: params.viewerId,
   };
 }
 

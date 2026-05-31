@@ -3,7 +3,6 @@ import type {
   CommentsResponse,
   CurrentUserResponse,
   FeedResponse,
-  FollowListResponse,
   MessagesResponse,
   NotesResponse,
   PostResponse,
@@ -112,22 +111,6 @@ export async function fetchUserProfile(username: string) {
 
 export async function fetchUserProfileViewer(username: string) {
   return fetchJson<UserProfileViewerResponse>(`/api/user/${username}/viewer`);
-}
-
-export async function fetchFollowersPage(
-  username: string,
-  cursor: string | null,
-) {
-  const url = appendCursor(`/api/user/${username}/followers`, cursor);
-  return fetchJson<FollowListResponse>(url);
-}
-
-export async function fetchFollowingPage(
-  username: string,
-  cursor: string | null,
-) {
-  const url = appendCursor(`/api/user/${username}/following`, cursor);
-  return fetchJson<FollowListResponse>(url);
 }
 
 export async function fetchMessagesPage(
