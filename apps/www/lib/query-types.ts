@@ -42,6 +42,16 @@ export type CurrentUserResponse = {
   user?: CurrentUserData;
 };
 
+export type FollowListUser = PublicUser & {
+  isFollowing: boolean;
+};
+
+export type FollowListResponse = {
+  data: FollowListUser[];
+  nextCursor: string | null;
+  viewerId: string | null;
+};
+
 export type UserProfileResponse = PublicUser | null;
 
 export type UserProfileViewerResponse = {

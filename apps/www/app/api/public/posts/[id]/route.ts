@@ -1,4 +1,5 @@
 import { publicJson } from "@/lib/public-json";
+import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getPostById } from "@/lib/server/data";
 
 const PUBLIC_CACHE_SECONDS = 120;
@@ -8,6 +9,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    if (!(await checkReadRateLimit())) {
+      return publicJson({ error: RATE_LIMIT_ERROR }, 0, { status: 429 });
+    }
+
     const { id } = await params;
     const result = await getPostById({ postId: id });
 

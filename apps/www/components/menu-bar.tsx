@@ -1,4 +1,5 @@
 import {
+  CircleUserRoundIcon,
   LayoutDashboardIcon,
   LinkIcon,
   LogInIcon,
@@ -27,9 +28,19 @@ export async function Menubar() {
         <ScrollTextIcon className="h-6 w-6" />
       </Link>
 
-      <Link href="/login" aria-label="Inbox" title="Inbox">
-        <LayoutDashboardIcon />
-      </Link>
+      {user?.username ? (
+        <Link
+          href={`/user/${user.username}`}
+          aria-label="Your profile"
+          title="Profile"
+        >
+          <CircleUserRoundIcon className="h-6 w-6" />
+        </Link>
+      ) : (
+        <Link href="/login" aria-label="Login" title="Login">
+          <LayoutDashboardIcon />
+        </Link>
+      )}
 
       <Link href="/feed" title="Social">
         <MessagesSquareIcon className="h-6 w-6" />

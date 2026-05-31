@@ -17,9 +17,12 @@ import {
   unblockUserAction,
   unfollowUserAction,
 } from "@/app/actions/user";
+import { EditProfileButton } from "@/components/edit-profile-button";
 import { Menu } from "@/components/menu";
 import { UserCard } from "@/components/user-card";
+import { YouTabs } from "@/components/you-tabs";
 import {
+  infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
   pageQueryOptions,
@@ -30,7 +33,11 @@ import {
   patchUserProfile,
   patchUserProfileViewer,
 } from "@/lib/query-cache";
-import { fetchUserProfile, fetchUserProfileViewer } from "@/lib/query-fetchers";
+import {
+  fetchCurrentUserOptional,
+  fetchUserProfile,
+  fetchUserProfileViewer,
+} from "@/lib/query-fetchers";
 import type {
   CurrentUserResponse,
   MessagesResponse,
@@ -69,10 +76,19 @@ export function UserProfile({ username, initialUser }: Props) {
 
   const profile = user ?? initialUser;
 
+  // Client-side self-check (app-wide currentUser cache) keeps the profile's
+  // server shell static — no cookie read.
+  const { data: currentUser } = useQuery({
+    queryKey: queryKeys.currentUser(),
+    queryFn: fetchCurrentUserOptional,
+    staleTime: PRIVATE_STALE_TIME,
+    ...infiniteQueryDefaults,
+  });
+
   const isFollowing = viewer?.isFollowing === true;
   const isBlocked = viewer?.isBlocked === true;
   const isBlockedBy = viewer?.isBlockedBy === true;
-  const isSelf = viewer?.currentUserId === profile.id;
+  const isSelf = !!currentUser?.user?.id && currentUser.user.id === profile.id;
 
   const resolveViewer = async () => {
     const cached = queryClient.getQueryData<UserProfileViewerResponse>(
@@ -378,71 +394,78 @@ export function UserProfile({ username, initialUser }: Props) {
 
   return (
     <>
-      <UserCard user={profile} />
+      <UserCard
+        user={profile}
+        action={isSelf ? <EditProfileButton /> : undefined}
+      />
 
-      <div className="flex gap-2 mt-6 w-full">
-        <Button
-          variant="outline"
-          disabled={
-            isSelf ||
-            isBlocked ||
-            isBlockedBy ||
-            followMutation.isPending ||
-            blockMutation.isPending
-          }
-          className="flex-1"
-          onClick={async () => {
-            if (blockMutation.isPending) return;
-
-            const resolvedViewer = await requireAuthenticatedViewer();
-            if (
-              !resolvedViewer ||
-              resolvedViewer.currentUserId === profile.id ||
-              resolvedViewer.isBlocked ||
-              resolvedViewer.isBlockedBy
-            ) {
-              return;
+      {isSelf ? null : (
+        <div className="flex gap-2 mt-6 w-full">
+          <Button
+            variant="outline"
+            disabled={
+              isSelf ||
+              isBlocked ||
+              isBlockedBy ||
+              followMutation.isPending ||
+              blockMutation.isPending
             }
+            className="flex-1"
+            onClick={async () => {
+              if (blockMutation.isPending) return;
 
-            followMutation.mutate(resolvedViewer.isFollowing);
-          }}
-        >
-          {isFollowing ? <UserCheckIcon /> : <UserPlusIcon />}
-          {isFollowing ? "Following" : "Follow"}
-        </Button>
+              const resolvedViewer = await requireAuthenticatedViewer();
+              if (
+                !resolvedViewer ||
+                resolvedViewer.currentUserId === profile.id ||
+                resolvedViewer.isBlocked ||
+                resolvedViewer.isBlockedBy
+              ) {
+                return;
+              }
 
-        <Button
-          variant="outline"
-          className="flex-1"
-          disabled={
-            isSelf ||
-            isBlocked ||
-            isBlockedBy ||
-            followMutation.isPending ||
-            blockMutation.isPending
-          }
-          onClick={async () => {
-            const resolvedViewer = await requireAuthenticatedViewer();
-            if (
-              !resolvedViewer ||
-              resolvedViewer.currentUserId === profile.id ||
-              resolvedViewer.isBlocked ||
-              resolvedViewer.isBlockedBy
-            ) {
-              return;
+              followMutation.mutate(resolvedViewer.isFollowing);
+            }}
+          >
+            {isFollowing ? <UserCheckIcon /> : <UserPlusIcon />}
+            {isFollowing ? "Following" : "Follow"}
+          </Button>
+
+          <Button
+            variant="outline"
+            className="flex-1"
+            disabled={
+              isSelf ||
+              isBlocked ||
+              isBlockedBy ||
+              followMutation.isPending ||
+              blockMutation.isPending
             }
+            onClick={async () => {
+              const resolvedViewer = await requireAuthenticatedViewer();
+              if (
+                !resolvedViewer ||
+                resolvedViewer.currentUserId === profile.id ||
+                resolvedViewer.isBlocked ||
+                resolvedViewer.isBlockedBy
+              ) {
+                return;
+              }
 
-            router.push(`/to/${profile.username}`);
-          }}
-        >
-          <MessageSquareMoreIcon />
-          Message
-        </Button>
+              router.push(`/to/${profile.username}`);
+            }}
+          >
+            <MessageSquareMoreIcon />
+            Message
+          </Button>
 
-        <Menu menuItems={menuItems} />
-      </div>
+          <Menu menuItems={menuItems} />
+        </div>
+      )}
 
-      <ProfilePostList username={username} />
+      {isSelf ? <YouTabs username={profile.username} active="posts" /> : null}
+
+      <ProfilePostList username={username} showDivider={!isSelf} />
     </>
   );
 }

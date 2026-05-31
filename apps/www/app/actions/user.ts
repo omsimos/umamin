@@ -17,7 +17,7 @@ import {
   userFollowTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -463,26 +463,40 @@ export async function followUserAction({ userId }: { userId: string }) {
       return { error: "User not found." };
     }
 
-    const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.userFollowTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(userFollowTable.followerId, session.userId),
-          eq(userFollowTable.followingId, userId),
+    // Enforce block state server-side, not just via the disabled button.
+    const blockExists = await db.query.userBlockTable.findFirst({
+      columns: { id: true },
+      where: or(
+        and(
+          eq(userBlockTable.blockerId, session.userId),
+          eq(userBlockTable.blockedId, userId),
         ),
-      });
+        and(
+          eq(userBlockTable.blockerId, userId),
+          eq(userBlockTable.blockedId, session.userId),
+        ),
+      ),
+    });
 
-      if (existing) {
-        return { success: true, alreadyFollowing: true };
-      }
+    if (blockExists) {
+      return { error: "You can't follow this user." };
+    }
 
-      await tx
+    const result = await db.transaction(async (tx) => {
+      // Increment only if the insert created the edge — a conflict (already
+      // following) must not double-count the denormalized counters.
+      const inserted = await tx
         .insert(userFollowTable)
         .values({
           followerId: session.userId,
           followingId: userId,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({ id: userFollowTable.id });
+
+      if (inserted.length === 0) {
+        return { success: true, alreadyFollowing: true };
+      }
 
       await tx
         .update(userTable)
@@ -507,6 +521,8 @@ export async function followUserAction({ userId }: { userId: string }) {
     if (user?.username) {
       updateTag(`user:${user.username}`);
     }
+    updateTag(`user-following:${session.userId}`);
+    updateTag(`user-followers:${userId}`);
 
     return result;
   } catch (err) {
@@ -546,26 +562,21 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.userFollowTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(userFollowTable.followerId, session.userId),
-          eq(userFollowTable.followingId, userId),
-        ),
-      });
-
-      if (!existing) {
-        return { success: true, alreadyRemoved: true };
-      }
-
-      await tx
+      // Decrement only if a row was deleted — concurrent unfollows must not
+      // double-count.
+      const removed = await tx
         .delete(userFollowTable)
         .where(
           and(
             eq(userFollowTable.followerId, session.userId),
             eq(userFollowTable.followingId, userId),
           ),
-        );
+        )
+        .returning({ id: userFollowTable.id });
+
+      if (removed.length === 0) {
+        return { success: true, alreadyRemoved: true };
+      }
 
       await tx
         .update(userTable)
@@ -590,6 +601,8 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     if (user?.username) {
       updateTag(`user:${user.username}`);
     }
+    updateTag(`user-following:${session.userId}`);
+    updateTag(`user-followers:${userId}`);
 
     return result;
   } catch (err) {
@@ -629,44 +642,33 @@ export async function blockUserAction({ userId }: { userId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.userBlockTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(userBlockTable.blockerId, session.userId),
-          eq(userBlockTable.blockedId, userId),
-        ),
-      });
-
-      if (existing) {
-        return { success: true, alreadyBlocked: true };
-      }
-
-      await tx
+      // Conflict → already blocked; skip the follow-severing below.
+      const insertedBlock = await tx
         .insert(userBlockTable)
         .values({
           blockerId: session.userId,
           blockedId: userId,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({ id: userBlockTable.id });
 
-      const follow = await tx.query.userFollowTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(userFollowTable.followerId, session.userId),
-          eq(userFollowTable.followingId, userId),
-        ),
-      });
+      if (insertedBlock.length === 0) {
+        return { success: true, alreadyBlocked: true };
+      }
 
-      if (follow) {
-        await tx
-          .delete(userFollowTable)
-          .where(
-            and(
-              eq(userFollowTable.followerId, session.userId),
-              eq(userFollowTable.followingId, userId),
-            ),
-          );
+      // Blocking severs the follow both ways (like every major platform); each
+      // decrement is gated on an actual delete.
+      const removedOutgoing = await tx
+        .delete(userFollowTable)
+        .where(
+          and(
+            eq(userFollowTable.followerId, session.userId),
+            eq(userFollowTable.followingId, userId),
+          ),
+        )
+        .returning({ id: userFollowTable.id });
 
+      if (removedOutgoing.length > 0) {
         await tx
           .update(userTable)
           .set({
@@ -682,6 +684,32 @@ export async function blockUserAction({ userId }: { userId: string }) {
           .where(eq(userTable.id, userId));
       }
 
+      const removedIncoming = await tx
+        .delete(userFollowTable)
+        .where(
+          and(
+            eq(userFollowTable.followerId, userId),
+            eq(userFollowTable.followingId, session.userId),
+          ),
+        )
+        .returning({ id: userFollowTable.id });
+
+      if (removedIncoming.length > 0) {
+        await tx
+          .update(userTable)
+          .set({
+            followingCount: sql`CASE WHEN ${userTable.followingCount} > 0 THEN ${userTable.followingCount} - 1 ELSE 0 END`,
+          })
+          .where(eq(userTable.id, userId));
+
+        await tx
+          .update(userTable)
+          .set({
+            followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
+          })
+          .where(eq(userTable.id, session.userId));
+      }
+
       return { success: true };
     });
 
@@ -693,9 +721,14 @@ export async function blockUserAction({ userId }: { userId: string }) {
     updateTag(`user:${target.username}:followed:${session.userId}`);
     if (user?.username) {
       updateTag(`user:${user.username}:blocked-by:${userId}`);
+      updateTag(`user:${user.username}:followed:${userId}`);
     }
     updateTag(`user-blocks:${session.userId}`);
     updateTag(`user-blocks:${userId}`);
+    updateTag(`user-following:${session.userId}`);
+    updateTag(`user-followers:${userId}`);
+    updateTag(`user-following:${userId}`);
+    updateTag(`user-followers:${session.userId}`);
     // Blocking is per-viewer: the user-blocks:<viewer> tags above already
     // refresh both sides' feed + notes overlays (getPostFeedViewerOverlay /
     // getNoteViewerOverlay). Don't bust the global posts/notes caches for the

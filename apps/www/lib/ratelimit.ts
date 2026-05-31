@@ -10,7 +10,7 @@ export const RATE_LIMIT_ERROR =
 // `redis` is the shared Upstash client (lib/redis.ts), built only when the KV
 // integration env is present; otherwise null so the limiter no-ops (local dev).
 
-type LimiterName = "auth" | "message" | "write";
+type LimiterName = "auth" | "message" | "read" | "write";
 
 // analytics:false keeps the Upstash command count (and cost) minimal; flip it on
 // per-limiter if you want the Upstash dashboard insights. Each limiter gets its
@@ -39,6 +39,16 @@ const limiters: Record<LimiterName, Ratelimit> | null = redis
         redis,
         limiter: Ratelimit.slidingWindow(30, "60 s"),
         prefix: "rl:write",
+        ephemeralCache: new Map(),
+        analytics: false,
+      }),
+      // Throttles cache-miss scraping (varied ?cursor= forces fresh Turso
+      // scans); CDN-cached hits never reach the function. Generous — bump if
+      // NAT'd networks trip it.
+      read: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(100, "60 s"),
+        prefix: "rl:read",
         ephemeralCache: new Map(),
         analytics: false,
       }),
@@ -84,4 +94,10 @@ export async function checkRateLimit(
   if (!limiters) return true;
   const { success } = await limiters[name].limit(identifier);
   return success;
+}
+
+// IP-keyed read throttle for the DB-backed GET routes; no-ops without Redis.
+export async function checkReadRateLimit(): Promise<boolean> {
+  const ip = await getClientIp();
+  return checkRateLimit("read", `read:${ip}`);
 }

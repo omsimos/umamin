@@ -15,13 +15,22 @@ import {
   MoonIcon,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import type { ReactNode } from "react";
 import { isOlderThanOneYear } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
+import { FollowListDrawer } from "./follow-list-drawer";
 import { ShareButton } from "./share-button";
 
 const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
 
-export function UserCard({ user }: { user: PublicUser }) {
+export function UserCard({
+  user,
+  // Optional top-right header slot (e.g. Edit profile on your own card).
+  action,
+}: {
+  user: PublicUser;
+  action?: ReactNode;
+}) {
   return (
     <div>
       <section className="flex gap-4">
@@ -40,7 +49,7 @@ export function UserCard({ user }: { user: PublicUser }) {
           </AvatarFallback>
         </Avatar>
 
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <div className="flex items-center space-x-1">
               <p className="font-semibold md:text-xl">
@@ -55,6 +64,10 @@ export function UserCard({ user }: { user: PublicUser }) {
           </div>
           <p className="text-muted-foreground text-sm">@{user.username}</p>
         </div>
+
+        {action ? (
+          <div className="ml-auto shrink-0 self-start">{action}</div>
+        ) : null}
       </section>
 
       <section className="mt-4">
@@ -66,20 +79,11 @@ export function UserCard({ user }: { user: PublicUser }) {
           {user?.bio}
         </p>
 
-        <div className="mt-3 flex gap-4 text-sm text-muted-foreground">
-          <span>
-            <span className="text-foreground font-semibold">
-              {user.followingCount ?? 0}
-            </span>{" "}
-            Following
-          </span>
-          <span>
-            <span className="text-foreground font-semibold">
-              {user.followerCount ?? 0}
-            </span>{" "}
-            Followers
-          </span>
-        </div>
+        <FollowListDrawer
+          username={user.username}
+          followerCount={user.followerCount ?? 0}
+          followingCount={user.followingCount ?? 0}
+        />
 
         <div className="mt-4 space-y-1">
           {user.quietMode && (

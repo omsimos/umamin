@@ -320,7 +320,7 @@ export function PostCard({
         className,
         "relative flex space-x-3 container text-[15px]",
         {
-          "border-b pb-6": !isRepost,
+          "border-b py-3": !isRepost,
           "border border-muted rounded-md px-2 py-3 sm:px-4": isRepost,
           "transition-colors hover:bg-muted/30": !isComment,
         },
