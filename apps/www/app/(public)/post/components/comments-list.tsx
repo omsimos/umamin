@@ -145,6 +145,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
         return (
           <div
             key={row.key}
+            data-index={row.index}
             ref={virtualizer.measureElement}
             className="pb-4"
             style={{
