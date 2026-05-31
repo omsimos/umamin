@@ -687,8 +687,10 @@ export async function blockUserAction({ userId }: { userId: string }) {
     }
     updateTag(`user-blocks:${session.userId}`);
     updateTag(`user-blocks:${userId}`);
-    updateTag("posts");
-    updateTag("notes");
+    // Blocking is per-viewer: the user-blocks:<viewer> tags above already
+    // refresh both sides' feed + notes overlays (getPostFeedViewerOverlay /
+    // getNoteViewerOverlay). Don't bust the global posts/notes caches for the
+    // entire user base on every block. [audit #14]
     updateTag(`messages:received:${session.userId}`);
     updateTag(`messages:received:${userId}`);
 
@@ -764,8 +766,10 @@ export async function unblockUserAction({ userId }: { userId: string }) {
     }
     updateTag(`user-blocks:${session.userId}`);
     updateTag(`user-blocks:${userId}`);
-    updateTag("posts");
-    updateTag("notes");
+    // Blocking is per-viewer: the user-blocks:<viewer> tags above already
+    // refresh both sides' feed + notes overlays (getPostFeedViewerOverlay /
+    // getNoteViewerOverlay). Don't bust the global posts/notes caches for the
+    // entire user base on every block. [audit #14]
     updateTag(`messages:received:${session.userId}`);
     updateTag(`messages:received:${userId}`);
 

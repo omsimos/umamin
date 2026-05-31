@@ -47,7 +47,9 @@ import type { CurrentUserClient, PublicUser } from "@/types/user";
 
 const PUBLIC_REVALIDATE_SECONDS = 120;
 const PRIVATE_REVALIDATE_SECONDS = 30;
-const FEED_PAGE_SIZE = 40;
+// 20 matches comments/messages and the virtualized above-the-fold (overscan 5);
+// 40 over-fetched ~2x the rows + payload per page on a per-row-billed DB.
+const FEED_PAGE_SIZE = 20;
 const COMMENTS_PAGE_SIZE = 20;
 const MESSAGES_PAGE_SIZE = 20;
 
@@ -327,13 +329,13 @@ async function getPublicPostsPage(
   };
 }
 
-async function getPostFeedViewerOverlay(viewerId: string, items: FeedItem[]) {
-  "use cache";
-  cacheTag(`user-blocks:${viewerId}`);
-
+// Extracts the stable id arrays the viewer-overlay cache key depends on. Sorted
+// + deduped so the same SET of posts/actors yields the same key regardless of
+// feed order.
+function feedOverlayIds(items: FeedItem[]) {
   const postIds = Array.from(
     new Set(items.map((item) => item.post.id).filter(Boolean)),
-  );
+  ).sort();
   const actorIds = Array.from(
     new Set(
       items.flatMap((item) =>
@@ -342,7 +344,22 @@ async function getPostFeedViewerOverlay(viewerId: string, items: FeedItem[]) {
           : [item.post.author.id, item.repost.user.id],
       ),
     ),
-  );
+  ).sort();
+
+  return { postIds, actorIds };
+}
+
+// Keyed on the viewer + the sorted id arrays the caller extracts — NOT the full
+// FeedItem[]. Passing whole items churned the cache key on every like/comment
+// count change and the 120s public revalidate, so this "cached" overlay re-ran
+// its 3 Turso queries on nearly every authenticated request.
+async function getPostFeedViewerOverlay(
+  viewerId: string,
+  postIds: string[],
+  actorIds: string[],
+) {
+  "use cache";
+  cacheTag(`user-blocks:${viewerId}`);
 
   for (const postId of postIds) {
     cacheTag(`post:${postId}:liked:${viewerId}`);
@@ -443,9 +460,11 @@ export async function getPostsPage(params: {
     return publicData;
   }
 
+  const { postIds, actorIds } = feedOverlayIds(publicData.data);
   const overlay = await getPostFeedViewerOverlay(
     params.viewerId,
-    publicData.data,
+    postIds,
+    actorIds,
   );
 
   return {
@@ -527,9 +546,11 @@ export async function getUserPostsPage(params: {
     return publicData;
   }
 
+  const { postIds, actorIds } = feedOverlayIds(publicData.data);
   const overlay = await getPostFeedViewerOverlay(
     params.viewerId,
-    publicData.data,
+    postIds,
+    actorIds,
   );
 
   return {
@@ -708,17 +729,28 @@ async function getPublicCommentsPage(
   };
 }
 
+// See feedOverlayIds: sorted + deduped so the cache key is stable across the
+// public revalidate and other viewers' churn.
+function commentOverlayIds(comments: CommentData[]) {
+  const commentIds = Array.from(
+    new Set(comments.map((comment) => comment.id)),
+  ).sort();
+  const authorIds = Array.from(
+    new Set(comments.map((comment) => comment.author.id)),
+  ).sort();
+
+  return { commentIds, authorIds };
+}
+
+// Keyed on the viewer + sorted id arrays, NOT the full CommentData[] (see
+// getPostFeedViewerOverlay), so the per-viewer overlay actually hits cache.
 async function getCommentViewerOverlay(
   viewerId: string,
-  comments: CommentData[],
+  commentIds: string[],
+  authorIds: string[],
 ) {
   "use cache";
   cacheTag(`user-blocks:${viewerId}`);
-
-  const commentIds = comments.map((comment) => comment.id);
-  const authorIds = Array.from(
-    new Set(comments.map((comment) => comment.author.id)),
-  );
 
   for (const commentId of commentIds) {
     cacheTag(`comment:${commentId}:liked:${viewerId}`);
@@ -784,9 +816,11 @@ export async function getPostCommentsPage(params: {
     return publicData;
   }
 
+  const { commentIds, authorIds } = commentOverlayIds(publicData.data);
   const overlay = await getCommentViewerOverlay(
     params.viewerId,
-    publicData.data,
+    commentIds,
+    authorIds,
   );
 
   return {
@@ -861,14 +895,12 @@ async function getPublicNotesPage(
   };
 }
 
-async function getNoteViewerOverlay(viewerId: string, notes: NoteItem[]) {
+// Keyed on the viewer + sorted authorIds (see getPostFeedViewerOverlay), NOT
+// the full NoteItem[], so the per-viewer overlay actually hits cache.
+async function getNoteViewerOverlay(viewerId: string, authorIds: string[]) {
   "use cache";
   cacheTag(`user-blocks:${viewerId}`);
   cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
-
-  const authorIds = Array.from(
-    new Set(notes.flatMap((note) => (note.user?.id ? [note.user.id] : []))),
-  );
 
   const blockRows =
     authorIds.length > 0
@@ -909,10 +941,12 @@ export async function getNotesPage(params: {
     return publicData;
   }
 
-  const blockedUserIds = await getNoteViewerOverlay(
-    params.viewerId,
-    publicData.data,
-  );
+  const authorIds = Array.from(
+    new Set(
+      publicData.data.flatMap((note) => (note.user?.id ? [note.user.id] : [])),
+    ),
+  ).sort();
+  const blockedUserIds = await getNoteViewerOverlay(params.viewerId, authorIds);
 
   return {
     ...publicData,
@@ -964,12 +998,6 @@ export async function getCurrentUserData(
     return userRecord;
   };
 
-  const userRecord = await getUserRecord();
-
-  if (!userRecord) {
-    return {};
-  }
-
   const getAccounts = async () => {
     "use cache";
     cacheTag(`user:${userId}:accounts`);
@@ -981,7 +1009,16 @@ export async function getCurrentUserData(
       .where(eq(accountTable.userId, userId));
   };
 
-  const accounts = await getAccounts();
+  // Independent cached reads — run concurrently to halve cold-cache latency on
+  // /api/me (hit on nearly every authenticated page).
+  const [userRecord, accounts] = await Promise.all([
+    getUserRecord(),
+    getAccounts(),
+  ]);
+
+  if (!userRecord) {
+    return {};
+  }
 
   return {
     user: {

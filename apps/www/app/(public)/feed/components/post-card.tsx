@@ -169,14 +169,8 @@ export function PostCard({
     async (prevLiked: boolean) => {
       if (isComment) {
         return prevLiked
-          ? removeCommentLikeAction({
-              commentId: data.id,
-              postId: commentPostId,
-            })
-          : addCommentLikeAction({
-              commentId: data.id,
-              postId: commentPostId,
-            });
+          ? removeCommentLikeAction({ commentId: data.id })
+          : addCommentLikeAction({ commentId: data.id });
       }
 
       return prevLiked
