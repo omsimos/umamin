@@ -45,14 +45,31 @@ const limiters: Record<LimiterName, Ratelimit> | null = redis
     }
   : null;
 
+// Surface the misconfiguration loudly in production logs: without Redis,
+// checkRateLimit() below allows everything (login brute-force, anonymous-message
+// spam, mutation floods all go unthrottled). We don't fail-closed because that
+// would brick core features (incl. anonymous messaging) on a transient KV
+// outage — set KV_REST_API_* to actually enforce limits.
+if (!limiters && process.env.NODE_ENV === "production") {
+  console.error(
+    "[ratelimit] Redis not configured — rate limiting is DISABLED in production. Set KV_REST_API_* env vars.",
+  );
+}
+
 /**
- * Best-effort client IP for keying limits. On Vercel the left-most entry of
- * `x-forwarded-for` is the real client. Falls back to a constant when the header
- * is absent (e.g. local dev) so behaviour stays deterministic.
+ * Best-effort client IP for keying limits. Prefer the headers Vercel's edge
+ * sets itself (`x-real-ip` / `x-vercel-forwarded-for`) — these are NOT
+ * client-spoofable. The left-most `x-forwarded-for` entry is a last-resort
+ * fallback (a client can prepend it), and a constant covers local dev so
+ * behaviour stays deterministic.
  */
 export async function getClientIp(): Promise<string> {
-  const forwardedFor = (await headers()).get("x-forwarded-for");
-  return forwardedFor?.split(",")[0]?.trim() || "127.0.0.1";
+  const h = await headers();
+  const ip =
+    h.get("x-real-ip")?.trim() ||
+    h.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+    h.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return ip || "127.0.0.1";
 }
 
 /**

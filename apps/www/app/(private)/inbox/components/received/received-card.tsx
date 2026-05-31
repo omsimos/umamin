@@ -3,7 +3,11 @@ import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ReceivedMessageMenu } from "./received-card-menu";
 
-export function ReceivedMessageCard({ data }: { data: SelectMessage }) {
+export function ReceivedMessageCard({
+  data,
+}: {
+  data: SelectMessage & { canBlock?: boolean };
+}) {
   return (
     <div id={`umamin-${data.id}`}>
       <div
@@ -14,7 +18,7 @@ export function ReceivedMessageCard({ data }: { data: SelectMessage }) {
         <div className="absolute top-4 right-4 text-muted-foreground">
           <ReceivedMessageMenu
             {...data}
-            senderId={data.senderId}
+            canBlock={data.canBlock}
             reply={data.reply}
             updatedAt={data.updatedAt}
           />

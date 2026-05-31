@@ -1306,6 +1306,7 @@ export async function getMessagesPage(params: {
   };
 
   const cachedData = await getCachedData();
+  const isReceived = params.type === "received";
   const messages = await Promise.all(
     cachedData.messages.map(async (message) => {
       let content = message.content;
@@ -1321,6 +1322,20 @@ export async function getMessagesPage(params: {
         } catch {
           reply = message.reply;
         }
+      }
+
+      if (isReceived) {
+        // Never expose the (logged-in) sender's account id to the recipient —
+        // returning it de-anonymizes every "anonymous" sender. Overwrite it to
+        // null and carry only whether a block is possible; blocking resolves the
+        // sender server-side from the message id. [audit #22]
+        return {
+          ...message,
+          senderId: null,
+          canBlock: message.senderId != null,
+          content,
+          reply,
+        };
       }
 
       return {

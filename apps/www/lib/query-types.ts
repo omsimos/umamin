@@ -23,6 +23,10 @@ export type NotesResponse = CursorPage<NoteItem>;
 
 export type MessageWithReceiver = SelectMessage & {
   receiver: PublicUser;
+  // Received messages set senderId=null and expose only this flag for the block
+  // UI — the sender's account id never reaches the client (anonymity). Blocking
+  // resolves the sender server-side from the message id. [audit #22]
+  canBlock?: boolean;
 };
 
 export type MessagesResponse = {
