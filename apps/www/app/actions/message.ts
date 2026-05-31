@@ -143,35 +143,35 @@ export async function sendMessageAction(
       return { error: "You can't send a message to yourself" };
     }
 
-    if (senderId) {
-      const blocked = await db.query.userBlockTable.findFirst({
-        columns: { id: true },
-        where: or(
-          and(
-            eq(userBlockTable.blockerId, receiverId),
-            eq(userBlockTable.blockedId, senderId),
-          ),
-          and(
-            eq(userBlockTable.blockerId, senderId),
-            eq(userBlockTable.blockedId, receiverId),
-          ),
-        ),
-      });
+    // Two independent reads — run them together (async-parallel). The block
+    // lookup only applies to a logged-in sender; quiet mode always applies.
+    const [blocked, receiver] = await Promise.all([
+      senderId
+        ? db.query.userBlockTable.findFirst({
+            columns: { id: true },
+            where: or(
+              and(
+                eq(userBlockTable.blockerId, receiverId),
+                eq(userBlockTable.blockedId, senderId),
+              ),
+              and(
+                eq(userBlockTable.blockerId, senderId),
+                eq(userBlockTable.blockedId, receiverId),
+              ),
+            ),
+          })
+        : Promise.resolve(undefined),
+      db.query.userTable.findFirst({
+        columns: { quietMode: true },
+        where: eq(userTable.id, receiverId),
+      }),
+    ]);
 
-      if (blocked) {
-        return { success: true };
-      }
-    }
-
-    // Enforce the receiver's quiet mode server-side — the client toggle is a UI
-    // hint, not a security boundary. Silently accept + drop (don't reveal the
-    // state, mirroring the block path); also covers a non-existent receiverId.
-    const receiver = await db.query.userTable.findFirst({
-      columns: { quietMode: true },
-      where: eq(userTable.id, receiverId),
-    });
-
-    if (!receiver || receiver.quietMode) {
+    // Both gates fail silently (don't reveal block/quiet state, and cover a
+    // non-existent receiverId) — the client can't distinguish a dropped send
+    // from a delivered one. Quiet mode is enforced server-side because the
+    // client toggle is a UI hint, not a security boundary.
+    if (blocked || !receiver || receiver.quietMode) {
       return { success: true };
     }
 
