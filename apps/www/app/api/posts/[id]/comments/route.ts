@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
+import { privateJson } from "@/lib/private-json";
 import { getPostCommentsPage } from "@/lib/server/data";
 
 export async function GET(
@@ -17,9 +18,9 @@ export async function GET(
       viewerId: session?.userId,
     });
 
-    return Response.json(result);
+    return privateJson(result);
   } catch (error) {
     console.error("Error fetching comments:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return privateJson({ error: "Internal server error" }, { status: 500 });
   }
 }

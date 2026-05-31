@@ -239,23 +239,6 @@ export function removeMessage(
   };
 }
 
-export function removeMessagesBySender(
-  previous: InfiniteData<MessagesResponse> | undefined,
-  senderId: string,
-) {
-  if (!previous) return previous;
-
-  return {
-    ...previous,
-    pages: previous.pages.map((page) => ({
-      ...page,
-      messages: page.messages.filter(
-        (message) => message.senderId !== senderId,
-      ),
-    })),
-  };
-}
-
 export function patchMessage(
   previous: InfiniteData<MessagesResponse> | undefined,
   messageId: string,

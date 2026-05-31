@@ -29,7 +29,6 @@ import {
   patchCurrentUser,
   patchUserProfile,
   patchUserProfileViewer,
-  removeMessagesBySender,
 } from "@/lib/query-cache";
 import { fetchUserProfile, fetchUserProfileViewer } from "@/lib/query-fetchers";
 import type {
@@ -287,12 +286,10 @@ export function UserProfile({ username, initialUser }: Props) {
         followingDelta: willRemoveFollow ? -1 : 0,
       });
 
-      if (nextBlocked) {
-        queryClient.setQueryData<InfiniteData<MessagesResponse>>(
-          queryKeys.receivedMessages(),
-          (current) => removeMessagesBySender(current, profile.id),
-        );
-      }
+      // The inbox no longer carries sender ids (anonymity, audit #22), so the
+      // blocked sender's messages can't be filtered client-side — the
+      // receivedMessages query is invalidated on success to refetch the
+      // server-filtered list instead.
 
       return {
         previousProfile,
@@ -353,6 +350,9 @@ export function UserProfile({ username, initialUser }: Props) {
         return;
       }
 
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.receivedMessages(),
+      });
       toast.success("User blocked.");
     },
   });

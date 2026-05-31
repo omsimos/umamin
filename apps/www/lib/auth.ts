@@ -117,6 +117,15 @@ export async function login(_initialState: unknown, formData: FormData) {
       .limit(1);
 
     if (!existingUser?.passwordHash) {
+      // Spend comparable Argon2 CPU on the not-found / OAuth-only path so login
+      // response time doesn't reveal which usernames exist (enumeration oracle).
+      await hash(password, {
+        memoryCost: 19456,
+        timeCost: 2,
+        outputLen: 32,
+        parallelism: 1,
+      }).catch(() => undefined);
+
       return {
         error: "Incorrect username or password",
       };

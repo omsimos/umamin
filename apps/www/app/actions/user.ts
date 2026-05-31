@@ -211,11 +211,20 @@ export async function generalSettingsAction(
   }
 }
 
-export async function deleteAccountAction() {
+export async function deleteAccountAction(confirmation?: string) {
   const { user } = await getSession();
 
   if (!user) {
     throw new Error("Unauthorized");
+  }
+
+  // Enforce the confirmation phrase on the SERVER, not just via the disabled
+  // button client-side, so a programmatic/CSRF/XSS call can't trigger this
+  // irreversible delete without the explicit phrase. [audit #24]
+  // (Stronger step-up auth — re-verifying the password / a fresh OAuth round —
+  // is the recommended follow-up but needs a UI change for OAuth-only accounts.)
+  if (confirmation?.trim().toLowerCase() !== "delete my account") {
+    redirect("/settings?error=invalid_confirmation");
   }
 
   // Throttle this destructive ~10-statement transaction. Placed OUTSIDE the try
@@ -778,6 +787,70 @@ export async function unblockUserAction({ userId }: { userId: string }) {
     console.log(err);
     return { error: "An error occured" };
   }
+}
+
+// Resolves a received message's sender server-side (scoped to the viewer's own
+// inbox) so the recipient can block/unblock without the sender's account id
+// ever reaching the client. [audit #22]
+async function resolveMessageSenderId(
+  messageId: string,
+  viewerId: string,
+): Promise<string | null> {
+  const message = await db.query.messageTable.findFirst({
+    columns: { senderId: true },
+    where: and(
+      eq(messageTable.id, messageId),
+      eq(messageTable.receiverId, viewerId),
+    ),
+  });
+
+  return message?.senderId ?? null;
+}
+
+export async function blockMessageSenderAction({
+  messageId,
+}: {
+  messageId: string;
+}) {
+  const parsed = z.string().min(1).safeParse(messageId);
+  if (!parsed.success) {
+    return { error: "Invalid input" };
+  }
+
+  const { session } = await getSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+
+  const senderId = await resolveMessageSenderId(messageId, session.userId);
+  if (!senderId) {
+    return { error: "Cannot block this sender." };
+  }
+
+  return blockUserAction({ userId: senderId });
+}
+
+export async function unblockMessageSenderAction({
+  messageId,
+}: {
+  messageId: string;
+}) {
+  const parsed = z.string().min(1).safeParse(messageId);
+  if (!parsed.success) {
+    return { error: "Invalid input" };
+  }
+
+  const { session } = await getSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+
+  const senderId = await resolveMessageSenderId(messageId, session.userId);
+  if (!senderId) {
+    return { error: "Cannot unblock this sender." };
+  }
+
+  return unblockUserAction({ userId: senderId });
 }
 
 export async function toggleDisplayPictureAction(accountImgUrl?: string) {

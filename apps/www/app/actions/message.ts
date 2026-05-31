@@ -2,7 +2,7 @@
 
 import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
-import { userBlockTable } from "@umamin/db/schema/user";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { aesEncrypt } from "@umamin/encryption";
 import { and, eq, or } from "drizzle-orm";
 import { updateTag } from "next/cache";
@@ -163,7 +163,19 @@ export async function sendMessageAction(
       }
     }
 
-    // Encrypt only after the block check so a blocked send does no crypto work.
+    // Enforce the receiver's quiet mode server-side — the client toggle is a UI
+    // hint, not a security boundary. Silently accept + drop (don't reveal the
+    // state, mirroring the block path); also covers a non-existent receiverId.
+    const receiver = await db.query.userTable.findFirst({
+      columns: { quietMode: true },
+      where: eq(userTable.id, receiverId),
+    });
+
+    if (!receiver || receiver.quietMode) {
+      return { success: true };
+    }
+
+    // Encrypt only after the above checks so a dropped send does no crypto work.
     const encryptedContent = await aesEncrypt(formatContent(content));
 
     await db.insert(messageTable).values({
