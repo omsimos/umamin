@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
+import { YouTabs } from "@/components/you-tabs";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
@@ -64,6 +65,10 @@ export default async function InboxPage() {
       <Suspense fallback={<UserCardSkeleton />}>
         <CurrentUserCard user={user ? toPublicUser(user) : null} />
       </Suspense>
+
+      {user?.username ? (
+        <YouTabs username={user.username} active="messages" />
+      ) : null}
 
       <HydrationBoundary state={dehydrate(queryClient)}>
         <InboxTabs />
