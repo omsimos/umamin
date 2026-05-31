@@ -42,19 +42,6 @@ export type CurrentUserResponse = {
   user?: CurrentUserData;
 };
 
-export type FollowListUser = PublicUser & {
-  // Whether the current viewer follows this listed user (false when logged out).
-  isFollowing: boolean;
-};
-
-export type FollowListResponse = {
-  data: FollowListUser[];
-  nextCursor: string | null;
-  // The viewer's own id, or null when logged out — lets each row hide its
-  // Follow button for self and send logged-out viewers to /login.
-  viewerId: string | null;
-};
-
 export type UserProfileResponse = PublicUser | null;
 
 export type UserProfileViewerResponse = {

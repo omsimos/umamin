@@ -17,7 +17,7 @@ import {
   userFollowTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -463,44 +463,26 @@ export async function followUserAction({ userId }: { userId: string }) {
       return { error: "User not found." };
     }
 
-    // Enforce block state on the SERVER, not just via the disabled button — a
-    // crafted request must not be able to follow across a block in either
-    // direction.
-    const blockExists = await db.query.userBlockTable.findFirst({
-      columns: { id: true },
-      where: or(
-        and(
-          eq(userBlockTable.blockerId, session.userId),
-          eq(userBlockTable.blockedId, userId),
-        ),
-        and(
-          eq(userBlockTable.blockerId, userId),
-          eq(userBlockTable.blockedId, session.userId),
-        ),
-      ),
-    });
-
-    if (blockExists) {
-      return { error: "You can't follow this user." };
-    }
-
     const result = await db.transaction(async (tx) => {
-      // Insert the edge first and let the unique (follower, following) index
-      // settle the race: a conflict means the edge already existed, so we must
-      // NOT run the increments again — they'd drift the denormalized counts
-      // upward permanently (delete-account only ever decrements them).
-      const inserted = await tx
+      const existing = await tx.query.userFollowTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(userFollowTable.followerId, session.userId),
+          eq(userFollowTable.followingId, userId),
+        ),
+      });
+
+      if (existing) {
+        return { success: true, alreadyFollowing: true };
+      }
+
+      await tx
         .insert(userFollowTable)
         .values({
           followerId: session.userId,
           followingId: userId,
         })
-        .onConflictDoNothing()
-        .returning({ id: userFollowTable.id });
-
-      if (inserted.length === 0) {
-        return { success: true, alreadyFollowing: true };
-      }
+        .onConflictDoNothing();
 
       await tx
         .update(userTable)
@@ -525,10 +507,6 @@ export async function followUserAction({ userId }: { userId: string }) {
     if (user?.username) {
       updateTag(`user:${user.username}`);
     }
-    // The follower's following-list (+ their list overlays) and the target's
-    // followers-list both changed.
-    updateTag(`user-following:${session.userId}`);
-    updateTag(`user-followers:${userId}`);
 
     return result;
   } catch (err) {
@@ -568,21 +546,26 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      // Delete first and gate the decrements on a row actually being removed,
-      // so two concurrent unfollows can't each decrement the counts (drift).
-      const removed = await tx
+      const existing = await tx.query.userFollowTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(userFollowTable.followerId, session.userId),
+          eq(userFollowTable.followingId, userId),
+        ),
+      });
+
+      if (!existing) {
+        return { success: true, alreadyRemoved: true };
+      }
+
+      await tx
         .delete(userFollowTable)
         .where(
           and(
             eq(userFollowTable.followerId, session.userId),
             eq(userFollowTable.followingId, userId),
           ),
-        )
-        .returning({ id: userFollowTable.id });
-
-      if (removed.length === 0) {
-        return { success: true, alreadyRemoved: true };
-      }
+        );
 
       await tx
         .update(userTable)
@@ -607,10 +590,6 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     if (user?.username) {
       updateTag(`user:${user.username}`);
     }
-    // The follower's following-list (+ their list overlays) and the target's
-    // followers-list both changed.
-    updateTag(`user-following:${session.userId}`);
-    updateTag(`user-followers:${userId}`);
 
     return result;
   } catch (err) {
@@ -650,36 +629,44 @@ export async function blockUserAction({ userId }: { userId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      // Insert first; a conflict means the block already existed, so skip the
-      // follow-severing + counter work below (idempotent, no drift).
-      const insertedBlock = await tx
+      const existing = await tx.query.userBlockTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(userBlockTable.blockerId, session.userId),
+          eq(userBlockTable.blockedId, userId),
+        ),
+      });
+
+      if (existing) {
+        return { success: true, alreadyBlocked: true };
+      }
+
+      await tx
         .insert(userBlockTable)
         .values({
           blockerId: session.userId,
           blockedId: userId,
         })
-        .onConflictDoNothing()
-        .returning({ id: userBlockTable.id });
+        .onConflictDoNothing();
 
-      if (insertedBlock.length === 0) {
-        return { success: true, alreadyBlocked: true };
-      }
+      const follow = await tx.query.userFollowTable.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(userFollowTable.followerId, session.userId),
+          eq(userFollowTable.followingId, userId),
+        ),
+      });
 
-      // Blocking severs the follow relationship in BOTH directions (matches
-      // every major platform — otherwise the blocked user keeps "following"
-      // the blocker and still counts toward their followers). Each decrement
-      // pair is gated on a row actually being deleted so counts can't drift.
-      const removedOutgoing = await tx
-        .delete(userFollowTable)
-        .where(
-          and(
-            eq(userFollowTable.followerId, session.userId),
-            eq(userFollowTable.followingId, userId),
-          ),
-        )
-        .returning({ id: userFollowTable.id });
+      if (follow) {
+        await tx
+          .delete(userFollowTable)
+          .where(
+            and(
+              eq(userFollowTable.followerId, session.userId),
+              eq(userFollowTable.followingId, userId),
+            ),
+          );
 
-      if (removedOutgoing.length > 0) {
         await tx
           .update(userTable)
           .set({
@@ -693,32 +680,6 @@ export async function blockUserAction({ userId }: { userId: string }) {
             followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
           })
           .where(eq(userTable.id, userId));
-      }
-
-      const removedIncoming = await tx
-        .delete(userFollowTable)
-        .where(
-          and(
-            eq(userFollowTable.followerId, userId),
-            eq(userFollowTable.followingId, session.userId),
-          ),
-        )
-        .returning({ id: userFollowTable.id });
-
-      if (removedIncoming.length > 0) {
-        await tx
-          .update(userTable)
-          .set({
-            followingCount: sql`CASE WHEN ${userTable.followingCount} > 0 THEN ${userTable.followingCount} - 1 ELSE 0 END`,
-          })
-          .where(eq(userTable.id, userId));
-
-        await tx
-          .update(userTable)
-          .set({
-            followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
-          })
-          .where(eq(userTable.id, session.userId));
       }
 
       return { success: true };
@@ -732,17 +693,9 @@ export async function blockUserAction({ userId }: { userId: string }) {
     updateTag(`user:${target.username}:followed:${session.userId}`);
     if (user?.username) {
       updateTag(`user:${user.username}:blocked-by:${userId}`);
-      // The blocked user no longer follows the blocker (reverse-follow severed
-      // above) — refresh their view of the blocker's profile follow state.
-      updateTag(`user:${user.username}:followed:${userId}`);
     }
     updateTag(`user-blocks:${session.userId}`);
     updateTag(`user-blocks:${userId}`);
-    // Both follow directions were severed above — refresh every affected list.
-    updateTag(`user-following:${session.userId}`);
-    updateTag(`user-followers:${userId}`);
-    updateTag(`user-following:${userId}`);
-    updateTag(`user-followers:${session.userId}`);
     // Blocking is per-viewer: the user-blocks:<viewer> tags above already
     // refresh both sides' feed + notes overlays (getPostFeedViewerOverlay /
     // getNoteViewerOverlay). Don't bust the global posts/notes caches for the
