@@ -314,10 +314,8 @@ export async function removeLikeAction({ postId }: { postId: string }) {
 
 export async function addCommentLikeAction({
   commentId,
-  postId,
 }: {
   commentId: string;
-  postId?: string;
 }) {
   try {
     const parsed = idSchema.safeParse(commentId);
@@ -365,12 +363,12 @@ export async function addCommentLikeAction({
       return { success: true };
     });
 
-    // Comment likes don't appear in the feed, so no "posts" invalidation.
-    updateTag(`comment:${commentId}`);
+    // A comment like only changes the per-viewer liked flag (the tag below,
+    // overlaid fresh by getCommentViewerOverlay) and an eventually-consistent
+    // likeCount. So don't bust the shared post-comments cache (re-scans every
+    // comment + author join for all viewers), and the bare comment:<id> tag was
+    // dead — no matching cacheTag exists. [audit #13, #18]
     updateTag(`comment:${commentId}:liked:${session.userId}`);
-    if (postId) {
-      updateTag(`post-comments:${postId}`);
-    }
     return result;
   } catch (err) {
     console.log(err);
@@ -380,10 +378,8 @@ export async function addCommentLikeAction({
 
 export async function removeCommentLikeAction({
   commentId,
-  postId,
 }: {
   commentId: string;
-  postId?: string;
 }) {
   try {
     const parsed = idSchema.safeParse(commentId);
@@ -432,12 +428,12 @@ export async function removeCommentLikeAction({
       return { success: true };
     });
 
-    // Comment likes don't appear in the feed, so no "posts" invalidation.
-    updateTag(`comment:${commentId}`);
+    // A comment like only changes the per-viewer liked flag (the tag below,
+    // overlaid fresh by getCommentViewerOverlay) and an eventually-consistent
+    // likeCount. So don't bust the shared post-comments cache (re-scans every
+    // comment + author join for all viewers), and the bare comment:<id> tag was
+    // dead — no matching cacheTag exists. [audit #13, #18]
     updateTag(`comment:${commentId}:liked:${session.userId}`);
-    if (postId) {
-      updateTag(`post-comments:${postId}`);
-    }
     return result;
   } catch (err) {
     console.log(err);
@@ -511,7 +507,11 @@ export async function addRepostAction(
     });
 
     updateTag(`post:${postId}`);
-    updateTag("posts");
+    // Intentionally NOT invalidating the global "posts" feed tag: a full feed
+    // recompute (union + inArray lookups) on every repost is the exact Turso
+    // cost the like path avoids. The new edge surfaces via the 120s revalidate
+    // + the feed:latest "new posts" pill (bumped below); the actor's own state
+    // is kept fresh by the per-viewer reposted tag + syncRepostCache.
     updateTag(`post:${postId}:reposted:${session.userId}`);
     if ("repost" in result && result.repost) {
       await bumpFeedLatest(result.repost.createdAt);
@@ -572,7 +572,8 @@ export async function removeRepostAction({ postId }: { postId: string }) {
     });
 
     updateTag(`post:${postId}`);
-    updateTag("posts");
+    // See addRepostAction: skip the global "posts" recompute; the removed edge
+    // ages out via the 120s revalidate, and the per-viewer tag stays fresh.
     updateTag(`post:${postId}:reposted:${session.userId}`);
     return result;
   } catch (err) {
