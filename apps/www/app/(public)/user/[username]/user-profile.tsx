@@ -40,6 +40,7 @@ import type {
 } from "@/lib/query-types";
 import { getActionError } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
+import { ProfilePostList } from "./profile-post-list";
 
 type Props = {
   username: string;
@@ -440,6 +441,8 @@ export function UserProfile({ username, initialUser }: Props) {
 
         <Menu menuItems={menuItems} />
       </div>
+
+      <ProfilePostList username={username} />
     </>
   );
 }

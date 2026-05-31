@@ -13,7 +13,6 @@ import {
 } from "@umamin/db/schema/post";
 import {
   accountTable,
-  sessionTable,
   userBlockTable,
   userFollowTable,
   userTable,
@@ -35,7 +34,7 @@ import {
   createSession,
   deleteSessionTokenCookie,
   generateSessionToken,
-  invalidateSession,
+  invalidateUserSessions,
   setSessionTokenCookie,
 } from "@/lib/session";
 import { formatContent } from "@/lib/utils";
@@ -213,7 +212,7 @@ export async function generalSettingsAction(
 }
 
 export async function deleteAccountAction() {
-  const { user, session } = await getSession();
+  const { user } = await getSession();
 
   if (!user) {
     throw new Error("Unauthorized");
@@ -227,6 +226,11 @@ export async function deleteAccountAction() {
 
   try {
     const uid = user.id;
+
+    // Revoke every session (this device + others) and clear their cached entries
+    // BEFORE the cascade removes the rows — otherwise other devices' cached
+    // sessions would keep validating for up to the cache TTL after deletion.
+    await invalidateUserSessions(uid);
 
     await db.transaction(async (tx) => {
       // FK CASCADE removes this user's follow/like/comment/repost rows when the
@@ -339,7 +343,6 @@ export async function deleteAccountAction() {
       await tx.delete(userTable).where(eq(userTable.id, uid));
     });
 
-    await invalidateSession(session.id);
     await deleteSessionTokenCookie();
 
     // Invalidate user's cached data by tag
@@ -406,9 +409,10 @@ export async function updatePasswordAction(
       .where(eq(userTable.id, user.id));
 
     // Changing the password revokes all existing sessions (standard account
-    // security — locks out a hijacked/old device), then re-mints one for the
-    // current request so the user stays signed in here.
-    await db.delete(sessionTable).where(eq(sessionTable.userId, user.id));
+    // security — locks out a hijacked/old device) and drops their cached
+    // entries, then re-mints one for the current request so the user stays
+    // signed in here.
+    await invalidateUserSessions(user.id);
     const token = generateSessionToken();
     const newSession = await createSession(token, user.id);
     await setSessionTokenCookie(token, new Date(newSession.expiresAt));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   Alert,
@@ -8,8 +8,8 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useMemo } from "react";
-import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { PostCard } from "@/app/(public)/feed/components/post-card";
+import { PostCardSkeleton } from "@/app/(public)/feed/components/post-card-skeleton";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
 import {
@@ -18,12 +18,26 @@ import {
   PUBLIC_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
-import { fetchNotesPage } from "@/lib/query-fetchers";
-import type { NoteItem, NotesResponse } from "@/lib/query-types";
-import { NoteCard } from "./note-card";
-import { NoteCardSkeleton } from "./note-card-skeleton";
+import {
+  fetchCurrentUserOptional,
+  fetchUserPostsPage,
+} from "@/lib/query-fetchers";
+import type { FeedResponse } from "@/lib/query-types";
+import type { FeedItem } from "@/types/post";
 
-export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function ProfilePostList({ username }: { username: string }) {
+  // Client-side auth (does not make the profile page dynamic). Shares the
+  // app-wide currentUser cache, so it's usually a cache hit. Drives button
+  // enablement + own-post menu on the cards.
+  const { data: currentUser } = useQuery({
+    queryKey: queryKeys.currentUser(),
+    queryFn: fetchCurrentUserOptional,
+    staleTime: PRIVATE_STALE_TIME,
+    ...infiniteQueryDefaults,
+  });
+  const currentUserId = currentUser?.user?.id;
+  const isAuthenticated = !!currentUserId;
+
   const {
     data,
     isLoading,
@@ -32,59 +46,45 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     hasNextPage,
     isFetching,
     isFetchingNextPage,
-  } = useInfiniteQuery<NotesResponse>({
-    queryKey: queryKeys.notes(),
+  } = useInfiniteQuery<FeedResponse>({
+    queryKey: queryKeys.userPosts(username),
     queryFn: ({ pageParam }) =>
-      fetchNotesPage((pageParam as string | null) ?? null, isAuthenticated),
+      fetchUserPostsPage(username, (pageParam as string | null) ?? null),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    staleTime: isAuthenticated ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME,
+    staleTime: PUBLIC_STALE_TIME,
     ...infiniteQueryDefaults,
   });
   const hasResolvedData = data !== undefined;
 
-  // De-duplicate posts by id across pages
-  const allPosts: NoteItem[] = (() => {
+  const allItems: FeedItem[] = (() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
-    const map = new Map<string, NoteItem>();
-    for (const item of flat) map.set(item.id, item);
+    const map = new Map<string, FeedItem>();
+    for (const item of flat) {
+      const key =
+        item.type === "post"
+          ? `post:${item.post.id}`
+          : `repost:${item.repost.id}`;
+      if (!map.has(key)) map.set(key, item);
+    }
     return Array.from(map.values());
   })();
 
-  const AD_FREQUENCY = 8;
-
-  const isAdRow = (rowIndex: number) =>
-    (rowIndex + 1) % (AD_FREQUENCY + 1) === 0;
-
-  const dataIndexForRow = (rowIndex: number) => {
-    const adsAtOrBefore = Math.floor((rowIndex + 1) / (AD_FREQUENCY + 1));
-    const adsBefore = isAdRow(rowIndex) ? adsAtOrBefore - 1 : adsAtOrBefore;
-    return rowIndex - adsBefore;
-  };
-
-  const totalRows = useMemo(() => {
-    const contentRows =
-      allPosts.length + Math.floor(allPosts.length / AD_FREQUENCY);
-    return hasNextPage ? contentRows + 1 : contentRows;
-  }, [allPosts.length, hasNextPage]);
-
+  const totalRows = hasNextPage ? allItems.length + 1 : allItems.length;
   const { containerRef, scrollMargin } =
     useWindowVirtualizerOffset<HTMLDivElement>();
 
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
-    estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
+    estimateSize: () => 160,
     paddingEnd: 100,
     overscan: 5,
     scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
-      if (isAdRow(index)) {
-        const adIndex = Math.floor((index + 1) / (AD_FREQUENCY + 1));
-        return `notes-inline-ad-${adIndex}`;
-      }
-      const post = allPosts[dataIndexForRow(index)];
-      return post?.id ?? `row-${index}`;
+      const item = allItems[index];
+      if (!item) return `row-${index}`;
+      return item.type === "post" ? item.post.id : item.repost.id;
     },
   });
 
@@ -102,11 +102,11 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   if (error) {
     return (
-      <div className="w-full mx-auto">
+      <div className="w-full mx-auto mt-6">
         <Alert variant="destructive">
           <AlertCircleIcon className="h-4 w-4" />
           <AlertDescription>
-            Failed to load data. Please try again later.
+            Failed to load posts. Please try again later.
           </AlertDescription>
         </Alert>
       </div>
@@ -115,29 +115,29 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   if (!hasResolvedData || isLoading) {
     return (
-      <div className="w-full mx-auto space-y-4">
-        <NoteCardSkeleton />
-        <NoteCardSkeleton />
-        <NoteCardSkeleton />
+      <div className="w-full mx-auto space-y-4 mt-6">
+        <PostCardSkeleton />
+        <PostCardSkeleton />
+      </div>
+    );
+  }
+
+  if (allItems.length === 0 && !isFetching) {
+    return (
+      <div className="mt-6">
+        <Alert>
+          <MessageCircleDashedIcon />
+          <AlertTitle>No posts yet</AlertTitle>
+          <AlertDescription>
+            This user hasn&apos;t posted anything.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
-    <div className="w-full">
-      {hasResolvedData && allPosts.length === 0 && !isFetching && (
-        <Alert>
-          <MessageCircleDashedIcon />
-          <AlertTitle>No data yet</AlertTitle>
-          <AlertDescription>
-            Start the conversation by creating a new post!
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* v2-notes (top ad) */}
-      <ClientOnlyAdContainer className="mb-5" placement="notes_top" />
-
+    <div className="w-full mt-6 border-t pt-6">
       <div
         ref={containerRef}
         style={{
@@ -148,7 +148,6 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
       >
         {items.map((row) => {
           const isLoaderRow = hasNextPage && row.index === totalRows - 1;
-          const isInlineAdRow = !isLoaderRow && isAdRow(row.index);
 
           return (
             <div
@@ -165,22 +164,17 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
               }}
             >
               {isLoaderRow ? (
-                <NoteCardSkeleton />
-              ) : isInlineAdRow ? (
-                <ClientOnlyAdContainer
-                  className="mb-4"
-                  placement="notes_inline"
-                />
+                <PostCardSkeleton />
               ) : (
                 (() => {
-                  const post = allPosts[dataIndexForRow(row.index)];
-                  if (!post) return null;
-
+                  const item = allItems[row.index];
+                  if (!item || item.type !== "post") return null;
                   return (
-                    <NoteCard
+                    <PostCard
                       isAuthenticated={isAuthenticated}
-                      key={post.id}
-                      data={post}
+                      currentUserId={currentUserId}
+                      key={item.post.id}
+                      data={item.post}
                     />
                   );
                 })()

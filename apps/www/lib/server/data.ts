@@ -455,6 +455,90 @@ export async function getPostsPage(params: {
   };
 }
 
+async function getPublicUserPostsPage(
+  authorId: string,
+  cursor: string | null,
+): Promise<FeedResponse> {
+  "use cache";
+  cacheTag(`user-posts:${authorId}`);
+  cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
+
+  const parsedCursor = parseCursor(cursor);
+  const cursorCondition = parsedCursor
+    ? or(
+        lt(postTable.createdAt, parsedCursor.cursorDate),
+        and(
+          eq(postTable.createdAt, parsedCursor.cursorDate),
+          lt(postTable.id, parsedCursor.cursorId),
+        ),
+      )
+    : undefined;
+
+  const baseCondition = eq(postTable.authorId, authorId);
+  const whereCondition = cursorCondition
+    ? and(baseCondition, cursorCondition)
+    : baseCondition;
+
+  // Keyset pagination on post_author_created_at_idx (author_id, created_at, id).
+  const rows = await db
+    .select({ post: postTable, author: publicUserColumns })
+    .from(postTable)
+    .innerJoin(userTable, eq(postTable.authorId, userTable.id))
+    .where(whereCondition)
+    .orderBy(desc(postTable.createdAt), desc(postTable.id))
+    .limit(FEED_PAGE_SIZE + 1);
+
+  const data: FeedItem[] = rows.flatMap(({ post, author }) => {
+    if (!author) {
+      return [];
+    }
+
+    return [
+      {
+        type: "post" as const,
+        post: { ...post, author, isLiked: false, isReposted: false },
+      },
+    ];
+  });
+
+  const { hasMore, pageRows } = getPageRows(data, FEED_PAGE_SIZE);
+  const lastItem = pageRows[pageRows.length - 1];
+
+  return {
+    data: pageRows,
+    nextCursor:
+      hasMore && lastItem
+        ? `${lastItem.post.createdAt.getTime()}.${lastItem.post.id}`
+        : null,
+  };
+}
+
+export async function getUserPostsPage(params: {
+  authorId: string;
+  cursor?: string | null;
+  viewerId?: string | null;
+}): Promise<FeedResponse> {
+  const publicData = await getPublicUserPostsPage(
+    params.authorId,
+    params.cursor ?? null,
+  );
+
+  if (!params.viewerId) {
+    return publicData;
+  }
+
+  const overlay = await getPostFeedViewerOverlay(
+    params.viewerId,
+    publicData.data,
+  );
+
+  return {
+    ...publicData,
+    // Preserve the shared public page window; viewer overlays may shorten it.
+    data: applyPostFeedViewerOverlay(publicData.data, overlay),
+  };
+}
+
 async function getPublicPost(postId: string): Promise<PostResponse> {
   "use cache";
   cacheTag(`post:${postId}`);

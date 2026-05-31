@@ -15,6 +15,26 @@ import {
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { LEGACY_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME } from "./cookies";
+import { redis } from "./redis";
+
+// Short TTL — the cache only collapses bursts of authed requests within a session
+// window; explicit DELs (logout / password change) handle real revocation, so a
+// stale entry can live at most this long, and expiry is always re-checked in code
+// before serving. No-ops entirely when Redis isn't configured (local dev).
+const SESSION_CACHE_PREFIX = "sess:";
+const SESSION_CACHE_TTL_SECONDS = 60;
+
+type CachedSession = { session: SelectSession; user: SelectUser };
+
+// Upstash serializes values to JSON, so Date columns come back as strings —
+// revive them so the SelectUser contract (Date fields) holds for every consumer.
+function reviveCachedUser(user: SelectUser): SelectUser {
+  return {
+    ...user,
+    createdAt: new Date(user.createdAt),
+    updatedAt: user.updatedAt ? new Date(user.updatedAt) : null,
+  };
+}
 
 export function generateSessionToken(): string {
   const bytes = new Uint8Array(20);
@@ -42,6 +62,24 @@ export async function validateSessionToken(
   token: string,
 ): Promise<SessionValidationResult> {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+  const cacheKey = `${SESSION_CACHE_PREFIX}${sessionId}`;
+
+  // Redis fast path: collapse a burst of authed requests (feed scroll, comments,
+  // every mutation) into a single Turso JOIN read. Expiry is re-checked here —
+  // an expired/revoked session is NEVER served from cache.
+  if (redis) {
+    const cached = await redis.get<CachedSession>(cacheKey);
+    if (cached) {
+      if (Date.now() < cached.session.expiresAt) {
+        return {
+          session: cached.session,
+          user: reviveCachedUser(cached.user),
+        };
+      }
+      await redis.del(cacheKey);
+    }
+  }
+
   const [result] = await db
     .select({
       session: sessionTable,
@@ -51,7 +89,6 @@ export async function validateSessionToken(
     .leftJoin(userTable, eq(sessionTable.userId, userTable.id))
     .where(eq(sessionTable.id, sessionId))
     .limit(1);
-  // .$withCache(false);
 
   if (!result?.user) {
     return { session: null, user: null };
@@ -71,6 +108,16 @@ export async function validateSessionToken(
         expiresAt: session.expiresAt,
       })
       .where(eq(sessionTable.id, sessionId));
+  }
+
+  if (redis) {
+    const ttl = Math.min(
+      SESSION_CACHE_TTL_SECONDS,
+      Math.max(1, Math.floor((session.expiresAt - Date.now()) / 1000)),
+    );
+    await redis.set(cacheKey, { session, user } satisfies CachedSession, {
+      ex: ttl,
+    });
   }
 
   return { session, user };
@@ -123,6 +170,28 @@ export async function deleteSessionTokenCookie(): Promise<void> {
 
 export async function invalidateSession(sessionId: string) {
   await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
+  if (redis) {
+    await redis.del(`${SESSION_CACHE_PREFIX}${sessionId}`);
+  }
+}
+
+// Revoke ALL of a user's sessions (e.g. on password change) and immediately
+// drop their cached entries so a changed password can't be bypassed via a
+// lingering cache hit. Enumerates ids first (uses session_user_idx).
+export async function invalidateUserSessions(userId: string) {
+  const sessions = await db
+    .select({ id: sessionTable.id })
+    .from(sessionTable)
+    .where(eq(sessionTable.userId, userId));
+
+  await db.delete(sessionTable).where(eq(sessionTable.userId, userId));
+
+  if (redis && sessions.length > 0) {
+    const client = redis;
+    await Promise.all(
+      sessions.map((s) => client.del(`${SESSION_CACHE_PREFIX}${s.id}`)),
+    );
+  }
 }
 
 export type SessionValidationResult =
