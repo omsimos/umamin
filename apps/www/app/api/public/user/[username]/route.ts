@@ -1,5 +1,4 @@
 import { publicJson } from "@/lib/public-json";
-import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getPublicUserProfileData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 
@@ -10,10 +9,6 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> },
 ) {
   try {
-    if (!(await checkReadRateLimit())) {
-      return publicJson({ error: RATE_LIMIT_ERROR }, 0, { status: 429 });
-    }
-
     const { username: rawUsername } = await params;
     const username = formatUsername(rawUsername);
     const result = await getPublicUserProfileData(username);
