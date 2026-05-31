@@ -19,11 +19,9 @@ import {
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import { ShareLinkDialog } from "./share-link-dialog";
 
-// Auth-aware nav for the (public) layout. The layout itself stays static (no
-// server cookie read); auth state comes from the app-wide currentUser cache on
-// the client, so logged-in viewers get a real Profile/Share/Settings nav on
-// public pages instead of the all-/login fallback. Icons stay stable across the
-// auth flip — only the auth-dependent slots' targets/behavior change.
+// Client-side auth (currentUser cache) so the (public) layout stays static —
+// logged-in viewers still get a Profile/Share/Settings nav, not the all-/login
+// fallback.
 export function PublicMenubar() {
   const { data: currentUser } = useQuery({
     queryKey: queryKeys.currentUser(),

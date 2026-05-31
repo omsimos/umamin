@@ -1070,10 +1070,8 @@ async function getUserProfileViewerOverlay(
   cacheTag(`user:${username}:blocked-by:${viewerId}`);
   cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
-  // All three flags are independent `exists(...)` index probes against the same
-  // target row — fold them into a single round-trip instead of three (Turso
-  // bills per query). This runs on every cache-missed authenticated profile
-  // view, so 3 -> 1 network hits is a real saving.
+  // Fold the three exists() probes into one round-trip (was three) — runs on
+  // every cache-missed authenticated profile view.
   const [row] = await db
     .select({
       isFollowing: exists(
@@ -1174,9 +1172,8 @@ export async function getUserProfileData(
 
 type FollowDirection = "followers" | "following";
 
-// Public, cached page of a user's followers / following. Keyset-paginated on
-// the existing (anchor_id, created_at) composite indexes so a cache miss reads
-// ~PAGE_SIZE follow rows + one batched user fetch — never a full-table scan.
+// Keyset-paginated on the existing (anchor_id, created_at) indexes — a cache
+// miss reads ~PAGE_SIZE follow rows + one batched user fetch, not a full scan.
 async function getPublicFollowListPage(
   userId: string,
   cursor: string | null,
@@ -1258,10 +1255,8 @@ async function getPublicFollowListPage(
   };
 }
 
-// Per-viewer overlay for a follow list: which of the listed users does the
-// viewer follow, and which are blocked (either direction, to hide them).
-// Keyed on (viewerId, sorted listed ids); refreshes via the viewer's
-// user-following / user-blocks tags — see getPostFeedViewerOverlay.
+// Per-viewer overlay; keyed on (viewerId, sorted ids) and refreshed via the
+// viewer's user-following / user-blocks tags (see getPostFeedViewerOverlay).
 async function getFollowListViewerOverlay(
   viewerId: string,
   listedUserIds: string[],

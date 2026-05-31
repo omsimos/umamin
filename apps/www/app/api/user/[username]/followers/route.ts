@@ -17,9 +17,6 @@ export async function GET(
     const username = formatUsername((await params).username);
     const cursor = req.nextUrl.searchParams.get("cursor");
 
-    // Resolve username -> id via the already-cached profile read (no extra DB
-    // cost) so the cache key / list query keys on the stable user id. The
-    // profile read and the session read are independent — run them together.
     const [profile, { session }] = await Promise.all([
       username ? getPublicUserProfileData(username) : Promise.resolve(null),
       getSession(),

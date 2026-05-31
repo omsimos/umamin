@@ -42,11 +42,9 @@ const limiters: Record<LimiterName, Ratelimit> | null = redis
         ephemeralCache: new Map(),
         analytics: false,
       }),
-      // IP-keyed throttle for cursor-paginated / DB-backed GET endpoints. Caps
-      // cache-miss scraping (a varied ?cursor= forces fresh Turso row scans);
-      // CDN-cached hits never reach the function, so they're unaffected.
-      // Generous on purpose — normal browsing / infinite-scroll stays well
-      // under it. Tune here if NAT'd networks trip it.
+      // Throttles cache-miss scraping (varied ?cursor= forces fresh Turso
+      // scans); CDN-cached hits never reach the function. Generous — bump if
+      // NAT'd networks trip it.
       read: new Ratelimit({
         redis,
         limiter: Ratelimit.slidingWindow(100, "60 s"),
@@ -98,12 +96,7 @@ export async function checkRateLimit(
   return success;
 }
 
-/**
- * IP-keyed read throttle for the cursor-paginated / DB-backed GET routes. Caps
- * cache-miss scraping without touching CDN-cached hits (which never reach the
- * function). No-ops without Redis, like checkRateLimit. Returns true when the
- * request may proceed.
- */
+// IP-keyed read throttle for the DB-backed GET routes; no-ops without Redis.
 export async function checkReadRateLimit(): Promise<boolean> {
   const ip = await getClientIp();
   return checkRateLimit("read", `read:${ip}`);

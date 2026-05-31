@@ -25,8 +25,7 @@ const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
 
 export function UserCard({
   user,
-  // Optional top-right slot in the header (e.g. an "Edit profile" button on
-  // your own profile). Other contexts (inbox, other people's profiles) omit it.
+  // Optional top-right header slot (e.g. Edit profile on your own card).
   action,
 }: {
   user: PublicUser;
