@@ -42,6 +42,8 @@ import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
 import type { FeedResponse, PostResponse } from "@/lib/query-types";
 import {
   getActionError,
+  isAlreadyLiked,
+  isAlreadyRemoved,
   isAlreadyReposted,
   isOlderThanOneYear,
 } from "@/lib/utils";
@@ -66,12 +68,9 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
   const [repostDialogOpen, setRepostDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const syncPostCache = (
-    nextLiked: boolean,
-    nextLikes: number,
-    nextReposted: boolean,
-    nextReposts: number,
-  ) => {
+  // Field-scoped cache writes: like and repost each patch ONLY their own pair so
+  // a concurrent like + repost can't clobber each other with stale closure values.
+  const syncLikeCache = (nextLiked: boolean, nextLikes: number) => {
     queryClient.setQueryData<InfiniteData<FeedResponse>>(
       queryKeys.posts(),
       (current) =>
@@ -79,8 +78,6 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
           ...post,
           isLiked: nextLiked,
           likeCount: nextLikes,
-          isReposted: nextReposted,
-          repostCount: nextReposts,
         })),
     );
     queryClient.setQueryData<PostResponse>(queryKeys.post(data.id), (current) =>
@@ -88,6 +85,23 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
         ...post,
         isLiked: nextLiked,
         likeCount: nextLikes,
+      })),
+    );
+  };
+
+  const syncRepostCache = (nextReposted: boolean, nextReposts: number) => {
+    queryClient.setQueryData<InfiniteData<FeedResponse>>(
+      queryKeys.posts(),
+      (current) =>
+        patchPostAcrossFeed(current, data.id, (post) => ({
+          ...post,
+          isReposted: nextReposted,
+          repostCount: nextReposts,
+        })),
+    );
+    queryClient.setQueryData<PostResponse>(queryKeys.post(data.id), (current) =>
+      patchPostResponse(current, (post) => ({
+        ...post,
         isReposted: nextReposted,
         repostCount: nextReposts,
       })),
@@ -126,9 +140,11 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
   const handleLike = async () => {
     const prevLiked = liked;
     const prevLikes = likes;
+    const nextLiked = !prevLiked;
+    const nextLikes = prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1;
 
-    setLiked(!prevLiked);
-    setLikes((v) => (prevLiked ? Math.max(v - 1, 0) : v + 1));
+    setLiked(nextLiked);
+    setLikes(nextLikes);
 
     try {
       const res = await handleLikeAction(prevLiked);
@@ -136,12 +152,16 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
       if (actionError) {
         throw new Error(actionError);
       }
-      syncPostCache(
-        !prevLiked,
-        prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1,
-        reposted,
-        reposts,
-      );
+
+      // Server no-op (like row already in target state): the DB count never
+      // moved, so drop the optimistic ±1 to avoid permanently drifting the cache.
+      if (isAlreadyLiked(res) || isAlreadyRemoved(res)) {
+        setLikes(prevLikes);
+        syncLikeCache(nextLiked, prevLikes);
+        return;
+      }
+
+      syncLikeCache(nextLiked, nextLikes);
       toast.success(prevLiked ? "Post unliked." : "Post liked.");
     } catch (err) {
       // rollback state
@@ -166,10 +186,16 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
         throw new Error(actionError);
       }
       if (prevReposted) {
-        // Optimistic update already applied -1; server doesn't further decrement
-        // on alreadyRemoved, so sync once (no undercount).
+        // Remove branch. If the row was already gone, the DB count never moved,
+        // so restore our optimistic -1 instead of persisting an undercount.
+        if (isAlreadyRemoved(res)) {
+          setReposts(prevReposts);
+          syncRepostCache(false, prevReposts);
+          toast.success("Repost removed.");
+          return;
+        }
         toast.success("Repost removed.");
-        syncPostCache(liked, likes, false, Math.max(prevReposts - 1, 0));
+        syncRepostCache(false, Math.max(prevReposts - 1, 0));
       } else {
         if (isAlreadyReposted(res)) {
           setReposted(prevReposted);
@@ -178,7 +204,7 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
           return;
         }
         toast.success("Reposted.");
-        syncPostCache(liked, likes, true, prevReposts + 1);
+        syncRepostCache(true, prevReposts + 1);
       }
     } catch (err) {
       setReposted(prevReposted);
@@ -215,7 +241,7 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
         return;
       }
       toast.success("Quote reposted.");
-      syncPostCache(liked, likes, true, prevReposts + 1);
+      syncRepostCache(true, prevReposts + 1);
     } catch (err) {
       setReposted(prevReposted);
       setReposts(prevReposts);
@@ -259,7 +285,7 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
 
           <div className="flex items-center gap-2 text-muted-foreground">
             <TimeAgo
-              date={author.createdAt}
+              date={data.createdAt}
               className="text-muted-foreground text-xs"
             />
             {isAuthenticated && (

@@ -82,7 +82,10 @@ export async function createReplyAction({
 
     const encryptedReply = await aesEncrypt(params.data.content);
 
-    await db
+    // Scope to the viewer's own messages (prevents IDOR) AND confirm a row was
+    // actually updated — otherwise a missing/non-owned messageId would return
+    // success and the optimistic UI would show a reply that was never saved.
+    const updated = await db
       .update(messageTable)
       .set({
         reply: encryptedReply,
@@ -92,7 +95,12 @@ export async function createReplyAction({
           eq(messageTable.id, messageId),
           eq(messageTable.receiverId, session.userId),
         ),
-      );
+      )
+      .returning({ id: messageTable.id });
+
+    if (updated.length === 0) {
+      return { error: "Message not found" };
+    }
 
     updateTag(`messages:received:${session.userId}`);
 
