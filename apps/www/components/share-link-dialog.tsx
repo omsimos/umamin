@@ -32,17 +32,13 @@ export function ShareLinkDialog({ username }: { username: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          aria-label="Share link"
-          title="Share link"
-          // Matches the sibling menu-bar items (full-width, py-5, rounded-lg,
-          // muted hover) while overriding Button's default size/padding/hover.
-          className="h-auto w-full justify-center rounded-lg px-0 py-5 hover:bg-muted text-muted-foreground"
-        >
-          <LinkIcon className="size-6" />
-        </Button>
+        {/* Plain <button> on purpose: this is one item in the menu-bar, whose
+            layout/hover/sizing come from the parent's `*:` child selectors —
+            its siblings are plain <Link>s. A <Button> here fights those rules
+            (inline-flex vs flex, its own box model) and broke the bar. */}
+        <button type="button" aria-label="Share link" title="Share link">
+          <LinkIcon className="h-6 w-6" />
+        </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
