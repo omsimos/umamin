@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { privateJson } from "@/lib/private-json";
+import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getPostById } from "@/lib/server/data";
 
 export async function GET(
@@ -7,6 +8,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    if (!(await checkReadRateLimit())) {
+      return privateJson({ error: RATE_LIMIT_ERROR }, { status: 429 });
+    }
+
     const { session } = await getSession();
     const { id } = await params;
 
