@@ -26,17 +26,23 @@ export function PostBody({
 
     const [full, url, mention, hashtag] = m;
     if (url) {
+      // The greedy [^\s]+ swallows trailing sentence punctuation / closing
+      // brackets into the URL; strip them back out (and re-emit as plain text)
+      // so the href stays valid — e.g. "https://x.com." -> link + ".".
+      const trailing = url.match(/[).,!?;:'"\]]+$/)?.[0] ?? "";
+      const cleanUrl = trailing ? url.slice(0, -trailing.length) : url;
       nodes.push(
         <a
           key={key++}
-          href={url}
+          href={cleanUrl}
           target="_blank"
           rel="noopener noreferrer nofollow"
           className="text-pink-500 hover:underline break-all"
         >
-          {url}
+          {cleanUrl}
         </a>,
       );
+      if (trailing) nodes.push(trailing);
     } else if (mention) {
       nodes.push(
         <Link

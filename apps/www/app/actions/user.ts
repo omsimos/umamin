@@ -34,7 +34,6 @@ import {
   createSession,
   deleteSessionTokenCookie,
   generateSessionToken,
-  invalidateSession,
   invalidateUserSessions,
   setSessionTokenCookie,
 } from "@/lib/session";
@@ -213,7 +212,7 @@ export async function generalSettingsAction(
 }
 
 export async function deleteAccountAction() {
-  const { user, session } = await getSession();
+  const { user } = await getSession();
 
   if (!user) {
     throw new Error("Unauthorized");
@@ -227,6 +226,11 @@ export async function deleteAccountAction() {
 
   try {
     const uid = user.id;
+
+    // Revoke every session (this device + others) and clear their cached entries
+    // BEFORE the cascade removes the rows — otherwise other devices' cached
+    // sessions would keep validating for up to the cache TTL after deletion.
+    await invalidateUserSessions(uid);
 
     await db.transaction(async (tx) => {
       // FK CASCADE removes this user's follow/like/comment/repost rows when the
@@ -339,7 +343,6 @@ export async function deleteAccountAction() {
       await tx.delete(userTable).where(eq(userTable.id, uid));
     });
 
-    await invalidateSession(session.id);
     await deleteSessionTokenCookie();
 
     // Invalidate user's cached data by tag
