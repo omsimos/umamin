@@ -463,9 +463,7 @@ export async function followUserAction({ userId }: { userId: string }) {
       return { error: "User not found." };
     }
 
-    // Enforce block state on the SERVER, not just via the disabled button — a
-    // crafted request must not be able to follow across a block in either
-    // direction.
+    // Enforce block state server-side, not just via the disabled button.
     const blockExists = await db.query.userBlockTable.findFirst({
       columns: { id: true },
       where: or(
@@ -485,10 +483,8 @@ export async function followUserAction({ userId }: { userId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      // Insert the edge first and let the unique (follower, following) index
-      // settle the race: a conflict means the edge already existed, so we must
-      // NOT run the increments again — they'd drift the denormalized counts
-      // upward permanently (delete-account only ever decrements them).
+      // Increment only if the insert created the edge — a conflict (already
+      // following) must not double-count the denormalized counters.
       const inserted = await tx
         .insert(userFollowTable)
         .values({
@@ -525,8 +521,6 @@ export async function followUserAction({ userId }: { userId: string }) {
     if (user?.username) {
       updateTag(`user:${user.username}`);
     }
-    // The follower's following-list (+ their list overlays) and the target's
-    // followers-list both changed.
     updateTag(`user-following:${session.userId}`);
     updateTag(`user-followers:${userId}`);
 
@@ -568,8 +562,8 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      // Delete first and gate the decrements on a row actually being removed,
-      // so two concurrent unfollows can't each decrement the counts (drift).
+      // Decrement only if a row was deleted — concurrent unfollows must not
+      // double-count.
       const removed = await tx
         .delete(userFollowTable)
         .where(
@@ -607,8 +601,6 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     if (user?.username) {
       updateTag(`user:${user.username}`);
     }
-    // The follower's following-list (+ their list overlays) and the target's
-    // followers-list both changed.
     updateTag(`user-following:${session.userId}`);
     updateTag(`user-followers:${userId}`);
 
@@ -650,8 +642,7 @@ export async function blockUserAction({ userId }: { userId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      // Insert first; a conflict means the block already existed, so skip the
-      // follow-severing + counter work below (idempotent, no drift).
+      // Conflict → already blocked; skip the follow-severing below.
       const insertedBlock = await tx
         .insert(userBlockTable)
         .values({
@@ -665,10 +656,8 @@ export async function blockUserAction({ userId }: { userId: string }) {
         return { success: true, alreadyBlocked: true };
       }
 
-      // Blocking severs the follow relationship in BOTH directions (matches
-      // every major platform — otherwise the blocked user keeps "following"
-      // the blocker and still counts toward their followers). Each decrement
-      // pair is gated on a row actually being deleted so counts can't drift.
+      // Blocking severs the follow both ways (like every major platform); each
+      // decrement is gated on an actual delete.
       const removedOutgoing = await tx
         .delete(userFollowTable)
         .where(
@@ -732,13 +721,10 @@ export async function blockUserAction({ userId }: { userId: string }) {
     updateTag(`user:${target.username}:followed:${session.userId}`);
     if (user?.username) {
       updateTag(`user:${user.username}:blocked-by:${userId}`);
-      // The blocked user no longer follows the blocker (reverse-follow severed
-      // above) — refresh their view of the blocker's profile follow state.
       updateTag(`user:${user.username}:followed:${userId}`);
     }
     updateTag(`user-blocks:${session.userId}`);
     updateTag(`user-blocks:${userId}`);
-    // Both follow directions were severed above — refresh every affected list.
     updateTag(`user-following:${session.userId}`);
     updateTag(`user-followers:${userId}`);
     updateTag(`user-following:${userId}`);

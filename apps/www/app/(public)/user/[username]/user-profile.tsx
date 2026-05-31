@@ -76,10 +76,8 @@ export function UserProfile({ username, initialUser }: Props) {
 
   const profile = user ?? initialUser;
 
-  // Client-side self check via the app-wide currentUser cache (usually a hit) —
-  // keeps the profile page's server shell static (no cookie read). Drives the
-  // self-only YouTabs + the Edit/Follow action swap. The lazy `viewer` query
-  // still backs the follow/block state for other people's profiles.
+  // Client-side self-check (app-wide currentUser cache) keeps the profile's
+  // server shell static — no cookie read.
   const { data: currentUser } = useQuery({
     queryKey: queryKeys.currentUser(),
     queryFn: fetchCurrentUserOptional,
