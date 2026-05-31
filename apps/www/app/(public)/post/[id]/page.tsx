@@ -117,7 +117,11 @@ export default async function Post({
         )}
 
         <div className="space-y-6 my-6">
-          <CommentsList isAuthenticated={!!user} postId={id} />
+          <CommentsList
+            isAuthenticated={!!user}
+            currentUserId={user?.id}
+            postId={id}
+          />
         </div>
       </HydrationBoundary>
     </main>

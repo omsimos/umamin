@@ -192,6 +192,64 @@ export async function createCommentAction(
 
 const idSchema = z.string().min(1);
 
+export async function deleteCommentAction({
+  commentId,
+}: {
+  commentId: string;
+}) {
+  try {
+    const parsed = idSchema.safeParse(commentId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
+
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `delcomment:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    // Resolve + authorize server-side (don't trust a client-supplied postId).
+    const comment = await db.query.postCommentTable.findFirst({
+      columns: { id: true, authorId: true, postId: true },
+      where: eq(postCommentTable.id, commentId),
+    });
+
+    if (!comment || comment.authorId !== session.userId) {
+      return { error: "Comment not found" };
+    }
+
+    await db.transaction(async (tx) => {
+      // The comment's own likes cascade via FK (post_comment_like → comment).
+      await tx
+        .delete(postCommentTable)
+        .where(eq(postCommentTable.id, commentId));
+
+      // Inverse of createCommentAction's increment; guarded against underflow.
+      await tx
+        .update(postTable)
+        .set({
+          commentCount: sql`CASE WHEN ${postTable.commentCount} > 0 THEN ${postTable.commentCount} - 1 ELSE 0 END`,
+        })
+        .where(eq(postTable.id, comment.postId));
+    });
+
+    // Mirror createCommentAction: refresh the single post + its thread, leave
+    // the feed's commentCount eventually-consistent (<=120s).
+    updateTag(`post:${comment.postId}`);
+    updateTag(`post-comments:${comment.postId}`);
+
+    return { success: true, postId: comment.postId };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
 export async function addLikeAction({ postId }: { postId: string }) {
   try {
     const parsed = idSchema.safeParse(postId);

@@ -150,6 +150,21 @@ export function replaceComment(
   };
 }
 
+export function removeComment(
+  previous: InfiniteData<CommentsResponse> | undefined,
+  commentId: string,
+) {
+  if (!previous) return previous;
+
+  return {
+    ...previous,
+    pages: previous.pages.map((page) => ({
+      ...page,
+      data: page.data.filter((comment) => comment.id !== commentId),
+    })),
+  };
+}
+
 export function patchComment(
   previous: InfiniteData<CommentsResponse> | undefined,
   commentId: string,

@@ -26,9 +26,14 @@ import type { CommentData } from "@/types/post";
 type CommentsListProps = {
   postId: string;
   isAuthenticated: boolean;
+  currentUserId?: string;
 };
 
-export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
+export function CommentsList({
+  postId,
+  isAuthenticated,
+  currentUserId,
+}: CommentsListProps) {
   const {
     data,
     error,
@@ -163,6 +168,7 @@ export function CommentsList({ postId, isAuthenticated }: CommentsListProps) {
                 <PostCard
                   isComment
                   isAuthenticated={isAuthenticated}
+                  currentUserId={currentUserId}
                   key={comment.id}
                   data={comment}
                   className="border-b"

@@ -59,6 +59,7 @@ import {
   isOlderThanOneYear,
 } from "@/lib/utils";
 import type { CommentData, PostData } from "@/types/post";
+import { CommentMenu } from "./comment-menu";
 import { PostMenu } from "./post-menu";
 import { RepostDialog } from "./repost-dialog";
 
@@ -377,6 +378,16 @@ export function PostCard({
                 postId={data.id}
                 authorId={author?.id ?? ""}
                 imageId={imageTargetId}
+                isAuthenticated={isAuthenticated}
+                currentUserId={currentUserId}
+              />
+            )}
+
+            {isComment && isAuthenticated && commentPostId && (
+              <CommentMenu
+                commentId={data.id}
+                postId={commentPostId}
+                authorId={author?.id ?? ""}
                 isAuthenticated={isAuthenticated}
                 currentUserId={currentUserId}
               />
