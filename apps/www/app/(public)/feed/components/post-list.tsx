@@ -12,6 +12,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
+import { Button } from "@umamin/ui/components/button";
 import {
   AlertCircleIcon,
   ArrowUpIcon,
@@ -195,14 +196,14 @@ export function PostList({
     <div className="w-full">
       {showNewPosts && (
         <div className="sticky top-2 z-20 mb-4 flex justify-center">
-          <button
+          <Button
             type="button"
             onClick={handleShowNewPosts}
-            className="flex items-center gap-1.5 rounded-full bg-pink-500 px-4 py-1.5 text-sm font-medium text-white shadow-lg transition-colors hover:bg-pink-600"
+            className="h-auto flex items-center gap-1.5 rounded-full bg-pink-500 px-4 py-1.5 text-sm font-medium text-white shadow-lg transition-colors hover:bg-pink-600 hover:text-white"
           >
-            <ArrowUpIcon className="h-4 w-4" />
+            <ArrowUpIcon className="size-4" />
             Show new posts
-          </button>
+          </Button>
         </div>
       )}
 

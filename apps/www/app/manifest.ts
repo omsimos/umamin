@@ -6,7 +6,10 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Umamin",
     description:
       "Umamin is an open-source social platform for sending and receiving encrypted anonymous messages.",
-    start_url: "/inbox",
+    // Public, always-200 entry. /inbox is auth-only (redirects to /login) and
+    // robots-disallowed, which fails PWA installability/start_url audits.
+    // PwaRedirect still forwards authenticated standalone users to /inbox. [#35]
+    start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

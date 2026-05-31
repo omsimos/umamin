@@ -71,7 +71,7 @@ export function ReplyDialog(props: Props) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-xl p-0">
-        <DialogTitle className="sr-only"></DialogTitle>
+        <DialogTitle className="sr-only">Reply to message</DialogTitle>
         <div
           className={cn(
             "h-full max-h-[500px] overflow-scroll px-5 sm:px-7 py-10",

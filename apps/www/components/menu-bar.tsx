@@ -27,7 +27,7 @@ export async function Menubar() {
         <ScrollTextIcon className="h-6 w-6" />
       </Link>
 
-      <Link href="/login" aria-label="home button" title="Inbox">
+      <Link href="/login" aria-label="Inbox" title="Inbox">
         <LayoutDashboardIcon />
       </Link>
 

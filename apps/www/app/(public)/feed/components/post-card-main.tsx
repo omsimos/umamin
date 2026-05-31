@@ -7,6 +7,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import { Button } from "@umamin/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -305,41 +306,51 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
         <PostBody content={data.content} className="mt-1" />
 
         <div className="flex items-center space-x-4 text-muted-foreground mt-4">
-          <button
+          <Button
             disabled={!isAuthenticated}
             type="button"
+            variant="ghost"
             onClick={handleLike}
             aria-label={liked ? "Unlike post" : "Like post"}
             aria-pressed={liked}
-            className={cn("flex space-x-1 items-center", {
-              "text-pink-500": liked,
-            })}
+            // Ghost + neutralizers preserve the bare inline look; only the
+            // focus-visible ring is added.
+            className={cn(
+              "h-auto gap-0 p-0 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
+              liked
+                ? "text-pink-500 hover:text-pink-500"
+                : "hover:text-muted-foreground",
+            )}
           >
             <HeartIcon
-              className={cn("h-5 w-5", {
+              className={cn("size-5", {
                 "fill-pink-500": liked,
               })}
             />
             <span>{likes}</span>
-          </button>
+          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Button
                 disabled={!isAuthenticated}
                 type="button"
+                variant="ghost"
                 aria-label="Repost options"
-                className={cn("flex space-x-1 items-center", {
-                  "text-emerald-600": reposted,
-                })}
+                className={cn(
+                  "h-auto gap-0 p-0 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
+                  reposted
+                    ? "text-emerald-600 hover:text-emerald-600"
+                    : "hover:text-muted-foreground",
+                )}
               >
                 <Repeat2Icon
-                  className={cn("h-5 w-5", {
+                  className={cn("size-5", {
                     "text-emerald-600": reposted,
                   })}
                 />
                 <span>{reposts}</span>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center">
               <DropdownMenuItem

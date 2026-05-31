@@ -32,9 +32,17 @@ export function ShareLinkDialog({ username }: { username: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button type="button" title="Share Link">
-          <LinkIcon className="h-6 w-6" />
-        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          aria-label="Share link"
+          title="Share link"
+          // Matches the sibling menu-bar items (full-width, py-5, rounded-lg,
+          // muted hover) while overriding Button's default size/padding/hover.
+          className="h-auto w-full justify-center rounded-lg px-0 py-5 hover:bg-muted text-muted-foreground"
+        >
+          <LinkIcon className="size-6" />
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
