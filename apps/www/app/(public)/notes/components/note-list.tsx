@@ -75,7 +75,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     count: totalRows,
     estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
     paddingEnd: 100,
-    overscan: 12,
+    overscan: 5,
     scrollMargin,
     getItemKey: (index) => {
       if (hasNextPage && index === totalRows - 1) return "loader";
