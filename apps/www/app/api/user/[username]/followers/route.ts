@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { privateJson } from "@/lib/private-json";
+import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getFollowListPage, getPublicUserProfileData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 
@@ -9,6 +10,10 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> },
 ) {
   try {
+    if (!(await checkReadRateLimit())) {
+      return privateJson({ error: RATE_LIMIT_ERROR }, { status: 429 });
+    }
+
     const username = formatUsername((await params).username);
     const cursor = req.nextUrl.searchParams.get("cursor");
 

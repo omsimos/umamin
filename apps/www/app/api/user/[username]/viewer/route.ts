@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { privateJson } from "@/lib/private-json";
+import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getUserProfileViewerData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 
@@ -8,6 +9,10 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> },
 ) {
   try {
+    if (!(await checkReadRateLimit())) {
+      return privateJson({ error: RATE_LIMIT_ERROR }, { status: 429 });
+    }
+
     const { username: rawUsername } = await params;
     const username = formatUsername(rawUsername);
     const { session } = await getSession();
