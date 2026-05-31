@@ -1,7 +1,12 @@
 import { Button } from "@umamin/ui/components/button";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Demo } from "@/components/demo";
 import { PwaRedirect } from "@/components/pwa-redirect";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function Home() {
   return (

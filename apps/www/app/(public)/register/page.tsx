@@ -16,8 +16,9 @@ export const metadata: Metadata = {
     "sign up for Umamin",
     "anonymous messaging sign up",
   ],
+  // Thin utility page — keep it out of the index (still followable). [audit #39]
   robots: {
-    index: true,
+    index: false,
     follow: true,
   },
   openGraph: {
