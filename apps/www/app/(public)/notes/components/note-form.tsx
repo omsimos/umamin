@@ -23,6 +23,11 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
   const updateNoteMutation = useMutation({
     mutationFn: createNoteAction,
     onMutate: async (nextValues) => {
+      // Cancel in-flight fetches so a settling refetch can't overwrite the
+      // optimistic note (mirrors reply-form.tsx).
+      await queryClient.cancelQueries({ queryKey: queryKeys.currentNote() });
+      await queryClient.cancelQueries({ queryKey: queryKeys.notes() });
+
       const previousNote = queryClient.getQueryData<NoteItem | null>(
         queryKeys.currentNote(),
       );
@@ -58,8 +63,18 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         previousNotes,
       };
     },
-    onSuccess: (data) => {
+    onSuccess: (data, _values, ctx) => {
       if (data?.error) {
+        // The action returns { error } without throwing, so roll back the
+        // optimistic note here (onError never fires for this path).
+        queryClient.setQueryData<NoteItem | null>(
+          queryKeys.currentNote(),
+          ctx?.previousNote,
+        );
+        queryClient.setQueryData<InfiniteData<NotesResponse>>(
+          queryKeys.notes(),
+          ctx?.previousNotes,
+        );
         toast.error(data.error ?? "Couldn't share note.");
         return;
       }

@@ -10,8 +10,16 @@ export function generateUsernameId(length = 12) {
   return id;
 }
 
-export function shortTimeAgo(date: Date) {
-  const distance = formatDistanceToNow(date);
+export function shortTimeAgo(date: Date | string) {
+  // Direct callers (note-card, repost-header) receive JSON-serialized ISO
+  // strings, not Date objects — normalize and guard so a bad value renders
+  // nothing instead of "Invalid Date".
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) {
+    return "";
+  }
+
+  const distance = formatDistanceToNow(d);
 
   if (distance === "less than a minute") {
     return "just now";
@@ -159,6 +167,15 @@ export function getActionError(res: unknown): string | undefined {
     return (res as { error: string }).error || undefined;
   }
   return undefined;
+}
+
+export function isAlreadyLiked(res: unknown): res is { alreadyLiked: true } {
+  return (
+    !!res &&
+    typeof res === "object" &&
+    "alreadyLiked" in res &&
+    (res as { alreadyLiked?: boolean }).alreadyLiked === true
+  );
 }
 
 export function isAlreadyReposted(
