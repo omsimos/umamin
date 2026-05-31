@@ -33,12 +33,14 @@ export default function CopyLink({ username }: { username: string }) {
       type="button"
       variant="ghost"
       onClick={() => onCopy(url)}
-      // Neutralize Button's size/padding/gap/hover so it keeps the original
-      // inline icon+badge look; we only want the focus-visible ring it adds.
+      // Inner <span> keeps the icon off the Button's direct children, so its
+      // `has-[>svg]:px-3` can't override `p-0` and re-add left padding.
       className="h-auto justify-start gap-0 p-0 hover:bg-transparent text-muted-foreground flex items-center cursor-pointer"
     >
-      <Link2Icon className="size-4 mr-2" />
-      <Badge variant="secondary">{url.replace(/(^\w+:|^)\/\//, "")}</Badge>
+      <span className="flex items-center gap-2">
+        <Link2Icon className="size-4" />
+        <Badge variant="secondary">{url.replace(/(^\w+:|^)\/\//, "")}</Badge>
+      </span>
     </Button>
   );
 }
