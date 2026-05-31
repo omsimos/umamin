@@ -16,8 +16,10 @@ export const metadata: Metadata = {
     "anonymous messaging login",
     "encrypted messages login",
   ],
+  // Thin utility page — keep it out of the index (still followable) so it
+  // doesn't waste crawl budget or dilute quality signals. [audit #39]
   robots: {
-    index: true,
+    index: false,
     follow: true,
   },
   openGraph: {

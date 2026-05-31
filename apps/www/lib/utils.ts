@@ -54,6 +54,17 @@ export function shortTimeAgo(date: Date | string) {
 }
 
 export const getBaseUrl = () => {
+  // Prefer an explicit site URL, then Vercel's STABLE production domain.
+  // VERCEL_URL is the per-deployment host (e.g. umamin-abc123.vercel.app) — wrong
+  // for canonical/OG/sitemap — so it's only a preview-env fallback now. [#37]
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }

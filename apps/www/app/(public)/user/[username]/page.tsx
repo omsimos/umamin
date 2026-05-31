@@ -15,18 +15,27 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const param = await params;
   const username = formatUsername(param.username);
+  // Cached read (same "use cache" fn the page uses → cache hit, no extra DB
+  // cost) so we can noindex missing profiles instead of soft-404ing. [#40]
+  const user = username ? await getPublicUserProfileData(username) : null;
 
-  const title = username
-    ? `(@${username}) on Umamin`
-    : "Umamin — User not found";
+  if (!user) {
+    return {
+      title: "Umamin — User not found",
+      description: "This user does not exist on Umamin.",
+      robots: { index: false },
+    };
+  }
 
-  const description = username
-    ? `Profile of @${username} on Umamin. Join Umamin to connect with @${username} and engage in anonymous messaging.`
-    : "This user does not exist on Umamin.";
+  const title = `(@${username}) on Umamin`;
+  const description = `Profile of @${username} on Umamin. Join Umamin to connect with @${username} and engage in anonymous messaging.`;
 
   return {
     title,
     description,
+    // Relative URLs resolved against metadataBase keep canonical == og:url and
+    // a consistent host across the site. [audit #36, #38]
+    alternates: { canonical: `/user/${username}` },
     keywords: [
       `Umamin profile`,
       `@${username}`,
@@ -38,7 +47,7 @@ export async function generateMetadata({
       type: "profile",
       title,
       description,
-      url: `https://www.umamin.link/user/${username}`,
+      url: `/user/${username}`,
     },
     twitter: {
       card: "summary",
