@@ -17,6 +17,7 @@ import {
 import dynamic from "next/dynamic";
 import { isOlderThanOneYear } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
+import { FollowListDrawer } from "./follow-list-drawer";
 import { ShareButton } from "./share-button";
 
 const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
@@ -66,20 +67,11 @@ export function UserCard({ user }: { user: PublicUser }) {
           {user?.bio}
         </p>
 
-        <div className="mt-3 flex gap-4 text-sm text-muted-foreground">
-          <span>
-            <span className="text-foreground font-semibold">
-              {user.followingCount ?? 0}
-            </span>{" "}
-            Following
-          </span>
-          <span>
-            <span className="text-foreground font-semibold">
-              {user.followerCount ?? 0}
-            </span>{" "}
-            Followers
-          </span>
-        </div>
+        <FollowListDrawer
+          username={user.username}
+          followerCount={user.followerCount ?? 0}
+          followingCount={user.followingCount ?? 0}
+        />
 
         <div className="mt-4 space-y-1">
           {user.quietMode && (

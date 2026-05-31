@@ -21,6 +21,8 @@ export const queryKeys = {
   userProfile: (username: string) => ["user-profile", username] as const,
   userProfileViewer: (username: string) =>
     ["user-profile-viewer", username] as const,
+  followers: (username: string) => ["followers", username] as const,
+  following: (username: string) => ["following", username] as const,
   receivedMessages: () => ["received_messages"] as const,
   sentMessages: () => ["sent_messages"] as const,
 };
