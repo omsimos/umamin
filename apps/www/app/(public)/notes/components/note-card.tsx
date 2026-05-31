@@ -4,6 +4,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
+import { Button } from "@umamin/ui/components/button";
 import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
 import { cn } from "@umamin/ui/lib/utils";
 import {
@@ -112,12 +113,17 @@ export function NoteCard({ data, isAuthenticated }: Props) {
               {user?.quietMode && <MessageSquareXIcon className="size-5" />}
 
               {isAuthenticated && !data.isAnonymous && !user?.quietMode && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Reply"
+                  aria-expanded={replyOpen}
                   onClick={() => setReplyOpen((prev) => !prev)}
+                  className="size-auto p-0 hover:bg-transparent text-muted-foreground"
                 >
                   <MessageSquareTextIcon className="size-5" />
-                </button>
+                </Button>
               )}
 
               {isAuthenticated && (

@@ -12,6 +12,7 @@ import {
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@umamin/ui/components/drawer";
@@ -136,6 +137,9 @@ export function RepostDialog({
       <DrawerContent className="p-4">
         <DrawerHeader>
           <DrawerTitle>Repost</DrawerTitle>
+          <DrawerDescription className="sr-only">
+            Repost with or without a quote.
+          </DrawerDescription>
         </DrawerHeader>
         {body}
         {actions}

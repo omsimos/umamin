@@ -184,7 +184,7 @@ export default function ReplyForm({ user, postId }: Props) {
           ) : (
             <SendIcon className="h-4 w-4" />
           )}
-          <span className="sr-only">SendIcon</span>
+          <span className="sr-only">Send</span>
         </Button>
       </form>
     </div>

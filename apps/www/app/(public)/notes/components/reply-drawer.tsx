@@ -39,7 +39,7 @@ export function ReplyDrawer({ isOpen, setIsOpen, note }: ReplyDrawerProps) {
     return (
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="p-0">
-          <DialogTitle className="sr-only"></DialogTitle>
+          <DialogTitle className="sr-only">Reply to note</DialogTitle>
           <ChatForm note={note} />
         </DialogContent>
       </Dialog>
@@ -49,7 +49,7 @@ export function ReplyDrawer({ isOpen, setIsOpen, note }: ReplyDrawerProps) {
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent className="grid place-items-center">
-        <DrawerTitle className="sr-only"></DrawerTitle>
+        <DrawerTitle className="sr-only">Reply to note</DrawerTitle>
         <ChatForm note={note} />
       </DrawerContent>
     </Drawer>
@@ -127,7 +127,7 @@ const ChatForm = ({ note }: ChatFormProps) => {
               ) : (
                 <SendIcon className="h-4 w-4" />
               )}
-              <span className="sr-only">SendIcon</span>
+              <span className="sr-only">Send</span>
             </Button>
           </form>
         </div>

@@ -1,6 +1,8 @@
 "use client";
 
+import { Button } from "@umamin/ui/components/button";
 import { Share2Icon } from "lucide-react";
+import { toast } from "sonner";
 
 const onShare = (username: string) => {
   try {
@@ -14,9 +16,8 @@ const onShare = (username: string) => {
       ) {
         navigator.share({ url });
       } else {
-        navigator.clipboard.writeText(
-          `${window.location.origin}/user/${username}`,
-        );
+        navigator.clipboard.writeText(url);
+        toast.success("Profile link copied.");
       }
     }
   } catch (err) {
@@ -26,8 +27,14 @@ const onShare = (username: string) => {
 
 export function ShareButton({ username }: { username: string }) {
   return (
-    <button type="button" onClick={() => onShare(username)}>
-      <Share2Icon className="h-4 w-4 text-muted-foreground" />
-    </button>
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      aria-label="Share profile"
+      onClick={() => onShare(username)}
+    >
+      <Share2Icon className="size-4 text-muted-foreground" />
+    </Button>
   );
 }
