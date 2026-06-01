@@ -18,6 +18,32 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [4.9.0] - 2026-06-02
+
+### Added
+
+- Share a saved post, message, or note image straight to your device's share sheet,
+  including saving it directly to your photo library on iOS and Android.
+- Posts now keep the line breaks you write.
+
+### Changed
+
+- Post pages open in a focused view: a top bar with a back button and the post's menu,
+  and a reply box pinned to the bottom of the screen.
+- Saved images are now exported as a square (1:1) with padding around the card, so they
+  are ready to post on social media.
+- The center navigation button now opens your inbox (messages) instead of your profile.
+
+### Fixed
+
+- Long links and unbroken text in posts no longer stretch the layout off-screen.
+
+### Security & Privacy
+
+- Links in posts now ask for confirmation before taking you off Umamin, with a stronger
+  warning when a link looks risky — for example link shorteners, non-secure (http) links,
+  raw IP addresses, or look-alike domains.
+
 ## [4.8.0] - 2026-06-01
 
 ### Added
@@ -306,6 +332,8 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[4.9.0]: https://github.com/omsimos/umamin/compare/v4.8.0...v4.9.0
+[4.8.0]: https://github.com/omsimos/umamin/compare/v4.7.2...v4.8.0
 [4.7.2]: https://github.com/omsimos/umamin/compare/v4.7.1...v4.7.2
 [4.7.1]: https://github.com/omsimos/umamin/compare/v4.7.0...v4.7.1
 [4.7.0]: https://github.com/omsimos/umamin/compare/v4.6.1...v4.7.0
