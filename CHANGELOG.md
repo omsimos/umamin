@@ -18,6 +18,15 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [4.7.2] - 2026-06-01
+
+### Fixed
+
+- Posting could hang and time out. The compose button now opens the composer in a
+  dialog on the feed instead of a separate page, which resolves it.
+- On desktop, the feed/notes navigation icons were hidden behind the header; the
+  desktop top bar now shows correctly.
+
 ## [4.7.1] - 2026-06-01
 
 ### Fixed
@@ -264,6 +273,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[4.7.2]: https://github.com/omsimos/umamin/compare/v4.7.1...v4.7.2
 [4.7.1]: https://github.com/omsimos/umamin/compare/v4.7.0...v4.7.1
 [4.7.0]: https://github.com/omsimos/umamin/compare/v4.6.1...v4.7.0
 [4.6.1]: https://github.com/omsimos/umamin/compare/v4.6.0...v4.6.1

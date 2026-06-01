@@ -27,7 +27,7 @@ export function AppHeader() {
   const user = data?.user;
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding backdrop-blur-xl backdrop-filter">
+    <header className="fixed inset-x-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding backdrop-blur-xl backdrop-filter lg:hidden">
       <div className="container relative flex h-16 max-w-7xl items-center justify-between">
         {user ? (
           <Link href={`/user/${user.username}`} aria-label="Your profile">
