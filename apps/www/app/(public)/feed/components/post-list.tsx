@@ -20,8 +20,10 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { LinkTabs } from "@/components/link-tabs";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
+import type { FeedSort } from "@/lib/feed-sort";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -36,9 +38,11 @@ import { PostCardSkeleton } from "./post-card-skeleton";
 import { RepostHeader } from "./repost-header";
 
 export function PostList({
+  sort,
   isAuthenticated,
   currentUserId,
 }: {
+  sort: FeedSort;
   isAuthenticated: boolean;
   currentUserId?: string;
 }) {
@@ -52,9 +56,13 @@ export function PostList({
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery<FeedResponse>({
-    queryKey: queryKeys.posts(),
+    queryKey: queryKeys.posts(sort),
     queryFn: ({ pageParam }) =>
-      fetchPostsPage((pageParam as string | null) ?? null, isAuthenticated),
+      fetchPostsPage(
+        (pageParam as string | null) ?? null,
+        isAuthenticated,
+        sort,
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: isAuthenticated ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME,
@@ -70,6 +78,7 @@ export function PostList({
   const { data: head } = useQuery({
     queryKey: ["feed-head"],
     queryFn: fetchFeedHead,
+    enabled: sort === "latest",
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
@@ -97,13 +106,16 @@ export function PostList({
       ).getTime()
     : 0;
   const showNewPosts =
-    !!head?.latest && topCreatedAtMs > 0 && head.latest > topCreatedAtMs;
+    sort === "latest" &&
+    !!head?.latest &&
+    topCreatedAtMs > 0 &&
+    head.latest > topCreatedAtMs;
 
   // Refetch only page 1 (drop later pages — we're scrolling back to top anyway)
   // so the cost stays bounded; the dedupe map above absorbs any overlap.
   const handleShowNewPosts = async () => {
     queryClient.setQueryData<InfiniteData<FeedResponse>>(
-      queryKeys.posts(),
+      queryKeys.posts(sort),
       (old) =>
         old
           ? {
@@ -194,6 +206,18 @@ export function PostList({
 
   return (
     <div className="w-full">
+      <LinkTabs
+        className="mb-5"
+        tabs={[
+          { label: "Hot", href: "/feed", active: sort === "hot" },
+          {
+            label: "Latest",
+            href: "/feed?sort=latest",
+            active: sort === "latest",
+          },
+        ]}
+      />
+
       {showNewPosts && (
         <div className="sticky top-2 z-20 mb-4 flex justify-center">
           <Button

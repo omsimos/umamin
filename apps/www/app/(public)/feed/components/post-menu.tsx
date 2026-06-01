@@ -52,9 +52,11 @@ export function PostMenu({
       }
     },
     onSuccess: () => {
-      queryClient.setQueryData<
+      queryClient.setQueriesData<
         import("@tanstack/react-query").InfiniteData<FeedResponse>
-      >(queryKeys.posts(), (current) => removePostFromFeed(current, postId));
+      >({ queryKey: queryKeys.postsRoot() }, (current) =>
+        removePostFromFeed(current, postId),
+      );
       queryClient.setQueryData(queryKeys.post(postId), null);
       queryClient.removeQueries({ queryKey: queryKeys.postComments(postId) });
       toast.success("Post deleted.");

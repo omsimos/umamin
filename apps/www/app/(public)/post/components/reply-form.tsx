@@ -54,13 +54,14 @@ export default function ReplyForm({ user, postId }: Props) {
       await queryClient.cancelQueries({
         queryKey: queryKeys.postComments(postId),
       });
+      await queryClient.cancelQueries({ queryKey: queryKeys.postsRoot() });
 
       const previous = queryClient.getQueryData<InfiniteData<CommentsResponse>>(
         queryKeys.postComments(postId),
       );
-      const previousPosts = queryClient.getQueryData<
+      const previousPosts = queryClient.getQueriesData<
         InfiniteData<FeedResponse>
-      >(queryKeys.posts());
+      >({ queryKey: queryKeys.postsRoot() });
       const previousPost = queryClient.getQueryData<PostResponse>(
         queryKeys.post(postId),
       );
@@ -80,8 +81,8 @@ export default function ReplyForm({ user, postId }: Props) {
         queryKeys.postComments(postId),
         prependComment(previous, optimistic),
       );
-      queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        queryKeys.posts(),
+      queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+        { queryKey: queryKeys.postsRoot() },
         (current) =>
           patchPostAcrossFeed(current, postId, (post) => ({
             ...post,
@@ -109,7 +110,9 @@ export default function ReplyForm({ user, postId }: Props) {
       if (ctx?.previous) {
         queryClient.setQueryData(queryKeys.postComments(postId), ctx.previous);
       }
-      queryClient.setQueryData(queryKeys.posts(), ctx?.previousPosts);
+      for (const [queryKey, previousPosts] of ctx?.previousPosts ?? []) {
+        queryClient.setQueryData(queryKey, previousPosts);
+      }
       queryClient.setQueryData(queryKeys.post(postId), ctx?.previousPost);
       toast.error(err.message ?? "Couldn't add comment.");
     },

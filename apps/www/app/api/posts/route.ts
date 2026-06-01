@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
+import { normalizeFeedSort } from "@/lib/feed-sort";
 import { privateJson } from "@/lib/private-json";
 import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getPostsPage } from "@/lib/server/data";
@@ -11,10 +12,12 @@ export async function GET(req: NextRequest) {
     }
 
     const cursor = req.nextUrl.searchParams.get("cursor");
+    const sort = normalizeFeedSort(req.nextUrl.searchParams.get("sort"));
     const { session } = await getSession();
 
     const result = await getPostsPage({
       cursor,
+      sort,
       viewerId: session?.userId,
     });
 

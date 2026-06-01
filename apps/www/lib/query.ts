@@ -1,5 +1,6 @@
 import type { QueryKey } from "@tanstack/react-query";
 import { queryOptions } from "@tanstack/react-query";
+import type { FeedSort } from "@/lib/feed-sort";
 
 export const PUBLIC_STALE_TIME = 120_000;
 export const PRIVATE_STALE_TIME = 30_000;
@@ -11,7 +12,8 @@ const stableRefetchOptions = {
 };
 
 export const queryKeys = {
-  posts: () => ["posts"] as const,
+  posts: (sort: FeedSort) => ["posts", sort] as const,
+  postsRoot: () => ["posts"] as const,
   post: (postId: string) => ["post", postId] as const,
   postComments: (postId: string) => ["post-comments", postId] as const,
   notes: () => ["notes"] as const,

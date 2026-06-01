@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { normalizeFeedSort } from "@/lib/feed-sort";
 import { publicJson } from "@/lib/public-json";
 import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getPostsPage } from "@/lib/server/data";
@@ -12,7 +13,8 @@ export async function GET(req: NextRequest) {
     }
 
     const cursor = req.nextUrl.searchParams.get("cursor");
-    const result = await getPostsPage({ cursor });
+    const sort = normalizeFeedSort(req.nextUrl.searchParams.get("sort"));
+    const result = await getPostsPage({ cursor, sort });
 
     return publicJson(result, PUBLIC_CACHE_SECONDS);
   } catch (error) {

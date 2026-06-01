@@ -9,6 +9,7 @@ import {
   postLikeTable,
   postRepostTable,
   postTable,
+  type SelectPost,
 } from "@umamin/db/schema/post";
 import {
   accountTable,
@@ -31,6 +32,7 @@ import {
 } from "drizzle-orm";
 import { unionAll } from "drizzle-orm/sqlite-core";
 import { cacheLife, cacheTag } from "next/cache";
+import type { FeedSort } from "@/lib/feed-sort";
 import type {
   CommentsResponse,
   CurrentUserResponse,
@@ -51,6 +53,7 @@ const PRIVATE_REVALIDATE_SECONDS = 30;
 // 20 matches comments/messages and the virtualized above-the-fold (overscan 5);
 // 40 over-fetched ~2x the rows + payload per page on a per-row-billed DB.
 const FEED_PAGE_SIZE = 20;
+const HOT_FEED_CANDIDATE_SIZE = 100;
 const COMMENTS_PAGE_SIZE = 20;
 const MESSAGES_PAGE_SIZE = 20;
 const FOLLOW_LIST_PAGE_SIZE = 20;
@@ -70,6 +73,18 @@ type FeedEdgeRow = {
   authorId: string;
   reposterId: string | null;
   repostContent: string | null;
+};
+
+type HotFeedCursor = {
+  rankedAtMs: number;
+  scoreKey: number;
+  createdAtMs: number;
+  postId: string;
+};
+
+type HotFeedCandidate = {
+  post: SelectPost;
+  scoreKey: number;
 };
 
 const publicUserColumns = {
@@ -108,6 +123,33 @@ function parseFeedCursor(cursor: string | null): FeedCursor | null {
   };
 }
 
+function parseHotFeedCursor(cursor: string | null): HotFeedCursor | null {
+  if (!cursor) {
+    return null;
+  }
+
+  const [rankedAtRaw, scoreRaw, createdAtRaw, postId] = cursor.split(".");
+  const rankedAtMs = Number(rankedAtRaw);
+  const scoreKey = Number(scoreRaw);
+  const createdAtMs = Number(createdAtRaw);
+
+  if (
+    Number.isNaN(rankedAtMs) ||
+    Number.isNaN(scoreKey) ||
+    Number.isNaN(createdAtMs) ||
+    !postId
+  ) {
+    return null;
+  }
+
+  return {
+    rankedAtMs,
+    scoreKey,
+    createdAtMs,
+    postId,
+  };
+}
+
 function parseCursor(cursor: string | null) {
   if (!cursor) return null;
 
@@ -128,6 +170,102 @@ function getFeedNextCursor(edge?: FeedEdgeRow) {
   if (!edge) return null;
 
   return `${edge.createdAt.getTime()}.${edge.kindPriority}.${edge.edgeId}`;
+}
+
+function getHotFeedNextCursor(
+  rankedAtMs: number,
+  candidate?: HotFeedCandidate,
+) {
+  if (!candidate) return null;
+
+  return `${rankedAtMs}.${candidate.scoreKey}.${candidate.post.createdAt.getTime()}.${candidate.post.id}`;
+}
+
+function getHotFeedScoreKey(post: SelectPost, rankedAtMs: number) {
+  const engagement =
+    post.likeCount + post.commentCount * 3 + post.repostCount * 4;
+  const createdAtMs = post.createdAt.getTime();
+  const ageHours = Math.max(0, (rankedAtMs - createdAtMs) / 3_600_000);
+  const score = (1.5 + Math.log1p(engagement)) / (ageHours + 2) ** 1.15;
+
+  return Math.round(score * 1_000_000);
+}
+
+function getHotFeedRankedAtMs(cursor: string | null) {
+  const parsedCursor = parseHotFeedCursor(cursor);
+
+  if (parsedCursor) {
+    return parsedCursor.rankedAtMs;
+  }
+
+  const revalidateMs = PUBLIC_REVALIDATE_SECONDS * 1000;
+  return Math.floor(Date.now() / revalidateMs) * revalidateMs;
+}
+
+function compareHotCandidates(left: HotFeedCandidate, right: HotFeedCandidate) {
+  if (left.scoreKey !== right.scoreKey) {
+    return right.scoreKey - left.scoreKey;
+  }
+
+  const leftCreatedAt = left.post.createdAt.getTime();
+  const rightCreatedAt = right.post.createdAt.getTime();
+
+  if (leftCreatedAt !== rightCreatedAt) {
+    return rightCreatedAt - leftCreatedAt;
+  }
+
+  return right.post.id.localeCompare(left.post.id);
+}
+
+function diversifyHotCandidates(candidates: HotFeedCandidate[]) {
+  const result = [...candidates];
+
+  for (let index = 1; index < result.length; index += 1) {
+    const previous = result[index - 1];
+    const current = result[index];
+
+    if (previous.post.authorId !== current.post.authorId) {
+      continue;
+    }
+
+    const replacementIndex = result.findIndex(
+      (candidate, candidateIndex) =>
+        candidateIndex > index &&
+        candidateIndex <= index + 4 &&
+        candidate.post.authorId !== previous.post.authorId &&
+        candidate.scoreKey >= current.scoreKey * 0.85,
+    );
+
+    if (replacementIndex === -1) {
+      continue;
+    }
+
+    const [replacement] = result.splice(replacementIndex, 1);
+    result.splice(index, 0, replacement);
+  }
+
+  return result;
+}
+
+function isAfterHotCursor(
+  candidate: HotFeedCandidate,
+  cursor: HotFeedCursor | null,
+) {
+  if (!cursor) {
+    return true;
+  }
+
+  const createdAtMs = candidate.post.createdAt.getTime();
+
+  if (candidate.scoreKey !== cursor.scoreKey) {
+    return candidate.scoreKey < cursor.scoreKey;
+  }
+
+  if (createdAtMs !== cursor.createdAtMs) {
+    return createdAtMs < cursor.createdAtMs;
+  }
+
+  return candidate.post.id < cursor.postId;
 }
 
 function getPageRows<T>(rows: T[], pageSize: number) {
@@ -164,7 +302,7 @@ function getFeedCursorCondition(
   );
 }
 
-async function getPublicPostsPage(
+async function getPublicLatestPostsPage(
   cursor: string | null,
 ): Promise<FeedResponse> {
   "use cache";
@@ -331,6 +469,79 @@ async function getPublicPostsPage(
   };
 }
 
+async function getPublicHotPostsPage(
+  cursor: string | null,
+  rankedAtMs: number,
+): Promise<FeedResponse> {
+  "use cache";
+  cacheTag("posts");
+  cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
+
+  const parsedCursor = parseHotFeedCursor(cursor);
+
+  const candidatePosts = await db
+    .select()
+    .from(postTable)
+    .orderBy(desc(postTable.createdAt), desc(postTable.id))
+    .limit(HOT_FEED_CANDIDATE_SIZE);
+
+  const rankedCandidates = candidatePosts
+    .map((post) => ({
+      post,
+      scoreKey: getHotFeedScoreKey(post, rankedAtMs),
+    }))
+    .sort(compareHotCandidates)
+    .filter((candidate) => isAfterHotCursor(candidate, parsedCursor));
+
+  const { hasMore, pageRows: scorePageRows } = getPageRows(
+    rankedCandidates,
+    FEED_PAGE_SIZE,
+  );
+  const pageRows = diversifyHotCandidates(scorePageRows);
+  const authorIds = Array.from(
+    new Set(pageRows.map((candidate) => candidate.post.authorId)),
+  );
+
+  const users =
+    authorIds.length > 0
+      ? await db
+          .select(publicUserColumns)
+          .from(userTable)
+          .where(inArray(userTable.id, authorIds))
+      : [];
+
+  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const data: FeedItem[] = pageRows.flatMap<FeedItem>(({ post }) => {
+    const author = userMap.get(post.authorId);
+
+    if (!author) {
+      return [];
+    }
+
+    return [
+      {
+        type: "post" as const,
+        post: {
+          ...post,
+          author,
+          isLiked: false,
+          isReposted: false,
+        },
+      },
+    ];
+  });
+
+  return {
+    data,
+    nextCursor: hasMore
+      ? getHotFeedNextCursor(
+          rankedAtMs,
+          scorePageRows[scorePageRows.length - 1],
+        )
+      : null,
+  };
+}
+
 // Extracts the stable id arrays the viewer-overlay cache key depends on. Sorted
 // + deduped so the same SET of posts/actors yields the same key regardless of
 // feed order.
@@ -454,9 +665,16 @@ function applyPostFeedViewerOverlay(
 
 export async function getPostsPage(params: {
   cursor?: string | null;
+  sort?: FeedSort;
   viewerId?: string | null;
 }): Promise<FeedResponse> {
-  const publicData = await getPublicPostsPage(params.cursor ?? null);
+  const publicData =
+    params.sort === "latest"
+      ? await getPublicLatestPostsPage(params.cursor ?? null)
+      : await getPublicHotPostsPage(
+          params.cursor ?? null,
+          getHotFeedRankedAtMs(params.cursor ?? null),
+        );
 
   if (!params.viewerId) {
     return publicData;
