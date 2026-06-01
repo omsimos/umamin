@@ -10,6 +10,7 @@ import * as z from "zod";
 import { getSession } from "@/lib/auth";
 import {
   GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME,
+  GOOGLE_OAUTH_INTENT_COOKIE_NAME,
   GOOGLE_OAUTH_STATE_COOKIE_NAME,
 } from "@/lib/cookies";
 import { google } from "@/lib/oauth";
@@ -40,6 +41,8 @@ export async function GET(req: NextRequest) {
     cookieStore.get(GOOGLE_OAUTH_STATE_COOKIE_NAME)?.value ?? null;
   const codeVerifier =
     cookieStore.get(GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME)?.value ?? null;
+  const intent =
+    cookieStore.get(GOOGLE_OAUTH_INTENT_COOKIE_NAME)?.value ?? null;
 
   const clearOauthCookies = () => {
     cookieStore.set(GOOGLE_OAUTH_STATE_COOKIE_NAME, "", {
@@ -50,6 +53,13 @@ export async function GET(req: NextRequest) {
       sameSite: "lax",
     });
     cookieStore.set(GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME, "", {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 0,
+      sameSite: "lax",
+    });
+    cookieStore.set(GOOGLE_OAUTH_INTENT_COOKIE_NAME, "", {
       path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -168,6 +178,18 @@ export async function GET(req: NextRequest) {
         status: 302,
         headers: {
           Location: "/inbox",
+        },
+      });
+    }
+
+    // No linked account and nobody signed in. Only the register flow may create
+    // one — a login attempt for an unknown Google account is sent back with an
+    // error instead of silently provisioning a profile.
+    if (intent !== "register") {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/login?error=no_account",
         },
       });
     }

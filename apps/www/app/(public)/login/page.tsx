@@ -1,3 +1,9 @@
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@umamin/ui/components/alert";
+import { Link2OffIcon } from "lucide-react";
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -37,8 +43,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Login() {
+export default async function Login({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { session } = await getSession();
+  const error = (await searchParams).error;
 
   if (session) {
     redirect("/inbox");
@@ -56,6 +67,16 @@ export default async function Login() {
           Proceed with your Umamin profile
         </p>
       </div>
+
+      {error === "no_account" && (
+        <Alert variant="destructive" className="mb-6">
+          <Link2OffIcon />
+          <AlertTitle>No account found</AlertTitle>
+          <AlertDescription>
+            That Google account isn&apos;t linked to an Umamin account.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <LoginForm />
 
