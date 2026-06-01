@@ -9,6 +9,9 @@ export const GOOGLE_OAUTH_STATE_COOKIE_NAME = isProduction
 export const GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME = isProduction
   ? "__Host-google_code_verifier"
   : "google_code_verifier";
+export const GOOGLE_OAUTH_INTENT_COOKIE_NAME = isProduction
+  ? "__Host-google_oauth_intent"
+  : "google_oauth_intent";
 
 type CookieReader = {
   get(name: string): { value: string } | undefined;

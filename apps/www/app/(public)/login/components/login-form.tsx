@@ -52,7 +52,11 @@ export function LoginForm() {
         </Button>
 
         <Button disabled={pending} variant="outline" asChild>
-          <Link prefetch={false} href="/auth/google" className="mt-4 w-full">
+          <Link
+            prefetch={false}
+            href="/auth/google?intent=login"
+            className="mt-4 w-full"
+          >
             Continue with Google
           </Link>
         </Button>

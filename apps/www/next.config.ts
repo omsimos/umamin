@@ -1,6 +1,26 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import createMDX from "@next/mdx";
 
 import type { NextConfig } from "next";
+
+// Displayed app version comes from the top CHANGELOG entry — the same source the
+// release pipeline tags from, so the navbar always matches the deployed build.
+// `next build` runs with cwd=apps/www; the second path covers a root-cwd build.
+function getAppVersion(): string {
+  for (const path of [
+    join(process.cwd(), "../../CHANGELOG.md"),
+    join(process.cwd(), "CHANGELOG.md"),
+  ]) {
+    try {
+      const match = readFileSync(path, "utf8").match(/^## \[([^\]]+)\]/m);
+      if (match) return `v${match[1]}`;
+    } catch {
+      // try the next candidate path
+    }
+  }
+  return "v0.0.0";
+}
 
 function buildContentSecurityPolicy() {
   const scriptSrc = [
@@ -101,6 +121,9 @@ function buildSecurityHeaders() {
 }
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_VERSION: getAppVersion(),
+  },
   reactCompiler: true,
   cacheComponents: true,
   experimental: {
