@@ -9,7 +9,7 @@ import {
   postTable,
 } from "@umamin/db/schema/post";
 import { and, eq, sql } from "drizzle-orm";
-import { updateTag } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
@@ -73,7 +73,10 @@ export async function createPostAction(
       })
       .returning();
 
-    updateTag("posts");
+    // Background SWR, not updateTag: expiring "posts" forces a blocking re-scan
+    // of the (Hot-ranked) feed, which times out on large datasets. The poster
+    // sees their post via the optimistic prepend; the feed refreshes async.
+    revalidateTag("posts", "max");
     updateTag(`user-posts:${session.userId}`);
     await bumpFeedLatest(createdPost.createdAt);
 
@@ -110,7 +113,8 @@ export async function deletePostAction({ postId }: { postId: string }) {
 
     await db.delete(postTable).where(eq(postTable.id, postId));
 
-    updateTag("posts");
+    // SWR like createPostAction — avoid the blocking full feed re-scan.
+    revalidateTag("posts", "max");
     updateTag(`user-posts:${session.userId}`);
     updateTag(`post:${postId}`);
     updateTag(`post-comments:${postId}`);
