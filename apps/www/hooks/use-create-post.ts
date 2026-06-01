@@ -90,5 +90,5 @@ export function useCreatePost(user: PublicUser | null) {
     },
   });
 
-  return { submitPost: mutation.mutate, isPending: mutation.isPending };
+  return { submitPost: mutation.mutateAsync, isPending: mutation.isPending };
 }

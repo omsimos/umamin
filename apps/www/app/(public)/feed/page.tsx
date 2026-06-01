@@ -7,6 +7,7 @@ import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
 import type { FeedResponse } from "@/lib/query-types";
 import { getPostsPage } from "@/lib/server/data";
+import { toPublicUser } from "@/types/user";
 import { PostList } from "./components/post-list";
 
 export default async function Feed({
@@ -21,6 +22,7 @@ export default async function Feed({
   const sort = normalizeFeedSort((await searchParams).sort);
   const { user } = await getSession();
   const queryClient = getQueryClient();
+  const publicUser = user ? toPublicUser(user) : null;
 
   await queryClient.prefetchInfiniteQuery({
     queryKey: queryKeys.posts(sort),
@@ -49,7 +51,7 @@ export default async function Feed({
         </div>
       </section>
 
-      {user && <ComposeFab />}
+      {user && <ComposeFab user={publicUser} />}
     </main>
   );
 }
