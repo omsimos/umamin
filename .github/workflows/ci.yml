@@ -118,17 +118,25 @@ jobs:
       - name: Extract latest changelog entry
         id: rel
         run: |
-          VERSION=$(grep -m1 -oE '^## \[[^]]+\]' CHANGELOG.md | sed -E 's/^## \[//; s/\]$//')
-          if [ -z "$VERSION" ]; then
+          HEADING=$(grep -m1 -E '^## \[[^]]+\]' CHANGELOG.md)
+          if [ -z "$HEADING" ]; then
             echo "::error::No '## [version]' heading found in CHANGELOG.md"
             exit 1
           fi
+          VERSION=$(printf '%s\n' "$HEADING" | sed -E 's/^## \[([^]]+)\].*/\1/')
+          DATE=$(printf '%s\n' "$HEADING" | sed -E 's/^## \[[^]]+\][[:space:]]*-[[:space:]]*([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')
+          # Only keep a strict YYYY-MM-DD date; otherwise the title falls back to the tag.
+          case "$DATE" in
+            [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
+            *) DATE="" ;;
+          esac
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
           # Body = everything under the top entry, up to the next entry or the
           # reference-link block; strip leading blank lines.
           awk 'f && /^## \[/ {exit} f && /^\[[^]]+\]: https?:/ {exit} /^## \[/ {f=1; next} f {print}' CHANGELOG.md \
             | sed '/./,$!d' > RELEASE_BODY.md
-          echo "Latest changelog version: $VERSION"
+          echo "Latest changelog version: $VERSION ($DATE)"
           echo "----- notes -----"
           cat RELEASE_BODY.md
 
@@ -136,6 +144,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.rel.outputs.version }}
+          RELEASE_DATE: ${{ steps.rel.outputs.date }}
           TARGET_SHA: ${{ github.sha }}
         run: |
           TAG="v$VERSION"
@@ -143,11 +152,17 @@ jobs:
             echo "$TAG already exists — no release needed."
             exit 0
           fi
+          # Match the existing title convention: "vX.Y.Z (Mon D, YYYY)".
+          TITLE="$TAG"
+          if [ -n "$RELEASE_DATE" ]; then
+            DISPLAY_DATE=$(date -d "$RELEASE_DATE" "+%b %-d, %Y" 2>/dev/null || true)
+            [ -n "$DISPLAY_DATE" ] && TITLE="$TAG ($DISPLAY_DATE)"
+          fi
           PRERELEASE=""
           case "$VERSION" in *-*) PRERELEASE="--prerelease" ;; esac
           gh release create "$TAG" \
             --target "$TARGET_SHA" \
-            --title "$TAG" \
+            --title "$TITLE" \
             --notes-file RELEASE_BODY.md \
             $PRERELEASE
-          echo "Published $TAG"
+          echo "Published $TITLE"
