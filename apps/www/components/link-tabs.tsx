@@ -7,8 +7,6 @@ type LinkTab = {
   active: boolean;
 };
 
-// Full-width underline tab bar shared by the You nav (Posts/Messages) and the
-// feed sort switch (Hot/Latest) so the two surfaces stay visually identical.
 export function LinkTabs({
   tabs,
   className,

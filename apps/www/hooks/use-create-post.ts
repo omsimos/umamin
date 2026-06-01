@@ -9,9 +9,6 @@ import type { FeedResponse } from "@/lib/query-types";
 import type { FeedItem, PostData } from "@/types/post";
 import type { PublicUser } from "@/types/user";
 
-// Create-post mutation with an optimistic prepend into the shared feed cache.
-// Extracted from the old inline composer so the compose surface (and any future
-// composer) share one behavior and one source of truth.
 export function useCreatePost(user: PublicUser | null) {
   const queryClient = useQueryClient();
   const submit = useSingleFlightAction(createPostAction);

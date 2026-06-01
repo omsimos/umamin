@@ -1,8 +1,6 @@
 import { cn } from "@umamin/ui/lib/utils";
 
-// The source SVG is fill=white, so render it as a mask over bg-foreground — it
-// then picks up the theme foreground color in both light and dark. Size it with
-// a `size-*` class on `className`.
+// Source SVG is fill=white; rendered as a mask over bg-foreground so it themes.
 export function UmaminLogo({ className }: { className?: string }) {
   return (
     <span

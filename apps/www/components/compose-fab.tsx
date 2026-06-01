@@ -1,8 +1,7 @@
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 
-// Floating compose button for the feed. Sits above the bottom menu bar on
-// mobile; the bar moves to the top on lg, so the offset relaxes there.
+// bottom-24 clears the mobile bottom nav; the bar moves to the top on lg.
 export function ComposeFab() {
   return (
     <Link

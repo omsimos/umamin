@@ -17,9 +17,6 @@ import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import { ThemeToggle } from "./theme-toggle";
 import { UmaminLogo } from "./umamin-logo";
 
-// Twitter-style top header for the feed surfaces: avatar (left), logo (center),
-// theme toggle (right). Rendered only on these routes; the default Navbar hides
-// here so the two never stack.
 const HEADER_ROUTES = new Set(["/feed", "/notes"]);
 
 export function AppHeader() {

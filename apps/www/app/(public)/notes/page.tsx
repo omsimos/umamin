@@ -68,7 +68,7 @@ export default async function Page() {
   }
 
   return (
-    <div className="container max-w-xl space-y-12">
+    <div className="container max-w-xl space-y-12 mt-2">
       {currentUser ? (
         <HydrationBoundary state={dehydrate(queryClient)}>
           <div className="space-y-12">

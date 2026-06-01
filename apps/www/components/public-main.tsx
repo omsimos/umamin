@@ -2,9 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-// The feed surfaces show the compact AppHeader (h-16); every other public page
-// shows the taller default Navbar. Pad the content area to clear whichever fixed
-// header is active so the content doesn't start with a large empty gap.
+// Clears the compact AppHeader (h-16) here vs the taller Navbar elsewhere.
 const COMPACT_ROUTES = new Set(["/feed", "/notes"]);
 
 export function PublicMain({ children }: { children: React.ReactNode }) {
