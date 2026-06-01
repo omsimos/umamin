@@ -5,19 +5,17 @@ export default function Loading() {
   return (
     <main className="pb-40">
       <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
-        <div className="px-4 pb-6">
-          <div className="flex gap-3">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="flex-1 space-y-3">
-              <Skeleton className="h-10 w-full" />
-              <div className="flex justify-end">
-                <Skeleton className="h-9 w-24" />
-              </div>
-            </div>
+        {/* Hot / Latest tabs placeholder (matches LinkTabs) */}
+        <nav className="mb-5 flex w-full border-b">
+          <div className="flex flex-1 justify-center pb-2.5">
+            <Skeleton className="h-5 w-12" />
           </div>
-        </div>
+          <div className="flex flex-1 justify-center pb-2.5">
+            <Skeleton className="h-5 w-14" />
+          </div>
+        </nav>
 
-        <div className="border-y space-y-6 pt-6">
+        <div className="space-y-6">
           <PostCardSkeleton />
           <PostCardSkeleton />
           <PostCardSkeleton />

@@ -31,10 +31,6 @@ export function Navbar() {
             className="flex items-center gap-1.5"
           >
             <UmaminLogo className="size-6" />
-            <span>
-              <span className="font-semibold text-foreground">umamin</span>
-              <span className="text-muted-foreground font-medium">.link</span>
-            </span>
           </Link>
 
           <Link
