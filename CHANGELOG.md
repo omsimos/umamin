@@ -24,6 +24,8 @@ any that are empty.
 
 - Posting could hang and time out. The compose button now opens the composer in a
   dialog on the feed instead of a separate page, which resolves it.
+- On desktop, the feed/notes navigation icons were hidden behind the header; the
+  desktop top bar now shows correctly.
 
 ## [4.7.1] - 2026-06-01
 

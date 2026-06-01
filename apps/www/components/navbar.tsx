@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@umamin/ui/components/badge";
+import { cn } from "@umamin/ui/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isStandaloneMode } from "@/lib/pwa";
@@ -16,13 +17,16 @@ export function Navbar() {
     return null;
   }
 
-  // Feed surfaces use the dedicated AppHeader instead.
-  if (pathname === "/feed" || pathname === "/notes") {
-    return null;
-  }
+  // Feed surfaces use the mobile AppHeader; keep the desktop bar there.
+  const feedSurface = pathname === "/feed" || pathname === "/notes";
 
   return (
-    <nav className="fixed left-0 right-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter lg:z-40 container max-w-7xl">
+    <nav
+      className={cn(
+        "fixed left-0 right-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter lg:z-40 container max-w-7xl",
+        feedSurface && "max-lg:hidden",
+      )}
+    >
       <div className="flex justify-between items-center">
         <div className="space-x-2 flex items-center">
           <Link
