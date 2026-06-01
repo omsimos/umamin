@@ -18,6 +18,39 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [4.8.0] - 2026-06-01
+
+### Added
+
+- Following feed — signed-in users now get `/feed?sort=following`, showing posts and
+  reposts from people they follow using the existing follow graph. No database
+  migration required.
+
+### Fixed
+
+- Like, comment-like, and repost counters now update only when the underlying edge was
+  actually inserted or removed, closing race conditions that could make counts drift.
+- Creating a post no longer optimistically inserts it into the Following timeline unless
+  it belongs there.
+- Authenticated requests for `sort=following` now return `401` when there is no active
+  session instead of silently falling back to Hot.
+
+### Performance & Cost
+
+- Anonymous `/feed` no longer performs server-side session work; the public shell
+  prefetches only public Hot/Latest data and resolves the current user on the client.
+- Feed query caches are scoped by viewer/public identity, preventing cross-user cache
+  reuse while preserving broad feed cache updates.
+- Hot feed can use a Redis sorted-set rank cache when it is warm enough, falling back to
+  the existing bounded DB ranking path when Redis is unavailable or underfilled.
+- Following feed pages are keyset-paginated and cached per viewer using existing tables
+  and indexes.
+
+### Security & Privacy
+
+- The public posts API treats `sort=following` as unsupported for anonymous public reads,
+  avoiding accidental personalized-feed semantics on the public endpoint.
+
 ## [4.7.2] - 2026-06-01
 
 ### Fixed

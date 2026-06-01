@@ -45,6 +45,10 @@ import type {
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "@/lib/query-types";
+import {
+  getRedisHotPostIdsPage,
+  isRedisHotCursor,
+} from "@/lib/server/feed-rank";
 import type { CommentData, FeedItem } from "@/types/post";
 import type { CurrentUserClient, PublicUser } from "@/types/user";
 
@@ -469,7 +473,62 @@ async function getPublicLatestPostsPage(
   };
 }
 
-async function getPublicHotPostsPage(
+async function getRedisHotPostsPage(
+  cursor: string | null,
+): Promise<FeedResponse | null> {
+  const page = await getRedisHotPostIdsPage(
+    cursor,
+    FEED_PAGE_SIZE,
+    HOT_FEED_CANDIDATE_SIZE,
+  );
+
+  if (!page) {
+    return null;
+  }
+
+  const posts =
+    page.ids.length > 0
+      ? await db.select().from(postTable).where(inArray(postTable.id, page.ids))
+      : [];
+  const authorIds = Array.from(new Set(posts.map((post) => post.authorId)));
+  const users =
+    authorIds.length > 0
+      ? await db
+          .select(publicUserColumns)
+          .from(userTable)
+          .where(inArray(userTable.id, authorIds))
+      : [];
+
+  const postMap = new Map(posts.map((post) => [post.id, post] as const));
+  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const data: FeedItem[] = page.ids.flatMap<FeedItem>((postId) => {
+    const post = postMap.get(postId);
+    const author = post ? userMap.get(post.authorId) : null;
+
+    if (!post || !author) {
+      return [];
+    }
+
+    return [
+      {
+        type: "post" as const,
+        post: {
+          ...post,
+          author,
+          isLiked: false,
+          isReposted: false,
+        },
+      },
+    ];
+  });
+
+  return {
+    data,
+    nextCursor: page.nextCursor,
+  };
+}
+
+async function getCachedPublicHotPostsPage(
   cursor: string | null,
   rankedAtMs: number,
 ): Promise<FeedResponse> {
@@ -538,6 +597,199 @@ async function getPublicHotPostsPage(
           rankedAtMs,
           scorePageRows[scorePageRows.length - 1],
         )
+      : null,
+  };
+}
+
+async function getPublicHotPostsPage(
+  cursor: string | null,
+  rankedAtMs: number,
+): Promise<FeedResponse> {
+  const redisData =
+    !cursor || isRedisHotCursor(cursor)
+      ? await getRedisHotPostsPage(cursor)
+      : null;
+
+  if (isRedisHotCursor(cursor)) {
+    return redisData ?? { data: [], nextCursor: null };
+  }
+
+  return redisData ?? (await getCachedPublicHotPostsPage(cursor, rankedAtMs));
+}
+
+async function getFollowingPostsPage(
+  viewerId: string,
+  cursor: string | null,
+): Promise<FeedResponse> {
+  "use cache";
+  cacheTag(`feed-following:${viewerId}`);
+  cacheTag(`user-following:${viewerId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  const parsedCursor = parseFeedCursor(cursor);
+  const postCursorCondition = getFeedCursorCondition(
+    postTable.createdAt,
+    postTable.id,
+    0,
+    parsedCursor,
+  );
+  const repostCursorCondition = getFeedCursorCondition(
+    postRepostTable.createdAt,
+    postRepostTable.id,
+    1,
+    parsedCursor,
+  );
+
+  const postEdgesBase = db
+    .select({
+      kind: sql<string>`'post'`.as("kind"),
+      kindPriority: sql<number>`0`.as("kindPriority"),
+      edgeId: sql<string>`${postTable.id}`.as("edge_id"),
+      createdAt: postTable.createdAt,
+      postId: sql<string>`${postTable.id}`.as("post_id"),
+      authorId: postTable.authorId,
+      reposterId: sql<string | null>`null`.as("reposter_id"),
+      repostContent: sql<string | null>`null`.as("repost_content"),
+    })
+    .from(postTable)
+    .innerJoin(
+      userFollowTable,
+      and(
+        eq(userFollowTable.followerId, viewerId),
+        eq(userFollowTable.followingId, postTable.authorId),
+      ),
+    )
+    .$dynamic();
+
+  const postEdges = (
+    postCursorCondition
+      ? postEdgesBase.where(postCursorCondition)
+      : postEdgesBase
+  )
+    .orderBy(desc(postTable.createdAt), desc(postTable.id))
+    .limit(FEED_PAGE_SIZE + 1)
+    .as("following_post_edges");
+
+  const repostEdgesBase = db
+    .select({
+      kind: sql<string>`'repost'`.as("kind"),
+      kindPriority: sql<number>`1`.as("kindPriority"),
+      edgeId: sql<string>`${postRepostTable.id}`.as("edge_id"),
+      createdAt: postRepostTable.createdAt,
+      postId: sql<string>`${postRepostTable.postId}`.as("post_id"),
+      authorId: postTable.authorId,
+      reposterId: sql<string | null>`${postRepostTable.userId}`.as(
+        "reposter_id",
+      ),
+      repostContent: sql<string | null>`${postRepostTable.content}`.as(
+        "repost_content",
+      ),
+    })
+    .from(postRepostTable)
+    .innerJoin(postTable, eq(postRepostTable.postId, postTable.id))
+    .innerJoin(
+      userFollowTable,
+      and(
+        eq(userFollowTable.followerId, viewerId),
+        eq(userFollowTable.followingId, postRepostTable.userId),
+      ),
+    )
+    .$dynamic();
+
+  const repostEdges = (
+    repostCursorCondition
+      ? repostEdgesBase.where(repostCursorCondition)
+      : repostEdgesBase
+  )
+    .orderBy(desc(postRepostTable.createdAt), desc(postRepostTable.id))
+    .limit(FEED_PAGE_SIZE + 1)
+    .as("following_repost_edges");
+
+  const feedEdges = unionAll(
+    db.select().from(postEdges),
+    db.select().from(repostEdges),
+  ).as("following_feed_edges");
+  const edgeRows = await db
+    .select()
+    .from(feedEdges)
+    .orderBy(
+      desc(feedEdges.createdAt),
+      desc(feedEdges.kindPriority),
+      desc(feedEdges.edgeId),
+    )
+    .limit(FEED_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(
+    edgeRows as FeedEdgeRow[],
+    FEED_PAGE_SIZE,
+  );
+  const postIds = Array.from(new Set(pageRows.map((edge) => edge.postId)));
+  const userIds = Array.from(
+    new Set(
+      pageRows.flatMap(
+        (edge) => [edge.authorId, edge.reposterId].filter(Boolean) as string[],
+      ),
+    ),
+  );
+
+  const [posts, users] = await Promise.all([
+    postIds.length > 0
+      ? db.select().from(postTable).where(inArray(postTable.id, postIds))
+      : [],
+    userIds.length > 0
+      ? db
+          .select(publicUserColumns)
+          .from(userTable)
+          .where(inArray(userTable.id, userIds))
+      : [],
+  ]);
+
+  const postMap = new Map(posts.map((post) => [post.id, post] as const));
+  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const data: FeedItem[] = pageRows.flatMap<FeedItem>((edge) => {
+    const post = postMap.get(edge.postId);
+    const author = userMap.get(edge.authorId);
+
+    if (!post || !author) {
+      return [];
+    }
+
+    const feedPost = {
+      ...post,
+      author,
+      isLiked: false,
+      isReposted: false,
+    };
+
+    if (edge.kind === "post") {
+      return [{ type: "post" as const, post: feedPost }];
+    }
+
+    const reposter = edge.reposterId ? userMap.get(edge.reposterId) : null;
+
+    if (!reposter) {
+      return [];
+    }
+
+    return [
+      {
+        type: "repost" as const,
+        post: feedPost,
+        repost: {
+          id: edge.edgeId,
+          postId: edge.postId,
+          content: edge.repostContent ?? undefined,
+          createdAt: edge.createdAt,
+          user: reposter,
+        },
+      },
+    ];
+  });
+
+  return {
+    data,
+    nextCursor: hasMore
+      ? getFeedNextCursor(pageRows[pageRows.length - 1])
       : null,
   };
 }
@@ -669,12 +921,14 @@ export async function getPostsPage(params: {
   viewerId?: string | null;
 }): Promise<FeedResponse> {
   const publicData =
-    params.sort === "latest"
-      ? await getPublicLatestPostsPage(params.cursor ?? null)
-      : await getPublicHotPostsPage(
-          params.cursor ?? null,
-          getHotFeedRankedAtMs(params.cursor ?? null),
-        );
+    params.sort === "following" && params.viewerId
+      ? await getFollowingPostsPage(params.viewerId, params.cursor ?? null)
+      : params.sort === "latest"
+        ? await getPublicLatestPostsPage(params.cursor ?? null)
+        : await getPublicHotPostsPage(
+            params.cursor ?? null,
+            getHotFeedRankedAtMs(params.cursor ?? null),
+          );
 
   if (!params.viewerId) {
     return publicData;
