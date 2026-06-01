@@ -7,7 +7,6 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -17,20 +16,13 @@ import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import { ThemeToggle } from "./theme-toggle";
 import { UmaminLogo } from "./umamin-logo";
 
-const HEADER_ROUTES = new Set(["/feed", "/notes"]);
-
 export function AppHeader() {
-  const pathname = usePathname();
   const { data } = useQuery({
     queryKey: queryKeys.currentUser(),
     queryFn: fetchCurrentUserOptional,
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
   });
-
-  if (!HEADER_ROUTES.has(pathname)) {
-    return null;
-  }
 
   const user = data?.user;
 

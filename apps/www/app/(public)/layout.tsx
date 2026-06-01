@@ -1,7 +1,6 @@
-import { AppHeader } from "@/components/app-header";
+import { Suspense } from "react";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
-import { PublicMain } from "@/components/public-main";
 import { PublicMenubar } from "@/components/public-menu-bar";
 
 export default function PublicLayout({
@@ -11,10 +10,11 @@ export default function PublicLayout({
 }) {
   return (
     <>
-      <Navbar />
-      <AppHeader />
+      <Suspense fallback={null}>
+        <Navbar />
+      </Suspense>
       <PublicMenubar />
-      <PublicMain>{children}</PublicMain>
+      <div className="pt-24">{children}</div>
       <Footer />
     </>
   );
