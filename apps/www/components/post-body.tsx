@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ExternalLink } from "./external-link";
 
 // Detects URLs, @mentions, and #hashtags in one pass. Lookbehinds avoid matching
 // inside words / email addresses (e.g. foo@bar.com won't linkify as a mention).
@@ -32,18 +33,17 @@ export function PostBody({
       const trailing = url.match(/[).,!?;:'"\]]+$/)?.[0] ?? "";
       const cleanUrl = trailing ? url.slice(0, -trailing.length) : url;
       nodes.push(
-        <a
+        // ExternalLink confirms before leaving the app (warning harder on risky
+        // URLs). relative z-10 lifts it above the post-card's full-card open
+        // overlay so it's clickable; the link's own handler stops that overlay
+        // from also firing. [#29]
+        <ExternalLink
           key={key++}
           href={cleanUrl}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          // relative z-10 lifts the link above the post-card's full-card open
-          // overlay so it's clickable by mouse (it was already keyboard
-          // focusable) — body text stays below to still open the thread. [#29]
           className="relative z-10 text-pink-500 hover:underline break-all"
         >
           {cleanUrl}
-        </a>,
+        </ExternalLink>,
       );
       if (trailing) nodes.push(trailing);
     } else if (mention) {
