@@ -65,8 +65,8 @@ export function CommentMenu({
       );
 
       // ...and decrement the parent post's comment count across feed + detail.
-      queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        queryKeys.posts(),
+      queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+        { queryKey: queryKeys.postsRoot() },
         (current) =>
           patchPostAcrossFeed(current, postId, (post) => ({
             ...post,

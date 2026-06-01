@@ -18,6 +18,32 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [4.7.0] - 2026-06-01
+
+### Added
+
+- Feed sorting — `/feed` now has Hot and Latest modes. Hot is the default discovery
+  feed; Latest preserves the chronological posts/reposts timeline at
+  `/feed?sort=latest`.
+- Mobile compose — a floating compose button on the feed opens a full-screen
+  `/compose` page for writing a post, replacing the inline composer at the top of the
+  feed.
+
+### Changed
+
+- The default feed now ranks recent posts by time-decayed engagement from likes,
+  comments, and reposts, with a small author-diversity pass so one active author is
+  less likely to dominate a page.
+- Refreshed the `/feed` and `/notes` header into a compact top bar — your avatar
+  (left), a centered umamin logo, and the theme toggle (right) — replacing the
+  default bar on those pages.
+
+### Performance & Cost
+
+- Hot feed ranking stays globally cacheable: it ranks only a bounded recent candidate
+  window, reuses the existing per-viewer overlay, and keeps likes/comments/reposts
+  eventually consistent instead of invalidating the whole feed on every interaction.
+
 ## [4.6.1] - 2026-06-01
 
 ### Added
@@ -230,6 +256,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[4.7.0]: https://github.com/omsimos/umamin/compare/v4.6.1...v4.7.0
 [4.6.1]: https://github.com/omsimos/umamin/compare/v4.6.0...v4.6.1
 [4.6.0]: https://github.com/omsimos/umamin/compare/v4.5.0...v4.6.0
 [4.5.0]: https://github.com/omsimos/umamin/compare/v4.4.0...v4.5.0

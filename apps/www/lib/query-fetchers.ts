@@ -1,4 +1,5 @@
 import type { SelectNote } from "@umamin/db/schema/note";
+import type { FeedSort } from "@/lib/feed-sort";
 import type {
   CommentsResponse,
   CurrentUserResponse,
@@ -30,9 +31,14 @@ function appendCursor(baseUrl: string, cursor: string | null) {
 export async function fetchPostsPage(
   cursor: string | null,
   isAuthenticated: boolean,
+  sort: FeedSort,
 ) {
   const baseUrl = isAuthenticated ? "/api/posts" : "/api/public/posts";
-  const url = appendCursor(baseUrl, cursor);
+  const params = new URLSearchParams({ sort });
+  if (cursor) {
+    params.set("cursor", cursor);
+  }
+  const url = `${baseUrl}?${params.toString()}`;
   return fetchJson<FeedResponse>(url);
 }
 

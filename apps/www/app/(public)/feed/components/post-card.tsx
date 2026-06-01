@@ -102,8 +102,8 @@ export function PostCard({
   // values; scoping the patch removes that race.
   const syncLikeCache = (nextLiked: boolean, nextLikes: number) => {
     if ("commentCount" in data) {
-      queryClient.setQueryData<InfiniteData<FeedResponse>>(
-        queryKeys.posts(),
+      queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+        { queryKey: queryKeys.postsRoot() },
         (current) =>
           patchPostAcrossFeed(current, data.id, (post) => ({
             ...post,
@@ -135,8 +135,8 @@ export function PostCard({
 
   // Reposts only exist on posts (never comments), so patch the feed + post caches.
   const syncRepostCache = (nextReposted: boolean, nextReposts: number) => {
-    queryClient.setQueryData<InfiniteData<FeedResponse>>(
-      queryKeys.posts(),
+    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+      { queryKey: queryKeys.postsRoot() },
       (current) =>
         patchPostAcrossFeed(current, data.id, (post) => ({
           ...post,

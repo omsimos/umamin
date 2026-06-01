@@ -72,8 +72,8 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
   // Field-scoped cache writes: like and repost each patch ONLY their own pair so
   // a concurrent like + repost can't clobber each other with stale closure values.
   const syncLikeCache = (nextLiked: boolean, nextLikes: number) => {
-    queryClient.setQueryData<InfiniteData<FeedResponse>>(
-      queryKeys.posts(),
+    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+      { queryKey: queryKeys.postsRoot() },
       (current) =>
         patchPostAcrossFeed(current, data.id, (post) => ({
           ...post,
@@ -91,8 +91,8 @@ export function PostCardMain({ data, isAuthenticated, currentUserId }: Props) {
   };
 
   const syncRepostCache = (nextReposted: boolean, nextReposts: number) => {
-    queryClient.setQueryData<InfiniteData<FeedResponse>>(
-      queryKeys.posts(),
+    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+      { queryKey: queryKeys.postsRoot() },
       (current) =>
         patchPostAcrossFeed(current, data.id, (post) => ({
           ...post,
