@@ -1,3 +1,4 @@
+import { cn } from "@umamin/ui/lib/utils";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ExternalLink } from "./external-link";
@@ -71,5 +72,11 @@ export function PostBody({
 
   if (last < content.length) nodes.push(content.slice(last));
 
-  return <p className={className}>{nodes}</p>;
+  // whitespace-pre-wrap keeps author line breaks; break-words + min-w-0 wrap
+  // long unbroken strings so they can't overflow a flex column. [layout]
+  return (
+    <p className={cn("min-w-0 whitespace-pre-wrap break-words", className)}>
+      {nodes}
+    </p>
+  );
 }
