@@ -7,9 +7,7 @@ import { isStandaloneMode } from "@/lib/pwa";
 import { ThemeToggle } from "./theme-toggle";
 
 export function Navbar() {
-  const version = process.env.NEXT_PUBLIC_VERSION
-    ? process.env.NEXT_PUBLIC_VERSION
-    : "v3.0.0";
+  const version = process.env.NEXT_PUBLIC_VERSION ?? "v0.0.0";
 
   if (isStandaloneMode()) {
     return null;
