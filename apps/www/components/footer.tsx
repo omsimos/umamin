@@ -1,6 +1,15 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+  const pathname = usePathname();
+  // The focused post view owns the bottom (reply bar) — skip the footer there.
+  if (pathname.startsWith("/post")) {
+    return null;
+  }
+
   return (
     <footer className="pb-24 lg:pb-8 flex flex-col items-center text-muted-foreground text-sm">
       <div>

@@ -64,7 +64,7 @@ const AdContainer = ({ placement, className }: Props) => {
 
   useEffect(() => {
     if (
-      !config ||
+      !config?.slotId ||
       !shouldInitialize ||
       process.env.NODE_ENV !== "production" ||
       typeof window === "undefined" ||
@@ -126,7 +126,8 @@ const AdContainer = ({ placement, className }: Props) => {
           ad: {placement}
         </div>
       ) : (
-        shouldInitialize && (
+        shouldInitialize &&
+        config.slotId && (
           <ins
             ref={adRef}
             className="adsbygoogle"

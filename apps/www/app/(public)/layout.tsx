@@ -13,9 +13,13 @@ export default function PublicLayout({
       <Suspense fallback={null}>
         <Navbar />
       </Suspense>
-      <PublicMenubar />
+      <Suspense fallback={null}>
+        <PublicMenubar />
+      </Suspense>
       <div className="pt-24">{children}</div>
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </>
   );
 }

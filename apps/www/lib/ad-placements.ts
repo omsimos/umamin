@@ -24,6 +24,11 @@ export const adPlacements = {
     minHeight: 250,
     lazy: true,
   },
+  post_detail: {
+    slotId: "4417573957",
+    minHeight: 280,
+    lazy: false,
+  },
 } as const;
 
 export type AdPlacement = keyof typeof adPlacements;
