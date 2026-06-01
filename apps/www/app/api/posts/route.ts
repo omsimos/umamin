@@ -15,6 +15,10 @@ export async function GET(req: NextRequest) {
     const sort = normalizeFeedSort(req.nextUrl.searchParams.get("sort"));
     const { session } = await getSession();
 
+    if (sort === "following" && !session) {
+      return privateJson({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const result = await getPostsPage({
       cursor,
       sort,

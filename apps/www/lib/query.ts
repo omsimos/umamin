@@ -12,7 +12,8 @@ const stableRefetchOptions = {
 };
 
 export const queryKeys = {
-  posts: (sort: FeedSort) => ["posts", sort] as const,
+  posts: (sort: FeedSort, viewerKey: string = "public") =>
+    ["posts", sort, viewerKey] as const,
   postsRoot: () => ["posts"] as const,
   post: (postId: string) => ["post", postId] as const,
   postComments: (postId: string) => ["post-comments", postId] as const,

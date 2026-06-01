@@ -9,6 +9,10 @@ import type { FeedResponse } from "@/lib/query-types";
 import type { FeedItem, PostData } from "@/types/post";
 import type { PublicUser } from "@/types/user";
 
+function isNonFollowingFeedQuery(queryKey: readonly unknown[]) {
+  return queryKey[0] === "posts" && queryKey[1] !== "following";
+}
+
 export function useCreatePost(user: PublicUser | null) {
   const queryClient = useQueryClient();
   const submit = useSingleFlightAction(createPostAction);
@@ -45,7 +49,10 @@ export function useCreatePost(user: PublicUser | null) {
       const optimistic: FeedItem = { type: "post", post: optimisticPost };
 
       queryClient.setQueriesData<InfiniteData<FeedResponse>>(
-        { queryKey: queryKeys.postsRoot() },
+        {
+          queryKey: queryKeys.postsRoot(),
+          predicate: (query) => isNonFollowingFeedQuery(query.queryKey),
+        },
         (current) => prependFeedItem(current, optimistic),
       );
 
@@ -75,7 +82,10 @@ export function useCreatePost(user: PublicUser | null) {
         };
 
         queryClient.setQueriesData<InfiniteData<FeedResponse>>(
-          { queryKey: queryKeys.postsRoot() },
+          {
+            queryKey: queryKeys.postsRoot(),
+            predicate: (query) => isNonFollowingFeedQuery(query.queryKey),
+          },
           (previous) =>
             replaceFeedItem(
               previous,

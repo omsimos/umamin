@@ -15,6 +15,7 @@ import { getSession } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { redis } from "@/lib/redis";
 import { getPostById } from "@/lib/server/data";
+import { refreshHotPostRank, removeHotPostRank } from "@/lib/server/feed-rank";
 import { formatContent } from "@/lib/utils";
 
 // Records the newest feed-edge timestamp so the client can show a "new posts"
@@ -78,6 +79,7 @@ export async function createPostAction(
     // sees their post via the optimistic prepend; the feed refreshes async.
     revalidateTag("posts", "max");
     updateTag(`user-posts:${session.userId}`);
+    await refreshHotPostRank(createdPost.id);
     await bumpFeedLatest(createdPost.createdAt);
 
     return {
@@ -115,6 +117,7 @@ export async function deletePostAction({ postId }: { postId: string }) {
 
     // SWR like createPostAction — avoid the blocking full feed re-scan.
     revalidateTag("posts", "max");
+    await removeHotPostRank(postId);
     updateTag(`user-posts:${session.userId}`);
     updateTag(`post:${postId}`);
     updateTag(`post-comments:${postId}`);
@@ -186,6 +189,7 @@ export async function createCommentAction(
     // below refresh immediately. Avoids a full feed re-scan on every comment.
     updateTag(`post:${postId}`);
     updateTag(`post-comments:${postId}`);
+    await refreshHotPostRank(postId);
 
     return { success: true, comment: createdComment };
   } catch (err) {
@@ -229,9 +233,14 @@ export async function deleteCommentAction({
 
     await db.transaction(async (tx) => {
       // The comment's own likes cascade via FK (post_comment_like → comment).
-      await tx
+      const removed = await tx
         .delete(postCommentTable)
-        .where(eq(postCommentTable.id, commentId));
+        .where(eq(postCommentTable.id, commentId))
+        .returning({ id: postCommentTable.id });
+
+      if (removed.length === 0) {
+        return;
+      }
 
       // Inverse of createCommentAction's increment; guarded against underflow.
       await tx
@@ -246,6 +255,7 @@ export async function deleteCommentAction({
     // the feed's commentCount eventually-consistent (<=120s).
     updateTag(`post:${comment.postId}`);
     updateTag(`post-comments:${comment.postId}`);
+    await refreshHotPostRank(comment.postId);
 
     return { success: true, postId: comment.postId };
   } catch (err) {
@@ -271,25 +281,18 @@ export async function addLikeAction({ postId }: { postId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.postLikeTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(postLikeTable.postId, postId),
-          eq(postLikeTable.userId, session.userId),
-        ),
-      });
-
-      if (existing) {
-        return { success: true, alreadyLiked: true };
-      }
-
-      await tx
+      const inserted = await tx
         .insert(postLikeTable)
         .values({
           postId,
           userId: session.userId,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({ id: postLikeTable.id });
+
+      if (inserted.length === 0) {
+        return { success: true, alreadyLiked: true };
+      }
 
       await tx
         .update(postTable)
@@ -307,6 +310,9 @@ export async function addLikeAction({ postId }: { postId: string }) {
     // consistent (<=120s). The per-viewer liked tag below keeps the viewer's
     // own like state fresh. This avoids a full feed-cache miss on every like.
     updateTag(`post:${postId}:liked:${session.userId}`);
+    if (!("alreadyLiked" in result)) {
+      await refreshHotPostRank(postId);
+    }
     return result;
   } catch (err) {
     console.log(err);
@@ -331,26 +337,19 @@ export async function removeLikeAction({ postId }: { postId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.postLikeTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(postLikeTable.postId, postId),
-          eq(postLikeTable.userId, session.userId),
-        ),
-      });
-
-      if (!existing) {
-        return { success: true, alreadyRemoved: true };
-      }
-
-      await tx
+      const removed = await tx
         .delete(postLikeTable)
         .where(
           and(
             eq(postLikeTable.postId, postId),
             eq(postLikeTable.userId, session.userId),
           ),
-        );
+        )
+        .returning({ id: postLikeTable.id });
+
+      if (removed.length === 0) {
+        return { success: true, alreadyRemoved: true };
+      }
 
       await tx
         .update(postTable)
@@ -366,6 +365,9 @@ export async function removeLikeAction({ postId }: { postId: string }) {
     // See addLikeAction: skip the "posts" feed tag; likeCount is eventually
     // consistent in the feed, and the per-viewer tag below stays fresh.
     updateTag(`post:${postId}:liked:${session.userId}`);
+    if (!("alreadyRemoved" in result)) {
+      await refreshHotPostRank(postId);
+    }
 
     return result;
   } catch (err) {
@@ -395,25 +397,18 @@ export async function addCommentLikeAction({
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.postCommentLikeTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(postCommentLikeTable.commentId, commentId),
-          eq(postCommentLikeTable.userId, session.userId),
-        ),
-      });
-
-      if (existing) {
-        return { success: true, alreadyLiked: true };
-      }
-
-      await tx
+      const inserted = await tx
         .insert(postCommentLikeTable)
         .values({
           commentId,
           userId: session.userId,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({ id: postCommentLikeTable.id });
+
+      if (inserted.length === 0) {
+        return { success: true, alreadyLiked: true };
+      }
 
       await tx
         .update(postCommentTable)
@@ -459,26 +454,19 @@ export async function removeCommentLikeAction({
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.postCommentLikeTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(postCommentLikeTable.commentId, commentId),
-          eq(postCommentLikeTable.userId, session.userId),
-        ),
-      });
-
-      if (!existing) {
-        return { success: true, alreadyRemoved: true };
-      }
-
-      await tx
+      const removed = await tx
         .delete(postCommentLikeTable)
         .where(
           and(
             eq(postCommentLikeTable.commentId, commentId),
             eq(postCommentLikeTable.userId, session.userId),
           ),
-        );
+        )
+        .returning({ id: postCommentLikeTable.id });
+
+      if (removed.length === 0) {
+        return { success: true, alreadyRemoved: true };
+      }
 
       await tx
         .update(postCommentTable)
@@ -535,18 +523,6 @@ export async function addRepostAction(
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.postRepostTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(postRepostTable.postId, postId),
-          eq(postRepostTable.userId, session.userId),
-        ),
-      });
-
-      if (existing) {
-        return { success: true, alreadyReposted: true };
-      }
-
       const formatted = content?.trim() ? formatContent(content) : null;
 
       const [repost] = await tx
@@ -556,7 +532,12 @@ export async function addRepostAction(
           userId: session.userId,
           content: formatted,
         })
+        .onConflictDoNothing()
         .returning();
+
+      if (!repost) {
+        return { success: true, alreadyReposted: true };
+      }
 
       await tx
         .update(postTable)
@@ -575,6 +556,9 @@ export async function addRepostAction(
     // + the feed:latest "new posts" pill (bumped below); the actor's own state
     // is kept fresh by the per-viewer reposted tag + syncRepostCache.
     updateTag(`post:${postId}:reposted:${session.userId}`);
+    if (!("alreadyReposted" in result)) {
+      await refreshHotPostRank(postId);
+    }
     if ("repost" in result && result.repost) {
       await bumpFeedLatest(result.repost.createdAt);
     }
@@ -602,26 +586,19 @@ export async function removeRepostAction({ postId }: { postId: string }) {
     }
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.query.postRepostTable.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(postRepostTable.postId, postId),
-          eq(postRepostTable.userId, session.userId),
-        ),
-      });
-
-      if (!existing) {
-        return { success: true, alreadyRemoved: true };
-      }
-
-      await tx
+      const removed = await tx
         .delete(postRepostTable)
         .where(
           and(
             eq(postRepostTable.postId, postId),
             eq(postRepostTable.userId, session.userId),
           ),
-        );
+        )
+        .returning({ id: postRepostTable.id });
+
+      if (removed.length === 0) {
+        return { success: true, alreadyRemoved: true };
+      }
 
       await tx
         .update(postTable)
@@ -637,6 +614,9 @@ export async function removeRepostAction({ postId }: { postId: string }) {
     // See addRepostAction: skip the global "posts" recompute; the removed edge
     // ages out via the 120s revalidate, and the per-viewer tag stays fresh.
     updateTag(`post:${postId}:reposted:${session.userId}`);
+    if (!("alreadyRemoved" in result)) {
+      await refreshHotPostRank(postId);
+    }
     return result;
   } catch (err) {
     console.log(err);

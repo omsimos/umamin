@@ -46,6 +46,7 @@ export function PostList({
   isAuthenticated: boolean;
   currentUserId?: string;
 }) {
+  const viewerKey = currentUserId ?? "public";
   const {
     data,
     isLoading,
@@ -56,7 +57,8 @@ export function PostList({
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery<FeedResponse>({
-    queryKey: queryKeys.posts(sort),
+    queryKey: queryKeys.posts(sort, viewerKey),
+    enabled: sort !== "following" || isAuthenticated,
     queryFn: ({ pageParam }) =>
       fetchPostsPage(
         (pageParam as string | null) ?? null,
@@ -115,7 +117,7 @@ export function PostList({
   // so the cost stays bounded; the dedupe map above absorbs any overlap.
   const handleShowNewPosts = async () => {
     queryClient.setQueryData<InfiniteData<FeedResponse>>(
-      queryKeys.posts(sort),
+      queryKeys.posts(sort, viewerKey),
       (old) =>
         old
           ? {
@@ -210,6 +212,15 @@ export function PostList({
         className="mb-5"
         tabs={[
           { label: "Hot", href: "/feed", active: sort === "hot" },
+          ...(isAuthenticated
+            ? [
+                {
+                  label: "Following",
+                  href: "/feed?sort=following",
+                  active: sort === "following",
+                },
+              ]
+            : []),
           {
             label: "Latest",
             href: "/feed?sort=latest",
