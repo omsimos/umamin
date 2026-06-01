@@ -348,7 +348,7 @@ export function PostCard({
         </AvatarFallback>
       </Avatar>
 
-      <div className=" w-full">
+      <div className="w-full min-w-0">
         <div className="flex justify-between">
           <div className="flex items-center space-x-1">
             <Link

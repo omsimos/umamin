@@ -17,6 +17,12 @@ export function Navbar() {
     return null;
   }
 
+  // Post detail is a focused view with its own header (PostHeader) — hide the
+  // global bar entirely on every breakpoint.
+  if (pathname.startsWith("/post")) {
+    return null;
+  }
+
   // Feed surfaces use the mobile AppHeader; keep the desktop bar there.
   const feedSurface = pathname === "/feed" || pathname === "/notes";
 

@@ -29,11 +29,7 @@ export async function Menubar() {
       </Link>
 
       {user?.username ? (
-        <Link
-          href={`/user/${user.username}`}
-          aria-label="Your profile"
-          title="Profile"
-        >
+        <Link href="/inbox" aria-label="Your inbox" title="Inbox">
           <CircleUserRoundIcon className="h-6 w-6" />
         </Link>
       ) : (

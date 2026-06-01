@@ -84,6 +84,58 @@ export function formatContent(content: string) {
   return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n").trim();
 }
 
+async function dataUrlToPngFile(
+  dataUrl: string,
+  filename: string,
+): Promise<File | null> {
+  try {
+    const blob = await (await fetch(dataUrl)).blob();
+    return new File([blob], filename, { type: "image/png" });
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+const EXPORT_BG = "#111113";
+
+// Pads the rendered card onto a larger canvas so the export is social-ready: a
+// uniform inset margin on every side, and landscape cards grown to 1:1 (tall
+// cards keep their portrait ratio — already postable). Returns the original on
+// any failure so a save never breaks over framing.
+async function padForSharing(dataUrl: string): Promise<string> {
+  try {
+    const img = new Image();
+    img.src = dataUrl;
+    await img.decode();
+
+    const { width: w, height: h } = img;
+    const margin = Math.round(Math.max(w, h) * 0.05);
+    const canvasW = w + margin * 2;
+    const canvasH = Math.max(h + margin * 2, canvasW);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return dataUrl;
+
+    ctx.fillStyle = EXPORT_BG;
+    ctx.fillRect(0, 0, canvasW, canvasH);
+    ctx.drawImage(
+      img,
+      Math.round((canvasW - w) / 2),
+      Math.round((canvasH - h) / 2),
+    );
+
+    return canvas.toDataURL("image/png");
+  } catch (err) {
+    console.log(err);
+    return dataUrl;
+  }
+}
+
 export const saveImage = async (id: string, isPost?: boolean) => {
   const target = document.querySelector(`#${id}`);
 
@@ -96,11 +148,13 @@ export const saveImage = async (id: string, isPost?: boolean) => {
   // feed/profile/chat client bundles — it's only needed for this download.
   const { domToPng } = await import("modern-screenshot");
 
-  toast.promise(
-    domToPng(target, {
+  const toastId = toast.loading("Saving...");
+
+  try {
+    const rawDataUrl = await domToPng(target, {
       quality: 1,
       scale: 4,
-      backgroundColor: "#111113",
+      backgroundColor: EXPORT_BG,
       style: {
         ...(isPost
           ? {
@@ -112,22 +166,45 @@ export const saveImage = async (id: string, isPost?: boolean) => {
               placeItems: "center",
             }),
       },
-    })
-      .then((dataUrl) => {
-        const link = document.createElement("a");
-        link.download = `umamin-${nanoid(5)}.png`;
-        link.href = dataUrl;
-        link.click();
-      })
-      .catch((err) => {
-        console.log(err);
-      }),
-    {
-      loading: "Saving...",
-      success: "Download ready",
-      error: "An error occured!",
-    },
-  );
+    });
+
+    const dataUrl = await padForSharing(rawDataUrl);
+
+    const filename = `umamin-${nanoid(5)}.png`;
+
+    // Where the Web Share API can take files (iOS/Android, installed PWA), hand
+    // off to the native sheet — its "Save Image" lands the photo in the user's
+    // gallery, which a plain <a download> can't do on iOS (Files only). Gated to
+    // deployed envs to match sharePost and keep local dev a direct download.
+    if (process.env.NODE_ENV === "production") {
+      const file = await dataUrlToPngFile(dataUrl, filename);
+
+      if (file && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          toast.dismiss(toastId);
+          return;
+        } catch (err) {
+          // Sheet dismissed by the user — leave it, no download.
+          if (err instanceof DOMException && err.name === "AbortError") {
+            toast.dismiss(toastId);
+            return;
+          }
+          // Any other share failure (e.g. lost user activation) falls through
+          // to a direct download below.
+        }
+      }
+    }
+
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+    toast.success("Download ready", { id: toastId });
+  } catch (err) {
+    console.log(err);
+    toast.error("An error occured!", { id: toastId });
+  }
 };
 
 export const sharePost = (postId: string) => {

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PostCardMain } from "@/app/(public)/feed/components/post-card-main";
 import { getPostAction, getPostPublicAction } from "@/app/actions/post";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
@@ -10,6 +11,7 @@ import type { CommentsResponse } from "@/lib/query-types";
 import { getPostCommentsPage } from "@/lib/server/data";
 import { toPublicUser } from "@/types/user";
 import { CommentsList } from "../components/comments-list";
+import { PostHeader } from "../components/post-header";
 import ReplyForm from "../components/reply-form";
 
 const truncate = (text: string, max = 160) =>
@@ -101,20 +103,29 @@ export default async function Post({
     staleTime: 120_000,
   });
 
+  // Shared between the header's Save Image and the post card's screenshot target.
+  const imageId = `umamin-${data.id}`;
+
   return (
-    <main className="w-full sm:max-w-lg mx-auto bg-background">
+    // -mt-24 cancels the (public) layout's pt-24 — the focused view hides the
+    // global top chrome, so content starts at the top; pb clears the fixed reply
+    // bar (and the mobile bottom nav beneath it).
+    <main className="-mt-24 min-h-svh w-full sm:max-w-lg mx-auto bg-background pb-40 lg:pb-28">
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <PostCardMain
+        <PostHeader
+          postId={id}
+          authorId={data.author.id}
+          imageId={imageId}
           isAuthenticated={!!user}
           currentUserId={user?.id}
-          data={data}
         />
 
-        {currentUser && (
-          <div className="w-full py-4 border-b font-medium text-muted-foreground px-7 sm:px-0">
-            <ReplyForm user={currentUser} postId={id} />
-          </div>
-        )}
+        <PostCardMain isAuthenticated={!!user} imageId={imageId} data={data} />
+
+        <ClientOnlyAdContainer
+          placement="post_detail"
+          className="my-6 px-7 sm:px-6"
+        />
 
         <div className="space-y-6 my-6">
           <CommentsList
@@ -124,6 +135,14 @@ export default async function Post({
           />
         </div>
       </HydrationBoundary>
+
+      {currentUser && (
+        <div className="fixed inset-x-0 bottom-20 lg:bottom-0 z-30 border-t bg-background/80 backdrop-blur">
+          <div className="mx-auto w-full sm:max-w-lg px-4 py-3">
+            <ReplyForm user={currentUser} postId={id} />
+          </div>
+        </div>
+      )}
     </main>
   );
 }

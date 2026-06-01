@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@umamin/ui/lib/utils";
 import {
   CircleUserRoundIcon,
   LayoutDashboardIcon,
@@ -11,6 +12,7 @@ import {
   UserCogIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -32,9 +34,18 @@ export function PublicMenubar() {
 
   const username = currentUser?.user?.username;
   const isAuthenticated = !!currentUser?.user?.id;
+  const pathname = usePathname();
+  // On post detail the bottom nav stays (the reply input sits above it), but the
+  // desktop top-bar variant is hidden so the focused view owns the top.
+  const isPostDetail = pathname.startsWith("/post");
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto flex max-w-screen-sm items-center justify-center gap-3 bg-bg bg-opacity-40 bg-clip-padding p-2 text-3xl backdrop-blur-xl backdrop-filter sm:px-10 lg:bottom-auto lg:top-0 lg:z-50 lg:bg-transparent lg:px-14 lg:text-[1.75rem] lg:backdrop-blur-none [&>*:hover]:bg-muted *:flex *:w-full *:justify-center *:rounded-lg *:py-5 *:text-center *:text-muted-foreground *:transition-colors *:duration-300">
+    <div
+      className={cn(
+        "fixed bottom-0 left-0 right-0 z-40 mx-auto flex max-w-screen-sm items-center justify-center gap-3 bg-bg bg-opacity-40 bg-clip-padding p-2 text-3xl backdrop-blur-xl backdrop-filter sm:px-10 lg:bottom-auto lg:top-0 lg:z-50 lg:bg-transparent lg:px-14 lg:text-[1.75rem] lg:backdrop-blur-none [&>*:hover]:bg-muted *:flex *:w-full *:justify-center *:rounded-lg *:py-5 *:text-center *:text-muted-foreground *:transition-colors *:duration-300",
+        isPostDetail && "lg:hidden",
+      )}
+    >
       {username ? (
         <ShareLinkDialog username={username} />
       ) : (
@@ -48,11 +59,7 @@ export function PublicMenubar() {
       </Link>
 
       {username ? (
-        <Link
-          href={`/user/${username}`}
-          aria-label="Your profile"
-          title="Profile"
-        >
+        <Link href="/inbox" aria-label="Your inbox" title="Inbox">
           <CircleUserRoundIcon className="h-6 w-6" />
         </Link>
       ) : (
