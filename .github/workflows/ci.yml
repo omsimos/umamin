@@ -102,3 +102,52 @@ jobs:
 
       - name: Run Biome
         run: biome ci .
+
+  release:
+    name: Release
+    needs: [build, typecheck, quality]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract latest changelog entry
+        id: rel
+        run: |
+          VERSION=$(grep -m1 -oE '^## \[[^]]+\]' CHANGELOG.md | sed -E 's/^## \[//; s/\]$//')
+          if [ -z "$VERSION" ]; then
+            echo "::error::No '## [version]' heading found in CHANGELOG.md"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # Body = everything under the top entry, up to the next entry or the
+          # reference-link block; strip leading blank lines.
+          awk 'f && /^## \[/ {exit} f && /^\[[^]]+\]: https?:/ {exit} /^## \[/ {f=1; next} f {print}' CHANGELOG.md \
+            | sed '/./,$!d' > RELEASE_BODY.md
+          echo "Latest changelog version: $VERSION"
+          echo "----- notes -----"
+          cat RELEASE_BODY.md
+
+      - name: Create GitHub release if tag is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.rel.outputs.version }}
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          TAG="v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists — no release needed."
+            exit 0
+          fi
+          PRERELEASE=""
+          case "$VERSION" in *-*) PRERELEASE="--prerelease" ;; esac
+          gh release create "$TAG" \
+            --target "$TARGET_SHA" \
+            --title "$TAG" \
+            --notes-file RELEASE_BODY.md \
+            $PRERELEASE
+          echo "Published $TAG"
