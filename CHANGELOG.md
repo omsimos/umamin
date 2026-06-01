@@ -34,6 +34,9 @@ any that are empty.
 - The default feed now ranks recent posts by time-decayed engagement from likes,
   comments, and reposts, with a small author-diversity pass so one active author is
   less likely to dominate a page.
+- Refreshed the `/feed` and `/notes` header into a compact top bar — your avatar
+  (left), a centered umamin logo, and the theme toggle (right) — replacing the
+  default bar on those pages.
 
 ### Performance & Cost
 
@@ -253,6 +256,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[4.7.0]: https://github.com/omsimos/umamin/compare/v4.6.1...v4.7.0
 [4.6.1]: https://github.com/omsimos/umamin/compare/v4.6.0...v4.6.1
 [4.6.0]: https://github.com/omsimos/umamin/compare/v4.5.0...v4.6.0
 [4.5.0]: https://github.com/omsimos/umamin/compare/v4.4.0...v4.5.0

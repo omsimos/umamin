@@ -2,14 +2,22 @@
 
 import { Badge } from "@umamin/ui/components/badge";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { isStandaloneMode } from "@/lib/pwa";
 // import { PwaInstallButton } from "./pwa-install-button";
 import { ThemeToggle } from "./theme-toggle";
+import { UmaminLogo } from "./umamin-logo";
 
 export function Navbar() {
+  const pathname = usePathname();
   const version = process.env.NEXT_PUBLIC_VERSION ?? "v0.0.0";
 
   if (isStandaloneMode()) {
+    return null;
+  }
+
+  // Feed surfaces use the dedicated AppHeader instead.
+  if (pathname === "/feed" || pathname === "/notes") {
     return null;
   }
 
@@ -17,9 +25,16 @@ export function Navbar() {
     <nav className="fixed left-0 right-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter lg:z-40 container max-w-7xl">
       <div className="flex justify-between items-center">
         <div className="space-x-2 flex items-center">
-          <Link href="/" aria-label="logo">
-            <span className="font-semibold text-foreground">umamin</span>
-            <span className="text-muted-foreground font-medium">.link</span>
+          <Link
+            href="/"
+            aria-label="umamin"
+            className="flex items-center gap-1.5"
+          >
+            <UmaminLogo className="size-6" />
+            <span>
+              <span className="font-semibold text-foreground">umamin</span>
+              <span className="text-muted-foreground font-medium">.link</span>
+            </span>
           </Link>
 
           <Link

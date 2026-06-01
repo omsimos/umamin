@@ -1,5 +1,7 @@
+import { AppHeader } from "@/components/app-header";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
+import { PublicMain } from "@/components/public-main";
 import { PublicMenubar } from "@/components/public-menu-bar";
 
 export default function PublicLayout({
@@ -10,8 +12,9 @@ export default function PublicLayout({
   return (
     <>
       <Navbar />
+      <AppHeader />
       <PublicMenubar />
-      <div className="pt-24">{children}</div>
+      <PublicMain>{children}</PublicMain>
       <Footer />
     </>
   );
