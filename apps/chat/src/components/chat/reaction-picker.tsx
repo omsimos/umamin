@@ -12,7 +12,7 @@ export function ReactionPicker({
           key={emoji}
           type="button"
           aria-label={`React ${emoji}`}
-          className="hover:bg-accent rounded-full px-1 text-base leading-none transition-colors"
+          className="hover:bg-accent focus-visible:border-ring focus-visible:ring-ring/50 rounded-full px-1 text-base leading-none transition-colors outline-none focus-visible:ring-[3px]"
           onClick={() => onPick(emoji)}
         >
           {emoji}
