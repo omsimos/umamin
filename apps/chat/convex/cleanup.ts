@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 import { GRACE_MS, MAX_QUEUE_WAIT_MS, SESSION_TTL_MS } from "./constants";
+import { presence } from "./presence";
 
 export const deleteMatch = internalMutation({
   args: { matchId: v.id("matches") },
@@ -23,6 +24,9 @@ export const deleteMatch = internalMutation({
       }
       await ctx.db.delete(matchId);
     }
+    // Tear down the presence room (room/roomTokens/sessionTokens) keyed on this
+    // match so the component's tables don't accumulate orphaned rows per match.
+    await presence.removeRoom(ctx, matchId);
   },
 });
 
@@ -57,6 +61,8 @@ export const sweepEndedMatches = internalMutation({
           await ctx.db.patch(s._id, { currentMatchId: undefined });
       }
       await ctx.db.delete(m._id);
+      // Tear down the presence room alongside the match (see deleteMatch).
+      await presence.removeRoom(ctx, m._id);
     }
   },
 });
