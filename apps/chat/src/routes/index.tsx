@@ -45,11 +45,7 @@ function Lobby() {
   return (
     <AppShell rail={rail}>
       <div className="mx-auto flex h-full max-w-xl flex-col overflow-y-auto p-6 sm:p-8">
-        <span className="border-primary/30 bg-primary/10 text-primary inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-xs">
-          <span className="bg-primary size-1.5 animate-pulse rounded-full" />
-          1,248 chatting now
-        </span>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           Talk to someone new.
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
