@@ -3,34 +3,45 @@ import { describe, expect, it, vi } from "vitest";
 import { IDLE_SNAPSHOT } from "../session/types";
 import { createConvexTransport } from "./convex-transport";
 
-// Minimal shape for the Node-level unhandled-rejection listeners used below;
-// the chat tsconfig doesn't pull in @types/node, so process isn't ambient.
-type NodeProcess = {
-  on(event: "unhandledRejection", listener: (reason: unknown) => void): void;
-  off(event: "unhandledRejection", listener: (reason: unknown) => void): void;
-};
-
 // A fake ConvexReactClient implementing only the surface the transport uses:
-// watchQuery -> { onUpdate, localQueryResult } and mutation(). `_emit` swaps the
-// local result and fires the subscribed callback, mimicking a server update.
-function fakeClient(initial: unknown) {
-  let result = initial;
-  let cb: (() => void) | null = null;
+// watchQuery -> { onUpdate, localQueryResult } and mutation(). The transport
+// watches two queries (snapshot + messages), so watchers are kept per query in
+// creation order: `_emit` drives the meta (snapshot) query, `_emitMessages` the
+// messages query — both fire the subscribed callback, mimicking a server update.
+function fakeClient(initialMeta: unknown) {
+  const order: { result: unknown; cb: (() => void) | null }[] = [];
+  const byQuery = new Map<unknown, (typeof order)[number]>();
+  function watcher(query: unknown) {
+    let w = byQuery.get(query);
+    if (!w) {
+      w = { result: order.length === 0 ? initialMeta : undefined, cb: null };
+      byQuery.set(query, w);
+      order.push(w);
+    }
+    return w;
+  }
+  function emitTo(index: number, next: unknown) {
+    const w = order[index];
+    if (!w) return;
+    w.result = next;
+    w.cb?.();
+  }
   return {
-    watchQuery: () => ({
-      onUpdate: (fn: () => void) => {
-        cb = fn;
-        return () => {
-          cb = null;
-        };
-      },
-      localQueryResult: () => result,
-    }),
-    mutation: vi.fn(async () => {}),
-    _emit: (next: unknown) => {
-      result = next;
-      cb?.();
+    watchQuery: (query: unknown) => {
+      const w = watcher(query);
+      return {
+        onUpdate: (fn: () => void) => {
+          w.cb = fn;
+          return () => {
+            w.cb = null;
+          };
+        },
+        localQueryResult: () => w.result,
+      };
     },
+    mutation: vi.fn(async () => {}),
+    _emit: (next: unknown) => emitTo(0, next),
+    _emitMessages: (next: unknown) => emitTo(1, next),
   };
 }
 
@@ -53,6 +64,23 @@ describe("convexTransport", () => {
     const first = t.getSnapshot();
     client._emit({ ...snap }); // structurally identical
     expect(t.getSnapshot()).toBe(first); // same reference -> no churn
+  });
+
+  it("merges the separate messages query into the snapshot", () => {
+    const client = fakeClient(undefined);
+    // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+    const t = createConvexTransport(client as any, "s1");
+    // Messages alone (meta unresolved) stays idle.
+    client._emitMessages([
+      { id: "x1", author: "partner", text: "hi", ts: 1, reactions: [] },
+    ]);
+    expect(t.getSnapshot()).toEqual(IDLE_SNAPSHOT);
+    // Once meta resolves, the message list merges in.
+    client._emit({ ...IDLE_SNAPSHOT, phase: "active", matchId: "m1" });
+    const snap = t.getSnapshot();
+    expect(snap.phase).toBe("active");
+    expect(snap.messages).toHaveLength(1);
+    expect(snap.messages[0].text).toBe("hi");
   });
 
   it("send calls the mutation with sessionId", () => {
@@ -97,33 +125,31 @@ describe("convexTransport", () => {
     expect(onRateLimited).toHaveBeenCalledWith(expect.any(String));
   });
 
-  it("does not treat a non-rate-limit ConvexError as a rate limit", async () => {
+  it("routes a non-rate-limit ConvexError to onError, not onRateLimited", async () => {
     const client = fakeClient({ ...IDLE_SNAPSHOT });
     const error = new ConvexError({ kind: "Unauthorized" });
     client.mutation = vi.fn(async () => {
       throw error;
     });
     const onRateLimited = vi.fn();
-    // The transport rethrows non-rate-limit errors onto its discarded mutation
-    // chain, which lands as a Node-level unhandled rejection; capture it to
-    // assert the rethrow happened and to keep it from failing the suite.
-    const proc = (globalThis as unknown as { process: NodeProcess }).process;
-    const rethrown = new Promise<unknown>((resolve) => {
-      const handler = (reason: unknown) => {
-        proc.off("unhandledRejection", handler);
-        resolve(reason);
-      };
-      proc.on("unhandledRejection", handler);
-    });
+    const onError = vi.fn();
+    // The transport logs non-rate-limit failures rather than rethrowing them
+    // onto a discarded promise; silence the expected log noise.
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     const t = createConvexTransport(
       // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
       client as any,
       "s1",
       onRateLimited,
+      onError,
     );
     t.send("hi");
-    await expect(rethrown).resolves.toBe(error);
+    await vi.waitFor(() => expect(onError).toHaveBeenCalledWith(error));
     expect(onRateLimited).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it("forwards sessionId on every action method", () => {

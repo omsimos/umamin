@@ -1,16 +1,32 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
-import { GRACE_MS, MAX_QUEUE_WAIT_MS, SESSION_TTL_MS } from "./constants";
+import {
+  GRACE_MS,
+  MAX_QUEUE_WAIT_MS,
+  MESSAGE_DELETE_PAGE,
+  SESSION_TTL_MS,
+} from "./constants";
 import { presence } from "./presence";
 
 export const deleteMatch = internalMutation({
   args: { matchId: v.id("matches") },
   handler: async (ctx, { matchId }) => {
-    const msgs = await ctx.db
+    // Delete messages a page at a time so a long match can't exceed a single
+    // mutation's write limit; re-arm until a short (final) page, then tear the
+    // match + presence room down. Idempotent — re-runs on an already-gone match
+    // delete nothing and no-op removeRoom.
+    const page = await ctx.db
       .query("messages")
       .withIndex("by_match", (q) => q.eq("matchId", matchId))
-      .collect();
-    for (const m of msgs) await ctx.db.delete(m._id);
+      .take(MESSAGE_DELETE_PAGE);
+    for (const m of page) await ctx.db.delete(m._id);
+    if (page.length === MESSAGE_DELETE_PAGE) {
+      await ctx.scheduler.runAfter(0, internal.cleanup.deleteMatch, {
+        matchId,
+      });
+      return; // more messages remain; finish teardown on the final page
+    }
     const match = await ctx.db.get(matchId);
     if (match) {
       // Detach any sessions still pointing here (defensive).
@@ -30,9 +46,6 @@ export const deleteMatch = internalMutation({
   },
 });
 
-// The message-delete loop above runs whether or not the match doc still
-// exists, so an orphaned-message sweep is covered by the grace delete itself.
-
 export const sweepEndedMatches = internalMutation({
   args: {},
   handler: async (ctx) => {
@@ -44,14 +57,11 @@ export const sweepEndedMatches = internalMutation({
       )
       .take(100);
     for (const m of stale) {
-      const msgs = await ctx.db
-        .query("messages")
-        .withIndex("by_match", (q) => q.eq("matchId", m._id))
-        .collect();
-      for (const msg of msgs) await ctx.db.delete(msg._id);
-      // Detach any sessions still pointing here before deleting the match;
-      // otherwise sweepDeadSessions can never reclaim them (it skips rows with
-      // a currentMatchId, which would now dangle at a deleted match).
+      // Detach the sessions now so sweepDeadSessions can reclaim them on its
+      // next pass, then delegate the paged message + match + room teardown to
+      // deleteMatch in its own transaction — so one oversized or failing match
+      // can't block the rest of the batch, and a dropped teardown is retried on
+      // the next sweep (the match stays "ended" until deleteMatch removes it).
       for (const sessionId of [m.a, m.b]) {
         const s = await ctx.db
           .query("sessions")
@@ -60,9 +70,9 @@ export const sweepEndedMatches = internalMutation({
         if (s?.currentMatchId === m._id)
           await ctx.db.patch(s._id, { currentMatchId: undefined });
       }
-      await ctx.db.delete(m._id);
-      // Tear down the presence room alongside the match (see deleteMatch).
-      await presence.removeRoom(ctx, m._id);
+      await ctx.scheduler.runAfter(0, internal.cleanup.deleteMatch, {
+        matchId: m._id,
+      });
     }
   },
 });

@@ -40,6 +40,14 @@ export interface SessionSnapshot {
 }
 
 /**
+ * The snapshot minus its message list. On Convex this is its own reactive query
+ * (`chat.snapshot`) so partner status / typing / stay-connected changes don't
+ * re-read the message list; `chat.messages` carries the list separately and the
+ * transport merges them back into a `SessionSnapshot` for the UI.
+ */
+export type SnapshotMeta = Omit<SessionSnapshot, "messages">;
+
+/**
  * The single seam between the UI and the "other side".
  * mockTransport implements it now; a Convex transport will implement the same
  * shape later (subscribe ~ useQuery, getSnapshot ~ initial query value, the

@@ -29,16 +29,18 @@ export default defineSchema({
     stayConnectedB: v.boolean(),
     typingA: v.optional(v.boolean()),
     typingB: v.optional(v.boolean()),
+    // Latches true once a reconcile observes both peers live; gates the
+    // start-grace that prevents a false "partner-left" teardown of a fresh match.
+    bothEverPresent: v.optional(v.boolean()),
     status: v.union(v.literal("active"), v.literal("ended")),
     endedReason: v.optional(
       v.union(v.literal("self-ended"), v.literal("partner-left")),
     ),
     endedAt: v.optional(v.number()),
     createdAt: v.number(),
-  })
-    .index("by_a", ["a"])
-    .index("by_b", ["b"])
-    .index("by_status_endedAt", ["status", "endedAt"]),
+    // Match lookups are by id (session.currentMatchId) or by status for the
+    // cleanup sweep; participants are only read off an already-fetched match.
+  }).index("by_status_endedAt", ["status", "endedAt"]),
 
   messages: defineTable({
     matchId: v.id("matches"),

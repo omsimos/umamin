@@ -29,11 +29,22 @@ async function beat(
   matchId: string,
   userId: string,
 ) {
-  await t.mutation(api.presence.heartbeat, {
+  return await t.mutation(api.presence.heartbeat, {
     roomId: matchId,
     userId,
     sessionId: `${userId}-tab`,
     interval: 10000,
+  });
+}
+
+// Push the match's createdAt into the past so it's no longer within the
+// start-grace window that protects freshly-paired matches from teardown.
+async function ageMatchPastStartGrace(
+  t: Awaited<ReturnType<typeof matched>>["t"],
+) {
+  await t.run(async (ctx) => {
+    const m = await ctx.db.query("matches").first();
+    if (m) await ctx.db.patch(m._id, { createdAt: 1 });
   });
 }
 
@@ -64,9 +75,20 @@ describe("presence", () => {
     expect(a.phase).toBe("active");
   });
 
-  it("reconcile ends the match (partner-left) when a participant is absent", async () => {
+  it("does not end a fresh match before a slow partner has established presence", async () => {
+    const { t, matchId } = await matched();
+    await beat(t, matchId, "a"); // `b` hasn't connected yet; match is brand new
+    await t.mutation(internal.presence.reconcile, {
+      matchId: matchId as never,
+    });
+    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+    expect(a.phase).toBe("active");
+  });
+
+  it("reconcile ends the match (partner-left) once a never-present partner exceeds the start grace", async () => {
     const { t, matchId } = await matched();
     await beat(t, matchId, "a"); // `b` never heartbeats — abandoned
+    await ageMatchPastStartGrace(t);
     await t.mutation(internal.presence.reconcile, {
       matchId: matchId as never,
     });
@@ -74,5 +96,28 @@ describe("presence", () => {
     expect(a.phase).toBe("ended");
     expect(a.endedReason).toBe("partner-left");
     expect(a.partner?.status).toBe("left");
+  });
+
+  it("ends the match if a partner leaves after both were present, even within the start grace", async () => {
+    const { t, matchId } = await matched();
+    await beat(t, matchId, "a");
+    const bBeat = await beat(t, matchId, "b");
+    // First reconcile sees both live and latches bothEverPresent.
+    await t.mutation(internal.presence.reconcile, {
+      matchId: matchId as never,
+    });
+    expect((await t.query(api.chat.snapshot, { sessionId: "a" })).phase).toBe(
+      "active",
+    );
+    // `b` disconnects (tab close) while the match is still young.
+    await t.mutation(api.presence.disconnect, {
+      sessionToken: bBeat.sessionToken,
+    });
+    await t.mutation(internal.presence.reconcile, {
+      matchId: matchId as never,
+    });
+    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+    expect(a.phase).toBe("ended");
+    expect(a.endedReason).toBe("partner-left");
   });
 });
