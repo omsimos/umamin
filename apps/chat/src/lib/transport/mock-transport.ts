@@ -173,6 +173,11 @@ export function createMockTransport(
       });
     },
 
+    setTyping(_isTyping: boolean) {
+      // No-op: the mock partner simulates its own typing via partnerSay, and
+      // there's no remote peer to notify of the local user's typing.
+    },
+
     signalStayConnected() {
       if (state.phase !== "active") return;
       set({ stayConnected: { ...state.stayConnected, self: true } });

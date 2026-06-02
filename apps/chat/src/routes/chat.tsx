@@ -27,8 +27,15 @@ export const Route = createFileRoute("/chat")({
 // lets TanStack Router's autoCodeSplitting pull it into its own chunk.
 function Session() {
   const navigate = useNavigate();
-  const { snapshot, send, react, signalStayConnected, leave, findMatch } =
-    useChatSession();
+  const {
+    snapshot,
+    send,
+    react,
+    setTyping,
+    signalStayConnected,
+    leave,
+    findMatch,
+  } = useChatSession();
   const { phase, self, partner, messages, stayConnected } = snapshot;
 
   // Direct navigation / refresh with no live session -> back to lobby.
@@ -124,7 +131,7 @@ function Session() {
                 ) : undefined
               }
             />
-            <MessageComposer onSend={send} />
+            <MessageComposer onSend={send} onTyping={setTyping} />
           </>
         )}
 

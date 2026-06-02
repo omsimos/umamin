@@ -85,6 +85,12 @@ export function createConvexTransport(
     react(messageId: string, emoji: string) {
       call(api.chat.react, { messageId, emoji });
     },
+    setTyping(isTyping: boolean) {
+      // Best-effort presence signal — never toast or throw on failure.
+      client
+        .mutation(api.chat.setTyping, { sessionId, typing: isTyping })
+        .catch(() => {});
+    },
     signalStayConnected() {
       call(api.chat.signalStayConnected, {});
     },

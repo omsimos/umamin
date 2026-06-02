@@ -51,6 +51,8 @@ export interface ChatTransport {
   findMatch(self: SelfIdentity): void;
   send(text: string): void;
   react(messageId: string, emoji: string): void;
+  /** Best-effort: tell the partner whether you're currently composing. */
+  setTyping(isTyping: boolean): void;
   signalStayConnected(): void;
   leave(reason?: EndedReason): void;
 }

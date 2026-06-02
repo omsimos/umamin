@@ -15,6 +15,7 @@ interface ChatSessionValue {
   findMatch: ChatTransport["findMatch"];
   send: ChatTransport["send"];
   react: ChatTransport["react"];
+  setTyping: ChatTransport["setTyping"];
   signalStayConnected: ChatTransport["signalStayConnected"];
   leave: ChatTransport["leave"];
 }
@@ -43,6 +44,7 @@ export function ChatSessionProvider({
       findMatch: (self) => t.findMatch(self),
       send: (text) => t.send(text),
       react: (id, emoji) => t.react(id, emoji),
+      setTyping: (isTyping) => t.setTyping(isTyping),
       signalStayConnected: () => t.signalStayConnected(),
       leave: (reason) => t.leave(reason),
     }),
