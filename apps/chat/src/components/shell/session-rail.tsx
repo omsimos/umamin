@@ -10,7 +10,7 @@ import {
   AlertDialogTrigger,
 } from "@umamin/ui/components/alert-dialog";
 import { Button } from "@umamin/ui/components/button";
-import { Flag, LogOut, Shuffle } from "lucide-react";
+import { LogOut, Shuffle } from "lucide-react";
 import type { ReactNode } from "react";
 import { SeedAvatar } from "../seed-avatar";
 import { ThemeToggle } from "../theme-toggle";
@@ -21,13 +21,11 @@ export function SessionRail({
   selfSeed,
   onNewMatch,
   onEndChat,
-  onReport,
 }: {
   selfAlias: string;
   selfSeed: string;
   onNewMatch: () => void;
   onEndChat: () => void;
-  onReport: () => void;
 }) {
   return (
     <div className="flex h-full flex-col gap-2">
@@ -63,22 +61,7 @@ export function SessionRail({
         onConfirm={onEndChat}
       />
 
-      <div className="mt-auto flex flex-col gap-2">
-        <ConfirmButton
-          trigger={
-            <Button
-              variant="ghost"
-              className="text-destructive hover:text-destructive justify-start gap-2"
-            >
-              <Flag />
-              Report
-            </Button>
-          }
-          title="Report this person?"
-          description="We'll end this chat and find you someone new."
-          confirmLabel="Report & skip"
-          onConfirm={onReport}
-        />
+      <div className="mt-auto">
         <ThemeToggle />
       </div>
     </div>

@@ -70,12 +70,6 @@ function Session() {
     leave("self-ended");
   }
 
-  function report() {
-    leave();
-    findMatch(self);
-    toast.success("Reported. Finding you someone new.");
-  }
-
   const rail =
     phase === "active" ? (
       <SessionRail
@@ -83,7 +77,6 @@ function Session() {
         selfSeed={self.avatarSeed}
         onNewMatch={newMatch}
         onEndChat={endChat}
-        onReport={report}
       />
     ) : (
       <Wordmark />
