@@ -1,4 +1,7 @@
-export type SessionPhase = "idle" | "matching" | "active" | "ended";
+/** "loading" is transport-only — the reactive query hasn't resolved yet (e.g. on
+ *  a fresh page load / reload); the server never emits it. The UI must hold on
+ *  "loading" rather than treat it as "no session". */
+export type SessionPhase = "loading" | "idle" | "matching" | "active" | "ended";
 
 export type PartnerStatus = "online" | "typing" | "left";
 
@@ -78,4 +81,11 @@ export const IDLE_SNAPSHOT: SessionSnapshot = {
   partner: null,
   messages: [],
   stayConnected: { self: false, partner: false },
+};
+
+/** Returned by the Convex transport while the snapshot query is unresolved, so
+ *  the route holds instead of bouncing to the lobby on a transient idle. */
+export const LOADING_SNAPSHOT: SessionSnapshot = {
+  ...IDLE_SNAPSHOT,
+  phase: "loading",
 };
