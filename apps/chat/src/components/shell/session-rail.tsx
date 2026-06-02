@@ -14,6 +14,7 @@ import { Flag, LogOut, Shuffle } from "lucide-react";
 import type { ReactNode } from "react";
 import { SeedAvatar } from "../seed-avatar";
 import { ThemeToggle } from "../theme-toggle";
+import { Wordmark } from "./app-shell";
 
 export function SessionRail({
   selfAlias,
@@ -30,9 +31,7 @@ export function SessionRail({
 }) {
   return (
     <div className="flex h-full flex-col gap-2">
-      <span className="text-sm font-bold">
-        umamin<span className="text-primary">·chat</span>
-      </span>
+      <Wordmark />
 
       <div className="bg-card mt-1 mb-2 flex items-center gap-2 rounded-lg border p-2">
         <SeedAvatar
