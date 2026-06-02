@@ -30,6 +30,8 @@ export interface ChatMessage {
 
 export interface SessionSnapshot {
   phase: SessionPhase;
+  /** Stable id for the current match; "" when idle. */
+  matchId: string;
   self: SelfIdentity;
   partner: Partner | null;
   messages: ChatMessage[];
@@ -53,7 +55,7 @@ export interface ChatTransport {
   leave(reason?: EndedReason): void;
 }
 
-export const EMPTY_SELF: SelfIdentity = {
+const EMPTY_SELF: SelfIdentity = {
   alias: "",
   avatarSeed: "",
   interests: [],
@@ -61,6 +63,7 @@ export const EMPTY_SELF: SelfIdentity = {
 
 export const IDLE_SNAPSHOT: SessionSnapshot = {
   phase: "idle",
+  matchId: "",
   self: EMPTY_SELF,
   partner: null,
   messages: [],

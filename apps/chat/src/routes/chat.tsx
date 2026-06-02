@@ -8,9 +8,8 @@ import { MessageComposer } from "../components/chat/message-composer";
 import { MessageList } from "../components/chat/message-list";
 import { StayConnectedCelebration } from "../components/chat/stay-connected-celebration";
 import { MatchingRadar } from "../components/matching/matching-radar";
-import { AppShell } from "../components/shell/app-shell";
+import { AppShell, Wordmark } from "../components/shell/app-shell";
 import { SessionRail } from "../components/shell/session-rail";
-import { MATCH_TIPS } from "../lib/mock/data";
 import { useChatSession } from "../lib/session/chat-context";
 
 export const Route = createFileRoute("/chat")({
@@ -34,11 +33,11 @@ function Session() {
   const [celebrationDismissed, setCelebrationDismissed] = useState(false);
 
   // Reset transient UI when a new match begins.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on partner identity
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on match identity
   useEffect(() => {
     setIceBreakerDismissed(false);
     setCelebrationDismissed(false);
-  }, [partner?.avatarSeed]);
+  }, [snapshot.matchId]);
 
   function newMatch() {
     leave();
@@ -66,9 +65,7 @@ function Session() {
         onReport={report}
       />
     ) : (
-      <div className="text-sm font-bold">
-        umamin<span className="text-primary">·chat</span>
-      </div>
+      <Wordmark />
     );
 
   const showIceBreaker =
@@ -81,8 +78,8 @@ function Session() {
       <div className="relative flex h-full flex-col">
         {phase === "matching" && (
           <MatchingRadar
+            self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
             interests={self.interests}
-            tip={MATCH_TIPS[0]}
             onCancel={() => {
               leave();
               navigate({ to: "/" });
