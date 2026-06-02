@@ -17,7 +17,9 @@ export const Route = createFileRoute("/chat")({
   component: Session,
 });
 
-export function Session() {
+// Not exported: keeping the route component inline (referenced only by Route)
+// lets TanStack Router's autoCodeSplitting pull it into its own chunk.
+function Session() {
   const navigate = useNavigate();
   const { snapshot, send, react, signalStayConnected, leave, findMatch } =
     useChatSession();
