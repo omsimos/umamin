@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ChatHeader } from "../components/chat/chat-header";
 import { EndedOverlay } from "../components/chat/ended-overlay";
@@ -41,23 +41,14 @@ function Session() {
   // Stable for the session; avoid a localStorage read on every render.
   const sessionId = useMemo(() => getSessionId(), []);
 
-  // A rematch fires leave()+findMatch() as two separate mutations; the snapshot
-  // can momentarily read "idle" between them. Suppress the lobby bounce while a
-  // rematch is in flight (cleared once the phase leaves "idle").
-  const rematchingRef = useRef(false);
-
-  // Bounce to the lobby only once we KNOW there's no live session. Two cases
-  // must NOT bounce: the snapshot is still resolving on a fresh reload
-  // (phase "loading"), or a rematch is mid-flight (rematchingRef) — otherwise a
-  // reload of an active chat would drop the user to the lobby and strand them.
+  // Bounce to the lobby only once we KNOW there's no live session. "loading"
+  // (the snapshot still resolving on a fresh reload) must NOT bounce. The
+  // transport holds an optimistic "matching" across a rematch, so a transient
+  // idle never reaches here during a valid rematch — and a *failed* rematch
+  // resolves to idle and correctly bounces back to the lobby.
   useEffect(() => {
     if (phase === "loading") return;
-    if (phase !== "idle") {
-      rematchingRef.current = false;
-      return;
-    }
-    if (rematchingRef.current) return;
-    navigate({ to: "/" });
+    if (phase === "idle") navigate({ to: "/" });
   }, [phase, navigate]);
 
   const [iceBreakerDismissed, setIceBreakerDismissed] = useState(false);
@@ -71,7 +62,6 @@ function Session() {
   }, [snapshot.matchId]);
 
   function newMatch() {
-    rematchingRef.current = true;
     leave();
     findMatch(self);
     toast("Finding someone new…");
@@ -82,7 +72,6 @@ function Session() {
   }
 
   function report() {
-    rematchingRef.current = true;
     leave();
     findMatch(self);
     toast.success("Reported. Finding you someone new.");

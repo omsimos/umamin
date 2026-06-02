@@ -189,4 +189,47 @@ describe("convexTransport", () => {
       expect.objectContaining({ sessionId: "s1", interests: ["music"] }),
     );
   });
+
+  it("holds optimistic matching across a rematch until a different match resolves", () => {
+    const client = fakeClient(undefined);
+    // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+    const t = createConvexTransport(client as any, "s1");
+    client._emit({ ...IDLE_SNAPSHOT, phase: "active", matchId: "m1" });
+    expect(t.getSnapshot().phase).toBe("active");
+    // Rematch while the server still reports the old match: show matching, not
+    // the stale chat (and don't bounce).
+    t.findMatch({ alias: "a", avatarSeed: "seed", interests: ["music"] });
+    expect(t.getSnapshot().phase).toBe("matching");
+    client._emit({ ...IDLE_SNAPSHOT, phase: "active", matchId: "m1" });
+    expect(t.getSnapshot().phase).toBe("matching");
+    // A different match resolves -> optimistic state clears.
+    client._emit({ ...IDLE_SNAPSHOT, phase: "active", matchId: "m2" });
+    expect(t.getSnapshot().phase).toBe("active");
+    expect(t.getSnapshot().matchId).toBe("m2");
+  });
+
+  it("rolls back to idle when findMatch fails so the route can recover", async () => {
+    const client = fakeClient(undefined);
+    const onError = vi.fn();
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    client.mutation = vi.fn(async () => {
+      throw new Error("enqueue failed");
+    });
+    const t = createConvexTransport(
+      // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+      client as any,
+      "s1",
+      undefined,
+      onError,
+    );
+    client._emit({ ...IDLE_SNAPSHOT });
+    t.findMatch({ alias: "a", avatarSeed: "seed", interests: ["music"] });
+    expect(t.getSnapshot().phase).toBe("matching");
+    await vi.waitFor(() => expect(onError).toHaveBeenCalled());
+    // After rollback the snapshot resolves to idle (route bounces, no strand).
+    expect(t.getSnapshot().phase).toBe("idle");
+    consoleError.mockRestore();
+  });
 });
