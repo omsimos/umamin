@@ -2,9 +2,9 @@ export function TypingIndicator() {
   return (
     <div
       role="status"
-      aria-label="Partner is typing"
       className="bg-muted flex w-fit items-center gap-1 rounded-2xl rounded-bl-sm px-3.5 py-3"
     >
+      <span className="sr-only">Partner is typing</span>
       {[0, 0.2, 0.4].map((delay) => (
         <span
           key={delay}

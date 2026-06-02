@@ -4,9 +4,12 @@ import { REACTION_EMOJIS } from "../../lib/mock/data";
 export function ReactionPicker({
   onPick,
   placement = "top",
+  autoFocusFirst = false,
 }: {
   onPick: (emoji: string) => void;
   placement?: "top" | "bottom";
+  /** Move keyboard focus to the first emoji when the picker opens. */
+  autoFocusFirst?: boolean;
 }) {
   return (
     <div
@@ -17,10 +20,12 @@ export function ReactionPicker({
         placement === "top" ? "-top-9" : "top-full mt-1",
       )}
     >
-      {REACTION_EMOJIS.map((emoji) => (
+      {REACTION_EMOJIS.map((emoji, i) => (
         <button
           key={emoji}
           type="button"
+          // biome-ignore lint/a11y/noAutofocus: focus moves into the popup on open
+          autoFocus={autoFocusFirst && i === 0}
           aria-label={`React ${emoji}`}
           className="hover:bg-accent focus-visible:border-ring focus-visible:ring-ring/50 rounded-full px-1 text-base leading-none transition-colors outline-none focus-visible:ring-[3px]"
           onClick={() => onPick(emoji)}

@@ -15,7 +15,9 @@ export function ChatHeader({
   onStayConnected: () => void;
 }) {
   const shared = interestById(partner.sharedInterests[0]);
-  const status = partner.status === "typing" ? "typing…" : "online";
+  const left = partner.status === "left";
+  const status =
+    partner.status === "typing" ? "typing…" : left ? "left" : "online";
 
   return (
     <header className="flex items-center gap-3 border-b px-4 py-3">
@@ -26,11 +28,14 @@ export function ChatHeader({
       />
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold">{partner.alias}</p>
-        <p className="text-[11px] text-emerald-500">● {status}</p>
+        <p className="text-[11px] text-emerald-600">
+          <span className={left ? "text-muted-foreground" : undefined}>●</span>{" "}
+          {status}
+        </p>
       </div>
       {shared && (
         <span className="bg-muted text-muted-foreground ml-1 rounded-full px-2 py-0.5 text-[10px]">
-          {shared.emoji} {shared.label}
+          <span aria-hidden>{shared.emoji}</span> {shared.label}
         </span>
       )}
       <Button

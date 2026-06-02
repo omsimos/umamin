@@ -15,18 +15,20 @@ function makeMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
   };
 }
 
+const BUBBLE_NAME = /^They said: hello there\./;
+
 describe("MessageBubble", () => {
   it("toggles the reaction picker when the bubble is clicked", async () => {
     render(<MessageBubble message={makeMessage()} onReact={() => {}} />);
 
     expect(screen.queryByRole("button", { name: /^React / })).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: "hello there" }));
+    await userEvent.click(screen.getByRole("button", { name: BUBBLE_NAME }));
     expect(
       screen.getAllByRole("button", { name: /^React / }).length,
     ).toBeGreaterThan(0);
 
-    await userEvent.click(screen.getByRole("button", { name: "hello there" }));
+    await userEvent.click(screen.getByRole("button", { name: BUBBLE_NAME }));
     expect(screen.queryByRole("button", { name: /^React / })).toBeNull();
   });
 
@@ -34,7 +36,7 @@ describe("MessageBubble", () => {
     const onReact = vi.fn();
     render(<MessageBubble message={makeMessage()} onReact={onReact} />);
 
-    await userEvent.click(screen.getByRole("button", { name: "hello there" }));
+    await userEvent.click(screen.getByRole("button", { name: BUBBLE_NAME }));
     const emojiButton = screen.getAllByRole("button", { name: /^React / })[0];
     await userEvent.click(emojiButton);
 
