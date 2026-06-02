@@ -7,7 +7,10 @@ const MAX_ALIAS = 20;
 
 function initialDraft(): SelfIdentity {
   const stored = loadDraft();
-  if (stored?.alias) return stored;
+  // loadDraft() returns null on missing/corrupt data, so a stored draft with a
+  // deliberately blank alias is still valid — keep it (and its interests/avatar)
+  // rather than wiping the draft on reload.
+  if (stored) return stored;
   return {
     alias: randomAlias(),
     avatarSeed: randomAvatarSeed(),

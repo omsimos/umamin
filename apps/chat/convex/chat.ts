@@ -136,11 +136,15 @@ export const messages = sessionQuery({
   handler: async (ctx) => {
     const matchId = ctx.session?.currentMatchId;
     if (!matchId) return [];
+    // Newest MESSAGE_CAP (order desc + take), returned oldest->newest for the
+    // UI. Taking asc would freeze the window at the first 100 and hide newer
+    // messages once a conversation passes the cap.
     const rows = await ctx.db
       .query("messages")
       .withIndex("by_match", (q) => q.eq("matchId", matchId))
-      .order("asc")
+      .order("desc")
       .take(MESSAGE_CAP);
+    rows.reverse();
     return rows.map((m) => ({
       id: m._id,
       author:
@@ -227,19 +231,18 @@ export const setTyping = sessionMutation({
 });
 
 export const leave = sessionMutation({
-  args: {
-    reason: v.optional(
-      v.union(v.literal("self-ended"), v.literal("partner-left")),
-    ),
-  },
-  handler: async (ctx, { reason }) => {
+  args: {},
+  handler: async (ctx) => {
     const s = ctx.session;
     if (!s?.currentMatchId) return;
     const match = await ctx.db.get(s.currentMatchId);
     if (match && match.status === "active") {
+      // The survivor is the only reader of endedReason (the leaver detaches
+      // below and bounces to the lobby), so from their view the partner left —
+      // matching the presence.reconcile teardown path.
       await ctx.db.patch(match._id, {
         status: "ended",
-        endedReason: reason ?? "partner-left",
+        endedReason: "partner-left",
         endedAt: Date.now(),
       });
       // Hard-delete is deferred GRACE_MS (not inline) so the survivor's snapshot

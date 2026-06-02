@@ -2,6 +2,7 @@ import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -68,6 +69,26 @@ describe("chat", () => {
     await t.mutation(api.chat.setTyping, { sessionId: "b", typing: false });
     const cleared = await t.run(async (ctx) => ctx.db.query("matches").first());
     expect(Boolean(cleared?.typingA) || Boolean(cleared?.typingB)).toBe(false);
+  });
+
+  it("returns the newest MESSAGE_CAP messages (oldest-first) once past the cap", async () => {
+    const t = await matched();
+    const matchId = (await t.query(api.chat.snapshot, { sessionId: "a" }))
+      .matchId as Id<"matches">;
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 150; i++) {
+        await ctx.db.insert("messages", {
+          matchId,
+          author: "a",
+          text: `m${i}`,
+          reactions: [],
+        });
+      }
+    });
+    const msgs = await t.query(api.chat.messages, { sessionId: "a" });
+    expect(msgs).toHaveLength(100);
+    expect(msgs[0].text).toBe("m50"); // oldest of the newest 100
+    expect(msgs[msgs.length - 1].text).toBe("m149"); // newest is present
   });
 
   it("leave ends the match for the survivor", async () => {

@@ -170,7 +170,23 @@ describe("convexTransport", () => {
     }
     expect(client.mutation).toHaveBeenLastCalledWith(
       expect.anything(),
-      expect.objectContaining({ sessionId: "s1", reason: "self-ended" }),
+      expect.objectContaining({ sessionId: "s1" }),
+    );
+  });
+
+  it("optimistically reports matching the instant findMatch is called", () => {
+    const client = fakeClient(undefined);
+    // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+    const t = createConvexTransport(client as any, "s1");
+    // Server has resolved to idle (no match yet).
+    client._emit({ ...IDLE_SNAPSHOT });
+    expect(t.getSnapshot().phase).toBe("idle");
+    // findMatch must flip to "matching" synchronously so /chat doesn't bounce.
+    t.findMatch({ alias: "a", avatarSeed: "seed", interests: ["music"] });
+    expect(t.getSnapshot().phase).toBe("matching");
+    expect(client.mutation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sessionId: "s1", interests: ["music"] }),
     );
   });
 });

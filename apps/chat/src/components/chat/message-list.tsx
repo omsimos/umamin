@@ -16,14 +16,33 @@ export function MessageList({
   header?: ReactNode;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const didInitialScroll = useRef(false);
 
+  // Auto-scroll to the newest message, but don't yank the user down while
+  // they're reading history: jump on first content and on your own sends,
+  // otherwise only when already near the bottom.
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new content
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    const c = containerRef.current;
+    if (!c) return;
+    if (!didInitialScroll.current && messages.length > 0) {
+      didInitialScroll.current = true;
+      endRef.current?.scrollIntoView();
+      return;
+    }
+    const last = messages[messages.length - 1];
+    const nearBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 120;
+    if (last?.author === "self" || nearBottom) {
+      endRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages.length, partnerStatus]);
 
   return (
-    <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-4">
+    <div
+      ref={containerRef}
+      className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-4"
+    >
       {header}
       {messages.map((m) => (
         <MessageBubble
