@@ -8,10 +8,12 @@ import {
 } from "@umamin/ui/components/drawer";
 import { Menu } from "lucide-react";
 import type { ReactNode } from "react";
+import { Logo } from "../logo";
 
 function Wordmark() {
   return (
-    <span className="text-sm font-bold">
+    <span className="inline-flex items-center gap-1.5 text-sm font-bold">
+      <Logo className="text-primary size-4" />
       umamin<span className="text-primary">·chat</span>
     </span>
   );
