@@ -33,7 +33,14 @@ export function createConvexTransport(
   let cached: SessionSnapshot = IDLE_SNAPSHOT;
 
   function current(): SessionSnapshot {
-    const result = watch.localQueryResult() as SessionSnapshot | undefined;
+    // localQueryResult() throws if the query errored on the server; treat that
+    // (and the not-yet-resolved undefined) as idle rather than crashing render.
+    let result: SessionSnapshot | undefined;
+    try {
+      result = watch.localQueryResult() as SessionSnapshot | undefined;
+    } catch {
+      result = undefined;
+    }
     if (!result) return IDLE_SNAPSHOT;
     if (sameSnapshot(result, cached)) return cached;
     cached = result;
