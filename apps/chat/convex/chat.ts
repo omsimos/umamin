@@ -164,6 +164,12 @@ export const leave = sessionMutation({
         endedReason: reason ?? "partner-left",
         endedAt: Date.now(),
       });
+      // STAGED FORWARD REFERENCE — Task 7 (cleanup.ts) supplies `deleteMatch`
+      // plus the cron sweeps for stale queue/session rows. Resolves at runtime
+      // via the permissive `anyApi` proxy, so `leave` commits, but the
+      // scheduled hard-delete will fail (function-not-found) until that module
+      // lands. Must ship together: without it, ended matches and their messages
+      // leak rows. Tracked as a follow-up — do not deploy tasks 5/6 alone.
       await ctx.scheduler.runAfter(GRACE_MS, internal.cleanup.deleteMatch, {
         matchId: match._id,
       });

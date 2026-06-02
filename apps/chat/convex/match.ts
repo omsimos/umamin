@@ -35,6 +35,11 @@ async function pair(
     const s = await getSession(ctx, sid);
     if (s) await ctx.db.patch(s._id, { currentMatchId: matchId });
   }
+  // STAGED FORWARD REFERENCE — Task 8 (presence.ts) supplies `reconcile`.
+  // Resolves at runtime via the permissive `anyApi` proxy, so this mutation
+  // commits, but the scheduled job will fail (function-not-found) until that
+  // module lands. Must ship together: without it, partner abandonment is never
+  // detected. Tracked as a follow-up — do not deploy tasks 5/6 alone.
   await ctx.scheduler.runAfter(RECONCILE_MS, internal.presence.reconcile, {
     matchId,
   });
