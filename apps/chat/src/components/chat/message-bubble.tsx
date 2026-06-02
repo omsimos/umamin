@@ -29,6 +29,7 @@ export function MessageBubble({
           onClick={() => setPicking((p) => !p)}
           className={cn(
             "rounded-2xl px-3.5 py-2 text-left text-sm leading-relaxed break-words",
+            "focus-visible:border-ring focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
             mine
               ? "bg-primary text-primary-foreground rounded-br-sm"
               : "bg-muted text-foreground rounded-bl-sm",
