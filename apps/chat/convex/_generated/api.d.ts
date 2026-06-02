@@ -8,9 +8,11 @@
  * @module
  */
 
+import type * as chat from "../chat.js";
 import type * as constants from "../constants.js";
 import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as lib_sessions from "../lib/sessions.js";
+import type * as match from "../match.js";
 
 import type {
   ApiFromModules,
@@ -19,9 +21,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  chat: typeof chat;
   constants: typeof constants;
   "lib/rateLimits": typeof lib_rateLimits;
   "lib/sessions": typeof lib_sessions;
+  match: typeof match;
 }>;
 
 /**
