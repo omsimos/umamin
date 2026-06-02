@@ -61,6 +61,7 @@ export function createMockTransport(
   const listeners = new Set<(s: SessionSnapshot) => void>();
   const timers = new Set<ReturnType<typeof setTimeout>>();
   let msgSeq = 0;
+  let matchSeq = 0;
 
   function emit() {
     for (const l of listeners) l(state);
@@ -124,8 +125,10 @@ export function createMockTransport(
     findMatch(self: SelfIdentity) {
       clearTimers();
       msgSeq = 0;
+      matchSeq += 1;
       state = {
         phase: "matching",
+        matchId: `match-${matchSeq}`,
         self,
         partner: null,
         messages: [],
@@ -155,6 +158,7 @@ export function createMockTransport(
     },
 
     react(messageId: string, emoji: string) {
+      if (state.phase !== "active") return;
       set({
         messages: state.messages.map((m) =>
           m.id === messageId
@@ -173,6 +177,7 @@ export function createMockTransport(
       if (state.phase !== "active") return;
       set({ stayConnected: { ...state.stayConnected, self: true } });
       schedule(timings.stayConnectedReplyDelay, () => {
+        if (state.phase !== "active") return;
         set({ stayConnected: { ...state.stayConnected, partner: true } });
       });
     },
