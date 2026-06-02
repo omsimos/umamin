@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@umamin/ui/components/button";
 import { ArrowRight } from "lucide-react";
+import { AdContainer } from "../components/ads/ad-container";
 import { IdentityCard } from "../components/lobby/identity-card";
 import { InterestPicker } from "../components/lobby/interest-picker";
 import { AppShell, Wordmark } from "../components/shell/app-shell";
@@ -76,6 +77,8 @@ function Lobby() {
               : "no interests picked · we'll match you with anyone"}
           </p>
         </div>
+
+        <AdContainer placement="lobby" className="mt-6" />
       </div>
     </AppShell>
   );
