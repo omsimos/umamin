@@ -5,6 +5,7 @@ import type { MutationCtx } from "./_generated/server";
 import { GRACE_MS, MESSAGE_CAP } from "./constants";
 import { limitPerSession } from "./lib/rateLimits";
 import { sessionMutation, sessionQuery } from "./lib/sessions";
+import { isPresent } from "./presence";
 
 const EMPTY = {
   phase: "idle" as const,
@@ -50,10 +51,12 @@ export const snapshot = sessionQuery({
       .unique();
 
     const ended = match.status === "ended";
-    // Task 8 refines this to a presence read (+ "typing").
-    const partnerOnline = !ended;
-    const status =
-      ended || !partnerOnline ? ("left" as const) : ("online" as const);
+    // Real presence: a partner with no live heartbeat in the match room reads as
+    // left. (The partner's live `list` subscription carries the typing flag on
+    // the client; the server snapshot only resolves online/left.)
+    const partnerOnline =
+      !ended && (await isPresent(ctx, match._id, partnerId));
+    const status: "online" | "left" = partnerOnline ? "online" : "left";
 
     const rows = await ctx.db
       .query("messages")

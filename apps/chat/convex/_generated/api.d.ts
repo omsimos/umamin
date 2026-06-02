@@ -15,6 +15,7 @@ import type * as crons from "../crons.js";
 import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as lib_sessions from "../lib/sessions.js";
 import type * as match from "../match.js";
+import type * as presence from "../presence.js";
 
 import type {
   ApiFromModules,
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   "lib/rateLimits": typeof lib_rateLimits;
   "lib/sessions": typeof lib_sessions;
   match: typeof match;
+  presence: typeof presence;
 }>;
 
 /**
