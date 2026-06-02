@@ -5,7 +5,6 @@ import { api } from "../../../convex/_generated/api";
 import {
   type ChatMessage,
   type ChatTransport,
-  type EndedReason,
   IDLE_SNAPSHOT,
   LOADING_SNAPSHOT,
   type SelfIdentity,
@@ -38,6 +37,12 @@ export function createConvexTransport(
   const watchMeta = client.watchQuery(api.chat.snapshot, { sessionId });
   const watchMessages = client.watchQuery(api.chat.messages, { sessionId });
   let cached: SessionSnapshot = IDLE_SNAPSHOT;
+  // Optimistic "matching" shown the instant findMatch is called, so navigating
+  // to /chat never observes a resolved-idle snapshot and bounces back to the
+  // lobby (the mock emits "matching" synchronously; this gives the real backend
+  // parity). Cleared once the server reflects a real phase, or on leave/failure.
+  let pending: SessionSnapshot | null = null;
+  const listeners = new Set<(snapshot: SessionSnapshot) => void>();
 
   // localQueryResult() throws if the query errored on the server; treat that
   // (and the not-yet-resolved undefined) as the fallback rather than crashing.
@@ -54,9 +59,15 @@ export function createConvexTransport(
     try {
       meta = watchMeta.localQueryResult() as SnapshotMeta | undefined;
     } catch {
-      // The meta query errored on the server — treat as resolved-empty so the
-      // route falls back to the lobby instead of spinning on "loading" forever.
+      // The meta query errored — drop any optimistic state and resolve to idle
+      // so the route falls back to the lobby instead of spinning forever.
+      pending = null;
       return IDLE_SNAPSHOT;
+    }
+    if (pending) {
+      // Hold the optimistic snapshot until the server reflects a real phase.
+      if (!meta || meta.phase === "idle") return pending;
+      pending = null;
     }
     // Not resolved yet (e.g. a fresh reload): a distinct "loading" phase so the
     // route holds rather than bouncing to the lobby on a transient idle.
@@ -67,48 +78,64 @@ export function createConvexTransport(
     cached = merged;
     return cached;
   }
+
+  function emit() {
+    const snapshot = current();
+    for (const listener of listeners) listener(snapshot);
+  }
+
+  // Fan the reactive queries out to all listeners once. The transport is a
+  // singleton for the app's lifetime, so these subscriptions never tear down.
+  watchMeta.onUpdate(emit);
+  watchMessages.onUpdate(emit);
   // Prime the cache so the first getSnapshot reflects any already-resolved value.
   cached = current();
+
+  function surfaceError(error: unknown) {
+    if (isRateLimitError(error)) {
+      onRateLimited?.(RATE_LIMITED_MESSAGE);
+      return;
+    }
+    // Fire-and-forget mutations (the transport API is void): a rethrow would
+    // become an unhandled rejection that reaches no UI. Log + surface instead.
+    console.error("chat mutation failed", error);
+    onError?.(error);
+  }
 
   function call(
     fn: FunctionReference<"mutation">,
     args: Record<string, unknown>,
   ) {
-    client.mutation(fn, { sessionId, ...args }).catch((error: unknown) => {
-      // Only the rate limiter's ConvexError maps to the toast; any other
-      // ConvexError (validation/auth/missing session) must surface, not be
-      // misreported as "going a little fast" and swallowed.
-      if (isRateLimitError(error)) {
-        onRateLimited?.(RATE_LIMITED_MESSAGE);
-        return;
-      }
-      // This promise is fire-and-forget (the transport API is void), so a
-      // rethrow here would become an unhandled rejection that reaches no UI.
-      // Log it and hand it to the caller-supplied surface instead.
-      console.error("chat mutation failed", error);
-      onError?.(error);
-    });
+    client.mutation(fn, { sessionId, ...args }).catch(surfaceError);
   }
 
   return {
     subscribe(listener) {
-      const emit = () => listener(current());
-      const unMeta = watchMeta.onUpdate(emit);
-      const unMessages = watchMessages.onUpdate(emit);
+      listeners.add(listener);
       return () => {
-        unMeta();
-        unMessages();
+        listeners.delete(listener);
       };
     },
     getSnapshot() {
       return current();
     },
     findMatch(self: SelfIdentity) {
-      call(api.match.enqueueAndMatch, {
-        alias: self.alias,
-        avatarSeed: self.avatarSeed,
-        interests: self.interests,
-      });
+      // Show "matching" immediately so the lobby -> /chat hop doesn't bounce on
+      // a resolved-idle snapshot; roll back if the enqueue fails.
+      pending = { ...IDLE_SNAPSHOT, phase: "matching", self };
+      emit();
+      client
+        .mutation(api.match.enqueueAndMatch, {
+          sessionId,
+          alias: self.alias,
+          avatarSeed: self.avatarSeed,
+          interests: self.interests,
+        })
+        .catch((error: unknown) => {
+          pending = null;
+          emit();
+          surfaceError(error);
+        });
     },
     send(text: string) {
       call(api.chat.send, { text });
@@ -125,8 +152,11 @@ export function createConvexTransport(
     signalStayConnected() {
       call(api.chat.signalStayConnected, {});
     },
-    leave(reason?: EndedReason) {
-      call(api.chat.leave, { reason: reason ?? "self-ended" });
+    leave() {
+      // Clear any optimistic "matching" so cancelling doesn't strand the UI.
+      pending = null;
+      emit();
+      call(api.chat.leave, {});
     },
   };
 }

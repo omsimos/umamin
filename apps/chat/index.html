@@ -5,6 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Umamin Chat</title>
+    <script>
+      // Apply the theme before first paint to avoid a flash of the wrong theme.
+      // Mirrors next-themes (storageKey "theme", defaultTheme "dark", enableSystem).
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme") || "dark";
+          var sys = window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+          var theme = stored === "system" ? sys : stored;
+          var el = document.documentElement;
+          el.classList.toggle("dark", theme === "dark");
+          el.style.colorScheme = theme;
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -34,4 +34,13 @@ describe("useIdentityDraft", () => {
     expect(second.result.current.alias).toBe("KeptName");
     expect(second.result.current.interests).toContain("gaming");
   });
+
+  it("keeps interests when the alias is cleared to empty, across remounts", () => {
+    const first = renderHook(() => useIdentityDraft());
+    act(() => first.result.current.toggleInterest("gaming"));
+    act(() => first.result.current.setAlias(""));
+    const second = renderHook(() => useIdentityDraft());
+    expect(second.result.current.alias).toBe("");
+    expect(second.result.current.interests).toContain("gaming");
+  });
 });
