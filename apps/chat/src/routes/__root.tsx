@@ -1,5 +1,4 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Toaster } from "@umamin/ui/components/sonner";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { toast } from "sonner";
@@ -26,7 +25,7 @@ function RootLayout() {
       <ChatSessionProvider transport={transport}>
         <Outlet />
         <Toaster position="top-center" />
-        <TanStackRouterDevtools />
+        {/* <TanStackRouterDevtools /> */}
       </ChatSessionProvider>
     </ThemeProvider>
   );
