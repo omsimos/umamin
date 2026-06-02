@@ -1,1 +1,6 @@
 @import "@umamin/ui/globals.css";
+
+/* Collapse ad slots AdSense couldn't fill so they leave no empty gap. */
+ins.adsbygoogle[data-ad-status="unfilled"] {
+  display: none !important;
+}
