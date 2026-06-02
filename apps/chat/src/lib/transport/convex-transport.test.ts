@@ -1,6 +1,6 @@
 import { ConvexError } from "convex/values";
 import { describe, expect, it, vi } from "vitest";
-import { IDLE_SNAPSHOT } from "../session/types";
+import { IDLE_SNAPSHOT, LOADING_SNAPSHOT } from "../session/types";
 import { createConvexTransport } from "./convex-transport";
 
 // A fake ConvexReactClient implementing only the surface the transport uses:
@@ -46,11 +46,13 @@ function fakeClient(initialMeta: unknown) {
 }
 
 describe("convexTransport", () => {
-  it("returns IDLE_SNAPSHOT until the query resolves", () => {
+  it("returns a loading snapshot until the meta query resolves", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
     const t = createConvexTransport(client as any, "s1");
-    expect(t.getSnapshot()).toEqual(IDLE_SNAPSHOT);
+    // Distinct from idle so the route holds instead of bouncing to the lobby.
+    expect(t.getSnapshot()).toEqual(LOADING_SNAPSHOT);
+    expect(t.getSnapshot().phase).toBe("loading");
   });
 
   it("maps query results to snapshots and is identity-stable between identical emits", () => {
@@ -70,11 +72,11 @@ describe("convexTransport", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
     const t = createConvexTransport(client as any, "s1");
-    // Messages alone (meta unresolved) stays idle.
+    // Messages alone (meta unresolved) stays loading.
     client._emitMessages([
       { id: "x1", author: "partner", text: "hi", ts: 1, reactions: [] },
     ]);
-    expect(t.getSnapshot()).toEqual(IDLE_SNAPSHOT);
+    expect(t.getSnapshot()).toEqual(LOADING_SNAPSHOT);
     // Once meta resolves, the message list merges in.
     client._emit({ ...IDLE_SNAPSHOT, phase: "active", matchId: "m1" });
     const snap = t.getSnapshot();

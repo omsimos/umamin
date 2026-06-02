@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ChatHeader } from "../components/chat/chat-header";
@@ -45,8 +46,12 @@ function Session() {
   // rematch is in flight (cleared once the phase leaves "idle").
   const rematchingRef = useRef(false);
 
-  // Direct navigation / refresh with no live session -> back to lobby.
+  // Bounce to the lobby only once we KNOW there's no live session. Two cases
+  // must NOT bounce: the snapshot is still resolving on a fresh reload
+  // (phase "loading"), or a rematch is mid-flight (rematchingRef) — otherwise a
+  // reload of an active chat would drop the user to the lobby and strand them.
   useEffect(() => {
+    if (phase === "loading") return;
     if (phase !== "idle") {
       rematchingRef.current = false;
       return;
@@ -104,6 +109,15 @@ function Session() {
   return (
     <AppShell rail={rail}>
       <div className="relative flex h-full flex-col">
+        {phase === "loading" && (
+          <div className="flex flex-1 items-center justify-center">
+            <Loader2
+              aria-label="Loading"
+              className="text-muted-foreground size-6 animate-spin"
+            />
+          </div>
+        )}
+
         {phase === "matching" && (
           <MatchingRadar
             self={{ alias: self.alias, avatarSeed: self.avatarSeed }}

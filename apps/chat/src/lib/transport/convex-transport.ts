@@ -7,6 +7,7 @@ import {
   type ChatTransport,
   type EndedReason,
   IDLE_SNAPSHOT,
+  LOADING_SNAPSHOT,
   type SelfIdentity,
   type SessionSnapshot,
   type SnapshotMeta,
@@ -49,8 +50,17 @@ export function createConvexTransport(
   }
 
   function current(): SessionSnapshot {
-    const meta = read<SnapshotMeta | undefined>(watchMeta, undefined);
-    if (!meta) return IDLE_SNAPSHOT;
+    let meta: SnapshotMeta | undefined;
+    try {
+      meta = watchMeta.localQueryResult() as SnapshotMeta | undefined;
+    } catch {
+      // The meta query errored on the server — treat as resolved-empty so the
+      // route falls back to the lobby instead of spinning on "loading" forever.
+      return IDLE_SNAPSHOT;
+    }
+    // Not resolved yet (e.g. a fresh reload): a distinct "loading" phase so the
+    // route holds rather than bouncing to the lobby on a transient idle.
+    if (!meta) return LOADING_SNAPSHOT;
     const messages = read<ChatMessage[]>(watchMessages, []);
     const merged: SessionSnapshot = { ...meta, messages };
     if (sameSnapshot(merged, cached)) return cached;
