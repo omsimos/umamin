@@ -8,7 +8,12 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [
     // tanstackRouter must precede react()
-    tanstackRouter({ target: "react", autoCodeSplitting: true }),
+    tanstackRouter({
+      target: "react",
+      autoCodeSplitting: true,
+      // Colocated route tests aren't routes.
+      routeFileIgnorePattern: "\\.test\\.tsx?$",
+    }),
     react(),
     tailwindcss(),
     babel({ presets: [reactCompilerPreset()] }),
