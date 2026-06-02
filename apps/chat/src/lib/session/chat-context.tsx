@@ -1,6 +1,7 @@
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useMemo,
   useRef,
@@ -32,10 +33,9 @@ export function ChatSessionProvider({
   if (!transportRef.current) transportRef.current = createMockTransport();
   const t = transportRef.current;
 
-  const snapshot = useSyncExternalStore(
-    (cb) => t.subscribe(cb),
-    () => t.getSnapshot(),
-  );
+  const subscribe = useCallback((cb: () => void) => t.subscribe(cb), [t]);
+  const getSnapshot = useCallback(() => t.getSnapshot(), [t]);
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot);
 
   const value = useMemo<ChatSessionValue>(
     () => ({
