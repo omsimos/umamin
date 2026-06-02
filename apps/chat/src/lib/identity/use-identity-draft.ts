@@ -7,7 +7,7 @@ const MAX_ALIAS = 20;
 
 function initialDraft(): SelfIdentity {
   const stored = loadDraft();
-  if (stored && stored.alias) return stored;
+  if (stored?.alias) return stored;
   return {
     alias: randomAlias(),
     avatarSeed: randomAvatarSeed(),

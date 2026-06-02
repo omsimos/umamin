@@ -3,7 +3,7 @@ import { Button } from "@umamin/ui/components/button";
 import { ArrowRight } from "lucide-react";
 import { IdentityCard } from "../components/lobby/identity-card";
 import { InterestPicker } from "../components/lobby/interest-picker";
-import { AppShell } from "../components/shell/app-shell";
+import { AppShell, Wordmark } from "../components/shell/app-shell";
 import { ThemeToggle } from "../components/theme-toggle";
 import { useIdentityDraft } from "../lib/identity/use-identity-draft";
 import { useChatSession } from "../lib/session/chat-context";
@@ -28,9 +28,7 @@ function Lobby() {
 
   const rail = (
     <div className="flex h-full flex-col gap-4">
-      <span className="text-sm font-bold">
-        umamin<span className="text-primary">·chat</span>
-      </span>
+      <Wordmark />
       <IdentityCard
         alias={draft.alias}
         avatarSeed={draft.avatarSeed}
