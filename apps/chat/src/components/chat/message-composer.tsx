@@ -17,7 +17,6 @@ export function MessageComposer({
   onTyping,
 }: {
   onSend: (text: string) => void;
-  /** Best-effort typing signal; debounced (true on first keystroke, false on idle/send). */
   onTyping?: (isTyping: boolean) => void;
 }) {
   const [value, setValue] = useState("");
@@ -59,7 +58,6 @@ export function MessageComposer({
     stopTyping();
   }
 
-  // Clear the typing flag (and timer) when the composer unmounts.
   useEffect(() => stopTyping, [stopTyping]);
 
   return (

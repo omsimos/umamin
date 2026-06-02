@@ -23,8 +23,7 @@ export function MessageBubble({
 
   function toggle() {
     if (!picking) {
-      // Open below when the bubble sits near the top (the chat header occupies
-      // the first ~64px), otherwise the picker would be clipped behind it.
+      // Open below near the top, else the picker is clipped behind the chat header.
       const rect = bubbleRef.current?.getBoundingClientRect();
       setPlacement(rect && rect.top < 96 ? "bottom" : "top");
     }

@@ -86,7 +86,6 @@ export const enqueueAndMatch = sessionMutation({
       }
     }
 
-    // Upsert session, detached from any prior match.
     if (ctx.session) {
       await ctx.db.patch(ctx.session._id, {
         alias: args.alias,
@@ -105,7 +104,6 @@ export const enqueueAndMatch = sessionMutation({
       });
     }
 
-    // Drop any stale queue row for this session.
     const mine = await ctx.db
       .query("queue")
       .withIndex("by_session", (q) => q.eq("sessionId", ctx.sessionId))
@@ -127,7 +125,6 @@ export const enqueueAndMatch = sessionMutation({
       return;
     }
 
-    // None sharing interests: enqueue + schedule a fallback to pair with anyone.
     await ctx.db.insert("queue", {
       sessionId: ctx.sessionId,
       interests: args.interests,

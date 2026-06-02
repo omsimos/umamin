@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 
-// import.meta.glob lets convex-test find all function modules.
 const modules = import.meta.glob("./**/*.ts");
 
 function self(id: string) {
@@ -37,8 +36,8 @@ describe("matchmaking", () => {
     const t = convexTest(schema, modules);
     registerRateLimiter(t);
     await t.mutation(api.match.enqueueAndMatch, self("a"));
-    await t.mutation(api.match.enqueueAndMatch, self("b")); // a<->b
-    await t.mutation(api.match.enqueueAndMatch, self("c")); // c waits
+    await t.mutation(api.match.enqueueAndMatch, self("b"));
+    await t.mutation(api.match.enqueueAndMatch, self("c"));
     const c = await t.query(api.chat.snapshot, { sessionId: "c" });
     expect(c.phase).toBe("matching");
   });

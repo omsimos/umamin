@@ -59,7 +59,7 @@ describe("presence", () => {
 
   it("partner shows left when they have no heartbeat in the room", async () => {
     const { t, matchId } = await matched();
-    await beat(t, matchId, "a"); // only `a` is present
+    await beat(t, matchId, "a");
     const a = await t.query(api.chat.snapshot, { sessionId: "a" });
     expect(a.partner?.status).toBe("left");
   });
@@ -87,7 +87,7 @@ describe("presence", () => {
 
   it("reconcile ends the match (partner-left) once a never-present partner exceeds the start grace", async () => {
     const { t, matchId } = await matched();
-    await beat(t, matchId, "a"); // `b` never heartbeats — abandoned
+    await beat(t, matchId, "a");
     await ageMatchPastStartGrace(t);
     await t.mutation(internal.presence.reconcile, {
       matchId: matchId as never,

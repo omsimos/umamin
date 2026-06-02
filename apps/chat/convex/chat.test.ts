@@ -87,8 +87,8 @@ describe("chat", () => {
     });
     const msgs = await t.query(api.chat.messages, { sessionId: "a" });
     expect(msgs).toHaveLength(100);
-    expect(msgs[0].text).toBe("m50"); // oldest of the newest 100
-    expect(msgs[msgs.length - 1].text).toBe("m149"); // newest is present
+    expect(msgs[0].text).toBe("m50");
+    expect(msgs[msgs.length - 1].text).toBe("m149");
   });
 
   it("leave ends the match for the survivor", async () => {

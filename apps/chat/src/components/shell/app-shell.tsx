@@ -19,11 +19,6 @@ function Wordmark() {
   );
 }
 
-/**
- * Two-pane app frame. On desktop the rail is a fixed left column; on mobile it
- * collapses behind a hamburger that opens a bottom Drawer. Page content is the
- * children; per-conversation chrome (partner header) lives inside children.
- */
 export function AppShell({
   rail,
   children,

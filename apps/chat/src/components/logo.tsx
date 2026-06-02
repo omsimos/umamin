@@ -1,6 +1,5 @@
-/** The umamin mark, inlined with `fill="currentColor"` so it adapts to the
- *  theme (color it via the parent's text color). The white asset lives at
- *  /public/umamin-logo.svg for non-themed uses. */
+// `fill="currentColor"` so it adapts to theme; the white asset for non-themed
+// uses lives at /public/umamin-logo.svg.
 export function Logo({ className }: { className?: string }) {
   return (
     <svg

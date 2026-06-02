@@ -8,9 +8,8 @@ import { mutation, query } from "../_generated/server";
 
 const sessionArgs = { sessionId: v.string() };
 
-// Look up the (nullable) session row for a client-generated sessionId and
-// attach { sessionId, session } to ctx. Creation happens explicitly in
-// enqueueAndMatch — queries can't write, so the row may be null here.
+// Creation happens explicitly in enqueueAndMatch — queries can't write, so the
+// row may be null here.
 async function lookupSession(ctx: QueryCtx | MutationCtx, sessionId: string) {
   return ctx.db
     .query("sessions")

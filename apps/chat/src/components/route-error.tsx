@@ -1,12 +1,7 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Button } from "@umamin/ui/components/button";
 
-/**
- * Router-level fallback for any render/load error in a route (registered as the
- * router's `defaultErrorComponent`). Without it a crash in the chat UI would
- * white-screen with nothing to catch or recover from. "Try again" resets the
- * error boundary in place; "Back to lobby" hard-navigates to a clean state.
- */
+// "Back to lobby" hard-navigates (not router nav) to guarantee a clean state.
 export function RouteError({ error, reset }: ErrorComponentProps) {
   return (
     <div

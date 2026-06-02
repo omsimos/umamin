@@ -3,12 +3,7 @@ import { ArrowRight } from "lucide-react";
 import type { EndedReason } from "../../lib/session/types";
 import { AdContainer } from "../ads/ad-container";
 
-/**
- * In-flow "chat ended" view (replaces the old floating overlay). Rendered in the
- * chat content column when phase === "ended". Normal document flow so the ad
- * below is AdSense-policy-compliant (no ads in overlays) and no focus trap is
- * needed.
- */
+// Normal document flow (not an overlay) so the ad below is AdSense-policy-compliant.
 export function EndedView({
   reason,
   partnerAlias,

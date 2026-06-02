@@ -25,7 +25,7 @@ export const deleteMatch = internalMutation({
       await ctx.scheduler.runAfter(0, internal.cleanup.deleteMatch, {
         matchId,
       });
-      return; // more messages remain; finish teardown on the final page
+      return;
     }
     const match = await ctx.db.get(matchId);
     if (match) {
