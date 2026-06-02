@@ -7,22 +7,19 @@ function renderRail(
   overrides: Partial<{
     onNewMatch: () => void;
     onEndChat: () => void;
-    onReport: () => void;
   }> = {},
 ) {
   const onNewMatch = overrides.onNewMatch ?? vi.fn();
   const onEndChat = overrides.onEndChat ?? vi.fn();
-  const onReport = overrides.onReport ?? vi.fn();
   render(
     <SessionRail
       selfAlias="Quiet Fox"
       selfSeed="seed"
       onNewMatch={onNewMatch}
       onEndChat={onEndChat}
-      onReport={onReport}
     />,
   );
-  return { onNewMatch, onEndChat, onReport };
+  return { onNewMatch, onEndChat };
 }
 
 describe("SessionRail", () => {
@@ -49,23 +46,5 @@ describe("SessionRail", () => {
     await userEvent.click(screen.getByRole("button", { name: "End chat" }));
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onEndChat).not.toHaveBeenCalled();
-  });
-
-  it("fires onReport only after confirming the report dialog", async () => {
-    const { onReport } = renderRail();
-    await userEvent.click(screen.getByRole("button", { name: "Report" }));
-    expect(onReport).not.toHaveBeenCalled();
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Report & skip" }),
-    );
-    expect(onReport).toHaveBeenCalledTimes(1);
-  });
-
-  it("does not fire onReport when the report dialog is cancelled", async () => {
-    const { onReport } = renderRail();
-    await userEvent.click(screen.getByRole("button", { name: "Report" }));
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(onReport).not.toHaveBeenCalled();
   });
 });

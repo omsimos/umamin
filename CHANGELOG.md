@@ -22,8 +22,7 @@ any that are empty.
 
 ### Added
 
-- Umamin Chat: anonymous, ephemeral one-on-one chat. Pick an alias and a few
-  interests, and get matched with someone who shares one.
+- Umamin Chat: anonymous, ephemeral one-on-one chat. Pick an alias and a few interests, and get matched with someone who shares one.
 - Talk in real time with typing indicators, emoji reactions, and a "stay
   connected" signal; skip to a new match anytime.
 - Nothing is saved — conversations disappear the moment they end.
