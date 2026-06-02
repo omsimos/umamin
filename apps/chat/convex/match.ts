@@ -28,6 +28,8 @@ async function pair(
     interestsShared: shared,
     stayConnectedA: false,
     stayConnectedB: false,
+    typingA: false,
+    typingB: false,
     status: "active" as const,
     createdAt: now,
   });

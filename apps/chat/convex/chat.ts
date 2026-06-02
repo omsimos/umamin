@@ -52,11 +52,16 @@ export const snapshot = sessionQuery({
 
     const ended = match.status === "ended";
     // Real presence: a partner with no live heartbeat in the match room reads as
-    // left. (The partner's live `list` subscription carries the typing flag on
-    // the client; the server snapshot only resolves online/left.)
+    // left. Typing is carried as a debounced boolean on the match row (set via
+    // `setTyping`) and overlays "online" while the partner is composing.
     const partnerOnline =
       !ended && (await isPresent(ctx, match._id, partnerId));
-    const status: "online" | "left" = partnerOnline ? "online" : "left";
+    const partnerTyping = iAmA ? match.typingB : match.typingA;
+    const status: "online" | "typing" | "left" = !partnerOnline
+      ? "left"
+      : partnerTyping
+        ? "typing"
+        : "online";
 
     const rows = await ctx.db
       .query("messages")
@@ -147,6 +152,20 @@ export const signalStayConnected = sessionMutation({
       match.a === ctx.sessionId
         ? { stayConnectedA: true }
         : { stayConnectedB: true },
+    );
+  },
+});
+
+export const setTyping = sessionMutation({
+  args: { typing: v.boolean() },
+  handler: async (ctx, { typing }) => {
+    const match = await activeMatchFor(ctx, ctx.session);
+    if (!match) return;
+    // Not rate-limited: it's debounced client-side and best-effort; throttling
+    // could drop the trailing `false` and leave the indicator stuck on.
+    await ctx.db.patch(
+      match._id,
+      match.a === ctx.sessionId ? { typingA: typing } : { typingB: typing },
     );
   },
 });

@@ -60,6 +60,16 @@ describe("chat", () => {
     expect(a.stayConnected).toEqual({ self: true, partner: true });
   });
 
+  it("setTyping flips the caller's typing flag on the match (and clears it)", async () => {
+    const t = await matched();
+    await t.mutation(api.chat.setTyping, { sessionId: "b", typing: true });
+    const typing = await t.run(async (ctx) => ctx.db.query("matches").first());
+    expect(Boolean(typing?.typingA) || Boolean(typing?.typingB)).toBe(true);
+    await t.mutation(api.chat.setTyping, { sessionId: "b", typing: false });
+    const cleared = await t.run(async (ctx) => ctx.db.query("matches").first());
+    expect(Boolean(cleared?.typingA) || Boolean(cleared?.typingB)).toBe(false);
+  });
+
   it("leave ends the match for the survivor", async () => {
     const t = await matched();
     await t.mutation(api.chat.leave, { sessionId: "a" });

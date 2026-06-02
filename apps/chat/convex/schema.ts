@@ -27,6 +27,8 @@ export default defineSchema({
     interestsShared: v.array(v.string()),
     stayConnectedA: v.boolean(),
     stayConnectedB: v.boolean(),
+    typingA: v.optional(v.boolean()),
+    typingB: v.optional(v.boolean()),
     status: v.union(v.literal("active"), v.literal("ended")),
     endedReason: v.optional(
       v.union(v.literal("self-ended"), v.literal("partner-left")),
