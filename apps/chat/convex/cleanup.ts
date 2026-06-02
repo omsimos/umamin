@@ -45,6 +45,17 @@ export const sweepEndedMatches = internalMutation({
         .withIndex("by_match", (q) => q.eq("matchId", m._id))
         .collect();
       for (const msg of msgs) await ctx.db.delete(msg._id);
+      // Detach any sessions still pointing here before deleting the match;
+      // otherwise sweepDeadSessions can never reclaim them (it skips rows with
+      // a currentMatchId, which would now dangle at a deleted match).
+      for (const sessionId of [m.a, m.b]) {
+        const s = await ctx.db
+          .query("sessions")
+          .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+          .unique();
+        if (s?.currentMatchId === m._id)
+          await ctx.db.patch(s._id, { currentMatchId: undefined });
+      }
       await ctx.db.delete(m._id);
     }
   },
@@ -71,7 +82,8 @@ export const sweepDeadSessions = internalMutation({
       .withIndex("by_lastSeen", (q) => q.lt("lastSeen", cutoff))
       .take(100);
     for (const s of dead) {
-      // active-match sessions handled by match sweep
+      // Sessions still attached to a match are reclaimed once that match is
+      // detached (deleteMatch / sweepEndedMatches clear currentMatchId first).
       if (!s.currentMatchId) await ctx.db.delete(s._id);
     }
   },
