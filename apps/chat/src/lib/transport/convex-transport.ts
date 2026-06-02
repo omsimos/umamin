@@ -37,11 +37,15 @@ export function createConvexTransport(
   const watchMeta = client.watchQuery(api.chat.snapshot, { sessionId });
   const watchMessages = client.watchQuery(api.chat.messages, { sessionId });
   let cached: SessionSnapshot = IDLE_SNAPSHOT;
-  // Optimistic "matching" shown the instant findMatch is called, so navigating
-  // to /chat never observes a resolved-idle snapshot and bounces back to the
-  // lobby (the mock emits "matching" synchronously; this gives the real backend
-  // parity). Cleared once the server reflects a real phase, or on leave/failure.
+  // Optimistic "matching" shown the instant findMatch is called so neither the
+  // lobby -> /chat hop nor a rematch flashes the old chat / bounces (the mock
+  // emits "matching" synchronously; this gives the real backend parity). It is
+  // HELD until the server reports a different match (or a fresh idle/matching),
+  // and cleared on leave/failure — so a failed rematch resolves to idle and the
+  // route bounces to the lobby rather than stranding. pendingLeftMatchId is the
+  // match being replaced; while the server still reports it, keep "matching".
   let pending: SessionSnapshot | null = null;
+  let pendingLeftMatchId = "";
   const listeners = new Set<(snapshot: SessionSnapshot) => void>();
 
   // localQueryResult() throws if the query errored on the server; treat that
@@ -62,12 +66,18 @@ export function createConvexTransport(
       // The meta query errored — drop any optimistic state and resolve to idle
       // so the route falls back to the lobby instead of spinning forever.
       pending = null;
+      pendingLeftMatchId = "";
       return IDLE_SNAPSHOT;
     }
     if (pending) {
-      // Hold the optimistic snapshot until the server reflects a real phase.
-      if (!meta || meta.phase === "idle") return pending;
+      // Hold the optimistic "matching" while the server still reports the match
+      // we're leaving (a rematch) or hasn't resolved past idle; once a real,
+      // different phase arrives it wins.
+      const stillPriorMatch =
+        !!meta && meta.matchId !== "" && meta.matchId === pendingLeftMatchId;
+      if (!meta || meta.phase === "idle" || stillPriorMatch) return pending;
       pending = null;
+      pendingLeftMatchId = "";
     }
     // Not resolved yet (e.g. a fresh reload): a distinct "loading" phase so the
     // route holds rather than bouncing to the lobby on a transient idle.
@@ -120,8 +130,11 @@ export function createConvexTransport(
       return current();
     },
     findMatch(self: SelfIdentity) {
-      // Show "matching" immediately so the lobby -> /chat hop doesn't bounce on
-      // a resolved-idle snapshot; roll back if the enqueue fails.
+      // Show "matching" immediately (held across a rematch via the match we're
+      // leaving) so the lobby -> /chat hop never bounces and a rematch never
+      // flashes the old chat; roll back if the enqueue fails so the route can
+      // recover (idle -> lobby).
+      pendingLeftMatchId = cached.matchId;
       pending = { ...IDLE_SNAPSHOT, phase: "matching", self };
       emit();
       client
@@ -133,6 +146,7 @@ export function createConvexTransport(
         })
         .catch((error: unknown) => {
           pending = null;
+          pendingLeftMatchId = "";
           emit();
           surfaceError(error);
         });
@@ -155,6 +169,7 @@ export function createConvexTransport(
     leave() {
       // Clear any optimistic "matching" so cancelling doesn't strand the UI.
       pending = null;
+      pendingLeftMatchId = "";
       emit();
       call(api.chat.leave, {});
     },
