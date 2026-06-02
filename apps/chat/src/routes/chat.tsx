@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ChatHeader } from "../components/chat/chat-header";
-import { EndedOverlay } from "../components/chat/ended-overlay";
+import { EndedView } from "../components/chat/ended-view";
 import { IceBreakerBanner } from "../components/chat/ice-breaker-banner";
 import { MessageComposer } from "../components/chat/message-composer";
 import { MessageList } from "../components/chat/message-list";
@@ -78,7 +78,7 @@ function Session() {
   }
 
   const rail =
-    phase === "active" || phase === "ended" ? (
+    phase === "active" ? (
       <SessionRail
         selfAlias={self.alias}
         selfSeed={self.avatarSeed}
@@ -118,7 +118,7 @@ function Session() {
           />
         )}
 
-        {(phase === "active" || phase === "ended") && partner && (
+        {phase === "active" && partner && (
           <>
             {presenceEnabled && snapshot.matchId && (
               <MatchPresence matchId={snapshot.matchId} sessionId={sessionId} />
@@ -150,7 +150,7 @@ function Session() {
         )}
 
         {phase === "ended" && (
-          <EndedOverlay
+          <EndedView
             reason={snapshot.endedReason}
             partnerAlias={partner?.alias}
             onFindNew={() => findMatch(self)}

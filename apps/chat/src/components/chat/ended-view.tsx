@@ -1,9 +1,15 @@
 import { Button } from "@umamin/ui/components/button";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useId, useRef } from "react";
 import type { EndedReason } from "../../lib/session/types";
+import { AdContainer } from "../ads/ad-container";
 
-export function EndedOverlay({
+/**
+ * In-flow "chat ended" view (replaces the old floating overlay). Rendered in the
+ * chat content column when phase === "ended". Normal document flow so the ad
+ * below is AdSense-policy-compliant (no ads in overlays) and no focus trap is
+ * needed.
+ */
+export function EndedView({
   reason,
   partnerAlias,
   onFindNew,
@@ -19,29 +25,19 @@ export function EndedOverlay({
       ? `${partnerAlias} left`
       : "Chat ended";
 
-  const titleId = useId();
-  const findNewRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    findNewRef.current?.focus();
-  }, []);
-
   return (
-    <div
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      className="bg-background/80 absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-sm"
+    <section
+      aria-label="Chat ended"
+      className="flex flex-1 flex-col items-center justify-center p-6 text-center"
     >
       <div aria-hidden className="mb-3 text-4xl">
         👋
       </div>
-      <h2 id={titleId} className="text-lg font-bold">
-        {title}
-      </h2>
+      <h2 className="text-lg font-bold">{title}</h2>
       <p className="text-muted-foreground mt-1 mb-5 max-w-xs text-sm">
         Poof — that conversation's gone. Nothing was saved.
       </p>
-      <Button ref={findNewRef} className="rounded-full" onClick={onFindNew}>
+      <Button className="rounded-full" onClick={onFindNew}>
         Find someone new
         <ArrowRight />
       </Button>
@@ -52,6 +48,7 @@ export function EndedOverlay({
       >
         Back to lobby
       </Button>
-    </div>
+      <AdContainer placement="ended" className="mt-8 max-w-sm" />
+    </section>
   );
 }
