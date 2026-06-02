@@ -1,6 +1,6 @@
+import { isRateLimitError } from "@convex-dev/rate-limiter";
 import type { ConvexReactClient } from "convex/react";
 import type { FunctionReference } from "convex/server";
-import { ConvexError } from "convex/values";
 import { api } from "../../../convex/_generated/api";
 import {
   type ChatTransport,
@@ -54,7 +54,10 @@ export function createConvexTransport(
     args: Record<string, unknown>,
   ) {
     client.mutation(fn, { sessionId, ...args }).catch((error: unknown) => {
-      if (error instanceof ConvexError) {
+      // Only the rate limiter's ConvexError maps to the toast; any other
+      // ConvexError (validation/auth/missing session) must surface, not be
+      // misreported as "going a little fast" and swallowed.
+      if (isRateLimitError(error)) {
         onRateLimited?.(RATE_LIMITED_MESSAGE);
         return;
       }

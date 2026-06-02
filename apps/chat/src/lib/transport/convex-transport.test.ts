@@ -3,6 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { IDLE_SNAPSHOT } from "../session/types";
 import { createConvexTransport } from "./convex-transport";
 
+// Minimal shape for the Node-level unhandled-rejection listeners used below;
+// the chat tsconfig doesn't pull in @types/node, so process isn't ambient.
+type NodeProcess = {
+  on(event: "unhandledRejection", listener: (reason: unknown) => void): void;
+  off(event: "unhandledRejection", listener: (reason: unknown) => void): void;
+};
+
 // A fake ConvexReactClient implementing only the surface the transport uses:
 // watchQuery -> { onUpdate, localQueryResult } and mutation(). `_emit` swaps the
 // local result and fires the subscribed callback, mimicking a server update.
@@ -74,7 +81,7 @@ describe("convexTransport", () => {
 
   it("routes a rate-limit ConvexError to onRateLimited and swallows it", async () => {
     const client = fakeClient({ ...IDLE_SNAPSHOT });
-    const error = new ConvexError({ kind: "RateLimited" });
+    const error = new ConvexError({ kind: "RateLimited", name: "sendMessage" });
     client.mutation = vi.fn(async () => {
       throw error;
     });
@@ -88,6 +95,35 @@ describe("convexTransport", () => {
     t.send("hi");
     await vi.waitFor(() => expect(onRateLimited).toHaveBeenCalledTimes(1));
     expect(onRateLimited).toHaveBeenCalledWith(expect.any(String));
+  });
+
+  it("does not treat a non-rate-limit ConvexError as a rate limit", async () => {
+    const client = fakeClient({ ...IDLE_SNAPSHOT });
+    const error = new ConvexError({ kind: "Unauthorized" });
+    client.mutation = vi.fn(async () => {
+      throw error;
+    });
+    const onRateLimited = vi.fn();
+    // The transport rethrows non-rate-limit errors onto its discarded mutation
+    // chain, which lands as a Node-level unhandled rejection; capture it to
+    // assert the rethrow happened and to keep it from failing the suite.
+    const proc = (globalThis as unknown as { process: NodeProcess }).process;
+    const rethrown = new Promise<unknown>((resolve) => {
+      const handler = (reason: unknown) => {
+        proc.off("unhandledRejection", handler);
+        resolve(reason);
+      };
+      proc.on("unhandledRejection", handler);
+    });
+    const t = createConvexTransport(
+      // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+      client as any,
+      "s1",
+      onRateLimited,
+    );
+    t.send("hi");
+    await expect(rethrown).resolves.toBe(error);
+    expect(onRateLimited).not.toHaveBeenCalled();
   });
 
   it("forwards sessionId on every action method", () => {
