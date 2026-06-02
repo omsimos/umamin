@@ -8,7 +8,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
-import { GRACE_MS, RECONCILE_MS } from "./constants";
+import { GRACE_MS, MATCH_START_GRACE_MS, RECONCILE_MS } from "./constants";
 
 // Room = matchId, user = sessionId. The component tracks online/offline via
 // heartbeats with graceful tab-close disconnect; we read it back server-side to
@@ -43,15 +43,6 @@ export const disconnect = mutation({
   },
 });
 
-/** Carries the per-user typing flag through the presence room's `data` channel
- *  so the partner's live `list` subscription renders the indicator. */
-export const setTyping = mutation({
-  args: { roomId: v.string(), userId: v.string(), typing: v.boolean() },
-  handler: async (ctx, { roomId, userId, typing }) => {
-    await presence.updateRoomUser(ctx, roomId, userId, { typing });
-  },
-});
-
 /** True when `sessionId` currently holds a live heartbeat in the match room.
  *  Reads the component's room presence (online-only) so a stale/closed tab
  *  drops out within ~2.5x the heartbeat interval. Defaults to online if the
@@ -71,7 +62,15 @@ export async function isPresent(
 
 /** Periodic abandonment check: if a participant's heartbeat has gone stale, end
  *  the match (partner-left) so the survivor's snapshot shows the overlay within
- *  seconds, and schedule the hard-delete. Re-arms while both are present. */
+ *  seconds, and schedule the hard-delete. Re-arms while both are present.
+ *
+ *  Start-grace: a brand-new match is NOT torn down before both clients have had
+ *  a realistic chance to mount presence and heartbeat. `isPresent` reads false
+ *  for a room with no heartbeats yet (an empty room is not an error), so without
+ *  this the first reconcile (~RECONCILE_MS after pairing) could end a perfectly
+ *  live match as "partner-left". Once a reconcile has seen both peers live we
+ *  latch `bothEverPresent` and drop the grace, so genuine post-connection
+ *  abandonment still ends the match promptly. */
 export const reconcile = internalMutation({
   args: { matchId: v.id("matches") },
   handler: async (ctx, { matchId }) => {
@@ -80,23 +79,38 @@ export const reconcile = internalMutation({
 
     const aLive = await isPresent(ctx, matchId, match.a);
     const bLive = await isPresent(ctx, matchId, match.b);
-    if (!aLive || !bLive) {
-      // Mark ended (partner-left) but keep both sessions attached so the
-      // survivor's snapshot shows the overlay within a reconcile cadence; the
-      // grace-delete (deleteMatch) detaches + hard-deletes after GRACE_MS,
-      // mirroring `chat.leave`.
-      await ctx.db.patch(matchId, {
-        status: "ended",
-        endedReason: "partner-left",
-        endedAt: Date.now(),
-      });
-      await ctx.scheduler.runAfter(GRACE_MS, internal.cleanup.deleteMatch, {
+
+    if (aLive && bLive) {
+      if (!match.bothEverPresent) {
+        await ctx.db.patch(matchId, { bothEverPresent: true });
+      }
+      await ctx.scheduler.runAfter(RECONCILE_MS, internal.presence.reconcile, {
         matchId,
       });
       return;
     }
 
-    await ctx.scheduler.runAfter(RECONCILE_MS, internal.presence.reconcile, {
+    // Not both present. Hold off on the partner-left teardown while the match is
+    // still young and has never seen both peers — the absent side may simply not
+    // have connected yet. Re-arm instead so we re-check after the grace.
+    const young = Date.now() - match.createdAt < MATCH_START_GRACE_MS;
+    if (!match.bothEverPresent && young) {
+      await ctx.scheduler.runAfter(RECONCILE_MS, internal.presence.reconcile, {
+        matchId,
+      });
+      return;
+    }
+
+    // Mark ended (partner-left) but keep both sessions attached so the
+    // survivor's snapshot shows the overlay within a reconcile cadence; the
+    // grace-delete (deleteMatch) detaches + hard-deletes after GRACE_MS,
+    // mirroring `chat.leave`.
+    await ctx.db.patch(matchId, {
+      status: "ended",
+      endedReason: "partner-left",
+      endedAt: Date.now(),
+    });
+    await ctx.scheduler.runAfter(GRACE_MS, internal.cleanup.deleteMatch, {
       matchId,
     });
   },

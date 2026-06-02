@@ -3,16 +3,18 @@ import type { ConvexReactClient } from "convex/react";
 import type { FunctionReference } from "convex/server";
 import { api } from "../../../convex/_generated/api";
 import {
+  type ChatMessage,
   type ChatTransport,
   type EndedReason,
   IDLE_SNAPSHOT,
   type SelfIdentity,
   type SessionSnapshot,
+  type SnapshotMeta,
 } from "../session/types";
 
-// The snapshot query already returns the SessionSnapshot shape, so mapping is
-// identity. Stable identity matters: only swap the cached snapshot when the
-// value actually changes, otherwise useSyncExternalStore churns on every emit.
+// The meta + messages queries are merged into one SessionSnapshot. Stable
+// identity matters: only swap the cached snapshot when the value actually
+// changes, otherwise useSyncExternalStore churns on every emit.
 function sameSnapshot(a: SessionSnapshot, b: SessionSnapshot): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -28,22 +30,31 @@ export function createConvexTransport(
   client: TransportClient,
   sessionId: string,
   onRateLimited?: (message: string) => void,
+  onError?: (error: unknown) => void,
 ): ChatTransport {
-  const watch = client.watchQuery(api.chat.snapshot, { sessionId });
+  // Meta (status/typing/stay-connected) and the message list are separate
+  // reactive queries so typing/presence churn never re-reads the messages.
+  const watchMeta = client.watchQuery(api.chat.snapshot, { sessionId });
+  const watchMessages = client.watchQuery(api.chat.messages, { sessionId });
   let cached: SessionSnapshot = IDLE_SNAPSHOT;
 
-  function current(): SessionSnapshot {
-    // localQueryResult() throws if the query errored on the server; treat that
-    // (and the not-yet-resolved undefined) as idle rather than crashing render.
-    let result: SessionSnapshot | undefined;
+  // localQueryResult() throws if the query errored on the server; treat that
+  // (and the not-yet-resolved undefined) as the fallback rather than crashing.
+  function read<T>(watch: { localQueryResult: () => unknown }, fallback: T): T {
     try {
-      result = watch.localQueryResult() as SessionSnapshot | undefined;
+      return (watch.localQueryResult() ?? fallback) as T;
     } catch {
-      result = undefined;
+      return fallback;
     }
-    if (!result) return IDLE_SNAPSHOT;
-    if (sameSnapshot(result, cached)) return cached;
-    cached = result;
+  }
+
+  function current(): SessionSnapshot {
+    const meta = read<SnapshotMeta | undefined>(watchMeta, undefined);
+    if (!meta) return IDLE_SNAPSHOT;
+    const messages = read<ChatMessage[]>(watchMessages, []);
+    const merged: SessionSnapshot = { ...meta, messages };
+    if (sameSnapshot(merged, cached)) return cached;
+    cached = merged;
     return cached;
   }
   // Prime the cache so the first getSnapshot reflects any already-resolved value.
@@ -61,13 +72,23 @@ export function createConvexTransport(
         onRateLimited?.(RATE_LIMITED_MESSAGE);
         return;
       }
-      throw error;
+      // This promise is fire-and-forget (the transport API is void), so a
+      // rethrow here would become an unhandled rejection that reaches no UI.
+      // Log it and hand it to the caller-supplied surface instead.
+      console.error("chat mutation failed", error);
+      onError?.(error);
     });
   }
 
   return {
     subscribe(listener) {
-      return watch.onUpdate(() => listener(current()));
+      const emit = () => listener(current());
+      const unMeta = watchMeta.onUpdate(emit);
+      const unMessages = watchMessages.onUpdate(emit);
+      return () => {
+        unMeta();
+        unMessages();
+      };
     },
     getSnapshot() {
       return current();

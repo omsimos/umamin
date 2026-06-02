@@ -69,6 +69,7 @@ export function MessageComposer({
         onChange={handleChange}
         placeholder="Type a message…"
         aria-label="Message"
+        maxLength={2000}
         className="rounded-full"
       />
       <Button

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ChatHeader } from "../components/chat/chat-header";
 import { EndedOverlay } from "../components/chat/ended-overlay";
@@ -37,10 +37,22 @@ function Session() {
     findMatch,
   } = useChatSession();
   const { phase, self, partner, messages, stayConnected } = snapshot;
+  // Stable for the session; avoid a localStorage read on every render.
+  const sessionId = useMemo(() => getSessionId(), []);
+
+  // A rematch fires leave()+findMatch() as two separate mutations; the snapshot
+  // can momentarily read "idle" between them. Suppress the lobby bounce while a
+  // rematch is in flight (cleared once the phase leaves "idle").
+  const rematchingRef = useRef(false);
 
   // Direct navigation / refresh with no live session -> back to lobby.
   useEffect(() => {
-    if (phase === "idle") navigate({ to: "/" });
+    if (phase !== "idle") {
+      rematchingRef.current = false;
+      return;
+    }
+    if (rematchingRef.current) return;
+    navigate({ to: "/" });
   }, [phase, navigate]);
 
   const [iceBreakerDismissed, setIceBreakerDismissed] = useState(false);
@@ -54,6 +66,7 @@ function Session() {
   }, [snapshot.matchId]);
 
   function newMatch() {
+    rematchingRef.current = true;
     leave();
     findMatch(self);
     toast("Finding someone new…");
@@ -64,6 +77,7 @@ function Session() {
   }
 
   function report() {
+    rematchingRef.current = true;
     leave();
     findMatch(self);
     toast.success("Reported. Finding you someone new.");
@@ -104,10 +118,7 @@ function Session() {
         {(phase === "active" || phase === "ended") && partner && (
           <>
             {presenceEnabled && snapshot.matchId && (
-              <MatchPresence
-                matchId={snapshot.matchId}
-                sessionId={getSessionId()}
-              />
+              <MatchPresence matchId={snapshot.matchId} sessionId={sessionId} />
             )}
             <ChatHeader
               partner={partner}

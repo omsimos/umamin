@@ -68,7 +68,8 @@ describe("cleanup", () => {
 
     await t.mutation(internal.cleanup.sweepEndedMatches, {});
 
-    // The match is gone and b is no longer dangling at it.
+    // The survivor is detached (the match-doc hard-delete is delegated to a
+    // scheduled deleteMatch, but detach happens synchronously in the sweep).
     const b = await t.run(async (ctx) =>
       ctx.db
         .query("sessions")

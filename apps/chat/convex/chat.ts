@@ -1,8 +1,8 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { GRACE_MS, MESSAGE_CAP } from "./constants";
+import { GRACE_MS, MAX_MESSAGE_LEN, MESSAGE_CAP } from "./constants";
 import { limitPerSession } from "./lib/rateLimits";
 import { sessionMutation, sessionQuery } from "./lib/sessions";
 import { isPresent } from "./presence";
@@ -12,12 +12,54 @@ const EMPTY = {
   matchId: "",
   self: { alias: "", avatarSeed: "", interests: [] as string[] },
   partner: null,
-  messages: [],
   stayConnected: { self: false, partner: false },
 };
 
+const snapshotMetaValidator = v.object({
+  phase: v.union(
+    v.literal("idle"),
+    v.literal("matching"),
+    v.literal("active"),
+    v.literal("ended"),
+  ),
+  matchId: v.string(),
+  self: v.object({
+    alias: v.string(),
+    avatarSeed: v.string(),
+    interests: v.array(v.string()),
+  }),
+  partner: v.union(
+    v.null(),
+    v.object({
+      alias: v.string(),
+      avatarSeed: v.string(),
+      sharedInterests: v.array(v.string()),
+      status: v.union(
+        v.literal("online"),
+        v.literal("typing"),
+        v.literal("left"),
+      ),
+    }),
+  ),
+  stayConnected: v.object({ self: v.boolean(), partner: v.boolean() }),
+  endedReason: v.optional(
+    v.union(v.literal("self-ended"), v.literal("partner-left")),
+  ),
+});
+
+const messageValidator = v.object({
+  id: v.id("messages"),
+  author: v.union(v.literal("self"), v.literal("partner")),
+  text: v.string(),
+  ts: v.number(),
+  reactions: v.array(v.string()),
+});
+
+// Match meta WITHOUT the message list: partner status / typing / stay-connected
+// changes invalidate this query (small reads) but never re-read the messages.
 export const snapshot = sessionQuery({
   args: {},
+  returns: snapshotMetaValidator,
   handler: async (ctx) => {
     const session = ctx.session;
     if (!session) return EMPTY;
@@ -63,20 +105,6 @@ export const snapshot = sessionQuery({
         ? "typing"
         : "online";
 
-    const rows = await ctx.db
-      .query("messages")
-      .withIndex("by_match", (q) => q.eq("matchId", match._id))
-      .order("asc")
-      .take(MESSAGE_CAP);
-    const messages = rows.map((m) => ({
-      id: m._id,
-      author:
-        m.author === ctx.sessionId ? ("self" as const) : ("partner" as const),
-      text: m.text,
-      ts: m._creationTime,
-      reactions: m.reactions,
-    }));
-
     return {
       phase: ended ? ("ended" as const) : ("active" as const),
       matchId: match._id,
@@ -89,7 +117,6 @@ export const snapshot = sessionQuery({
             status,
           }
         : null,
-      messages,
       stayConnected: {
         self: iAmA ? match.stayConnectedA : match.stayConnectedB,
         partner: iAmA ? match.stayConnectedB : match.stayConnectedA,
@@ -98,6 +125,30 @@ export const snapshot = sessionQuery({
         ? { endedReason: match.endedReason ?? ("partner-left" as const) }
         : {}),
     };
+  },
+});
+
+// Message list for the current match, kept separate from `snapshot` so it only
+// re-reads on send/react — never on typing, presence, or stay-connected churn.
+export const messages = sessionQuery({
+  args: {},
+  returns: v.array(messageValidator),
+  handler: async (ctx) => {
+    const matchId = ctx.session?.currentMatchId;
+    if (!matchId) return [];
+    const rows = await ctx.db
+      .query("messages")
+      .withIndex("by_match", (q) => q.eq("matchId", matchId))
+      .order("asc")
+      .take(MESSAGE_CAP);
+    return rows.map((m) => ({
+      id: m._id,
+      author:
+        m.author === ctx.sessionId ? ("self" as const) : ("partner" as const),
+      text: m.text,
+      ts: m._creationTime,
+      reactions: m.reactions,
+    }));
   },
 });
 
@@ -115,6 +166,11 @@ export const send = sessionMutation({
   handler: async (ctx, { text }) => {
     const trimmed = text.trim();
     if (!trimmed) return;
+    // Server-side cap: `send` is a public mutation callable directly, so the
+    // composer's maxLength is UX only — this is the actual guard.
+    if (trimmed.length > MAX_MESSAGE_LEN) {
+      throw new ConvexError("Message is too long.");
+    }
     const match = await activeMatchFor(ctx, ctx.session);
     if (!match) return;
     await limitPerSession(ctx, "sendMessage", ctx.sessionId);
@@ -186,12 +242,9 @@ export const leave = sessionMutation({
         endedReason: reason ?? "partner-left",
         endedAt: Date.now(),
       });
-      // STAGED FORWARD REFERENCE — Task 7 (cleanup.ts) supplies `deleteMatch`
-      // plus the cron sweeps for stale queue/session rows. Resolves at runtime
-      // via the permissive `anyApi` proxy, so `leave` commits, but the
-      // scheduled hard-delete will fail (function-not-found) until that module
-      // lands. Must ship together: without it, ended matches and their messages
-      // leak rows. Tracked as a follow-up — do not deploy tasks 5/6 alone.
+      // Hard-delete is deferred GRACE_MS (not inline) so the survivor's snapshot
+      // keeps a window to render the partner-left overlay before the match and
+      // its messages are swept; mirrors presence.reconcile.
       await ctx.scheduler.runAfter(GRACE_MS, internal.cleanup.deleteMatch, {
         matchId: match._id,
       });

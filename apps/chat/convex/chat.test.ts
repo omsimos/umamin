@@ -24,30 +24,30 @@ describe("chat", () => {
   it("send appends a message visible to both", async () => {
     const t = await matched();
     await t.mutation(api.chat.send, { sessionId: "a", text: "hi" });
-    const b = await t.query(api.chat.snapshot, { sessionId: "b" });
-    expect(b.messages.at(-1)?.text).toBe("hi");
-    expect(b.messages.at(-1)?.author).toBe("partner");
+    const b = await t.query(api.chat.messages, { sessionId: "b" });
+    expect(b.at(-1)?.text).toBe("hi");
+    expect(b.at(-1)?.author).toBe("partner");
   });
 
   it("react toggles an emoji server-side", async () => {
     const t = await matched();
     await t.mutation(api.chat.send, { sessionId: "a", text: "hi" });
-    const a1 = await t.query(api.chat.snapshot, { sessionId: "a" });
-    const id = a1.messages[0].id;
+    const m1 = await t.query(api.chat.messages, { sessionId: "a" });
+    const id = m1[0].id;
     await t.mutation(api.chat.react, {
       sessionId: "b",
       messageId: id,
       emoji: "❤️",
     });
-    const a2 = await t.query(api.chat.snapshot, { sessionId: "a" });
-    expect(a2.messages[0].reactions).toContain("❤️");
+    const m2 = await t.query(api.chat.messages, { sessionId: "a" });
+    expect(m2[0].reactions).toContain("❤️");
     await t.mutation(api.chat.react, {
       sessionId: "b",
       messageId: id,
       emoji: "❤️",
     });
-    const a3 = await t.query(api.chat.snapshot, { sessionId: "a" });
-    expect(a3.messages[0].reactions).not.toContain("❤️");
+    const m3 = await t.query(api.chat.messages, { sessionId: "a" });
+    expect(m3[0].reactions).not.toContain("❤️");
   });
 
   it("mutual stay-connected when both sides signal", async () => {

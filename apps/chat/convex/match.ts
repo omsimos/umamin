@@ -1,9 +1,16 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation } from "./_generated/server";
-import { FALLBACK_MS, RECONCILE_MS } from "./constants";
+import {
+  FALLBACK_MS,
+  GRACE_MS,
+  MAX_ALIAS_LEN,
+  MAX_AVATAR_SEED_LEN,
+  MAX_INTERESTS,
+  RECONCILE_MS,
+} from "./constants";
 import { limitPerSession } from "./lib/rateLimits";
 import { sessionMutation } from "./lib/sessions";
 
@@ -30,6 +37,7 @@ async function pair(
     stayConnectedB: false,
     typingA: false,
     typingB: false,
+    bothEverPresent: false,
     status: "active" as const,
     createdAt: now,
   });
@@ -50,8 +58,33 @@ export const enqueueAndMatch = sessionMutation({
     interests: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    // The lobby bounds these, but this mutation is publicly callable.
+    if (
+      args.alias.length > MAX_ALIAS_LEN ||
+      args.avatarSeed.length > MAX_AVATAR_SEED_LEN ||
+      args.interests.length > MAX_INTERESTS
+    ) {
+      throw new ConvexError("Invalid identity.");
+    }
     await limitPerSession(ctx, "findMatch", ctx.sessionId);
     const now = Date.now();
+
+    // End any still-active match before re-queueing so the partner gets a clean
+    // partner-left and the old match becomes GC-eligible, rather than being
+    // silently abandoned (orphaned active matches have no cron backstop).
+    if (ctx.session?.currentMatchId) {
+      const prev = await ctx.db.get(ctx.session.currentMatchId);
+      if (prev && prev.status === "active") {
+        await ctx.db.patch(prev._id, {
+          status: "ended",
+          endedReason: "partner-left",
+          endedAt: now,
+        });
+        await ctx.scheduler.runAfter(GRACE_MS, internal.cleanup.deleteMatch, {
+          matchId: prev._id,
+        });
+      }
+    }
 
     // Upsert session, detached from any prior match.
     if (ctx.session) {

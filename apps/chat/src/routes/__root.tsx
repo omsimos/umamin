@@ -16,7 +16,12 @@ export const Route = createRootRoute({
 const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
 const transport = convex
-  ? createConvexTransport(convex, getSessionId(), (message) => toast(message))
+  ? createConvexTransport(
+      convex,
+      getSessionId(),
+      (message) => toast(message),
+      () => toast("Something went wrong. Please try again."),
+    )
   : undefined;
 
 function RootLayout() {
