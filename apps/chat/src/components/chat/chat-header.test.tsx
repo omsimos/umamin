@@ -54,7 +54,10 @@ describe("ChatHeader", () => {
     ).toContain("text-primary");
   });
 
-  it("shows 'online' or 'typing…' based on partner status", () => {
+  it("shows 'online', 'typing…' or 'left' based on partner status", () => {
+    const byStatusText = (text: string) => (_: string, el: Element | null) =>
+      el?.tagName === "P" && el.textContent?.trim() === text;
+
     const { rerender } = render(
       <ChatHeader
         partner={makePartner({ status: "online" })}
@@ -62,7 +65,7 @@ describe("ChatHeader", () => {
         onStayConnected={() => {}}
       />,
     );
-    expect(screen.getByText("● online")).toBeInTheDocument();
+    expect(screen.getByText(byStatusText("● online"))).toBeInTheDocument();
 
     rerender(
       <ChatHeader
@@ -71,7 +74,16 @@ describe("ChatHeader", () => {
         onStayConnected={() => {}}
       />,
     );
-    expect(screen.getByText("● typing…")).toBeInTheDocument();
+    expect(screen.getByText(byStatusText("● typing…"))).toBeInTheDocument();
+
+    rerender(
+      <ChatHeader
+        partner={makePartner({ status: "left" })}
+        stayConnectedActive={false}
+        onStayConnected={() => {}}
+      />,
+    );
+    expect(screen.getByText(byStatusText("● left"))).toBeInTheDocument();
   });
 
   it("shows the shared-interest badge only when present", () => {
