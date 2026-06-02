@@ -17,7 +17,7 @@ export const Route = createFileRoute("/chat")({
   component: Session,
 });
 
-function Session() {
+export function Session() {
   const navigate = useNavigate();
   const { snapshot, send, react, signalStayConnected, leave, findMatch } =
     useChatSession();
