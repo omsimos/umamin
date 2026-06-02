@@ -13,3 +13,17 @@ afterEach(cleanup);
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
+
+// jsdom has no IntersectionObserver; lazy AdContainer constructs one on mount.
+if (!("IntersectionObserver" in globalThis)) {
+  class MockIntersectionObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stub
+  (globalThis as any).IntersectionObserver = MockIntersectionObserver;
+}
