@@ -50,7 +50,6 @@ describe("convexTransport", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
     const t = createConvexTransport(client as any, "s1");
-    // Distinct from idle so the route holds instead of bouncing to the lobby.
     expect(t.getSnapshot()).toEqual(LOADING_SNAPSHOT);
     expect(t.getSnapshot().phase).toBe("loading");
   });
@@ -64,7 +63,7 @@ describe("convexTransport", () => {
     const snap = { ...IDLE_SNAPSHOT, phase: "matching" as const };
     client._emit(snap);
     const first = t.getSnapshot();
-    client._emit({ ...snap }); // structurally identical
+    client._emit({ ...snap });
     expect(t.getSnapshot()).toBe(first); // same reference -> no churn
   });
 
@@ -72,12 +71,10 @@ describe("convexTransport", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
     const t = createConvexTransport(client as any, "s1");
-    // Messages alone (meta unresolved) stays loading.
     client._emitMessages([
       { id: "x1", author: "partner", text: "hi", ts: 1, reactions: [] },
     ]);
     expect(t.getSnapshot()).toEqual(LOADING_SNAPSHOT);
-    // Once meta resolves, the message list merges in.
     client._emit({ ...IDLE_SNAPSHOT, phase: "active", matchId: "m1" });
     const snap = t.getSnapshot();
     expect(snap.phase).toBe("active");
@@ -178,7 +175,6 @@ describe("convexTransport", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
     const t = createConvexTransport(client as any, "s1");
-    // Server has resolved to idle (no match yet).
     client._emit({ ...IDLE_SNAPSHOT });
     expect(t.getSnapshot().phase).toBe("idle");
     // findMatch must flip to "matching" synchronously so /chat doesn't bounce.
@@ -202,7 +198,6 @@ describe("convexTransport", () => {
     expect(t.getSnapshot().phase).toBe("matching");
     client._emit({ ...IDLE_SNAPSHOT, phase: "active", matchId: "m1" });
     expect(t.getSnapshot().phase).toBe("matching");
-    // A different match resolves -> optimistic state clears.
     client._emit({ ...IDLE_SNAPSHOT, phase: "active", matchId: "m2" });
     expect(t.getSnapshot().phase).toBe("active");
     expect(t.getSnapshot().matchId).toBe("m2");

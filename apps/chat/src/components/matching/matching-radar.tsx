@@ -9,7 +9,6 @@ function formatElapsed(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-// Faint background avatars suggesting other strangers nearby; decorative only.
 const GHOSTS = [
   { top: "12%", left: "18%" },
   { top: "22%", right: "14%" },

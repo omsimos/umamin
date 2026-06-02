@@ -17,7 +17,6 @@ export interface SelfIdentity {
 export interface Partner {
   alias: string;
   avatarSeed: string;
-  /** Interest ids shared with self. */
   sharedInterests: string[];
   status: PartnerStatus;
 }
@@ -27,7 +26,6 @@ export interface ChatMessage {
   author: "self" | "partner";
   text: string;
   ts: number;
-  /** Emoji reactions currently applied to this message. */
   reactions: string[];
 }
 
@@ -62,7 +60,7 @@ export interface ChatTransport {
   findMatch(self: SelfIdentity): void;
   send(text: string): void;
   react(messageId: string, emoji: string): void;
-  /** Best-effort: tell the partner whether you're currently composing. */
+  /** Best-effort: delivery is not guaranteed. */
   setTyping(isTyping: boolean): void;
   signalStayConnected(): void;
   leave(reason?: EndedReason): void;

@@ -8,15 +8,13 @@ export function ReactionPicker({
 }: {
   onPick: (emoji: string) => void;
   placement?: "top" | "bottom";
-  /** Move keyboard focus to the first emoji when the picker opens. */
   autoFocusFirst?: boolean;
 }) {
   return (
     <div
       className={cn(
         "bg-popover absolute left-0 z-20 flex gap-0.5 rounded-full border px-1.5 py-1 shadow-lg",
-        // Flip below the bubble when there's no room above (top messages would
-        // otherwise be clipped under the chat header).
+        // Flip below the bubble when there's no room above, else it's clipped under the chat header.
         placement === "top" ? "-top-9" : "top-full mt-1",
       )}
     >

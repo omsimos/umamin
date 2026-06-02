@@ -54,7 +54,6 @@ function Session() {
   const [iceBreakerDismissed, setIceBreakerDismissed] = useState(false);
   const [celebrationDismissed, setCelebrationDismissed] = useState(false);
 
-  // Reset transient UI when a new match begins.
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on match identity
   useEffect(() => {
     setIceBreakerDismissed(false);

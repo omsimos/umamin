@@ -70,7 +70,6 @@ export const snapshot = sessionQuery({
     };
 
     if (!session.currentMatchId) {
-      // matching if queued, else idle.
       const queued = await ctx.db
         .query("queue")
         .withIndex("by_session", (q) => q.eq("sessionId", ctx.sessionId))

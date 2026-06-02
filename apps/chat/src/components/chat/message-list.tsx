@@ -12,16 +12,14 @@ export function MessageList({
   messages: ChatMessage[];
   partnerStatus: PartnerStatus | undefined;
   onReact: (messageId: string, emoji: string) => void;
-  /** Optional node rendered above the first message (the ice-breaker). */
   header?: ReactNode;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const didInitialScroll = useRef(false);
 
-  // Auto-scroll to the newest message, but don't yank the user down while
-  // they're reading history: jump on first content and on your own sends,
-  // otherwise only when already near the bottom.
+  // Don't yank the user down while reading history: jump on first content and
+  // own sends, otherwise only when already near the bottom.
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new content
   useEffect(() => {
     const c = containerRef.current;

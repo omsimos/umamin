@@ -14,12 +14,6 @@ declare global {
   }
 }
 
-/**
- * Config-driven AdSense unit (mirrors apps/www/components/ad-container.tsx).
- * Renders nothing until its placement has a slotId AND ads are enabled
- * (production, non-localhost). Lazy placements only request a fill once scrolled
- * near; every unit requests a fill at most once.
- */
 export function AdContainer({
   placement,
   className,

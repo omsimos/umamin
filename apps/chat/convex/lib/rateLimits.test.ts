@@ -21,7 +21,6 @@ describe("rate limits", () => {
       t.run((ctx) => limitPerSession(ctx, "sendMessage", "a")),
     ).rejects.toThrow();
 
-    // A different session is unaffected (separate bucket, not a global one).
     await expect(
       t.run((ctx) => limitPerSession(ctx, "sendMessage", "b")),
     ).resolves.not.toThrow();

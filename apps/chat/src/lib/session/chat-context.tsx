@@ -27,7 +27,6 @@ export function ChatSessionProvider({
   transport,
 }: {
   children: ReactNode;
-  /** Swap point: defaults to the mock; a Convex transport drops in here later. */
   transport?: ChatTransport;
 }) {
   const transportRef = useRef<ChatTransport | undefined>(transport);

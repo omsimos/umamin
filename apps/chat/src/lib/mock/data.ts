@@ -25,7 +25,6 @@ export function interestById(id: string): Interest | undefined {
   return INTEREST_BY_ID.get(id);
 }
 
-/** Alias parts. randomAlias() joins one of each. */
 export const ALIAS_ADJECTIVES = [
   "Wandering",
   "Quiet",
@@ -59,7 +58,6 @@ export const ALIAS_NOUNS = [
   "Bear",
 ];
 
-/** Pre-written partner replies — intentionally generic. Replaced by a backend later. */
 export const PARTNER_LINES = [
   "haha that's so real",
   "ooh tell me more",
