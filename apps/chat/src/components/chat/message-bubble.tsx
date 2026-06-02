@@ -1,5 +1,5 @@
 import { cn } from "@umamin/ui/lib/utils";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ChatMessage } from "../../lib/session/types";
 import { ReactionPicker } from "./reaction-picker";
 
@@ -11,13 +11,26 @@ export function MessageBubble({
   onReact: (emoji: string) => void;
 }) {
   const [picking, setPicking] = useState(false);
+  const [placement, setPlacement] = useState<"top" | "bottom">("top");
+  const bubbleRef = useRef<HTMLButtonElement>(null);
   const mine = message.author === "self";
+
+  function toggle() {
+    if (!picking) {
+      // Open below when the bubble sits near the top (the chat header occupies
+      // the first ~64px), otherwise the picker would be clipped behind it.
+      const rect = bubbleRef.current?.getBoundingClientRect();
+      setPlacement(rect && rect.top < 96 ? "bottom" : "top");
+    }
+    setPicking((p) => !p);
+  }
 
   return (
     <div className={cn("flex w-full", mine ? "justify-end" : "justify-start")}>
       <div className="relative max-w-[78%]">
         {picking && (
           <ReactionPicker
+            placement={placement}
             onPick={(emoji) => {
               onReact(emoji);
               setPicking(false);
@@ -25,8 +38,9 @@ export function MessageBubble({
           />
         )}
         <button
+          ref={bubbleRef}
           type="button"
-          onClick={() => setPicking((p) => !p)}
+          onClick={toggle}
           className={cn(
             "rounded-2xl px-3.5 py-2 text-left text-sm leading-relaxed break-words",
             "focus-visible:border-ring focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
