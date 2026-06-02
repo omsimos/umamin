@@ -11,6 +11,7 @@
     "clean": "rm -rf dist .turbo node_modules"
   },
   "dependencies": {
+    "@tanstack/react-router": "^1.170.10",
     "@umamin/ui": "workspace:*",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
@@ -19,6 +20,8 @@
     "@babel/core": "^7.29.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tailwindcss/vite": "^4.3.0",
+    "@tanstack/react-router-devtools": "^1.167.0",
+    "@tanstack/router-plugin": "^1.168.13",
     "@types/babel__core": "^7.20.5",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
