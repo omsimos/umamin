@@ -29,6 +29,49 @@ describe("cleanup", () => {
     expect(msgs).toHaveLength(0);
   });
 
+  it("sweepEndedMatches detaches the survivor so sweepDeadSessions can reclaim it", async () => {
+    const t = convexTest(schema, modules);
+    registerRateLimiter(t);
+    await t.mutation(api.match.enqueueAndMatch, self("a"));
+    await t.mutation(api.match.enqueueAndMatch, self("b"));
+    // a leaves (detached); b is the survivor (still attached to the match).
+    await t.mutation(api.chat.leave, { sessionId: "a" });
+
+    // Age the ended match past GRACE and b's session past TTL.
+    await t.run(async (ctx) => {
+      const match = await ctx.db
+        .query("matches")
+        .withIndex("by_status_endedAt", (q) => q.eq("status", "ended"))
+        .unique();
+      if (match) await ctx.db.patch(match._id, { endedAt: 1 });
+      const b = await ctx.db
+        .query("sessions")
+        .withIndex("by_session", (q) => q.eq("sessionId", "b"))
+        .unique();
+      if (b) await ctx.db.patch(b._id, { lastSeen: 1 });
+    });
+
+    await t.mutation(internal.cleanup.sweepEndedMatches, {});
+
+    // The match is gone and b is no longer dangling at it.
+    const b = await t.run(async (ctx) =>
+      ctx.db
+        .query("sessions")
+        .withIndex("by_session", (q) => q.eq("sessionId", "b"))
+        .unique(),
+    );
+    expect(b?.currentMatchId).toBeUndefined();
+
+    await t.mutation(internal.cleanup.sweepDeadSessions, {});
+    const leftover = await t.run(async (ctx) =>
+      ctx.db
+        .query("sessions")
+        .withIndex("by_session", (q) => q.eq("sessionId", "b"))
+        .unique(),
+    );
+    expect(leftover).toBeNull();
+  });
+
   it("sweepDeadSessions deletes sessions past TTL", async () => {
     const t = convexTest(schema, modules);
     await t.run(async (ctx) => {
