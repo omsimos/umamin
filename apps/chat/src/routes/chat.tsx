@@ -8,9 +8,16 @@ import { MessageComposer } from "../components/chat/message-composer";
 import { MessageList } from "../components/chat/message-list";
 import { StayConnectedCelebration } from "../components/chat/stay-connected-celebration";
 import { MatchingRadar } from "../components/matching/matching-radar";
+import { MatchPresence } from "../components/presence/match-presence";
 import { AppShell, Wordmark } from "../components/shell/app-shell";
 import { SessionRail } from "../components/shell/session-rail";
 import { useChatSession } from "../lib/session/chat-context";
+import { getSessionId } from "../lib/session/session-id";
+
+// Presence heartbeats only flow against a real Convex backend; on the mock
+// there's no ConvexProvider, so MatchPresence (which calls Convex hooks) stays
+// unmounted.
+const presenceEnabled = Boolean(import.meta.env.VITE_CONVEX_URL);
 
 export const Route = createFileRoute("/chat")({
   component: Session,
@@ -89,6 +96,12 @@ function Session() {
 
         {(phase === "active" || phase === "ended") && partner && (
           <>
+            {presenceEnabled && snapshot.matchId && (
+              <MatchPresence
+                matchId={snapshot.matchId}
+                sessionId={getSessionId()}
+              />
+            )}
             <ChatHeader
               partner={partner}
               stayConnectedActive={stayConnected.self}
