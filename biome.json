@@ -13,7 +13,8 @@
       "!.next",
       "!dist",
       "!build",
-      "!**/routeTree.gen.ts"
+      "!**/routeTree.gen.ts",
+      "!**/convex/_generated"
     ]
   },
   "formatter": {
