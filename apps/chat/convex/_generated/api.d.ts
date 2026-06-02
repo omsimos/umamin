@@ -9,6 +9,7 @@
  */
 
 import type * as constants from "../constants.js";
+import type * as lib_sessions from "../lib/sessions.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +19,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   constants: typeof constants;
+  "lib/sessions": typeof lib_sessions;
 }>;
 
 /**
