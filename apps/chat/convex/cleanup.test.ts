@@ -9,10 +9,12 @@ import schema from "./schema";
 const modules = import.meta.glob("./**/*.ts");
 const self = (id: string) => ({
   sessionId: id,
+  sessionSecret: `${id}-secret`,
   alias: id,
   avatarSeed: id,
   interests: ["music"],
 });
+const auth = (id: string) => ({ sessionId: id, sessionSecret: `${id}-secret` });
 
 describe("cleanup", () => {
   it("deleteMatch removes the match and its messages", async () => {
@@ -21,8 +23,8 @@ describe("cleanup", () => {
     registerPresence(t);
     await t.mutation(api.match.enqueueAndMatch, self("a"));
     await t.mutation(api.match.enqueueAndMatch, self("b"));
-    await t.mutation(api.chat.send, { sessionId: "a", text: "hi" });
-    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+    await t.mutation(api.chat.send, { ...auth("a"), text: "hi" });
+    const a = await t.query(api.chat.snapshot, auth("a"));
     const matchId = a.matchId as string;
     // Heartbeat so the presence component holds rows keyed on this match.
     await t.mutation(api.presence.heartbeat, {
@@ -34,7 +36,7 @@ describe("cleanup", () => {
     await t.mutation(internal.cleanup.deleteMatch, {
       matchId: matchId as never,
     });
-    const after = await t.query(api.chat.snapshot, { sessionId: "a" });
+    const after = await t.query(api.chat.snapshot, auth("a"));
     expect(after.phase).toBe("idle");
     const msgs = await t.run(async (ctx) => ctx.db.query("messages").collect());
     expect(msgs).toHaveLength(0);
@@ -50,7 +52,7 @@ describe("cleanup", () => {
     await t.mutation(api.match.enqueueAndMatch, self("a"));
     await t.mutation(api.match.enqueueAndMatch, self("b"));
     // a leaves (detached); b is the survivor (still attached to the match).
-    await t.mutation(api.chat.leave, { sessionId: "a" });
+    await t.mutation(api.chat.leave, auth("a"));
 
     // Age the ended match past GRACE and b's session past TTL.
     await t.run(async (ctx) => {
@@ -88,11 +90,37 @@ describe("cleanup", () => {
     expect(leftover).toBeNull();
   });
 
+  it("sweepStaleActiveMatches detaches old active matches as a cleanup backstop", async () => {
+    const t = convexTest(schema, modules);
+    registerRateLimiter(t);
+    registerPresence(t);
+    await t.mutation(api.match.enqueueAndMatch, self("a"));
+    await t.mutation(api.match.enqueueAndMatch, self("b"));
+
+    await t.run(async (ctx) => {
+      const match = await ctx.db.query("matches").first();
+      if (match) await ctx.db.patch(match._id, { createdAt: 1 });
+    });
+
+    await t.mutation(internal.cleanup.sweepStaleActiveMatches, {});
+
+    const match = await t.run((ctx) => ctx.db.query("matches").first());
+    expect(match?.status).toBe("ended");
+    const a = await t.run((ctx) =>
+      ctx.db
+        .query("sessions")
+        .withIndex("by_session", (q) => q.eq("sessionId", "a"))
+        .unique(),
+    );
+    expect(a?.currentMatchId).toBeUndefined();
+  });
+
   it("sweepDeadSessions deletes sessions past TTL", async () => {
     const t = convexTest(schema, modules);
     await t.run(async (ctx) => {
       await ctx.db.insert("sessions", {
         sessionId: "old",
+        sessionSecret: "old-secret",
         alias: "x",
         avatarSeed: "x",
         interests: [],

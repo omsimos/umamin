@@ -4,6 +4,7 @@ import { v } from "convex/values";
 export default defineSchema({
   sessions: defineTable({
     sessionId: v.string(),
+    sessionSecret: v.optional(v.string()),
     alias: v.string(),
     avatarSeed: v.string(),
     interests: v.array(v.string()),
@@ -40,7 +41,9 @@ export default defineSchema({
     createdAt: v.number(),
     // Match lookups are by id (session.currentMatchId) or by status for the
     // cleanup sweep; participants are only read off an already-fetched match.
-  }).index("by_status_endedAt", ["status", "endedAt"]),
+  })
+    .index("by_status_endedAt", ["status", "endedAt"])
+    .index("by_status_createdAt", ["status", "createdAt"]),
 
   messages: defineTable({
     matchId: v.id("matches"),

@@ -2,8 +2,14 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { GRACE_MS, MAX_MESSAGE_LEN, MESSAGE_CAP } from "./constants";
-import { limitPerSession } from "./lib/rateLimits";
+import {
+  ALLOWED_REACTIONS,
+  GRACE_MS,
+  MAX_MESSAGE_LEN,
+  MAX_REACTIONS_PER_MESSAGE,
+  MESSAGE_CAP,
+} from "./constants";
+import { limitGlobal, limitPerSession } from "./lib/rateLimits";
 import { sessionMutation, sessionQuery } from "./lib/sessions";
 import { isPresent } from "./presence";
 
@@ -176,6 +182,7 @@ export const send = sessionMutation({
     }
     const match = await activeMatchFor(ctx, ctx.session);
     if (!match) return;
+    await limitGlobal(ctx, "globalSendMessage");
     await limitPerSession(ctx, "sendMessage", ctx.sessionId);
     await ctx.db.insert("messages", {
       matchId: match._id,
@@ -189,14 +196,21 @@ export const send = sessionMutation({
 export const react = sessionMutation({
   args: { messageId: v.id("messages"), emoji: v.string() },
   handler: async (ctx, { messageId, emoji }) => {
+    if (!ALLOWED_REACTIONS.includes(emoji)) {
+      throw new ConvexError("Unsupported reaction.");
+    }
     const match = await activeMatchFor(ctx, ctx.session);
     if (!match) return;
     const msg = await ctx.db.get(messageId);
     if (!msg || msg.matchId !== match._id) return;
+    await limitGlobal(ctx, "globalReact");
     await limitPerSession(ctx, "react", ctx.sessionId);
     const reactions = msg.reactions.includes(emoji)
       ? msg.reactions.filter((e) => e !== emoji)
       : [...msg.reactions, emoji];
+    if (reactions.length > MAX_REACTIONS_PER_MESSAGE) {
+      throw new ConvexError("Too many reactions.");
+    }
     await ctx.db.patch(messageId, { reactions });
   },
 });
@@ -220,11 +234,17 @@ export const setTyping = sessionMutation({
   handler: async (ctx, { typing }) => {
     const match = await activeMatchFor(ctx, ctx.session);
     if (!match) return;
-    // Not rate-limited: it's debounced client-side and best-effort; throttling
-    // could drop the trailing `false` and leave the indicator stuck on.
+    const field = match.a === ctx.sessionId ? "typingA" : "typingB";
+    if (Boolean(match[field]) === typing) return;
+    if (typing) {
+      await limitGlobal(ctx, "globalTyping");
+      await limitPerSession(ctx, "typing", ctx.sessionId);
+    }
+    // The trailing false is allowed through so the indicator cannot get stuck;
+    // repeated identical false writes are skipped above.
     await ctx.db.patch(
       match._id,
-      match.a === ctx.sessionId ? { typingA: typing } : { typingB: typing },
+      field === "typingA" ? { typingA: typing } : { typingB: typing },
     );
   },
 });

@@ -8,10 +8,11 @@ import {
   GRACE_MS,
   MAX_ALIAS_LEN,
   MAX_AVATAR_SEED_LEN,
+  MAX_INTEREST_LEN,
   MAX_INTERESTS,
   RECONCILE_MS,
 } from "./constants";
-import { limitPerSession } from "./lib/rateLimits";
+import { limitGlobal, limitPerSession } from "./lib/rateLimits";
 import { sessionMutation } from "./lib/sessions";
 
 async function getSession(ctx: MutationCtx, sessionId: string) {
@@ -19,6 +20,28 @@ async function getSession(ctx: MutationCtx, sessionId: string) {
     .query("sessions")
     .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
     .unique();
+}
+
+function normalizeIdentity(args: {
+  alias: string;
+  avatarSeed: string;
+  interests: string[];
+}) {
+  const alias = args.alias.trim() || "Anonymous";
+  const avatarSeed = args.avatarSeed.trim();
+  const interests = Array.from(
+    new Set(args.interests.map((i) => i.trim()).filter(Boolean)),
+  );
+  if (
+    alias.length > MAX_ALIAS_LEN ||
+    avatarSeed.length === 0 ||
+    avatarSeed.length > MAX_AVATAR_SEED_LEN ||
+    interests.length > MAX_INTERESTS ||
+    interests.some((i) => i.length > MAX_INTEREST_LEN)
+  ) {
+    throw new ConvexError("Invalid identity.");
+  }
+  return { alias, avatarSeed, interests };
 }
 
 async function pair(
@@ -59,13 +82,8 @@ export const enqueueAndMatch = sessionMutation({
   },
   handler: async (ctx, args) => {
     // The lobby bounds these, but this mutation is publicly callable.
-    if (
-      args.alias.length > MAX_ALIAS_LEN ||
-      args.avatarSeed.length > MAX_AVATAR_SEED_LEN ||
-      args.interests.length > MAX_INTERESTS
-    ) {
-      throw new ConvexError("Invalid identity.");
-    }
+    const identity = normalizeIdentity(args);
+    await limitGlobal(ctx, "globalFindMatch");
     await limitPerSession(ctx, "findMatch", ctx.sessionId);
     const now = Date.now();
 
@@ -88,18 +106,20 @@ export const enqueueAndMatch = sessionMutation({
 
     if (ctx.session) {
       await ctx.db.patch(ctx.session._id, {
-        alias: args.alias,
-        avatarSeed: args.avatarSeed,
-        interests: args.interests,
+        sessionSecret: ctx.sessionSecret,
+        alias: identity.alias,
+        avatarSeed: identity.avatarSeed,
+        interests: identity.interests,
         lastSeen: now,
         currentMatchId: undefined,
       });
     } else {
       await ctx.db.insert("sessions", {
         sessionId: ctx.sessionId,
-        alias: args.alias,
-        avatarSeed: args.avatarSeed,
-        interests: args.interests,
+        sessionSecret: ctx.sessionSecret,
+        alias: identity.alias,
+        avatarSeed: identity.avatarSeed,
+        interests: identity.interests,
         lastSeen: now,
       });
     }
@@ -118,7 +138,7 @@ export const enqueueAndMatch = sessionMutation({
       .take(50);
     const others = waiting.filter((q) => q.sessionId !== ctx.sessionId);
     const overlap = (q: { interests: string[] }) =>
-      q.interests.filter((i) => args.interests.includes(i));
+      q.interests.filter((i) => identity.interests.includes(i));
     const partner = others.find((q) => overlap(q).length > 0);
     if (partner) {
       await pair(ctx, ctx.sessionId, partner, overlap(partner));
@@ -127,7 +147,7 @@ export const enqueueAndMatch = sessionMutation({
 
     await ctx.db.insert("queue", {
       sessionId: ctx.sessionId,
-      interests: args.interests,
+      interests: identity.interests,
       enqueuedAt: now,
     });
     await ctx.scheduler.runAfter(FALLBACK_MS, internal.match.fallbackPair, {

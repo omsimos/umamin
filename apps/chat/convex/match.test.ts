@@ -7,15 +7,22 @@ import schema from "./schema";
 const modules = import.meta.glob("./**/*.ts");
 
 function self(id: string) {
-  return { sessionId: id, alias: id, avatarSeed: id, interests: ["music"] };
+  return {
+    sessionId: id,
+    sessionSecret: `${id}-secret`,
+    alias: id,
+    avatarSeed: id,
+    interests: ["music"],
+  };
 }
+const auth = (id: string) => ({ sessionId: id, sessionSecret: `${id}-secret` });
 
 describe("matchmaking", () => {
   it("queues the first user (no partner yet)", async () => {
     const t = convexTest(schema, modules);
     registerRateLimiter(t);
     await t.mutation(api.match.enqueueAndMatch, self("a"));
-    const snap = await t.query(api.chat.snapshot, { sessionId: "a" });
+    const snap = await t.query(api.chat.snapshot, auth("a"));
     expect(snap.phase).toBe("matching");
   });
 
@@ -24,8 +31,8 @@ describe("matchmaking", () => {
     registerRateLimiter(t);
     await t.mutation(api.match.enqueueAndMatch, self("a"));
     await t.mutation(api.match.enqueueAndMatch, self("b"));
-    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
-    const b = await t.query(api.chat.snapshot, { sessionId: "b" });
+    const a = await t.query(api.chat.snapshot, auth("a"));
+    const b = await t.query(api.chat.snapshot, auth("b"));
     expect(a.phase).toBe("active");
     expect(b.phase).toBe("active");
     expect(a.matchId).toBe(b.matchId);
@@ -38,7 +45,30 @@ describe("matchmaking", () => {
     await t.mutation(api.match.enqueueAndMatch, self("a"));
     await t.mutation(api.match.enqueueAndMatch, self("b"));
     await t.mutation(api.match.enqueueAndMatch, self("c"));
-    const c = await t.query(api.chat.snapshot, { sessionId: "c" });
+    const c = await t.query(api.chat.snapshot, auth("c"));
     expect(c.phase).toBe("matching");
+  });
+
+  it("normalizes identity before storing and queueing", async () => {
+    const t = convexTest(schema, modules);
+    registerRateLimiter(t);
+    await t.mutation(api.match.enqueueAndMatch, {
+      sessionId: "a",
+      sessionSecret: "a-secret",
+      alias: "  ",
+      avatarSeed: " seed ",
+      interests: [" music ", "music", " "],
+    });
+    const session = await t.run((ctx) =>
+      ctx.db
+        .query("sessions")
+        .withIndex("by_session", (q) => q.eq("sessionId", "a"))
+        .unique(),
+    );
+    expect(session).toMatchObject({
+      alias: "Anonymous",
+      avatarSeed: "seed",
+      interests: ["music"],
+    });
   });
 });

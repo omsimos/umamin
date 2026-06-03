@@ -10,6 +10,12 @@ crons.interval(
   {},
 );
 crons.interval(
+  "sweep stale active matches",
+  { minutes: 5 },
+  internal.cleanup.sweepStaleActiveMatches,
+  {},
+);
+crons.interval(
   "sweep stale queue",
   { seconds: 120 },
   internal.cleanup.sweepStaleQueue,

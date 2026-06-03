@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 import {
+  ACTIVE_MATCH_TTL_MS,
   GRACE_MS,
   MAX_QUEUE_WAIT_MS,
   MESSAGE_DELETE_PAGE,
@@ -71,6 +72,37 @@ export const sweepEndedMatches = internalMutation({
           await ctx.db.patch(s._id, { currentMatchId: undefined });
       }
       await ctx.scheduler.runAfter(0, internal.cleanup.deleteMatch, {
+        matchId: m._id,
+      });
+    }
+  },
+});
+
+export const sweepStaleActiveMatches = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const cutoff = Date.now() - ACTIVE_MATCH_TTL_MS;
+    const stale = await ctx.db
+      .query("matches")
+      .withIndex("by_status_createdAt", (q) =>
+        q.eq("status", "active").lt("createdAt", cutoff),
+      )
+      .take(100);
+    for (const m of stale) {
+      await ctx.db.patch(m._id, {
+        status: "ended",
+        endedReason: "partner-left",
+        endedAt: Date.now(),
+      });
+      for (const sessionId of [m.a, m.b]) {
+        const s = await ctx.db
+          .query("sessions")
+          .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+          .unique();
+        if (s?.currentMatchId === m._id)
+          await ctx.db.patch(s._id, { currentMatchId: undefined });
+      }
+      await ctx.scheduler.runAfter(GRACE_MS, internal.cleanup.deleteMatch, {
         matchId: m._id,
       });
     }
