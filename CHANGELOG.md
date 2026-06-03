@@ -20,6 +20,10 @@ any that are empty.
 
 ## [5.0.3] - 2026-06-03
 
+### Added
+
+- The umamin navigation now has an Umamin Chat shortcut that opens a quick intro with a link to start an anonymous chat.
+
 ### Fixed
 
 - In Umamin Chat, the message box no longer jumps to the top of the screen and covers the conversation when the other person starts typing.
