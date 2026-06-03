@@ -43,6 +43,18 @@
       "react": "recommended"
     }
   },
+  "overrides": [
+    {
+      "includes": ["apps/chat/**"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noImgElement": "off"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "actions": {
       "source": {
