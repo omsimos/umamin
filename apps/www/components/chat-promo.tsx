@@ -19,8 +19,8 @@ import {
   DrawerTrigger,
 } from "@umamin/ui/components/drawer";
 import { ArrowRightIcon, MessageSquareQuoteIcon } from "lucide-react";
+import Image from "next/image";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { UmaminLogo } from "./umamin-logo";
 
 const CHAT_URL =
   "https://chat.umamin.link?utm_source=umamin&utm_medium=referral&utm_content=nav";
@@ -42,7 +42,13 @@ export function ChatPromo() {
 
   const title = (
     <>
-      <UmaminLogo className="size-5" />
+      <Image
+        src="/umamin-chat-logo.png"
+        alt=""
+        width={24}
+        height={24}
+        className="size-6 rounded-md"
+      />
       Umamin Chat
       <Badge variant="secondary" className="font-normal">
         Beta
@@ -82,7 +88,7 @@ export function ChatPromo() {
     <Drawer>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent className="p-4">
-        <DrawerHeader className="px-0 text-left">
+        <DrawerHeader className="px-0 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
           <DrawerTitle className="flex items-center gap-2">{title}</DrawerTitle>
           <DrawerDescription className="leading-relaxed">
             {DESCRIPTION}
