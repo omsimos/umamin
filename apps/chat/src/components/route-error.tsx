@@ -11,7 +11,7 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
       <div aria-hidden className="mb-3 text-4xl">
         😵
       </div>
-      <h1 className="text-lg font-bold">Something went wrong</h1>
+      <h1 className="font-display text-lg font-bold">Something went wrong</h1>
       <p className="text-muted-foreground mt-1 mb-5 max-w-xs text-sm">
         The chat hit an unexpected error. Try again, or head back to the lobby
         to start fresh.

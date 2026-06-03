@@ -43,7 +43,7 @@ export function StayConnectedCelebration({
           className="size-12"
         />
       </div>
-      <h2 id={titleId} className="text-lg font-bold">
+      <h2 id={titleId} className="font-display text-lg font-bold">
         It's mutual!
       </h2>
       <p className="text-muted-foreground mt-1 mb-5 max-w-xs text-sm">

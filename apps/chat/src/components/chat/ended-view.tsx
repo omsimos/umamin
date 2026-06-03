@@ -28,7 +28,7 @@ export function EndedView({
       <div aria-hidden className="mb-3 text-4xl">
         👋
       </div>
-      <h2 className="text-lg font-bold">{title}</h2>
+      <h2 className="font-display text-lg font-bold">{title}</h2>
       <p className="text-muted-foreground mt-1 mb-5 max-w-xs text-sm">
         Poof — that conversation's gone. Nothing was saved.
       </p>

@@ -17,6 +17,8 @@
   "dependencies": {
     "@convex-dev/presence": "^0.3.0",
     "@convex-dev/rate-limiter": "^0.3.2",
+    "@fontsource-variable/bricolage-grotesque": "^5.2.10",
+    "@fontsource-variable/geist": "^5.2.9",
     "@tanstack/react-router": "^1.170.10",
     "@umamin/ui": "workspace:*",
     "convex": "^1.40.0",
