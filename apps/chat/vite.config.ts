@@ -18,4 +18,10 @@ export default defineConfig({
     tailwindcss(),
     babel({ presets: [reactCompilerPreset()] }),
   ],
+  server: {
+    // Native FS watching doesn't reliably deliver change events on this setup,
+    // so HMR (and even hard reloads) serve stale modules until a dev restart.
+    // Polling detects edits deterministically.
+    watch: { usePolling: true },
+  },
 });
