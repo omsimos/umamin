@@ -25,6 +25,6 @@ export function avatarGradient(seed: string): { backgroundImage: string } {
   return { backgroundImage: `linear-gradient(${angle}deg, ${from}, ${to})` };
 }
 
-export function initialOf(name: string): string {
-  return name.trim().charAt(0).toUpperCase() || "?";
+export function seedIndex(seed: string, count: number): number {
+  return hash(seed) % count;
 }
