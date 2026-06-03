@@ -23,6 +23,7 @@ any that are empty.
 ### Fixed
 
 - In Umamin Chat, the message box no longer jumps to the top of the screen and covers the conversation when the other person starts typing.
+- The emoji reaction picker is no longer cut off at the top of a chat — it now stays fully on-screen, flipping below messages near the header.
 
 ## [5.0.2] - 2026-06-03
 
