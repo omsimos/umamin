@@ -11,6 +11,8 @@ import { ThemeToggle } from "../components/theme-toggle";
 import { useIdentityDraft } from "../lib/identity/use-identity-draft";
 import { useChatSession } from "../lib/session/chat-context";
 
+const maintenanceMode = import.meta.env.VITE_MAINTENANCE === "true";
+
 export const Route = createFileRoute("/")({
   component: Lobby,
 });
@@ -56,36 +58,53 @@ function Lobby() {
           Anonymous conversations with{" "}
           <span className="text-primary">unexpected people.</span>
         </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Pick what you're into — we'll match you with a stranger who shares it.
-          No history, nothing saved.
-        </p>
+        {maintenanceMode ? (
+          <div className="bg-card my-auto rounded-xl border p-6 text-center">
+            <div aria-hidden className="mb-3 text-4xl">
+              🛠️
+            </div>
+            <h2 className="font-display text-lg font-bold">
+              Under maintenance
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Umamin Chat is taking a short break while we sort things out.
+              Please check back soon — thanks for your patience.
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Pick what you're into — we'll match you with a stranger who shares
+              it. No history, nothing saved.
+            </p>
 
-        <p className="text-muted-foreground mt-6 mb-2 text-[11px] font-medium tracking-wide uppercase">
-          Your interests
-        </p>
-        <InterestPicker
-          selected={draft.interests}
-          onToggle={draft.toggleInterest}
-        />
+            <p className="text-muted-foreground mt-6 mb-2 text-[11px] font-medium tracking-wide uppercase">
+              Your interests
+            </p>
+            <InterestPicker
+              selected={draft.interests}
+              onToggle={draft.toggleInterest}
+            />
 
-        <div className="mt-auto pt-8">
-          <Button
-            size="lg"
-            className="h-12 w-full rounded-full text-base"
-            onClick={start}
-          >
-            Find someone who gets you
-            <ArrowRight />
-          </Button>
-          <p className="text-muted-foreground mt-2 text-center text-[11px]">
-            {draft.interests.length > 0
-              ? `${draft.interests.length} selected · matches on at least one`
-              : "no interests picked · we'll match you with anyone"}
-          </p>
-        </div>
+            <div className="mt-auto pt-8">
+              <Button
+                size="lg"
+                className="h-12 w-full rounded-full text-base"
+                onClick={start}
+              >
+                Find someone who gets you
+                <ArrowRight />
+              </Button>
+              <p className="text-muted-foreground mt-2 text-center text-[11px]">
+                {draft.interests.length > 0
+                  ? `${draft.interests.length} selected · matches on at least one`
+                  : "no interests picked · we'll match you with anyone"}
+              </p>
+            </div>
 
-        <AdContainer placement="lobby" className="mt-6" />
+            <AdContainer placement="lobby" className="mt-6" />
+          </>
+        )}
       </div>
     </AppShell>
   );
