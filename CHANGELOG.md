@@ -20,6 +20,10 @@ any that are empty.
 
 ## [5.0.2] - 2026-06-03
 
+### Added
+
+- Umamin Chat can be switched into a maintenance mode that pauses new matches and shows a notice during planned downtime.
+
 ### Changed
 
 - Shared links now show a dedicated Umamin Chat preview card.
