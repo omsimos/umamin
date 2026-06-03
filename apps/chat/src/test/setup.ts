@@ -14,6 +14,25 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
 
+// jsdom has no ResizeObserver; Radix Popover's positioning (Floating UI
+// autoUpdate) observes the trigger/content on open.
+if (!("ResizeObserver" in globalThis)) {
+  class MockResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stub
+  (globalThis as any).ResizeObserver = MockResizeObserver;
+}
+
+// jsdom lacks the Pointer Capture API that Radix's dismissable layer touches.
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.setPointerCapture = () => {};
+  Element.prototype.releasePointerCapture = () => {};
+}
+
 // jsdom has no IntersectionObserver; lazy AdContainer constructs one on mount.
 if (!("IntersectionObserver" in globalThis)) {
   class MockIntersectionObserver {

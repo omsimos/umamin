@@ -1,5 +1,10 @@
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@umamin/ui/components/popover";
 import { cn } from "@umamin/ui/lib/utils";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { ChatMessage } from "../../lib/session/types";
 import { ReactionPicker } from "./reaction-picker";
 
@@ -10,80 +15,48 @@ export function MessageBubble({
   message: ChatMessage;
   onReact: (emoji: string) => void;
 }) {
-  const [picking, setPicking] = useState(false);
-  const [placement, setPlacement] = useState<"top" | "bottom">("top");
-  const bubbleRef = useRef<HTMLButtonElement>(null);
-  const pickerRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
   const mine = message.author === "self";
-
-  const close = useCallback(() => {
-    setPicking(false);
-    bubbleRef.current?.focus();
-  }, []);
-
-  function toggle() {
-    if (!picking) {
-      // Open below near the top, else the picker is clipped behind the chat header.
-      const rect = bubbleRef.current?.getBoundingClientRect();
-      setPlacement(rect && rect.top < 96 ? "bottom" : "top");
-    }
-    setPicking((p) => !p);
-  }
-
-  useEffect(() => {
-    if (!picking) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") close();
-    }
-    function onPointerDown(e: PointerEvent) {
-      const target = e.target as Node;
-      // The bubble's own click handler toggles; treat it as inside so an
-      // outside-close + reopen race can't happen.
-      if (
-        !pickerRef.current?.contains(target) &&
-        !bubbleRef.current?.contains(target)
-      ) {
-        setPicking(false);
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
-  }, [picking, close]);
 
   return (
     <div className={cn("flex w-full", mine ? "justify-end" : "justify-start")}>
       <div className="relative max-w-[78%]">
-        {picking && (
-          <div ref={pickerRef}>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={`${mine ? "You" : "They"} said: ${message.text}. Tap to react.`}
+              className={cn(
+                "rounded-2xl px-3.5 py-2 text-left text-sm leading-relaxed break-words",
+                "focus-visible:border-ring focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
+                "transition-[filter] active:brightness-95",
+                mine
+                  ? "bg-primary text-primary-foreground rounded-br-sm"
+                  : "bg-muted text-foreground rounded-bl-sm",
+              )}
+            >
+              {message.text}
+            </button>
+          </PopoverTrigger>
+          {/* Portaled + viewport collision-aware, so the picker flips below the
+              bubble near the top instead of being clipped under the header. */}
+          <PopoverContent
+            side="top"
+            align={mine ? "end" : "start"}
+            sideOffset={8}
+            // Clear the stacked top chrome (app header + chat header) so a
+            // near-top message flips the picker below instead of over them.
+            collisionPadding={{ top: 116, bottom: 16, left: 12, right: 12 }}
+            className="bg-popover/95 w-auto rounded-full border p-1 shadow-lg backdrop-blur"
+          >
             <ReactionPicker
-              placement={placement}
-              autoFocusFirst
               onPick={(emoji) => {
                 onReact(emoji);
-                close();
+                setOpen(false);
               }}
             />
-          </div>
-        )}
-        <button
-          ref={bubbleRef}
-          type="button"
-          aria-label={`${mine ? "You" : "They"} said: ${message.text}. Tap to react.`}
-          onClick={toggle}
-          className={cn(
-            "rounded-2xl px-3.5 py-2 text-left text-sm leading-relaxed break-words",
-            "focus-visible:border-ring focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
-            mine
-              ? "bg-primary text-primary-foreground rounded-br-sm"
-              : "bg-muted text-foreground rounded-bl-sm",
-          )}
-        >
-          {message.text}
-        </button>
+          </PopoverContent>
+        </Popover>
         {message.reactions.length > 0 && (
           // biome-ignore lint/a11y/useSemanticElements: a label-only grouping of reaction badges, not a form fieldset
           <div
