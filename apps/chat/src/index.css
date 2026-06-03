@@ -13,9 +13,3 @@
     font-family: var(--font-sans);
   }
 }
-
-/* Collapse ad slots AdSense couldn't fill so they leave no empty gap. */
-ins.adsbygoogle[data-ad-status="unfilled"] {
-  /* biome-ignore lint/complexity/noImportantStyles: must override AdSense's inline display:block on the <ins> */
-  display: none !important;
-}
