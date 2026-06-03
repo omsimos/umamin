@@ -2,23 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Umamin Chat</title>
     <script>
       // Apply the theme before first paint to avoid a flash of the wrong theme.
       // Mirrors next-themes (storageKey "theme", defaultTheme "dark", enableSystem).
-      (function () {
+      (() => {
         try {
-          var stored = localStorage.getItem("theme") || "dark";
-          var sys = window.matchMedia("(prefers-color-scheme: dark)").matches
+          const stored = localStorage.getItem("theme") || "dark";
+          const sys = window.matchMedia("(prefers-color-scheme: dark)").matches
             ? "dark"
             : "light";
-          var theme = stored === "system" ? sys : stored;
-          var el = document.documentElement;
+          const theme = stored === "system" ? sys : stored;
+          const el = document.documentElement;
           el.classList.toggle("dark", theme === "dark");
           el.style.colorScheme = theme;
-        } catch (e) {}
+        } catch {}
       })();
     </script>
   </head>
