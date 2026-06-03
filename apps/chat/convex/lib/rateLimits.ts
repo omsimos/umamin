@@ -13,35 +13,45 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   findMatch: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 5 },
   react: { kind: "token bucket", rate: 20, period: 10 * SECOND, capacity: 10 },
   typing: { kind: "token bucket", rate: 30, period: 10 * SECOND, capacity: 10 },
+  // Global brakes are keyless, so every call hits the same bucket — sharded so
+  // high-frequency mutations (esp. the per-client heartbeat) don't all contend
+  // on one rateLimits document and trigger OCC write-conflict retries. Shard
+  // counts scale with each limit's expected throughput; rate/capacity stay the
+  // global totals and the component divides them across shards.
   globalFindMatch: {
     kind: "token bucket",
     rate: 1500,
     period: MINUTE,
     capacity: 500,
+    shards: 5,
   },
   globalSendMessage: {
     kind: "token bucket",
     rate: 3000,
     period: 10 * SECOND,
     capacity: 1000,
+    shards: 10,
   },
   globalReact: {
     kind: "token bucket",
     rate: 4000,
     period: 10 * SECOND,
     capacity: 1500,
+    shards: 10,
   },
   globalTyping: {
     kind: "token bucket",
     rate: 6000,
     period: 10 * SECOND,
     capacity: 2000,
+    shards: 10,
   },
   globalPresenceHeartbeat: {
     kind: "token bucket",
     rate: 20000,
     period: 10 * SECOND,
     capacity: 5000,
+    shards: 16,
   },
 });
 
