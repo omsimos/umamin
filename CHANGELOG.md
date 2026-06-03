@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.0.2] - 2026-06-03
+
+### Changed
+
+- Shared links now show a dedicated Umamin Chat preview card.
+
 ## [5.0.1] - 2026-06-03
 
 ### Changed
@@ -351,6 +357,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.0.2]: https://github.com/omsimos/umamin/compare/v5.0.1...v5.0.2
 [5.0.1]: https://github.com/omsimos/umamin/compare/v5.0.0...v5.0.1
 [5.0.0]: https://github.com/omsimos/umamin/compare/v4.9.0...v5.0.0
 [4.9.0]: https://github.com/omsimos/umamin/compare/v4.8.0...v4.9.0
