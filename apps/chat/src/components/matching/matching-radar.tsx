@@ -68,7 +68,9 @@ export function MatchingRadar({
         />
       </div>
 
-      <h2 className="text-lg font-bold">Finding someone for you…</h2>
+      <h2 className="font-display text-lg font-bold">
+        Finding someone for you…
+      </h2>
 
       <div className="mt-3 flex flex-wrap justify-center gap-1.5">
         {(interests.length > 0 ? interests : ["anyone"]).map((id) => {
