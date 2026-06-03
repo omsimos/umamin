@@ -25,6 +25,10 @@ any that are empty.
 - In Umamin Chat, the message box no longer jumps to the top of the screen and covers the conversation when the other person starts typing.
 - The emoji reaction picker is no longer cut off at the top of a chat — it now stays fully on-screen, flipping below messages near the header.
 
+### Performance & Cost
+
+- Umamin Chat's app-wide rate-limit buckets are now sharded, so high-frequency activity (especially presence heartbeats) no longer contends on a single record and stays reliable under load.
+
 ## [5.0.2] - 2026-06-03
 
 ### Added
