@@ -1,8 +1,8 @@
 import {
   createContext,
   type ReactNode,
+  use,
   useCallback,
-  useContext,
   useMemo,
   useRef,
   useSyncExternalStore,
@@ -58,7 +58,7 @@ export function ChatSessionProvider({
 }
 
 export function useChatSession(): ChatSessionValue {
-  const ctx = useContext(ChatSessionContext);
+  const ctx = use(ChatSessionContext);
   if (!ctx) {
     throw new Error("useChatSession must be used within a ChatSessionProvider");
   }
