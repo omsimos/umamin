@@ -10,11 +10,11 @@ import { Menu } from "lucide-react";
 import type { ReactNode } from "react";
 import { Logo } from "../logo";
 
-function Wordmark() {
+export function Wordmark() {
   return (
     <span className="font-display inline-flex items-center gap-1.5 text-sm font-bold">
       <Logo className="size-5" />
-      umamin
+      Umamin Chat
     </span>
   );
 }
@@ -56,5 +56,3 @@ export function AppShell({
     </div>
   );
 }
-
-export { Wordmark };

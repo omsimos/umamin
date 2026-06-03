@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avatarGradient, initialOf } from "./avatar";
+import { avatarGradient } from "./avatar";
 
 describe("avatarGradient", () => {
   it("is deterministic for the same seed", () => {
@@ -12,15 +12,5 @@ describe("avatarGradient", () => {
 
   it("returns a CSS linear-gradient background", () => {
     expect(avatarGradient("x").backgroundImage).toMatch(/^linear-gradient\(/);
-  });
-});
-
-describe("initialOf", () => {
-  it("uppercases the first letter", () => {
-    expect(initialOf("nightOwl")).toBe("N");
-  });
-
-  it("falls back to '?' for empty input", () => {
-    expect(initialOf("")).toBe("?");
   });
 });

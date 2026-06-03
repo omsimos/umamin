@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import { SeedAvatar } from "./seed-avatar";
 
 describe("SeedAvatar", () => {
-  it("renders the alias initial", () => {
+  it("renders a dicebear avatar image for the seed", () => {
     render(<SeedAvatar seed="x" alias="NightOwl" />);
-    expect(screen.getByText("N")).toBeInTheDocument();
+    const img = screen.getByLabelText("NightOwl").querySelector("img");
+    expect(img?.getAttribute("src")).toMatch(/^data:image\/svg\+xml/);
   });
 
   it("applies a gradient background", () => {
