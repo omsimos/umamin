@@ -1,3 +1,4 @@
+import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import {
   Drawer,
@@ -12,9 +13,12 @@ import { Logo } from "../logo";
 
 export function Wordmark() {
   return (
-    <span className="font-display inline-flex items-center gap-1.5 text-sm font-bold">
+    <span className="inline-flex items-center gap-1.5 text-sm font-bold">
       <Logo className="size-5" />
-      Umamin Chat
+      <span className="font-display">Umamin Chat</span>
+      <Badge variant="secondary" className="px-1.5 text-[10px]">
+        Beta
+      </Badge>
     </span>
   );
 }
