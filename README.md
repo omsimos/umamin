@@ -5,7 +5,7 @@
 </div>
 
 <div align="center">
-  <p>An open-source social platform for sending and receiving encrypted anonymous messages. 🔏</p>
+  <p>An open-source platform for anonymous communication. 🔏</p>
 
   <img src="https://github.com/omsimos/umamin/actions/workflows/ci.yml/badge.svg" alt="actions">
   <img src="https://img.shields.io/github/v/release/omsimos/umamin.svg" alt="releases">
@@ -14,24 +14,41 @@
 
 <br/>
 
+## Overview
+
+This monorepo hosts two open-source apps for anonymous communication:
+
+- **Umamin** — [www.umamin.link](https://www.umamin.link) — the main social platform: a profile-based inbox for sending and receiving **encrypted anonymous messages**. Built with Next.js, Drizzle ORM, and Turso/libSQL.
+- **Umamin Chat** — [chat.umamin.link](https://chat.umamin.link) — **ephemeral, anonymous 1:1 chat**: get matched with a stranger who shares your interests. No sign-up, no history, nothing saved. Built with Vite, React, and Convex.
+
 ## Contributing
 
 If you like this project, please consider giving it a star! ✨ If you wish to suggest or work on a new feature, please open an issue to discuss with the community and the project maintainers. We appreciate your interest and look forward to collaborating with you! Please review our [Code of Conduct](./CODE_OF_CONDUCT.md) before contributing.
 
-### Monorepo Setup
+### Monorepo Structure
 
-| Core Packages        | Description                                                      |
-| -------------------- | ---------------------------------------------------------------- |
-| `www`                | **Umamin Q&A** & landing page (Next.js)                          |
-| `@umamin/db`         | Database schema & migrations using Drizzle ORM + Turso/libSQL    |
-| `@umamin/encryption` | AES-GCM encryption/decryption utilities (uses `AES_256_GCM_KEY`) |
-| `@umamin/ui`         | Shared UI components and styling                                 |
+**Apps**
+
+| App         | Description                                                                  |
+| ----------- | ---------------------------------------------------------------------------- |
+| `apps/www`  | **Umamin** — anonymous messaging platform & landing page (Next.js)           |
+| `apps/chat` | **Umamin Chat** — ephemeral, anonymous stranger chat (Vite + React + Convex) |
+
+**Packages**
+
+| Package              | Description                                                          |
+| -------------------- | ------------------------------------------------------------------- |
+| `@umamin/db`         | Database schema & migrations using Drizzle ORM + Turso/libSQL (www) |
+| `@umamin/encryption` | AES-GCM encryption/decryption utilities (uses `AES_256_GCM_KEY`)    |
+| `@umamin/ui`         | Shared UI components and styling (used by both apps)                |
 
 ### Prerequisites
 
-- [`Turso CLI`](https://docs.turso.tech/cli/installation) (for local libSQL server)
+- [`Turso CLI`](https://docs.turso.tech/cli/installation) — local libSQL server for **www**
 - `Node.js` >= 24 or [`nvm`](https://github.com/nvm-sh/nvm)
 - `pnpm` >= 10
+
+> **Umamin Chat** uses [Convex](https://www.convex.dev) as its backend. `pnpm dev:chat` starts a local Convex deployment automatically (no account or extra install needed), and the chat falls back to an in-memory mock when `VITE_CONVEX_URL` is unset — so you can work on its UI without a backend.
 
 ### Install Dependencies
 
@@ -63,6 +80,12 @@ TURSO_CONNECTION_URL=http://127.0.0.1:8080
 TURSO_AUTH_TOKEN= # can be empty for local
 ```
 
+```env
+# apps/chat/.env.local (all optional)
+VITE_CONVEX_URL= # Convex backend; when unset, the chat uses an in-memory mock
+VITE_GTM_ID=     # Google Tag Manager; production analytics only (no-op locally)
+```
+
 Generate an AES-256-GCM key using the helper script:
 
 ```sh
@@ -77,16 +100,19 @@ If you need to use Google OAuth, you must set up your own OAuth client. [Setting
 Run the development servers with Turborepo:
 
 ```sh
-$ pnpm dev # runs app(s) and local db dev (if configured)
+$ pnpm dev # runs all apps (and local db dev if configured)
 ```
 
 Run a specific app only:
 
 ```sh
-$ pnpm dev --filter=www
+$ pnpm dev --filter=www   # Umamin (www)
+$ pnpm dev:chat           # Umamin Chat (Vite + local Convex)
 ```
 
 ### Setup Database
+
+> Applies to **www** only — Umamin Chat uses Convex, not Turso/Drizzle.
 
 Start a local libSQL server and run migrations.
 
@@ -119,6 +145,7 @@ After making changes, build the project (runs lint and type checks via tasks).
 $ pnpm build # build all
 # or
 $ pnpm build --filter=www
+$ pnpm build --filter=chat
 ```
 
 Once ready, you can submit a pull request for review.
