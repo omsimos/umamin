@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /chat
+
+Sitemap: https://chat.umamin.link/sitemap.xml

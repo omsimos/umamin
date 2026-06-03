@@ -14,7 +14,9 @@
         "GOOGLE_*",
         "KV_REST_API_*",
         "CRON_SECRET",
-        "AES_256_GCM_KEY"
+        "AES_256_GCM_KEY",
+        "VITE_CONVEX_URL",
+        "CONVEX_DEPLOYMENT"
       ]
     },
     "lint": {
@@ -26,6 +28,9 @@
     },
     "check-types": {
       "dependsOn": ["^check-types"]
+    },
+    "test": {
+      "outputs": []
     },
     "dev": {
       "cache": false,

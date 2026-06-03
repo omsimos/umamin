@@ -7,7 +7,15 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!node_modules", "!.next", "!dist", "!build"]
+    "includes": [
+      "**",
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!build",
+      "!**/routeTree.gen.ts",
+      "!**/convex/_generated"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -35,6 +43,18 @@
       "react": "recommended"
     }
   },
+  "overrides": [
+    {
+      "includes": ["apps/chat/**"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noImgElement": "off"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "actions": {
       "source": {

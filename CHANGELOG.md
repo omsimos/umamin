@@ -18,6 +18,15 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.0.0] - 2026-06-03
+
+### Added
+
+- Umamin Chat: anonymous, ephemeral one-on-one chat. Pick an alias and a few interests, and get matched with someone who shares one.
+- Talk in real time with typing indicators, emoji reactions, and a "stay
+  connected" signal; skip to a new match anytime.
+- Nothing is saved — conversations disappear the moment they end.
+
 ## [4.9.0] - 2026-06-02
 
 ### Added
@@ -332,6 +341,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.0.0]: https://github.com/omsimos/umamin/compare/v4.9.0...v5.0.0
 [4.9.0]: https://github.com/omsimos/umamin/compare/v4.8.0...v4.9.0
 [4.8.0]: https://github.com/omsimos/umamin/compare/v4.7.2...v4.8.0
 [4.7.2]: https://github.com/omsimos/umamin/compare/v4.7.1...v4.7.2

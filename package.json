@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:chat": "turbo run dev --filter=chat",
     "clean": "turbo clean && rm -rf .turbo node_modules",
     "ui:add:www": "pnpm --filter=www ui:add",
     "db:generate": "pnpm --filter=@umamin/db generate",
