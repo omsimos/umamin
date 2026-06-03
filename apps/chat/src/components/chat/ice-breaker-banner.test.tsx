@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { ICE_BREAKER_PROMPTS } from "../../lib/mock/data";
+import { ICE_BREAKER_PROMPTS } from "../../lib/content";
 import { IceBreakerBanner } from "./ice-breaker-banner";
 
 describe("IceBreakerBanner", () => {

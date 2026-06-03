@@ -178,3 +178,10 @@
   animation: shine 3s infinite;
   pointer-events: none;
 }
+
+/* Collapse AdSense slots that couldn't be filled so they leave no empty box.
+   Shared by apps/www and apps/chat (both render <ins class="adsbygoogle">). */
+ins.adsbygoogle[data-ad-status="unfilled"] {
+  /* biome-ignore lint/complexity/noImportantStyles: must override AdSense's inline display:block on the <ins> */
+  display: none !important;
+}

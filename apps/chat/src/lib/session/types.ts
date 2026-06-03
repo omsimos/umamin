@@ -10,7 +10,7 @@ export type EndedReason = "self-ended" | "partner-left";
 export interface SelfIdentity {
   alias: string;
   avatarSeed: string;
-  /** Interest ids (see lib/mock/data.ts INTERESTS). */
+  /** Interest ids (see lib/content.ts INTERESTS). */
   interests: string[];
 }
 

@@ -1,6 +1,6 @@
 import { Button } from "@umamin/ui/components/button";
 import { MessageSquareQuoteIcon, XIcon } from "lucide-react";
-import { ICE_BREAKER_PROMPTS, interestById } from "../../lib/mock/data";
+import { ICE_BREAKER_PROMPTS, interestById } from "../../lib/content";
 
 export function IceBreakerBanner({
   sharedInterests,

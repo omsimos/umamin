@@ -80,12 +80,6 @@ TURSO_CONNECTION_URL=http://127.0.0.1:8080
 TURSO_AUTH_TOKEN= # can be empty for local
 ```
 
-```env
-# apps/chat/.env.local (all optional)
-VITE_CONVEX_URL= # Convex backend; when unset, the chat uses an in-memory mock
-VITE_GTM_ID=     # Google Tag Manager; production analytics only (no-op locally)
-```
-
 Generate an AES-256-GCM key using the helper script:
 
 ```sh

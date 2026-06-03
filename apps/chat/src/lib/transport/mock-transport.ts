@@ -1,5 +1,5 @@
 import { randomAlias, randomAvatarSeed } from "../alias";
-import { INTERESTS, interestById, PARTNER_LINES } from "../mock/data";
+import { INTERESTS, interestById } from "../content";
 import {
   type ChatMessage,
   type ChatTransport,
@@ -8,6 +8,19 @@ import {
   type SelfIdentity,
   type SessionSnapshot,
 } from "../session/types";
+
+const PARTNER_LINES = [
+  "haha that's so real",
+  "ooh tell me more",
+  "honestly same",
+  "wait that's actually interesting",
+  "no way 😄",
+  "i've been thinking about that too lately",
+  "okay that's a hot take",
+  "what got you into that?",
+  "lol fair enough",
+  "that's kind of the dream tbh",
+];
 
 type Rng = () => number;
 

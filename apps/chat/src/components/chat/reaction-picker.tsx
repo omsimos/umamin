@@ -1,5 +1,5 @@
 import { cn } from "@umamin/ui/lib/utils";
-import { REACTION_EMOJIS } from "../../lib/mock/data";
+import { REACTION_EMOJIS } from "../../lib/content";
 
 export function ReactionPicker({
   onPick,

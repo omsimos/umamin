@@ -53,7 +53,8 @@ function Lobby() {
     <AppShell rail={rail}>
       <div className="mx-auto flex h-full max-w-xl flex-col overflow-y-auto p-6 sm:p-8">
         <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-          Talk to someone new.
+          Anonymous conversations with{" "}
+          <span className="text-primary">unexpected people.</span>
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Pick what you're into — we'll match you with a stranger who shares it.
