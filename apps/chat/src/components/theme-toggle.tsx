@@ -8,12 +8,12 @@ export function ThemeToggle() {
   return (
     <Button
       variant="ghost"
-      size="sm"
-      className="text-muted-foreground justify-start gap-2"
+      size="icon"
+      className="text-muted-foreground"
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >
       {isDark ? <Moon /> : <Sun />}
-      {isDark ? "Dark theme" : "Light theme"}
     </Button>
   );
 }
