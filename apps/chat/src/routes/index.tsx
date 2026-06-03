@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@umamin/ui/components/button";
 import { ArrowRight } from "lucide-react";
 import { AdContainer } from "../components/ads/ad-container";
+import { Attribution } from "../components/attribution";
 import { IdentityCard } from "../components/lobby/identity-card";
 import { InterestPicker } from "../components/lobby/interest-picker";
 import { PlatformPromo } from "../components/promo/platform-promo";
@@ -30,7 +31,10 @@ function Lobby() {
 
   const rail = (
     <div className="flex h-full flex-col gap-4">
-      <Wordmark />
+      <div className="flex items-center justify-between">
+        <Wordmark />
+        <ThemeToggle />
+      </div>
       <IdentityCard
         alias={draft.alias}
         avatarSeed={draft.avatarSeed}
@@ -40,7 +44,7 @@ function Lobby() {
       />
       <div className="mt-auto flex flex-col gap-3">
         <PlatformPromo />
-        <ThemeToggle />
+        <Attribution />
       </div>
     </div>
   );

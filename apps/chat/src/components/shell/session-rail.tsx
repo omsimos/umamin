@@ -29,7 +29,10 @@ export function SessionRail({
 }) {
   return (
     <div className="flex h-full flex-col gap-2">
-      <Wordmark />
+      <div className="flex items-center justify-between">
+        <Wordmark />
+        <ThemeToggle />
+      </div>
 
       <div className="bg-card mt-1 mb-2 flex items-center gap-2 rounded-lg border p-2">
         <SeedAvatar
@@ -60,10 +63,6 @@ export function SessionRail({
         confirmLabel="End chat"
         onConfirm={onEndChat}
       />
-
-      <div className="mt-auto">
-        <ThemeToggle />
-      </div>
     </div>
   );
 }
