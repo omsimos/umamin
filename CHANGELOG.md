@@ -24,6 +24,28 @@ any that are empty.
 
 - Shared links now show a dedicated Umamin Chat preview card.
 
+### Fixed
+
+- Umamin Chat now has a cleanup backstop for stale active matches, so abandoned
+  conversations and their sessions cannot remain attached indefinitely if a presence
+  reconciliation path is missed.
+- Umamin Chat now rejects legacy or mismatched anonymous session credentials instead of allowing a session id alone to access chat state.
+
+### Performance & Cost
+
+- Umamin Chat now applies app-wide Convex rate-limit buckets to matching, sending,
+  reactions, typing, and presence heartbeats, adding an aggregate cost brake on top of
+  per-session limits.
+- Chat cleanup remains paged and scheduled, so large conversations are deleted across
+  bounded Convex mutations instead of a single oversized teardown.
+
+### Security & Privacy
+
+- Anonymous chat sessions now use a persisted session secret in addition to the
+  session id for Convex queries and mutations.
+- Server-side chat input validation now bounds identity fields, interest ids, message
+  length, and reaction payloads, and only accepts supported reaction emoji.
+
 ## [5.0.1] - 2026-06-03
 
 ### Changed

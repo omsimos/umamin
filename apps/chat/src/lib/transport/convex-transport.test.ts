@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { IDLE_SNAPSHOT, LOADING_SNAPSHOT } from "../session/types";
 import { createConvexTransport } from "./convex-transport";
 
+const credentials = { sessionId: "s1", sessionSecret: "s1-secret" };
+
 // A fake ConvexReactClient implementing only the surface the transport uses:
 // watchQuery -> { onUpdate, localQueryResult } and mutation(). The transport
 // watches two queries (snapshot + messages), so watchers are kept per query in
@@ -49,7 +51,7 @@ describe("convexTransport", () => {
   it("returns a loading snapshot until the meta query resolves", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
-    const t = createConvexTransport(client as any, "s1");
+    const t = createConvexTransport(client as any, credentials);
     expect(t.getSnapshot()).toEqual(LOADING_SNAPSHOT);
     expect(t.getSnapshot().phase).toBe("loading");
   });
@@ -57,7 +59,7 @@ describe("convexTransport", () => {
   it("maps query results to snapshots and is identity-stable between identical emits", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
-    const t = createConvexTransport(client as any, "s1");
+    const t = createConvexTransport(client as any, credentials);
     const seen: unknown[] = [];
     t.subscribe(() => seen.push(t.getSnapshot()));
     const snap = { ...IDLE_SNAPSHOT, phase: "matching" as const };
@@ -70,7 +72,7 @@ describe("convexTransport", () => {
   it("merges the separate messages query into the snapshot", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
-    const t = createConvexTransport(client as any, "s1");
+    const t = createConvexTransport(client as any, credentials);
     client._emitMessages([
       { id: "x1", author: "partner", text: "hi", ts: 1, reactions: [] },
     ]);
@@ -85,11 +87,15 @@ describe("convexTransport", () => {
   it("send calls the mutation with sessionId", () => {
     const client = fakeClient({ ...IDLE_SNAPSHOT });
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
-    const t = createConvexTransport(client as any, "s1");
+    const t = createConvexTransport(client as any, credentials);
     t.send("hi");
     expect(client.mutation).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ sessionId: "s1", text: "hi" }),
+      expect.objectContaining({
+        sessionId: "s1",
+        sessionSecret: "s1-secret",
+        text: "hi",
+      }),
     );
   });
 
@@ -102,7 +108,7 @@ describe("convexTransport", () => {
       },
     });
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
-    const t = createConvexTransport(client as any, "s1");
+    const t = createConvexTransport(client as any, credentials);
     expect(t.getSnapshot()).toEqual(IDLE_SNAPSHOT);
   });
 
@@ -116,7 +122,7 @@ describe("convexTransport", () => {
     const t = createConvexTransport(
       // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
       client as any,
-      "s1",
+      credentials,
       onRateLimited,
     );
     t.send("hi");
@@ -140,7 +146,7 @@ describe("convexTransport", () => {
     const t = createConvexTransport(
       // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
       client as any,
-      "s1",
+      credentials,
       onRateLimited,
       onError,
     );
@@ -154,7 +160,7 @@ describe("convexTransport", () => {
   it("forwards sessionId on every action method", () => {
     const client = fakeClient({ ...IDLE_SNAPSHOT });
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
-    const t = createConvexTransport(client as any, "s1");
+    const t = createConvexTransport(client as any, credentials);
 
     t.findMatch({ alias: "a", avatarSeed: "seed", interests: ["music"] });
     t.react("m1", "❤️");
@@ -163,18 +169,24 @@ describe("convexTransport", () => {
 
     for (const [, args] of (client.mutation as ReturnType<typeof vi.fn>).mock
       .calls) {
-      expect(args).toMatchObject({ sessionId: "s1" });
+      expect(args).toMatchObject({
+        sessionId: "s1",
+        sessionSecret: "s1-secret",
+      });
     }
     expect(client.mutation).toHaveBeenLastCalledWith(
       expect.anything(),
-      expect.objectContaining({ sessionId: "s1" }),
+      expect.objectContaining({
+        sessionId: "s1",
+        sessionSecret: "s1-secret",
+      }),
     );
   });
 
   it("optimistically reports matching the instant findMatch is called", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
-    const t = createConvexTransport(client as any, "s1");
+    const t = createConvexTransport(client as any, credentials);
     client._emit({ ...IDLE_SNAPSHOT });
     expect(t.getSnapshot().phase).toBe("idle");
     // findMatch must flip to "matching" synchronously so /chat doesn't bounce.
@@ -182,14 +194,18 @@ describe("convexTransport", () => {
     expect(t.getSnapshot().phase).toBe("matching");
     expect(client.mutation).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ sessionId: "s1", interests: ["music"] }),
+      expect.objectContaining({
+        sessionId: "s1",
+        sessionSecret: "s1-secret",
+        interests: ["music"],
+      }),
     );
   });
 
   it("holds optimistic matching across a rematch until a different match resolves", () => {
     const client = fakeClient(undefined);
     // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
-    const t = createConvexTransport(client as any, "s1");
+    const t = createConvexTransport(client as any, credentials);
     client._emit({ ...IDLE_SNAPSHOT, phase: "active", matchId: "m1" });
     expect(t.getSnapshot().phase).toBe("active");
     // Rematch while the server still reports the old match: show matching, not
@@ -215,7 +231,7 @@ describe("convexTransport", () => {
     const t = createConvexTransport(
       // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
       client as any,
-      "s1",
+      credentials,
       undefined,
       onError,
     );

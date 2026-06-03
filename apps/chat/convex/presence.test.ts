@@ -8,10 +8,12 @@ import schema from "./schema";
 const modules = import.meta.glob("./**/*.ts");
 const self = (id: string) => ({
   sessionId: id,
+  sessionSecret: `${id}-secret`,
   alias: id,
   avatarSeed: id,
   interests: ["music"],
 });
+const auth = (id: string) => ({ sessionId: id, sessionSecret: `${id}-secret` });
 
 async function matched() {
   const t = convexTest(schema, modules);
@@ -19,7 +21,7 @@ async function matched() {
   registerPresence(t);
   await t.mutation(api.match.enqueueAndMatch, self("a"));
   await t.mutation(api.match.enqueueAndMatch, self("b"));
-  const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+  const a = await t.query(api.chat.snapshot, auth("a"));
   return { t, matchId: a.matchId as string };
 }
 
@@ -53,14 +55,14 @@ describe("presence", () => {
     const { t, matchId } = await matched();
     await beat(t, matchId, "a");
     await beat(t, matchId, "b");
-    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+    const a = await t.query(api.chat.snapshot, auth("a"));
     expect(a.partner?.status).toBe("online");
   });
 
   it("partner shows left when they have no heartbeat in the room", async () => {
     const { t, matchId } = await matched();
     await beat(t, matchId, "a");
-    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+    const a = await t.query(api.chat.snapshot, auth("a"));
     expect(a.partner?.status).toBe("left");
   });
 
@@ -71,7 +73,7 @@ describe("presence", () => {
     await t.mutation(internal.presence.reconcile, {
       matchId: matchId as never,
     });
-    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+    const a = await t.query(api.chat.snapshot, auth("a"));
     expect(a.phase).toBe("active");
   });
 
@@ -81,7 +83,7 @@ describe("presence", () => {
     await t.mutation(internal.presence.reconcile, {
       matchId: matchId as never,
     });
-    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+    const a = await t.query(api.chat.snapshot, auth("a"));
     expect(a.phase).toBe("active");
   });
 
@@ -92,7 +94,7 @@ describe("presence", () => {
     await t.mutation(internal.presence.reconcile, {
       matchId: matchId as never,
     });
-    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+    const a = await t.query(api.chat.snapshot, auth("a"));
     expect(a.phase).toBe("ended");
     expect(a.endedReason).toBe("partner-left");
     expect(a.partner?.status).toBe("left");
@@ -106,9 +108,7 @@ describe("presence", () => {
     await t.mutation(internal.presence.reconcile, {
       matchId: matchId as never,
     });
-    expect((await t.query(api.chat.snapshot, { sessionId: "a" })).phase).toBe(
-      "active",
-    );
+    expect((await t.query(api.chat.snapshot, auth("a"))).phase).toBe("active");
     // `b` disconnects (tab close) while the match is still young.
     await t.mutation(api.presence.disconnect, {
       sessionToken: bBeat.sessionToken,
@@ -116,7 +116,7 @@ describe("presence", () => {
     await t.mutation(internal.presence.reconcile, {
       matchId: matchId as never,
     });
-    const a = await t.query(api.chat.snapshot, { sessionId: "a" });
+    const a = await t.query(api.chat.snapshot, auth("a"));
     expect(a.phase).toBe("ended");
     expect(a.endedReason).toBe("partner-left");
   });

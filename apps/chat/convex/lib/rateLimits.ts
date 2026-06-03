@@ -12,15 +12,54 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   },
   findMatch: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 5 },
   react: { kind: "token bucket", rate: 20, period: 10 * SECOND, capacity: 10 },
+  typing: { kind: "token bucket", rate: 30, period: 10 * SECOND, capacity: 10 },
+  globalFindMatch: {
+    kind: "token bucket",
+    rate: 1500,
+    period: MINUTE,
+    capacity: 500,
+  },
+  globalSendMessage: {
+    kind: "token bucket",
+    rate: 3000,
+    period: 10 * SECOND,
+    capacity: 1000,
+  },
+  globalReact: {
+    kind: "token bucket",
+    rate: 4000,
+    period: 10 * SECOND,
+    capacity: 1500,
+  },
+  globalTyping: {
+    kind: "token bucket",
+    rate: 6000,
+    period: 10 * SECOND,
+    capacity: 2000,
+  },
+  globalPresenceHeartbeat: {
+    kind: "token bucket",
+    rate: 20000,
+    period: 10 * SECOND,
+    capacity: 5000,
+  },
 });
 
-/** The policies above are all token buckets with no inherent key, so a bare
- *  `rateLimiter.limit(ctx, name)` shares one global bucket across everyone —
- *  e.g. a 5-msg/10s cap that throttles all users together. These limits are
- *  per-session anti-abuse, so every call site must scope to the anonymous
- *  session. This wrapper makes the `key` mandatory (callers can't omit it) and
- *  throws a `ConvexError` when exceeded, so the keying contract can't drift. */
-export type SessionRateLimitName = "sendMessage" | "findMatch" | "react";
+/** Per-session policies must always pass a key. Keep this wrapper as the only
+ *  per-session entrypoint so a call site can't accidentally create a global
+ *  bucket with user-level limits. */
+export type SessionRateLimitName =
+  | "sendMessage"
+  | "findMatch"
+  | "react"
+  | "typing";
+
+export type GlobalRateLimitName =
+  | "globalFindMatch"
+  | "globalSendMessage"
+  | "globalReact"
+  | "globalTyping"
+  | "globalPresenceHeartbeat";
 
 export function limitPerSession(
   ctx: RunMutationCtx,
@@ -28,4 +67,10 @@ export function limitPerSession(
   sessionId: string,
 ) {
   return rateLimiter.limit(ctx, name, { key: sessionId, throws: true });
+}
+
+/** Global policies intentionally omit a key. Use these only on public,
+ *  write-heavy mutations as an aggregate cost brake. */
+export function limitGlobal(ctx: RunMutationCtx, name: GlobalRateLimitName) {
+  return rateLimiter.limit(ctx, name, { throws: true });
 }

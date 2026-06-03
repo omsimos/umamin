@@ -22,14 +22,23 @@ export const MAX_QUEUE_WAIT_MS = 5 * MINUTE;
 export const MESSAGE_CAP = 100;
 /** Max characters in a single message (anti-abuse; far under Convex's 1 MiB doc cap). */
 export const MAX_MESSAGE_LEN = 2000;
+/** Client-generated anonymous session credentials. */
+export const MAX_SESSION_ID_LEN = 128;
+export const MAX_SESSION_SECRET_LEN = 128;
 /** Server-side bounds on client-supplied identity. The lobby caps these too, but
  *  the matchmaking mutation is publicly callable, so the server must as well. */
 export const MAX_ALIAS_LEN = 40;
 export const MAX_AVATAR_SEED_LEN = 64;
 export const MAX_INTERESTS = 24;
+export const MAX_INTEREST_LEN = 48;
+/** Reactions are a fixed UI affordance, not arbitrary user content. */
+export const ALLOWED_REACTIONS = ["❤️", "😂", "🔥", "😮", "👍", "😢"];
+export const MAX_REACTIONS_PER_MESSAGE = ALLOWED_REACTIONS.length;
 /** Messages deleted per teardown transaction; a match with more pages re-arms
  *  deleteMatch so cleanup can't exceed a single mutation's write limit. */
 export const MESSAGE_DELETE_PAGE = 256;
+/** Backstop for active matches whose reconcile loop never gets to clean them. */
+export const ACTIVE_MATCH_TTL_MS = 30 * MINUTE;
 /** A fresh match is not torn down as "partner-left" until this long after
  *  creation unless both peers have been seen present — absorbs the time both
  *  clients need to mount presence and send a first heartbeat after pairing.

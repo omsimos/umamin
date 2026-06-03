@@ -9,6 +9,7 @@ import {
   query,
 } from "./_generated/server";
 import { GRACE_MS, MATCH_START_GRACE_MS, RECONCILE_MS } from "./constants";
+import { limitGlobal } from "./lib/rateLimits";
 
 // Room = matchId, user = sessionId. The component tracks online/offline via
 // heartbeats with graceful tab-close disconnect; we read it back server-side to
@@ -23,6 +24,7 @@ export const heartbeat = mutation({
     interval: v.number(),
   },
   handler: async (ctx, { roomId, userId, sessionId, interval }) => {
+    await limitGlobal(ctx, "globalPresenceHeartbeat");
     return await presence.heartbeat(ctx, roomId, userId, sessionId, interval);
   },
 });

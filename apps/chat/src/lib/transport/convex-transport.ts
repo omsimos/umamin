@@ -2,6 +2,7 @@ import { isRateLimitError } from "@convex-dev/rate-limiter";
 import type { ConvexReactClient } from "convex/react";
 import type { FunctionReference } from "convex/server";
 import { api } from "../../../convex/_generated/api";
+import type { SessionCredentials } from "../session/session-id";
 import {
   type ChatMessage,
   type ChatTransport,
@@ -28,14 +29,16 @@ const RATE_LIMITED_MESSAGE =
 
 export function createConvexTransport(
   client: TransportClient,
-  sessionId: string,
+  credentials: SessionCredentials,
   onRateLimited?: (message: string) => void,
   onError?: (error: unknown) => void,
 ): ChatTransport {
+  const { sessionId, sessionSecret } = credentials;
+  const sessionArgs = { sessionId, sessionSecret };
   // Meta (status/typing/stay-connected) and the message list are separate
   // reactive queries so typing/presence churn never re-reads the messages.
-  const watchMeta = client.watchQuery(api.chat.snapshot, { sessionId });
-  const watchMessages = client.watchQuery(api.chat.messages, { sessionId });
+  const watchMeta = client.watchQuery(api.chat.snapshot, sessionArgs);
+  const watchMessages = client.watchQuery(api.chat.messages, sessionArgs);
   let cached: SessionSnapshot = IDLE_SNAPSHOT;
   // Optimistic "matching" shown the instant findMatch is called so neither the
   // lobby -> /chat hop nor a rematch flashes the old chat / bounces (the mock
@@ -116,7 +119,7 @@ export function createConvexTransport(
     fn: FunctionReference<"mutation">,
     args: Record<string, unknown>,
   ) {
-    client.mutation(fn, { sessionId, ...args }).catch(surfaceError);
+    client.mutation(fn, { ...sessionArgs, ...args }).catch(surfaceError);
   }
 
   return {
@@ -139,7 +142,7 @@ export function createConvexTransport(
       emit();
       client
         .mutation(api.match.enqueueAndMatch, {
-          sessionId,
+          ...sessionArgs,
           alias: self.alias,
           avatarSeed: self.avatarSeed,
           interests: self.interests,
@@ -160,7 +163,7 @@ export function createConvexTransport(
     setTyping(isTyping: boolean) {
       // Best-effort presence signal — never toast or throw on failure.
       client
-        .mutation(api.chat.setTyping, { sessionId, typing: isTyping })
+        .mutation(api.chat.setTyping, { ...sessionArgs, typing: isTyping })
         .catch(() => {});
     },
     signalStayConnected() {

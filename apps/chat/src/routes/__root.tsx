@@ -4,7 +4,7 @@ import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { toast } from "sonner";
 import { ThemeProvider } from "../components/theme-provider";
 import { ChatSessionProvider } from "../lib/session/chat-context";
-import { getSessionId } from "../lib/session/session-id";
+import { getSessionCredentials } from "../lib/session/session-id";
 import { createConvexTransport } from "../lib/transport/convex-transport";
 
 export const Route = createRootRoute({
@@ -15,10 +15,11 @@ export const Route = createRootRoute({
 // (ChatSessionProvider's default) keeps tests and offline dev working.
 const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
+const credentials = getSessionCredentials();
 const transport = convex
   ? createConvexTransport(
       convex,
-      getSessionId(),
+      credentials,
       (message) => toast(message),
       () => toast("Something went wrong. Please try again."),
     )
