@@ -1,6 +1,6 @@
 export function Attribution() {
   return (
-    <p className="text-muted-foreground text-sm">
+    <p className="text-muted-foreground text-xs">
       Developed by{" "}
       <a
         href="https://www.instagram.com/josh.xfi/"

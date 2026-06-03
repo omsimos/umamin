@@ -1,5 +1,5 @@
 import { Button } from "@umamin/ui/components/button";
-import { Sparkles, X } from "lucide-react";
+import { MessageSquareQuoteIcon, XIcon } from "lucide-react";
 import { ICE_BREAKER_PROMPTS, interestById } from "../../lib/mock/data";
 
 export function IceBreakerBanner({
@@ -25,10 +25,10 @@ export function IceBreakerBanner({
         className="text-muted-foreground absolute top-1 right-1 size-7"
         onClick={onDismiss}
       >
-        <X />
+        <XIcon />
       </Button>
       <p className="text-primary mb-2 flex items-center gap-1.5 text-xs font-semibold">
-        <Sparkles className="size-3.5" />
+        <MessageSquareQuoteIcon className="size-3.5" />
         {labels ? `You both like ${labels}` : "Say hi 👋"}
       </p>
       <div className="flex flex-wrap gap-1.5">
