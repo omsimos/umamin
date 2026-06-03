@@ -12,8 +12,8 @@ import { Logo } from "../logo";
 
 function Wordmark() {
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm font-bold">
-      <Logo className="text-primary size-5" />
+    <span className="font-display inline-flex items-center gap-1.5 text-sm font-bold">
+      <Logo className="size-5" />
       umamin
     </span>
   );
