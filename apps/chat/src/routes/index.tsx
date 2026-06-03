@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { AdContainer } from "../components/ads/ad-container";
 import { IdentityCard } from "../components/lobby/identity-card";
 import { InterestPicker } from "../components/lobby/interest-picker";
+import { PlatformPromo } from "../components/promo/platform-promo";
 import { AppShell, Wordmark } from "../components/shell/app-shell";
 import { ThemeToggle } from "../components/theme-toggle";
 import { useIdentityDraft } from "../lib/identity/use-identity-draft";
@@ -37,7 +38,8 @@ function Lobby() {
         onAliasChange={draft.setAlias}
         onShuffle={draft.shuffle}
       />
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col gap-3">
+        <PlatformPromo />
         <ThemeToggle />
       </div>
     </div>
@@ -46,7 +48,7 @@ function Lobby() {
   return (
     <AppShell rail={rail}>
       <div className="mx-auto flex h-full max-w-xl flex-col overflow-y-auto p-6 sm:p-8">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
           Talk to someone new.
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
