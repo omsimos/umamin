@@ -5,7 +5,6 @@ import { cn } from "@umamin/ui/lib/utils";
 import {
   CircleUserRoundIcon,
   LayoutDashboardIcon,
-  LinkIcon,
   LogInIcon,
   MessagesSquareIcon,
   ScrollTextIcon,
@@ -19,7 +18,7 @@ import {
   queryKeys,
 } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
-import { ShareLinkDialog } from "./share-link-dialog";
+import { ChatPromo } from "./chat-promo";
 
 // Client-side auth (currentUser cache) so the (public) layout stays static —
 // logged-in viewers still get a Profile/Share/Settings nav, not the all-/login
@@ -46,13 +45,7 @@ export function PublicMenubar() {
         isPostDetail && "lg:hidden",
       )}
     >
-      {username ? (
-        <ShareLinkDialog username={username} />
-      ) : (
-        <Link href="/login" title="Share Link">
-          <LinkIcon className="h-6 w-6" />
-        </Link>
-      )}
+      <ChatPromo />
 
       <Link href="/notes" title="Notes">
         <ScrollTextIcon className="h-6 w-6" />

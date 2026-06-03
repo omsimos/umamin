@@ -18,6 +18,21 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.0.3] - 2026-06-03
+
+### Added
+
+- The umamin navigation now has an Umamin Chat shortcut that opens a quick intro with a link to start an anonymous chat.
+
+### Fixed
+
+- In Umamin Chat, the message box no longer jumps to the top of the screen and covers the conversation when the other person starts typing.
+- The emoji reaction picker is no longer cut off at the top of a chat — it now stays fully on-screen, flipping below messages near the header.
+
+### Performance & Cost
+
+- Umamin Chat's app-wide rate-limit buckets are now sharded, so high-frequency activity (especially presence heartbeats) no longer contends on a single record and stays reliable under load.
+
 ## [5.0.2] - 2026-06-03
 
 ### Added
@@ -383,6 +398,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.0.3]: https://github.com/omsimos/umamin/compare/v5.0.2...v5.0.3
 [5.0.2]: https://github.com/omsimos/umamin/compare/v5.0.1...v5.0.2
 [5.0.1]: https://github.com/omsimos/umamin/compare/v5.0.0...v5.0.1
 [5.0.0]: https://github.com/omsimos/umamin/compare/v4.9.0...v5.0.0
