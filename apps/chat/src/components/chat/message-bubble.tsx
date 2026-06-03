@@ -63,7 +63,7 @@ export function MessageBubble({
             role="group"
             aria-label="Reactions"
             className={cn(
-              "bg-popover absolute -bottom-2 flex gap-0.5 rounded-full border px-1.5 py-0.5 text-xs shadow-sm",
+              "bg-popover absolute -bottom-3 flex gap-0.5 rounded-full border px-2 py-0.5 text-base leading-none shadow-sm",
               mine ? "left-2" : "right-2",
             )}
           >
