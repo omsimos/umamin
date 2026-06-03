@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import { RouteError } from "./components/route-error";
 import "./index.css";
 import { AD_CLIENT, adsEnabled } from "./lib/ad-placements";
+import { initAnalytics } from "./lib/analytics";
 import { routeTree } from "./routeTree.gen";
 
 const router = createRouter({
@@ -34,6 +35,8 @@ if (adsEnabled()) {
   adScript.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}`;
   document.head.appendChild(adScript);
 }
+
+initAnalytics(router);
 
 createRoot(root).render(
   <StrictMode>
