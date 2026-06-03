@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { randomAlias, randomAvatarSeed } from "./alias";
-import { ALIAS_ADJECTIVES, ALIAS_NOUNS } from "./mock/data";
+import {
+  ALIAS_ADJECTIVES,
+  ALIAS_NOUNS,
+  randomAlias,
+  randomAvatarSeed,
+} from "./alias";
 
 describe("randomAlias", () => {
   it("joins an adjective and a noun from the word lists", () => {

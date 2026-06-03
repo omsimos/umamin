@@ -25,52 +25,6 @@ export function interestById(id: string): Interest | undefined {
   return INTEREST_BY_ID.get(id);
 }
 
-export const ALIAS_ADJECTIVES = [
-  "Wandering",
-  "Quiet",
-  "Midnight",
-  "Velvet",
-  "Golden",
-  "Electric",
-  "Hidden",
-  "Cosmic",
-  "Gentle",
-  "Restless",
-  "Lucid",
-  "Amber",
-  "Silver",
-  "Wild",
-];
-export const ALIAS_NOUNS = [
-  "Fox",
-  "Owl",
-  "Comet",
-  "Wolf",
-  "Ember",
-  "Otter",
-  "Falcon",
-  "Moth",
-  "Heron",
-  "Lynx",
-  "Raven",
-  "Koi",
-  "Sparrow",
-  "Bear",
-];
-
-export const PARTNER_LINES = [
-  "haha that's so real",
-  "ooh tell me more",
-  "honestly same",
-  "wait that's actually interesting",
-  "no way 😄",
-  "i've been thinking about that too lately",
-  "okay that's a hot take",
-  "what got you into that?",
-  "lol fair enough",
-  "that's kind of the dream tbh",
-];
-
 export const MATCH_TIPS = [
   'a simple "hey, what are you into?" goes a long way.',
   "ask about the thing you both picked — instant common ground.",

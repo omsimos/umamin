@@ -1,7 +1,7 @@
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { Heart } from "lucide-react";
-import { interestById } from "../../lib/mock/data";
+import { interestById } from "../../lib/content";
 import type { Partner } from "../../lib/session/types";
 import { SeedAvatar } from "../seed-avatar";
 

@@ -1,4 +1,35 @@
-import { ALIAS_ADJECTIVES, ALIAS_NOUNS } from "./mock/data";
+export const ALIAS_ADJECTIVES = [
+  "Wandering",
+  "Quiet",
+  "Midnight",
+  "Velvet",
+  "Golden",
+  "Electric",
+  "Hidden",
+  "Cosmic",
+  "Gentle",
+  "Restless",
+  "Lucid",
+  "Amber",
+  "Silver",
+  "Wild",
+];
+export const ALIAS_NOUNS = [
+  "Fox",
+  "Owl",
+  "Comet",
+  "Wolf",
+  "Ember",
+  "Otter",
+  "Falcon",
+  "Moth",
+  "Heron",
+  "Lynx",
+  "Raven",
+  "Koi",
+  "Sparrow",
+  "Bear",
+];
 
 type Rng = () => number;
 

@@ -1,6 +1,6 @@
 import { Button } from "@umamin/ui/components/button";
 import { useEffect, useState } from "react";
-import { interestById, MATCH_TIPS } from "../../lib/mock/data";
+import { interestById, MATCH_TIPS } from "../../lib/content";
 import { SeedAvatar } from "../seed-avatar";
 
 function formatElapsed(seconds: number): string {

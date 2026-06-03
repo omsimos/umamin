@@ -1,5 +1,5 @@
 import { cn } from "@umamin/ui/lib/utils";
-import { INTERESTS } from "../../lib/mock/data";
+import { INTERESTS } from "../../lib/content";
 
 export function InterestPicker({
   selected,
