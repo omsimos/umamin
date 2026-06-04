@@ -83,8 +83,8 @@ export function NoteCard({
   );
 
   const syncReactionCache = (nextReacted: boolean, nextCount: number) => {
-    queryClient.setQueryData<InfiniteData<NotesResponse>>(
-      queryKeys.notes(),
+    queryClient.setQueriesData<InfiniteData<NotesResponse>>(
+      { queryKey: queryKeys.notesRoot() },
       (current) =>
         patchNote(current, data.id, (note) => ({
           ...note,

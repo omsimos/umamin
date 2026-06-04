@@ -28,7 +28,17 @@ import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
 
-export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function NoteList({
+  isAuthenticated,
+  currentUserId,
+}: {
+  isAuthenticated: boolean;
+  currentUserId?: string;
+}) {
+  // Per-viewer query key (mirrors PostList): the public hydration and each
+  // authed viewer live in separate cache entries, so neither can clobber the
+  // other.
+  const viewerKey = currentUserId ?? "public";
   const {
     data,
     isLoading,
@@ -38,7 +48,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<NotesResponse>({
-    queryKey: queryKeys.notes(),
+    queryKey: queryKeys.notes(viewerKey),
     queryFn: ({ pageParam }) =>
       fetchNotesPage((pageParam as string | null) ?? null, isAuthenticated),
     initialPageParam: null as string | null,

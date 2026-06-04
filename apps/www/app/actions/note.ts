@@ -3,7 +3,7 @@
 import { db } from "@umamin/db";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import { and, eq, sql } from "drizzle-orm";
-import { updateTag } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
@@ -77,7 +77,10 @@ export async function createNoteAction(
     });
 
     updateTag(`current-note:${session.userId}`);
-    updateTag("notes");
+    // Background SWR (see createPostAction): the author already gets
+    // read-your-writes from the optimistic cache upsert + current-note tag, so
+    // no request should block on a shared feed recompute.
+    revalidateTag("notes", "max");
 
     return {
       success: true,
@@ -126,7 +129,7 @@ export const clearNoteAction = async () => {
     });
 
     updateTag(`current-note:${session.userId}`);
-    updateTag("notes");
+    revalidateTag("notes", "max");
 
     return { success: true };
   } catch (error) {
@@ -171,13 +174,10 @@ export async function addNoteReactionAction({ noteId }: { noteId: string }) {
       return { success: true };
     });
 
+    // Per-viewer tag only: counts are eventually consistent in the shared feed
+    // (<=120s, same contract as post likes). The notes shell is static and the
+    // client cache is viewer-keyed, so rehydration can't clobber optimistic UI.
     updateTag(`note:${noteId}:reacted:${session.userId}`);
-    // Unlike /feed, the notes page is dynamic (session), so this action's tag
-    // update refreshes the route and REHYDRATES the client list — the shared
-    // page cache must carry the new count or it clobbers the optimistic UI.
-    if (!("alreadyReacted" in result)) {
-      updateTag("notes");
-    }
 
     return result;
   } catch (err) {
@@ -226,11 +226,8 @@ export async function removeNoteReactionAction({ noteId }: { noteId: string }) {
       return { success: true };
     });
 
+    // See addNoteReactionAction — per-viewer tag only.
     updateTag(`note:${noteId}:reacted:${session.userId}`);
-    // See addNoteReactionAction — the rehydrated page must carry the new count.
-    if (!("alreadyRemoved" in result)) {
-      updateTag("notes");
-    }
 
     return result;
   } catch (err) {
