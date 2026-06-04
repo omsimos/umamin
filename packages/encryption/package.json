@@ -14,12 +14,15 @@
     "build": "tsdown",
     "generate": "tsx ./src/generate-aes-key.ts",
     "clean": "rm -rf ./node_modules .turbo dist",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@types/node": "^24.12.2",
     "tsdown": "^0.21.9",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   }
 }

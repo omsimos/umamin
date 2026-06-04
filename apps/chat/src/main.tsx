@@ -1,5 +1,8 @@
-import "@fontsource-variable/bricolage-grotesque";
-import "@fontsource-variable/geist";
+// Explicit .css subpaths: the bare specifiers resolve to CSS-only packages
+// TypeScript can't see, tripping noUncheckedSideEffectImports (on by default
+// in TS 6); vite/client types `*.css`, and the package main is this same file.
+import "@fontsource-variable/bricolage-grotesque/index.css";
+import "@fontsource-variable/geist/index.css";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
