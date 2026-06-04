@@ -130,4 +130,14 @@ describe("NoteCard reactions", () => {
     fireEvent.click(button);
     expect(addAction).not.toHaveBeenCalled();
   });
+
+  it("linkifies mentions and URLs in the note content", () => {
+    renderCard(
+      makeNote({ content: "shoutout @josh check https://example.com" }),
+    );
+
+    const mention = screen.getByRole("link", { name: "@josh" });
+    expect(mention).toHaveAttribute("href", "/user/josh");
+    expect(screen.getByText("https://example.com")).toBeInTheDocument();
+  });
 });

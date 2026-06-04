@@ -12,6 +12,22 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
 
+// jsdom has no matchMedia; useMediaQuery (ExternalLink, responsive drawers)
+// reads it on mount.
+if (!window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+}
+
 // jsdom has no ResizeObserver; Radix positioning observes its trigger/content.
 if (!("ResizeObserver" in globalThis)) {
   class MockResizeObserver {

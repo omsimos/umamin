@@ -28,6 +28,7 @@ import {
 import { toast } from "sonner";
 import { clearNoteAction } from "@/app/actions/note";
 import { Menu } from "@/components/menu";
+import { PostBody } from "@/components/post-body";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
@@ -208,9 +209,10 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
             )}
           </div>
 
-          <p className="min-w-0 whitespace-pre-wrap break-words font-display text-lg leading-snug">
-            {data.content}
-          </p>
+          <PostBody
+            content={data.content}
+            className="font-display text-lg leading-snug"
+          />
         </CardContent>
 
         {(data.reactionCount ?? 0) > 0 && (
