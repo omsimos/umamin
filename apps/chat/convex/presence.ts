@@ -68,20 +68,22 @@ export const disconnect = mutation({
   },
 });
 
-/** True when `sessionId` currently holds a live heartbeat in the match room.
- *  Reads the component's room presence (online-only) so a stale/closed tab
- *  drops out within ~2.5x the heartbeat interval. Defaults to online if the
- *  read fails so a transient presence error never tears down a live match. */
-export async function isPresent(
+/** A member's presence in the match room: `online` is the live-heartbeat flag
+ *  (drops within ~2.5x the heartbeat interval for a stale tab); `joined`
+ *  distinguishes "never connected yet" from "was here and left", which is what
+ *  separates a connecting partner from an away one. Fails open (online) so a
+ *  transient component error never degrades a live match. */
+export async function memberPresence(
   ctx: QueryCtx | MutationCtx,
   matchId: string,
   sessionId: string,
-): Promise<boolean> {
+): Promise<{ online: boolean; joined: boolean }> {
   try {
-    const members = await presence.listRoom(ctx, matchId, true);
-    return members.some((m) => m.userId === sessionId && m.online);
+    const members = await presence.listRoom(ctx, matchId, false);
+    const m = members.find((x) => x.userId === sessionId);
+    return { online: Boolean(m?.online), joined: Boolean(m) };
   } catch {
-    return true;
+    return { online: true, joined: true };
   }
 }
 

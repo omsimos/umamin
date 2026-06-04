@@ -11,7 +11,7 @@ import {
 } from "./constants";
 import { limitGlobal, limitPerSession } from "./lib/rateLimits";
 import { sessionMutation, sessionQuery } from "./lib/sessions";
-import { isPresent } from "./presence";
+import { memberPresence } from "./presence";
 
 const EMPTY = {
   phase: "idle" as const,
@@ -99,17 +99,22 @@ export const snapshot = sessionQuery({
       .unique();
 
     const ended = match.status === "ended";
-    // Real presence: while the match is active, a partner with no live
-    // heartbeat reads as "away" — they may be app-switched or screen-locked;
+    // Real presence: while the match is active, a partner who joined and lost
+    // their heartbeat reads as "away" — app-switched or screen-locked;
     // reconcile only ends the match once the absence outlasts AWAY_GRACE_MS.
+    // A partner who has NEVER joined a not-yet-latched match is still
+    // connecting (mounting presence right after the pair) and reads as
+    // "online" — reconcile's start grace bounds how long that can last.
     // "left" is reserved for an ended match. Typing is carried as a debounced
     // boolean on the match row (set via `setTyping`) and overlays "online".
-    const partnerOnline =
-      !ended && (await isPresent(ctx, match._id, partnerId));
+    const partnerPresence = ended
+      ? { online: false, joined: true }
+      : await memberPresence(ctx, match._id, partnerId);
+    const connecting = !partnerPresence.joined && !match.bothEverPresent;
     const partnerTyping = iAmA ? match.typingB : match.typingA;
     const status: "online" | "typing" | "away" | "left" = ended
       ? "left"
-      : !partnerOnline
+      : !(partnerPresence.online || connecting)
         ? "away"
         : partnerTyping
           ? "typing"

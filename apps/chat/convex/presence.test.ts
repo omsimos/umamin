@@ -65,9 +65,21 @@ describe("presence", () => {
     expect(a.partner?.status).toBe("online");
   });
 
-  it("partner shows away (not left) when they have no heartbeat in the room", async () => {
+  it("partner shows online (connecting) while they have never joined a fresh match", async () => {
+    const { t, matchId } = await matched();
+    await beat(t, matchId, "a"); // `b` is still mounting presence
+    const a = await t.query(api.chat.snapshot, auth("a"));
+    expect(a.partner?.status).toBe("online");
+    expect(a.phase).toBe("active");
+  });
+
+  it("partner shows away once they joined and lost their heartbeat", async () => {
     const { t, matchId } = await matched();
     await beat(t, matchId, "a");
+    const bBeat = await beat(t, matchId, "b");
+    await t.mutation(api.presence.disconnect, {
+      sessionToken: bBeat?.sessionToken as string,
+    });
     const a = await t.query(api.chat.snapshot, auth("a"));
     expect(a.partner?.status).toBe("away");
     expect(a.phase).toBe("active");

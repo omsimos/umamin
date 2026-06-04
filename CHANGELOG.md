@@ -27,6 +27,7 @@ any that are empty.
 ### Fixed
 
 - Umamin Chat: switching tabs or checking a notification mid-chat no longer ends the conversation within seconds.
+- Umamin Chat: a fresh match shows your partner as online while they finish connecting, instead of briefly flashing "away".
 - Umamin Chat: long conversations are no longer cut off after 30 minutes with a false "partner left" — only genuinely abandoned chats are cleaned up.
 - Umamin Chat: cancelling the partner search now actually removes you from the queue, so strangers stop getting matched with someone who already left — and a closed or backgrounded tab can no longer be matched at all.
 

@@ -1,5 +1,5 @@
 import { useConvex } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { api } from "../../../convex/_generated/api";
 import { PRESENCE_HEARTBEAT_MS } from "../../../convex/constants";
 import { getSessionCredentials, uuid } from "../../lib/session/session-id";
@@ -15,11 +15,15 @@ import { getSessionCredentials, uuid } from "../../lib/session/session-id";
 // disconnects on real departure — unmount or pagehide.
 export function MatchPresence({ matchId }: { matchId: string }) {
   const convex = useConvex();
-  // One presence session per mount; state (not a ref) so StrictMode's
-  // double-invoke reuses the same id and the server sees a single session.
-  const [presenceId] = useState(() => uuid());
 
   useEffect(() => {
+    // One presence session PER EFFECT RUN, like a browser tab. Sharing an id
+    // across runs would let StrictMode's first mount (whose disconnect is
+    // deferred until its in-flight beat resolves) tear down the session the
+    // second mount is keeping alive — reading as ~30s of "away" on entry.
+    // The component treats multiple sessions per user as multi-tab, so the
+    // extra dev-mode session is disconnected cleanly by its own cleanup.
+    const presenceId = uuid();
     const credentials = getSessionCredentials();
     let sessionToken: string | null = null;
     let inFlight = false;
@@ -93,7 +97,7 @@ export function MatchPresence({ matchId }: { matchId: string }) {
       window.removeEventListener("pageshow", onPageShow);
       disconnect();
     };
-  }, [convex, matchId, presenceId]);
+  }, [convex, matchId]);
 
   return null;
 }

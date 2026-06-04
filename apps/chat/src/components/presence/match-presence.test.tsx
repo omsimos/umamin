@@ -1,5 +1,6 @@
 import { act, render } from "@testing-library/react";
 import { getFunctionName } from "convex/server";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PRESENCE_HEARTBEAT_MS } from "../../../convex/constants";
 import { MatchPresence } from "./match-presence";
@@ -95,5 +96,22 @@ describe("MatchPresence", () => {
     unmount();
     expect(disconnects()).toHaveLength(1);
     expect(disconnects()[0][1]).toEqual({ sessionToken: "st" });
+  });
+
+  it("uses a distinct presence session per mount (StrictMode-safe)", async () => {
+    // StrictMode double-invokes the effect; if both runs shared one session,
+    // the first mount's deferred disconnect would kill the second mount's
+    // presence and the user would read as away until the next 30s beat.
+    render(
+      <StrictMode>
+        <MatchPresence matchId="m1" />
+      </StrictMode>,
+    );
+    await flush();
+    const ids = heartbeats().map(
+      ([, args]) => (args as { presenceId: string }).presenceId,
+    );
+    expect(ids.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
