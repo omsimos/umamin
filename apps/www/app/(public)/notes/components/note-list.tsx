@@ -142,20 +142,29 @@ export function NoteList({
     if (dataIndex < 0) return;
 
     const rowIndex = rowIndexForDataIndex(dataIndex);
+    const reducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-    // Unmounted rows only have estimated heights, so one scrollToIndex lands
-    // off-target (and smooth scrolling fights re-measurement — unsupported
-    // with dynamic sizes). Jump, then re-correct as real sizes come in;
-    // converged frames are no-ops.
+    // Scroll to the real element: the virtualizer's scrollMargin goes stale
+    // when the auth-resolved composer mounts above the list, so index-based
+    // targeting lands short. Off-screen targets get an instant scrollToIndex
+    // hop first, purely to mount them.
     if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
-    let attempts = 0;
-    const correct = () => {
+    const attempt = (tries: number) => {
+      const el = document.getElementById(`umamin-${target.id}`);
+      if (el) {
+        el.scrollIntoView({
+          behavior: reducedMotion ? "auto" : "smooth",
+          block: "center",
+        });
+        scrollFrame.current = null;
+        return;
+      }
       virtualizer.scrollToIndex(rowIndex, { align: "center" });
-      attempts++;
       scrollFrame.current =
-        attempts < 8 ? requestAnimationFrame(correct) : null;
+        tries > 0 ? requestAnimationFrame(() => attempt(tries - 1)) : null;
     };
-    correct();
+    attempt(8);
 
     setHighlightedId(target.id);
     if (highlightTimer.current) clearTimeout(highlightTimer.current);
