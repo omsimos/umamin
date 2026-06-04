@@ -29,11 +29,8 @@
     "check-types": {
       "dependsOn": ["^check-types"]
     },
-    "transit": {
-      "dependsOn": ["^transit"]
-    },
     "test": {
-      "dependsOn": ["transit"],
+      "dependsOn": ["^build"],
       "outputs": []
     },
     "dev": {
