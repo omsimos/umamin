@@ -1,3 +1,65 @@
 /* File added for LSP support */
 @import "@umamin/ui/globals.css";
 @plugin "@tailwindcss/typography";
+
+/* next/font sets these vars on <body>; inline so utilities resolve at runtime */
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  --font-display:
+    var(--font-bricolage), var(--font-geist-sans), ui-sans-serif, sans-serif;
+}
+
+@theme {
+  --animate-marquee: marquee 32s linear infinite;
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  --animate-heart-pop: heart-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @keyframes heart-pop {
+    0% {
+      transform: scale(0.4);
+    }
+    60% {
+      transform: scale(1.3);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  --animate-typing-dot: typing-dot 1.2s ease-in-out infinite;
+  @keyframes typing-dot {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+    30% {
+      transform: translateY(-3px);
+      opacity: 1;
+    }
+  }
+
+  --animate-rise: rise 0.6s ease-out both;
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@utility text-outline {
+  -webkit-text-stroke: 1px
+    color-mix(in oklch, var(--color-foreground) 40%, transparent);
+  color: transparent;
+}
