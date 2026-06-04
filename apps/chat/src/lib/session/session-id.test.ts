@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getSessionCredentials, getSessionId } from "./session-id";
+import { getSessionCredentials } from "./session-id";
 
-describe("getSessionId", () => {
+describe("getSessionCredentials", () => {
   beforeEach(() => localStorage.clear());
+
   it("creates and persists a stable id", () => {
-    const a = getSessionId();
-    expect(a).toMatch(/.+/);
-    expect(getSessionId()).toBe(a);
+    const a = getSessionCredentials();
+    expect(a.sessionId).toMatch(/.+/);
+    expect(getSessionCredentials().sessionId).toBe(a.sessionId);
   });
 
   it("creates and persists a stable secret with the id", () => {

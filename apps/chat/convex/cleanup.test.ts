@@ -28,9 +28,9 @@ describe("cleanup", () => {
     const matchId = a.matchId as string;
     // Heartbeat so the presence component holds rows keyed on this match.
     await t.mutation(api.presence.heartbeat, {
+      ...auth("a"),
       roomId: matchId,
-      userId: "a",
-      sessionId: "a-tab",
+      presenceId: "a-tab",
       interval: 10000,
     });
     await t.mutation(internal.cleanup.deleteMatch, {
@@ -90,13 +90,15 @@ describe("cleanup", () => {
     expect(leftover).toBeNull();
   });
 
-  it("sweepStaleActiveMatches detaches old active matches as a cleanup backstop", async () => {
+  it("sweepStaleActiveMatches detaches old abandoned matches as a cleanup backstop", async () => {
     const t = convexTest(schema, modules);
     registerRateLimiter(t);
     registerPresence(t);
     await t.mutation(api.match.enqueueAndMatch, self("a"));
     await t.mutation(api.match.enqueueAndMatch, self("b"));
 
+    // Neither side ever heartbeats: absent since createdAt, far past the away
+    // grace — the definition of an orphaned match.
     await t.run(async (ctx) => {
       const match = await ctx.db.query("matches").first();
       if (match) await ctx.db.patch(match._id, { createdAt: 1 });
@@ -113,6 +115,34 @@ describe("cleanup", () => {
         .unique(),
     );
     expect(a?.currentMatchId).toBeUndefined();
+  });
+
+  it("sweepStaleActiveMatches leaves a long conversation alone while both peers are live", async () => {
+    const t = convexTest(schema, modules);
+    registerRateLimiter(t);
+    registerPresence(t);
+    await t.mutation(api.match.enqueueAndMatch, self("a"));
+    await t.mutation(api.match.enqueueAndMatch, self("b"));
+    const matchId = (await t.query(api.chat.snapshot, auth("a")))
+      .matchId as string;
+    for (const id of ["a", "b"]) {
+      await t.mutation(api.presence.heartbeat, {
+        ...auth(id),
+        roomId: matchId,
+        presenceId: `${id}-tab`,
+        interval: 10000,
+      });
+    }
+
+    await t.run(async (ctx) => {
+      const match = await ctx.db.query("matches").first();
+      if (match) await ctx.db.patch(match._id, { createdAt: 1 });
+    });
+
+    await t.mutation(internal.cleanup.sweepStaleActiveMatches, {});
+
+    const match = await t.run((ctx) => ctx.db.query("matches").first());
+    expect(match?.status).toBe("active");
   });
 
   it("sweepDeadSessions deletes sessions past TTL", async () => {

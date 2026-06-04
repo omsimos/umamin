@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ChatHeader } from "../components/chat/chat-header";
 import { EndedView } from "../components/chat/ended-view";
@@ -10,10 +10,10 @@ import { MessageList } from "../components/chat/message-list";
 import { StayConnectedCelebration } from "../components/chat/stay-connected-celebration";
 import { MatchingRadar } from "../components/matching/matching-radar";
 import { MatchPresence } from "../components/presence/match-presence";
+import { QueueHeartbeat } from "../components/presence/queue-heartbeat";
 import { AppShell, Wordmark } from "../components/shell/app-shell";
 import { SessionRail } from "../components/shell/session-rail";
 import { useChatSession } from "../lib/session/chat-context";
-import { getSessionId } from "../lib/session/session-id";
 
 // Presence heartbeats only flow against a real Convex backend; on the mock
 // there's no ConvexProvider, so MatchPresence (which calls Convex hooks) stays
@@ -38,8 +38,6 @@ function Session() {
     findMatch,
   } = useChatSession();
   const { phase, self, partner, messages, stayConnected } = snapshot;
-  // Stable for the session; avoid a localStorage read on every render.
-  const sessionId = useMemo(() => getSessionId(), []);
 
   // Bounce to the lobby only once we KNOW there's no live session. "loading"
   // (the snapshot still resolving on a fresh reload) must NOT bounce. The
@@ -100,20 +98,28 @@ function Session() {
         )}
 
         {phase === "matching" && (
-          <MatchingRadar
-            self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
-            interests={self.interests}
-            onCancel={() => {
-              leave();
-              navigate({ to: "/" });
-            }}
-          />
+          <>
+            {presenceEnabled && <QueueHeartbeat />}
+            <MatchingRadar
+              self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
+              interests={self.interests}
+              onCancel={() => {
+                leave();
+                navigate({ to: "/" });
+              }}
+            />
+          </>
         )}
 
         {phase === "active" && partner && (
           <>
             {presenceEnabled && snapshot.matchId && (
-              <MatchPresence matchId={snapshot.matchId} sessionId={sessionId} />
+              // Keyed so a match change always remounts with a fresh presence
+              // session — the room's per-tab id must never span two matches.
+              <MatchPresence
+                key={snapshot.matchId}
+                matchId={snapshot.matchId}
+              />
             )}
             <ChatHeader
               partner={partner}

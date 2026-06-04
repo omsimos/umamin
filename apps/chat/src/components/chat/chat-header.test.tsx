@@ -54,7 +54,7 @@ describe("ChatHeader", () => {
     ).toContain("text-primary");
   });
 
-  it("shows 'online', 'typing…' or 'left' based on partner status", () => {
+  it("shows 'online', 'typing…', 'away' or 'left' based on partner status", () => {
     const byStatusText = (text: string) => (_: string, el: Element | null) =>
       el?.tagName === "P" && el.textContent?.trim() === text;
 
@@ -78,12 +78,56 @@ describe("ChatHeader", () => {
 
     rerender(
       <ChatHeader
+        partner={makePartner({ status: "away" })}
+        stayConnectedActive={false}
+        onStayConnected={() => {}}
+      />,
+    );
+    expect(screen.getByText(byStatusText("● away"))).toBeInTheDocument();
+
+    rerender(
+      <ChatHeader
         partner={makePartner({ status: "left" })}
         stayConnectedActive={false}
         onStayConnected={() => {}}
       />,
     );
     expect(screen.getByText(byStatusText("● left"))).toBeInTheDocument();
+  });
+
+  it("tones the status line per state (emerald online, amber away, muted left)", () => {
+    const statusP = (text: string) =>
+      screen.getByText(
+        (_: string, el: Element | null) =>
+          el?.tagName === "P" && el.textContent?.trim() === text,
+      );
+
+    const { rerender } = render(
+      <ChatHeader
+        partner={makePartner({ status: "online" })}
+        stayConnectedActive={false}
+        onStayConnected={() => {}}
+      />,
+    );
+    expect(statusP("● online").className).toContain("text-emerald-600");
+
+    rerender(
+      <ChatHeader
+        partner={makePartner({ status: "away" })}
+        stayConnectedActive={false}
+        onStayConnected={() => {}}
+      />,
+    );
+    expect(statusP("● away").className).toContain("text-amber-600");
+
+    rerender(
+      <ChatHeader
+        partner={makePartner({ status: "left" })}
+        stayConnectedActive={false}
+        onStayConnected={() => {}}
+      />,
+    );
+    expect(statusP("● left").className).toContain("text-muted-foreground");
   });
 
   it("shows the shared-interest badge only when present", () => {

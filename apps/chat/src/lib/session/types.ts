@@ -3,7 +3,10 @@
  *  "loading" rather than treat it as "no session". */
 export type SessionPhase = "loading" | "idle" | "matching" | "active" | "ended";
 
-export type PartnerStatus = "online" | "typing" | "left";
+/** "away" = no live heartbeat while the match is still active (app switch,
+ *  screen lock, network blip) — the server only ends the match once the
+ *  absence outlasts its away grace. "left" = the match has ended. */
+export type PartnerStatus = "online" | "typing" | "away" | "left";
 
 export type EndedReason = "self-ended" | "partner-left";
 
