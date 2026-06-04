@@ -122,10 +122,13 @@ export function NoteList({
 
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollFrame = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (highlightTimer.current) clearTimeout(highlightTimer.current);
+      if (scrollFrame.current !== null)
+        cancelAnimationFrame(scrollFrame.current);
     };
   }, []);
 
@@ -138,13 +141,21 @@ export function NoteList({
     const dataIndex = allPosts.findIndex((post) => post.id === target.id);
     if (dataIndex < 0) return;
 
-    const reducedMotion =
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const rowIndex = rowIndexForDataIndex(dataIndex);
 
-    virtualizer.scrollToIndex(rowIndexForDataIndex(dataIndex), {
-      align: "center",
-      behavior: reducedMotion ? "auto" : "smooth",
-    });
+    // Unmounted rows only have estimated heights, so one scrollToIndex lands
+    // off-target (and smooth scrolling fights re-measurement — unsupported
+    // with dynamic sizes). Jump, then re-correct as real sizes come in;
+    // converged frames are no-ops.
+    if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+    let attempts = 0;
+    const correct = () => {
+      virtualizer.scrollToIndex(rowIndex, { align: "center" });
+      attempts++;
+      scrollFrame.current =
+        attempts < 8 ? requestAnimationFrame(correct) : null;
+    };
+    correct();
 
     setHighlightedId(target.id);
     if (highlightTimer.current) clearTimeout(highlightTimer.current);
