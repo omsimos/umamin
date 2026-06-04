@@ -1,9 +1,9 @@
 "use server";
 
 import { db } from "@umamin/db";
-import { noteTable } from "@umamin/db/schema/note";
-import { eq, sql } from "drizzle-orm";
-import { updateTag } from "next/cache";
+import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
+import { and, eq, sql } from "drizzle-orm";
+import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
@@ -43,28 +43,44 @@ export async function createNoteAction(
 
     const formattedContent = formatContent(content);
 
-    await db
-      .insert(noteTable)
-      .values({
-        userId: session?.userId,
-        content: formattedContent,
-        isAnonymous,
-        // updated_at is the notes-feed sort key + pagination cursor. Set it on
-        // insert (it has no SQL default) so new notes sort to the top and never
-        // produce a NULL -> NaN cursor.
-        updatedAt: sql`(unixepoch())`,
-      })
-      .onConflictDoUpdate({
-        target: noteTable.userId,
-        set: {
+    // Every submit rewrites the same note slot, so reactions from the previous
+    // content no longer apply — reset them with the upsert.
+    await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(noteTable)
+        .values({
+          userId: session?.userId,
           content: formattedContent,
           isAnonymous,
+          reactionCount: 0,
+          // updated_at is the notes-feed sort key + pagination cursor. Set it on
+          // insert (it has no SQL default) so new notes sort to the top and never
+          // produce a NULL -> NaN cursor.
           updatedAt: sql`(unixepoch())`,
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: noteTable.userId,
+          set: {
+            content: formattedContent,
+            isAnonymous,
+            reactionCount: 0,
+            updatedAt: sql`(unixepoch())`,
+          },
+        })
+        .returning({ id: noteTable.id });
+
+      if (row) {
+        await tx
+          .delete(noteReactionTable)
+          .where(eq(noteReactionTable.noteId, row.id));
+      }
+    });
 
     updateTag(`current-note:${session.userId}`);
-    updateTag("notes");
+    // Background SWR (see createPostAction): the author already gets
+    // read-your-writes from the optimistic cache upsert + current-note tag, so
+    // no request should block on a shared feed recompute.
+    revalidateTag("notes", "max");
 
     return {
       success: true,
@@ -98,13 +114,22 @@ export const clearNoteAction = async () => {
       return { error: RATE_LIMIT_ERROR };
     }
 
-    await db
-      .update(noteTable)
-      .set({ content: "" })
-      .where(eq(noteTable.userId, session.userId));
+    await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(noteTable)
+        .set({ content: "", reactionCount: 0 })
+        .where(eq(noteTable.userId, session.userId))
+        .returning({ id: noteTable.id });
+
+      if (row) {
+        await tx
+          .delete(noteReactionTable)
+          .where(eq(noteReactionTable.noteId, row.id));
+      }
+    });
 
     updateTag(`current-note:${session.userId}`);
-    updateTag("notes");
+    revalidateTag("notes", "max");
 
     return { success: true };
   } catch (error) {
@@ -112,3 +137,101 @@ export const clearNoteAction = async () => {
     return { error: "Failed to clear note" };
   }
 };
+
+const noteIdSchema = z.string().min(1);
+
+export async function addNoteReactionAction({ noteId }: { noteId: string }) {
+  try {
+    if (!noteIdSchema.safeParse(noteId).success) {
+      return { error: "Invalid input" };
+    }
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `notereact:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(noteReactionTable)
+        .values({ noteId, userId: session.userId })
+        .onConflictDoNothing()
+        .returning({ id: noteReactionTable.id });
+
+      if (inserted.length === 0) {
+        return { success: true, alreadyReacted: true };
+      }
+
+      await tx
+        .update(noteTable)
+        .set({ reactionCount: sql`${noteTable.reactionCount} + 1` })
+        .where(eq(noteTable.id, noteId));
+
+      return { success: true };
+    });
+
+    // Per-viewer tag only: counts are eventually consistent in the shared feed
+    // (<=120s, same contract as post likes). The notes shell is static and the
+    // client cache is viewer-keyed, so rehydration can't clobber optimistic UI.
+    updateTag(`note:${noteId}:reacted:${session.userId}`);
+
+    return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+export async function removeNoteReactionAction({ noteId }: { noteId: string }) {
+  try {
+    if (!noteIdSchema.safeParse(noteId).success) {
+      return { error: "Invalid input" };
+    }
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `notereact:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const removed = await tx
+        .delete(noteReactionTable)
+        .where(
+          and(
+            eq(noteReactionTable.noteId, noteId),
+            eq(noteReactionTable.userId, session.userId),
+          ),
+        )
+        .returning({ id: noteReactionTable.id });
+
+      if (removed.length === 0) {
+        return { success: true, alreadyRemoved: true };
+      }
+
+      await tx
+        .update(noteTable)
+        .set({
+          reactionCount: sql`CASE WHEN ${noteTable.reactionCount} > 0 THEN ${noteTable.reactionCount} - 1 ELSE 0 END`,
+        })
+        .where(eq(noteTable.id, noteId));
+
+      return { success: true };
+    });
+
+    // See addNoteReactionAction — per-viewer tag only.
+    updateTag(`note:${noteId}:reacted:${session.userId}`);
+
+    return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}

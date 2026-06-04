@@ -7,8 +7,13 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useMemo } from "react";
+import { Button } from "@umamin/ui/components/button";
+import {
+  AlertCircleIcon,
+  MessageCircleDashedIcon,
+  ShuffleIcon,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
@@ -23,7 +28,17 @@ import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
 
-export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function NoteList({
+  isAuthenticated,
+  currentUserId,
+}: {
+  isAuthenticated: boolean;
+  currentUserId?: string;
+}) {
+  // Per-viewer query key (mirrors PostList): the public hydration and each
+  // authed viewer live in separate cache entries, so neither can clobber the
+  // other.
+  const viewerKey = currentUserId ?? "public";
   const {
     data,
     isLoading,
@@ -33,7 +48,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery<NotesResponse>({
-    queryKey: queryKeys.notes(),
+    queryKey: queryKeys.notes(viewerKey),
     queryFn: ({ pageParam }) =>
       fetchNotesPage((pageParam as string | null) ?? null, isAuthenticated),
     initialPageParam: null as string | null,
@@ -61,6 +76,11 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     const adsBefore = isAdRow(rowIndex) ? adsAtOrBefore - 1 : adsAtOrBefore;
     return rowIndex - adsBefore;
   };
+
+  // Inverse of dataIndexForRow: an ad precedes this row for every full
+  // AD_FREQUENCY content rows above it.
+  const rowIndexForDataIndex = (dataIndex: number) =>
+    dataIndex + Math.floor(dataIndex / AD_FREQUENCY);
 
   const totalRows = useMemo(() => {
     const contentRows =
@@ -100,6 +120,57 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     onLoadMore: fetchNextPage,
   });
 
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollFrame = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+      if (scrollFrame.current !== null)
+        cancelAnimationFrame(scrollFrame.current);
+    };
+  }, []);
+
+  const handleShuffle = () => {
+    if (allPosts.length < 2) return;
+
+    // Only shuffle among already-loaded notes — no extra fetches.
+    const pool = allPosts.filter((post) => post.id !== highlightedId);
+    const target = pool[Math.floor(Math.random() * pool.length)];
+    const dataIndex = allPosts.findIndex((post) => post.id === target.id);
+    if (dataIndex < 0) return;
+
+    const rowIndex = rowIndexForDataIndex(dataIndex);
+    const reducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    // Scroll to the real element: the virtualizer's scrollMargin goes stale
+    // when the auth-resolved composer mounts above the list, so index-based
+    // targeting lands short. Off-screen targets get an instant scrollToIndex
+    // hop first, purely to mount them.
+    if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+    const attempt = (tries: number) => {
+      const el = document.getElementById(`umamin-${target.id}`);
+      if (el) {
+        el.scrollIntoView({
+          behavior: reducedMotion ? "auto" : "smooth",
+          block: "center",
+        });
+        scrollFrame.current = null;
+        return;
+      }
+      virtualizer.scrollToIndex(rowIndex, { align: "center" });
+      scrollFrame.current =
+        tries > 0 ? requestAnimationFrame(() => attempt(tries - 1)) : null;
+    };
+    attempt(8);
+
+    setHighlightedId(target.id);
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightedId(null), 2000);
+  };
+
   if (error) {
     return (
       <div className="w-full mx-auto">
@@ -128,11 +199,26 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
       {hasResolvedData && allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
-          <AlertTitle>No data yet</AlertTitle>
+          <AlertTitle>nothing here yet</AlertTitle>
           <AlertDescription>
-            Start the conversation by creating a new post!
+            say something into the void — it'll land right here.
           </AlertDescription>
         </Alert>
+      )}
+
+      {allPosts.length >= 2 && (
+        <div className="mb-4 flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleShuffle}
+            className="min-h-11 gap-2 rounded-full"
+          >
+            <ShuffleIcon className="size-4" />
+            Surprise me
+          </Button>
+        </div>
       )}
 
       {/* v2-notes (top ad) */}
@@ -181,6 +267,8 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
                       isAuthenticated={isAuthenticated}
                       key={post.id}
                       data={post}
+                      index={dataIndexForRow(row.index)}
+                      isHighlighted={post.id === highlightedId}
                     />
                   );
                 })()

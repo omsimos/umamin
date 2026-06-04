@@ -1,18 +1,14 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { Button } from "@umamin/ui/components/button";
-import { SquarePenIcon } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { connection } from "next/server";
+import { Suspense } from "react";
 import { ChatAnnouncement } from "@/components/chat-announcement";
-import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
 import type { NotesResponse } from "@/lib/query-types";
-import { getCurrentNoteData, getNotesPage } from "@/lib/server/data";
-import { toPublicUser } from "@/types/user";
-import { CurrentUserNote } from "./components/current-user-note";
-import { NoteForm } from "./components/note-form";
-import { NoteList } from "./components/note-list";
+import { getNotesPage } from "@/lib/server/data";
+import { NoteCardSkeleton } from "./components/note-card-skeleton";
+import { NotesClient } from "./components/notes-client";
 
 export const metadata: Metadata = {
   title: "Umamin — Notes",
@@ -43,61 +39,51 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Page() {
-  const { user } = await getSession();
+// Request-time hole (like /feed's searchParams access): a build-time prefetch
+// would need a live, migrated, authorized Turso during `next build` — CI broke
+// on exactly that. The data itself still comes from the shared "use cache"
+// page, so per-request cost stays one cache read.
+async function HydratedNotes() {
+  await connection();
+
   const queryClient = getQueryClient();
-  const currentUser = user ? toPublicUser(user) : null;
 
   await queryClient.prefetchInfiniteQuery({
     queryKey: queryKeys.notes(),
     queryFn: ({ pageParam }) =>
       getNotesPage({
         cursor: (pageParam as string | null) ?? null,
-        viewerId: user?.id,
       }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage: NotesResponse) => lastPage.nextCursor ?? null,
     staleTime: 120_000,
   });
 
-  if (user) {
-    await queryClient.prefetchQuery({
-      queryKey: queryKeys.currentNote(),
-      queryFn: () => getCurrentNoteData(user.id),
-      staleTime: 30_000,
-    });
-  }
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <NotesClient />
+    </HydrationBoundary>
+  );
+}
 
+// No session work here (mirrors /feed): the shell carries only public data;
+// NotesClient resolves the viewer in the browser and re-keys its queries per
+// viewer.
+export default function Page() {
   return (
     <div className="container max-w-xl mt-2">
       <ChatAnnouncement className="mb-6" />
-      <div className="space-y-12">
-        {currentUser ? (
-          <HydrationBoundary state={dehydrate(queryClient)}>
-            <div className="space-y-12">
-              <NoteForm currentUser={currentUser} />
-              <CurrentUserNote currentUser={currentUser} />
-            </div>
-          </HydrationBoundary>
-        ) : (
-          <div className="flex items-center space-x-4 rounded-md border p-4 mb-5">
-            <SquarePenIcon />
-            <div className="flex-1 space-y-1">
-              <p className="text-sm font-medium leading-none">Umamin Notes</p>
-              <p className="text-sm text-muted-foreground">
-                Login to start writing notes
-              </p>
-            </div>
-
-            <Button asChild>
-              <Link href="/login">Login</Link>
-            </Button>
+      <Suspense
+        fallback={
+          <div className="space-y-4">
+            <NoteCardSkeleton />
+            <NoteCardSkeleton />
+            <NoteCardSkeleton />
           </div>
-        )}
-        <HydrationBoundary state={dehydrate(queryClient)}>
-          <NoteList isAuthenticated={!!user} />
-        </HydrationBoundary>
-      </div>
+        }
+      >
+        <HydratedNotes />
+      </Suspense>
     </div>
   );
 }

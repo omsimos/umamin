@@ -17,6 +17,7 @@ export type CommentsResponse = CursorPage<CommentData>;
 
 export type NoteItem = SelectNote & {
   user?: PublicUser;
+  isReacted?: boolean;
 };
 
 export type NotesResponse = CursorPage<NoteItem>;

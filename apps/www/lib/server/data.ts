@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
-import { noteTable } from "@umamin/db/schema/note";
+import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import {
   postCommentLikeTable,
   postCommentTable,
@@ -1369,16 +1369,23 @@ async function getPublicNotesPage(
   };
 }
 
-// Keyed on the viewer + sorted authorIds (see getPostFeedViewerOverlay), NOT
-// the full NoteItem[], so the per-viewer overlay actually hits cache.
-async function getNoteViewerOverlay(viewerId: string, authorIds: string[]) {
+// Keyed on the viewer + sorted authorIds/noteIds (see getPostFeedViewerOverlay),
+// NOT the full NoteItem[], so the per-viewer overlay actually hits cache.
+async function getNoteViewerOverlay(
+  viewerId: string,
+  authorIds: string[],
+  noteIds: string[],
+) {
   "use cache";
   cacheTag(`user-blocks:${viewerId}`);
+  for (const noteId of noteIds) {
+    cacheTag(`note:${noteId}:reacted:${viewerId}`);
+  }
   cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
-  const blockRows =
+  const [blockRows, reactedRows] = await Promise.all([
     authorIds.length > 0
-      ? await db
+      ? db
           .select({
             blockerId: userBlockTable.blockerId,
             blockedId: userBlockTable.blockedId,
@@ -1396,13 +1403,28 @@ async function getNoteViewerOverlay(viewerId: string, authorIds: string[]) {
               ),
             ),
           )
-      : [];
+      : [],
+    noteIds.length > 0
+      ? db
+          .select({ noteId: noteReactionTable.noteId })
+          .from(noteReactionTable)
+          .where(
+            and(
+              eq(noteReactionTable.userId, viewerId),
+              inArray(noteReactionTable.noteId, noteIds),
+            ),
+          )
+      : [],
+  ]);
 
-  return new Set(
-    blockRows.flatMap((row) =>
-      row.blockerId === viewerId ? [row.blockedId] : [row.blockerId],
+  return {
+    blockedUserIds: new Set(
+      blockRows.flatMap((row) =>
+        row.blockerId === viewerId ? [row.blockedId] : [row.blockerId],
+      ),
     ),
-  );
+    reactedNoteIds: new Set(reactedRows.map((row) => row.noteId)),
+  };
 }
 
 export async function getNotesPage(params: {
@@ -1420,13 +1442,21 @@ export async function getNotesPage(params: {
       publicData.data.flatMap((note) => (note.user?.id ? [note.user.id] : [])),
     ),
   ).sort();
-  const blockedUserIds = await getNoteViewerOverlay(params.viewerId, authorIds);
+  // From note.id, not author presence — anonymous notes are reactable too.
+  const noteIds = publicData.data.map((note) => note.id).sort();
+  const overlay = await getNoteViewerOverlay(
+    params.viewerId,
+    authorIds,
+    noteIds,
+  );
 
   return {
     ...publicData,
     // Preserve the shared public page window; viewer overlays may shorten it.
     data: publicData.data.flatMap((note) =>
-      note.user?.id && blockedUserIds.has(note.user.id) ? [] : [note],
+      note.user?.id && overlay.blockedUserIds.has(note.user.id)
+        ? []
+        : [{ ...note, isReacted: overlay.reactedNoteIds.has(note.id) }],
     ),
   };
 }

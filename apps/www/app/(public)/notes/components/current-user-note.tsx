@@ -15,10 +15,10 @@ import {
 } from "@umamin/ui/components/card";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { cn } from "@umamin/ui/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 import {
   BadgeCheckIcon,
   DownloadIcon,
+  FlameIcon,
   MessageCircleDashedIcon,
   MessageCircleMoreIcon,
   MessageSquareXIcon,
@@ -32,7 +32,12 @@ import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
-import { getActionError, isOlderThanOneYear, saveImage } from "@/lib/utils";
+import {
+  getActionError,
+  isOlderThanOneYear,
+  saveImage,
+  shortTimeAgo,
+} from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
 export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
@@ -56,13 +61,13 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
     onSuccess: () => {
       queryClient.setQueryData(queryKeys.currentNote(), null);
       if (data?.id) {
-        queryClient.setQueryData<
+        queryClient.setQueriesData<
           import("@tanstack/react-query").InfiniteData<NotesResponse>
-        >(queryKeys.notes(), (current) =>
+        >({ queryKey: queryKeys.notesRoot() }, (current) =>
           patchNote(current, data.id, () => null),
         );
       }
-      toast.success("Note cleared.");
+      toast.success("Gone like it never happened.");
     },
     onError: (err) => {
       console.log(err);
@@ -118,77 +123,106 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
 
   return (
     <div id={`umamin-${data.id}`}>
-      <Card className="flex flex-col items-start justify-between">
+      <Card
+        className={cn(
+          "flex flex-col items-start justify-between",
+          data.isAnonymous && "border-dashed",
+        )}
+      >
         <CardHeader className="w-full flex items-center justify-between text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Badge variant="secondary" className="font-medium">
-              {data.isAnonymous ? (
-                <MessageCircleDashedIcon className="size-4" />
-              ) : (
-                <MessageCircleMoreIcon className="size-4" />
-              )}
-              Your {data.isAnonymous ? "anonymous" : "shared"} note
-            </Badge>
-          </div>
+          <Badge variant="secondary" className="font-medium">
+            {data.isAnonymous ? (
+              <MessageCircleDashedIcon className="size-4" />
+            ) : (
+              <MessageCircleMoreIcon className="size-4" />
+            )}
+            Your {data.isAnonymous ? "anonymous" : "shared"} note
+          </Badge>
 
-          <div className="flex gap-1 items-center">
+          <div className="flex gap-x-1 items-center">
+            {data.updatedAt && (
+              <span className="text-xs text-muted-foreground mr-1">
+                {shortTimeAgo(data.updatedAt)}
+              </span>
+            )}
             {currentUser.quietMode && <MessageSquareXIcon className="size-5" />}
             <Menu menuItems={menuItems} />
           </div>
         </CardHeader>
 
         <CardContent className="w-full">
-          <div
-            className={cn("flex gap-3 mb-4", {
-              "blur-xs": data.isAnonymous,
-            })}
-          >
-            <Avatar
-              className={cn("relative top-1", {
-                "avatar-shine": isOlderThanOneYear(currentUser?.createdAt),
-              })}
-            >
-              <AvatarImage
-                className="rounded-full"
-                src={currentUser?.imageUrl ?? ""}
-                alt="User avatar"
-              />
-              <AvatarFallback className="text-xs">
-                <ScanFaceIcon />
-              </AvatarFallback>
-            </Avatar>
+          <div className="flex gap-3 mb-4">
+            {data.isAnonymous ? (
+              <>
+                <Avatar>
+                  <AvatarFallback>
+                    <ScanFaceIcon />
+                  </AvatarFallback>
+                </Avatar>
 
-            <div className="flex flex-col mt-1">
-              <div className="flex items-center space-x-1">
-                <span className="font-semibold flex-none text-base leading-none">
-                  {currentUser.displayName
-                    ? currentUser.displayName
-                    : currentUser.username}
-                </span>
-                {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                  currentUser.username,
-                ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
-              </div>
+                <div className="flex flex-col mt-1">
+                  <span className="text-muted-foreground text-base font-semibold leading-none">
+                    anonymous
+                  </span>
+                  <span className="text-xs text-muted-foreground pt-1">
+                    only you know it's you
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <Avatar
+                  className={cn("relative top-1", {
+                    "avatar-shine": isOlderThanOneYear(currentUser?.createdAt),
+                  })}
+                >
+                  <AvatarImage
+                    className="rounded-full"
+                    src={currentUser?.imageUrl ?? ""}
+                    alt="User avatar"
+                  />
+                  <AvatarFallback className="text-xs">
+                    <ScanFaceIcon />
+                  </AvatarFallback>
+                </Avatar>
 
-              <span className="text-muted-foreground truncate">
-                @{currentUser.username}
-              </span>
-            </div>
+                <div className="flex flex-col mt-1">
+                  <div className="flex items-center space-x-1">
+                    <span className="font-semibold flex-none text-base leading-none">
+                      {currentUser.displayName
+                        ? currentUser.displayName
+                        : currentUser.username}
+                    </span>
+                    {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
+                      ",",
+                    ).includes(currentUser.username) && (
+                      <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
+                    )}
+                  </div>
+
+                  <span className="text-muted-foreground truncate">
+                    @{currentUser.username}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="whitespace-pre-wrap break-words bg-muted p-5 rounded-lg min-w-0">
+          <p className="min-w-0 whitespace-pre-wrap break-words font-display text-lg leading-snug">
             {data.content}
-          </div>
+          </p>
         </CardContent>
 
-        <CardFooter className="justify-center w-full">
-          <p className="text-muted-foreground text-center text-sm italic">
-            {data.updatedAt &&
-              formatDistanceToNow(data.updatedAt, {
-                addSuffix: true,
-              })}
-          </p>
-        </CardFooter>
+        {(data.reactionCount ?? 0) > 0 && (
+          <CardFooter className="w-full justify-center">
+            <p className="flex items-center gap-1.5 text-sm text-orange-500">
+              <FlameIcon className="size-4 fill-orange-500" />
+              {data.reactionCount === 1
+                ? "1 stranger reacted to this"
+                : `${data.reactionCount} strangers reacted to this`}
+            </p>
+          </CardFooter>
+        )}
       </Card>
     </div>
   );

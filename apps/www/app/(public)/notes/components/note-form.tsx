@@ -7,7 +7,7 @@ import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, MessageSquareShareIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createNoteAction } from "@/app/actions/note";
 import { queryKeys } from "@/lib/query";
@@ -15,10 +15,24 @@ import { upsertNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import type { PublicUser } from "@/types/user";
 
+const PROMPTS = [
+  "currently overthinking about…",
+  "confess something harmless",
+  "drop a hot take",
+  "say it into the void",
+  "what's living in your head rent-free?",
+];
+
 export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
+  // Randomized after mount — picking during render would mismatch the SSR HTML.
+  const [placeholder, setPlaceholder] = useState(PROMPTS[0]);
+
+  useEffect(() => {
+    setPlaceholder(PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
+  }, []);
 
   const updateNoteMutation = useMutation({
     mutationFn: createNoteAction,
@@ -26,14 +40,15 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       // Cancel in-flight fetches so a settling refetch can't overwrite the
       // optimistic note (mirrors reply-form.tsx).
       await queryClient.cancelQueries({ queryKey: queryKeys.currentNote() });
-      await queryClient.cancelQueries({ queryKey: queryKeys.notes() });
+      await queryClient.cancelQueries({ queryKey: queryKeys.notesRoot() });
 
       const previousNote = queryClient.getQueryData<NoteItem | null>(
         queryKeys.currentNote(),
       );
-      const previousNotes = queryClient.getQueryData<
+      // Snapshot every viewer-keyed notes query (mirrors use-create-post).
+      const previousNotes = queryClient.getQueriesData<
         InfiniteData<NotesResponse>
-      >(queryKeys.notes());
+      >({ queryKey: queryKeys.notesRoot() });
 
       const optimisticNote: NoteItem = {
         id:
@@ -42,6 +57,8 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         userId: currentUser.id,
         content: nextValues.content,
         isAnonymous: nextValues.isAnonymous,
+        // Server resets reactions on every upsert — mirror that optimistically.
+        reactionCount: 0,
         createdAt:
           (previousNote as NoteItem | null | undefined)?.createdAt ??
           new Date(),
@@ -53,8 +70,8 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         queryKeys.currentNote(),
         optimisticNote,
       );
-      queryClient.setQueryData<InfiniteData<NotesResponse>>(
-        queryKeys.notes(),
+      queryClient.setQueriesData<InfiniteData<NotesResponse>>(
+        { queryKey: queryKeys.notesRoot() },
         (current) => upsertNote(current, optimisticNote),
       );
 
@@ -71,10 +88,9 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
           queryKeys.currentNote(),
           ctx?.previousNote,
         );
-        queryClient.setQueryData<InfiniteData<NotesResponse>>(
-          queryKeys.notes(),
-          ctx?.previousNotes,
-        );
+        for (const [key, value] of ctx?.previousNotes ?? []) {
+          queryClient.setQueryData(key, value);
+        }
         toast.error(data.error ?? "Couldn't share note.");
         return;
       }
@@ -84,8 +100,8 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
           queryKeys.currentNote(),
           data.note,
         );
-        queryClient.setQueryData<InfiniteData<NotesResponse>>(
-          queryKeys.notes(),
+        queryClient.setQueriesData<InfiniteData<NotesResponse>>(
+          { queryKey: queryKeys.notesRoot() },
           (current) =>
             upsertNote(current, {
               ...data.note,
@@ -94,7 +110,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         );
       }
 
-      toast.success("Note shared.");
+      toast.success("Note's out there.");
 
       setContent("");
     },
@@ -104,10 +120,9 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         queryKeys.currentNote(),
         ctx?.previousNote,
       );
-      queryClient.setQueryData<InfiniteData<NotesResponse>>(
-        queryKeys.notes(),
-        ctx?.previousNotes,
-      );
+      for (const [key, value] of ctx?.previousNotes ?? []) {
+        queryClient.setQueryData(key, value);
+      }
       toast.error("Couldn't share note.");
     },
   });
@@ -120,7 +135,8 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         value={content}
         onChange={(e) => setContent(e.target.value)}
         id="message"
-        placeholder="How's your day going"
+        placeholder={placeholder}
+        className="font-display md:text-base"
       />
 
       <div className="flex items-center justify-between mt-2">
@@ -131,7 +147,12 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
             onCheckedChange={setIsAnonymous}
             id="anonymous-mode"
           />
-          <Label htmlFor="anonymous-mode">Anonymous</Label>
+          <Label
+            htmlFor="anonymous-mode"
+            className="font-mono text-xs text-muted-foreground"
+          >
+            {isAnonymous ? "as nobody" : `as @${currentUser.username}`}
+          </Label>
         </div>
 
         <Button
@@ -148,7 +169,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
           ) : (
             <MessageSquareShareIcon />
           )}
-          Share Note
+          Put it out there
         </Button>
       </div>
     </section>

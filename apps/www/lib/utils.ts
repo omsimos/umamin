@@ -266,6 +266,17 @@ export function isAlreadyLiked(res: unknown): res is { alreadyLiked: true } {
   );
 }
 
+export function isAlreadyReacted(
+  res: unknown,
+): res is { alreadyReacted: true } {
+  return (
+    !!res &&
+    typeof res === "object" &&
+    "alreadyReacted" in res &&
+    (res as { alreadyReacted?: boolean }).alreadyReacted === true
+  );
+}
+
 export function isAlreadyReposted(
   res: unknown,
 ): res is { alreadyReposted: true } {
