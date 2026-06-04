@@ -22,7 +22,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
 
-    "baseUrl": ".",
     "paths": {
       "@umamin/ui/*": ["../../packages/ui/src/*"]
     }

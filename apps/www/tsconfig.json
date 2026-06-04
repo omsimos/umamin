@@ -18,7 +18,7 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",
+    "types": ["node", "mdx"],
     "paths": {
       "@/*": ["./*"],
       "@umamin/ui/*": ["../../packages/ui/src/*"]

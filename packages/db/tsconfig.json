@@ -10,7 +10,8 @@
     "isolatedModules": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "module": "NodeNext"
+    "module": "NodeNext",
+    "types": ["node"]
   },
   "include": ["src"],
   "exclude": ["node_modules"]
