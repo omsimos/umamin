@@ -29,6 +29,7 @@ import {
   removeNoteReactionAction,
 } from "@/app/actions/note";
 import { Menu } from "@/components/menu";
+import { PostBody } from "@/components/post-body";
 import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
@@ -256,9 +257,10 @@ export function NoteCard({
           </CardHeader>
 
           <CardContent className="flex w-full gap-3">
-            <p className="min-w-0 whitespace-pre-wrap break-words font-display text-lg leading-snug">
-              {data.content}
-            </p>
+            <PostBody
+              content={data.content}
+              className="font-display text-lg leading-snug"
+            />
           </CardContent>
 
           <CardFooter className="w-full pt-0">

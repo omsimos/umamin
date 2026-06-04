@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.2.1] - 2026-06-04
+
+### Added
+
+- Links and @mentions in notes are now clickable, matching posts and comments — URLs ask for confirmation before taking you off Umamin (with a stronger warning on risky links), and mentions go to the profile.
+
 ## [5.2.0] - 2026-06-04
 
 ### Added
@@ -433,6 +439,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.2.1]: https://github.com/omsimos/umamin/compare/v5.2.0...v5.2.1
 [5.2.0]: https://github.com/omsimos/umamin/compare/v5.1.0...v5.2.0
 [5.1.0]: https://github.com/omsimos/umamin/compare/v5.0.4...v5.1.0
 [5.0.4]: https://github.com/omsimos/umamin/compare/v5.0.3...v5.0.4
