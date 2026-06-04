@@ -7,8 +7,13 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useMemo } from "react";
+import { Button } from "@umamin/ui/components/button";
+import {
+  AlertCircleIcon,
+  MessageCircleDashedIcon,
+  ShuffleIcon,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
 import { useWindowVirtualizerOffset } from "@/hooks/use-window-virtualizer-offset";
@@ -62,6 +67,11 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     return rowIndex - adsBefore;
   };
 
+  // Inverse of dataIndexForRow: an ad precedes this row for every full
+  // AD_FREQUENCY content rows above it.
+  const rowIndexForDataIndex = (dataIndex: number) =>
+    dataIndex + Math.floor(dataIndex / AD_FREQUENCY);
+
   const totalRows = useMemo(() => {
     const contentRows =
       allPosts.length + Math.floor(allPosts.length / AD_FREQUENCY);
@@ -100,6 +110,37 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
     onLoadMore: fetchNextPage,
   });
 
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    };
+  }, []);
+
+  const handleShuffle = () => {
+    if (allPosts.length < 2) return;
+
+    // Only shuffle among already-loaded notes — no extra fetches.
+    const pool = allPosts.filter((post) => post.id !== highlightedId);
+    const target = pool[Math.floor(Math.random() * pool.length)];
+    const dataIndex = allPosts.findIndex((post) => post.id === target.id);
+    if (dataIndex < 0) return;
+
+    const reducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    virtualizer.scrollToIndex(rowIndexForDataIndex(dataIndex), {
+      align: "center",
+      behavior: reducedMotion ? "auto" : "smooth",
+    });
+
+    setHighlightedId(target.id);
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightedId(null), 2000);
+  };
+
   if (error) {
     return (
       <div className="w-full mx-auto">
@@ -133,6 +174,21 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
             say something into the void — it'll land right here.
           </AlertDescription>
         </Alert>
+      )}
+
+      {allPosts.length >= 2 && (
+        <div className="mb-4 flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleShuffle}
+            className="min-h-11 gap-2 rounded-full"
+          >
+            <ShuffleIcon className="size-4" />
+            Surprise me
+          </Button>
+        </div>
       )}
 
       {/* v2-notes (top ad) */}
@@ -182,6 +238,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
                       key={post.id}
                       data={post}
                       index={dataIndexForRow(row.index)}
+                      isHighlighted={post.id === highlightedId}
                     />
                   );
                 })()

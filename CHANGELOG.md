@@ -18,6 +18,13 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.2.0] - 2026-06-04
+
+### Added
+
+- React to any note with an anonymous "relate" — a one-tap flame with a public count. Nobody sees who related, and reactions reset when a note is rewritten or cleared. Your own note shows how many strangers related.
+- A "Surprise me" shuffle on the notes feed that jumps to a random note and briefly highlights it.
+
 ## [5.1.1] - 2026-06-04
 
 ### Changed
@@ -424,6 +431,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.2.0]: https://github.com/omsimos/umamin/compare/v5.1.1...v5.2.0
 [5.1.1]: https://github.com/omsimos/umamin/compare/v5.1.0...v5.1.1
 [5.1.0]: https://github.com/omsimos/umamin/compare/v5.0.4...v5.1.0
 [5.0.4]: https://github.com/omsimos/umamin/compare/v5.0.3...v5.0.4

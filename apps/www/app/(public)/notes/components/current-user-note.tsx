@@ -19,6 +19,7 @@ import { formatDistanceToNow } from "date-fns";
 import {
   BadgeCheckIcon,
   DownloadIcon,
+  FlameIcon,
   MessageCircleDashedIcon,
   MessageCircleMoreIcon,
   MessageSquareXIcon,
@@ -181,7 +182,15 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
           </div>
         </CardContent>
 
-        <CardFooter className="justify-center w-full">
+        <CardFooter className="w-full flex-col gap-1.5">
+          {(data.reactionCount ?? 0) > 0 && (
+            <p className="flex items-center gap-1.5 text-sm text-orange-500">
+              <FlameIcon className="size-4 fill-orange-500" />
+              {data.reactionCount === 1
+                ? "1 stranger related"
+                : `${data.reactionCount} strangers related`}
+            </p>
+          )}
           <p className="text-muted-foreground text-center text-sm italic">
             {data.updatedAt &&
               formatDistanceToNow(data.updatedAt, {

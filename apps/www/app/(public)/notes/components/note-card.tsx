@@ -1,36 +1,129 @@
-import type { SelectNote } from "@umamin/db/schema/note";
+import type { InfiniteData } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
-import { Card, CardContent, CardHeader } from "@umamin/ui/components/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@umamin/ui/components/card";
 import { cn } from "@umamin/ui/lib/utils";
 import {
   BadgeCheckIcon,
   DownloadIcon,
+  FlameIcon,
   MessageSquareTextIcon,
   MessageSquareXIcon,
   ScanFaceIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  addNoteReactionAction,
+  removeNoteReactionAction,
+} from "@/app/actions/note";
 import { Menu } from "@/components/menu";
-import { isOlderThanOneYear, saveImage, shortTimeAgo } from "@/lib/utils";
-import type { PublicUser } from "@/types/user";
+import {
+  BURST_ACTION_REJECT_MESSAGE,
+  useBurstAction,
+} from "@/hooks/use-burst-action";
+import { queryKeys } from "@/lib/query";
+import { patchNote } from "@/lib/query-cache";
+import type { NoteItem, NotesResponse } from "@/lib/query-types";
+import {
+  getActionError,
+  isAlreadyReacted,
+  isAlreadyRemoved,
+  isOlderThanOneYear,
+  saveImage,
+  shortTimeAgo,
+} from "@/lib/utils";
 import { ReplyDrawer } from "./reply-drawer";
 
 type Props = {
-  data: SelectNote & { user?: PublicUser };
+  data: NoteItem;
   isAuthenticated: boolean;
   index?: number;
+  isHighlighted?: boolean;
 };
 
-export function NoteCard({ data, isAuthenticated, index = 0 }: Props) {
+export function NoteCard({
+  data,
+  isAuthenticated,
+  index = 0,
+  isHighlighted = false,
+}: Props) {
   const user = data.user;
   const username = user?.username;
   const [replyOpen, setReplyOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const [reacted, setReacted] = useState(data.isReacted === true);
+  const [reactions, setReactions] = useState(data.reactionCount ?? 0);
+
+  // Scalar deps only — see post-card.tsx: depending on `data` itself would
+  // clobber optimistic state on every parent render.
+  useEffect(() => {
+    setReacted(data.isReacted === true);
+    setReactions(data.reactionCount ?? 0);
+  }, [data.isReacted, data.reactionCount]);
+
+  const handleReactAction = useBurstAction(
+    async (prevReacted: boolean) =>
+      prevReacted
+        ? removeNoteReactionAction({ noteId: data.id })
+        : addNoteReactionAction({ noteId: data.id }),
+    { limit: 4, rejectMessage: BURST_ACTION_REJECT_MESSAGE },
+  );
+
+  const syncReactionCache = (nextReacted: boolean, nextCount: number) => {
+    queryClient.setQueryData<InfiniteData<NotesResponse>>(
+      queryKeys.notes(),
+      (current) =>
+        patchNote(current, data.id, (note) => ({
+          ...note,
+          isReacted: nextReacted,
+          reactionCount: nextCount,
+        })),
+    );
+  };
+
+  const handleReact = async () => {
+    const prevReacted = reacted;
+    const prevCount = reactions;
+    const nextReacted = !prevReacted;
+    const nextCount = prevReacted ? Math.max(prevCount - 1, 0) : prevCount + 1;
+
+    setReacted(nextReacted);
+    setReactions(nextCount);
+
+    try {
+      const res = await handleReactAction(prevReacted);
+      const actionError = getActionError(res);
+      if (actionError) {
+        throw new Error(actionError);
+      }
+
+      // The edge was already in the target state — keep the flag, revert the ±1.
+      if (isAlreadyReacted(res) || isAlreadyRemoved(res)) {
+        setReactions(prevCount);
+        syncReactionCache(nextReacted, prevCount);
+        return;
+      }
+
+      syncReactionCache(nextReacted, nextCount);
+    } catch (err) {
+      setReacted(prevReacted);
+      setReactions(prevCount);
+      toast.error(err instanceof Error ? err.message : "Couldn't react.");
+    }
+  };
 
   return (
     // Tilt lives outside the export element so saved images stay straight.
@@ -53,6 +146,8 @@ export function NoteCard({ data, isAuthenticated, index = 0 }: Props) {
           className={cn(
             "flex flex-col items-start justify-between",
             data.isAnonymous && "border-dashed",
+            isHighlighted &&
+              "ring-2 ring-orange-500 ring-offset-2 ring-offset-background motion-safe:animate-pulse",
           )}
         >
           <CardHeader className="w-full text-sm">
@@ -165,6 +260,31 @@ export function NoteCard({ data, isAuthenticated, index = 0 }: Props) {
               {data.content}
             </p>
           </CardContent>
+
+          <CardFooter className="w-full pt-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={!isAuthenticated}
+              onClick={handleReact}
+              aria-pressed={reacted}
+              aria-label={reacted ? "Remove reaction" : "Relate to this note"}
+              className={cn(
+                "-ml-2 min-h-11 gap-1.5 px-2 hover:bg-transparent disabled:opacity-100",
+                reacted
+                  ? "text-orange-500 hover:text-orange-500"
+                  : "text-muted-foreground",
+              )}
+            >
+              <FlameIcon
+                className={cn("size-5", reacted && "fill-orange-500")}
+              />
+              <span className="text-sm">
+                {reactions > 0 ? reactions : "relate"}
+              </span>
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     </div>

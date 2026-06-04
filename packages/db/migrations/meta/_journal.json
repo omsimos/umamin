@@ -29,6 +29,13 @@
       "when": 1780156734335,
       "tag": "0003_daily_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1780558195976,
+      "tag": "0004_tranquil_goliath",
+      "breakpoints": true
     }
   ]
 }

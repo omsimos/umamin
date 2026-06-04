@@ -6,6 +6,7 @@ import {
   getActionError,
   getBaseUrl,
   isAlreadyLiked,
+  isAlreadyReacted,
   isAlreadyRemoved,
   isAlreadyReposted,
   isOlderThanOneYear,
@@ -144,6 +145,7 @@ describe("getActionError", () => {
 describe("already-X guards", () => {
   const cases = [
     ["isAlreadyLiked", isAlreadyLiked, "alreadyLiked"],
+    ["isAlreadyReacted", isAlreadyReacted, "alreadyReacted"],
     ["isAlreadyReposted", isAlreadyReposted, "alreadyReposted"],
     ["isAlreadyRemoved", isAlreadyRemoved, "alreadyRemoved"],
   ] as const;

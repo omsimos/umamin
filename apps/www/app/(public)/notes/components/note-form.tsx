@@ -56,6 +56,8 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         userId: currentUser.id,
         content: nextValues.content,
         isAnonymous: nextValues.isAnonymous,
+        // Server resets reactions on every upsert — mirror that optimistically.
+        reactionCount: 0,
         createdAt:
           (previousNote as NoteItem | null | undefined)?.createdAt ??
           new Date(),
