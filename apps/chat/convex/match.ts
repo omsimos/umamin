@@ -10,6 +10,7 @@ import {
   MAX_AVATAR_SEED_LEN,
   MAX_INTEREST_LEN,
   MAX_INTERESTS,
+  QUEUE_FRESH_MS,
   RECONCILE_MS,
 } from "./constants";
 import { limitGlobal, limitPerSession } from "./lib/rateLimits";
@@ -20,6 +21,15 @@ async function getSession(ctx: MutationCtx, sessionId: string) {
     .query("sessions")
     .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
     .unique();
+}
+
+// Only claim queuers whose radar pinged recently: a closed or backgrounded tab
+// can't establish match presence, so pairing with it just manufactures a
+// "partner left". Stale rows are skipped, not deleted — pings (and thus
+// matchability) resume if the tab comes back; the queue sweep handles true
+// ghosts. Pre-field rows fall back to enqueuedAt and age out naturally.
+function isFresh(row: Doc<"queue">, now: number): boolean {
+  return (row.lastPingAt ?? row.enqueuedAt) > now - QUEUE_FRESH_MS;
 }
 
 function normalizeIdentity(args: {
@@ -136,7 +146,9 @@ export const enqueueAndMatch = sessionMutation({
       .withIndex("by_enqueuedAt")
       .order("asc")
       .take(50);
-    const others = waiting.filter((q) => q.sessionId !== ctx.sessionId);
+    const others = waiting.filter(
+      (q) => q.sessionId !== ctx.sessionId && isFresh(q, now),
+    );
     const overlap = (q: { interests: string[] }) =>
       q.interests.filter((i) => identity.interests.includes(i));
     const partner = others.find((q) => overlap(q).length > 0);
@@ -149,6 +161,7 @@ export const enqueueAndMatch = sessionMutation({
       sessionId: ctx.sessionId,
       interests: identity.interests,
       enqueuedAt: now,
+      lastPingAt: now,
     });
     await ctx.scheduler.runAfter(FALLBACK_MS, internal.match.fallbackPair, {
       sessionId: ctx.sessionId,
@@ -164,15 +177,35 @@ export const fallbackPair = internalMutation({
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .unique();
     if (!mine) return; // already matched or gone
+    const now = Date.now();
     const waiting = await ctx.db
       .query("queue")
       .withIndex("by_enqueuedAt")
       .order("asc")
       .take(50);
-    const partner = waiting.find((q) => q.sessionId !== sessionId);
+    const partner = waiting.find(
+      (q) => q.sessionId !== sessionId && isFresh(q, now),
+    );
     if (!partner) return; // still nobody — keep waiting
     await ctx.db.delete(mine._id);
     const shared = mine.interests.filter((i) => partner.interests.includes(i));
     await pair(ctx, sessionId, partner, shared);
+  },
+});
+
+/** Queue-liveness ping from the matching radar. Refreshes the caller's row so
+ *  it stays claimable; a row whose pings stop (closed/backgrounded tab) goes
+ *  stale within QUEUE_FRESH_MS and is skipped by pairing until pings resume. */
+export const stillWaiting = sessionMutation({
+  args: {},
+  handler: async (ctx) => {
+    await limitGlobal(ctx, "globalQueuePing");
+    await limitPerSession(ctx, "queuePing", ctx.sessionId);
+    const row = await ctx.db
+      .query("queue")
+      .withIndex("by_session", (q) => q.eq("sessionId", ctx.sessionId))
+      .unique();
+    if (!row) return; // matched or swept — the radar learns via snapshot
+    await ctx.db.patch(row._id, { lastPingAt: Date.now() });
   },
 });

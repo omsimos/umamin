@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@umamin/ui/components/button";
 import { ArrowRight } from "lucide-react";
+import { useEffect } from "react";
 import { AdContainer } from "../components/ads/ad-container";
 import { Attribution } from "../components/attribution";
 import { IdentityCard } from "../components/lobby/identity-card";
@@ -19,8 +20,17 @@ export const Route = createFileRoute("/")({
 
 function Lobby() {
   const navigate = useNavigate();
-  const { findMatch } = useChatSession();
+  const { snapshot, findMatch } = useChatSession();
   const draft = useIdentityDraft();
+
+  // A live session outranks the lobby: an accidental tab close (or reload)
+  // within the away grace should drop the user straight back into their chat
+  // (or their spot in the queue), not strand them here while a partner waits.
+  useEffect(() => {
+    if (snapshot.phase === "active" || snapshot.phase === "matching") {
+      navigate({ to: "/chat" });
+    }
+  }, [snapshot.phase, navigate]);
 
   function start() {
     findMatch({

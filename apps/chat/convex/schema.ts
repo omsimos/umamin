@@ -18,6 +18,10 @@ export default defineSchema({
     sessionId: v.string(),
     interests: v.array(v.string()),
     enqueuedAt: v.number(),
+    // Refreshed by the radar's stillWaiting ping; pairing only claims rows
+    // pinged within QUEUE_FRESH_MS so closed/backgrounded tabs aren't matchable.
+    // Optional only for rows that predate the field (they read as stale).
+    lastPingAt: v.optional(v.number()),
   })
     .index("by_session", ["sessionId"])
     .index("by_enqueuedAt", ["enqueuedAt"]),

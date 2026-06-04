@@ -3,12 +3,13 @@ import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 import {
   ACTIVE_MATCH_TTL_MS,
+  AWAY_GRACE_MS,
   GRACE_MS,
   MAX_QUEUE_WAIT_MS,
   MESSAGE_DELETE_PAGE,
   SESSION_TTL_MS,
 } from "./constants";
-import { presence } from "./presence";
+import { matchLiveness, presence } from "./presence";
 
 export const deleteMatch = internalMutation({
   args: { matchId: v.id("matches") },
@@ -89,6 +90,13 @@ export const sweepStaleActiveMatches = internalMutation({
       )
       .take(100);
     for (const m of stale) {
+      // Liveness gate: an old match with both peers still heartbeating is a
+      // real conversation, not an orphan — leave it alone. A side absent
+      // within the away grace may just be app-switched; the next pass (or
+      // reconcile, when its chain is alive) re-checks. Failed presence reads
+      // count as live, mirroring reconcile's fail-open.
+      const liveness = await matchLiveness(ctx, m);
+      if (!liveness || liveness.maxAbsentMs <= AWAY_GRACE_MS) continue;
       await ctx.db.patch(m._id, {
         status: "ended",
         endedReason: "partner-left",

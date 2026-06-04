@@ -1,8 +1,10 @@
 import { register as registerPresence } from "@convex-dev/presence/test";
 import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
+import { AWAY_GRACE_MS, PRESENCE_HEARTBEAT_MS, SECOND } from "./constants";
+import { clampHeartbeatInterval, presence } from "./presence";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -32,9 +34,9 @@ async function beat(
   userId: string,
 ) {
   return await t.mutation(api.presence.heartbeat, {
+    ...auth(userId),
     roomId: matchId,
-    userId,
-    sessionId: `${userId}-tab`,
+    presenceId: `${userId}-tab`,
     interval: 10000,
   });
 }
@@ -50,6 +52,10 @@ async function ageMatchPastStartGrace(
   });
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("presence", () => {
   it("partner shows online once both have a heartbeat in the room", async () => {
     const { t, matchId } = await matched();
@@ -59,11 +65,43 @@ describe("presence", () => {
     expect(a.partner?.status).toBe("online");
   });
 
-  it("partner shows left when they have no heartbeat in the room", async () => {
+  it("partner shows online (connecting) while they have never joined a fresh match", async () => {
+    const { t, matchId } = await matched();
+    await beat(t, matchId, "a"); // `b` is still mounting presence
+    const a = await t.query(api.chat.snapshot, auth("a"));
+    expect(a.partner?.status).toBe("online");
+    expect(a.phase).toBe("active");
+  });
+
+  it("partner shows away once they joined and lost their heartbeat", async () => {
     const { t, matchId } = await matched();
     await beat(t, matchId, "a");
+    const bBeat = await beat(t, matchId, "b");
+    await t.mutation(api.presence.disconnect, {
+      sessionToken: bBeat?.sessionToken as string,
+    });
     const a = await t.query(api.chat.snapshot, auth("a"));
-    expect(a.partner?.status).toBe("left");
+    expect(a.partner?.status).toBe("away");
+    expect(a.phase).toBe("active");
+  });
+
+  it("clamps the client-supplied heartbeat interval (abuse guard)", () => {
+    expect(clampHeartbeatInterval(10_000_000)).toBe(PRESENCE_HEARTBEAT_MS);
+    expect(clampHeartbeatInterval(0)).toBe(SECOND);
+    expect(clampHeartbeatInterval(10_000)).toBe(10_000);
+  });
+
+  it("ignores a heartbeat into a match the session is not part of", async () => {
+    const { t, matchId } = await matched();
+    const result = await t.mutation(api.presence.heartbeat, {
+      ...auth("c"),
+      roomId: matchId,
+      presenceId: "c-tab",
+      interval: 10000,
+    });
+    expect(result).toBeNull();
+    const room = await t.run((ctx) => presence.listRoom(ctx, matchId, false));
+    expect(room.find((m) => m.userId === "c")).toBeUndefined();
   });
 
   it("reconcile keeps the match active while both are present", async () => {
@@ -100,7 +138,7 @@ describe("presence", () => {
     expect(a.partner?.status).toBe("left");
   });
 
-  it("ends the match if a partner leaves after both were present, even within the start grace", async () => {
+  it("keeps the match active through a brief disconnect (away grace)", async () => {
     const { t, matchId } = await matched();
     await beat(t, matchId, "a");
     const bBeat = await beat(t, matchId, "b");
@@ -108,16 +146,82 @@ describe("presence", () => {
     await t.mutation(internal.presence.reconcile, {
       matchId: matchId as never,
     });
-    expect((await t.query(api.chat.snapshot, auth("a"))).phase).toBe("active");
-    // `b` disconnects (tab close) while the match is still young.
+    // `b` disconnects (app switch / screen lock)…
     await t.mutation(api.presence.disconnect, {
-      sessionToken: bBeat.sessionToken,
+      sessionToken: bBeat?.sessionToken as string,
     });
+    // …and reconcile observes a real mid-grace absence. The forced clock makes
+    // the absence unambiguously non-zero, so this pins the grace branch itself:
+    // without it the absent side would be torn down here.
+    const base = Date.now();
+    vi.spyOn(Date, "now").mockReturnValue(base + AWAY_GRACE_MS / 2);
+    await t.mutation(internal.presence.reconcile, {
+      matchId: matchId as never,
+    });
+    const a = await t.query(api.chat.snapshot, auth("a"));
+    expect(a.phase).toBe("active");
+    expect(a.partner?.status).toBe("away");
+  });
+
+  it("ends the match (partner-left) once a disconnect outlasts the away grace", async () => {
+    const { t, matchId } = await matched();
+    await beat(t, matchId, "a");
+    const bBeat = await beat(t, matchId, "b");
+    await t.mutation(internal.presence.reconcile, {
+      matchId: matchId as never,
+    });
+    await t.mutation(api.presence.disconnect, {
+      sessionToken: bBeat?.sessionToken as string,
+    });
+    // Reconcile observes the absence only after the grace has fully elapsed.
+    const base = Date.now();
+    vi.spyOn(Date, "now").mockReturnValue(base + AWAY_GRACE_MS + 1000);
     await t.mutation(internal.presence.reconcile, {
       matchId: matchId as never,
     });
     const a = await t.query(api.chat.snapshot, auth("a"));
     expect(a.phase).toBe("ended");
     expect(a.endedReason).toBe("partner-left");
+  });
+
+  it("grants the away grace to a peer who joined but was never online at the same tick", async () => {
+    const { t, matchId } = await matched();
+    await beat(t, matchId, "a");
+    const bBeat = await beat(t, matchId, "b");
+    // `b` drops before any reconcile observed both online simultaneously…
+    await t.mutation(api.presence.disconnect, {
+      sessionToken: bBeat?.sessionToken as string,
+    });
+    await ageMatchPastStartGrace(t);
+    // …yet reconcile latches on "both joined" and applies the away grace
+    // instead of cutting them at the start-grace boundary.
+    await t.mutation(internal.presence.reconcile, {
+      matchId: matchId as never,
+    });
+    const a = await t.query(api.chat.snapshot, auth("a"));
+    expect(a.phase).toBe("active");
+    expect(a.partner?.status).toBe("away");
+  });
+
+  it("a returning partner clears the away grace instead of accruing it", async () => {
+    const { t, matchId } = await matched();
+    await beat(t, matchId, "a");
+    const bBeat = await beat(t, matchId, "b");
+    await t.mutation(internal.presence.reconcile, {
+      matchId: matchId as never,
+    });
+    await t.mutation(api.presence.disconnect, {
+      sessionToken: bBeat?.sessionToken as string,
+    });
+    // `b` comes back before the grace runs out…
+    await beat(t, matchId, "b");
+    // …so even a reconcile far in the future sees them live, not abandoned.
+    const base = Date.now();
+    vi.spyOn(Date, "now").mockReturnValue(base + AWAY_GRACE_MS + 1000);
+    await t.mutation(internal.presence.reconcile, {
+      matchId: matchId as never,
+    });
+    const a = await t.query(api.chat.snapshot, auth("a"));
+    expect(a.phase).toBe("active");
   });
 });

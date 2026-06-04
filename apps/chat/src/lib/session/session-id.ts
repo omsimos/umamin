@@ -7,8 +7,9 @@ export interface SessionCredentials {
 }
 
 // crypto.randomUUID is unavailable on insecure origins (e.g. http over a LAN IP)
-// and old engines; fall back so a session id can always be produced.
-function uuid(): string {
+// and old engines; fall back so a session id can always be produced. Exported
+// for per-tab presence ids, which need the same fallbacks.
+export function uuid(): string {
   try {
     if (
       typeof crypto !== "undefined" &&
@@ -39,9 +40,9 @@ function uuid(): string {
 }
 
 // Per-tab fallback when localStorage is unavailable (private mode / disabled /
-// quota). getSessionId() runs at module load in __root.tsx, before React and
-// the route error boundary mount, so an uncaught throw here white-screens the
-// whole app — hence the try/catch.
+// quota). getSessionCredentials() runs at module load in __root.tsx, before
+// React and the route error boundary mount, so an uncaught throw here
+// white-screens the whole app — hence the try/catch.
 let memoryId: string | null = null;
 let memorySecret: string | null = null;
 
@@ -63,8 +64,4 @@ export function getSessionCredentials(): SessionCredentials {
     if (!memorySecret) memorySecret = uuid();
     return { sessionId: memoryId, sessionSecret: memorySecret };
   }
-}
-
-export function getSessionId(): string {
-  return getSessionCredentials().sessionId;
 }
