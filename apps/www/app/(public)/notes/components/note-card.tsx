@@ -269,7 +269,7 @@ export function NoteCard({
               disabled={!isAuthenticated}
               onClick={handleReact}
               aria-pressed={reacted}
-              aria-label={reacted ? "Remove reaction" : "Felt this note"}
+              aria-label={reacted ? "Remove reaction" : "React to this note"}
               className={cn(
                 "-ml-2 min-h-11 gap-1.5 px-2 hover:bg-transparent disabled:opacity-100",
                 reacted
@@ -280,9 +280,7 @@ export function NoteCard({
               <FlameIcon
                 className={cn("size-5", reacted && "fill-orange-500")}
               />
-              <span className="text-sm">
-                {reactions > 0 ? reactions : "felt this"}
-              </span>
+              <span className="text-sm">{reactions}</span>
             </Button>
           </CardFooter>
         </Card>

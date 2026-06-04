@@ -187,8 +187,8 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
             <p className="flex items-center gap-1.5 text-sm text-orange-500">
               <FlameIcon className="size-4 fill-orange-500" />
               {data.reactionCount === 1
-                ? "1 stranger felt this"
-                : `${data.reactionCount} strangers felt this`}
+                ? "1 stranger reacted to this"
+                : `${data.reactionCount} strangers reacted to this`}
             </p>
           )}
           <p className="text-muted-foreground text-center text-sm italic">
