@@ -46,6 +46,7 @@ describe("MatchPresence", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
     setHidden(false);
   });
 
@@ -77,7 +78,30 @@ describe("MatchPresence", () => {
     expect(heartbeats().length).toBe(before + 1);
   });
 
-  it("sends a disconnect beacon on pagehide (real departure)", async () => {
+  it("disconnects via keepalive fetch on pagehide (real departure)", async () => {
+    const fetchMock = vi.fn(async (..._args: unknown[]) => ({}) as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    render(<MatchPresence matchId="m1" />);
+    await flush();
+
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://convex.test/api/mutation");
+    expect(init).toMatchObject({ method: "POST", keepalive: true });
+    expect(init.body).toContain("presence:disconnect");
+    expect(navigator.sendBeacon).not.toHaveBeenCalled();
+  });
+
+  it("falls back to sendBeacon when keepalive fetch is unavailable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => {
+        throw new Error("no keepalive");
+      }),
+    );
     render(<MatchPresence matchId="m1" />);
     await flush();
 

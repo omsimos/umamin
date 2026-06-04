@@ -69,20 +69,32 @@ export function MatchPresence({ matchId }: { matchId: string }) {
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
 
-    // pagehide is the reliable "really leaving" signal on mobile; sendBeacon
-    // survives page teardown. A bfcache restore re-establishes via pageshow.
+    // pagehide is the reliable "really leaving" signal on mobile. keepalive
+    // fetch survives page teardown AND completes the CORS preflight that a
+    // JSON sendBeacon often drops mid-unload (which silently lost the graceful
+    // disconnect and left the partner seeing "online" until the 75s heartbeat
+    // timeout). Beacon stays as the fallback for engines without keepalive.
+    // A bfcache restore re-establishes via pageshow.
     const onPageHide = () => {
       if (!sessionToken) return;
-      const body = new Blob(
-        [
-          JSON.stringify({
-            path: "presence:disconnect",
-            args: { sessionToken },
-          }),
-        ],
-        { type: "application/json" },
-      );
-      navigator.sendBeacon(`${convex.url}/api/mutation`, body);
+      const payload = JSON.stringify({
+        path: "presence:disconnect",
+        args: { sessionToken },
+        format: "json",
+      });
+      try {
+        fetch(`${convex.url}/api/mutation`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      } catch {
+        navigator.sendBeacon(
+          `${convex.url}/api/mutation`,
+          new Blob([payload], { type: "application/json" }),
+        );
+      }
       sessionToken = null;
     };
     const onPageShow = () => void beat();
