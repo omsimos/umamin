@@ -18,6 +18,13 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.0.4] - 2026-06-04
+
+### Added
+
+- A dismissible Umamin Chat announcement on the feed and notes pages — a quick intro to anonymous, interest-based one-on-one chats with a button to try it.
+- The navigation's Umamin Chat button now shows a "new" indicator until you open it for the first time.
+
 ## [5.0.3] - 2026-06-03
 
 ### Added
@@ -398,6 +405,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.0.4]: https://github.com/omsimos/umamin/compare/v5.0.3...v5.0.4
 [5.0.3]: https://github.com/omsimos/umamin/compare/v5.0.2...v5.0.3
 [5.0.2]: https://github.com/omsimos/umamin/compare/v5.0.1...v5.0.2
 [5.0.1]: https://github.com/omsimos/umamin/compare/v5.0.0...v5.0.1
