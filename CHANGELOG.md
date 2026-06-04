@@ -25,11 +25,9 @@ any that are empty.
 - React to any note anonymously — a one-tap flame with a public count. Nobody sees who reacted, and reactions reset when a note is rewritten or cleared. Your own note shows how many strangers reacted to it.
 - A "Surprise me" shuffle on the notes feed that jumps to a random note and briefly highlights it.
 
-## [5.1.1] - 2026-06-04
-
 ### Changed
 
-- Notes got a personality pass: a proper page header, rotating prompts in the composer, a clearer "as @you / as nobody" anonymous toggle, and friendlier confirmations and empty states.
+- Notes got a personality pass: rotating prompts in the composer, a clearer "as @you / as nobody" anonymous toggle, and friendlier confirmations and empty states.
 - Notes now render in the display typeface with a subtle alternating tilt, and anonymous notes are set apart with a dashed border.
 
 ## [5.1.0] - 2026-06-04
@@ -431,8 +429,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
-[5.2.0]: https://github.com/omsimos/umamin/compare/v5.1.1...v5.2.0
-[5.1.1]: https://github.com/omsimos/umamin/compare/v5.1.0...v5.1.1
+[5.2.0]: https://github.com/omsimos/umamin/compare/v5.1.0...v5.2.0
 [5.1.0]: https://github.com/omsimos/umamin/compare/v5.0.4...v5.1.0
 [5.0.4]: https://github.com/omsimos/umamin/compare/v5.0.3...v5.0.4
 [5.0.3]: https://github.com/omsimos/umamin/compare/v5.0.2...v5.0.3
