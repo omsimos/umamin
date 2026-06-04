@@ -1,5 +1,6 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
+import { ChatAnnouncement } from "@/components/chat-announcement";
 import { normalizeFeedSort } from "@/lib/feed-sort";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
@@ -37,6 +38,7 @@ export default async function Feed({
     <main className="pb-40">
       <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
         <div className="space-y-6">
+          <ChatAnnouncement className="mx-4 sm:mx-0" />
           <HydrationBoundary state={dehydrate(queryClient)}>
             <FeedClient sort={sort} />
           </HydrationBoundary>

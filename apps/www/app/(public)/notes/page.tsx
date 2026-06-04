@@ -3,6 +3,7 @@ import { Button } from "@umamin/ui/components/button";
 import { SquarePenIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ChatAnnouncement } from "@/components/chat-announcement";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
@@ -68,32 +69,35 @@ export default async function Page() {
   }
 
   return (
-    <div className="container max-w-xl space-y-12 mt-2">
-      {currentUser ? (
-        <HydrationBoundary state={dehydrate(queryClient)}>
-          <div className="space-y-12">
-            <NoteForm currentUser={currentUser} />
-            <CurrentUserNote currentUser={currentUser} />
-          </div>
-        </HydrationBoundary>
-      ) : (
-        <div className="flex items-center space-x-4 rounded-md border p-4 mb-5">
-          <SquarePenIcon />
-          <div className="flex-1 space-y-1">
-            <p className="text-sm font-medium leading-none">Umamin Notes</p>
-            <p className="text-sm text-muted-foreground">
-              Login to start writing notes
-            </p>
-          </div>
+    <div className="container max-w-xl mt-2">
+      <ChatAnnouncement className="mb-6" />
+      <div className="space-y-12">
+        {currentUser ? (
+          <HydrationBoundary state={dehydrate(queryClient)}>
+            <div className="space-y-12">
+              <NoteForm currentUser={currentUser} />
+              <CurrentUserNote currentUser={currentUser} />
+            </div>
+          </HydrationBoundary>
+        ) : (
+          <div className="flex items-center space-x-4 rounded-md border p-4 mb-5">
+            <SquarePenIcon />
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium leading-none">Umamin Notes</p>
+              <p className="text-sm text-muted-foreground">
+                Login to start writing notes
+              </p>
+            </div>
 
-          <Button asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-        </div>
-      )}
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <NoteList isAuthenticated={!!user} />
-      </HydrationBoundary>
+            <Button asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+          </div>
+        )}
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          <NoteList isAuthenticated={!!user} />
+        </HydrationBoundary>
+      </div>
     </div>
   );
 }
