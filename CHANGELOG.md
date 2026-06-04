@@ -18,6 +18,18 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.1.0] - 2026-06-04
+
+### Changed
+
+- The landing page is fully redesigned: an animated decrypting headline, live playable previews of Messages, Notes, Social, and Umamin Chat, a product marquee, and a new footer with product links and a shortcut to send the team anonymous feedback.
+- Headings now use the Bricolage Grotesque display typeface, matching Umamin Chat.
+
+### Fixed
+
+- Body text now renders in the intended Geist typeface instead of the system font.
+- The top bar's translucent backdrop now spans the full width of wide screens, so content no longer scrolls past its edges unblurred.
+
 ## [5.0.4] - 2026-06-04
 
 ### Added
@@ -405,6 +417,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.1.0]: https://github.com/omsimos/umamin/compare/v5.0.4...v5.1.0
 [5.0.4]: https://github.com/omsimos/umamin/compare/v5.0.3...v5.0.4
 [5.0.3]: https://github.com/omsimos/umamin/compare/v5.0.2...v5.0.3
 [5.0.2]: https://github.com/omsimos/umamin/compare/v5.0.1...v5.0.2
