@@ -18,6 +18,22 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.2.2] - 2026-06-04
+
+### Added
+
+- Umamin Chat: when your partner switches apps, locks their phone, or loses signal, they now show as "away" instead of the chat abruptly ending — the conversation only ends after they've been gone for a while, and picks right back up when they return.
+
+### Fixed
+
+- Umamin Chat: switching tabs or checking a notification mid-chat no longer ends the conversation within seconds.
+- Umamin Chat: long conversations are no longer cut off after 30 minutes with a false "partner left" — only genuinely abandoned chats are cleaned up.
+- Umamin Chat: cancelling the partner search now actually removes you from the queue, so strangers stop getting matched with someone who already left — and a closed or backgrounded tab can no longer be matched at all.
+
+### Security & Privacy
+
+- Umamin Chat: online-status heartbeats now require the session's secret and are only accepted from a match's own participants, so a third party can no longer spoof someone else's presence.
+
 ## [5.2.1] - 2026-06-04
 
 ### Added
@@ -439,6 +455,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.2.2]: https://github.com/omsimos/umamin/compare/v5.2.1...v5.2.2
 [5.2.1]: https://github.com/omsimos/umamin/compare/v5.2.0...v5.2.1
 [5.2.0]: https://github.com/omsimos/umamin/compare/v5.1.0...v5.2.0
 [5.1.0]: https://github.com/omsimos/umamin/compare/v5.0.4...v5.1.0
