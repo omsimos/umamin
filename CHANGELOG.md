@@ -32,7 +32,7 @@ any that are empty.
 
 ### Performance & Cost
 
-- The notes page is now a fully static, publicly cacheable shell — sign-in is resolved in the browser, the first page of notes is baked into the shell and refreshed in the background, and reacting no longer forces shared feed-cache recomputes. Reaction counts in the feed are eventually consistent within two minutes.
+- The notes page now ships a static shell with the first page of notes streamed from a shared public cache — sign-in is resolved in the browser, and reacting no longer forces shared feed-cache recomputes. Reaction counts in the feed are eventually consistent within two minutes.
 
 ## [5.1.0] - 2026-06-04
 
