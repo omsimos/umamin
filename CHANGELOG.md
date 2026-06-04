@@ -22,7 +22,7 @@ any that are empty.
 
 ### Added
 
-- React to any note with an anonymous "relate" — a one-tap flame with a public count. Nobody sees who related, and reactions reset when a note is rewritten or cleared. Your own note shows how many strangers related.
+- React to any note with an anonymous "felt this" — a one-tap flame with a public count. Nobody sees who reacted, and reactions reset when a note is rewritten or cleared. Your own note shows how many strangers felt it.
 - A "Surprise me" shuffle on the notes feed that jumps to a random note and briefly highlights it.
 
 ## [5.1.1] - 2026-06-04

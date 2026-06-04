@@ -54,9 +54,9 @@ describe("NoteCard reactions", () => {
     addAction.mockResolvedValue({ success: true });
     renderCard(makeNote());
 
-    const button = screen.getByRole("button", { name: /relate to this note/i });
+    const button = screen.getByRole("button", { name: /felt this note/i });
     expect(button).toHaveAttribute("aria-pressed", "false");
-    expect(button).toHaveTextContent("relate");
+    expect(button).toHaveTextContent("felt this");
 
     fireEvent.click(button);
 
@@ -83,7 +83,7 @@ describe("NoteCard reactions", () => {
       expect(removeAction).toHaveBeenCalledWith({ noteId: "note-1" });
     });
     expect(
-      screen.getByRole("button", { name: /relate to this note/i }),
+      screen.getByRole("button", { name: /felt this note/i }),
     ).toHaveTextContent("2");
   });
 
@@ -91,9 +91,7 @@ describe("NoteCard reactions", () => {
     addAction.mockResolvedValue({ success: true, alreadyReacted: true });
     renderCard(makeNote({ reactionCount: 5 }));
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /relate to this note/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /felt this note/i }));
 
     await waitFor(() => {
       expect(addAction).toHaveBeenCalled();
@@ -108,14 +106,12 @@ describe("NoteCard reactions", () => {
     addAction.mockResolvedValue({ error: "Rate limited" });
     renderCard(makeNote({ reactionCount: 2 }));
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /relate to this note/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /felt this note/i }));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Rate limited");
     });
-    const button = screen.getByRole("button", { name: /relate to this note/i });
+    const button = screen.getByRole("button", { name: /felt this note/i });
     expect(button).toHaveAttribute("aria-pressed", "false");
     expect(button).toHaveTextContent("2");
   });
@@ -123,7 +119,7 @@ describe("NoteCard reactions", () => {
   it("renders a disabled button for unauthenticated viewers", () => {
     renderCard(makeNote({ reactionCount: 7 }), false);
 
-    const button = screen.getByRole("button", { name: /relate to this note/i });
+    const button = screen.getByRole("button", { name: /felt this note/i });
     expect(button).toBeDisabled();
     expect(button).toHaveTextContent("7");
 

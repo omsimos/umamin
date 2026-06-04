@@ -171,10 +171,13 @@ export async function addNoteReactionAction({ noteId }: { noteId: string }) {
       return { success: true };
     });
 
-    // Skip the "notes" feed tag — reactionCount is eventually consistent there
-    // (same contract as post likes); only the viewer's reacted state must be
-    // read-your-writes.
     updateTag(`note:${noteId}:reacted:${session.userId}`);
+    // Unlike /feed, the notes page is dynamic (session), so this action's tag
+    // update refreshes the route and REHYDRATES the client list — the shared
+    // page cache must carry the new count or it clobbers the optimistic UI.
+    if (!("alreadyReacted" in result)) {
+      updateTag("notes");
+    }
 
     return result;
   } catch (err) {
@@ -224,6 +227,10 @@ export async function removeNoteReactionAction({ noteId }: { noteId: string }) {
     });
 
     updateTag(`note:${noteId}:reacted:${session.userId}`);
+    // See addNoteReactionAction — the rehydrated page must carry the new count.
+    if (!("alreadyRemoved" in result)) {
+      updateTag("notes");
+    }
 
     return result;
   } catch (err) {
