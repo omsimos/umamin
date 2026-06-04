@@ -28,9 +28,9 @@ export function NoteCardSkeleton() {
       <CardContent className="flex w-full gap-3">
         <div className="w-full space-y-2">
           {/* Content skeleton - multiple lines with varying widths */}
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-4/5" />
-          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-4/5" />
+          <Skeleton className="h-5 w-3/4" />
         </div>
       </CardContent>
     </Card>

@@ -128,9 +128,9 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
       {hasResolvedData && allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
-          <AlertTitle>No data yet</AlertTitle>
+          <AlertTitle>nothing here yet</AlertTitle>
           <AlertDescription>
-            Start the conversation by creating a new post!
+            say something into the void — it'll land right here.
           </AlertDescription>
         </Alert>
       )}
@@ -181,6 +181,7 @@ export function NoteList({ isAuthenticated }: { isAuthenticated: boolean }) {
                       isAuthenticated={isAuthenticated}
                       key={post.id}
                       data={post}
+                      index={dataIndexForRow(row.index)}
                     />
                   );
                 })()

@@ -71,6 +71,14 @@ export default async function Page() {
   return (
     <div className="container max-w-xl mt-2">
       <ChatAnnouncement className="mb-6" />
+      <header className="pb-8">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">
+          Notes
+        </h1>
+        <p className="pt-1 text-sm text-muted-foreground">
+          thoughts without owners — drop one, or reply to a stranger's
+        </p>
+      </header>
       <div className="space-y-12">
         {currentUser ? (
           <HydrationBoundary state={dehydrate(queryClient)}>
@@ -85,7 +93,7 @@ export default async function Page() {
             <div className="flex-1 space-y-1">
               <p className="text-sm font-medium leading-none">Umamin Notes</p>
               <p className="text-sm text-muted-foreground">
-                Login to start writing notes
+                got a thought? log in and leave it here
               </p>
             </div>
 

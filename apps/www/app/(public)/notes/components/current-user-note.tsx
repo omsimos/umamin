@@ -62,7 +62,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
           patchNote(current, data.id, () => null),
         );
       }
-      toast.success("Note cleared.");
+      toast.success("Gone like it never happened.");
     },
     onError: (err) => {
       console.log(err);
@@ -176,7 +176,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
             </div>
           </div>
 
-          <div className="whitespace-pre-wrap break-words bg-muted p-5 rounded-lg min-w-0">
+          <div className="min-w-0 whitespace-pre-wrap break-words rounded-lg bg-muted p-5 font-display text-lg leading-snug">
             {data.content}
           </div>
         </CardContent>
