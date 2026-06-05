@@ -32,9 +32,9 @@ export const MAX_ALIAS_LEN = 40;
 export const MAX_AVATAR_SEED_LEN = 64;
 export const MAX_INTERESTS = 24;
 export const MAX_INTEREST_LEN = 48;
-/** Reactions are a fixed UI affordance, not arbitrary user content. */
+/** Reactions are a fixed UI affordance, not arbitrary user content. Each
+ *  participant gets one reaction per message (reactionA/reactionB columns). */
 export const ALLOWED_REACTIONS = ["❤️", "😂", "🔥", "😮", "👍", "😢"];
-export const MAX_REACTIONS_PER_MESSAGE = ALLOWED_REACTIONS.length;
 /** Messages deleted per teardown transaction; a match with more pages re-arms
  *  deleteMatch so cleanup can't exceed a single mutation's write limit. */
 export const MESSAGE_DELETE_PAGE = 256;

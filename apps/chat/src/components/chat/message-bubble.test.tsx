@@ -15,11 +15,25 @@ function makeMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
   };
 }
 
+const SELF = { alias: "Calm Otter", avatarSeed: "self-seed" };
+const PARTNER = { alias: "Blue Fox", avatarSeed: "partner-seed" };
+
+function renderBubble(message: ChatMessage, onReact: () => void = () => {}) {
+  return render(
+    <MessageBubble
+      message={message}
+      onReact={onReact}
+      self={SELF}
+      partner={PARTNER}
+    />,
+  );
+}
+
 const BUBBLE_NAME = /^They said: hello there\./;
 
 describe("MessageBubble", () => {
   it("toggles the reaction picker when the bubble is clicked", async () => {
-    render(<MessageBubble message={makeMessage()} onReact={() => {}} />);
+    renderBubble(makeMessage());
 
     expect(screen.queryByRole("button", { name: /^React / })).toBeNull();
 
@@ -34,7 +48,7 @@ describe("MessageBubble", () => {
 
   it("calls onReact and closes the picker when an emoji is chosen", async () => {
     const onReact = vi.fn();
-    render(<MessageBubble message={makeMessage()} onReact={onReact} />);
+    renderBubble(makeMessage(), onReact);
 
     await userEvent.click(screen.getByRole("button", { name: BUBBLE_NAME }));
     const emojiButton = screen.getAllByRole("button", { name: /^React / })[0];
@@ -45,17 +59,67 @@ describe("MessageBubble", () => {
   });
 
   it("renders reactions only when the message has them", () => {
-    const { rerender } = render(
-      <MessageBubble message={makeMessage()} onReact={() => {}} />,
-    );
-    expect(screen.queryByText("🔥")).toBeNull();
+    const { rerender } = renderBubble(makeMessage());
+    expect(screen.queryByRole("button", { name: "View reactions" })).toBeNull();
 
     rerender(
       <MessageBubble
-        message={makeMessage({ reactions: ["🔥"] })}
+        message={makeMessage({ reactions: [{ emoji: "🔥", by: "partner" }] })}
         onReact={() => {}}
+        self={SELF}
+        partner={PARTNER}
       />,
     );
-    expect(screen.getByText("🔥")).toBeInTheDocument();
+    const badge = screen.getByRole("button", { name: "View reactions" });
+    expect(badge).toHaveTextContent("🔥");
+  });
+
+  it("groups a shared emoji into one badge entry with a counter", () => {
+    renderBubble(
+      makeMessage({
+        reactions: [
+          { emoji: "❤️", by: "self" },
+          { emoji: "❤️", by: "partner" },
+        ],
+      }),
+    );
+    const badge = screen.getByRole("button", { name: "View reactions" });
+    expect(badge.textContent).toBe("❤️2");
+  });
+
+  it("opens the reaction details listing who reacted with what", async () => {
+    renderBubble(
+      makeMessage({
+        reactions: [
+          { emoji: "❤️", by: "self" },
+          { emoji: "🔥", by: "partner" },
+        ],
+      }),
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "View reactions" }),
+    );
+
+    const details = await screen.findByRole("dialog");
+    expect(details).toHaveTextContent("Calm Otter");
+    expect(details).toHaveTextContent("(you)");
+    expect(details).toHaveTextContent("Blue Fox");
+    expect(details).toHaveTextContent("❤️");
+    expect(details).toHaveTextContent("🔥");
+  });
+
+  it("marks the user's current reaction as pressed in the picker", async () => {
+    renderBubble(makeMessage({ reactions: [{ emoji: "❤️", by: "self" }] }));
+
+    await userEvent.click(screen.getByRole("button", { name: BUBBLE_NAME }));
+    expect(screen.getByRole("button", { name: "React ❤️" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "React 🔥" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 });

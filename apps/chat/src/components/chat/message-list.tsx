@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useRef } from "react";
 import type { ChatMessage, PartnerStatus } from "../../lib/session/types";
 import { MessageBubble } from "./message-bubble";
+import type { Reactor } from "./reaction-details";
 import { TypingIndicator } from "./typing-indicator";
 
 export function MessageList({
@@ -8,11 +9,15 @@ export function MessageList({
   partnerStatus,
   onReact,
   header,
+  self,
+  partner,
 }: {
   messages: ChatMessage[];
   partnerStatus: PartnerStatus | undefined;
   onReact: (messageId: string, emoji: string) => void;
   header?: ReactNode;
+  self: Reactor;
+  partner: Reactor;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const didInitialScroll = useRef(false);
@@ -53,6 +58,8 @@ export function MessageList({
           key={m.id}
           message={m}
           onReact={(e) => onReact(m.id, e)}
+          self={self}
+          partner={partner}
         />
       ))}
       {partnerStatus === "typing" && <TypingIndicator />}

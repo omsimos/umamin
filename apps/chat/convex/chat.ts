@@ -6,7 +6,6 @@ import {
   ALLOWED_REACTIONS,
   GRACE_MS,
   MAX_MESSAGE_LEN,
-  MAX_REACTIONS_PER_MESSAGE,
   MESSAGE_CAP,
 } from "./constants";
 import { limitGlobal, limitPerSession } from "./lib/rateLimits";
@@ -59,7 +58,12 @@ const messageValidator = v.object({
   author: v.union(v.literal("self"), v.literal("partner")),
   text: v.string(),
   ts: v.number(),
-  reactions: v.array(v.string()),
+  reactions: v.array(
+    v.object({
+      emoji: v.string(),
+      by: v.union(v.literal("self"), v.literal("partner")),
+    }),
+  ),
 });
 
 // Match meta WITHOUT the message list: partner status / typing / stay-connected
@@ -151,6 +155,9 @@ export const messages = sessionQuery({
   handler: async (ctx) => {
     const matchId = ctx.session?.currentMatchId;
     if (!matchId) return [];
+    const match = await ctx.db.get(matchId);
+    if (!match) return [];
+    const iAmA = match.a === ctx.sessionId;
     // Newest MESSAGE_CAP (order desc + take), returned oldest->newest for the
     // UI. Taking asc would freeze the window at the first 100 and hide newer
     // messages once a conversation passes the cap.
@@ -166,7 +173,26 @@ export const messages = sessionQuery({
         m.author === ctx.sessionId ? ("self" as const) : ("partner" as const),
       text: m.text,
       ts: m._creationTime,
-      reactions: m.reactions,
+      // Side-keyed reactions resolved to the viewer's perspective; sessionIds
+      // never leave the server. A-then-B order keeps the array deterministic.
+      reactions: [
+        ...(m.reactionA
+          ? [
+              {
+                emoji: m.reactionA,
+                by: iAmA ? ("self" as const) : ("partner" as const),
+              },
+            ]
+          : []),
+        ...(m.reactionB
+          ? [
+              {
+                emoji: m.reactionB,
+                by: iAmA ? ("partner" as const) : ("self" as const),
+              },
+            ]
+          : []),
+      ],
     }));
   },
 });
@@ -198,7 +224,6 @@ export const send = sessionMutation({
       matchId: match._id,
       author: ctx.sessionId,
       text: trimmed,
-      reactions: [],
     });
   },
 });
@@ -215,13 +240,14 @@ export const react = sessionMutation({
     if (!msg || msg.matchId !== match._id) return;
     await limitGlobal(ctx, "globalReact");
     await limitPerSession(ctx, "react", ctx.sessionId);
-    const reactions = msg.reactions.includes(emoji)
-      ? msg.reactions.filter((e) => e !== emoji)
-      : [...msg.reactions, emoji];
-    if (reactions.length > MAX_REACTIONS_PER_MESSAGE) {
-      throw new ConvexError("Too many reactions.");
-    }
-    await ctx.db.patch(messageId, { reactions });
+    // One reaction per participant (own messages included): repeating the
+    // current emoji clears it, a different one replaces it.
+    const field = match.a === ctx.sessionId ? "reactionA" : "reactionB";
+    const next = msg[field] === emoji ? undefined : emoji;
+    await ctx.db.patch(
+      messageId,
+      field === "reactionA" ? { reactionA: next } : { reactionB: next },
+    );
   },
 });
 

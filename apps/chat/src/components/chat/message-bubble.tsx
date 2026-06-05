@@ -5,18 +5,27 @@ import {
 } from "@umamin/ui/components/popover";
 import { cn } from "@umamin/ui/lib/utils";
 import { useState } from "react";
+import { groupReactions } from "../../lib/reactions";
 import type { ChatMessage } from "../../lib/session/types";
+import { ReactionDetails, type Reactor } from "./reaction-details";
 import { ReactionPicker } from "./reaction-picker";
 
 export function MessageBubble({
   message,
   onReact,
+  self,
+  partner,
 }: {
   message: ChatMessage;
   onReact: (emoji: string) => void;
+  self: Reactor;
+  partner: Reactor;
 }) {
   const [open, setOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const mine = message.author === "self";
+  const selfReaction = message.reactions.find((r) => r.by === "self")?.emoji;
+  const groups = groupReactions(message.reactions);
 
   return (
     <div className={cn("flex w-full", mine ? "justify-end" : "justify-start")}>
@@ -50,6 +59,7 @@ export function MessageBubble({
             className="bg-popover/95 w-auto rounded-full border p-1 shadow-lg backdrop-blur"
           >
             <ReactionPicker
+              current={selfReaction}
               onPick={(emoji) => {
                 onReact(emoji);
                 setOpen(false);
@@ -57,18 +67,38 @@ export function MessageBubble({
             />
           </PopoverContent>
         </Popover>
-        {message.reactions.length > 0 && (
-          // biome-ignore lint/a11y/useSemanticElements: a label-only grouping of reaction badges, not a form fieldset
-          <div
-            role="group"
-            aria-label="Reactions"
-            className={cn(
-              "bg-popover absolute -bottom-3 flex gap-0.5 rounded-full border px-2 py-0.5 text-base leading-none shadow-sm",
-              mine ? "left-2" : "right-2",
-            )}
-          >
-            {message.reactions.join(" ")}
-          </div>
+        {groups.length > 0 && (
+          <>
+            <button
+              type="button"
+              aria-label="View reactions"
+              onClick={() => setDetailsOpen(true)}
+              className={cn(
+                "bg-popover absolute -bottom-3 flex items-center gap-1 rounded-full border px-2 py-0.5 text-base leading-none shadow-sm",
+                "focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
+                "transition-transform active:scale-95",
+                mine ? "left-2" : "right-2",
+              )}
+            >
+              {groups.map((group) => (
+                <span key={group.emoji} className="flex items-center gap-0.5">
+                  {group.emoji}
+                  {group.count > 1 && (
+                    <span className="text-muted-foreground text-xs font-medium tabular-nums">
+                      {group.count}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </button>
+            <ReactionDetails
+              open={detailsOpen}
+              onOpenChange={setDetailsOpen}
+              reactions={message.reactions}
+              self={self}
+              partner={partner}
+            />
+          </>
         )}
       </div>
     </div>
