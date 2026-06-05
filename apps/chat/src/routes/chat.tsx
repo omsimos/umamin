@@ -130,6 +130,11 @@ function Session() {
               messages={messages}
               partnerStatus={partner.status}
               onReact={react}
+              self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
+              partner={{
+                alias: partner.alias,
+                avatarSeed: partner.avatarSeed,
+              }}
               header={
                 showIceBreaker ? (
                   <IceBreakerBanner

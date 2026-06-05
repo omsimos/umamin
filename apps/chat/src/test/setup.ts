@@ -33,6 +33,22 @@ if (!Element.prototype.hasPointerCapture) {
   Element.prototype.releasePointerCapture = () => {};
 }
 
+// jsdom has no matchMedia; useMediaQuery (dialog-vs-drawer split) reads it.
+// Defaults to no-match (mobile) — tests override per-case for the desktop path.
+if (!window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+}
+
 // jsdom has no IntersectionObserver; lazy AdContainer constructs one on mount.
 if (!("IntersectionObserver" in globalThis)) {
   class MockIntersectionObserver {

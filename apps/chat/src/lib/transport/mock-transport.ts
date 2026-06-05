@@ -172,17 +172,21 @@ export function createMockTransport(
 
     react(messageId: string, emoji: string) {
       if (state.phase !== "active") return;
+      // Mirrors the server: one reaction per user — repeating the current
+      // emoji clears it, a different one replaces it.
       set({
-        messages: state.messages.map((m) =>
-          m.id === messageId
-            ? {
-                ...m,
-                reactions: m.reactions.includes(emoji)
-                  ? m.reactions.filter((e) => e !== emoji)
-                  : [...m.reactions, emoji],
-              }
-            : m,
-        ),
+        messages: state.messages.map((m) => {
+          if (m.id !== messageId) return m;
+          const mine = m.reactions.find((r) => r.by === "self");
+          const others = m.reactions.filter((r) => r.by !== "self");
+          return {
+            ...m,
+            reactions:
+              mine?.emoji === emoji
+                ? others
+                : [...others, { emoji, by: "self" as const }],
+          };
+        }),
       });
     },
 

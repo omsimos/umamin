@@ -24,12 +24,18 @@ export interface Partner {
   status: PartnerStatus;
 }
 
+/** One reaction per user per message; "by" is the viewer's perspective. */
+export interface MessageReaction {
+  emoji: string;
+  by: "self" | "partner";
+}
+
 export interface ChatMessage {
   id: string;
   author: "self" | "partner";
   text: string;
   ts: number;
-  reactions: string[];
+  reactions: MessageReaction[];
 }
 
 export interface SessionSnapshot {

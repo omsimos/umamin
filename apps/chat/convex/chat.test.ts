@@ -32,27 +32,58 @@ describe("chat", () => {
     expect(b.at(-1)?.author).toBe("partner");
   });
 
-  it("react toggles an emoji server-side", async () => {
+  it("react attributes the emoji to the reactor and toggles it off", async () => {
     const t = await matched();
     await t.mutation(api.chat.send, { ...auth("a"), text: "hi" });
     const m1 = await t.query(api.chat.messages, auth("a"));
     const id = m1[0].id;
     await t.mutation(api.chat.react, {
-      sessionId: "b",
-      sessionSecret: "b-secret",
+      ...auth("b"),
       messageId: id,
       emoji: "❤️",
     });
     const m2 = await t.query(api.chat.messages, auth("a"));
-    expect(m2[0].reactions).toContain("❤️");
+    expect(m2[0].reactions).toEqual([{ emoji: "❤️", by: "partner" }]);
+    // The reactor sees the same reaction as their own.
+    const m2b = await t.query(api.chat.messages, auth("b"));
+    expect(m2b[0].reactions).toEqual([{ emoji: "❤️", by: "self" }]);
     await t.mutation(api.chat.react, {
-      sessionId: "b",
-      sessionSecret: "b-secret",
+      ...auth("b"),
       messageId: id,
       emoji: "❤️",
     });
     const m3 = await t.query(api.chat.messages, auth("a"));
-    expect(m3[0].reactions).not.toContain("❤️");
+    expect(m3[0].reactions).toEqual([]);
+  });
+
+  it("allows reacting to your own message", async () => {
+    const t = await matched();
+    await t.mutation(api.chat.send, { ...auth("a"), text: "hi" });
+    const [message] = await t.query(api.chat.messages, auth("a"));
+    await t.mutation(api.chat.react, {
+      ...auth("a"),
+      messageId: message.id,
+      emoji: "🔥",
+    });
+    const [after] = await t.query(api.chat.messages, auth("a"));
+    expect(after.reactions).toEqual([{ emoji: "🔥", by: "self" }]);
+  });
+
+  it("keeps one reaction per side when both react with the same emoji", async () => {
+    const t = await matched();
+    await t.mutation(api.chat.send, { ...auth("a"), text: "hi" });
+    const [message] = await t.query(api.chat.messages, auth("a"));
+    for (const id of ["a", "b"]) {
+      await t.mutation(api.chat.react, {
+        ...auth(id),
+        messageId: message.id,
+        emoji: "❤️",
+      });
+    }
+    const [after] = await t.query(api.chat.messages, auth("a"));
+    expect(after.reactions).toHaveLength(2);
+    expect(after.reactions).toContainEqual({ emoji: "❤️", by: "self" });
+    expect(after.reactions).toContainEqual({ emoji: "❤️", by: "partner" });
   });
 
   it("rejects unsupported reaction payloads", async () => {
@@ -128,7 +159,6 @@ describe("chat", () => {
           matchId,
           author: "a",
           text: `m${i}`,
-          reactions: [],
         });
       }
     });

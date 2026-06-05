@@ -18,6 +18,18 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.3.0] - 2026-06-05
+
+### Added
+
+- Umamin Chat: tap the reactions on a message to see who reacted with what — shown as a dialog on desktop and a bottom sheet on mobile.
+- Umamin Chat: when both of you react to a message with the same emoji, it now shows once with a counter instead of repeating.
+- Umamin Chat: the reaction picker now highlights the reaction you've already given.
+
+### Changed
+
+- Umamin Chat: reactions are now per person — each of you gets one reaction per message; picking a new emoji replaces your previous one, and picking the same emoji again removes it. Reacting no longer removes your partner's identical reaction.
+
 ## [5.2.2] - 2026-06-04
 
 ### Added
@@ -458,6 +470,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.3.0]: https://github.com/omsimos/umamin/compare/v5.2.2...v5.3.0
 [5.2.2]: https://github.com/omsimos/umamin/compare/v5.2.1...v5.2.2
 [5.2.1]: https://github.com/omsimos/umamin/compare/v5.2.0...v5.2.1
 [5.2.0]: https://github.com/omsimos/umamin/compare/v5.1.0...v5.2.0

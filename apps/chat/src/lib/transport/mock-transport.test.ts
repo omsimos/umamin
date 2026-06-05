@@ -76,15 +76,22 @@ describe("mockTransport", () => {
     expect(latest(t).partner?.status).toBe("online");
   });
 
-  it("react toggles an emoji on a message", () => {
+  it("react sets, replaces, and clears the self reaction", () => {
     const t = createMockTransport(opts);
     t.findMatch(SELF);
     vi.advanceTimersByTime(1000 + 500 + 500);
     const id = latest(t).messages[0].id;
     t.react(id, "❤️");
-    expect(latest(t).messages[0].reactions).toContain("❤️");
-    t.react(id, "❤️");
-    expect(latest(t).messages[0].reactions).not.toContain("❤️");
+    expect(latest(t).messages[0].reactions).toEqual([
+      { emoji: "❤️", by: "self" },
+    ]);
+    // One reaction per user: a different emoji replaces the previous one.
+    t.react(id, "🔥");
+    expect(latest(t).messages[0].reactions).toEqual([
+      { emoji: "🔥", by: "self" },
+    ]);
+    t.react(id, "🔥");
+    expect(latest(t).messages[0].reactions).toEqual([]);
   });
 
   it("signalStayConnected becomes mutual after the partner reciprocates", () => {

@@ -53,6 +53,13 @@ export default defineSchema({
     matchId: v.id("matches"),
     author: v.string(),
     text: v.string(),
-    reactions: v.array(v.string()),
+    // Superseded by reactionA/reactionB; kept optional (and unwritten) so rows
+    // written before the per-user reactions deploy still validate. Messages are
+    // ephemeral, so this can be dropped once no pre-deploy rows remain.
+    reactions: v.optional(v.array(v.string())),
+    // One reaction per participant, keyed by match side (like typingA/typingB)
+    // — structurally enforces a single reaction per user per message.
+    reactionA: v.optional(v.string()),
+    reactionB: v.optional(v.string()),
   }).index("by_match", ["matchId"]),
 });

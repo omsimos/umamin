@@ -14,6 +14,9 @@ function makeMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
   };
 }
 
+const SELF = { alias: "Calm Otter", avatarSeed: "self-seed" };
+const PARTNER = { alias: "Blue Fox", avatarSeed: "partner-seed" };
+
 describe("MessageList", () => {
   it("renders the typing indicator only when partnerStatus is 'typing'", () => {
     const { container, rerender } = render(
@@ -21,6 +24,8 @@ describe("MessageList", () => {
         messages={[makeMessage()]}
         partnerStatus="online"
         onReact={() => {}}
+        self={SELF}
+        partner={PARTNER}
       />,
     );
     expect(container.querySelector(".animate-bounce")).toBeNull();
@@ -30,6 +35,8 @@ describe("MessageList", () => {
         messages={[makeMessage()]}
         partnerStatus="typing"
         onReact={() => {}}
+        self={SELF}
+        partner={PARTNER}
       />,
     );
     expect(container.querySelector(".animate-bounce")).not.toBeNull();
@@ -41,6 +48,8 @@ describe("MessageList", () => {
         messages={[makeMessage({ text: "first message" })]}
         partnerStatus="online"
         onReact={() => {}}
+        self={SELF}
+        partner={PARTNER}
         header={<div>ice breaker</div>}
       />,
     );

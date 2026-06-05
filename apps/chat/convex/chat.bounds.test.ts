@@ -80,12 +80,12 @@ describe("chat.send server-side bounding", () => {
 });
 
 describe("chat.react server-side bounding", () => {
-  it("caps distinct reactions at the allowed-emoji count and rejects overflow", async () => {
+  it("keeps one reaction per participant — a new emoji replaces the previous", async () => {
     const t = await matched();
     await t.mutation(api.chat.send, { ...auth("a"), text: "hi" });
     const [message] = await t.query(api.chat.messages, auth("a"));
 
-    // Drive the message to the full set of distinct reactions.
+    // Cycling through every allowed emoji leaves only the last one standing.
     for (const emoji of ALLOWED_REACTIONS) {
       await t.mutation(api.chat.react, {
         ...auth("a"),
@@ -93,27 +93,10 @@ describe("chat.react server-side bounding", () => {
         emoji,
       });
     }
-    const full = await t.query(api.chat.messages, auth("a"));
-    expect(full[0].reactions).toHaveLength(ALLOWED_REACTIONS.length);
-
-    // Seed the array to the cap WITHOUT the emoji we're about to add, so the
-    // toggle appends (rather than removes) and trips the post-add length guard
-    // — not the allowed-list guard. (Two non-allowed fillers stand in for the
-    // one allowed emoji we hold back.)
-    const heart = "❤️";
-    const withoutHeart = ALLOWED_REACTIONS.filter((e) => e !== heart);
-    await t.run(async (ctx) => {
-      await ctx.db.patch(message.id as never, {
-        reactions: [...withoutHeart, "✨", "✨2"],
-      });
-    });
-    await expect(
-      t.mutation(api.chat.react, {
-        ...auth("a"),
-        messageId: message.id,
-        emoji: heart,
-      }),
-    ).rejects.toThrow(/too many reactions/i);
+    const [after] = await t.query(api.chat.messages, auth("a"));
+    expect(after.reactions).toEqual([
+      { emoji: ALLOWED_REACTIONS.at(-1), by: "self" },
+    ]);
   });
 
   it("ignores a reaction targeting a message outside the caller's match", async () => {
