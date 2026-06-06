@@ -83,7 +83,21 @@ export function PostMenu({
             pinnedPostId: nowPinned ? postId : null,
           })),
       );
-      // Re-render the profile list (any username) with the new pin order.
+      // Re-render the profile list with the new pin order, but drop loaded
+      // pages beyond the first before invalidating — otherwise a deep-scrolled
+      // profile refetches EVERY page against the just-busted server cache
+      // (same bounded-refetch trick as the feed's "show new posts").
+      queryClient.setQueriesData<
+        import("@tanstack/react-query").InfiniteData<FeedResponse>
+      >({ queryKey: ["user-posts"] }, (old) =>
+        old
+          ? {
+              ...old,
+              pages: old.pages.slice(0, 1),
+              pageParams: old.pageParams.slice(0, 1),
+            }
+          : old,
+      );
       queryClient.invalidateQueries({ queryKey: ["user-posts"] });
       toast.success(
         nowPinned ? "Pinned to your profile." : "Unpinned from your profile.",

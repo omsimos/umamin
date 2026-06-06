@@ -50,6 +50,7 @@ any that are empty.
 ### Changed
 
 - Your profile and inbox now share one flat tab row — Posts, Received, Sent — replacing the nested Messages tabs, and each tab has its own link you can share or return to.
+- The profile button in the navigation now opens your profile's Posts tab first; Received and Sent are one tap away.
 
 ### Performance & Cost
 
