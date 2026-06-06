@@ -12,7 +12,8 @@ import type { MessagesResponse } from "@/lib/query-types";
 import { getMessagesPage } from "@/lib/server/data";
 import { toPublicUser } from "@/types/user";
 import { CurrentUserCard } from "./components/current-user-card";
-import { InboxTabs } from "./components/inbox-tabs";
+import { ReceivedMessages } from "./components/received/received-messages";
+import { SentMessages } from "./components/sent/sent-messages";
 
 export const metadata: Metadata = {
   title: "Umamin — Inbox",
@@ -37,20 +38,29 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function InboxPage() {
+export default async function InboxPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { session, user } = await getSession();
 
   if (!session) {
     redirect("/login");
   }
 
+  // Received and Sent are flat top-level tabs (one row with Posts), routed by
+  // search param so each direction stays linkable and back-button friendly.
+  const tab = (await searchParams).tab === "sent" ? "sent" : "received";
+
   const queryClient = getQueryClient();
 
   await queryClient.prefetchInfiniteQuery({
-    queryKey: queryKeys.receivedMessages(),
+    queryKey:
+      tab === "sent" ? queryKeys.sentMessages() : queryKeys.receivedMessages(),
     queryFn: ({ pageParam }) =>
       getMessagesPage({
-        type: "received",
+        type: tab,
         cursor: (pageParam as string | null) ?? null,
         userId: session.userId,
       }),
@@ -67,11 +77,13 @@ export default async function InboxPage() {
       </Suspense>
 
       {user?.username ? (
-        <YouTabs username={user.username} active="messages" />
+        <YouTabs username={user.username} active={tab} />
       ) : null}
 
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <InboxTabs />
+        <div className="mt-5">
+          {tab === "sent" ? <SentMessages /> : <ReceivedMessages />}
+        </div>
       </HydrationBoundary>
 
       {/* v2-user */}

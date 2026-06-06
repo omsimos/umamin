@@ -28,6 +28,10 @@ any that are empty.
 - Tapping a post's image opens a full-screen viewer — swipe down or press Esc to close.
 - Upload your own profile photo from Settings — it's cropped square, compressed on your device, and applied after a preview. Using a connected Google photo still works.
 
+### Changed
+
+- Your profile and inbox now share one flat tab row — Posts, Received, Sent — replacing the nested Messages tabs, and each tab has its own link you can share or return to.
+
 ### Performance & Cost
 
 - Images are compressed on your device before uploading — to a small fraction of their original size — so uploads finish fast even on slow connections and feeds stay light to scroll.
