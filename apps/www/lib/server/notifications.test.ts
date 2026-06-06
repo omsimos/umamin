@@ -25,7 +25,7 @@ vi.mock("@umamin/db", () => ({
   },
 }));
 
-import { notify } from "./notifications";
+import { countUnseen, notify } from "./notifications";
 
 describe("notify", () => {
   afterEach(() => {
@@ -39,7 +39,7 @@ describe("notify", () => {
     expect(updateTag).not.toHaveBeenCalled();
   });
 
-  it("upserts and invalidates the recipient's tag", async () => {
+  it("upserts and invalidates the recipient's list and badge tags", async () => {
     onConflictDoUpdate.mockResolvedValueOnce(undefined);
 
     await notify({
@@ -60,6 +60,7 @@ describe("notify", () => {
       }),
     );
     expect(updateTag).toHaveBeenCalledWith("notifications:u2");
+    expect(updateTag).toHaveBeenCalledWith("notifications-badge:u2");
   });
 
   it("trims previews to 80 chars and nulls empty ones", async () => {
@@ -102,5 +103,31 @@ describe("notify", () => {
     expect(updateTag).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+});
+
+describe("countUnseen", () => {
+  const at = (seconds: number) => new Date(seconds * 1000);
+
+  it("counts only rows newer than the watermark", () => {
+    const rows = [
+      { updatedAt: at(300) },
+      { updatedAt: at(200) },
+      { updatedAt: at(100) },
+    ];
+
+    expect(countUnseen(rows, at(150))).toBe(2);
+    expect(countUnseen(rows, at(300))).toBe(0);
+  });
+
+  it("excludes rows exactly at the watermark (second precision)", () => {
+    expect(countUnseen([{ updatedAt: at(200) }], at(200))).toBe(0);
+  });
+
+  it("counts everything when the watermark was never set", () => {
+    const rows = [{ updatedAt: at(300) }, { updatedAt: at(100) }];
+
+    expect(countUnseen(rows, null)).toBe(2);
+    expect(countUnseen([], null)).toBe(0);
   });
 });

@@ -48,10 +48,12 @@ import type {
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "@/lib/query-types";
+import { parseCursor } from "@/lib/server/cursor";
 import {
   getRedisHotPostIdsPage,
   isRedisHotCursor,
 } from "@/lib/server/feed-rank";
+import { countUnseen } from "@/lib/server/notifications";
 import type { CommentData, FeedItem, QuotedPostData } from "@/types/post";
 import type { CurrentUserClient, PublicUser } from "@/types/user";
 
@@ -208,22 +210,6 @@ function parseHotFeedCursor(cursor: string | null): HotFeedCursor | null {
     scoreKey,
     createdAtMs,
     postId,
-  };
-}
-
-function parseCursor(cursor: string | null) {
-  if (!cursor) return null;
-
-  const sep = cursor.indexOf(".");
-  if (sep <= 0) return null;
-
-  const ms = Number(cursor.slice(0, sep));
-  const cursorId = cursor.slice(sep + 1);
-  const cursorDate = new Date(ms);
-
-  return {
-    cursorId,
-    cursorDate,
   };
 }
 
@@ -2164,7 +2150,9 @@ export async function getNotificationBadgeData(
   viewerId: string,
 ): Promise<NotificationBadgeResponse> {
   "use cache";
-  cacheTag(`notifications:${viewerId}`);
+  // Deliberately NOT the list's `notifications:` tag: mark-seen changes only
+  // the badge, and must not bust the list cache the page just populated.
+  cacheTag(`notifications-badge:${viewerId}`);
   cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
   // Two independent reads run together (async-parallel); the watermark filter
@@ -2196,11 +2184,7 @@ export async function getNotificationBadgeData(
     return { unseen: 0 };
   }
 
-  const lastSeenMs = viewer.lastSeenNotificationsAt?.getTime() ?? 0;
-
-  return {
-    unseen: latest.filter((row) => row.updatedAt.getTime() > lastSeenMs).length,
-  };
+  return { unseen: countUnseen(latest, viewer.lastSeenNotificationsAt) };
 }
 
 export async function getNotificationsPage(params: {

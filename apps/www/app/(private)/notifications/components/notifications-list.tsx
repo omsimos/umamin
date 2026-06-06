@@ -42,17 +42,27 @@ export function NotificationsList() {
   });
 
   // Visiting the page is what "reads" notifications: advance the server
-  // watermark once, then refresh the bell badge. Failures are swallowed —
-  // the watermark just advances on the next visit instead.
+  // watermark through the newest item actually rendered (not "now" — one
+  // arriving after this snapshot must stay unseen), then refresh the bell
+  // badge. Empty list → nothing to mark, no write. Failures are swallowed —
+  // the watermark just advances on the next visit instead. Primitive dep so a
+  // refetch with the same head doesn't re-fire; a newer head re-marks.
+  const newest = data?.pages[0]?.notifications[0];
+  const seenThroughMs = newest ? new Date(newest.updatedAt).getTime() : null;
+
   useEffect(() => {
-    markNotificationsSeenAction()
+    if (seenThroughMs === null) {
+      return;
+    }
+
+    markNotificationsSeenAction({ seenThrough: seenThroughMs })
       .then(() => {
         queryClient.invalidateQueries({
           queryKey: queryKeys.notificationBadge(),
         });
       })
       .catch(() => {});
-  }, [queryClient]);
+  }, [seenThroughMs, queryClient]);
 
   if (error) {
     return (

@@ -20,6 +20,19 @@ type NotifyParams = {
 };
 
 /**
+ * Counts notification rows newer than the viewer's seen-watermark. Pure: the
+ * badge query fetches the newest rows and watermark in parallel, so the
+ * filtering happens here instead of SQL (avoids a dependent-query waterfall).
+ */
+export function countUnseen(
+  rows: { updatedAt: Date }[],
+  lastSeenNotificationsAt: Date | null,
+): number {
+  const lastSeenMs = lastSeenNotificationsAt?.getTime() ?? 0;
+  return rows.filter((row) => row.updatedAt.getTime() > lastSeenMs).length;
+}
+
+/**
  * Records an in-app notification as a single aggregated upsert: one row per
  * (recipient, type, target), bumping `count` and the latest actor on repeats.
  * Best-effort by design — a notification must never fail its parent action.
@@ -63,7 +76,10 @@ export async function notify({
         },
       });
 
+    // Badge and list carry separate tags so mark-seen can refresh the badge
+    // without busting the list cache the page just populated.
     updateTag(`notifications:${recipientId}`);
+    updateTag(`notifications-badge:${recipientId}`);
   } catch (err) {
     console.error("notify failed", err);
   }
