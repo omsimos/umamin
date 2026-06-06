@@ -28,6 +28,7 @@ any that are empty.
 
 ### Changed
 
+- Posts now hold up to 4 photos (up from 1) — the feed lays them out in a grid and the full-screen viewer pages between them with swipes or arrow keys.
 - Quoting now opens the full composer (with image support for Umamin+) instead of a small caption box.
 - Your existing quote reposts have been upgraded into real posts automatically — same text, same timestamps, now with their own engagement.
 - If a quoted post is deleted, quotes of it show "This post is unavailable" instead of disappearing.

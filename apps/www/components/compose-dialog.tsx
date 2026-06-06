@@ -257,7 +257,7 @@ export function ComposeDialog({
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label="Add image"
+                aria-label="Add images"
                 onClick={handlePickImages}
                 disabled={attachments.items.length >= MAX_POST_IMAGES}
                 className="text-pink-500 hover:text-pink-600"
