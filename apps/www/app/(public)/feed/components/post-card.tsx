@@ -35,6 +35,7 @@ import {
   removeRepostAction,
 } from "@/app/actions/post";
 import { PostBody } from "@/components/post-body";
+import { PostImages } from "@/components/post-images";
 import { TimeAgo } from "@/components/time-ago";
 import {
   BURST_ACTION_REJECT_MESSAGE,
@@ -53,10 +54,10 @@ import type {
 } from "@/lib/query-types";
 import {
   getActionError,
+  hasUmaminPlus,
   isAlreadyLiked,
   isAlreadyRemoved,
   isAlreadyReposted,
-  isOlderThanOneYear,
 } from "@/lib/utils";
 import type { CommentData, PostData } from "@/types/post";
 import { CommentMenu } from "./comment-menu";
@@ -339,7 +340,7 @@ export function PostCard({
 
       <Avatar
         className={cn({
-          "avatar-shine": isOlderThanOneYear(author?.createdAt),
+          "avatar-shine": hasUmaminPlus(author?.createdAt),
         })}
       >
         <AvatarImage src={author?.imageUrl ?? ""} alt="User avatar" />
@@ -396,6 +397,10 @@ export function PostCard({
         </div>
 
         <PostBody content={data?.content ?? ""} className="mt-1" />
+
+        {"images" in data && data.images && data.images.length > 0 && (
+          <PostImages images={data.images} />
+        )}
 
         <div className="relative z-10 flex items-center space-x-4 text-muted-foreground mt-4">
           <Button

@@ -10,6 +10,14 @@ import { nanoid } from "nanoid";
 
 import { userTable } from "./user";
 
+// Denormalized onto the post row (not a join table) so feed reads pay zero
+// extra row scans; `key` is the R2 object key, dims reserve layout space.
+export type PostImage = {
+  key: string;
+  width: number;
+  height: number;
+};
+
 export const postTable = sqliteTable(
   "postTable",
   {
@@ -17,6 +25,7 @@ export const postTable = sqliteTable(
       .primaryKey()
       .$defaultFn(() => nanoid()),
     content: text("content").notNull(),
+    images: text("images", { mode: "json" }).$type<PostImage[]>(),
     authorId: text("author_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),

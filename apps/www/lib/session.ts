@@ -194,6 +194,28 @@ export async function invalidateUserSessions(userId: string) {
   }
 }
 
+// Account-deletion split of invalidateUserSessions: the user-row FK cascade
+// removes the session rows inside the delete transaction, so ids must be
+// snapshotted BEFORE it and only the cache entries cleared AFTER it commits —
+// revoking up front locked users out of an intact account whenever the
+// transaction failed.
+export async function getUserSessionIds(userId: string): Promise<string[]> {
+  const sessions = await db
+    .select({ id: sessionTable.id })
+    .from(sessionTable)
+    .where(eq(sessionTable.userId, userId));
+
+  return sessions.map((s) => s.id);
+}
+
+export async function clearSessionCache(sessionIds: string[]) {
+  if (!redis || sessionIds.length === 0) return;
+  const client = redis;
+  await Promise.all(
+    sessionIds.map((id) => client.del(`${SESSION_CACHE_PREFIX}${id}`)),
+  );
+}
+
 export type SessionValidationResult =
   | { session: SelectSession; user: SelectUser }
   | { session: null; user: null };

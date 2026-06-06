@@ -15,26 +15,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@umamin/ui/components/dialog";
-import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
 import {
   CircleUserRoundIcon,
-  ExternalLinkIcon,
+  ImagePlusIcon,
   Loader2Icon,
   MessageCircleOffIcon,
   ScanFaceIcon,
 } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { presignAvatarUploadAction } from "@/app/actions/upload";
 import {
-  getGravatarAction,
   toggleDisplayPictureAction,
   toggleQuietModeAction,
   updateAvatarAction,
+  updateProfilePhotoAction,
 } from "@/app/actions/user";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { compressAvatar, ImageCompressError } from "@/lib/image-compress";
+import {
+  MAX_AVATAR_SOURCE_BYTES,
+  postImagesEnabled,
+  type UploadContentType,
+} from "@/lib/post-images";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
 import type {
@@ -43,13 +48,25 @@ import type {
 } from "@/lib/query-types";
 import type { UserWithAccount } from "@/types/user";
 
+type PendingPhoto =
+  | {
+      kind: "upload";
+      blob: Blob;
+      contentType: UploadContentType;
+      previewUrl: string;
+    }
+  | { kind: "google"; previewUrl: string };
+
 export function PrivacySettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
-  const [gravatarEmail, setGravatarEmail] = useState("");
-  const [avatarPreviewUrl, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<PendingPhoto | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [isCompressing, setCompressing] = useState(false);
 
   const googlePicture = user.account?.picture;
+  const uploadsAvailable = postImagesEnabled();
+
   const patchOwnProfile = (updates: Partial<UserWithAccount>) => {
     queryClient.setQueryData<UserProfileResponse>(
       queryKeys.userProfile(user.username),
@@ -61,35 +78,50 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     );
   };
 
-  const gravatarMutation = useMutation({
-    mutationFn: async (email: string) => getGravatarAction(email),
-    onSuccess: (res) => {
-      if (!res || "error" in res) {
-        toast.error(res?.error ?? "No Gravatar found for that email.");
-        setAvatarPreview(null);
-        return;
-      }
-
-      setAvatarPreview(res.url);
-      setPreviewOpen(true);
-    },
-    onError: (error) => {
-      console.error(error);
-      toast.error("Couldn't preview Gravatar.");
-    },
-  });
-
-  const isPreviewing = gravatarMutation.isPending;
   const toggleDisplayPicture = useSingleFlightAction(
     toggleDisplayPictureAction,
   );
   const toggleQuietMode = useSingleFlightAction(toggleQuietModeAction);
-  const applyAvatarUpdate = useSingleFlightAction(updateAvatarAction);
+  const applyGooglePhoto = useSingleFlightAction(updateAvatarAction);
+  const applyUploadedPhoto = useSingleFlightAction(updateProfilePhotoAction);
+
+  const clearPending = () => {
+    setPending((current) => {
+      if (current?.kind === "upload") {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+      return null;
+    });
+  };
+
+  const handlePickPhoto = async (file: File) => {
+    // Release any previous pick's blob URL before it's overwritten.
+    clearPending();
+    setCompressing(true);
+    try {
+      const compressed = await compressAvatar(file);
+      setPending({
+        kind: "upload",
+        blob: compressed.blob,
+        contentType: compressed.contentType,
+        previewUrl: URL.createObjectURL(compressed.blob),
+      });
+      setPreviewOpen(true);
+    } catch (err) {
+      toast.error(
+        err instanceof ImageCompressError
+          ? err.message
+          : "Couldn't process this image.",
+      );
+    } finally {
+      setCompressing(false);
+    }
+  };
 
   const displayPictureMutation = useMutation({
     mutationFn: async () => {
       if (!user.imageUrl) {
-        throw new Error("Gravatar or Google account not connected");
+        throw new Error("Upload a photo or connect a Google account");
       }
 
       const res = await toggleDisplayPicture(user.account?.picture);
@@ -112,7 +144,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       );
       patchOwnProfile({ imageUrl });
       toast.success(
-        data ? "Profile photo displayed." : "Profile photo hidden.",
+        data ? "Profile photo displayed." : "Profile photo removed.",
       );
     },
     onError: (err) => {
@@ -122,29 +154,52 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
   });
 
   const updateAvatarMutation = useMutation({
-    mutationFn: async (url: string) => {
-      const res = await applyAvatarUpdate(url);
+    mutationFn: async (photo: PendingPhoto) => {
+      if (photo.kind === "google") {
+        const res = await applyGooglePhoto(photo.previewUrl);
+        if (res.error) {
+          throw new Error(res.error);
+        }
+        return res.imageUrl;
+      }
+
+      const presign = await presignAvatarUploadAction({
+        contentType: photo.contentType,
+        contentLength: photo.blob.size,
+      });
+      if (presign.error || !presign.key || !presign.url) {
+        throw new Error(presign.error ?? "Upload failed. Please try again.");
+      }
+
+      const put = await fetch(presign.url, {
+        method: "PUT",
+        // Must match the presigned signature exactly or R2 rejects with 403.
+        headers: { "Content-Type": photo.contentType },
+        body: photo.blob,
+      });
+      if (!put.ok) {
+        throw new Error("Upload failed. Please try again.");
+      }
+
+      const res = await applyUploadedPhoto({ key: presign.key });
       if (res.error) {
         throw new Error(res.error);
       }
-
-      return res;
+      return res.imageUrl;
     },
-    onSuccess: (result) => {
-      const imageUrl = result.imageUrl ?? avatarPreviewUrl ?? user.imageUrl;
-
+    onSuccess: (imageUrl) => {
       queryClient.setQueryData<CurrentUserResponse>(
         queryKeys.currentUser(),
         (current) =>
           patchCurrentUser(current, (currentUser) => ({
             ...currentUser,
-            imageUrl,
+            imageUrl: imageUrl ?? currentUser.imageUrl,
           })),
       );
-      patchOwnProfile({ imageUrl });
+      patchOwnProfile({ imageUrl: imageUrl ?? user.imageUrl });
       toast.success("Profile photo updated.");
-      setAvatarPreview(null);
       setPreviewOpen(false);
+      clearPending();
     },
     onError: (err) => {
       toast.error(err.message ?? "Couldn't update photo.");
@@ -181,64 +236,67 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
   return (
     <div className="space-y-8">
       <section>
-        <Label htmlFor="gravatar-email">Profile Photo</Label>
+        <Label>Profile Photo</Label>
         <div className="space-y-4 p-4 rounded-lg border mt-2">
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarImage
                 className="rounded-full"
                 src={user.imageUrl ?? ""}
-                alt="Profile avatar preview"
+                alt="Current profile photo"
               />
               <AvatarFallback className="md:text-4xl text-xl">
                 <ScanFaceIcon />
               </AvatarFallback>
             </Avatar>
 
-            <div className="space-y-2 w-full">
-              <Label htmlFor="gravatar-email">Gravatar Email</Label>
-              <Input
-                id="gravatar-email"
-                type="email"
-                placeholder="name@example.com"
-                className="w-full"
-                value={gravatarEmail}
-                onChange={(event) => setGravatarEmail(event.target.value)}
-                autoComplete="email"
-              />
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium leading-none">Upload a photo</p>
               <p className="text-xs text-muted-foreground">
-                Enter the email linked to your{" "}
-                <Link
-                  className="underline inline-flex items-center"
-                  href="https://gravatar.com/"
-                  target="_blank"
-                >
-                  Gravatar <ExternalLinkIcon className="size-3 ml-1" />
-                </Link>{" "}
+                JPG, PNG, or WebP, up to{" "}
+                {MAX_AVATAR_SOURCE_BYTES / (1024 * 1024)}MB.
               </p>
             </div>
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              disabled={!gravatarEmail || isPreviewing}
-              onClick={() => gravatarMutation.mutate(gravatarEmail)}
-            >
-              {isPreviewing && <Loader2Icon className="h-4 w-4 animate-spin" />}
-              Use Gravatar
-            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handlePickPhoto(file);
+                e.target.value = "";
+              }}
+            />
+
+            {uploadsAvailable && (
+              <Button
+                type="button"
+                disabled={isCompressing}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isCompressing ? (
+                  <Loader2Icon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ImagePlusIcon className="h-4 w-4" />
+                )}
+                Upload photo
+              </Button>
+            )}
 
             {googlePicture && (
               <Button
                 onClick={() => {
-                  setAvatarPreview(googlePicture);
+                  clearPending();
+                  setPending({ kind: "google", previewUrl: googlePicture });
                   setPreviewOpen(true);
                 }}
                 type="button"
                 variant="outline"
               >
-                {/* <Loader2Icon className="h-4 w-4 animate-spin" /> */}
                 Use Google Photo
               </Button>
             )}
@@ -254,11 +312,11 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             <p className="text-sm font-medium leading-none">Display Picture</p>
             {user.imageUrl ? (
               <p className="text-sm text-muted-foreground">
-                Show picture from connected account
+                Turning this off permanently deletes an uploaded photo
               </p>
             ) : (
               <p className="text-sm text-yellow-600">
-                Gravatar or Google account required
+                Upload a photo or connect a Google account
               </p>
             )}
           </div>
@@ -285,19 +343,27 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
         </div>
       </section>
 
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+      <Dialog
+        open={previewOpen}
+        onOpenChange={(open) => {
+          setPreviewOpen(open);
+          if (!open && !updateAvatarMutation.isPending) {
+            clearPending();
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Preview Avatar</DialogTitle>
+          <DialogHeader>
+            <DialogTitle className="sr-only">Preview profile photo</DialogTitle>
           </DialogHeader>
 
-          {avatarPreviewUrl && (
+          {pending && (
             <>
               <Avatar className="w-full h-auto mx-auto mb-4 max-w-[300px]">
                 <AvatarImage
                   className="rounded-full"
-                  src={avatarPreviewUrl}
-                  alt="Profile avatar preview"
+                  src={pending.previewUrl}
+                  alt="Profile photo preview"
                 />
                 <AvatarFallback className="md:text-4xl text-xl">
                   <ScanFaceIcon />
@@ -306,13 +372,23 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
 
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
+                  {/* The PUT + claim can't be aborted mid-flight; letting the
+                      dialog close would surface a surprise success later. */}
+                  <Button
+                    variant="outline"
+                    disabled={updateAvatarMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
                 </DialogClose>
                 <Button
                   disabled={updateAvatarMutation.isPending}
-                  onClick={() => updateAvatarMutation.mutate(avatarPreviewUrl)}
+                  onClick={() => updateAvatarMutation.mutate(pending)}
                   type="submit"
                 >
+                  {updateAvatarMutation.isPending && (
+                    <Loader2Icon className="h-4 w-4 animate-spin" />
+                  )}
                   Apply photo
                 </Button>
               </DialogFooter>

@@ -24,9 +24,25 @@ import { generateUsernameId } from "@/lib/utils";
 
 const claimsSchema = z.object({
   sub: z.string(),
-  // Optional so a missing picture never breaks sign-in; validated as a URL so we
-  // don't persist garbage. (Value is Google-sourced over the TLS code exchange.)
-  picture: z.url().optional(),
+  // Optional so a missing picture never breaks sign-in. Beyond URL shape, the
+  // host is pinned below: imageUrl renders as a raw <img src> for every
+  // viewer, so only Google's own CDN may ever be persisted (defense in depth
+  // against a non-standard picture claim).
+  picture: z
+    .url()
+    .optional()
+    .transform((value) => {
+      if (!value) return undefined;
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" &&
+          url.hostname === "lh3.googleusercontent.com"
+          ? value
+          : undefined;
+      } catch {
+        return undefined;
+      }
+    }),
   email: z.email(),
 });
 
@@ -139,7 +155,7 @@ export async function GET(req: NextRequest) {
     } else if (user) {
       await db.transaction(async (tx) => {
         // Only set the avatar if the user hasn't already chosen one — don't
-        // clobber an existing Gravatar/custom picture on link.
+        // clobber an existing uploaded/custom picture on link.
         if (!user.imageUrl && googleUser.picture) {
           await tx
             .update(userTable)

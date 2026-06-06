@@ -8,7 +8,7 @@ import {
 import { cn } from "@umamin/ui/lib/utils";
 import { BadgeCheckIcon, Repeat2Icon } from "lucide-react";
 import Link from "next/link";
-import { isOlderThanOneYear, shortTimeAgo } from "@/lib/utils";
+import { hasUmaminPlus, shortTimeAgo } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 
 export function RepostHeader({
@@ -44,7 +44,7 @@ export function RepostHeader({
     <div className="flex items-start gap-3 px-2 sm:px-0">
       <Avatar
         className={cn({
-          "avatar-shine": isOlderThanOneYear(user?.createdAt),
+          "avatar-shine": hasUmaminPlus(user?.createdAt),
         })}
       >
         <AvatarImage src={user.imageUrl ?? ""} alt="User avatar" />

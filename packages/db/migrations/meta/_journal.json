@@ -36,6 +36,13 @@
       "when": 1780558195976,
       "tag": "0004_tranquil_goliath",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1780654009562,
+      "tag": "0005_tranquil_swordsman",
+      "breakpoints": true
     }
   ]
 }
