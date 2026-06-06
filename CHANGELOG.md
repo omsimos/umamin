@@ -24,6 +24,7 @@ any that are empty.
 
 - Quote posts are now real posts: they have their own likes, comments, reposts, and page — and they can carry an image. Quote someone by picking "Quote" on any post; the quoted post appears as a compact card you can tap through.
 - You can now quote a post you've also reposted, and quote the same post more than once.
+- Pin a post to your profile: pick "Pin to profile" from your post's menu and it stays at the top of your Posts tab with a pin marker. Pinning another post replaces the previous pin; deleting a pinned post unpins it.
 
 ### Changed
 
