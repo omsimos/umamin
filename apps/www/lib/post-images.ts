@@ -1,8 +1,6 @@
 import * as z from "zod";
 
-// One photo per post for now; the schema/grid/lightbox all handle arrays, so
-// raising this later is a one-line change.
-export const MAX_POST_IMAGES = 1;
+export const MAX_POST_IMAGES = 4;
 
 // Aggressive lossy target the client compresses toward. The server caps the
 // *declared* upload size with headroom for noisy photos that resist

@@ -49,7 +49,7 @@ import {
   getRedisHotPostIdsPage,
   isRedisHotCursor,
 } from "@/lib/server/feed-rank";
-import type { CommentData, FeedItem } from "@/types/post";
+import type { CommentData, FeedItem, QuotedPostData } from "@/types/post";
 import type { CurrentUserClient, PublicUser } from "@/types/user";
 
 const PUBLIC_REVALIDATE_SECONDS = 120;
@@ -76,7 +76,6 @@ type FeedEdgeRow = {
   postId: string;
   authorId: string;
   reposterId: string | null;
-  repostContent: string | null;
 };
 
 type HotFeedCursor = {
@@ -99,11 +98,63 @@ const publicUserColumns = {
   imageUrl: userTable.imageUrl,
   quietMode: userTable.quietMode,
   question: userTable.question,
+  pinnedPostId: userTable.pinnedPostId,
   followerCount: userTable.followerCount,
   followingCount: userTable.followingCount,
   createdAt: userTable.createdAt,
   updatedAt: userTable.updatedAt,
 };
+
+/**
+ * Resolves the quoted posts embedded in a page of posts: one bounded inArray
+ * read for the quoted rows + one for their authors, and only when the page
+ * actually contains quotes. A quoted id that resolves to nothing (deleted
+ * post) is simply absent from the map — callers render the husk.
+ */
+async function getQuotedPostMap(
+  posts: Pick<SelectPost, "quotedPostId">[],
+): Promise<Map<string, QuotedPostData>> {
+  const ids = Array.from(
+    new Set(
+      posts.flatMap((post) => (post.quotedPostId ? [post.quotedPostId] : [])),
+    ),
+  );
+
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const quoted = await db
+    .select()
+    .from(postTable)
+    .where(inArray(postTable.id, ids));
+  const authorIds = Array.from(new Set(quoted.map((post) => post.authorId)));
+  const authors =
+    authorIds.length > 0
+      ? await db
+          .select(publicUserColumns)
+          .from(userTable)
+          .where(inArray(userTable.id, authorIds))
+      : [];
+
+  const authorMap = new Map(authors.map((author) => [author.id, author]));
+
+  return new Map(
+    quoted.flatMap((post) => {
+      const author = authorMap.get(post.authorId);
+      return author ? [[post.id, { ...post, author }] as const] : [];
+    }),
+  );
+}
+
+// `undefined` = not a quote; `null` = quote whose target is gone (husk).
+function resolveQuotedPost(
+  post: Pick<SelectPost, "quotedPostId">,
+  quotedMap: Map<string, QuotedPostData>,
+): QuotedPostData | null | undefined {
+  if (!post.quotedPostId) return undefined;
+  return quotedMap.get(post.quotedPostId) ?? null;
+}
 
 function parseFeedCursor(cursor: string | null): FeedCursor | null {
   if (!cursor) {
@@ -342,7 +393,6 @@ async function getPublicLatestPostsPage(
       postId: sql<string>`${postTable.id}`.as("post_id"),
       authorId: postTable.authorId,
       reposterId: sql<string | null>`null`.as("reposter_id"),
-      repostContent: sql<string | null>`null`.as("repost_content"),
     })
     .from(postTable)
     .$dynamic();
@@ -366,9 +416,6 @@ async function getPublicLatestPostsPage(
       authorId: postTable.authorId,
       reposterId: sql<string | null>`${postRepostTable.userId}`.as(
         "reposter_id",
-      ),
-      repostContent: sql<string | null>`${postRepostTable.content}`.as(
-        "repost_content",
       ),
     })
     .from(postRepostTable)
@@ -423,6 +470,8 @@ async function getPublicLatestPostsPage(
       : [],
   ]);
 
+  const quotedMap = await getQuotedPostMap(posts);
+
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
   const userMap = new Map(users.map((user) => [user.id, user] as const));
   const data: FeedItem[] = pageRows.flatMap<FeedItem>((edge) => {
@@ -436,6 +485,7 @@ async function getPublicLatestPostsPage(
     const feedPost = {
       ...post,
       author,
+      quotedPost: resolveQuotedPost(post, quotedMap),
       isLiked: false,
       isReposted: false,
     };
@@ -457,7 +507,6 @@ async function getPublicLatestPostsPage(
         repost: {
           id: edge.edgeId,
           postId: edge.postId,
-          content: edge.repostContent ?? undefined,
           createdAt: edge.createdAt,
           user: reposter,
         },
@@ -499,6 +548,8 @@ async function getRedisHotPostsPage(
           .where(inArray(userTable.id, authorIds))
       : [];
 
+  const quotedMap = await getQuotedPostMap(posts);
+
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
   const userMap = new Map(users.map((user) => [user.id, user] as const));
   const data: FeedItem[] = page.ids.flatMap<FeedItem>((postId) => {
@@ -515,6 +566,7 @@ async function getRedisHotPostsPage(
         post: {
           ...post,
           author,
+          quotedPost: resolveQuotedPost(post, quotedMap),
           isLiked: false,
           isReposted: false,
         },
@@ -569,6 +621,10 @@ async function getCachedPublicHotPostsPage(
           .where(inArray(userTable.id, authorIds))
       : [];
 
+  const quotedMap = await getQuotedPostMap(
+    pageRows.map((candidate) => candidate.post),
+  );
+
   const userMap = new Map(users.map((user) => [user.id, user] as const));
   const data: FeedItem[] = pageRows.flatMap<FeedItem>(({ post }) => {
     const author = userMap.get(post.authorId);
@@ -583,6 +639,7 @@ async function getCachedPublicHotPostsPage(
         post: {
           ...post,
           author,
+          quotedPost: resolveQuotedPost(post, quotedMap),
           isLiked: false,
           isReposted: false,
         },
@@ -649,7 +706,6 @@ async function getFollowingPostsPage(
       postId: sql<string>`${postTable.id}`.as("post_id"),
       authorId: postTable.authorId,
       reposterId: sql<string | null>`null`.as("reposter_id"),
-      repostContent: sql<string | null>`null`.as("repost_content"),
     })
     .from(postTable)
     .innerJoin(
@@ -680,9 +736,6 @@ async function getFollowingPostsPage(
       authorId: postTable.authorId,
       reposterId: sql<string | null>`${postRepostTable.userId}`.as(
         "reposter_id",
-      ),
-      repostContent: sql<string | null>`${postRepostTable.content}`.as(
-        "repost_content",
       ),
     })
     .from(postRepostTable)
@@ -744,6 +797,8 @@ async function getFollowingPostsPage(
       : [],
   ]);
 
+  const quotedMap = await getQuotedPostMap(posts);
+
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
   const userMap = new Map(users.map((user) => [user.id, user] as const));
   const data: FeedItem[] = pageRows.flatMap<FeedItem>((edge) => {
@@ -757,6 +812,7 @@ async function getFollowingPostsPage(
     const feedPost = {
       ...post,
       author,
+      quotedPost: resolveQuotedPost(post, quotedMap),
       isLiked: false,
       isReposted: false,
     };
@@ -778,7 +834,6 @@ async function getFollowingPostsPage(
         repost: {
           id: edge.edgeId,
           postId: edge.postId,
-          content: edge.repostContent ?? undefined,
           createdAt: edge.createdAt,
           user: reposter,
         },
@@ -803,11 +858,13 @@ function feedOverlayIds(items: FeedItem[]) {
   ).sort();
   const actorIds = Array.from(
     new Set(
-      items.flatMap((item) =>
-        item.type === "post"
-          ? [item.post.author.id]
-          : [item.post.author.id, item.repost.user.id],
-      ),
+      items.flatMap((item) => [
+        item.post.author.id,
+        // Quoted authors must be probed too, or a blocked user's content
+        // would leak through the embedded card.
+        ...(item.post.quotedPost ? [item.post.quotedPost.author.id] : []),
+        ...(item.type === "repost" ? [item.repost.user.id] : []),
+      ]),
     ),
   ).sort();
 
@@ -902,11 +959,21 @@ function applyPostFeedViewerOverlay(
       return [];
     }
 
+    // A quoted post from a blocked user degrades to the "unavailable" husk
+    // (matching what its own page shows the viewer) instead of leaking through
+    // the embed.
+    const quotedPost =
+      item.post.quotedPost &&
+      overlay.blockedUserIds.has(item.post.quotedPost.author.id)
+        ? null
+        : item.post.quotedPost;
+
     return [
       {
         ...item,
         post: {
           ...item.post,
+          quotedPost,
           isLiked: overlay.likedPostIds.has(item.post.id),
           isReposted: overlay.repostedPostIds.has(item.post.id),
         },
@@ -972,6 +1039,16 @@ async function getPublicUserPostsPage(
     ? and(baseCondition, cursorCondition)
     : baseCondition;
 
+  // The author's pin surfaces above the chronological flow on the first page
+  // and is removed from its natural slot on every page (two pk lookups, only
+  // on cache miss and only when a pin exists).
+  const [pinTarget] = await db
+    .select({ pinnedPostId: userTable.pinnedPostId })
+    .from(userTable)
+    .where(eq(userTable.id, authorId))
+    .limit(1);
+  const pinnedPostId = pinTarget?.pinnedPostId ?? null;
+
   // Keyset pagination on post_author_created_at_idx (author_id, created_at, id).
   const rows = await db
     .select({ post: postTable, author: publicUserColumns })
@@ -981,24 +1058,61 @@ async function getPublicUserPostsPage(
     .orderBy(desc(postTable.createdAt), desc(postTable.id))
     .limit(FEED_PAGE_SIZE + 1);
 
-  const data: FeedItem[] = rows.flatMap(({ post, author }) => {
-    if (!author) {
-      return [];
-    }
+  // The author guard makes a stale/corrupted pin id (e.g. of someone else's
+  // post) render nothing instead of pinning foreign content.
+  const [pinnedRow] =
+    !cursor && pinnedPostId
+      ? await db
+          .select({ post: postTable, author: publicUserColumns })
+          .from(postTable)
+          .innerJoin(userTable, eq(postTable.authorId, userTable.id))
+          .where(
+            and(
+              eq(postTable.id, pinnedPostId),
+              eq(postTable.authorId, authorId),
+            ),
+          )
+          .limit(1)
+      : [];
 
-    return [
-      {
-        type: "post" as const,
-        post: { ...post, author, isLiked: false, isReposted: false },
-      },
-    ];
+  const quotedMap = await getQuotedPostMap([
+    ...(pinnedRow ? [pinnedRow.post] : []),
+    ...rows.map((row) => row.post),
+  ]);
+
+  const toFeedItem = (
+    row: (typeof rows)[number],
+    isPinned?: boolean,
+  ): FeedItem => ({
+    type: "post" as const,
+    post: {
+      ...row.post,
+      author: row.author,
+      quotedPost: resolveQuotedPost(row.post, quotedMap),
+      isLiked: false,
+      isReposted: false,
+      ...(isPinned ? { isPinned: true } : {}),
+    },
   });
 
+  const data: FeedItem[] = rows.flatMap((row) =>
+    row.author ? [toFeedItem(row)] : [],
+  );
+
+  // Cursor math runs on the raw window so pagination stays continuous even
+  // when the pin sits at a page boundary; the pin is filtered afterwards.
   const { hasMore, pageRows } = getPageRows(data, FEED_PAGE_SIZE);
   const lastItem = pageRows[pageRows.length - 1];
 
+  const chronological = pinnedPostId
+    ? pageRows.filter((item) => item.post.id !== pinnedPostId)
+    : pageRows;
+  const finalRows = pinnedRow?.author
+    ? [toFeedItem(pinnedRow, true), ...chronological]
+    : chronological;
+
   return {
-    data: pageRows,
+    data: finalRows,
     nextCursor:
       hasMore && lastItem
         ? `${lastItem.post.createdAt.getTime()}.${lastItem.post.id}`
@@ -1050,9 +1164,12 @@ async function getPublicPost(postId: string): Promise<PostResponse> {
     return null;
   }
 
+  const quotedMap = await getQuotedPostMap([post]);
+
   return {
     ...post,
     author: post.author as PublicUser,
+    quotedPost: resolveQuotedPost(post, quotedMap),
     isLiked: false,
     isReposted: false,
   };
@@ -1135,8 +1252,24 @@ export async function getPostById(params: {
     return null;
   }
 
+  // Same husk rule as the feed overlay: an embedded quote from a blocked user
+  // must not leak content its own page would hide from this viewer. Reuses
+  // the cached overlay probe keyed on the quoted (post, author) pair.
+  let quotedPost = publicPost.quotedPost;
+  if (quotedPost) {
+    const quotedOverlay = await getPostViewerOverlay(
+      params.viewerId,
+      quotedPost.id,
+      quotedPost.author.id,
+    );
+    if (quotedOverlay.isBlocked) {
+      quotedPost = null;
+    }
+  }
+
   return {
     ...publicPost,
+    quotedPost,
     isLiked: overlay.isLiked,
     isReposted: overlay.isReposted,
   };
@@ -1549,6 +1682,7 @@ export async function getPublicUserProfileData(
       bio: userTable.bio,
       question: userTable.question,
       quietMode: userTable.quietMode,
+      pinnedPostId: userTable.pinnedPostId,
       followerCount: userTable.followerCount,
       followingCount: userTable.followingCount,
       createdAt: userTable.createdAt,

@@ -172,11 +172,7 @@ export function useImageAttachments() {
     // async `items` state could.
     const slots = MAX_POST_IMAGES - metaRef.current.size;
     if (slots <= 0 || images.length > slots) {
-      toast.error(
-        MAX_POST_IMAGES === 1
-          ? "You can attach one image per post."
-          : `You can attach up to ${MAX_POST_IMAGES} images.`,
-      );
+      toast.error(`You can attach up to ${MAX_POST_IMAGES} images.`);
       if (slots <= 0) return;
     }
 

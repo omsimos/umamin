@@ -43,6 +43,20 @@
       "when": 1780654009562,
       "tag": "0005_tranquil_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1780730500313,
+      "tag": "0006_polite_kid_colt",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1780733092507,
+      "tag": "0007_modern_silhouette",
+      "breakpoints": true
     }
   ]
 }

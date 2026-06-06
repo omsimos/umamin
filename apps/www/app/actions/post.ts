@@ -8,6 +8,7 @@ import {
   postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
+import { userTable } from "@umamin/db/schema/user";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
@@ -43,6 +44,8 @@ const createPostSchema = z
       .trim()
       .max(500, { error: "Content cannot exceed 500 characters" }),
     images: z.array(postImageInputSchema).max(MAX_POST_IMAGES).optional(),
+    // Quote posts: a real post referencing another (soft reference).
+    quotedPostId: z.string().min(1).max(50).optional(),
   })
   // Image-only posts are allowed; empty posts are not.
   .refine((v) => v.content.length > 0 || (v.images?.length ?? 0) > 0, {
@@ -68,7 +71,7 @@ export async function createPostAction(
       return { error: "Invalid input" };
     }
 
-    const { content, images } = params.data;
+    const { content, images, quotedPostId } = params.data;
     const { session, user } = await getSession();
 
     if (!session || !user) {
@@ -77,6 +80,17 @@ export async function createPostAction(
 
     if (!(await checkRateLimit("write", `post:${session.userId}`))) {
       return { error: RATE_LIMIT_ERROR };
+    }
+
+    if (quotedPostId) {
+      const quoted = await db.query.postTable.findFirst({
+        columns: { id: true },
+        where: eq(postTable.id, quotedPostId),
+      });
+
+      if (!quoted) {
+        return { error: "The post you're quoting is no longer available." };
+      }
     }
 
     let claimedImages: Awaited<ReturnType<typeof claimStagedImages>> = null;
@@ -103,14 +117,30 @@ export async function createPostAction(
     let createdPost: typeof postTable.$inferSelect;
 
     try {
-      [createdPost] = await db
-        .insert(postTable)
-        .values({
-          content: formattedContent,
-          authorId: session.userId,
-          images: claimedImages,
-        })
-        .returning();
+      createdPost = await db.transaction(async (tx) => {
+        const [inserted] = await tx
+          .insert(postTable)
+          .values({
+            content: formattedContent,
+            authorId: session.userId,
+            images: claimedImages,
+            quotedPostId: quotedPostId ?? null,
+          })
+          .returning();
+
+        // A quote counts toward the quoted post's combined repost count, in
+        // the same transaction so the count can't drift from the row.
+        if (quotedPostId) {
+          await tx
+            .update(postTable)
+            .set({
+              repostCount: sql`${postTable.repostCount} + 1`,
+            })
+            .where(eq(postTable.id, quotedPostId));
+        }
+
+        return inserted;
+      });
     } catch (err) {
       // Claimed objects must not outlive a failed insert (storage leak).
       await deletePostImages(claimedImages);
@@ -123,6 +153,12 @@ export async function createPostAction(
     revalidateTag("posts", "max");
     updateTag(`user-posts:${session.userId}`);
     await refreshHotPostRank(createdPost.id);
+    if (quotedPostId) {
+      // Mirror addRepostAction: refresh the quoted post's card + rank; the
+      // feed shows its bumped count eventually (<=120s), same as likes.
+      updateTag(`post:${quotedPostId}`);
+      await refreshHotPostRank(quotedPostId);
+    }
     await bumpFeedLatest(createdPost.createdAt);
 
     return {
@@ -148,7 +184,7 @@ export async function deletePostAction({ postId }: { postId: string }) {
     }
 
     const post = await db.query.postTable.findFirst({
-      columns: { id: true, authorId: true, images: true },
+      columns: { id: true, authorId: true, images: true, quotedPostId: true },
       where: eq(postTable.id, postId),
     });
 
@@ -156,7 +192,31 @@ export async function deletePostAction({ postId }: { postId: string }) {
       return { error: "Post not found" };
     }
 
-    await db.delete(postTable).where(eq(postTable.id, postId));
+    await db.transaction(async (tx) => {
+      await tx.delete(postTable).where(eq(postTable.id, postId));
+
+      // Inverse of the quote bump in createPostAction; guarded against
+      // underflow, no-op when the quoted post is already gone.
+      if (post.quotedPostId) {
+        await tx
+          .update(postTable)
+          .set({
+            repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
+          })
+          .where(eq(postTable.id, post.quotedPostId));
+      }
+
+      // Deleting the pinned post unpins it (soft reference — no FK cascade).
+      await tx
+        .update(userTable)
+        .set({ pinnedPostId: null })
+        .where(
+          and(
+            eq(userTable.id, session.userId),
+            eq(userTable.pinnedPostId, postId),
+          ),
+        );
+    });
 
     // Best-effort: an orphaned R2 object costs fractions of a cent; the post
     // row (already gone) is the source of truth.
@@ -170,6 +230,12 @@ export async function deletePostAction({ postId }: { postId: string }) {
     updateTag(`post-comments:${postId}`);
     updateTag(`post:${postId}:liked:${session.userId}`);
     updateTag(`post:${postId}:reposted:${session.userId}`);
+    // Covers the pin-clear above: /api/me carries pinnedPostId for menu state.
+    updateTag(`user:${session.userId}`);
+    if (post.quotedPostId) {
+      updateTag(`post:${post.quotedPostId}`);
+      await refreshHotPostRank(post.quotedPostId);
+    }
 
     return { success: true };
   } catch (err) {
@@ -538,14 +604,9 @@ export async function removeCommentLikeAction({
   }
 }
 
+// Plain reposts only — quotes go through createPostAction with quotedPostId.
 const createRepostSchema = z.object({
   postId: z.string(),
-  content: z
-    .string()
-    .trim()
-    .max(500, { error: "Content cannot exceed 500 characters" })
-    .optional()
-    .or(z.literal("")),
 });
 
 export async function addRepostAction(
@@ -558,7 +619,7 @@ export async function addRepostAction(
       return { error: "Invalid input" };
     }
 
-    const { postId, content } = params.data;
+    const { postId } = params.data;
     const { session } = await getSession();
 
     if (!session) {
@@ -570,14 +631,11 @@ export async function addRepostAction(
     }
 
     const result = await db.transaction(async (tx) => {
-      const formatted = content?.trim() ? formatContent(content) : null;
-
       const [repost] = await tx
         .insert(postRepostTable)
         .values({
           postId,
           userId: session.userId,
-          content: formatted,
         })
         .onConflictDoNothing()
         .returning();
@@ -665,6 +723,83 @@ export async function removeRepostAction({ postId }: { postId: string }) {
       await refreshHotPostRank(postId);
     }
     return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+/**
+ * Pins one of the caller's own posts to their profile. One pin per user —
+ * pinning a different post simply replaces the previous pin.
+ */
+export async function pinPostAction({ postId }: { postId: string }) {
+  try {
+    const parsed = idSchema.safeParse(postId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
+
+    const { session, user } = await getSession();
+
+    if (!session || !user) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `pin:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    // Only your own, still-existing post can be pinned.
+    const post = await db.query.postTable.findFirst({
+      columns: { id: true, authorId: true },
+      where: eq(postTable.id, postId),
+    });
+
+    if (!post || post.authorId !== session.userId) {
+      return { error: "Post not found" };
+    }
+
+    await db
+      .update(userTable)
+      .set({ pinnedPostId: postId })
+      .where(eq(userTable.id, session.userId));
+
+    // The profile list re-renders with the pin on top; /api/me carries
+    // pinnedPostId for the post-menu state.
+    updateTag(`user-posts:${session.userId}`);
+    updateTag(`user:${session.userId}`);
+    updateTag(`user:${user.username}`);
+
+    return { success: true };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+export async function unpinPostAction() {
+  try {
+    const { session, user } = await getSession();
+
+    if (!session || !user) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `pin:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    await db
+      .update(userTable)
+      .set({ pinnedPostId: null })
+      .where(eq(userTable.id, session.userId));
+
+    updateTag(`user-posts:${session.userId}`);
+    updateTag(`user:${session.userId}`);
+    updateTag(`user:${user.username}`);
+
+    return { success: true };
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };

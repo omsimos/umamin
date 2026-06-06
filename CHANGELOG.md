@@ -18,6 +18,25 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.5.0] - 2026-06-06
+
+### Added
+
+- Quote posts are now real posts: they have their own likes, comments, reposts, and page — and they can carry an image. Quote someone by picking "Quote" on any post; the quoted post appears as a compact card you can tap through.
+- You can now quote a post you've also reposted, and quote the same post more than once.
+- Pin a post to your profile: pick "Pin to profile" from your post's menu and it stays at the top of your Posts tab with a pin marker. Pinning another post replaces the previous pin; deleting a pinned post unpins it.
+
+### Changed
+
+- Posts now hold up to 4 photos (up from 1) — the feed lays them out in a grid and the full-screen viewer pages between them with swipes or arrow keys.
+- Quoting now opens the full composer (with image support for Umamin+) instead of a small caption box.
+- Your existing quote reposts have been upgraded into real posts automatically — same text, same timestamps, now with their own engagement.
+- If a quoted post is deleted, quotes of it show "This post is unavailable" instead of disappearing.
+
+### Fixed
+
+- Posts, post pages, and quote reposts now show the author's username when they haven't set a display name, instead of an empty space — matching how notes already behave.
+
 ## [5.4.0] - 2026-06-05
 
 ### Added
@@ -31,6 +50,7 @@ any that are empty.
 ### Changed
 
 - Your profile and inbox now share one flat tab row — Posts, Received, Sent — replacing the nested Messages tabs, and each tab has its own link you can share or return to.
+- The profile button in the navigation now opens your profile's Posts tab first; Received and Sent are one tap away.
 
 ### Performance & Cost
 
@@ -503,6 +523,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.5.0]: https://github.com/omsimos/umamin/compare/v5.4.0...v5.5.0
 [5.4.0]: https://github.com/omsimos/umamin/compare/v5.3.0...v5.4.0
 [5.3.0]: https://github.com/omsimos/umamin/compare/v5.2.2...v5.3.0
 [5.2.2]: https://github.com/omsimos/umamin/compare/v5.2.1...v5.2.2

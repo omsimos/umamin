@@ -22,7 +22,12 @@ export async function Menubar() {
       </Link>
 
       {user?.username ? (
-        <Link href="/inbox" aria-label="Your inbox" title="Inbox">
+        // Lands on the profile's Posts tab; Received/Sent are one tap away.
+        <Link
+          href={`/user/${user.username}`}
+          aria-label="Your profile"
+          title="Profile"
+        >
           <CircleUserRoundIcon className="h-6 w-6" />
         </Link>
       ) : (
