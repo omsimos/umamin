@@ -8,7 +8,11 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { cn } from "@umamin/ui/lib/utils";
-import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
+import {
+  AlertCircleIcon,
+  MessageCircleDashedIcon,
+  PinIcon,
+} from "lucide-react";
 import { PostCard } from "@/app/(public)/feed/components/post-card";
 import { PostCardSkeleton } from "@/app/(public)/feed/components/post-card-skeleton";
 import { useInfiniteBoundaryLoader } from "@/hooks/use-infinite-boundary-loader";
@@ -179,12 +183,19 @@ export function ProfilePostList({
                   const item = allItems[row.index];
                   if (!item || item.type !== "post") return null;
                   return (
-                    <PostCard
-                      isAuthenticated={isAuthenticated}
-                      currentUserId={currentUserId}
-                      key={item.post.id}
-                      data={item.post}
-                    />
+                    <div key={item.post.id}>
+                      {item.post.isPinned && (
+                        <div className="mb-2 flex items-center px-2 text-sm text-muted-foreground sm:px-0">
+                          <PinIcon className="mr-1 size-4" />
+                          <span>Pinned</span>
+                        </div>
+                      )}
+                      <PostCard
+                        isAuthenticated={isAuthenticated}
+                        currentUserId={currentUserId}
+                        data={item.post}
+                      />
+                    </div>
                   );
                 })()
               )}

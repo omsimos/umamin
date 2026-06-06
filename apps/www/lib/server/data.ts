@@ -98,6 +98,7 @@ const publicUserColumns = {
   imageUrl: userTable.imageUrl,
   quietMode: userTable.quietMode,
   question: userTable.question,
+  pinnedPostId: userTable.pinnedPostId,
   followerCount: userTable.followerCount,
   followingCount: userTable.followingCount,
   createdAt: userTable.createdAt,
@@ -1038,6 +1039,16 @@ async function getPublicUserPostsPage(
     ? and(baseCondition, cursorCondition)
     : baseCondition;
 
+  // The author's pin surfaces above the chronological flow on the first page
+  // and is removed from its natural slot on every page (two pk lookups, only
+  // on cache miss and only when a pin exists).
+  const [pinTarget] = await db
+    .select({ pinnedPostId: userTable.pinnedPostId })
+    .from(userTable)
+    .where(eq(userTable.id, authorId))
+    .limit(1);
+  const pinnedPostId = pinTarget?.pinnedPostId ?? null;
+
   // Keyset pagination on post_author_created_at_idx (author_id, created_at, id).
   const rows = await db
     .select({ post: postTable, author: publicUserColumns })
@@ -1047,32 +1058,61 @@ async function getPublicUserPostsPage(
     .orderBy(desc(postTable.createdAt), desc(postTable.id))
     .limit(FEED_PAGE_SIZE + 1);
 
-  const quotedMap = await getQuotedPostMap(rows.map((row) => row.post));
+  // The author guard makes a stale/corrupted pin id (e.g. of someone else's
+  // post) render nothing instead of pinning foreign content.
+  const [pinnedRow] =
+    !cursor && pinnedPostId
+      ? await db
+          .select({ post: postTable, author: publicUserColumns })
+          .from(postTable)
+          .innerJoin(userTable, eq(postTable.authorId, userTable.id))
+          .where(
+            and(
+              eq(postTable.id, pinnedPostId),
+              eq(postTable.authorId, authorId),
+            ),
+          )
+          .limit(1)
+      : [];
 
-  const data: FeedItem[] = rows.flatMap(({ post, author }) => {
-    if (!author) {
-      return [];
-    }
+  const quotedMap = await getQuotedPostMap([
+    ...(pinnedRow ? [pinnedRow.post] : []),
+    ...rows.map((row) => row.post),
+  ]);
 
-    return [
-      {
-        type: "post" as const,
-        post: {
-          ...post,
-          author,
-          quotedPost: resolveQuotedPost(post, quotedMap),
-          isLiked: false,
-          isReposted: false,
-        },
-      },
-    ];
+  const toFeedItem = (
+    row: (typeof rows)[number],
+    isPinned?: boolean,
+  ): FeedItem => ({
+    type: "post" as const,
+    post: {
+      ...row.post,
+      author: row.author,
+      quotedPost: resolveQuotedPost(row.post, quotedMap),
+      isLiked: false,
+      isReposted: false,
+      ...(isPinned ? { isPinned: true } : {}),
+    },
   });
 
+  const data: FeedItem[] = rows.flatMap((row) =>
+    row.author ? [toFeedItem(row)] : [],
+  );
+
+  // Cursor math runs on the raw window so pagination stays continuous even
+  // when the pin sits at a page boundary; the pin is filtered afterwards.
   const { hasMore, pageRows } = getPageRows(data, FEED_PAGE_SIZE);
   const lastItem = pageRows[pageRows.length - 1];
 
+  const chronological = pinnedPostId
+    ? pageRows.filter((item) => item.post.id !== pinnedPostId)
+    : pageRows;
+  const finalRows = pinnedRow?.author
+    ? [toFeedItem(pinnedRow, true), ...chronological]
+    : chronological;
+
   return {
-    data: pageRows,
+    data: finalRows,
     nextCursor:
       hasMore && lastItem
         ? `${lastItem.post.createdAt.getTime()}.${lastItem.post.id}`
@@ -1642,6 +1682,7 @@ export async function getPublicUserProfileData(
       bio: userTable.bio,
       question: userTable.question,
       quietMode: userTable.quietMode,
+      pinnedPostId: userTable.pinnedPostId,
       followerCount: userTable.followerCount,
       followingCount: userTable.followingCount,
       createdAt: userTable.createdAt,

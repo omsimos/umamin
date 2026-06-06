@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,14 +12,25 @@ import {
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
 import { Button } from "@umamin/ui/components/button";
-import { DownloadIcon, Share2Icon, Trash2Icon } from "lucide-react";
+import {
+  DownloadIcon,
+  PinIcon,
+  PinOffIcon,
+  Share2Icon,
+  Trash2Icon,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { deletePostAction } from "@/app/actions/post";
+import {
+  deletePostAction,
+  pinPostAction,
+  unpinPostAction,
+} from "@/app/actions/post";
 import { Menu } from "@/components/menu";
-import { queryKeys } from "@/lib/query";
-import { removePostFromFeed } from "@/lib/query-cache";
-import type { FeedResponse } from "@/lib/query-types";
+import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
+import { patchCurrentUser, removePostFromFeed } from "@/lib/query-cache";
+import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
+import type { CurrentUserResponse, FeedResponse } from "@/lib/query-types";
 import { saveImage, sharePost } from "@/lib/utils";
 
 type PostMenuProps = {
@@ -42,6 +53,47 @@ export function PostMenu({
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const canDelete = !!currentUserId && currentUserId === authorId;
+
+  // Shared app-wide cache (usually a hit); carries pinnedPostId for the
+  // pin/unpin menu state on own posts.
+  const { data: currentUser } = useQuery({
+    queryKey: queryKeys.currentUser(),
+    queryFn: fetchCurrentUserOptional,
+    staleTime: PRIVATE_STALE_TIME,
+    enabled: canDelete,
+  });
+  const isPinned = currentUser?.user?.pinnedPostId === postId;
+
+  const pinMutation = useMutation({
+    mutationFn: async () => {
+      const res = isPinned
+        ? await unpinPostAction()
+        : await pinPostAction({ postId });
+      if (res.error) {
+        throw new Error(res.error);
+      }
+      return !isPinned;
+    },
+    onSuccess: (nowPinned) => {
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (u) => ({
+            ...u,
+            pinnedPostId: nowPinned ? postId : null,
+          })),
+      );
+      // Re-render the profile list (any username) with the new pin order.
+      queryClient.invalidateQueries({ queryKey: ["user-posts"] });
+      toast.success(
+        nowPinned ? "Pinned to your profile." : "Unpinned from your profile.",
+      );
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error(err.message ?? "Couldn't update pin.");
+    },
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -83,6 +135,17 @@ export function PostMenu({
     },
     ...(canDelete
       ? [
+          {
+            title: isPinned ? "Unpin from profile" : "Pin to profile",
+            onClick: () => {
+              if (!pinMutation.isPending) pinMutation.mutate();
+            },
+            icon: isPinned ? (
+              <PinOffIcon className="h-4 w-4" />
+            ) : (
+              <PinIcon className="h-4 w-4" />
+            ),
+          },
           {
             title: "Delete",
             onClick: () => setOpen(true),

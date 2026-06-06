@@ -1,0 +1,1 @@
+ALTER TABLE `user` ADD `pinned_post_id` text;

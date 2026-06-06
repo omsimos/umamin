@@ -27,6 +27,8 @@ export type PostData = Omit<SelectPost, "images"> & {
   comments?: SelectPostComment[];
   isLiked?: boolean;
   isReposted?: boolean;
+  // Set only by the profile posts page, on the author's pinned post.
+  isPinned?: boolean;
 };
 
 // Strips viewer overlays + the nested embed so quote composers/optimistic

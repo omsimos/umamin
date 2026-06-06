@@ -8,6 +8,7 @@ import {
   postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
+import { userTable } from "@umamin/db/schema/user";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
@@ -204,6 +205,17 @@ export async function deletePostAction({ postId }: { postId: string }) {
           })
           .where(eq(postTable.id, post.quotedPostId));
       }
+
+      // Deleting the pinned post unpins it (soft reference — no FK cascade).
+      await tx
+        .update(userTable)
+        .set({ pinnedPostId: null })
+        .where(
+          and(
+            eq(userTable.id, session.userId),
+            eq(userTable.pinnedPostId, postId),
+          ),
+        );
     });
 
     // Best-effort: an orphaned R2 object costs fractions of a cent; the post
@@ -218,6 +230,8 @@ export async function deletePostAction({ postId }: { postId: string }) {
     updateTag(`post-comments:${postId}`);
     updateTag(`post:${postId}:liked:${session.userId}`);
     updateTag(`post:${postId}:reposted:${session.userId}`);
+    // Covers the pin-clear above: /api/me carries pinnedPostId for menu state.
+    updateTag(`user:${session.userId}`);
     if (post.quotedPostId) {
       updateTag(`post:${post.quotedPostId}`);
       await refreshHotPostRank(post.quotedPostId);
@@ -709,6 +723,83 @@ export async function removeRepostAction({ postId }: { postId: string }) {
       await refreshHotPostRank(postId);
     }
     return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+/**
+ * Pins one of the caller's own posts to their profile. One pin per user —
+ * pinning a different post simply replaces the previous pin.
+ */
+export async function pinPostAction({ postId }: { postId: string }) {
+  try {
+    const parsed = idSchema.safeParse(postId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
+
+    const { session, user } = await getSession();
+
+    if (!session || !user) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `pin:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    // Only your own, still-existing post can be pinned.
+    const post = await db.query.postTable.findFirst({
+      columns: { id: true, authorId: true },
+      where: eq(postTable.id, postId),
+    });
+
+    if (!post || post.authorId !== session.userId) {
+      return { error: "Post not found" };
+    }
+
+    await db
+      .update(userTable)
+      .set({ pinnedPostId: postId })
+      .where(eq(userTable.id, session.userId));
+
+    // The profile list re-renders with the pin on top; /api/me carries
+    // pinnedPostId for the post-menu state.
+    updateTag(`user-posts:${session.userId}`);
+    updateTag(`user:${session.userId}`);
+    updateTag(`user:${user.username}`);
+
+    return { success: true };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+export async function unpinPostAction() {
+  try {
+    const { session, user } = await getSession();
+
+    if (!session || !user) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `pin:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    await db
+      .update(userTable)
+      .set({ pinnedPostId: null })
+      .where(eq(userTable.id, session.userId));
+
+    updateTag(`user-posts:${session.userId}`);
+    updateTag(`user:${session.userId}`);
+    updateTag(`user:${user.username}`);
+
+    return { success: true };
   } catch (err) {
     console.log(err);
     return { error: "An error occurred" };

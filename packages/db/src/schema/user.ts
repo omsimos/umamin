@@ -22,6 +22,10 @@ export const userTable = sqliteTable("user", {
     .notNull()
     .default(false),
   question: text("question").notNull().default("Send me an anonymous message!"),
+  // Pinned profile post: soft reference, no FK — an FK to postTable would
+  // create a circular schema import (post.ts already references userTable).
+  // deletePostAction clears it; a dangling id just renders no pin.
+  pinnedPostId: text("pinned_post_id"),
   followerCount: integer("follower_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp" })
