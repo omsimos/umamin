@@ -273,7 +273,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
               href={`/user/${author.username}`}
               className="font-semibold hover:underline"
             >
-              {author.displayName}
+              {author.displayName || author.username}
             </Link>
 
             {author.username &&

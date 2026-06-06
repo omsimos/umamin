@@ -356,7 +356,7 @@ export function PostCard({
               href={`/user/${author?.username}`}
               className="relative z-10 font-semibold hover:underline"
             >
-              {author?.displayName}
+              {author?.displayName || author?.username}
             </Link>
 
             {author?.username &&

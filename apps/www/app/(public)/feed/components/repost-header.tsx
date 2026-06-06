@@ -61,7 +61,7 @@ export function RepostHeader({
                 href={`/user/${user.username}`}
                 className="font-semibold hover:underline"
               >
-                {user.displayName ?? user.username}
+                {user.displayName || user.username}
               </Link>
               {verified && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
             </span>

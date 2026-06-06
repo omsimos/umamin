@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.4.1] - 2026-06-06
+
+### Fixed
+
+- Posts, post pages, and quote reposts now show the author's username when they haven't set a display name, instead of an empty space — matching how notes already behave.
+
 ## [5.4.0] - 2026-06-05
 
 ### Added
@@ -503,6 +509,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.4.1]: https://github.com/omsimos/umamin/compare/v5.4.0...v5.4.1
 [5.4.0]: https://github.com/omsimos/umamin/compare/v5.3.0...v5.4.0
 [5.3.0]: https://github.com/omsimos/umamin/compare/v5.2.2...v5.3.0
 [5.2.2]: https://github.com/omsimos/umamin/compare/v5.2.1...v5.2.2
