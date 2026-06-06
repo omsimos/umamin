@@ -9,6 +9,11 @@ import type { PostImageDisplay } from "@/types/post";
 type Props = {
   images: PostImageDisplay[];
   className?: string;
+  /**
+   * False inside an embedded quote card (which is itself a link): tiles render
+   * as plain divs — no lightbox, no button-inside-anchor nesting.
+   */
+  interactive?: boolean;
 };
 
 // Clamp a lone image between slightly-tall and wide-cinema so one post can't
@@ -26,7 +31,7 @@ function singleImageRatio(width: number, height: number) {
  * WebP/JPEG served straight from the R2 custom domain (plain <img>, no
  * optimizer hop).
  */
-export function PostImages({ images, className }: Props) {
+export function PostImages({ images, className, interactive = true }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (images.length === 0) return null;
@@ -58,19 +63,14 @@ export function PostImages({ images, className }: Props) {
             : undefined
         }
       >
-        {shown.map((image, i) => (
-          <button
-            key={image.key || image.previewUrl}
-            type="button"
-            onClick={() => setLightboxIndex(i)}
-            aria-label={`View image ${i + 1} of ${count}`}
-            className={cn(
-              "relative h-full w-full overflow-hidden bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
-              count === 2 && "aspect-[7/8]",
-              count === 3 && i === 0 && "row-span-2",
-            )}
-          >
-            {/* biome-ignore lint/performance/noImgElement: pre-optimized R2 asset; bypassing Vercel image optimization is deliberate */}
+        {shown.map((image, i) => {
+          const tileClassName = cn(
+            "relative h-full w-full overflow-hidden bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
+            count === 2 && "aspect-[7/8]",
+            count === 3 && i === 0 && "row-span-2",
+          );
+          const img = (
+            // biome-ignore lint/performance/noImgElement: pre-optimized R2 asset; bypassing Vercel image optimization is deliberate
             <img
               src={image.previewUrl ?? publicImageUrl(image.key)}
               alt=""
@@ -80,11 +80,34 @@ export function PostImages({ images, className }: Props) {
               decoding="async"
               className="h-full w-full object-cover"
             />
-          </button>
-        ))}
+          );
+
+          if (!interactive) {
+            return (
+              <div
+                key={image.key || image.previewUrl}
+                className={tileClassName}
+              >
+                {img}
+              </div>
+            );
+          }
+
+          return (
+            <button
+              key={image.key || image.previewUrl}
+              type="button"
+              onClick={() => setLightboxIndex(i)}
+              aria-label={`View image ${i + 1} of ${count}`}
+              className={tileClassName}
+            >
+              {img}
+            </button>
+          );
+        })}
       </div>
 
-      {lightboxIndex !== null && (
+      {interactive && lightboxIndex !== null && (
         <ImageLightbox
           images={shown}
           index={lightboxIndex}

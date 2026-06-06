@@ -26,6 +26,11 @@ export const postTable = sqliteTable(
       .$defaultFn(() => nanoid()),
     content: text("content").notNull(),
     images: text("images", { mode: "json" }).$type<PostImage[]>(),
+    // Quote posts: soft reference, deliberately NO FK. Deleting the quoted
+    // post must neither cascade (would delete other people's commentary) nor
+    // SET NULL (quotes would silently become plain posts) — the id survives
+    // and a missing join renders a "post unavailable" husk.
+    quotedPostId: text("quoted_post_id"),
     authorId: text("author_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
@@ -133,7 +138,7 @@ export const postRepostTable = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
-    content: text("content"),
+    // Plain reposts only — quotes are real posts (postTable.quotedPostId).
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

@@ -32,8 +32,10 @@ import {
   removeLikeAction,
   removeRepostAction,
 } from "@/app/actions/post";
+import { ComposeDialog } from "@/components/compose-dialog";
 import { PostBody } from "@/components/post-body";
 import { PostImages } from "@/components/post-images";
+import { QuotedPostCard } from "@/components/quoted-post-card";
 import { TimeAgo } from "@/components/time-ago";
 import {
   BURST_ACTION_REJECT_MESSAGE,
@@ -49,8 +51,7 @@ import {
   isAlreadyRemoved,
   isAlreadyReposted,
 } from "@/lib/utils";
-import type { PostData } from "@/types/post";
-import { RepostDialog } from "./repost-dialog";
+import { type PostData, toQuotedPostData } from "@/types/post";
 
 type Props = {
   data: PostData;
@@ -65,7 +66,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
   const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
   const [reposted, setReposted] = useState<boolean>(data.isReposted === true);
   const [reposts, setReposts] = useState<number>(data.repostCount ?? 0);
-  const [repostDialogOpen, setRepostDialogOpen] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Field-scoped cache writes: like and repost each patch ONLY their own pair so
@@ -216,40 +217,6 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
     }
   };
 
-  const handleQuoteRepost = async (content: string) => {
-    const prevReposted = reposted;
-    const prevReposts = reposts;
-
-    if (prevReposted) {
-      toast.error("Remove repost before quoting.");
-      return;
-    }
-
-    setReposted(true);
-    setReposts((v) => v + 1);
-
-    try {
-      const res = await addRepostAction({ postId: data.id, content });
-      const actionError = getActionError(res);
-      if (actionError) {
-        throw new Error(actionError);
-      }
-      if (isAlreadyReposted(res)) {
-        setReposted(prevReposted);
-        setReposts(prevReposts);
-        toast.error("Already reposted.");
-        return;
-      }
-      toast.success("Quote reposted.");
-      syncRepostCache(true, prevReposts + 1);
-    } catch (err) {
-      setReposted(prevReposted);
-      setReposts(prevReposts);
-      toast.error("Couldn't repost.");
-      console.log(err);
-    }
-  };
-
   return (
     <div
       id={imageId}
@@ -298,6 +265,8 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
         {data.images && data.images.length > 0 && (
           <PostImages images={data.images} />
         )}
+
+        {data.quotedPostId && <QuotedPostCard post={data.quotedPost ?? null} />}
 
         <div className="flex items-center space-x-4 text-muted-foreground mt-4">
           <Button
@@ -359,9 +328,8 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
-                  setRepostDialogOpen(true);
+                  setQuoteOpen(true);
                 }}
-                disabled={reposted}
               >
                 <span className="flex items-center gap-2">
                   <MessageSquareTextIcon className="h-4 w-4" />
@@ -378,13 +346,13 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
         </div>
       </div>
 
-      <RepostDialog
-        open={repostDialogOpen}
-        onOpenChange={setRepostDialogOpen}
-        isAuthenticated={!!isAuthenticated}
-        isReposted={reposted}
-        onQuote={handleQuoteRepost}
-      />
+      {quoteOpen && (
+        <ComposeDialog
+          open={quoteOpen}
+          onOpenChange={setQuoteOpen}
+          quotedPost={toQuotedPostData(data)}
+        />
+      )}
     </div>
   );
 }

@@ -310,16 +310,10 @@ export function PostList({
                       <RepostHeader
                         user={repost.user}
                         createdAt={repost.createdAt}
-                        content={repost.content}
                       />
 
-                      <div
-                        className={`mt-4 sm:pr-0 ${
-                          repost.content ? "pl-8 pr-2 border-b pb-6" : ""
-                        }`}
-                      >
+                      <div className="mt-4 sm:pr-0">
                         <PostCard
-                          isRepost={!!repost.content}
                           isAuthenticated={isAuthenticated}
                           currentUserId={currentUserId}
                           key={item.post.id}

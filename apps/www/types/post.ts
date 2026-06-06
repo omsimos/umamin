@@ -11,13 +11,36 @@ export type PostImageDisplay = PostImage & {
   previewUrl?: string;
 };
 
+// The embedded card inside a quote post. Never carries viewer overlays or a
+// nested quotedPost — embedding stops at one level (the card links through).
+export type QuotedPostData = Omit<SelectPost, "images"> & {
+  images?: PostImageDisplay[] | null;
+  author: PublicUser;
+};
+
 export type PostData = Omit<SelectPost, "images"> & {
   images?: PostImageDisplay[] | null;
+  // Set when quotedPostId is set: the resolved post, or null when it's been
+  // deleted / its author is blocked — rendered as an "unavailable" husk.
+  quotedPost?: QuotedPostData | null;
   author: PublicUser;
   comments?: SelectPostComment[];
   isLiked?: boolean;
   isReposted?: boolean;
 };
+
+// Strips viewer overlays + the nested embed so quote composers/optimistic
+// items carry exactly the documented QuotedPostData shape.
+export function toQuotedPostData(post: PostData): QuotedPostData {
+  const {
+    quotedPost: _quotedPost,
+    comments: _comments,
+    isLiked: _isLiked,
+    isReposted: _isReposted,
+    ...rest
+  } = post;
+  return rest;
+}
 
 export type CommentData = SelectPostComment & {
   author: PublicUser;
@@ -27,7 +50,6 @@ export type CommentData = SelectPostComment & {
 export type RepostData = {
   id: string;
   postId: string;
-  content?: string | null;
   createdAt: Date;
   user: PublicUser;
 };

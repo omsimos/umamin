@@ -33,7 +33,7 @@ export function FeedClient({ sort }: { sort: FeedSort }) {
   return (
     <>
       <PostList sort={sort} isAuthenticated={!!user} currentUserId={user?.id} />
-      {user && <ComposeFab user={user} />}
+      {user && <ComposeFab />}
     </>
   );
 }

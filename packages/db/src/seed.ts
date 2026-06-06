@@ -503,6 +503,8 @@ async function main() {
 
       if (insertedPosts.length > 0) {
         const repostValues: InsertPostRepost[] = [];
+        // Quotes are real posts referencing the original (combined count).
+        const quotePostValues: InsertPost[] = [];
         const repostCounts = new Map<string, number>();
 
         for (const post of insertedPosts) {
@@ -531,15 +533,22 @@ async function main() {
             });
             const isQuote = faker.datatype.boolean({ probability: 0.35 });
 
-            repostValues.push({
-              postId: post.id,
-              userId: userIdOrThrow(reposter.username),
-              content: isQuote
-                ? faker.lorem.sentences({ min: 1, max: 2 })
-                : null,
-              createdAt,
-              updatedAt: createdAt,
-            });
+            if (isQuote) {
+              quotePostValues.push({
+                content: faker.lorem.sentences({ min: 1, max: 2 }),
+                authorId: userIdOrThrow(reposter.username),
+                quotedPostId: post.id,
+                createdAt,
+                updatedAt: createdAt,
+              });
+            } else {
+              repostValues.push({
+                postId: post.id,
+                userId: userIdOrThrow(reposter.username),
+                createdAt,
+                updatedAt: createdAt,
+              });
+            }
           }
 
           repostCounts.set(post.id, usedReposters.size);
@@ -547,6 +556,10 @@ async function main() {
 
         if (repostValues.length > 0) {
           await tx.insert(postRepostTable).values(repostValues);
+        }
+
+        if (quotePostValues.length > 0) {
+          await tx.insert(postTable).values(quotePostValues);
         }
 
         if (repostCounts.size > 0) {

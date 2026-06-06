@@ -11,7 +11,12 @@ import {
   replaceFeedItem,
 } from "@/lib/query-cache";
 import type { FeedResponse } from "@/lib/query-types";
-import type { FeedItem, PostData, PostImageDisplay } from "@/types/post";
+import type {
+  FeedItem,
+  PostData,
+  PostImageDisplay,
+  QuotedPostData,
+} from "@/types/post";
 import type { PublicUser } from "@/types/user";
 
 function isNonFollowingFeedQuery(queryKey: readonly unknown[]) {
@@ -21,6 +26,10 @@ function isNonFollowingFeedQuery(queryKey: readonly unknown[]) {
 type CreatePostVariables = {
   content: string;
   images?: PostImageInput[];
+  quotedPostId?: string;
+  // The already-loaded quoted post, embedded into the optimistic item (and
+  // its server replacement — the action returns the raw row without it).
+  quotedPost?: QuotedPostData;
   // Local object URLs so the optimistic item (and its server replacement)
   // render instantly without fetching the just-uploaded objects from R2.
   optimisticImages?: PostImageDisplay[];
@@ -60,14 +69,23 @@ export function useCreatePost(user: PublicUser | null) {
   };
 
   const mutation = useMutation({
-    mutationFn: async ({ content, images }: CreatePostVariables) => {
-      const res = await submit({ content, images });
+    mutationFn: async ({
+      content,
+      images,
+      quotedPostId,
+    }: CreatePostVariables) => {
+      const res = await submit({ content, images, quotedPostId });
       if (res?.error) {
         throw new Error(res.error);
       }
       return res;
     },
-    onMutate: async ({ content, optimisticImages }) => {
+    onMutate: async ({
+      content,
+      optimisticImages,
+      quotedPostId,
+      quotedPost,
+    }) => {
       if (!user) return {};
       await queryClient.cancelQueries({ queryKey: queryKeys.postsRoot() });
 
@@ -79,6 +97,8 @@ export function useCreatePost(user: PublicUser | null) {
         id: `optimistic-${crypto.randomUUID()}`,
         content,
         images: optimisticImages?.length ? optimisticImages : null,
+        quotedPostId: quotedPostId ?? null,
+        quotedPost,
         authorId: user.id,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -124,6 +144,9 @@ export function useCreatePost(user: PublicUser | null) {
               ...image,
               previewUrl: vars.optimisticImages?.[i]?.previewUrl,
             })),
+            // The action returns the raw row; re-attach the embed we already
+            // hold so the quoted card survives the optimistic->server swap.
+            quotedPost: vars.quotedPost,
             author: user,
             isLiked: false,
             isReposted: false,
