@@ -1,5 +1,6 @@
 import type { SelectMessage } from "@umamin/db/schema/message";
 import type { SelectNote } from "@umamin/db/schema/note";
+import type { NotificationType } from "@umamin/db/schema/notification";
 import type { SelectAccount } from "@umamin/db/schema/user";
 import type { CommentData, FeedItem, PostData } from "@/types/post";
 import type { CurrentUserClient, PublicUser } from "@/types/user";
@@ -33,6 +34,31 @@ export type MessageWithReceiver = SelectMessage & {
 export type MessagesResponse = {
   messages: MessageWithReceiver[];
   nextCursor: string | null;
+};
+
+export type NotificationItem = {
+  id: string;
+  type: NotificationType;
+  targetId: string;
+  count: number;
+  preview: string | null;
+  updatedAt: Date;
+  // Latest actor only (aggregated rows overwrite it); null = anonymous or
+  // deleted account.
+  actor: {
+    username: string;
+    displayName: string | null;
+    imageUrl: string | null;
+  } | null;
+};
+
+export type NotificationsResponse = {
+  notifications: NotificationItem[];
+  nextCursor: string | null;
+};
+
+export type NotificationBadgeResponse = {
+  unseen: number;
 };
 
 export type CurrentUserData = CurrentUserClient & {

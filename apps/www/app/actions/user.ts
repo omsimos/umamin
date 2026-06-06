@@ -25,6 +25,7 @@ import { getSession } from "@/lib/auth";
 import { publicImageUrl } from "@/lib/post-images";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getCurrentUserData, getUserProfileData } from "@/lib/server/data";
+import { notify } from "@/lib/server/notifications";
 import {
   claimStagedAvatar,
   deletePostImages,
@@ -505,6 +506,14 @@ export async function followUserAction({ userId }: { userId: string }) {
     }
     updateTag(`user-following:${session.userId}`);
     updateTag(`user-followers:${userId}`);
+
+    if (!("alreadyFollowing" in result)) {
+      await notify({
+        recipientId: userId,
+        type: "follow",
+        actorId: session.userId,
+      });
+    }
 
     return result;
   } catch (err) {

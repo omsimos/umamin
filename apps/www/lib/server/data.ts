@@ -3,6 +3,7 @@ import "server-only";
 import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
+import { notificationTable } from "@umamin/db/schema/notification";
 import {
   postCommentLikeTable,
   postCommentTable,
@@ -41,6 +42,8 @@ import type {
   MessagesResponse,
   NoteItem,
   NotesResponse,
+  NotificationBadgeResponse,
+  NotificationsResponse,
   PostResponse,
   UserProfileResponse,
   UserProfileViewerResponse,
@@ -61,6 +64,9 @@ const HOT_FEED_CANDIDATE_SIZE = 100;
 const COMMENTS_PAGE_SIZE = 20;
 const MESSAGES_PAGE_SIZE = 20;
 const FOLLOW_LIST_PAGE_SIZE = 20;
+const NOTIFICATIONS_PAGE_SIZE = 20;
+// The badge displays "9+" past nine — scanning further buys nothing.
+const NOTIFICATION_BADGE_LIMIT = 10;
 
 type FeedCursor = {
   createdAt: Date;
@@ -2151,5 +2157,106 @@ export async function getMessagesPage(params: {
   return {
     ...cachedData,
     messages,
+  };
+}
+
+export async function getNotificationBadgeData(
+  viewerId: string,
+): Promise<NotificationBadgeResponse> {
+  "use cache";
+  cacheTag(`notifications:${viewerId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  // Two independent reads run together (async-parallel); the watermark filter
+  // happens in JS over the bounded newest rows instead of SQL, so the user row
+  // and the notification scan don't waterfall. Unseen rows are by definition
+  // the newest (updatedAt > watermark), so filtering the top LIMIT rows counts
+  // exactly min(unseen, LIMIT) — the UI caps at "9+" anyway.
+  //
+  // The watermark is read from the user row directly — getSession's copy can
+  // be up to 60s stale (Redis session cache), which would resurrect the badge
+  // right after mark-seen.
+  const [viewerRows, latest] = await Promise.all([
+    db
+      .select({ lastSeenNotificationsAt: userTable.lastSeenNotificationsAt })
+      .from(userTable)
+      .where(eq(userTable.id, viewerId))
+      .limit(1),
+    db
+      .select({ updatedAt: notificationTable.updatedAt })
+      .from(notificationTable)
+      .where(eq(notificationTable.recipientId, viewerId))
+      .orderBy(desc(notificationTable.updatedAt), desc(notificationTable.id))
+      .limit(NOTIFICATION_BADGE_LIMIT),
+  ]);
+
+  const viewer = viewerRows[0];
+
+  if (!viewer) {
+    return { unseen: 0 };
+  }
+
+  const lastSeenMs = viewer.lastSeenNotificationsAt?.getTime() ?? 0;
+
+  return {
+    unseen: latest.filter((row) => row.updatedAt.getTime() > lastSeenMs).length,
+  };
+}
+
+export async function getNotificationsPage(params: {
+  viewerId: string;
+  cursor?: string | null;
+}): Promise<NotificationsResponse> {
+  "use cache";
+  cacheTag(`notifications:${params.viewerId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  const parsedCursor = parseCursor(params.cursor ?? null);
+
+  // Cursor rides updatedAt (not createdAt): aggregation bumps rows back to the
+  // top, matching the (recipientId, updatedAt, id) index order.
+  const cursorCondition = parsedCursor
+    ? or(
+        lt(notificationTable.updatedAt, parsedCursor.cursorDate),
+        and(
+          eq(notificationTable.updatedAt, parsedCursor.cursorDate),
+          lt(notificationTable.id, parsedCursor.cursorId),
+        ),
+      )
+    : undefined;
+
+  const baseCondition = eq(notificationTable.recipientId, params.viewerId);
+
+  const rows = await db
+    .select({
+      id: notificationTable.id,
+      type: notificationTable.type,
+      targetId: notificationTable.targetId,
+      count: notificationTable.count,
+      preview: notificationTable.preview,
+      updatedAt: notificationTable.updatedAt,
+      actor: {
+        username: userTable.username,
+        displayName: userTable.displayName,
+        imageUrl: userTable.imageUrl,
+      },
+    })
+    .from(notificationTable)
+    .leftJoin(userTable, eq(notificationTable.actorId, userTable.id))
+    .where(
+      cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
+    )
+    .orderBy(desc(notificationTable.updatedAt), desc(notificationTable.id))
+    .limit(NOTIFICATIONS_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(rows, NOTIFICATIONS_PAGE_SIZE);
+  const lastRow = pageRows[pageRows.length - 1];
+
+  return {
+    notifications: pageRows,
+    nextCursor:
+      hasMore && lastRow
+        ? `${lastRow.updatedAt.getTime()}.${lastRow.id}`
+        : null,
   };
 }

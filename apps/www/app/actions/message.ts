@@ -9,6 +9,7 @@ import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
 import { checkRateLimit, getClientIp, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
+import { notify } from "@/lib/server/notifications";
 import { formatContent } from "@/lib/utils";
 
 export async function deleteMessageAction(id: string) {
@@ -96,13 +97,24 @@ export async function createReplyAction({
           eq(messageTable.receiverId, session.userId),
         ),
       )
-      .returning({ id: messageTable.id });
+      .returning({ id: messageTable.id, senderId: messageTable.senderId });
 
     if (updated.length === 0) {
       return { error: "Message not found" };
     }
 
     updateTag(`messages:received:${session.userId}`);
+
+    // Only a logged-in sender can be notified; the replier's identity isn't a
+    // leak — the sender chose this recipient. No preview: replies are encrypted.
+    if (updated[0].senderId) {
+      await notify({
+        recipientId: updated[0].senderId,
+        type: "reply",
+        targetId: messageId,
+        actorId: session.userId,
+      });
+    }
 
     return { success: true, reply: params.data.content, updatedAt: new Date() };
   } catch (err) {
@@ -189,6 +201,10 @@ export async function sendMessageAction(
       updateTag(`messages:sent:${senderId}`);
     }
     updateTag(`messages:received:${receiverId}`);
+
+    // actorId stays null even for a logged-in sender — messages are anonymous.
+    // No preview: content is encrypted at rest.
+    await notify({ recipientId: receiverId, type: "message" });
 
     return { success: true };
   } catch (err) {

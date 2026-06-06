@@ -28,6 +28,12 @@ export const userTable = sqliteTable("user", {
   pinnedPostId: text("pinned_post_id"),
   followerCount: integer("follower_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
+  // Watermark for the notification badge: unread = notification rows with
+  // updatedAt past this. Mark-all-seen is one user-row write instead of
+  // flipping a read flag on N notification rows.
+  lastSeenNotificationsAt: integer("last_seen_notifications_at", {
+    mode: "timestamp",
+  }),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

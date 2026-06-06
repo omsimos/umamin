@@ -7,6 +7,8 @@ import type {
   FollowListResponse,
   MessagesResponse,
   NotesResponse,
+  NotificationBadgeResponse,
+  NotificationsResponse,
   PostResponse,
   UserProfileResponse,
   UserProfileViewerResponse,
@@ -134,6 +136,16 @@ export async function fetchFollowingPage(
 ) {
   const url = appendCursor(`/api/user/${username}/following`, cursor);
   return fetchJson<FollowListResponse>(url);
+}
+
+export async function fetchNotificationBadge() {
+  return fetchJson<NotificationBadgeResponse>("/api/notifications/badge");
+}
+
+export async function fetchNotificationsPage(cursor: string | null) {
+  return fetchJson<NotificationsResponse>(
+    appendCursor("/api/notifications", cursor),
+  );
 }
 
 export async function fetchMessagesPage(

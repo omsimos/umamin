@@ -13,6 +13,7 @@ import {
   queryKeys,
 } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
+import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { UmaminLogo } from "./umamin-logo";
 
@@ -55,7 +56,10 @@ export function AppHeader() {
           <UmaminLogo className="size-8" />
         </Link>
 
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );
