@@ -29,6 +29,8 @@ export const queryKeys = {
   following: (username: string) => ["following", username] as const,
   receivedMessages: () => ["received_messages"] as const,
   sentMessages: () => ["sent_messages"] as const,
+  notifications: () => ["notifications"] as const,
+  notificationBadge: () => ["notification_badge"] as const,
 };
 
 export const infiniteQueryDefaults = {

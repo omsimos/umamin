@@ -18,6 +18,19 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.6.0] - 2026-06-06
+
+### Added
+
+- In-app notifications: a bell in the top bar shows when someone likes or comments on your post, follows you, sends you an anonymous message, or replies to a message you sent. The badge counts what you haven't seen (capped at 9+), and the new Notifications page lists everything with links straight to the post, profile, or your inbox.
+- Repeat activity on the same post is grouped into a single notification — "Alice and 4 others liked your post" — instead of flooding the list.
+- Opening the Notifications page marks everything as seen and clears the badge.
+
+### Security & Privacy
+
+- Anonymous message notifications never reveal the sender — they show only that a message arrived, and never include message content, which stays encrypted.
+- Notifications are kept for 30 days and then deleted automatically.
+
 ## [5.5.0] - 2026-06-06
 
 ### Added
@@ -523,6 +536,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.6.0]: https://github.com/omsimos/umamin/compare/v5.5.0...v5.6.0
 [5.5.0]: https://github.com/omsimos/umamin/compare/v5.4.0...v5.5.0
 [5.4.0]: https://github.com/omsimos/umamin/compare/v5.3.0...v5.4.0
 [5.3.0]: https://github.com/omsimos/umamin/compare/v5.2.2...v5.3.0

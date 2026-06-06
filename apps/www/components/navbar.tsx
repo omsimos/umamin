@@ -5,6 +5,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isStandaloneMode } from "@/lib/pwa";
+import { NotificationBell } from "./notification-bell";
 // import { PwaInstallButton } from "./pwa-install-button";
 import { ThemeToggle } from "./theme-toggle";
 import { UmaminLogo } from "./umamin-logo";
@@ -54,6 +55,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           {/* <PwaInstallButton /> */}
+          <NotificationBell />
           <ThemeToggle />
         </div>
       </div>

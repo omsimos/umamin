@@ -1,14 +1,23 @@
 import type { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 import * as z from "zod";
 
-export type PublicUser = Omit<SelectUser, "passwordHash">;
+// lastSeenNotificationsAt is the viewer's own notification watermark — private
+// state, never part of a public (or even own-profile) payload.
+export type PublicUser = Omit<
+  SelectUser,
+  "passwordHash" | "lastSeenNotificationsAt"
+>;
 export type CurrentUserClient = PublicUser & { hasPassword: boolean };
 export type UserWithAccount = CurrentUserClient & {
   account: SelectAccount | null;
 };
 
 export function toPublicUser(user: SelectUser): PublicUser {
-  const { passwordHash: _passwordHash, ...rest } = user;
+  const {
+    passwordHash: _passwordHash,
+    lastSeenNotificationsAt: _lastSeenNotificationsAt,
+    ...rest
+  } = user;
   return rest;
 }
 

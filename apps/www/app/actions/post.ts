@@ -22,6 +22,7 @@ import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { redis } from "@/lib/redis";
 import { getPostById } from "@/lib/server/data";
 import { refreshHotPostRank, removeHotPostRank } from "@/lib/server/feed-rank";
+import { notify } from "@/lib/server/notifications";
 import {
   claimStagedImages,
   deletePostImages,
@@ -275,6 +276,7 @@ export async function createCommentAction(
     }
 
     let createdComment: typeof postCommentTable.$inferSelect | undefined;
+    let postAuthorId: string | undefined;
 
     await db.transaction(async (tx) => {
       const [comment] = await tx
@@ -288,12 +290,16 @@ export async function createCommentAction(
 
       createdComment = comment;
 
-      await tx
+      // .returning() hands the notification its recipient for free.
+      const [updated] = await tx
         .update(postTable)
         .set({
           commentCount: sql`${postTable.commentCount} + 1`,
         })
-        .where(eq(postTable.id, postId));
+        .where(eq(postTable.id, postId))
+        .returning({ authorId: postTable.authorId });
+
+      postAuthorId = updated?.authorId;
     });
 
     // Note: not invalidating the "posts" feed tag — a new comment only bumps
@@ -303,6 +309,15 @@ export async function createCommentAction(
     updateTag(`post:${postId}`);
     updateTag(`post-comments:${postId}`);
     await refreshHotPostRank(postId);
+    if (postAuthorId && createdComment) {
+      await notify({
+        recipientId: postAuthorId,
+        type: "comment",
+        targetId: postId,
+        actorId: session.userId,
+        preview: createdComment.content,
+      });
+    }
 
     return { success: true, comment: createdComment };
   } catch (err) {
@@ -393,6 +408,10 @@ export async function addLikeAction({ postId }: { postId: string }) {
       return { error: RATE_LIMIT_ERROR };
     }
 
+    // Captured via .returning() on the count update — the like notification's
+    // recipient (post author) and preview come free, no extra row read.
+    let likedPost: { authorId: string; content: string } | undefined;
+
     const result = await db.transaction(async (tx) => {
       const inserted = await tx
         .insert(postLikeTable)
@@ -407,12 +426,18 @@ export async function addLikeAction({ postId }: { postId: string }) {
         return { success: true, alreadyLiked: true };
       }
 
-      await tx
+      const [updated] = await tx
         .update(postTable)
         .set({
           likeCount: sql`${postTable.likeCount} + 1`,
         })
-        .where(eq(postTable.id, postId));
+        .where(eq(postTable.id, postId))
+        .returning({
+          authorId: postTable.authorId,
+          content: postTable.content,
+        });
+
+      likedPost = updated;
 
       return { success: true };
     });
@@ -425,6 +450,15 @@ export async function addLikeAction({ postId }: { postId: string }) {
     updateTag(`post:${postId}:liked:${session.userId}`);
     if (!("alreadyLiked" in result)) {
       await refreshHotPostRank(postId);
+    }
+    if (likedPost) {
+      await notify({
+        recipientId: likedPost.authorId,
+        type: "like",
+        targetId: postId,
+        actorId: session.userId,
+        preview: likedPost.content,
+      });
     }
     return result;
   } catch (err) {

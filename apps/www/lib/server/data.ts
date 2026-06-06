@@ -3,6 +3,7 @@ import "server-only";
 import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
+import { notificationTable } from "@umamin/db/schema/notification";
 import {
   postCommentLikeTable,
   postCommentTable,
@@ -41,14 +42,18 @@ import type {
   MessagesResponse,
   NoteItem,
   NotesResponse,
+  NotificationBadgeResponse,
+  NotificationsResponse,
   PostResponse,
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "@/lib/query-types";
+import { parseCursor } from "@/lib/server/cursor";
 import {
   getRedisHotPostIdsPage,
   isRedisHotCursor,
 } from "@/lib/server/feed-rank";
+import { countUnseen } from "@/lib/server/notifications";
 import type { CommentData, FeedItem, QuotedPostData } from "@/types/post";
 import type { CurrentUserClient, PublicUser } from "@/types/user";
 
@@ -61,6 +66,9 @@ const HOT_FEED_CANDIDATE_SIZE = 100;
 const COMMENTS_PAGE_SIZE = 20;
 const MESSAGES_PAGE_SIZE = 20;
 const FOLLOW_LIST_PAGE_SIZE = 20;
+const NOTIFICATIONS_PAGE_SIZE = 20;
+// The badge displays "9+" past nine — scanning further buys nothing.
+const NOTIFICATION_BADGE_LIMIT = 10;
 
 type FeedCursor = {
   createdAt: Date;
@@ -202,22 +210,6 @@ function parseHotFeedCursor(cursor: string | null): HotFeedCursor | null {
     scoreKey,
     createdAtMs,
     postId,
-  };
-}
-
-function parseCursor(cursor: string | null) {
-  if (!cursor) return null;
-
-  const sep = cursor.indexOf(".");
-  if (sep <= 0) return null;
-
-  const ms = Number(cursor.slice(0, sep));
-  const cursorId = cursor.slice(sep + 1);
-  const cursorDate = new Date(ms);
-
-  return {
-    cursorId,
-    cursorDate,
   };
 }
 
@@ -2151,5 +2143,104 @@ export async function getMessagesPage(params: {
   return {
     ...cachedData,
     messages,
+  };
+}
+
+export async function getNotificationBadgeData(
+  viewerId: string,
+): Promise<NotificationBadgeResponse> {
+  "use cache";
+  // Deliberately NOT the list's `notifications:` tag: mark-seen changes only
+  // the badge, and must not bust the list cache the page just populated.
+  cacheTag(`notifications-badge:${viewerId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  // Two independent reads run together (async-parallel); the watermark filter
+  // happens in JS over the bounded newest rows instead of SQL, so the user row
+  // and the notification scan don't waterfall. Unseen rows are by definition
+  // the newest (updatedAt > watermark), so filtering the top LIMIT rows counts
+  // exactly min(unseen, LIMIT) — the UI caps at "9+" anyway.
+  //
+  // The watermark is read from the user row directly — getSession's copy can
+  // be up to 60s stale (Redis session cache), which would resurrect the badge
+  // right after mark-seen.
+  const [viewerRows, latest] = await Promise.all([
+    db
+      .select({ lastSeenNotificationsAt: userTable.lastSeenNotificationsAt })
+      .from(userTable)
+      .where(eq(userTable.id, viewerId))
+      .limit(1),
+    db
+      .select({ updatedAt: notificationTable.updatedAt })
+      .from(notificationTable)
+      .where(eq(notificationTable.recipientId, viewerId))
+      .orderBy(desc(notificationTable.updatedAt), desc(notificationTable.id))
+      .limit(NOTIFICATION_BADGE_LIMIT),
+  ]);
+
+  const viewer = viewerRows[0];
+
+  if (!viewer) {
+    return { unseen: 0 };
+  }
+
+  return { unseen: countUnseen(latest, viewer.lastSeenNotificationsAt) };
+}
+
+export async function getNotificationsPage(params: {
+  viewerId: string;
+  cursor?: string | null;
+}): Promise<NotificationsResponse> {
+  "use cache";
+  cacheTag(`notifications:${params.viewerId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  const parsedCursor = parseCursor(params.cursor ?? null);
+
+  // Cursor rides updatedAt (not createdAt): aggregation bumps rows back to the
+  // top, matching the (recipientId, updatedAt, id) index order.
+  const cursorCondition = parsedCursor
+    ? or(
+        lt(notificationTable.updatedAt, parsedCursor.cursorDate),
+        and(
+          eq(notificationTable.updatedAt, parsedCursor.cursorDate),
+          lt(notificationTable.id, parsedCursor.cursorId),
+        ),
+      )
+    : undefined;
+
+  const baseCondition = eq(notificationTable.recipientId, params.viewerId);
+
+  const rows = await db
+    .select({
+      id: notificationTable.id,
+      type: notificationTable.type,
+      targetId: notificationTable.targetId,
+      count: notificationTable.count,
+      preview: notificationTable.preview,
+      updatedAt: notificationTable.updatedAt,
+      actor: {
+        username: userTable.username,
+        displayName: userTable.displayName,
+        imageUrl: userTable.imageUrl,
+      },
+    })
+    .from(notificationTable)
+    .leftJoin(userTable, eq(notificationTable.actorId, userTable.id))
+    .where(
+      cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
+    )
+    .orderBy(desc(notificationTable.updatedAt), desc(notificationTable.id))
+    .limit(NOTIFICATIONS_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(rows, NOTIFICATIONS_PAGE_SIZE);
+  const lastRow = pageRows[pageRows.length - 1];
+
+  return {
+    notifications: pageRows,
+    nextCursor:
+      hasMore && lastRow
+        ? `${lastRow.updatedAt.getTime()}.${lastRow.id}`
+        : null,
   };
 }
