@@ -39,9 +39,9 @@ import { patchNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import {
   getActionError,
+  hasUmaminPlus,
   isAlreadyReacted,
   isAlreadyRemoved,
-  isOlderThanOneYear,
   saveImage,
   shortTimeAgo,
 } from "@/lib/utils";
@@ -167,7 +167,7 @@ export function NoteCard({
                   >
                     <Avatar
                       className={cn({
-                        "avatar-shine": isOlderThanOneYear(user?.createdAt),
+                        "avatar-shine": hasUmaminPlus(user?.createdAt),
                       })}
                     >
                       <AvatarImage

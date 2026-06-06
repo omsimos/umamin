@@ -33,6 +33,7 @@ import {
   removeRepostAction,
 } from "@/app/actions/post";
 import { PostBody } from "@/components/post-body";
+import { PostImages } from "@/components/post-images";
 import { TimeAgo } from "@/components/time-ago";
 import {
   BURST_ACTION_REJECT_MESSAGE,
@@ -43,10 +44,10 @@ import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
 import type { FeedResponse, PostResponse } from "@/lib/query-types";
 import {
   getActionError,
+  hasUmaminPlus,
   isAlreadyLiked,
   isAlreadyRemoved,
   isAlreadyReposted,
-  isOlderThanOneYear,
 } from "@/lib/utils";
 import type { PostData } from "@/types/post";
 import { RepostDialog } from "./repost-dialog";
@@ -257,7 +258,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
       <div className="flex justify-center gap-3">
         <Avatar
           className={cn({
-            "avatar-shine": isOlderThanOneYear(author.createdAt),
+            "avatar-shine": hasUmaminPlus(author.createdAt),
           })}
         >
           <AvatarImage src={author.imageUrl ?? ""} alt="User avatar" />
@@ -293,6 +294,10 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
 
       <div className="text-[15px] w-full">
         <PostBody content={data.content} className="mt-1" />
+
+        {data.images && data.images.length > 0 && (
+          <PostImages images={data.images} />
+        )}
 
         <div className="flex items-center space-x-4 text-muted-foreground mt-4">
           <Button

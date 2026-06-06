@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
-import { isOlderThanOneYear } from "@/lib/utils";
+import { hasUmaminPlus } from "@/lib/utils";
 import type { PublicUser } from "@/types/user";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { ShareButton } from "./share-button";
@@ -36,7 +36,7 @@ export function UserCard({
       <section className="flex gap-4">
         <Avatar
           className={cn("md:size-20 size-16", {
-            "avatar-shine": isOlderThanOneYear(user?.createdAt),
+            "avatar-shine": hasUmaminPlus(user?.createdAt),
           })}
         >
           <AvatarImage

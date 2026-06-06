@@ -227,7 +227,11 @@ export const sharePost = (postId: string) => {
   }
 };
 
-export function isOlderThanOneYear(createdAt?: Date | string | null) {
+/**
+ * Umamin+ — perks (avatar shine, image uploads) unlocked once an account is
+ * over a year old. Client-side gate only; mutations re-check server-side.
+ */
+export function hasUmaminPlus(createdAt?: Date | string | null) {
   if (!createdAt) return false;
 
   const createdDate = new Date(createdAt);

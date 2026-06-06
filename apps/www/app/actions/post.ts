@@ -12,11 +12,21 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import {
+  MAX_POST_IMAGES,
+  PLUS_REQUIRED_ERROR,
+  postImageInputSchema,
+} from "@/lib/post-images";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { redis } from "@/lib/redis";
 import { getPostById } from "@/lib/server/data";
 import { refreshHotPostRank, removeHotPostRank } from "@/lib/server/feed-rank";
-import { formatContent } from "@/lib/utils";
+import {
+  claimStagedImages,
+  deletePostImages,
+  isR2Configured,
+} from "@/lib/server/r2";
+import { formatContent, hasUmaminPlus } from "@/lib/utils";
 
 // Records the newest feed-edge timestamp so the client can show a "new posts"
 // pill without polling Turso. No-ops when Redis isn't configured.
@@ -26,13 +36,18 @@ async function bumpFeedLatest(createdAt: Date) {
   }
 }
 
-const createPostSchema = z.object({
-  content: z
-    .string()
-    .trim()
-    .min(1, { error: "Content cannot be empty" })
-    .max(500, { error: "Content cannot exceed 500 characters" }),
-});
+const createPostSchema = z
+  .object({
+    content: z
+      .string()
+      .trim()
+      .max(500, { error: "Content cannot exceed 500 characters" }),
+    images: z.array(postImageInputSchema).max(MAX_POST_IMAGES).optional(),
+  })
+  // Image-only posts are allowed; empty posts are not.
+  .refine((v) => v.content.length > 0 || (v.images?.length ?? 0) > 0, {
+    error: "Content cannot be empty",
+  });
 
 export async function getPostAction(id: string) {
   const { session } = await getSession();
@@ -53,10 +68,10 @@ export async function createPostAction(
       return { error: "Invalid input" };
     }
 
-    const { content } = params.data;
-    const { session } = await getSession();
+    const { content, images } = params.data;
+    const { session, user } = await getSession();
 
-    if (!session) {
+    if (!session || !user) {
       throw new Error("Unauthorized");
     }
 
@@ -64,15 +79,43 @@ export async function createPostAction(
       return { error: RATE_LIMIT_ERROR };
     }
 
+    let claimedImages: Awaited<ReturnType<typeof claimStagedImages>> = null;
+
+    if (images?.length) {
+      if (!isR2Configured()) {
+        return { error: "Image uploads aren't available right now." };
+      }
+
+      // Re-checked server-side: the composer gate is UX-only.
+      if (!hasUmaminPlus(user.createdAt)) {
+        return { error: PLUS_REQUIRED_ERROR };
+      }
+
+      claimedImages = await claimStagedImages(session.userId, images);
+
+      if (!claimedImages) {
+        return { error: "Couldn't attach images. Please try again." };
+      }
+    }
+
     const formattedContent = formatContent(content);
 
-    const [createdPost] = await db
-      .insert(postTable)
-      .values({
-        content: formattedContent,
-        authorId: session.userId,
-      })
-      .returning();
+    let createdPost: typeof postTable.$inferSelect;
+
+    try {
+      [createdPost] = await db
+        .insert(postTable)
+        .values({
+          content: formattedContent,
+          authorId: session.userId,
+          images: claimedImages,
+        })
+        .returning();
+    } catch (err) {
+      // Claimed objects must not outlive a failed insert (storage leak).
+      await deletePostImages(claimedImages);
+      throw err;
+    }
 
     // Background SWR, not updateTag: expiring "posts" forces a blocking re-scan
     // of the (Hot-ranked) feed, which times out on large datasets. The poster
@@ -105,7 +148,7 @@ export async function deletePostAction({ postId }: { postId: string }) {
     }
 
     const post = await db.query.postTable.findFirst({
-      columns: { id: true, authorId: true },
+      columns: { id: true, authorId: true, images: true },
       where: eq(postTable.id, postId),
     });
 
@@ -114,6 +157,10 @@ export async function deletePostAction({ postId }: { postId: string }) {
     }
 
     await db.delete(postTable).where(eq(postTable.id, postId));
+
+    // Best-effort: an orphaned R2 object costs fractions of a cent; the post
+    // row (already gone) is the source of truth.
+    await deletePostImages(post.images);
 
     // SWR like createPostAction — avoid the blocking full feed re-scan.
     revalidateTag("posts", "max");

@@ -18,6 +18,39 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.4.0] - 2026-06-05
+
+### Added
+
+- Umamin+: accounts that are a year or older now hold Umamin+ — the avatar shine you already know, plus new perks starting with image uploads.
+- Post images (Umamin+): attach a photo to a post on the feed — pick from your gallery, paste, or drag and drop into the composer, with an instant preview, upload progress, retry on failure, and one-tap removal.
+- Posts can now be image-only; text is optional when an image is attached.
+- Tapping a post's image opens a full-screen viewer — swipe down or press Esc to close.
+- Upload your own profile photo from Settings — it's cropped square, compressed on your device, and applied after a preview. Using a connected Google photo still works.
+
+### Changed
+
+- Your profile and inbox now share one flat tab row — Posts, Received, Sent — replacing the nested Messages tabs, and each tab has its own link you can share or return to.
+
+### Performance & Cost
+
+- Images are compressed on your device before uploading — to a small fraction of their original size — so uploads finish fast even on slow connections and feeds stay light to scroll.
+- Post images are served from a dedicated media domain with long-lived caching, and their space is reserved up front so the feed never jumps while they load.
+
+### Security & Privacy
+
+- Compression strips photo metadata (location and other EXIF data) before anything leaves your device.
+- Upload size and type are pinned to what the server approved and re-verified when a post is published; deleting a post also deletes its images from storage.
+- Changing, hiding, or replacing your profile photo deletes the old uploaded one from storage, and deleting your account removes every photo you've uploaded.
+
+### Accessibility
+
+- The full-screen image viewer is fully keyboard operable (arrow keys, Esc) and upload progress is announced to screen readers.
+
+### Removed
+
+- Gravatar support: profile photos now come from your own uploads or a connected Google account. Existing Gravatar photos keep displaying until you change them.
+
 ## [5.3.0] - 2026-06-05
 
 ### Added
@@ -470,6 +503,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.4.0]: https://github.com/omsimos/umamin/compare/v5.3.0...v5.4.0
 [5.3.0]: https://github.com/omsimos/umamin/compare/v5.2.2...v5.3.0
 [5.2.2]: https://github.com/omsimos/umamin/compare/v5.2.1...v5.2.2
 [5.2.1]: https://github.com/omsimos/umamin/compare/v5.2.0...v5.2.1

@@ -3,29 +3,71 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { createPostAction } from "@/app/actions/post";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { type PostImageInput, publicImageUrl } from "@/lib/post-images";
 import { queryKeys } from "@/lib/query";
-import { prependFeedItem, replaceFeedItem } from "@/lib/query-cache";
+import {
+  patchPostAcrossFeed,
+  prependFeedItem,
+  replaceFeedItem,
+} from "@/lib/query-cache";
 import type { FeedResponse } from "@/lib/query-types";
-import type { FeedItem, PostData } from "@/types/post";
+import type { FeedItem, PostData, PostImageDisplay } from "@/types/post";
 import type { PublicUser } from "@/types/user";
 
 function isNonFollowingFeedQuery(queryKey: readonly unknown[]) {
   return queryKey[0] === "posts" && queryKey[1] !== "following";
 }
 
+type CreatePostVariables = {
+  content: string;
+  images?: PostImageInput[];
+  // Local object URLs so the optimistic item (and its server replacement)
+  // render instantly without fetching the just-uploaded objects from R2.
+  optimisticImages?: PostImageDisplay[];
+};
+
 export function useCreatePost(user: PublicUser | null) {
   const queryClient = useQueryClient();
   const submit = useSingleFlightAction(createPostAction);
 
+  // Once the R2 copy is confirmed loadable (it lands in the browser cache,
+  // immutable), strip the blob preview from the cached item and revoke it —
+  // otherwise every posted image pins its local blob for the whole session.
+  const releasePreviewWhenRemoteLoads = (
+    postId: string,
+    key: string,
+    previewUrl: string,
+  ) => {
+    const remoteUrl = publicImageUrl(key);
+    if (!remoteUrl) return;
+
+    const remote = new Image();
+    remote.onload = () => {
+      queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+        { queryKey: queryKeys.postsRoot() },
+        (current) =>
+          patchPostAcrossFeed(current, postId, (post) => ({
+            ...post,
+            images: post.images?.map((image) =>
+              image.key === key ? { ...image, previewUrl: undefined } : image,
+            ),
+          })),
+      );
+      URL.revokeObjectURL(previewUrl);
+    };
+    // On error keep the local preview — revoking would blank the image.
+    remote.src = remoteUrl;
+  };
+
   const mutation = useMutation({
-    mutationFn: async (nextContent: string) => {
-      const res = await submit({ content: nextContent });
+    mutationFn: async ({ content, images }: CreatePostVariables) => {
+      const res = await submit({ content, images });
       if (res?.error) {
         throw new Error(res.error);
       }
       return res;
     },
-    onMutate: async (nextContent) => {
+    onMutate: async ({ content, optimisticImages }) => {
       if (!user) return {};
       await queryClient.cancelQueries({ queryKey: queryKeys.postsRoot() });
 
@@ -35,7 +77,8 @@ export function useCreatePost(user: PublicUser | null) {
 
       const optimisticPost: PostData = {
         id: `optimistic-${crypto.randomUUID()}`,
-        content: nextContent,
+        content,
+        images: optimisticImages?.length ? optimisticImages : null,
         authorId: user.id,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -64,7 +107,7 @@ export function useCreatePost(user: PublicUser | null) {
       }
       toast.error(err.message ?? "Couldn't post.");
     },
-    onSuccess: (res, _vars, ctx) => {
+    onSuccess: (res, vars, ctx) => {
       if (res?.error) {
         toast.error(res.error);
         return;
@@ -75,6 +118,12 @@ export function useCreatePost(user: PublicUser | null) {
           type: "post",
           post: {
             ...res.post,
+            // Keep the local previews layered over the server keys so the
+            // images don't flash a refetch when the optimistic item swaps.
+            images: res.post.images?.map((image, i) => ({
+              ...image,
+              previewUrl: vars.optimisticImages?.[i]?.previewUrl,
+            })),
             author: user,
             isLiked: false,
             isReposted: false,
@@ -94,6 +143,16 @@ export function useCreatePost(user: PublicUser | null) {
               nextItem,
             ),
         );
+
+        for (const image of nextItem.post.images ?? []) {
+          if (image.previewUrl) {
+            releasePreviewWhenRemoteLoads(
+              res.post.id,
+              image.key,
+              image.previewUrl,
+            );
+          }
+        }
       }
 
       toast.success("Post published.");

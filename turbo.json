@@ -16,7 +16,9 @@
         "CRON_SECRET",
         "AES_256_GCM_KEY",
         "VITE_CONVEX_URL",
-        "CONVEX_DEPLOYMENT"
+        "CONVEX_DEPLOYMENT",
+        "R2_*",
+        "NEXT_PUBLIC_R2_PUBLIC_URL"
       ]
     },
     "lint": {

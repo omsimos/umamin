@@ -35,7 +35,7 @@ import { fetchCurrentNote } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import {
   getActionError,
-  isOlderThanOneYear,
+  hasUmaminPlus,
   saveImage,
   shortTimeAgo,
 } from "@/lib/utils";
@@ -174,7 +174,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
               <>
                 <Avatar
                   className={cn("relative top-1", {
-                    "avatar-shine": isOlderThanOneYear(currentUser?.createdAt),
+                    "avatar-shine": hasUmaminPlus(currentUser?.createdAt),
                   })}
                 >
                   <AvatarImage

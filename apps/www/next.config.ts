@@ -51,6 +51,10 @@ function buildContentSecurityPolicy() {
         "https://pagead2.googlesyndication.com",
         "https://googleads.g.doubleclick.net",
         "https://ep1.adtrafficquality.google",
+        // Direct browser->R2 image uploads (presigned PUT).
+        ...(process.env.R2_ACCOUNT_ID
+          ? [`https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`]
+          : []),
       ],
     ],
     ["img-src", ["'self'", "data:", "blob:", "https:"]],

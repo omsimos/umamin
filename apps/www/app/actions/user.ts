@@ -17,41 +17,38 @@ import {
   userFollowTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
-import {
-  getGravatarFinalUrl,
-  getGravatarPreviewUrl,
-  hashEmailForGravatar,
-  normaliseEmailForGravatar,
-} from "@/lib/avatar";
+import { publicImageUrl } from "@/lib/post-images";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getCurrentUserData, getUserProfileData } from "@/lib/server/data";
 import {
+  claimStagedAvatar,
+  deletePostImages,
+  deleteR2Avatar,
+  isR2Configured,
+} from "@/lib/server/r2";
+import {
+  clearSessionCache,
   createSession,
   deleteSessionTokenCookie,
   generateSessionToken,
+  getUserSessionIds,
   invalidateUserSessions,
   setSessionTokenCookie,
 } from "@/lib/session";
 import { formatContent } from "@/lib/utils";
 import { generalSettingsSchema, passwordFormSchema } from "@/types/user";
 
-const gravatarEmailSchema = z
-  .email({ error: "Invalid email address" })
-  .transform((value) => normaliseEmailForGravatar(value));
-
 // Avatars are rendered as raw <img src> across the app (not next/image), so an
 // arbitrary stored URL would load from every viewer's browser (tracking-beacon /
-// deanonymization / abusive image vector). Only allow the two hosts the UI ever
-// supplies: Gravatar and Google profile pictures, over https.
-const ALLOWED_AVATAR_HOSTS = new Set([
-  "www.gravatar.com",
-  "lh3.googleusercontent.com",
-]);
+// deanonymization / abusive image vector). Only Google profile pictures are
+// applied by URL; uploaded photos go through updateProfilePhotoAction, which
+// builds the URL server-side from a claimed R2 key.
+const ALLOWED_AVATAR_HOSTS = new Set(["lh3.googleusercontent.com"]);
 
 function isAllowedAvatarUrl(value: string): boolean {
   try {
@@ -62,56 +59,24 @@ function isAllowedAvatarUrl(value: string): boolean {
   }
 }
 
-export async function getGravatarAction(email: string) {
-  const parsed = gravatarEmailSchema.safeParse(email);
+// Sets the user's photo and returns the value it replaced, read in the same
+// transaction (SQLite's single writer serializes concurrent swaps) so R2
+// cleanup always targets the object that actually became unreachable.
+async function swapUserImageUrl(userId: string, imageUrl: string | null) {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ imageUrl: userTable.imageUrl })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
 
-  if (!parsed.success) {
-    return {
-      error: parsed.error.issues[0]?.message ?? "Invalid email address",
-    };
-  }
+    await tx
+      .update(userTable)
+      .set({ imageUrl })
+      .where(eq(userTable.id, userId));
 
-  // Settings-only feature: require a session (the action carried none before)
-  // and throttle the outbound fetch so it can't be looped as a cost/egress
-  // amplifier or a Gravatar-enumeration oracle. No-ops locally (Redis unset).
-  const { session } = await getSession();
-  if (!session) {
-    return { error: "Unauthorized" };
-  }
-  if (!(await checkRateLimit("write", `gravatar:${session.userId}`))) {
-    return { error: RATE_LIMIT_ERROR };
-  }
-
-  try {
-    const hash = hashEmailForGravatar(parsed.data);
-    const previewUrl = getGravatarPreviewUrl(hash);
-
-    // Bound the upstream call so a slow Gravatar response can't pin the
-    // serverless function open (Active-CPU / hung-invocation cost).
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-    let response: Response;
-    try {
-      response = await fetch(previewUrl, {
-        method: "GET",
-        cache: "no-store",
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    if (!response.ok) {
-      return {
-        error: "No Gravatar found for that email",
-      };
-    }
-
-    return { url: getGravatarFinalUrl(hash) };
-  } catch (error) {
-    console.log("Error resolving Gravatar:", error);
-    return { error: "Failed to reach Gravatar. Please try again later." };
-  }
+    return row?.imageUrl ?? null;
+  });
 }
 
 export async function getCurrentUserAction() {
@@ -236,10 +201,15 @@ export async function deleteAccountAction(confirmation?: string) {
   try {
     const uid = user.id;
 
-    // Revoke every session (this device + others) and clear their cached entries
-    // BEFORE the cascade removes the rows — otherwise other devices' cached
-    // sessions would keep validating for up to the cache TTL after deletion.
-    await invalidateUserSessions(uid);
+    // Snapshot the user's R2 object keys and session ids BEFORE the cascade
+    // deletes the rows that reference them (both bounded, indexed reads).
+    // Sessions are only revoked AFTER the transaction commits — revoking up
+    // front locked users out of an intact account when the delete failed.
+    const postImageRows = await db
+      .select({ images: postTable.images })
+      .from(postTable)
+      .where(and(eq(postTable.authorId, uid), isNotNull(postTable.images)));
+    const sessionIds = await getUserSessionIds(uid);
 
     await db.transaction(async (tx) => {
       // FK CASCADE removes this user's follow/like/comment/repost rows when the
@@ -352,7 +322,19 @@ export async function deleteAccountAction(confirmation?: string) {
       await tx.delete(userTable).where(eq(userTable.id, uid));
     });
 
+    // Cookie first: if the Redis clear below throws, the catch swallows it,
+    // and this device must not be left holding a live-looking session cookie.
     await deleteSessionTokenCookie();
+
+    // The FK cascade already removed the session rows; clear their cached
+    // entries so other devices stop validating immediately rather than after
+    // the cache TTL.
+    await clearSessionCache(sessionIds);
+
+    // Best-effort: the rows are gone, so these objects are unreachable —
+    // delete them from storage rather than letting them orphan forever.
+    await deletePostImages(postImageRows.flatMap((row) => row.images ?? []));
+    await deleteR2Avatar(user.imageUrl);
 
     // Invalidate user's cached data by tag
     updateTag(`user:${user.username}`);
@@ -907,12 +889,18 @@ export async function toggleDisplayPictureAction(accountImgUrl?: string) {
       return { error: "Invalid input" };
     }
 
-    const imageUrl = user.imageUrl ? null : accountImgUrl;
+    const imageUrl = user.imageUrl ? null : (accountImgUrl ?? null);
 
-    await db
-      .update(userTable)
-      .set({ imageUrl })
-      .where(eq(userTable.id, user.id));
+    // Swap inside a transaction so the cleanup target is the row's TRUE
+    // current value — the session-cached user.imageUrl can be up to a minute
+    // stale (Redis fast path), which could orphan or miss an object.
+    const previousImageUrl = await swapUserImageUrl(user.id, imageUrl);
+
+    // Hiding an uploaded photo retires it — delete the object (no-op for
+    // Google/legacy URLs). Re-enabling shows the connected-account picture.
+    if (!imageUrl) {
+      await deleteR2Avatar(previousImageUrl);
+    }
 
     // Invalidate user's cached data (imageUrl affects profile payload)
     updateTag(`user:${user.username}`);
@@ -969,16 +957,89 @@ export async function updateAvatarAction(imageUrl: string) {
       return { error: RATE_LIMIT_ERROR };
     }
 
-    // imageUrl is rendered as a raw <img src> for every viewer — only allow the
-    // Gravatar / Google hosts the UI supplies, over https.
+    // imageUrl is rendered as a raw <img src> for every viewer — only allow
+    // the Google host the UI supplies, over https.
     if (!isAllowedAvatarUrl(imageUrl)) {
       return { error: "Invalid input" };
     }
 
-    await db
-      .update(userTable)
-      .set({ imageUrl })
-      .where(eq(userTable.id, user.id));
+    // See toggleDisplayPictureAction: read the true previous value in the
+    // same transaction as the swap, not the (possibly stale) session cache.
+    const previousImageUrl = await swapUserImageUrl(user.id, imageUrl);
+
+    // A replaced uploaded photo is unreachable from now on — delete it.
+    if (previousImageUrl && previousImageUrl !== imageUrl) {
+      await deleteR2Avatar(previousImageUrl);
+    }
+
+    updateTag(`user:${user.username}`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
+
+    return { success: true, imageUrl };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occured" };
+  }
+}
+
+const profilePhotoSchema = z.object({
+  key: z.string().min(1).max(200),
+});
+
+/**
+ * Applies an uploaded profile photo: claims the staged R2 object (magic-byte
+ * + size validated, copied to avatars/), stores its public URL, and deletes
+ * the previous uploaded photo so a change never leaves an orphaned object.
+ */
+export async function updateProfilePhotoAction(
+  values: z.infer<typeof profilePhotoSchema>,
+) {
+  try {
+    const params = profilePhotoSchema.safeParse(values);
+
+    if (!params.success) {
+      return { error: "Invalid input" };
+    }
+
+    const { user } = await getSession();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!isR2Configured()) {
+      return { error: "Photo uploads aren't available right now." };
+    }
+
+    // Same key as presignAvatarUploadAction so the presign+claim cycle draws
+    // from ONE 30/min budget instead of two stacked ones (each claim fans out
+    // to ~4 R2 operations).
+    if (!(await checkRateLimit("write", `avatarup:${user.id}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    const finalKey = await claimStagedAvatar(user.id, params.data.key);
+
+    if (!finalKey) {
+      return { error: "Couldn't apply this photo. Please try again." };
+    }
+
+    const imageUrl = publicImageUrl(finalKey);
+    let previousImageUrl: string | null;
+
+    try {
+      // See toggleDisplayPictureAction: the transactional read (not the
+      // possibly-stale session cache) is what makes concurrent changes from
+      // two devices delete the right object instead of orphaning one.
+      previousImageUrl = await swapUserImageUrl(user.id, imageUrl);
+    } catch (err) {
+      // The claimed object must not outlive a failed update (storage leak).
+      await deleteR2Avatar(imageUrl);
+      throw err;
+    }
+
+    await deleteR2Avatar(previousImageUrl);
 
     updateTag(`user:${user.username}`);
     updateTag(`user:${user.id}`);

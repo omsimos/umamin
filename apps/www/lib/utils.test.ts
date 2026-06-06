@@ -5,11 +5,11 @@ import {
   generateUsernameId,
   getActionError,
   getBaseUrl,
+  hasUmaminPlus,
   isAlreadyLiked,
   isAlreadyReacted,
   isAlreadyRemoved,
   isAlreadyReposted,
-  isOlderThanOneYear,
   shortTimeAgo,
 } from "./utils";
 
@@ -99,24 +99,24 @@ describe("formatContent", () => {
   });
 });
 
-describe("isOlderThanOneYear", () => {
+describe("hasUmaminPlus", () => {
   it("is true for a 2-year-old date", () => {
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-    expect(isOlderThanOneYear(twoYearsAgo)).toBe(true);
+    expect(hasUmaminPlus(twoYearsAgo)).toBe(true);
   });
 
   it("is false for now", () => {
-    expect(isOlderThanOneYear(new Date())).toBe(false);
+    expect(hasUmaminPlus(new Date())).toBe(false);
   });
 
   it("is false for null / undefined", () => {
-    expect(isOlderThanOneYear(null)).toBe(false);
-    expect(isOlderThanOneYear(undefined)).toBe(false);
+    expect(hasUmaminPlus(null)).toBe(false);
+    expect(hasUmaminPlus(undefined)).toBe(false);
   });
 
   it("is false for an invalid date", () => {
-    expect(isOlderThanOneYear("not a date")).toBe(false);
+    expect(hasUmaminPlus("not a date")).toBe(false);
   });
 });
 
