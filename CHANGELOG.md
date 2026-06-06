@@ -18,7 +18,18 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
-## [5.4.1] - 2026-06-06
+## [5.5.0] - 2026-06-06
+
+### Added
+
+- Quote posts are now real posts: they have their own likes, comments, reposts, and page — and they can carry an image. Quote someone by picking "Quote" on any post; the quoted post appears as a compact card you can tap through.
+- You can now quote a post you've also reposted, and quote the same post more than once.
+
+### Changed
+
+- Quoting now opens the full composer (with image support for Umamin+) instead of a small caption box.
+- Your existing quote reposts have been upgraded into real posts automatically — same text, same timestamps, now with their own engagement.
+- If a quoted post is deleted, quotes of it show "This post is unavailable" instead of disappearing.
 
 ### Fixed
 
@@ -509,7 +520,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
-[5.4.1]: https://github.com/omsimos/umamin/compare/v5.4.0...v5.4.1
+[5.5.0]: https://github.com/omsimos/umamin/compare/v5.4.0...v5.5.0
 [5.4.0]: https://github.com/omsimos/umamin/compare/v5.3.0...v5.4.0
 [5.3.0]: https://github.com/omsimos/umamin/compare/v5.2.2...v5.3.0
 [5.2.2]: https://github.com/omsimos/umamin/compare/v5.2.1...v5.2.2
