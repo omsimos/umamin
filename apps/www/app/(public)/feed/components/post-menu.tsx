@@ -32,6 +32,7 @@ import { patchCurrentUser, removePostFromFeed } from "@/lib/query-cache";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { CurrentUserResponse, FeedResponse } from "@/lib/query-types";
 import { saveImage, sharePost } from "@/lib/utils";
+import type { FeedItem } from "@/types/post";
 
 type PostMenuProps = {
   postId: string;
@@ -83,22 +84,50 @@ export function PostMenu({
             pinnedPostId: nowPinned ? postId : null,
           })),
       );
-      // Re-render the profile list with the new pin order, but drop loaded
-      // pages beyond the first before invalidating — otherwise a deep-scrolled
-      // profile refetches EVERY page against the just-busted server cache
-      // (same bounded-refetch trick as the feed's "show new posts").
+      // Patch the actor's profile-list cache directly instead of refetching:
+      // the public posts route is CDN-cached (s-maxage + SWR), which tag
+      // invalidation can't purge — a refetch would just read back the
+      // pre-pin order for up to ~4 minutes. Visitors converge on the CDN's
+      // own schedule, same per-viewer-instant split as likes/reposts. The
+      // previous pin only loses its badge here; its true chronological slot
+      // is restored by the next natural revalidate.
       queryClient.setQueriesData<
         import("@tanstack/react-query").InfiniteData<FeedResponse>
-      >({ queryKey: ["user-posts"] }, (old) =>
-        old
-          ? {
-              ...old,
-              pages: old.pages.slice(0, 1),
-              pageParams: old.pageParams.slice(0, 1),
+      >({ queryKey: ["user-posts"] }, (old) => {
+        if (!old) return old;
+
+        let pinnedItem: FeedItem | undefined;
+        const pages = old.pages.map((page) => ({
+          ...page,
+          data: page.data.flatMap((item): FeedItem[] => {
+            if (item.type !== "post") return [item];
+
+            if (item.post.id === postId) {
+              const updated: FeedItem = {
+                ...item,
+                post: { ...item.post, isPinned: nowPinned },
+              };
+              if (nowPinned) {
+                pinnedItem = updated;
+                return [];
+              }
+              return [updated];
             }
-          : old,
-      );
-      queryClient.invalidateQueries({ queryKey: ["user-posts"] });
+
+            if (item.post.isPinned) {
+              return [{ ...item, post: { ...item.post, isPinned: false } }];
+            }
+
+            return [item];
+          }),
+        }));
+
+        if (pinnedItem && pages[0]) {
+          pages[0] = { ...pages[0], data: [pinnedItem, ...pages[0].data] };
+        }
+
+        return { ...old, pages };
+      });
       toast.success(
         nowPinned ? "Pinned to your profile." : "Unpinned from your profile.",
       );
