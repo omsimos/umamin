@@ -277,7 +277,7 @@ export function hasUmaminPlus(createdAt?: Date | string | null) {
   if (!createdAt) return false;
 
   const createdDate = new Date(createdAt);
-  if (Number.isNaN(createdDate.getTime())) return false; // invalid date
+  if (Number.isNaN(createdDate.getTime())) return false;
 
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
