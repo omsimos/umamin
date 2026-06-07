@@ -38,4 +38,25 @@ describe("vibrate", () => {
 
     expect(() => vibrate()).not.toThrow();
   });
+
+  it("stays silent for prefers-reduced-motion users", () => {
+    const vibrateSpy = vi.fn();
+    Object.defineProperty(navigator, "vibrate", {
+      value: vibrateSpy,
+      configurable: true,
+      writable: true,
+    });
+    const matchMediaSpy = vi
+      .spyOn(window, "matchMedia")
+      .mockReturnValue({ matches: true } as MediaQueryList);
+
+    vibrate(10);
+
+    expect(matchMediaSpy).toHaveBeenCalledWith(
+      "(prefers-reduced-motion: reduce)",
+    );
+    expect(vibrateSpy).not.toHaveBeenCalled();
+
+    matchMediaSpy.mockRestore();
+  });
 });

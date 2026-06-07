@@ -23,6 +23,7 @@ any that are empty.
 ### Added
 
 - Anonymous messages now arrive sealed. A new message shows as a closed envelope in your inbox — tap to open it and reveal the question and message, with a subtle reveal animation. Messages you received before this update are already open. Whether you've opened a message is yours alone; senders are never told.
+- Subtle haptic feedback on supported devices when you open a sealed message, like a post, vote on a poll, or react to a note. Off automatically when your system asks for reduced motion.
 
 ### Fixed
 
