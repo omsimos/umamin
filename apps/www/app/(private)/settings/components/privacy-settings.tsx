@@ -127,11 +127,11 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       }
 
       const res = await toggleDisplayPicture(user.account?.picture);
-      if (res.error) {
+      if ("error" in res && res.error) {
         throw new Error(res.error);
       }
 
-      return !!res.imageUrl;
+      return "imageUrl" in res && !!res.imageUrl;
     },
     onSuccess: (data) => {
       const imageUrl = data ? (user.account?.picture ?? user.imageUrl) : null;
@@ -159,18 +159,21 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     mutationFn: async (photo: PendingPhoto) => {
       if (photo.kind === "google") {
         const res = await applyGooglePhoto(photo.previewUrl);
-        if (res.error) {
+        if ("error" in res && res.error) {
           throw new Error(res.error);
         }
-        return res.imageUrl;
+        return "imageUrl" in res ? res.imageUrl : undefined;
       }
 
       const presign = await presignAvatarUploadAction({
         contentType: photo.contentType,
         contentLength: photo.blob.size,
       });
-      if (presign.error || !presign.key || !presign.url) {
-        throw new Error(presign.error ?? "Upload failed. Please try again.");
+      if (!("key" in presign) || !presign.key || !presign.url) {
+        throw new Error(
+          ("error" in presign ? presign.error : undefined) ??
+            "Upload failed. Please try again.",
+        );
       }
 
       const put = await fetch(presign.url, {
@@ -184,10 +187,10 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       }
 
       const res = await applyUploadedPhoto({ key: presign.key });
-      if (res.error) {
+      if ("error" in res && res.error) {
         throw new Error(res.error);
       }
-      return res.imageUrl;
+      return "imageUrl" in res ? res.imageUrl : undefined;
     },
     onSuccess: (imageUrl) => {
       queryClient.setQueryData<CurrentUserResponse>(
@@ -211,11 +214,11 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
   const quietModeMutation = useMutation({
     mutationFn: async () => {
       const res = await toggleQuietMode();
-      if (res.error) {
+      if ("error" in res && res.error) {
         throw new Error(res.error);
       }
 
-      return res.quietMode;
+      return "quietMode" in res ? res.quietMode : undefined;
     },
     onSuccess: (data) => {
       queryClient.setQueryData<CurrentUserResponse>(

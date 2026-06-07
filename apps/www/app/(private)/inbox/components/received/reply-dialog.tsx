@@ -53,8 +53,10 @@ export function ReplyDialog(props: Props) {
       >(queryKeys.receivedMessages(), (current) =>
         patchMessage(current, props.data.id, (message) => ({
           ...message,
-          reply: result.reply ?? content,
-          updatedAt: result.updatedAt ?? new Date(),
+          reply: ("reply" in result ? result.reply : undefined) ?? content,
+          updatedAt:
+            ("updatedAt" in result ? result.updatedAt : undefined) ??
+            new Date(),
         })),
       );
       toast.success("Reply sent.");

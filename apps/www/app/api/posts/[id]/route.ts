@@ -1,17 +1,11 @@
 import { getSession } from "@/lib/auth";
 import { privateJson } from "@/lib/private-json";
-import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getPostById } from "@/lib/server/data";
+import { withPrivateRead } from "@/lib/server/read-route";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    if (!(await checkReadRateLimit())) {
-      return privateJson({ error: RATE_LIMIT_ERROR }, { status: 429 });
-    }
-
+export const GET = withPrivateRead<{ id: string }>(
+  "fetching post",
+  async (_req, { params }) => {
     const { session } = await getSession();
     const { id } = await params;
 
@@ -21,8 +15,5 @@ export async function GET(
     });
 
     return privateJson(result);
-  } catch (error) {
-    console.error("Error fetching post:", error);
-    return privateJson({ error: "Internal server error" }, { status: 500 });
-  }
-}
+  },
+);

@@ -7,28 +7,22 @@ import { aesEncrypt } from "@umamin/encryption";
 import { and, eq, or } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import * as z from "zod";
-import { getSession } from "@/lib/auth";
 import { matchesBlockedWords } from "@/lib/blocked-words";
-import { checkRateLimit, getClientIp, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
+import { getClientIp } from "@/lib/ratelimit";
+import { idSchema } from "@/lib/schema";
 import { notify } from "@/lib/server/notifications";
+import { withAction } from "@/lib/server/with-action";
 import { formatContent } from "@/lib/utils";
 
-export async function deleteMessageAction(id: string) {
-  try {
-    const parsed = z.string().min(1).safeParse(id);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `delmsg:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const deleteMessageAction = withAction(
+  {
+    schema: idSchema,
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `delmsg:${session.userId}`,
+    },
+  },
+  async (id, { session }) => {
     await db
       .delete(messageTable)
       .where(
@@ -41,48 +35,26 @@ export async function deleteMessageAction(id: string) {
     updateTag(`messages:received:${session.userId}`);
 
     return { success: true };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-type CreateReplyParams = {
-  messageId: string;
-  content: string;
-};
-
-export async function createReplyAction({
-  messageId,
-  content,
-}: CreateReplyParams) {
-  try {
-    const params = z
-      .object({
-        messageId: z.string().min(1),
-        content: z
-          .string()
-          .trim()
-          .min(1, { error: "Content cannot be empty" })
-          .max(500, { error: "Content cannot exceed 500 characters" }),
-      })
-      .safeParse({ messageId, content });
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("message", `reply:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
-    const encryptedReply = await aesEncrypt(params.data.content);
+export const createReplyAction = withAction(
+  {
+    schema: z.object({
+      messageId: z.string().min(1),
+      content: z
+        .string()
+        .trim()
+        .min(1, { error: "Content cannot be empty" })
+        .max(500, { error: "Content cannot exceed 500 characters" }),
+    }),
+    rateLimit: {
+      name: "message",
+      key: ({ session }) => `reply:${session.userId}`,
+    },
+  },
+  async ({ messageId, content }, { session }) => {
+    const encryptedReply = await aesEncrypt(content);
 
     // Scope to the viewer's own messages (prevents IDOR) AND confirm a row was
     // actually updated — otherwise a missing/non-owned messageId would return
@@ -117,12 +89,9 @@ export async function createReplyAction({
       });
     }
 
-    return { success: true, reply: params.data.content, updatedAt: new Date() };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+    return { success: true, reply: content, updatedAt: new Date() };
+  },
+);
 
 const sendMessageSchema = z.object({
   question: z.string().trim().min(1).max(500),
@@ -130,26 +99,19 @@ const sendMessageSchema = z.object({
   receiverId: z.string().min(1),
 });
 
-export async function sendMessageAction(
-  values: z.infer<typeof sendMessageSchema>,
-) {
-  try {
-    const params = sendMessageSchema.safeParse(values);
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { question, content, receiverId } = params.data;
-
+export const sendMessageAction = withAction(
+  {
+    schema: sendMessageSchema,
+    auth: "none",
     // Throttle anonymous/unauthenticated spam before any DB work or AES.
-    // No-ops until Redis is configured (e.g. local dev).
-    const ip = await getClientIp();
-    if (!(await checkRateLimit("message", `msg:${ip}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
-    const { session } = await getSession();
+    // No-ops until Redis is configured (e.g. local dev). The wrapper runs an
+    // IP-keyed limiter for auth "none" before the session lookup.
+    rateLimit: {
+      name: "message",
+      key: async () => `msg:${await getClientIp()}`,
+    },
+  },
+  async ({ question, content, receiverId }, { session }) => {
     const senderId = session?.userId ?? null;
 
     if (receiverId === senderId) {
@@ -216,8 +178,5 @@ export async function sendMessageAction(
     await notify({ recipientId: receiverId, type: "message" });
 
     return { success: true };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);

@@ -24,8 +24,10 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { sanitizeBlockedWords } from "@/lib/blocked-words";
 import { publicImageUrl } from "@/lib/post-images";
-import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
+import { checkRateLimit } from "@/lib/ratelimit";
+import { idSchema } from "@/lib/schema";
 import { getCurrentUserData, getUserProfileData } from "@/lib/server/data";
+import { isUniqueConstraintViolation } from "@/lib/server/errors";
 import { notify } from "@/lib/server/notifications";
 import {
   claimStagedAvatar,
@@ -33,6 +35,7 @@ import {
   deleteR2Avatar,
   isR2Configured,
 } from "@/lib/server/r2";
+import { withAction } from "@/lib/server/with-action";
 import {
   clearSessionCache,
   createSession,
@@ -81,20 +84,10 @@ async function swapUserImageUrl(userId: string, imageUrl: string | null) {
   });
 }
 
-export async function getCurrentUserAction() {
-  try {
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    return getCurrentUserData(session.userId);
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+export const getCurrentUserAction = withAction(
+  {},
+  async (_input, { session }) => getCurrentUserData(session.userId),
+);
 
 export async function getUserProfileAction(username: string) {
   try {
@@ -106,27 +99,19 @@ export async function getUserProfileAction(username: string) {
   }
 }
 
-export async function generalSettingsAction(
-  values: z.infer<typeof generalSettingsSchema>,
-) {
-  try {
-    const params = generalSettingsSchema.safeParse(values);
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { session, user } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `settings:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
-    const data = params.data;
+export const generalSettingsAction = withAction(
+  {
+    schema: generalSettingsSchema,
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `settings:${session.userId}`,
+    },
+    onError: (err) =>
+      isUniqueConstraintViolation(err, "user.username")
+        ? { error: "Username already exists" }
+        : undefined,
+  },
+  async (data, { session, user }) => {
     const normalized = {
       ...data,
       bio: formatContent(data.bio ?? ""),
@@ -156,27 +141,8 @@ export async function generalSettingsAction(
       success: true,
       user: normalized,
     };
-  } catch (err) {
-    console.log(err);
-
-    if (
-      err instanceof Error &&
-      typeof err.cause === "object" &&
-      err.cause !== null
-    ) {
-      const cause = err.cause as { code?: string; message?: string };
-
-      if (
-        cause.code === "SQLITE_CONSTRAINT" &&
-        cause.message?.includes("user.username")
-      ) {
-        return { error: "Username already exists" };
-      }
-    }
-
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
 export async function deleteAccountAction(confirmation?: string) {
   const { user } = await getSession();
@@ -349,28 +315,16 @@ export async function deleteAccountAction(confirmation?: string) {
   redirect("/login");
 }
 
-export async function updatePasswordAction(
-  values: z.infer<typeof passwordFormSchema>,
-) {
-  try {
-    const { user } = await getSession();
-
-    if (!user) {
-      throw new Error("Unauthorized");
-    }
-
-    const params = passwordFormSchema.safeParse(values);
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    if (!(await checkRateLimit("auth", `pwd:${user.id}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
-    const { currentPassword, newPassword } = params.data;
-
+export const updatePasswordAction = withAction(
+  {
+    schema: passwordFormSchema,
+    auth: "user",
+    rateLimit: {
+      name: "auth",
+      key: ({ user }) => `pwd:${user.id}`,
+    },
+  },
+  async ({ currentPassword, newPassword }, { user }) => {
     // If user has an existing password, require and verify current password
     if (user.passwordHash) {
       if (!currentPassword || currentPassword.length === 0) {
@@ -411,30 +365,20 @@ export async function updatePasswordAction(
     await setSessionTokenCookie(token, new Date(newSession.expiresAt));
 
     return { success: true };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
-export async function followUserAction({ userId }: { userId: string }) {
-  try {
-    const parsed = z.string().min(1).safeParse(userId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session, user } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
+export const followUserAction = withAction(
+  {
+    schema: z.object({ userId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `follow:${session.userId}`,
+    },
+  },
+  async ({ userId }, { session, user }) => {
     if (session.userId === userId) {
       return { error: "You cannot follow yourself." };
-    }
-
-    if (!(await checkRateLimit("write", `follow:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
     }
 
     const [target] = await db
@@ -517,30 +461,20 @@ export async function followUserAction({ userId }: { userId: string }) {
     }
 
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
-export async function unfollowUserAction({ userId }: { userId: string }) {
-  try {
-    const parsed = z.string().min(1).safeParse(userId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session, user } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
+export const unfollowUserAction = withAction(
+  {
+    schema: z.object({ userId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `follow:${session.userId}`,
+    },
+  },
+  async ({ userId }, { session, user }) => {
     if (session.userId === userId) {
       return { error: "You cannot unfollow yourself." };
-    }
-
-    if (!(await checkRateLimit("write", `follow:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
     }
 
     const [target] = await db
@@ -597,30 +531,20 @@ export async function unfollowUserAction({ userId }: { userId: string }) {
     updateTag(`user-followers:${userId}`);
 
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
-export async function blockUserAction({ userId }: { userId: string }) {
-  try {
-    const parsed = z.string().min(1).safeParse(userId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session, user } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
+export const blockUserAction = withAction(
+  {
+    schema: z.object({ userId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `block:${session.userId}`,
+    },
+  },
+  async ({ userId }, { session, user }) => {
     if (session.userId === userId) {
       return { error: "You cannot block yourself." };
-    }
-
-    if (!(await checkRateLimit("write", `block:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
     }
 
     const [target] = await db
@@ -729,30 +653,20 @@ export async function blockUserAction({ userId }: { userId: string }) {
     updateTag(`messages:received:${userId}`);
 
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
-export async function unblockUserAction({ userId }: { userId: string }) {
-  try {
-    const parsed = z.string().min(1).safeParse(userId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session, user } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
+export const unblockUserAction = withAction(
+  {
+    schema: z.object({ userId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `block:${session.userId}`,
+    },
+  },
+  async ({ userId }, { session, user }) => {
     if (session.userId === userId) {
       return { error: "You cannot unblock yourself." };
-    }
-
-    if (!(await checkRateLimit("write", `block:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
     }
 
     const [target] = await db
@@ -808,24 +722,19 @@ export async function unblockUserAction({ userId }: { userId: string }) {
     updateTag(`messages:received:${userId}`);
 
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
-export async function toggleDisplayPictureAction(accountImgUrl?: string) {
-  try {
-    const { user } = await getSession();
-
-    if (!user) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `displaypic:${user.id}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const toggleDisplayPictureAction = withAction(
+  {
+    schema: z.string().optional(),
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ user }) => `displaypic:${user.id}`,
+    },
+  },
+  async (accountImgUrl, { user }) => {
     // When setting (not clearing) the picture, validate the incoming URL host —
     // it is rendered as a raw <img src> for every viewer.
     if (
@@ -854,24 +763,18 @@ export async function toggleDisplayPictureAction(accountImgUrl?: string) {
     updateTag(`user:${user.id}:accounts`);
 
     return { imageUrl };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
-export async function toggleQuietModeAction() {
-  try {
-    const { user } = await getSession();
-
-    if (!user) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `quiet:${user.id}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const toggleQuietModeAction = withAction(
+  {
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ user }) => `quiet:${user.id}`,
+    },
+  },
+  async (_input, { user }) => {
     const quietMode = !user.quietMode;
 
     await db
@@ -885,37 +788,25 @@ export async function toggleQuietModeAction() {
     updateTag(`user:${user.id}:accounts`);
 
     return { quietMode };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
 const blockedWordsSchema = z.object({
   // Loose pre-bound; sanitizeBlockedWords applies the real caps server-side.
   words: z.array(z.string().max(200)).max(200),
 });
 
-export async function updateBlockedWordsAction(
-  values: z.infer<typeof blockedWordsSchema>,
-) {
-  try {
-    const params = blockedWordsSchema.safeParse(values);
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { user } = await getSession();
-
-    if (!user) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `blockedwords:${user.id}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
-    const blockedWords = sanitizeBlockedWords(params.data.words);
+export const updateBlockedWordsAction = withAction(
+  {
+    schema: blockedWordsSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ user }) => `blockedwords:${user.id}`,
+    },
+  },
+  async ({ words }, { user }) => {
+    const blockedWords = sanitizeBlockedWords(words);
 
     await db
       .update(userTable)
@@ -926,24 +817,19 @@ export async function updateBlockedWordsAction(
     updateTag(`user:${user.id}`);
 
     return { success: true, blockedWords };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
-export async function updateAvatarAction(imageUrl: string) {
-  try {
-    const { user } = await getSession();
-
-    if (!user) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `avatar:${user.id}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const updateAvatarAction = withAction(
+  {
+    schema: z.string(),
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ user }) => `avatar:${user.id}`,
+    },
+  },
+  async (imageUrl, { user }) => {
     // imageUrl is rendered as a raw <img src> for every viewer — only allow
     // the Google host the UI supplies, over https.
     if (!isAllowedAvatarUrl(imageUrl)) {
@@ -964,11 +850,8 @@ export async function updateAvatarAction(imageUrl: string) {
     updateTag(`user:${user.id}:accounts`);
 
     return { success: true, imageUrl };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);
 
 const profilePhotoSchema = z.object({
   key: z.string().min(1).max(200),
@@ -979,34 +862,24 @@ const profilePhotoSchema = z.object({
  * + size validated, copied to avatars/), stores its public URL, and deletes
  * the previous uploaded photo so a change never leaves an orphaned object.
  */
-export async function updateProfilePhotoAction(
-  values: z.infer<typeof profilePhotoSchema>,
-) {
-  try {
-    const params = profilePhotoSchema.safeParse(values);
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { user } = await getSession();
-
-    if (!user) {
-      throw new Error("Unauthorized");
-    }
-
+export const updateProfilePhotoAction = withAction(
+  {
+    schema: profilePhotoSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      // Same key as presignAvatarUploadAction so the presign+claim cycle draws
+      // from ONE 30/min budget instead of two stacked ones (each claim fans out
+      // to ~4 R2 operations).
+      key: ({ user }) => `avatarup:${user.id}`,
+    },
+  },
+  async ({ key }, { user }) => {
     if (!isR2Configured()) {
       return { error: "Photo uploads aren't available right now." };
     }
 
-    // Same key as presignAvatarUploadAction so the presign+claim cycle draws
-    // from ONE 30/min budget instead of two stacked ones (each claim fans out
-    // to ~4 R2 operations).
-    if (!(await checkRateLimit("write", `avatarup:${user.id}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
-    const finalKey = await claimStagedAvatar(user.id, params.data.key);
+    const finalKey = await claimStagedAvatar(user.id, key);
 
     if (!finalKey) {
       return { error: "Couldn't apply this photo. Please try again." };
@@ -1033,8 +906,5 @@ export async function updateProfilePhotoAction(
     updateTag(`user:${user.id}:accounts`);
 
     return { success: true, imageUrl };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occured" };
-  }
-}
+  },
+);

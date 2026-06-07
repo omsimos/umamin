@@ -40,7 +40,7 @@ export default function ReplyForm({ user, postId }: Props) {
   const mutation = useMutation({
     mutationFn: async (nextContent: string) => {
       const res = await submitComment({ content: nextContent, postId });
-      if (res?.error) {
+      if (res && "error" in res && res.error) {
         throw new Error(res.error);
       }
       return res;
@@ -112,12 +112,12 @@ export default function ReplyForm({ user, postId }: Props) {
       toast.error(err.message ?? "Couldn't add comment.");
     },
     onSuccess: (res, _vars, ctx) => {
-      if (res?.error) {
+      if (res && "error" in res && res.error) {
         toast.error(res.error);
         return;
       }
 
-      if (res?.comment && ctx?.optimisticId) {
+      if (res && "comment" in res && res.comment && ctx?.optimisticId) {
         const nextComment: CommentData = {
           ...res.comment,
           author,

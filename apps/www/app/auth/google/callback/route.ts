@@ -3,7 +3,7 @@ import { accountTable, userTable } from "@umamin/db/schema/user";
 import { decodeIdToken, OAuth2RequestError, type OAuth2Tokens } from "arctic";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import * as z from "zod";
@@ -173,9 +173,11 @@ export async function GET(req: NextRequest) {
       });
 
       // imageUrl/accounts may have changed -> refresh cached profile payloads.
-      updateTag(`user:${user.username}`);
-      updateTag(`user:${user.id}`);
-      updateTag(`user:${user.id}:accounts`);
+      // updateTag is Server-Actions-only (throws in Route Handlers); SWR
+      // revalidation is the legal equivalent here.
+      revalidateTag(`user:${user.username}`, "max");
+      revalidateTag(`user:${user.id}`, "max");
+      revalidateTag(`user:${user.id}:accounts`, "max");
 
       return new Response(null, {
         status: 302,

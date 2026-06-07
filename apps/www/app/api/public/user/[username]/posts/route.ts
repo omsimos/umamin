@@ -1,20 +1,12 @@
-import type { NextRequest } from "next/server";
 import { publicJson } from "@/lib/public-json";
-import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getPublicUserProfileData, getUserPostsPage } from "@/lib/server/data";
+import { withPublicRead } from "@/lib/server/read-route";
 import { formatUsername } from "@/lib/utils";
 
-const PUBLIC_CACHE_SECONDS = 120;
-
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ username: string }> },
-) {
-  try {
-    if (!(await checkReadRateLimit())) {
-      return publicJson({ error: RATE_LIMIT_ERROR }, 0, { status: 429 });
-    }
-
+export const GET = withPublicRead<{ username: string }>(
+  "fetching public user posts",
+  120,
+  async (req, { params }) => {
     const { username: rawUsername } = await params;
     const username = formatUsername(rawUsername);
     const user = await getPublicUserProfileData(username);
@@ -24,11 +16,6 @@ export async function GET(
     }
 
     const cursor = req.nextUrl.searchParams.get("cursor");
-    const result = await getUserPostsPage({ authorId: user.id, cursor });
-
-    return publicJson(result, PUBLIC_CACHE_SECONDS);
-  } catch (error) {
-    console.error("Error fetching public user posts:", error);
-    return publicJson({ error: "Internal server error" }, 0, { status: 500 });
-  }
-}
+    return getUserPostsPage({ authorId: user.id, cursor });
+  },
+);

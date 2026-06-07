@@ -159,7 +159,7 @@ export function useCreatePost(user: PublicUser | null) {
         return;
       }
 
-      if (user && res?.post && ctx?.optimisticId) {
+      if (user && res && "post" in res && res.post && ctx?.optimisticId) {
         const nextItem: FeedItem = {
           type: "post",
           post: {
