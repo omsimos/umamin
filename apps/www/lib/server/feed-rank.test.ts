@@ -9,7 +9,6 @@ const redisMock = vi.hoisted(() => ({
   zadd: vi.fn(),
   zrem: vi.fn(),
   zremrangebyrank: vi.fn(),
-  del: vi.fn(),
 }));
 
 vi.mock("@/lib/redis", () => ({ redis: redisMock }));
@@ -21,28 +20,15 @@ import {
   isRedisHotCursor,
   refreshHotPostRank,
   removeHotPostRank,
-  seedHotPostRanks,
 } from "./feed-rank";
 
 const HOT_FEED_KEY = "feed:hot:v2";
-const LEGACY_HOT_FEED_KEY = "feed:hot:v1";
 
 // Drizzle select chain that resolves `.limit()` to `rows` (single-post read).
 function selectReturning(rows: unknown[]) {
   return {
     from: () => ({
       where: () => ({
-        limit: () => Promise.resolve(rows),
-      }),
-    }),
-  };
-}
-
-// Drizzle select chain for the seed's ordered scan.
-function selectOrdered(rows: unknown[]) {
-  return {
-    from: () => ({
-      orderBy: () => ({
         limit: () => Promise.resolve(rows),
       }),
     }),
@@ -309,64 +295,6 @@ describe("removeHotPostRank", () => {
   });
 });
 
-describe("seedHotPostRanks", () => {
-  const posts = [
-    {
-      id: "post-1",
-      createdAt: new Date("2026-06-04T00:00:00.000Z"),
-      likeCount: 5,
-      pollVoteCount: 0,
-      commentCount: 2,
-      repostCount: 1,
-    },
-    {
-      id: "post-2",
-      createdAt: new Date("2026-06-03T00:00:00.000Z"),
-      likeCount: 0,
-      pollVoteCount: 8,
-      commentCount: 0,
-      repostCount: 0,
-    },
-  ];
-
-  it("zadds every post with its score in one call and deletes the legacy key", async () => {
-    vi.mocked(db.select).mockReturnValue(
-      // biome-ignore lint/suspicious/noExplicitAny: drizzle chain stub
-      selectOrdered(posts) as any,
-    );
-
-    const seeded = await seedHotPostRanks();
-
-    expect(seeded).toBe(2);
-    expect(redisMock.zadd).toHaveBeenCalledExactlyOnceWith(
-      HOT_FEED_KEY,
-      { score: getHotScore(posts[0]), member: "post-1" },
-      { score: getHotScore(posts[1]), member: "post-2" },
-    );
-    // Pre-seed organic members could put the set over the cap — seed trims.
-    expect(redisMock.zremrangebyrank).toHaveBeenCalledWith(
-      HOT_FEED_KEY,
-      0,
-      -2001,
-    );
-    expect(redisMock.del).toHaveBeenCalledWith(LEGACY_HOT_FEED_KEY);
-  });
-
-  it("still deletes the legacy key when there is nothing to seed", async () => {
-    vi.mocked(db.select).mockReturnValue(
-      // biome-ignore lint/suspicious/noExplicitAny: drizzle chain stub
-      selectOrdered([]) as any,
-    );
-
-    const seeded = await seedHotPostRanks();
-
-    expect(seeded).toBe(0);
-    expect(redisMock.zadd).not.toHaveBeenCalled();
-    expect(redisMock.zremrangebyrank).not.toHaveBeenCalled();
-    expect(redisMock.del).toHaveBeenCalledWith(LEGACY_HOT_FEED_KEY);
-  });
-});
-
 describe("when the redis binding is null", () => {
   afterEach(() => {
     vi.resetModules();
@@ -382,7 +310,6 @@ describe("when the redis binding is null", () => {
     await expect(mod.getRedisHotPostIdsPage(null, 20, 10)).resolves.toBeNull();
     await expect(mod.refreshHotPostRank("x")).resolves.toBeUndefined();
     await expect(mod.removeHotPostRank("x")).resolves.toBeUndefined();
-    await expect(mod.seedHotPostRanks()).resolves.toBeNull();
 
     // No db read is attempted when redis is absent.
     const { db: nullRedisDb } = await import("@umamin/db");

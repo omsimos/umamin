@@ -2,15 +2,13 @@ import "server-only";
 
 import { db } from "@umamin/db";
 import { postTable } from "@umamin/db/schema/post";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { redis } from "@/lib/redis";
 import { getHotScore } from "@/lib/server/hot-score";
 
 // v2: v1 held linear-formula scores; mixing them with log-dampened scores
 // would leave never-touched members permanently mis-ordered.
 const HOT_FEED_KEY = "feed:hot:v2";
-// Deletable (with the seed route) once the one-off v2 seed has run in prod.
-const LEGACY_HOT_FEED_KEY = "feed:hot:v1";
 const HOT_CURSOR_PREFIX = "rh.";
 const HOT_FEED_MAX_ITEMS = 2_000;
 
@@ -116,37 +114,4 @@ export async function removeHotPostRank(postId: string) {
   } catch (err) {
     console.error("removeHotPostRank failed", { postId, err });
   }
-}
-
-/**
- * One-off backfill for the v2 zset (called by the seed-hot-rank route): a
- * fresh key otherwise only fills as posts get touched by engagement, leaving
- * Hot on the SQL fallback (newest-100 window) for days at current volume.
- * Deliberately NOT best-effort — the manual curl should surface failures.
- */
-export async function seedHotPostRanks() {
-  if (!redis) {
-    return null;
-  }
-
-  const posts = await db
-    .select(hotRankColumns)
-    .from(postTable)
-    .orderBy(desc(postTable.createdAt), desc(postTable.id))
-    .limit(HOT_FEED_MAX_ITEMS);
-
-  if (posts.length > 0) {
-    const [first, ...rest] = posts.map((post) => ({
-      score: getHotScore(post),
-      member: post.id,
-    }));
-    await redis.zadd(HOT_FEED_KEY, first, ...rest);
-    // Organic members that pre-date the seeded window would otherwise leave
-    // the set over its cap until the next new-member refresh trims it.
-    await redis.zremrangebyrank(HOT_FEED_KEY, 0, -(HOT_FEED_MAX_ITEMS + 1));
-  }
-
-  await redis.del(LEGACY_HOT_FEED_KEY);
-
-  return posts.length;
 }
