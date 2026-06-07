@@ -1145,23 +1145,27 @@ async function getPublicPost(postId: string): Promise<PostResponse> {
   cacheTag(`post:${postId}`);
   cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
 
-  const post = await db.query.postTable.findFirst({
-    with: {
-      author: true,
-    },
-    where: eq(postTable.id, postId),
-  });
+  // Explicit join over the relational `with: { author: true }`: the relation
+  // selects every user column (passwordHash, blockedWords, ...) and a type
+  // cast can't strip them at runtime — this payload is client-bound and
+  // CDN-cached, so the author must be projected through publicUserColumns.
+  const [row] = await db
+    .select({ post: postTable, author: publicUserColumns })
+    .from(postTable)
+    .innerJoin(userTable, eq(postTable.authorId, userTable.id))
+    .where(eq(postTable.id, postId))
+    .limit(1);
 
-  if (!post?.author) {
+  if (!row) {
     return null;
   }
 
-  const quotedMap = await getQuotedPostMap([post]);
+  const quotedMap = await getQuotedPostMap([row.post]);
 
   return {
-    ...post,
-    author: post.author as PublicUser,
-    quotedPost: resolveQuotedPost(post, quotedMap),
+    ...row.post,
+    author: row.author,
+    quotedPost: resolveQuotedPost(row.post, quotedMap),
     isLiked: false,
     isReposted: false,
   };
