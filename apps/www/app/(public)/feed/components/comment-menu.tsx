@@ -13,10 +13,11 @@ import {
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
 import { Button } from "@umamin/ui/components/button";
-import { Trash2Icon } from "lucide-react";
+import { Trash2Icon, UserXIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteCommentAction } from "@/app/actions/post";
+import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
 import { queryKeys } from "@/lib/query";
 import {
@@ -34,6 +35,7 @@ type CommentMenuProps = {
   commentId: string;
   postId: string;
   authorId: string;
+  authorUsername?: string;
   isAuthenticated: boolean;
   currentUserId?: string;
 };
@@ -42,12 +44,15 @@ export function CommentMenu({
   commentId,
   postId,
   authorId,
+  authorUsername,
   isAuthenticated,
   currentUserId,
 }: CommentMenuProps) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
   const canDelete = !!currentUserId && currentUserId === authorId;
+  const canBlock = !!currentUserId && !!authorId && currentUserId !== authorId;
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -90,43 +95,78 @@ export function CommentMenu({
     },
   });
 
-  // Only the comment's author gets a menu at all (delete is the only action).
-  if (!isAuthenticated || !canDelete) return null;
+  if (!isAuthenticated) return null;
 
   const menuItems = [
-    {
-      title: "Delete",
-      onClick: () => setOpen(true),
-      className: "text-red-500",
-      icon: <Trash2Icon className="h-4 w-4" />,
-    },
+    ...(canDelete
+      ? [
+          {
+            title: "Delete",
+            onClick: () => setOpen(true),
+            className: "text-red-500",
+            icon: <Trash2Icon className="h-4 w-4" />,
+          },
+        ]
+      : []),
+    ...(canBlock
+      ? [
+          {
+            title: authorUsername ? `Block @${authorUsername}` : "Block",
+            onClick: () => setBlockOpen(true),
+            className: "text-red-500",
+            icon: <UserXIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
   ];
+
+  if (menuItems.length === 0) return null;
 
   return (
     <>
-      <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. Your comment will be permanently
-              removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                disabled={deleteMutation.isPending}
-                variant="destructive"
-                onClick={() => deleteMutation.mutate()}
-              >
-                Continue
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {canDelete && (
+        <AlertDialog open={open} onOpenChange={setOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. Your comment will be permanently
+                removed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Button
+                  disabled={deleteMutation.isPending}
+                  variant="destructive"
+                  onClick={() => deleteMutation.mutate()}
+                >
+                  Continue
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {canBlock && (
+        <BlockUserDialog
+          userId={authorId}
+          username={authorUsername}
+          open={blockOpen}
+          onOpenChange={setBlockOpen}
+          onBlocked={() => {
+            // Drop the blocked author's comments here plus their posts/notes
+            // everywhere else (overlay tags are already busted server-side).
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.postComments(postId),
+            });
+            queryClient.invalidateQueries({ queryKey: queryKeys.postsRoot() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.notesRoot() });
+          }}
+        />
+      )}
 
       <Menu menuItems={menuItems} />
     </>

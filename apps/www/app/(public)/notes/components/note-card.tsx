@@ -20,6 +20,7 @@ import {
   MessageSquareTextIcon,
   MessageSquareXIcon,
   ScanFaceIcon,
+  UserXIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -28,6 +29,7 @@ import {
   addNoteReactionAction,
   removeNoteReactionAction,
 } from "@/app/actions/note";
+import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
 import { PostBody } from "@/components/post-body";
 import {
@@ -50,6 +52,7 @@ import { ReplyDrawer } from "./reply-drawer";
 type Props = {
   data: NoteItem;
   isAuthenticated: boolean;
+  currentUserId?: string;
   index?: number;
   isHighlighted?: boolean;
 };
@@ -57,13 +60,23 @@ type Props = {
 export function NoteCard({
   data,
   isAuthenticated,
+  currentUserId,
   index = 0,
   isHighlighted = false,
 }: Props) {
   const user = data.user;
   const username = user?.username;
   const [replyOpen, setReplyOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  // Anonymous notes have no identified author to block.
+  const canBlock =
+    isAuthenticated &&
+    !data.isAnonymous &&
+    !!user?.id &&
+    !!currentUserId &&
+    currentUserId !== user.id;
 
   const [reacted, setReacted] = useState(data.isReacted === true);
   const [reactions, setReactions] = useState(data.reactionCount ?? 0);
@@ -140,6 +153,25 @@ export function NoteCard({
             isOpen={replyOpen}
             setIsOpen={setReplyOpen}
             note={{ ...data, user }}
+          />
+        )}
+
+        {canBlock && user && (
+          <BlockUserDialog
+            userId={user.id}
+            username={username}
+            open={blockOpen}
+            onOpenChange={setBlockOpen}
+            onBlocked={() => {
+              // The user-blocks tag is already busted server-side; refetch so
+              // the per-viewer overlay drops the blocked author's content.
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.notesRoot(),
+              });
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.postsRoot(),
+              });
+            }}
           />
         )}
 
@@ -249,6 +281,16 @@ export function NoteCard({
                         onClick: () => saveImage(`umamin-${data.id}`),
                         icon: <DownloadIcon className="h-4 w-4" />,
                       },
+                      ...(canBlock
+                        ? [
+                            {
+                              title: username ? `Block @${username}` : "Block",
+                              onClick: () => setBlockOpen(true),
+                              className: "text-red-500",
+                              icon: <UserXIcon className="h-4 w-4" />,
+                            },
+                          ]
+                        : []),
                     ]}
                   />
                 )}

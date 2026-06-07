@@ -11,8 +11,12 @@ vi.mock("@/app/actions/note", () => ({
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn() },
 }));
-// Severs the heavy message-action import chain; not rendered for anonymous notes.
+// Severs the heavy message/user-action import chains; neither is rendered for
+// anonymous notes.
 vi.mock("./reply-drawer", () => ({ ReplyDrawer: () => null }));
+vi.mock("@/components/block-user-dialog", () => ({
+  BlockUserDialog: () => null,
+}));
 
 import { toast } from "sonner";
 import {

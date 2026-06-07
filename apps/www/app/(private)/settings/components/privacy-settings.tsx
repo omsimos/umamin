@@ -47,6 +47,8 @@ import type {
   UserProfileResponse,
 } from "@/lib/query-types";
 import type { UserWithAccount } from "@/types/user";
+import { BlockedUsersSection } from "./blocked-users-section";
+import { BlockedWordsSection } from "./blocked-words-section";
 
 type PendingPhoto =
   | {
@@ -342,6 +344,10 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
           />
         </div>
       </section>
+
+      <BlockedWordsSection user={user} />
+
+      <BlockedUsersSection />
 
       <Dialog
         open={previewOpen}

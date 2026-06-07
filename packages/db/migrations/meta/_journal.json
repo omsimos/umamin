@@ -64,6 +64,13 @@
       "when": 1780751176826,
       "tag": "0008_lucky_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1780817355987,
+      "tag": "0009_heavy_mephistopheles",
+      "breakpoints": true
     }
   ]
 }

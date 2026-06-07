@@ -22,6 +22,9 @@ export const userTable = sqliteTable("user", {
     .notNull()
     .default(false),
   question: text("question").notNull().default("Send me an anonymous message!"),
+  // Owner-private message filter; must never ride a public payload — kept out
+  // of publicUserColumns and stripped from PublicUser (see apps/www toPublicUser).
+  blockedWords: text("blocked_words", { mode: "json" }).$type<string[]>(),
   // Pinned profile post: soft reference, no FK — an FK to postTable would
   // create a circular schema import (post.ts already references userTable).
   // deletePostAction clears it; a dangling id just renders no pin.

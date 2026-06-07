@@ -265,6 +265,7 @@ export function NoteList({
                   return (
                     <NoteCard
                       isAuthenticated={isAuthenticated}
+                      currentUserId={currentUserId}
                       key={post.id}
                       data={post}
                       index={dataIndexForRow(row.index)}
