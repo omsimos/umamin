@@ -341,6 +341,9 @@ export function UserProfile({ username, initialUser }: Props) {
         if (res && "alreadyRemoved" in res && res.alreadyRemoved) {
           patchProfileCaches({ isBlocked: false });
         }
+        // Settings' blocked-users list has stable refetch options — it only
+        // updates via explicit invalidation.
+        queryClient.invalidateQueries({ queryKey: queryKeys.blockedUsers() });
         toast.success("Unblocked.");
         return;
       }
@@ -369,6 +372,7 @@ export function UserProfile({ username, initialUser }: Props) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.receivedMessages(),
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.blockedUsers() });
       toast.success("User blocked.");
     },
   });

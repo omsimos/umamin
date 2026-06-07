@@ -35,6 +35,7 @@ import { unionAll } from "drizzle-orm/sqlite-core";
 import { cacheLife, cacheTag } from "next/cache";
 import type { FeedSort } from "@/lib/feed-sort";
 import type {
+  BlockedUsersResponse,
   CommentsResponse,
   CurrentUserResponse,
   FeedResponse,
@@ -1619,6 +1620,9 @@ export async function getCurrentUserData(
     const [userRecord] = await db
       .select({
         ...publicUserColumns,
+        // Owner-private (like hasPassword): this record is only ever served to
+        // its own session — keep blockedWords out of publicUserColumns.
+        blockedWords: userTable.blockedWords,
         hasPassword:
           sql<number>`CASE WHEN ${userTable.passwordHash} IS NOT NULL THEN 1 ELSE 0 END`.as(
             "hasPassword",
@@ -1978,6 +1982,75 @@ export async function getFollowListPage(params: {
   };
 }
 
+const BLOCKED_USERS_PAGE_SIZE = 20;
+
+// Keyset-paginated on user_block_blocker_created_idx — a cache miss reads
+// ~PAGE_SIZE block rows + one batched user fetch, not a full scan. Per-viewer
+// private data; the user-blocks tag is already busted by block/unblock.
+export async function getBlockedUsersPage(params: {
+  viewerId: string;
+  cursor?: string | null;
+}): Promise<BlockedUsersResponse> {
+  "use cache";
+  cacheTag(`user-blocks:${params.viewerId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  const parsedCursor = parseCursor(params.cursor ?? null);
+  const cursorCondition = parsedCursor
+    ? or(
+        lt(userBlockTable.createdAt, parsedCursor.cursorDate),
+        and(
+          eq(userBlockTable.createdAt, parsedCursor.cursorDate),
+          lt(userBlockTable.id, parsedCursor.cursorId),
+        ),
+      )
+    : undefined;
+
+  const baseCondition = eq(userBlockTable.blockerId, params.viewerId);
+
+  const edgeRows = await db
+    .select({
+      id: userBlockTable.id,
+      createdAt: userBlockTable.createdAt,
+      blockedId: userBlockTable.blockedId,
+    })
+    .from(userBlockTable)
+    .where(
+      cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
+    )
+    .orderBy(desc(userBlockTable.createdAt), desc(userBlockTable.id))
+    .limit(BLOCKED_USERS_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(edgeRows, BLOCKED_USERS_PAGE_SIZE);
+  const blockedIds = pageRows.map((row) => row.blockedId);
+
+  const users =
+    blockedIds.length > 0
+      ? await db
+          .select(publicUserColumns)
+          .from(userTable)
+          .where(inArray(userTable.id, blockedIds))
+      : [];
+
+  // Preserve the block-edge order (newest first); a missing user row (deleted
+  // account) just drops out.
+  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const data = pageRows.flatMap((row) => {
+    const user = userMap.get(row.blockedId);
+    return user ? [{ ...user, blockedAt: row.createdAt }] : [];
+  });
+
+  const lastEdge = pageRows[pageRows.length - 1];
+
+  return {
+    data,
+    nextCursor:
+      hasMore && lastEdge
+        ? `${lastEdge.createdAt.getTime()}.${lastEdge.id}`
+        : null,
+  };
+}
+
 export async function getMessagesPage(params: {
   type: "received" | "sent";
   cursor?: string | null;
@@ -2124,13 +2197,10 @@ export async function getMessagesPage(params: {
 
       if (isReceived) {
         // Never expose the (logged-in) sender's account id to the recipient —
-        // returning it de-anonymizes every "anonymous" sender. Overwrite it to
-        // null and carry only whether a block is possible; blocking resolves the
-        // sender server-side from the message id. [audit #22]
+        // returning it de-anonymizes every "anonymous" sender. [audit #22]
         return {
           ...message,
           senderId: null,
-          canBlock: message.senderId != null,
           content,
           reply,
         };

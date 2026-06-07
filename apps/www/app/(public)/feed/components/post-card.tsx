@@ -349,6 +349,7 @@ export function PostCard({
               <PostMenu
                 postId={data.id}
                 authorId={author?.id ?? ""}
+                authorUsername={author?.username}
                 imageId={imageTargetId}
                 isAuthenticated={isAuthenticated}
                 currentUserId={currentUserId}
@@ -360,6 +361,7 @@ export function PostCard({
                 commentId={data.id}
                 postId={commentPostId}
                 authorId={author?.id ?? ""}
+                authorUsername={author?.username}
                 isAuthenticated={isAuthenticated}
                 currentUserId={currentUserId}
               />

@@ -12,19 +12,10 @@ import {
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
 import { Button } from "@umamin/ui/components/button";
-import {
-  DownloadIcon,
-  MessageSquareTextIcon,
-  MessageSquareXIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { DownloadIcon, MessageSquareTextIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteMessageAction } from "@/app/actions/message";
-import {
-  blockMessageSenderAction,
-  unblockMessageSenderAction,
-} from "@/app/actions/user";
 import { Menu } from "@/components/menu";
 import { queryKeys } from "@/lib/query";
 import { removeMessage } from "@/lib/query-cache";
@@ -34,9 +25,6 @@ import { ReplyDialog } from "./reply-dialog";
 
 export type ReceivedMenuProps = {
   id: string;
-  // Whether the sender can be blocked (i.e. the message had a logged-in sender).
-  // The sender's account id is intentionally NOT sent to the client. [audit #22]
-  canBlock?: boolean;
   question: string;
   content: string;
   reply?: string | null;
@@ -48,8 +36,6 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
   const queryClient = useQueryClient();
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [open, setOpen] = useState(false);
-  const [blockOpen, setBlockOpen] = useState(false);
-  const canBlock = !!props.canBlock;
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -71,45 +57,6 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     },
   });
 
-  const blockMutation = useMutation({
-    mutationFn: async () => {
-      const res = await blockMessageSenderAction({ messageId: id });
-
-      if (res && "error" in res && res.error) {
-        throw new Error(res.error);
-      }
-    },
-    onSuccess: () => {
-      // Remove this message immediately, then refetch: the sender's other
-      // messages are now filtered server-side and we have no sender id
-      // client-side to filter them ourselves. [audit #22]
-      queryClient.setQueryData<
-        import("@tanstack/react-query").InfiniteData<MessagesResponse>
-      >(queryKeys.receivedMessages(), (current) => removeMessage(current, id));
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.receivedMessages(),
-      });
-      toast.success("User blocked.", {
-        action: {
-          label: "Undo",
-          onClick: () => {
-            unblockMessageSenderAction({ messageId: id })
-              .then(() =>
-                queryClient.invalidateQueries({
-                  queryKey: queryKeys.receivedMessages(),
-                }),
-              )
-              .catch((err) => console.error(err));
-          },
-        },
-      });
-    },
-    onError: (err) => {
-      console.error(err);
-      toast.error("Couldn't block user.");
-    },
-  });
-
   const menuItems = [
     {
       title: "Reply",
@@ -121,16 +68,6 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
       onClick: () => saveImage(`umamin-${id}`),
       icon: <DownloadIcon className="h-4 w-4" />,
     },
-    ...(canBlock
-      ? [
-          {
-            title: "Block",
-            onClick: () => setBlockOpen(true),
-            className: "text-red-500",
-            icon: <MessageSquareXIcon className="h-4 w-4" />,
-          },
-        ]
-      : []),
     {
       title: "Delete",
       onClick: () => setOpen(true),
@@ -164,31 +101,6 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {canBlock && (
-        <AlertDialog open={blockOpen} onOpenChange={setBlockOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Block this user?</AlertDialogTitle>
-              <AlertDialogDescription>
-                You won’t receive messages or see content from this user.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction asChild>
-                <Button
-                  disabled={blockMutation.isPending}
-                  variant="destructive"
-                  onClick={() => blockMutation.mutate()}
-                >
-                  Continue
-                </Button>
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
 
       <Menu menuItems={menuItems} />
 

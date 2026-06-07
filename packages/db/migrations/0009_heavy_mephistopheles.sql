@@ -1,0 +1,1 @@
+ALTER TABLE `user` ADD `blocked_words` text;

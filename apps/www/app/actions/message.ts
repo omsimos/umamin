@@ -8,6 +8,7 @@ import { and, eq, or } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import { matchesBlockedWords } from "@/lib/blocked-words";
 import { checkRateLimit, getClientIp, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { notify } from "@/lib/server/notifications";
 import { formatContent } from "@/lib/utils";
@@ -174,7 +175,7 @@ export async function sendMessageAction(
           })
         : Promise.resolve(undefined),
       db.query.userTable.findFirst({
-        columns: { quietMode: true },
+        columns: { quietMode: true, blockedWords: true },
         where: eq(userTable.id, receiverId),
       }),
     ]);
@@ -187,8 +188,16 @@ export async function sendMessageAction(
       return { success: true };
     }
 
+    // Same silent drop as block/quiet — a sender must not be able to probe the
+    // receiver's blocked words. Checked against the formatted plaintext (what
+    // would be stored), before any crypto work.
+    const formattedContent = formatContent(content);
+    if (matchesBlockedWords(formattedContent, receiver.blockedWords)) {
+      return { success: true };
+    }
+
     // Encrypt only after the above checks so a dropped send does no crypto work.
-    const encryptedContent = await aesEncrypt(formatContent(content));
+    const encryptedContent = await aesEncrypt(formattedContent);
 
     await db.insert(messageTable).values({
       senderId,

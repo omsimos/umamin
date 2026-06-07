@@ -18,6 +18,7 @@ import {
   PinOffIcon,
   Share2Icon,
   Trash2Icon,
+  UserXIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ import {
   pinPostAction,
   unpinPostAction,
 } from "@/app/actions/post";
+import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
 import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { patchCurrentUser, removePostFromFeed } from "@/lib/query-cache";
@@ -37,6 +39,7 @@ import type { FeedItem } from "@/types/post";
 type PostMenuProps = {
   postId: string;
   authorId: string;
+  authorUsername?: string;
   imageId: string;
   isAuthenticated: boolean;
   currentUserId?: string;
@@ -46,6 +49,7 @@ type PostMenuProps = {
 export function PostMenu({
   postId,
   authorId,
+  authorUsername,
   imageId,
   isAuthenticated,
   currentUserId,
@@ -53,7 +57,9 @@ export function PostMenu({
 }: PostMenuProps) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
   const canDelete = !!currentUserId && currentUserId === authorId;
+  const canBlock = !!currentUserId && !!authorId && currentUserId !== authorId;
 
   // Shared app-wide cache (usually a hit); carries pinnedPostId for the
   // pin/unpin menu state on own posts.
@@ -197,6 +203,16 @@ export function PostMenu({
           },
         ]
       : []),
+    ...(canBlock
+      ? [
+          {
+            title: authorUsername ? `Block @${authorUsername}` : "Block",
+            onClick: () => setBlockOpen(true),
+            className: "text-red-500",
+            icon: <UserXIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -225,6 +241,21 @@ export function PostMenu({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      )}
+
+      {canBlock && (
+        <BlockUserDialog
+          userId={authorId}
+          username={authorUsername}
+          open={blockOpen}
+          onOpenChange={setBlockOpen}
+          onBlocked={() => {
+            // The user-blocks tag is already busted server-side; refetch so the
+            // per-viewer overlay drops the blocked author's content.
+            queryClient.invalidateQueries({ queryKey: queryKeys.postsRoot() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.notesRoot() });
+          }}
+        />
       )}
 
       <Menu menuItems={menuItems} />

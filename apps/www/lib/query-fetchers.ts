@@ -1,6 +1,7 @@
 import type { SelectNote } from "@umamin/db/schema/note";
 import type { FeedSort } from "@/lib/feed-sort";
 import type {
+  BlockedUsersResponse,
   CommentsResponse,
   CurrentUserResponse,
   FeedResponse,
@@ -136,6 +137,12 @@ export async function fetchFollowingPage(
 ) {
   const url = appendCursor(`/api/user/${username}/following`, cursor);
   return fetchJson<FollowListResponse>(url);
+}
+
+export async function fetchBlockedUsersPage(cursor: string | null) {
+  return fetchJson<BlockedUsersResponse>(
+    appendCursor("/api/blocked-users", cursor),
+  );
 }
 
 export async function fetchNotificationBadge() {

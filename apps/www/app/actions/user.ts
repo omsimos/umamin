@@ -22,6 +22,7 @@ import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
+import { sanitizeBlockedWords } from "@/lib/blocked-words";
 import { publicImageUrl } from "@/lib/post-images";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { getCurrentUserData, getUserProfileData } from "@/lib/server/data";
@@ -813,70 +814,6 @@ export async function unblockUserAction({ userId }: { userId: string }) {
   }
 }
 
-// Resolves a received message's sender server-side (scoped to the viewer's own
-// inbox) so the recipient can block/unblock without the sender's account id
-// ever reaching the client. [audit #22]
-async function resolveMessageSenderId(
-  messageId: string,
-  viewerId: string,
-): Promise<string | null> {
-  const message = await db.query.messageTable.findFirst({
-    columns: { senderId: true },
-    where: and(
-      eq(messageTable.id, messageId),
-      eq(messageTable.receiverId, viewerId),
-    ),
-  });
-
-  return message?.senderId ?? null;
-}
-
-export async function blockMessageSenderAction({
-  messageId,
-}: {
-  messageId: string;
-}) {
-  const parsed = z.string().min(1).safeParse(messageId);
-  if (!parsed.success) {
-    return { error: "Invalid input" };
-  }
-
-  const { session } = await getSession();
-  if (!session) {
-    throw new Error("Unauthorized");
-  }
-
-  const senderId = await resolveMessageSenderId(messageId, session.userId);
-  if (!senderId) {
-    return { error: "Cannot block this sender." };
-  }
-
-  return blockUserAction({ userId: senderId });
-}
-
-export async function unblockMessageSenderAction({
-  messageId,
-}: {
-  messageId: string;
-}) {
-  const parsed = z.string().min(1).safeParse(messageId);
-  if (!parsed.success) {
-    return { error: "Invalid input" };
-  }
-
-  const { session } = await getSession();
-  if (!session) {
-    throw new Error("Unauthorized");
-  }
-
-  const senderId = await resolveMessageSenderId(messageId, session.userId);
-  if (!senderId) {
-    return { error: "Cannot unblock this sender." };
-  }
-
-  return unblockUserAction({ userId: senderId });
-}
-
 export async function toggleDisplayPictureAction(accountImgUrl?: string) {
   try {
     const { user } = await getSession();
@@ -948,6 +885,47 @@ export async function toggleQuietModeAction() {
     updateTag(`user:${user.id}:accounts`);
 
     return { quietMode };
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occured" };
+  }
+}
+
+const blockedWordsSchema = z.object({
+  // Loose pre-bound; sanitizeBlockedWords applies the real caps server-side.
+  words: z.array(z.string().max(200)).max(200),
+});
+
+export async function updateBlockedWordsAction(
+  values: z.infer<typeof blockedWordsSchema>,
+) {
+  try {
+    const params = blockedWordsSchema.safeParse(values);
+    if (!params.success) {
+      return { error: "Invalid input" };
+    }
+
+    const { user } = await getSession();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `blockedwords:${user.id}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    const blockedWords = sanitizeBlockedWords(params.data.words);
+
+    await db
+      .update(userTable)
+      .set({ blockedWords })
+      .where(eq(userTable.id, user.id));
+
+    // Owner-private field; only the viewer's own cached record carries it.
+    updateTag(`user:${user.id}`);
+
+    return { success: true, blockedWords };
   } catch (err) {
     console.log(err);
     return { error: "An error occured" };

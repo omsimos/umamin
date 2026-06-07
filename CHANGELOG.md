@@ -18,6 +18,26 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.7.0] - 2026-06-07
+
+### Added
+
+- Blocked words: in Settings → Privacy, list words or phrases you don't want to receive — any incoming anonymous message containing one is quietly discarded, and the sender is none the wiser.
+- Block someone straight from their content: posts, comments, and notes by identified users now have a "Block" option in their menu, alongside the existing one on profiles.
+- A Blocked Users section in Settings → Privacy lists everyone you've blocked, with a one-tap Unblock. Anyone you blocked in the past appears there too.
+
+### Changed
+
+- Blocking is now managed from profiles, posts, comments, notes, and the new Blocked Users list instead of from individual received messages.
+
+### Security & Privacy
+
+- Post pages and the post API no longer include non-public account fields of the post's author in their payload.
+
+### Removed
+
+- The "Block" option on received messages. Keeping it would have let your blocked list hint at who sent an anonymous message; use blocked words to filter unwanted messages instead.
+
 ## [5.6.0] - 2026-06-06
 
 ### Added
@@ -536,6 +556,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.7.0]: https://github.com/omsimos/umamin/compare/v5.6.0...v5.7.0
 [5.6.0]: https://github.com/omsimos/umamin/compare/v5.5.0...v5.6.0
 [5.5.0]: https://github.com/omsimos/umamin/compare/v5.4.0...v5.5.0
 [5.4.0]: https://github.com/omsimos/umamin/compare/v5.3.0...v5.4.0

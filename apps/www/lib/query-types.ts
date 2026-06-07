@@ -25,10 +25,6 @@ export type NotesResponse = CursorPage<NoteItem>;
 
 export type MessageWithReceiver = SelectMessage & {
   receiver: PublicUser;
-  // Received messages set senderId=null and expose only this flag for the block
-  // UI — the sender's account id never reaches the client (anonymity). Blocking
-  // resolves the sender server-side from the message id. [audit #22]
-  canBlock?: boolean;
 };
 
 export type MessagesResponse = {
@@ -68,6 +64,12 @@ export type CurrentUserData = CurrentUserClient & {
 export type CurrentUserResponse = {
   user?: CurrentUserData;
 };
+
+export type BlockedUser = PublicUser & {
+  blockedAt: Date;
+};
+
+export type BlockedUsersResponse = CursorPage<BlockedUser>;
 
 export type FollowListUser = PublicUser & {
   isFollowing: boolean;
