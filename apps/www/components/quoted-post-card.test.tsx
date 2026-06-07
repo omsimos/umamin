@@ -29,6 +29,7 @@ function makeQuoted(overrides: Partial<QuotedPostData> = {}): QuotedPostData {
     likeCount: 0,
     commentCount: 0,
     repostCount: 0,
+    pollVoteCount: 0,
     pollEndsAt: null,
     author,
     ...overrides,

@@ -18,6 +18,17 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.9.0] - 2026-06-07
+
+### Added
+
+- Poll votes now count toward how a post ranks in the Hot feed, alongside likes, comments, and reposts.
+
+### Changed
+
+- The Hot feed ranks posts with a steadier engagement score: a burst of reactions lifts a post for hours rather than pinning it for days, and each additional reaction adds a little less, so fresh posts keep surfacing.
+- Hot now spaces out consecutive posts from the same author throughout the feed.
+
 ## [5.8.0] - 2026-06-07
 
 ### Added
@@ -566,6 +577,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.9.0]: https://github.com/omsimos/umamin/compare/v5.8.0...v5.9.0
 [5.8.0]: https://github.com/omsimos/umamin/compare/v5.7.0...v5.8.0
 [5.7.0]: https://github.com/omsimos/umamin/compare/v5.6.0...v5.7.0
 [5.6.0]: https://github.com/omsimos/umamin/compare/v5.5.0...v5.6.0

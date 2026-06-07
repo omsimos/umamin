@@ -44,6 +44,10 @@ export const postTable = sqliteTable(
     likeCount: integer("like_count").notNull().default(0),
     commentCount: integer("comment_count").notNull().default(0),
     repostCount: integer("repost_count").notNull().default(0),
+    // Denormalized poll-vote total across all options, mirroring likeCount —
+    // feeds the Hot engagement score without a per-read aggregate over
+    // poll_option.
+    pollVoteCount: integer("poll_vote_count").notNull().default(0),
     // Poll attached to this post; null = no poll. The post content is the
     // question. Absolute end timestamp — expiry is a read-time comparison,
     // no sweeper. Lives on the post row so feed reads know a post has a poll

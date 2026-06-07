@@ -13,7 +13,9 @@ const state = {
   existingVote: [] as unknown[],
 };
 const voteInsertValues = vi.fn();
-const optionCountUpdate = vi.fn();
+// Captures (table, values) for each tx.update — the fresh-vote path bumps
+// poll_option.voteCount and postTable.pollVoteCount in one transaction.
+const countUpdate = vi.fn();
 
 vi.mock("@umamin/db", () => ({
   db: {
@@ -46,10 +48,10 @@ vi.mock("@umamin/db", () => ({
             }),
           }),
         }),
-        update: () => ({
+        update: (table: unknown) => ({
           set: (values: unknown) => ({
             where: () => {
-              optionCountUpdate(values);
+              countUpdate(table, values);
               return Promise.resolve();
             },
           }),
@@ -87,7 +89,9 @@ vi.mock("@/lib/server/r2", () => ({
   isR2Configured: () => false,
 }));
 
+import { pollOptionTable, postTable } from "@umamin/db/schema/post";
 import { POLL_ENDED_ERROR } from "@/lib/poll";
+import { refreshHotPostRank } from "@/lib/server/feed-rank";
 import { votePollAction } from "./post";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -126,11 +130,17 @@ describe("votePollAction", () => {
       optionId: "opt-1",
       userId: "viewer-1",
     });
-    expect(optionCountUpdate).toHaveBeenCalledTimes(1);
+    // Option count first, then the post's denormalized poll-vote total.
+    expect(countUpdate.mock.calls.map(([table]) => table)).toEqual([
+      pollOptionTable,
+      postTable,
+    ]);
     expect(updateTag).toHaveBeenCalledWith("post:post-1");
     expect(updateTag).toHaveBeenCalledWith("post:post-1:poll-voted:viewer-1");
     // Never the shared feed cache — vote counts are eventually consistent.
     expect(updateTag).not.toHaveBeenCalledWith("posts");
+    // Votes feed the Hot engagement score.
+    expect(refreshHotPostRank).toHaveBeenCalledExactlyOnceWith("post-1");
     expect(notify).toHaveBeenCalledWith({
       recipientId: "author-1",
       type: "vote",
@@ -152,7 +162,8 @@ describe("votePollAction", () => {
       alreadyVoted: true,
       votedOptionId: "opt-2",
     });
-    expect(optionCountUpdate).not.toHaveBeenCalled();
+    expect(countUpdate).not.toHaveBeenCalled();
+    expect(refreshHotPostRank).not.toHaveBeenCalled();
     expect(notify).not.toHaveBeenCalled();
   });
 

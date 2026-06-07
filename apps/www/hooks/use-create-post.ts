@@ -131,6 +131,7 @@ export function useCreatePost(user: PublicUser | null) {
         likeCount: 0,
         commentCount: 0,
         repostCount: 0,
+        pollVoteCount: 0,
         author: user,
         isLiked: false,
         isReposted: false,

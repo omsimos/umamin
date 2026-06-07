@@ -57,6 +57,7 @@ import {
   getRedisHotPostIdsPage,
   isRedisHotCursor,
 } from "@/lib/server/feed-rank";
+import { diversifyHotCandidates, getHotScoreKey } from "@/lib/server/hot-score";
 import { countUnseen } from "@/lib/server/notifications";
 import type {
   CommentData,
@@ -290,16 +291,9 @@ function getHotFeedNextCursor(
   return `${rankedAtMs}.${candidate.scoreKey}.${candidate.post.createdAt.getTime()}.${candidate.post.id}`;
 }
 
-function getHotFeedScoreKey(post: SelectPost, rankedAtMs: number) {
-  const engagement =
-    post.likeCount + post.commentCount * 3 + post.repostCount * 4;
-  const createdAtMs = post.createdAt.getTime();
-  const ageHours = Math.max(0, (rankedAtMs - createdAtMs) / 3_600_000);
-  const score = (1.5 + Math.log1p(engagement)) / (ageHours + 2) ** 1.15;
-
-  return Math.round(score * 1_000_000);
-}
-
+// No longer a scoring input (the Hot score is static — see hot-score.ts):
+// rankedAtMs survives purely as the per-120s "use cache" key for the first
+// page, then rides the cursor so later pages reuse the same cache window.
 function getHotFeedRankedAtMs(cursor: string | null) {
   const parsedCursor = parseHotFeedCursor(cursor);
 
@@ -324,36 +318,6 @@ function compareHotCandidates(left: HotFeedCandidate, right: HotFeedCandidate) {
   }
 
   return right.post.id.localeCompare(left.post.id);
-}
-
-function diversifyHotCandidates(candidates: HotFeedCandidate[]) {
-  const result = [...candidates];
-
-  for (let index = 1; index < result.length; index += 1) {
-    const previous = result[index - 1];
-    const current = result[index];
-
-    if (previous.post.authorId !== current.post.authorId) {
-      continue;
-    }
-
-    const replacementIndex = result.findIndex(
-      (candidate, candidateIndex) =>
-        candidateIndex > index &&
-        candidateIndex <= index + 4 &&
-        candidate.post.authorId !== previous.post.authorId &&
-        candidate.scoreKey >= current.scoreKey * 0.85,
-    );
-
-    if (replacementIndex === -1) {
-      continue;
-    }
-
-    const [replacement] = result.splice(replacementIndex, 1);
-    result.splice(index, 0, replacement);
-  }
-
-  return result;
 }
 
 function isAfterHotCursor(
@@ -613,28 +577,36 @@ async function getRedisHotPostsPage(
 
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
   const userMap = new Map(users.map((user) => [user.id, user] as const));
-  const data: FeedItem[] = page.ids.flatMap<FeedItem>((postId) => {
+  // scoreKeys recomputed from the hydrated counters (no extra Redis reads);
+  // they can drift from a stale zset float only within this page, which at
+  // worst nudges the same-author spacing below.
+  const candidates = page.ids.flatMap((postId) => {
     const post = postMap.get(postId);
-    const author = post ? userMap.get(post.authorId) : null;
-
-    if (!post || !author) {
-      return [];
-    }
-
-    return [
-      {
-        type: "post" as const,
-        post: {
-          ...post,
-          author,
-          quotedPost: resolveQuotedPost(post, quotedMap),
-          poll: resolvePoll(post, pollMap),
-          isLiked: false,
-          isReposted: false,
-        },
-      },
-    ];
+    return post ? [{ post, scoreKey: getHotScoreKey(post) }] : [];
   });
+  const data: FeedItem[] = diversifyHotCandidates(candidates).flatMap<FeedItem>(
+    ({ post }) => {
+      const author = userMap.get(post.authorId);
+
+      if (!author) {
+        return [];
+      }
+
+      return [
+        {
+          type: "post" as const,
+          post: {
+            ...post,
+            author,
+            quotedPost: resolveQuotedPost(post, quotedMap),
+            poll: resolvePoll(post, pollMap),
+            isLiked: false,
+            isReposted: false,
+          },
+        },
+      ];
+    },
+  );
 
   return {
     data,
@@ -661,7 +633,7 @@ async function getCachedPublicHotPostsPage(
   const rankedCandidates = candidatePosts
     .map((post) => ({
       post,
-      scoreKey: getHotFeedScoreKey(post, rankedAtMs),
+      scoreKey: getHotScoreKey(post),
     }))
     .sort(compareHotCandidates)
     .filter((candidate) => isAfterHotCursor(candidate, parsedCursor));
