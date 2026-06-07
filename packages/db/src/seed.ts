@@ -300,6 +300,9 @@ const MIN_TESTUSER_SENT = 25;
 
 const addTestuserReceivedMessage = () => {
   const senderUsername = faker.helpers.arrayElement(otherUsernames);
+  const reply = faker.datatype.boolean({ probability: 0.25 })
+    ? faker.lorem.sentences({ min: 1, max: 2 })
+    : undefined;
   messageSeeds.push({
     receiverUsername: "testuser",
     senderUsername: faker.datatype.boolean({ probability: 0.2 })
@@ -307,9 +310,13 @@ const addTestuserReceivedMessage = () => {
       : senderUsername,
     question: userQuestions.get("testuser") ?? DEFAULT_PROMPT,
     content: randomContent(),
-    reply: faker.datatype.boolean({ probability: 0.25 })
-      ? faker.lorem.sentences({ min: 1, max: 2 })
-      : undefined,
+    reply,
+    // A replied message was necessarily opened; ~40% of the rest stay sealed
+    // so the dev inbox exercises both states.
+    openedAt:
+      reply || faker.datatype.boolean({ probability: 0.6 })
+        ? new Date()
+        : undefined,
   });
 };
 

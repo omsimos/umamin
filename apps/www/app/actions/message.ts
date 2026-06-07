@@ -4,7 +4,7 @@ import { db } from "@umamin/db";
 import { messageTable } from "@umamin/db/schema/message";
 import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { aesEncrypt } from "@umamin/encryption";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import * as z from "zod";
 import { matchesBlockedWords } from "@/lib/blocked-words";
@@ -35,6 +35,40 @@ export const deleteMessageAction = withAction(
     updateTag(`messages:received:${session.userId}`);
 
     return { success: true };
+  },
+);
+
+export const openMessageAction = withAction(
+  {
+    schema: z.object({ messageId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `openmsg:${session.userId}`,
+    },
+  },
+  async ({ messageId }, { session }) => {
+    // Idempotent + IDOR-scoped: only flips a still-sealed row owned by the
+    // viewer — a re-open is a 0-row no-op so the timestamp is never rewritten.
+    const updated = await db
+      .update(messageTable)
+      .set({ openedAt: new Date() })
+      .where(
+        and(
+          eq(messageTable.id, messageId),
+          eq(messageTable.receiverId, session.userId),
+          isNull(messageTable.openedAt),
+        ),
+      )
+      .returning({ id: messageTable.id });
+
+    // A no-op (already opened, wrong owner, missing id) still returns success:
+    // the client revealed optimistically, and an unknown id must not leak
+    // whether a message exists.
+    if (updated.length > 0) {
+      updateTag(`messages:received:${session.userId}`);
+    }
+
+    return { success: true, opened: updated.length > 0 };
   },
 );
 

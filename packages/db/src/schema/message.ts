@@ -21,6 +21,9 @@ export const messageTable = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
       () => new Date(),
     ),
+    // NULL = still sealed in the receiver's inbox. Receiver-only state — the
+    // sent-messages payload strips it server-side.
+    openedAt: integer("opened_at", { mode: "timestamp" }),
   },
   (t) => [
     index("receiver_id_created_at_id_idx").on(t.receiverId, t.createdAt, t.id),
