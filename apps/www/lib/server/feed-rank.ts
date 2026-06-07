@@ -141,6 +141,9 @@ export async function seedHotPostRanks() {
       member: post.id,
     }));
     await redis.zadd(HOT_FEED_KEY, first, ...rest);
+    // Organic members that pre-date the seeded window would otherwise leave
+    // the set over its cap until the next new-member refresh trims it.
+    await redis.zremrangebyrank(HOT_FEED_KEY, 0, -(HOT_FEED_MAX_ITEMS + 1));
   }
 
   await redis.del(LEGACY_HOT_FEED_KEY);

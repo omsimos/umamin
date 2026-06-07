@@ -44,10 +44,18 @@ import { withAction } from "@/lib/server/with-action";
 import { formatContent, hasUmaminPlus } from "@/lib/utils";
 
 // Records the newest feed-edge timestamp so the client can show a "new posts"
-// pill without polling Turso. No-ops when Redis isn't configured.
+// pill without polling Turso. No-ops when Redis isn't configured. Best-effort
+// like refreshHotPostRank: it runs after the action's DB write has committed,
+// so a Redis blip must not fail the action.
 async function bumpFeedLatest(createdAt: Date) {
-  if (redis) {
+  if (!redis) {
+    return;
+  }
+
+  try {
     await redis.set("feed:latest", createdAt.getTime());
+  } catch (err) {
+    console.error("bumpFeedLatest failed", { err });
   }
 }
 

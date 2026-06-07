@@ -29,6 +29,10 @@ any that are empty.
 - The Hot feed ranks posts with a steadier engagement score: a burst of reactions lifts a post for hours rather than pinning it for days, and each additional reaction adds a little less, so fresh posts keep surfacing.
 - Hot now spaces out consecutive posts from the same author throughout the feed.
 
+### Fixed
+
+- Posting and reposting no longer report an error when the "new posts" indicator briefly can't be updated — the post still goes through.
+
 ## [5.8.0] - 2026-06-07
 
 ### Added

@@ -343,6 +343,12 @@ describe("seedHotPostRanks", () => {
       { score: getHotScore(posts[0]), member: "post-1" },
       { score: getHotScore(posts[1]), member: "post-2" },
     );
+    // Pre-seed organic members could put the set over the cap — seed trims.
+    expect(redisMock.zremrangebyrank).toHaveBeenCalledWith(
+      HOT_FEED_KEY,
+      0,
+      -2001,
+    );
     expect(redisMock.del).toHaveBeenCalledWith(LEGACY_HOT_FEED_KEY);
   });
 
@@ -356,6 +362,7 @@ describe("seedHotPostRanks", () => {
 
     expect(seeded).toBe(0);
     expect(redisMock.zadd).not.toHaveBeenCalled();
+    expect(redisMock.zremrangebyrank).not.toHaveBeenCalled();
     expect(redisMock.del).toHaveBeenCalledWith(LEGACY_HOT_FEED_KEY);
   });
 });
