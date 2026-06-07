@@ -35,6 +35,7 @@ import {
   removeRepostAction,
 } from "@/app/actions/post";
 import { ComposeDialog } from "@/components/compose-dialog";
+import { PollCard } from "@/components/poll-card";
 import { PostBody } from "@/components/post-body";
 import { PostImages } from "@/components/post-images";
 import { QuotedPostCard } from "@/components/quoted-post-card";
@@ -370,6 +371,14 @@ export function PostCard({
         </div>
 
         <PostBody content={data?.content ?? ""} className="mt-1" />
+
+        {!isComment && "poll" in data && data.poll && (
+          <PollCard
+            postId={data.id}
+            poll={data.poll}
+            isAuthenticated={isAuthenticated}
+          />
+        )}
 
         {"images" in data && data.images && data.images.length > 0 && (
           <PostImages images={data.images} />

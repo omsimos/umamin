@@ -18,6 +18,15 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.8.0] - 2026-06-07
+
+### Added
+
+- Polls: Umamin+ members can attach a poll to a post — 2 to 4 options, with the post text as the question, running for a duration you pick (1 hour to 7 days, default 1 day).
+- Anyone signed in can vote, one vote per poll, and votes are final. Results appear as percentage bars once you've voted or the poll closes; until then only the options show.
+- Poll authors get a "voted on your poll" notification, grouped the same way as likes.
+- Quoted posts with a poll show a poll indicator — tap through to the original to vote.
+
 ## [5.7.0] - 2026-06-07
 
 ### Added
@@ -557,6 +566,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.8.0]: https://github.com/omsimos/umamin/compare/v5.7.0...v5.8.0
 [5.7.0]: https://github.com/omsimos/umamin/compare/v5.6.0...v5.7.0
 [5.6.0]: https://github.com/omsimos/umamin/compare/v5.5.0...v5.6.0
 [5.5.0]: https://github.com/omsimos/umamin/compare/v5.4.0...v5.5.0

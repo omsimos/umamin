@@ -6,7 +6,7 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { cn } from "@umamin/ui/lib/utils";
-import { ScanFaceIcon } from "lucide-react";
+import { BarChart3Icon, ScanFaceIcon } from "lucide-react";
 import Link from "next/link";
 import { PostImages } from "@/components/post-images";
 import { shortTimeAgo } from "@/lib/utils";
@@ -62,6 +62,15 @@ export function QuotedPostCard({ post, linked = true, className }: Props) {
       {post.content && (
         <p className="mt-1.5 line-clamp-4 whitespace-pre-line text-sm">
           {post.content}
+        </p>
+      )}
+
+      {/* Embeds stop at one level: the quoted poll renders as a static
+          indicator (no options/counts) and the card links through to vote. */}
+      {post.pollEndsAt && (
+        <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <BarChart3Icon className="size-4" />
+          Poll
         </p>
       )}
 

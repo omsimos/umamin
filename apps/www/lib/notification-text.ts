@@ -1,9 +1,10 @@
 import type { NotificationType } from "@umamin/db/schema/notification";
 
-const VERBS: Record<"like" | "comment" | "follow", string> = {
+const VERBS: Record<"like" | "comment" | "follow" | "vote", string> = {
   like: "liked your post",
   comment: "commented on your post",
   follow: "followed you",
+  vote: "voted on your poll",
 };
 
 export function formatNotificationText(

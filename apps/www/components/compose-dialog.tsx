@@ -16,14 +16,22 @@ import {
 } from "@umamin/ui/components/dialog";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { cn } from "@umamin/ui/lib/utils";
-import { ImagePlusIcon, Loader2Icon, XIcon } from "lucide-react";
+import { BarChart3Icon, ImagePlusIcon, Loader2Icon, XIcon } from "lucide-react";
 import { type FormEventHandler, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ComposerImages } from "@/components/composer-images";
+import { PollComposer } from "@/components/poll-composer";
 import { QuotedPostCard } from "@/components/quoted-post-card";
 import { useCreatePost } from "@/hooks/use-create-post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useImageAttachments } from "@/hooks/use-image-attachments";
+import {
+  DEFAULT_POLL_DURATION,
+  POLL_MIN_OPTIONS,
+  POLL_PLUS_REQUIRED_ERROR,
+  type PollDuration,
+  sanitizePollOptions,
+} from "@/lib/poll";
 import {
   MAX_POST_IMAGES,
   PLUS_REQUIRED_ERROR,
@@ -59,6 +67,10 @@ export function ComposeDialog({
 
   const [dragging, setDragging] = useState(false);
   const [content, setContent] = useState("");
+  const [poll, setPoll] = useState<{
+    options: string[];
+    duration: PollDuration;
+  } | null>(null);
   const inputRef = useDynamicTextarea(content);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { submitPost, isPending } = useCreatePost(user);
@@ -69,6 +81,11 @@ export function ComposeDialog({
 
   const count = content.length;
   const overLimit = count > 500;
+  // A poll post needs its question (the content) and 2+ distinct options.
+  const pollReady =
+    !poll ||
+    (content.trim().length > 0 &&
+      sanitizePollOptions(poll.options).length >= POLL_MIN_OPTIONS);
   // Image-only posts are allowed; posting waits for in-flight uploads and
   // blocks on failed tiles so an image the user can see is never silently
   // dropped from the published post.
@@ -77,6 +94,7 @@ export function ComposeDialog({
     !attachments.isBusy &&
     !attachments.hasErrors &&
     !overLimit &&
+    pollReady &&
     (content.trim().length > 0 || attachments.hasReadyImages);
 
   const handleSubmit: FormEventHandler = async (e) => {
@@ -89,6 +107,7 @@ export function ComposeDialog({
       await submitPost({
         content,
         images: images.length > 0 ? images : undefined,
+        poll: poll ?? undefined,
         quotedPostId: quotedPost?.id,
         quotedPost,
         optimisticImages: attachments.items.flatMap((item) =>
@@ -105,6 +124,7 @@ export function ComposeDialog({
         ),
       });
       setContent("");
+      setPoll(null);
       attachments.resetAfterPost();
       onOpenChange(false);
     } catch {
@@ -117,11 +137,24 @@ export function ComposeDialog({
       toast.info(PLUS_REQUIRED_ERROR);
       return;
     }
+    if (poll) return;
     fileInputRef.current?.click();
   };
 
+  const handleTogglePoll = () => {
+    if (!isPlus) {
+      toast.info(POLL_PLUS_REQUIRED_ERROR);
+      return;
+    }
+    if (attachments.items.length > 0) return;
+    setPoll((current) =>
+      current ? null : { options: ["", ""], duration: DEFAULT_POLL_DURATION },
+    );
+  };
+
   const acceptFiles = (files: Iterable<File>) => {
-    if (!isPlus) return;
+    // Poll XOR images — drag/paste must respect it too.
+    if (!isPlus || poll) return;
     attachments.addFiles(files);
   };
 
@@ -133,7 +166,7 @@ export function ComposeDialog({
         onDragOver={(e) => {
           if (!imagesAvailable) return;
           e.preventDefault();
-          if (isPlus) setDragging(true);
+          if (isPlus && !poll) setDragging(true);
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => {
@@ -234,48 +267,78 @@ export function ComposeDialog({
                 onRetry={attachments.retry}
               />
 
+              {poll && (
+                <PollComposer
+                  options={poll.options}
+                  duration={poll.duration}
+                  onOptionsChange={(options) =>
+                    setPoll((current) => current && { ...current, options })
+                  }
+                  onDurationChange={(duration) =>
+                    setPoll((current) => current && { ...current, duration })
+                  }
+                  onRemove={() => setPoll(null)}
+                />
+              )}
+
               {quotedPost && (
                 <QuotedPostCard post={quotedPost} linked={false} />
               )}
             </div>
           </div>
 
-          {imagesAvailable && (
-            <footer className="flex items-center gap-1 border-t px-3 py-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple={MAX_POST_IMAGES > 1}
-                hidden
-                onChange={(e) => {
-                  if (e.target.files) acceptFiles(e.target.files);
-                  e.target.value = "";
-                }}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Add images"
-                onClick={handlePickImages}
-                disabled={attachments.items.length >= MAX_POST_IMAGES}
-                className="text-pink-500 hover:text-pink-600"
-              >
-                <ImagePlusIcon className="size-5" />
-              </Button>
-              {!isPlus && (
-                <Badge variant="secondary" className="text-muted-foreground">
-                  Requires Umamin+
-                </Badge>
-              )}
-              {attachments.hasErrors && (
-                <span role="status" className="text-xs text-red-500">
-                  Retry or remove the failed image to post.
-                </span>
-              )}
-            </footer>
-          )}
+          <footer className="flex items-center gap-1 border-t px-3 py-2">
+            {imagesAvailable && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple={MAX_POST_IMAGES > 1}
+                  hidden
+                  onChange={(e) => {
+                    if (e.target.files) acceptFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Add images"
+                  onClick={handlePickImages}
+                  disabled={
+                    attachments.items.length >= MAX_POST_IMAGES || !!poll
+                  }
+                  className="text-pink-500 hover:text-pink-600"
+                >
+                  <ImagePlusIcon className="size-5" />
+                </Button>
+              </>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={poll ? "Remove poll" : "Add a poll"}
+              aria-pressed={!!poll}
+              onClick={handleTogglePoll}
+              disabled={attachments.items.length > 0}
+              className="text-pink-500 hover:text-pink-600"
+            >
+              <BarChart3Icon className="size-5" />
+            </Button>
+            {!isPlus && (
+              <Badge variant="secondary" className="text-muted-foreground">
+                Requires Umamin+
+              </Badge>
+            )}
+            {attachments.hasErrors && (
+              <span role="status" className="text-xs text-red-500">
+                Retry or remove the failed image to post.
+              </span>
+            )}
+          </footer>
         </form>
       </DialogContent>
     </Dialog>

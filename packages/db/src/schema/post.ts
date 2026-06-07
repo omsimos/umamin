@@ -44,10 +44,63 @@ export const postTable = sqliteTable(
     likeCount: integer("like_count").notNull().default(0),
     commentCount: integer("comment_count").notNull().default(0),
     repostCount: integer("repost_count").notNull().default(0),
+    // Poll attached to this post; null = no poll. The post content is the
+    // question. Absolute end timestamp — expiry is a read-time comparison,
+    // no sweeper. Lives on the post row so feed reads know a post has a poll
+    // without extra scans.
+    pollEndsAt: integer("poll_ends_at", { mode: "timestamp" }),
   },
   (t) => [
     index("post_created_at_id_idx").on(t.createdAt, t.id),
     index("post_author_created_at_idx").on(t.authorId, t.createdAt, t.id),
+  ],
+);
+
+export const pollOptionTable = sqliteTable(
+  "poll_option",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    postId: text("post_id")
+      .notNull()
+      .references(() => postTable.id, { onDelete: "cascade" }),
+    // 0..3 display order, fixed at creation (options are never edited).
+    idx: integer("idx").notNull(),
+    label: text("label").notNull(),
+    voteCount: integer("vote_count").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [uniqueIndex("poll_option_post_idx_uidx").on(t.postId, t.idx)],
+);
+
+export const pollVoteTable = sqliteTable(
+  "poll_vote",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    postId: text("post_id")
+      .notNull()
+      .references(() => postTable.id, { onDelete: "cascade" }),
+    optionId: text("option_id")
+      .notNull()
+      .references(() => pollOptionTable.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    // One vote per poll (not per option) — votes are single-choice and final.
+    uniqueIndex("poll_vote_post_user_uidx").on(t.postId, t.userId),
+    // Backs the per-viewer overlay (user_id = ? AND post_id IN (...)) and the
+    // user-delete cascade lookup. Without it the overlay scans poll_vote.
+    index("poll_vote_user_post_idx").on(t.userId, t.postId),
   ],
 );
 
@@ -166,6 +219,30 @@ export const PostRelations = relations(postTable, ({ one, many }) => ({
   comments: many(postCommentTable),
   likes: many(postLikeTable),
   reposts: many(postRepostTable),
+  pollOptions: many(pollOptionTable),
+  pollVotes: many(pollVoteTable),
+}));
+
+export const PollOptionRelations = relations(pollOptionTable, ({ one }) => ({
+  post: one(postTable, {
+    fields: [pollOptionTable.postId],
+    references: [postTable.id],
+  }),
+}));
+
+export const PollVoteRelations = relations(pollVoteTable, ({ one }) => ({
+  post: one(postTable, {
+    fields: [pollVoteTable.postId],
+    references: [postTable.id],
+  }),
+  option: one(pollOptionTable, {
+    fields: [pollVoteTable.optionId],
+    references: [pollOptionTable.id],
+  }),
+  user: one(userTable, {
+    fields: [pollVoteTable.userId],
+    references: [userTable.id],
+  }),
 }));
 
 export const PostLikeRelations = relations(postLikeTable, ({ one }) => ({
@@ -225,3 +302,7 @@ export type InsertPostRepost = typeof postRepostTable.$inferInsert;
 export type SelectPostRepost = typeof postRepostTable.$inferSelect;
 export type InsertPostComment = typeof postCommentTable.$inferInsert;
 export type SelectPostComment = typeof postCommentTable.$inferSelect;
+export type InsertPollOption = typeof pollOptionTable.$inferInsert;
+export type SelectPollOption = typeof pollOptionTable.$inferSelect;
+export type InsertPollVote = typeof pollVoteTable.$inferInsert;
+export type SelectPollVote = typeof pollVoteTable.$inferSelect;

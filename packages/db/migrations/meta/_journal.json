@@ -71,6 +71,13 @@
       "when": 1780817355987,
       "tag": "0009_heavy_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1780823103976,
+      "tag": "0010_lying_aaron_stack",
+      "breakpoints": true
     }
   ]
 }

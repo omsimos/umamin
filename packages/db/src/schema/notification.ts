@@ -15,7 +15,8 @@ export type NotificationType =
   | "comment"
   | "follow"
   | "message"
-  | "reply";
+  | "reply"
+  | "vote";
 
 // One row per (recipient, type, target), aggregated via upsert — a viral post
 // produces a single "like" notification row, not one per liker. Keeps rows

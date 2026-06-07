@@ -5,6 +5,8 @@ import { messageTable } from "@umamin/db/schema/message";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import { notificationTable } from "@umamin/db/schema/notification";
 import {
+  pollOptionTable,
+  pollVoteTable,
   postCommentLikeTable,
   postCommentTable,
   postLikeTable,
@@ -21,6 +23,7 @@ import {
 import { aesDecrypt } from "@umamin/encryption";
 import {
   and,
+  asc,
   desc,
   eq,
   exists,
@@ -55,7 +58,13 @@ import {
   isRedisHotCursor,
 } from "@/lib/server/feed-rank";
 import { countUnseen } from "@/lib/server/notifications";
-import type { CommentData, FeedItem, QuotedPostData } from "@/types/post";
+import type {
+  CommentData,
+  FeedItem,
+  PollData,
+  PollOptionData,
+  QuotedPostData,
+} from "@/types/post";
 import type { CurrentUserClient, PublicUser } from "@/types/user";
 
 const PUBLIC_REVALIDATE_SECONDS = 120;
@@ -163,6 +172,58 @@ function resolveQuotedPost(
 ): QuotedPostData | null | undefined {
   if (!post.quotedPostId) return undefined;
   return quotedMap.get(post.quotedPostId) ?? null;
+}
+
+/**
+ * Resolves poll options for a page of posts: one bounded inArray read, only
+ * when the page actually contains polls (pollEndsAt set). Counts are the
+ * denormalized voteCount column — eventually consistent in the shared feed
+ * cache, same as likeCount. The viewer's own vote is overlay data, not here.
+ */
+async function getPollOptionsMap(
+  posts: Pick<SelectPost, "id" | "pollEndsAt">[],
+): Promise<Map<string, PollOptionData[]>> {
+  const ids = Array.from(
+    new Set(posts.flatMap((post) => (post.pollEndsAt ? [post.id] : []))),
+  );
+
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const rows = await db
+    .select({
+      id: pollOptionTable.id,
+      postId: pollOptionTable.postId,
+      idx: pollOptionTable.idx,
+      label: pollOptionTable.label,
+      voteCount: pollOptionTable.voteCount,
+    })
+    .from(pollOptionTable)
+    .where(inArray(pollOptionTable.postId, ids))
+    .orderBy(asc(pollOptionTable.idx));
+
+  const map = new Map<string, PollOptionData[]>();
+  for (const { postId, ...option } of rows) {
+    const list = map.get(postId);
+    if (list) {
+      list.push(option);
+    } else {
+      map.set(postId, [option]);
+    }
+  }
+
+  return map;
+}
+
+// `undefined` = no poll; `null` = poll whose option rows are missing.
+function resolvePoll(
+  post: Pick<SelectPost, "id" | "pollEndsAt">,
+  pollMap: Map<string, PollOptionData[]>,
+): PollData | null | undefined {
+  if (!post.pollEndsAt) return undefined;
+  const options = pollMap.get(post.id);
+  return options ? { endsAt: post.pollEndsAt, options } : null;
 }
 
 function parseFeedCursor(cursor: string | null): FeedCursor | null {
@@ -463,7 +524,10 @@ async function getPublicLatestPostsPage(
       : [],
   ]);
 
-  const quotedMap = await getQuotedPostMap(posts);
+  const [quotedMap, pollMap] = await Promise.all([
+    getQuotedPostMap(posts),
+    getPollOptionsMap(posts),
+  ]);
 
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
   const userMap = new Map(users.map((user) => [user.id, user] as const));
@@ -479,6 +543,7 @@ async function getPublicLatestPostsPage(
       ...post,
       author,
       quotedPost: resolveQuotedPost(post, quotedMap),
+      poll: resolvePoll(post, pollMap),
       isLiked: false,
       isReposted: false,
     };
@@ -541,7 +606,10 @@ async function getRedisHotPostsPage(
           .where(inArray(userTable.id, authorIds))
       : [];
 
-  const quotedMap = await getQuotedPostMap(posts);
+  const [quotedMap, pollMap] = await Promise.all([
+    getQuotedPostMap(posts),
+    getPollOptionsMap(posts),
+  ]);
 
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
   const userMap = new Map(users.map((user) => [user.id, user] as const));
@@ -560,6 +628,7 @@ async function getRedisHotPostsPage(
           ...post,
           author,
           quotedPost: resolveQuotedPost(post, quotedMap),
+          poll: resolvePoll(post, pollMap),
           isLiked: false,
           isReposted: false,
         },
@@ -614,9 +683,10 @@ async function getCachedPublicHotPostsPage(
           .where(inArray(userTable.id, authorIds))
       : [];
 
-  const quotedMap = await getQuotedPostMap(
-    pageRows.map((candidate) => candidate.post),
-  );
+  const [quotedMap, pollMap] = await Promise.all([
+    getQuotedPostMap(pageRows.map((candidate) => candidate.post)),
+    getPollOptionsMap(pageRows.map((candidate) => candidate.post)),
+  ]);
 
   const userMap = new Map(users.map((user) => [user.id, user] as const));
   const data: FeedItem[] = pageRows.flatMap<FeedItem>(({ post }) => {
@@ -633,6 +703,7 @@ async function getCachedPublicHotPostsPage(
           ...post,
           author,
           quotedPost: resolveQuotedPost(post, quotedMap),
+          poll: resolvePoll(post, pollMap),
           isLiked: false,
           isReposted: false,
         },
@@ -790,7 +861,10 @@ async function getFollowingPostsPage(
       : [],
   ]);
 
-  const quotedMap = await getQuotedPostMap(posts);
+  const [quotedMap, pollMap] = await Promise.all([
+    getQuotedPostMap(posts),
+    getPollOptionsMap(posts),
+  ]);
 
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
   const userMap = new Map(users.map((user) => [user.id, user] as const));
@@ -806,6 +880,7 @@ async function getFollowingPostsPage(
       ...post,
       author,
       quotedPost: resolveQuotedPost(post, quotedMap),
+      poll: resolvePoll(post, pollMap),
       isLiked: false,
       isReposted: false,
     };
@@ -860,8 +935,13 @@ function feedOverlayIds(items: FeedItem[]) {
       ]),
     ),
   ).sort();
+  // Deterministic subset of postIds, so passing it as an overlay arg doesn't
+  // churn the cache key; lets the overlay tag + probe only poll posts.
+  const pollPostIds = Array.from(
+    new Set(items.flatMap((item) => (item.post.poll ? [item.post.id] : []))),
+  ).sort();
 
-  return { postIds, actorIds };
+  return { postIds, actorIds, pollPostIds };
 }
 
 // Keyed on the viewer + the sorted id arrays the caller extracts — NOT the full
@@ -872,6 +952,7 @@ async function getPostFeedViewerOverlay(
   viewerId: string,
   postIds: string[],
   actorIds: string[],
+  pollPostIds: string[] = [],
 ) {
   "use cache";
   cacheTag(`user-blocks:${viewerId}`);
@@ -880,10 +961,15 @@ async function getPostFeedViewerOverlay(
     cacheTag(`post:${postId}:liked:${viewerId}`);
     cacheTag(`post:${postId}:reposted:${viewerId}`);
   }
+  // Only poll posts — a poll-free post can never bust a poll-voted tag, so
+  // registering it for every post would just inflate the tag set.
+  for (const postId of pollPostIds) {
+    cacheTag(`post:${postId}:poll-voted:${viewerId}`);
+  }
 
   cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
-  const [likedRows, repostRows, blockRows] = await Promise.all([
+  const [likedRows, repostRows, blockRows, voteRows] = await Promise.all([
     postIds.length > 0
       ? db
           .select({ postId: postLikeTable.postId })
@@ -926,6 +1012,20 @@ async function getPostFeedViewerOverlay(
             ),
           )
       : [],
+    pollPostIds.length > 0
+      ? db
+          .select({
+            postId: pollVoteTable.postId,
+            optionId: pollVoteTable.optionId,
+          })
+          .from(pollVoteTable)
+          .where(
+            and(
+              eq(pollVoteTable.userId, viewerId),
+              inArray(pollVoteTable.postId, pollPostIds),
+            ),
+          )
+      : [],
   ]);
 
   return {
@@ -936,6 +1036,9 @@ async function getPostFeedViewerOverlay(
     ),
     likedPostIds: new Set(likedRows.map((row) => row.postId)),
     repostedPostIds: new Set(repostRows.map((row) => row.postId)),
+    myVoteByPostId: new Map(
+      voteRows.map((row) => [row.postId, row.optionId] as const),
+    ),
   };
 }
 
@@ -967,6 +1070,13 @@ function applyPostFeedViewerOverlay(
         post: {
           ...item.post,
           quotedPost,
+          poll: item.post.poll
+            ? {
+                ...item.post.poll,
+                myVoteOptionId:
+                  overlay.myVoteByPostId.get(item.post.id) ?? null,
+              }
+            : item.post.poll,
           isLiked: overlay.likedPostIds.has(item.post.id),
           isReposted: overlay.repostedPostIds.has(item.post.id),
         },
@@ -994,11 +1104,12 @@ export async function getPostsPage(params: {
     return publicData;
   }
 
-  const { postIds, actorIds } = feedOverlayIds(publicData.data);
+  const { postIds, actorIds, pollPostIds } = feedOverlayIds(publicData.data);
   const overlay = await getPostFeedViewerOverlay(
     params.viewerId,
     postIds,
     actorIds,
+    pollPostIds,
   );
 
   return {
@@ -1068,9 +1179,13 @@ async function getPublicUserPostsPage(
           .limit(1)
       : [];
 
-  const quotedMap = await getQuotedPostMap([
+  const pagePosts = [
     ...(pinnedRow ? [pinnedRow.post] : []),
     ...rows.map((row) => row.post),
+  ];
+  const [quotedMap, pollMap] = await Promise.all([
+    getQuotedPostMap(pagePosts),
+    getPollOptionsMap(pagePosts),
   ]);
 
   const toFeedItem = (
@@ -1082,6 +1197,7 @@ async function getPublicUserPostsPage(
       ...row.post,
       author: row.author,
       quotedPost: resolveQuotedPost(row.post, quotedMap),
+      poll: resolvePoll(row.post, pollMap),
       isLiked: false,
       isReposted: false,
       ...(isPinned ? { isPinned: true } : {}),
@@ -1127,11 +1243,12 @@ export async function getUserPostsPage(params: {
     return publicData;
   }
 
-  const { postIds, actorIds } = feedOverlayIds(publicData.data);
+  const { postIds, actorIds, pollPostIds } = feedOverlayIds(publicData.data);
   const overlay = await getPostFeedViewerOverlay(
     params.viewerId,
     postIds,
     actorIds,
+    pollPostIds,
   );
 
   return {
@@ -1161,12 +1278,16 @@ async function getPublicPost(postId: string): Promise<PostResponse> {
     return null;
   }
 
-  const quotedMap = await getQuotedPostMap([row.post]);
+  const [quotedMap, pollMap] = await Promise.all([
+    getQuotedPostMap([row.post]),
+    getPollOptionsMap([row.post]),
+  ]);
 
   return {
     ...row.post,
     author: row.author,
     quotedPost: resolveQuotedPost(row.post, quotedMap),
+    poll: resolvePoll(row.post, pollMap),
     isLiked: false,
     isReposted: false,
   };
@@ -1176,14 +1297,20 @@ async function getPostViewerOverlay(
   viewerId: string,
   postId: string,
   authorId: string,
+  // Opt-in: this overlay doubles as the quoted-post block probe, which never
+  // needs (or should pay for) a poll-vote read.
+  hasPoll = false,
 ) {
   "use cache";
   cacheTag(`user-blocks:${viewerId}`);
   cacheTag(`post:${postId}:liked:${viewerId}`);
   cacheTag(`post:${postId}:reposted:${viewerId}`);
+  if (hasPoll) {
+    cacheTag(`post:${postId}:poll-voted:${viewerId}`);
+  }
   cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
-  const [blockRows, likedRows, repostRows] = await Promise.all([
+  const [blockRows, likedRows, repostRows, voteRows] = await Promise.all([
     db
       .select({
         blockerId: userBlockTable.blockerId,
@@ -1220,12 +1347,24 @@ async function getPostViewerOverlay(
           eq(postRepostTable.userId, viewerId),
         ),
       ),
+    hasPoll
+      ? db
+          .select({ optionId: pollVoteTable.optionId })
+          .from(pollVoteTable)
+          .where(
+            and(
+              eq(pollVoteTable.postId, postId),
+              eq(pollVoteTable.userId, viewerId),
+            ),
+          )
+      : [],
   ]);
 
   return {
     isBlocked: blockRows.length > 0,
     isLiked: likedRows.length > 0,
     isReposted: repostRows.length > 0,
+    myVoteOptionId: voteRows[0]?.optionId ?? null,
   };
 }
 
@@ -1243,6 +1382,7 @@ export async function getPostById(params: {
     params.viewerId,
     params.postId,
     publicPost.author.id,
+    !!publicPost.poll,
   );
 
   if (overlay.isBlocked) {
@@ -1267,6 +1407,9 @@ export async function getPostById(params: {
   return {
     ...publicPost,
     quotedPost,
+    poll: publicPost.poll
+      ? { ...publicPost.poll, myVoteOptionId: overlay.myVoteOptionId }
+      : publicPost.poll,
     isLiked: overlay.isLiked,
     isReposted: overlay.isReposted,
   };

@@ -14,6 +14,8 @@ import {
   type InsertPost,
   type InsertPostComment,
   type InsertPostRepost,
+  pollOptionTable,
+  pollVoteTable,
   postCommentTable,
   postRepostTable,
   postTable,
@@ -570,6 +572,71 @@ async function main() {
                 .set({ repostCount: count })
                 .where(eq(postTable.id, postId)),
             ),
+          );
+        }
+      }
+
+      // Polls: one open and one already ended (with votes) for local QA.
+      {
+        const DAY_MS = 24 * 60 * 60 * 1000;
+
+        const [openPollPost] = await tx
+          .insert(postTable)
+          .values({
+            authorId: userIdOrThrow("alex"),
+            content: "Which part of Umamin should we polish next?",
+            pollEndsAt: new Date(Date.now() + 3 * DAY_MS),
+            createdAt: faker.date.recent({ days: 1 }),
+          })
+          .returning({ id: postTable.id });
+
+        await tx
+          .insert(pollOptionTable)
+          .values(
+            ["The feed", "Anonymous messages", "Notes", "Profiles"].map(
+              (label, idx) => ({ postId: openPollPost.id, idx, label }),
+            ),
+          );
+
+        const endedCreatedAt = new Date(Date.now() - 3 * DAY_MS);
+        const [endedPollPost] = await tx
+          .insert(postTable)
+          .values({
+            authorId: userIdOrThrow("bailey"),
+            content: "Settled: pineapple on pizza?",
+            pollEndsAt: new Date(Date.now() - 2 * DAY_MS),
+            createdAt: endedCreatedAt,
+            updatedAt: endedCreatedAt,
+          })
+          .returning({ id: postTable.id });
+
+        // Vote rows and the denormalized counts must agree (2 / 1).
+        const endedOptions = await tx
+          .insert(pollOptionTable)
+          .values([
+            { postId: endedPollPost.id, idx: 0, label: "Yes", voteCount: 2 },
+            { postId: endedPollPost.id, idx: 1, label: "Never", voteCount: 1 },
+          ])
+          .returning({ id: pollOptionTable.id, idx: pollOptionTable.idx });
+
+        const yesOption = endedOptions.find((option) => option.idx === 0);
+        const neverOption = endedOptions.find((option) => option.idx === 1);
+
+        if (yesOption && neverOption) {
+          await tx.insert(pollVoteTable).values(
+            [
+              { username: "alex", optionId: yesOption.id },
+              { username: "casey", optionId: yesOption.id },
+              { username: "testuser", optionId: neverOption.id },
+            ].map(({ username, optionId }) => ({
+              postId: endedPollPost.id,
+              optionId,
+              userId: userIdOrThrow(username),
+              createdAt: faker.date.between({
+                from: endedCreatedAt,
+                to: new Date(Date.now() - 2 * DAY_MS),
+              }),
+            })),
           );
         }
       }
