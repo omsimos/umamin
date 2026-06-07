@@ -84,6 +84,15 @@ export function formatContent(content: string) {
   return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n").trim();
 }
 
+// iPadOS 13+ masquerades as desktop Safari ("Macintosh") — the touch-points
+// probe is what tells an iPad apart from an actual Mac.
+function isIOS(): boolean {
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 1)
+  );
+}
+
 async function dataUrlToPngFile(
   dataUrl: string,
   filename: string,
@@ -172,11 +181,12 @@ export const saveImage = async (id: string, isPost?: boolean) => {
 
     const filename = `umamin-${nanoid(5)}.png`;
 
-    // Where the Web Share API can take files (iOS/Android, installed PWA), hand
-    // off to the native sheet — its "Save Image" lands the photo in the user's
-    // gallery, which a plain <a download> can't do on iOS (Files only). Gated to
+    // iOS only: a plain <a download> lands in Files, not Photos, so hand off to
+    // the native sheet ("Save Image" puts it in the gallery). Android's download
+    // manager saves straight to gallery-indexed storage, so there — and on
+    // desktop — the direct download below is the fewer-tap path. Gated to
     // deployed envs to match sharePost and keep local dev a direct download.
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && isIOS()) {
       const file = await dataUrlToPngFile(dataUrl, filename);
 
       if (file && navigator.canShare?.({ files: [file] })) {

@@ -29,6 +29,7 @@ any that are empty.
 ### Changed
 
 - Blocking is now managed from profiles, posts, comments, notes, and the new Blocked Users list instead of from individual received messages.
+- Save Image on Android now downloads straight to your gallery instead of opening the share sheet; iPhone and iPad keep the share sheet so the image can be saved to Photos.
 
 ### Security & Privacy
 
