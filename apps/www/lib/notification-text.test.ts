@@ -41,6 +41,18 @@ describe("formatNotificationText", () => {
     );
   });
 
+  it("describes poll votes, aggregated like likes", () => {
+    expect(formatNotificationText("vote", 1, "Alice")).toBe(
+      "Alice voted on your poll",
+    );
+    expect(formatNotificationText("vote", 3, "Alice")).toBe(
+      "Alice and 2 others voted on your poll",
+    );
+    expect(formatNotificationText("vote", 1, null)).toBe(
+      "Someone voted on your poll",
+    );
+  });
+
   it("describes replies with the replier's name", () => {
     expect(formatNotificationText("reply", 1, "Bob")).toBe(
       "Bob replied to your message",

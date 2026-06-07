@@ -16,29 +16,6 @@ export function SentMessageCard({
 }: {
   data: SelectMessage & { receiver: PublicUser };
 }) {
-  // const menuItems = [
-  //   {
-  //     title: "View",
-  //     onClick: () => {
-  //       toast.error("Not implemented yet");
-  //     },
-  //   },
-  //   {
-  //     title: "Download",
-  //     onClick: () => {
-  //       toast.error("Not implemented yet");
-  //     },
-  //   },
-  //   {
-  //     title: "Delete",
-  //     onClick: () => {
-  //       toast.error("Not implemented yet");
-  //     },
-  //     className: "text-red-500",
-  //   },
-  // ];
-  //
-
   return (
     <Card>
       <CardHeader>
@@ -54,7 +31,6 @@ export function SentMessageCard({
           </div>
 
           <span className="font-semibold">umamin</span>
-          {/* <Menu menuItems={menuItems} /> */}
         </div>
       </CardHeader>
       <CardContent className="px-5 sm:px-7">
@@ -72,13 +48,6 @@ export function SentMessageCard({
               addSuffix: true,
             })}
           </p>
-
-          {/* <ProfileHoverCard user={_recipient}>
-                <p className="cursor-pointer hover:underline italic">
-                  @johndoe
-                </p> 
-              </ProfileHoverCard>
-          */}
         </div>
       </CardFooter>
     </Card>

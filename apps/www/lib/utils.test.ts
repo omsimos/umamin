@@ -10,7 +10,9 @@ import {
   isAlreadyReacted,
   isAlreadyRemoved,
   isAlreadyReposted,
+  isAlreadyVoted,
   shortTimeAgo,
+  shortTimeUntil,
 } from "./utils";
 
 describe("shortTimeAgo", () => {
@@ -62,6 +64,43 @@ describe("shortTimeAgo", () => {
   it("returns '' for an invalid date", () => {
     expect(shortTimeAgo("not a date")).toBe("");
     expect(shortTimeAgo(new Date("nope"))).toBe("");
+  });
+});
+
+describe("shortTimeUntil", () => {
+  const NOW = new Date("2026-06-04T12:00:00.000Z");
+  const ahead = (ms: number) => new Date(NOW.getTime() + ms);
+  const MINUTE = 60_000;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("renders minutes, hours, and days compactly", () => {
+    expect(shortTimeUntil(ahead(5 * MINUTE))).toBe("5m");
+    expect(shortTimeUntil(ahead(3 * HOUR))).toBe("3h");
+    expect(shortTimeUntil(ahead(4 * DAY))).toBe("4d");
+  });
+
+  it("renders sub-minute as 1m", () => {
+    expect(shortTimeUntil(ahead(10_000))).toBe("1m");
+  });
+
+  it("returns '' for past or invalid dates", () => {
+    expect(shortTimeUntil(ahead(-HOUR))).toBe("");
+    expect(shortTimeUntil(NOW)).toBe("");
+    expect(shortTimeUntil("not a date")).toBe("");
+  });
+
+  it("accepts an ISO-string input", () => {
+    expect(shortTimeUntil(ahead(2 * HOUR).toISOString())).toBe("2h");
   });
 });
 
@@ -148,6 +187,7 @@ describe("already-X guards", () => {
     ["isAlreadyReacted", isAlreadyReacted, "alreadyReacted"],
     ["isAlreadyReposted", isAlreadyReposted, "alreadyReposted"],
     ["isAlreadyRemoved", isAlreadyRemoved, "alreadyRemoved"],
+    ["isAlreadyVoted", isAlreadyVoted, "alreadyVoted"],
   ] as const;
 
   for (const [name, guard, key] of cases) {

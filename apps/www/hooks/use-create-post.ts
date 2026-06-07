@@ -3,6 +3,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { createPostAction } from "@/app/actions/post";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import {
+  type PollDuration,
+  pollEndsAtFrom,
+  sanitizePollOptions,
+} from "@/lib/poll";
 import { type PostImageInput, publicImageUrl } from "@/lib/post-images";
 import { queryKeys } from "@/lib/query";
 import {
@@ -26,6 +31,7 @@ function isNonFollowingFeedQuery(queryKey: readonly unknown[]) {
 type CreatePostVariables = {
   content: string;
   images?: PostImageInput[];
+  poll?: { options: string[]; duration: PollDuration };
   quotedPostId?: string;
   // The already-loaded quoted post, embedded into the optimistic item (and
   // its server replacement — the action returns the raw row without it).
@@ -72,9 +78,10 @@ export function useCreatePost(user: PublicUser | null) {
     mutationFn: async ({
       content,
       images,
+      poll,
       quotedPostId,
     }: CreatePostVariables) => {
-      const res = await submit({ content, images, quotedPostId });
+      const res = await submit({ content, images, poll, quotedPostId });
       if (res?.error) {
         throw new Error(res.error);
       }
@@ -83,6 +90,7 @@ export function useCreatePost(user: PublicUser | null) {
     onMutate: async ({
       content,
       optimisticImages,
+      poll,
       quotedPostId,
       quotedPost,
     }) => {
@@ -93,12 +101,30 @@ export function useCreatePost(user: PublicUser | null) {
         queryKey: queryKeys.postsRoot(),
       });
 
+      // Temp option ids: the optimistic poll renders but is not votable until
+      // the server swap brings the real ids (onSuccess below).
+      const optimisticPollEndsAt = poll ? pollEndsAtFrom(poll.duration) : null;
+      const optimisticPoll = poll
+        ? {
+            endsAt: optimisticPollEndsAt as Date,
+            options: sanitizePollOptions(poll.options).map((label, idx) => ({
+              id: `optimistic-opt-${idx}`,
+              idx,
+              label,
+              voteCount: 0,
+            })),
+            myVoteOptionId: null,
+          }
+        : null;
+
       const optimisticPost: PostData = {
         id: `optimistic-${crypto.randomUUID()}`,
         content,
         images: optimisticImages?.length ? optimisticImages : null,
         quotedPostId: quotedPostId ?? null,
         quotedPost,
+        pollEndsAt: optimisticPollEndsAt,
+        poll: optimisticPoll,
         authorId: user.id,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -147,6 +173,9 @@ export function useCreatePost(user: PublicUser | null) {
             // The action returns the raw row; re-attach the embed we already
             // hold so the quoted card survives the optimistic->server swap.
             quotedPost: vars.quotedPost,
+            // Real option ids from the action — without them the fresh poll
+            // would be unvotable until a hard reload (no refetch-on-mount).
+            poll: res.poll ? { ...res.poll, myVoteOptionId: null } : undefined,
             author: user,
             isLiked: false,
             isReposted: false,

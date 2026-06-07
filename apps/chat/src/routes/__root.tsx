@@ -31,7 +31,6 @@ function RootLayout() {
       <ChatSessionProvider transport={transport}>
         <Outlet />
         <Toaster position="top-center" />
-        {/* <TanStackRouterDevtools /> */}
       </ChatSessionProvider>
     </ThemeProvider>
   );

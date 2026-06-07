@@ -53,6 +53,38 @@ export function shortTimeAgo(date: Date | string) {
   return distance;
 }
 
+// Future-distance twin of shortTimeAgo ("ends in 3h" footers). Returns "" for
+// invalid or already-past dates — callers render an ended state instead.
+export function shortTimeUntil(date: Date | string) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime()) || d.getTime() <= Date.now()) {
+    return "";
+  }
+
+  const distance = formatDistanceToNow(d);
+
+  if (distance === "less than a minute") {
+    return "1m";
+  }
+
+  const minutesMatch = distance.match(/(\d+)\s+min/);
+  if (minutesMatch) {
+    return `${minutesMatch[1]}m`;
+  }
+
+  const hoursMatch = distance.match(/(\d+)\s+hour/);
+  if (hoursMatch) {
+    return `${hoursMatch[1]}h`;
+  }
+
+  const daysMatch = distance.match(/(\d+)\s+day/);
+  if (daysMatch) {
+    return `${daysMatch[1]}d`;
+  }
+
+  return distance;
+}
+
 export const getBaseUrl = () => {
   // Prefer an explicit site URL, then Vercel's STABLE production domain.
   // VERCEL_URL is the per-deployment host (e.g. umamin-abc123.vercel.app) — wrong
@@ -245,7 +277,7 @@ export function hasUmaminPlus(createdAt?: Date | string | null) {
   if (!createdAt) return false;
 
   const createdDate = new Date(createdAt);
-  if (Number.isNaN(createdDate.getTime())) return false; // invalid date
+  if (Number.isNaN(createdDate.getTime())) return false;
 
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
@@ -310,5 +342,16 @@ export function isAlreadyRemoved(
     typeof res === "object" &&
     "alreadyRemoved" in res &&
     (res as { alreadyRemoved?: boolean }).alreadyRemoved === true
+  );
+}
+
+export function isAlreadyVoted(
+  res: unknown,
+): res is { alreadyVoted: true; votedOptionId?: string } {
+  return (
+    !!res &&
+    typeof res === "object" &&
+    "alreadyVoted" in res &&
+    (res as { alreadyVoted?: boolean }).alreadyVoted === true
   );
 }

@@ -11,7 +11,6 @@ function makeQueryClient() {
         staleTime: 0,
       },
       dehydrate: {
-        // include pending queries in dehydration
         shouldDehydrateQuery: (query) =>
           defaultShouldDehydrateQuery(query) ||
           query.state.status === "pending",

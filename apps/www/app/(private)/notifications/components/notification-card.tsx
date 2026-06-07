@@ -15,6 +15,7 @@ function notificationHref(notification: NotificationItem): string | null {
   switch (notification.type) {
     case "like":
     case "comment":
+    case "vote":
       // A deleted post renders its own "post unavailable" husk on the detail
       // page — no special handling here.
       return `/post/${notification.targetId}`;

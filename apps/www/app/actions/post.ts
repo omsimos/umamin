@@ -2,6 +2,8 @@
 
 import { db } from "@umamin/db";
 import {
+  pollOptionTable,
+  pollVoteTable,
   postCommentLikeTable,
   postCommentTable,
   postLikeTable,
@@ -13,6 +15,16 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import {
+  POLL_DURATIONS,
+  POLL_ENDED_ERROR,
+  POLL_MAX_OPTIONS,
+  POLL_MIN_OPTIONS,
+  POLL_OPTION_MAX_LENGTH,
+  POLL_PLUS_REQUIRED_ERROR,
+  pollEndsAtFrom,
+  sanitizePollOptions,
+} from "@/lib/poll";
 import {
   MAX_POST_IMAGES,
   PLUS_REQUIRED_ERROR,
@@ -47,10 +59,27 @@ const createPostSchema = z
     images: z.array(postImageInputSchema).max(MAX_POST_IMAGES).optional(),
     // Quote posts: a real post referencing another (soft reference).
     quotedPostId: z.string().min(1).max(50).optional(),
+    poll: z
+      .object({
+        options: z
+          .array(z.string().trim().min(1).max(POLL_OPTION_MAX_LENGTH))
+          .min(POLL_MIN_OPTIONS)
+          .max(POLL_MAX_OPTIONS),
+        duration: z.enum(POLL_DURATIONS),
+      })
+      .optional(),
   })
   // Image-only posts are allowed; empty posts are not.
   .refine((v) => v.content.length > 0 || (v.images?.length ?? 0) > 0, {
     error: "Content cannot be empty",
+  })
+  // The post text is the poll's question — a poll can't stand alone, and it
+  // never coexists with images (one attachment kind per post).
+  .refine((v) => !v.poll || v.content.length > 0, {
+    error: "A poll needs a question",
+  })
+  .refine((v) => !(v.poll && (v.images?.length ?? 0) > 0), {
+    error: "A post can have a poll or images, not both",
   });
 
 export async function getPostAction(id: string) {
@@ -72,7 +101,7 @@ export async function createPostAction(
       return { error: "Invalid input" };
     }
 
-    const { content, images, quotedPostId } = params.data;
+    const { content, images, quotedPostId, poll } = params.data;
     const { session, user } = await getSession();
 
     if (!session || !user) {
@@ -81,6 +110,20 @@ export async function createPostAction(
 
     if (!(await checkRateLimit("write", `post:${session.userId}`))) {
       return { error: RATE_LIMIT_ERROR };
+    }
+
+    // Independent of the image gate below (which only runs when images are
+    // attached) — a poll-only post must be re-checked server-side too.
+    let pollLabels: string[] | null = null;
+    if (poll) {
+      if (!hasUmaminPlus(user.createdAt)) {
+        return { error: POLL_PLUS_REQUIRED_ERROR };
+      }
+
+      pollLabels = sanitizePollOptions(poll.options);
+      if (pollLabels.length < POLL_MIN_OPTIONS) {
+        return { error: "A poll needs at least 2 distinct options" };
+      }
     }
 
     if (quotedPostId) {
@@ -116,9 +159,10 @@ export async function createPostAction(
     const formattedContent = formatContent(content);
 
     let createdPost: typeof postTable.$inferSelect;
+    let createdPollOptions: (typeof pollOptionTable.$inferSelect)[] = [];
 
     try {
-      createdPost = await db.transaction(async (tx) => {
+      const created = await db.transaction(async (tx) => {
         const [inserted] = await tx
           .insert(postTable)
           .values({
@@ -126,8 +170,26 @@ export async function createPostAction(
             authorId: session.userId,
             images: claimedImages,
             quotedPostId: quotedPostId ?? null,
+            pollEndsAt:
+              poll && pollLabels ? pollEndsAtFrom(poll.duration) : null,
           })
           .returning();
+
+        // Option ids must come back from the insert — the client needs them
+        // to make the optimistic post votable after the server swap.
+        const insertedOptions =
+          poll && pollLabels
+            ? await tx
+                .insert(pollOptionTable)
+                .values(
+                  pollLabels.map((label, idx) => ({
+                    postId: inserted.id,
+                    idx,
+                    label,
+                  })),
+                )
+                .returning()
+            : [];
 
         // A quote counts toward the quoted post's combined repost count, in
         // the same transaction so the count can't drift from the row.
@@ -140,8 +202,10 @@ export async function createPostAction(
             .where(eq(postTable.id, quotedPostId));
         }
 
-        return inserted;
+        return { post: inserted, pollOptions: insertedOptions };
       });
+      createdPost = created.post;
+      createdPollOptions = created.pollOptions;
     } catch (err) {
       // Claimed objects must not outlive a failed insert (storage leak).
       await deletePostImages(claimedImages);
@@ -165,6 +229,18 @@ export async function createPostAction(
     return {
       success: true,
       post: createdPost,
+      poll:
+        createdPost.pollEndsAt && createdPollOptions.length > 0
+          ? {
+              endsAt: createdPost.pollEndsAt,
+              options: createdPollOptions.map((option) => ({
+                id: option.id,
+                idx: option.idx,
+                label: option.label,
+                voteCount: option.voteCount,
+              })),
+            }
+          : null,
     };
   } catch (err) {
     console.log(err);
@@ -231,6 +307,7 @@ export async function deletePostAction({ postId }: { postId: string }) {
     updateTag(`post-comments:${postId}`);
     updateTag(`post:${postId}:liked:${session.userId}`);
     updateTag(`post:${postId}:reposted:${session.userId}`);
+    updateTag(`post:${postId}:poll-voted:${session.userId}`);
     // Covers the pin-clear above: /api/me carries pinnedPostId for menu state.
     updateTag(`user:${session.userId}`);
     if (post.quotedPostId) {
@@ -460,6 +537,113 @@ export async function addLikeAction({ postId }: { postId: string }) {
         preview: likedPost.content,
       });
     }
+    return result;
+  } catch (err) {
+    console.log(err);
+    return { error: "An error occurred" };
+  }
+}
+
+export async function votePollAction({ optionId }: { optionId: string }) {
+  try {
+    const parsed = idSchema.safeParse(optionId);
+    if (!parsed.success) {
+      return { error: "Invalid input" };
+    }
+    const { session } = await getSession();
+
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!(await checkRateLimit("write", `pollvote:${session.userId}`))) {
+      return { error: RATE_LIMIT_ERROR };
+    }
+
+    // The post is derived from the option server-side — a client-supplied
+    // postId could pair a foreign option with another poll's unique slot.
+    const [target] = await db
+      .select({
+        postId: pollOptionTable.postId,
+        authorId: postTable.authorId,
+        content: postTable.content,
+        pollEndsAt: postTable.pollEndsAt,
+      })
+      .from(pollOptionTable)
+      .innerJoin(postTable, eq(pollOptionTable.postId, postTable.id))
+      .where(eq(pollOptionTable.id, optionId))
+      .limit(1);
+
+    if (!target) {
+      return { error: "This poll is no longer available." };
+    }
+
+    // Read-time expiry — re-checked here because cached feeds can show a poll
+    // as open for up to ~2 minutes past its end.
+    if (!target.pollEndsAt || target.pollEndsAt.getTime() <= Date.now()) {
+      return { error: POLL_ENDED_ERROR };
+    }
+
+    const postId = target.postId;
+
+    const result = await db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(pollVoteTable)
+        .values({
+          postId,
+          optionId,
+          userId: session.userId,
+        })
+        .onConflictDoNothing()
+        .returning({ id: pollVoteTable.id });
+
+      if (inserted.length === 0) {
+        // Stale client (second device, profile feed without overlay): tell it
+        // which option this user actually picked so it can self-correct.
+        const [existing] = await tx
+          .select({ optionId: pollVoteTable.optionId })
+          .from(pollVoteTable)
+          .where(
+            and(
+              eq(pollVoteTable.postId, postId),
+              eq(pollVoteTable.userId, session.userId),
+            ),
+          )
+          .limit(1);
+
+        return {
+          success: true,
+          alreadyVoted: true,
+          votedOptionId: existing?.optionId,
+        };
+      }
+
+      await tx
+        .update(pollOptionTable)
+        .set({
+          voteCount: sql`${pollOptionTable.voteCount} + 1`,
+        })
+        .where(eq(pollOptionTable.id, optionId));
+
+      return { success: true, votedOptionId: optionId };
+    });
+
+    updateTag(`post:${postId}`);
+    // Like likes: counts in the public feed are eventually consistent (<=120s);
+    // only the viewer's own vote state needs to be fresh. No "posts" bust, and
+    // no hot-rank refresh — votes don't feed the engagement score.
+    updateTag(`post:${postId}:poll-voted:${session.userId}`);
+
+    if (!("alreadyVoted" in result)) {
+      await notify({
+        recipientId: target.authorId,
+        type: "vote",
+        targetId: postId,
+        actorId: session.userId,
+        preview: target.content,
+      });
+    }
+
     return result;
   } catch (err) {
     console.log(err);

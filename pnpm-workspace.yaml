@@ -2,5 +2,11 @@ packages:
   - "apps/*"
   - "packages/*"
 
-onlyBuiltDependencies:
-  - lefthook
+# pnpm 11: replaces onlyBuiltDependencies — only these packages may run
+# install scripts. esbuild/sharp scripts were already skipped under v10
+# (both ship prebuilt binaries via optionalDependencies); v11 just demands
+# the decision be explicit.
+allowBuilds:
+  esbuild: false
+  lefthook: true
+  sharp: false

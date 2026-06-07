@@ -11,8 +11,26 @@ export type PostImageDisplay = PostImage & {
   previewUrl?: string;
 };
 
-// The embedded card inside a quote post. Never carries viewer overlays or a
-// nested quotedPost — embedding stops at one level (the card links through).
+export type PollOptionData = {
+  id: string;
+  idx: number;
+  label: string;
+  voteCount: number;
+};
+
+export type PollData = {
+  endsAt: Date;
+  // Sorted by idx; percentages/totals are computed in the card (lib/poll),
+  // never stored.
+  options: PollOptionData[];
+  // Overlay-only: undefined = viewer unknown (public/profile reads),
+  // null = known not-voted, string = the option the viewer picked.
+  myVoteOptionId?: string | null;
+};
+
+// The embedded card inside a quote post. Never carries viewer overlays, a
+// nested quotedPost, or a live poll — embedding stops at one level (the card
+// links through; pollEndsAt alone drives a static "Poll" indicator).
 export type QuotedPostData = Omit<SelectPost, "images"> & {
   images?: PostImageDisplay[] | null;
   author: PublicUser;
@@ -23,6 +41,8 @@ export type PostData = Omit<SelectPost, "images"> & {
   // Set when quotedPostId is set: the resolved post, or null when it's been
   // deleted / its author is blocked — rendered as an "unavailable" husk.
   quotedPost?: QuotedPostData | null;
+  // Set when pollEndsAt is set; null only if the option rows are missing.
+  poll?: PollData | null;
   author: PublicUser;
   comments?: SelectPostComment[];
   isLiked?: boolean;
@@ -36,6 +56,7 @@ export type PostData = Omit<SelectPost, "images"> & {
 export function toQuotedPostData(post: PostData): QuotedPostData {
   const {
     quotedPost: _quotedPost,
+    poll: _poll,
     comments: _comments,
     isLiked: _isLiked,
     isReposted: _isReposted,
