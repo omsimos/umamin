@@ -28,8 +28,11 @@ export function BlockedWordsSection({ user }: { user: UserWithAccount }) {
   const updateMutation = useMutation({
     mutationFn: async (nextWords: string[]) => {
       const res = await updateBlockedWords({ words: nextWords });
-      if (res.error || !res.blockedWords) {
-        throw new Error(res.error ?? "Couldn't update blocked words.");
+      if ("error" in res || !res.blockedWords) {
+        throw new Error(
+          ("error" in res ? res.error : undefined) ??
+            "Couldn't update blocked words.",
+        );
       }
       return res.blockedWords;
     },

@@ -20,7 +20,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof generalSettingsSchema>) => {
       const res = await submitSettings(values);
-      if (res?.error) {
+      if ("error" in res) {
         throw new Error(res.error);
       }
 

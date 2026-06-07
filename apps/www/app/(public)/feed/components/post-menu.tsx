@@ -76,7 +76,7 @@ export function PostMenu({
       const res = isPinned
         ? await unpinPostAction()
         : await pinPostAction({ postId });
-      if (res.error) {
+      if ("error" in res && res.error) {
         throw new Error(res.error);
       }
       return !isPinned;

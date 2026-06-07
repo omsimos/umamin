@@ -41,7 +41,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
     mutationFn: async () => {
       const res = await deleteMessageAction(id);
 
-      if (res.error) {
+      if ("error" in res && res.error) {
         throw new Error(res.error);
       }
     },

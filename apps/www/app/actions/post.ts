@@ -30,8 +30,8 @@ import {
   PLUS_REQUIRED_ERROR,
   postImageInputSchema,
 } from "@/lib/post-images";
-import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { redis } from "@/lib/redis";
+import { idSchema } from "@/lib/schema";
 import { getPostById } from "@/lib/server/data";
 import { refreshHotPostRank, removeHotPostRank } from "@/lib/server/feed-rank";
 import { notify } from "@/lib/server/notifications";
@@ -40,6 +40,7 @@ import {
   deletePostImages,
   isR2Configured,
 } from "@/lib/server/r2";
+import { withAction } from "@/lib/server/with-action";
 import { formatContent, hasUmaminPlus } from "@/lib/utils";
 
 // Records the newest feed-edge timestamp so the client can show a "new posts"
@@ -91,27 +92,16 @@ export async function getPostPublicAction(id: string) {
   return getPostById({ postId: id });
 }
 
-export async function createPostAction(
-  values: z.infer<typeof createPostSchema>,
-) {
-  try {
-    const params = createPostSchema.safeParse(values);
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { content, images, quotedPostId, poll } = params.data;
-    const { session, user } = await getSession();
-
-    if (!session || !user) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `post:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const createPostAction = withAction(
+  {
+    schema: createPostSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `post:${session.userId}`,
+    },
+  },
+  async ({ content, images, quotedPostId, poll }, { session, user }) => {
     // Independent of the image gate below (which only runs when images are
     // attached) — a poll-only post must be re-checked server-side too.
     let pollLabels: string[] | null = null;
@@ -242,24 +232,18 @@ export async function createPostAction(
             }
           : null,
     };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-export async function deletePostAction({ postId }: { postId: string }) {
-  try {
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `delpost:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const deletePostAction = withAction(
+  {
+    schema: z.object({ postId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `delpost:${session.userId}`,
+    },
+  },
+  async ({ postId }, { session }) => {
     const post = await db.query.postTable.findFirst({
       columns: { id: true, authorId: true, images: true, quotedPostId: true },
       where: eq(postTable.id, postId),
@@ -316,11 +300,8 @@ export async function deletePostAction({ postId }: { postId: string }) {
     }
 
     return { success: true };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
 const createCommentSchema = z.object({
   postId: z.string(),
@@ -331,27 +312,15 @@ const createCommentSchema = z.object({
     .max(500, { error: "Content cannot exceed 500 characters" }),
 });
 
-export async function createCommentAction(
-  values: z.infer<typeof createCommentSchema>,
-) {
-  try {
-    const params = createCommentSchema.safeParse(values);
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { content, postId } = params.data;
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `comment:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const createCommentAction = withAction(
+  {
+    schema: createCommentSchema,
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `comment:${session.userId}`,
+    },
+  },
+  async ({ content, postId }, { session }) => {
     let createdComment: typeof postCommentTable.$inferSelect | undefined;
     let postAuthorId: string | undefined;
 
@@ -397,35 +366,18 @@ export async function createCommentAction(
     }
 
     return { success: true, comment: createdComment };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-const idSchema = z.string().min(1);
-
-export async function deleteCommentAction({
-  commentId,
-}: {
-  commentId: string;
-}) {
-  try {
-    const parsed = idSchema.safeParse(commentId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `delcomment:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const deleteCommentAction = withAction(
+  {
+    schema: z.object({ commentId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `delcomment:${session.userId}`,
+    },
+  },
+  async ({ commentId }, { session }) => {
     // Resolve + authorize server-side (don't trust a client-supplied postId).
     const comment = await db.query.postCommentTable.findFirst({
       columns: { id: true, authorId: true, postId: true },
@@ -463,28 +415,18 @@ export async function deleteCommentAction({
     await refreshHotPostRank(comment.postId);
 
     return { success: true, postId: comment.postId };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-export async function addLikeAction({ postId }: { postId: string }) {
-  try {
-    const parsed = idSchema.safeParse(postId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `like:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const addLikeAction = withAction(
+  {
+    schema: z.object({ postId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `like:${session.userId}`,
+    },
+  },
+  async ({ postId }, { session }) => {
     // Captured via .returning() on the count update — the like notification's
     // recipient (post author) and preview come free, no extra row read.
     let likedPost: { authorId: string; content: string } | undefined;
@@ -538,28 +480,18 @@ export async function addLikeAction({ postId }: { postId: string }) {
       });
     }
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-export async function votePollAction({ optionId }: { optionId: string }) {
-  try {
-    const parsed = idSchema.safeParse(optionId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `pollvote:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const votePollAction = withAction(
+  {
+    schema: z.object({ optionId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `pollvote:${session.userId}`,
+    },
+  },
+  async ({ optionId }, { session }) => {
     // The post is derived from the option server-side — a client-supplied
     // postId could pair a foreign option with another poll's unique slot.
     const [target] = await db
@@ -645,28 +577,18 @@ export async function votePollAction({ optionId }: { optionId: string }) {
     }
 
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-export async function removeLikeAction({ postId }: { postId: string }) {
-  try {
-    const parsed = idSchema.safeParse(postId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `like:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const removeLikeAction = withAction(
+  {
+    schema: z.object({ postId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `like:${session.userId}`,
+    },
+  },
+  async ({ postId }, { session }) => {
     const result = await db.transaction(async (tx) => {
       const removed = await tx
         .delete(postLikeTable)
@@ -701,32 +623,18 @@ export async function removeLikeAction({ postId }: { postId: string }) {
     }
 
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-export async function addCommentLikeAction({
-  commentId,
-}: {
-  commentId: string;
-}) {
-  try {
-    const parsed = idSchema.safeParse(commentId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `commentlike:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const addCommentLikeAction = withAction(
+  {
+    schema: z.object({ commentId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `commentlike:${session.userId}`,
+    },
+  },
+  async ({ commentId }, { session }) => {
     const result = await db.transaction(async (tx) => {
       const inserted = await tx
         .insert(postCommentLikeTable)
@@ -758,32 +666,18 @@ export async function addCommentLikeAction({
     // dead — no matching cacheTag exists. [audit #13, #18]
     updateTag(`comment:${commentId}:liked:${session.userId}`);
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-export async function removeCommentLikeAction({
-  commentId,
-}: {
-  commentId: string;
-}) {
-  try {
-    const parsed = idSchema.safeParse(commentId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `commentlike:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const removeCommentLikeAction = withAction(
+  {
+    schema: z.object({ commentId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `commentlike:${session.userId}`,
+    },
+  },
+  async ({ commentId }, { session }) => {
     const result = await db.transaction(async (tx) => {
       const removed = await tx
         .delete(postCommentLikeTable)
@@ -816,38 +710,23 @@ export async function removeCommentLikeAction({
     // dead — no matching cacheTag exists. [audit #13, #18]
     updateTag(`comment:${commentId}:liked:${session.userId}`);
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
 // Plain reposts only — quotes go through createPostAction with quotedPostId.
 const createRepostSchema = z.object({
   postId: z.string(),
 });
 
-export async function addRepostAction(
-  values: z.infer<typeof createRepostSchema>,
-) {
-  try {
-    const params = createRepostSchema.safeParse(values);
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { postId } = params.data;
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `repost:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const addRepostAction = withAction(
+  {
+    schema: createRepostSchema,
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `repost:${session.userId}`,
+    },
+  },
+  async ({ postId }, { session }) => {
     const result = await db.transaction(async (tx) => {
       const [repost] = await tx
         .insert(postRepostTable)
@@ -886,28 +765,18 @@ export async function addRepostAction(
       await bumpFeedLatest(result.repost.createdAt);
     }
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-export async function removeRepostAction({ postId }: { postId: string }) {
-  try {
-    const parsed = idSchema.safeParse(postId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `repost:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const removeRepostAction = withAction(
+  {
+    schema: z.object({ postId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `repost:${session.userId}`,
+    },
+  },
+  async ({ postId }, { session }) => {
     const result = await db.transaction(async (tx) => {
       const removed = await tx
         .delete(postRepostTable)
@@ -941,33 +810,23 @@ export async function removeRepostAction({ postId }: { postId: string }) {
       await refreshHotPostRank(postId);
     }
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
 /**
  * Pins one of the caller's own posts to their profile. One pin per user —
  * pinning a different post simply replaces the previous pin.
  */
-export async function pinPostAction({ postId }: { postId: string }) {
-  try {
-    const parsed = idSchema.safeParse(postId);
-    if (!parsed.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { session, user } = await getSession();
-
-    if (!session || !user) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `pin:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const pinPostAction = withAction(
+  {
+    schema: z.object({ postId: idSchema }),
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `pin:${session.userId}`,
+    },
+  },
+  async ({ postId }, { session, user }) => {
     // Only your own, still-existing post can be pinned.
     const post = await db.query.postTable.findFirst({
       columns: { id: true, authorId: true },
@@ -990,24 +849,18 @@ export async function pinPostAction({ postId }: { postId: string }) {
     updateTag(`user:${user.username}`);
 
     return { success: true };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-export async function unpinPostAction() {
-  try {
-    const { session, user } = await getSession();
-
-    if (!session || !user) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `pin:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const unpinPostAction = withAction(
+  {
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `pin:${session.userId}`,
+    },
+  },
+  async (_input, { session, user }) => {
     await db
       .update(userTable)
       .set({ pinnedPostId: null })
@@ -1018,8 +871,5 @@ export async function unpinPostAction() {
     updateTag(`user:${user.username}`);
 
     return { success: true };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);

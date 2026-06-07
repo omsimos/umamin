@@ -1,7 +1,6 @@
 "use server";
 
 import * as z from "zod";
-import { getSession } from "@/lib/auth";
 import {
   AVATAR_MAX_BYTES,
   MAX_IMAGE_BYTES,
@@ -9,12 +8,12 @@ import {
   PLUS_REQUIRED_ERROR,
   UPLOAD_CONTENT_TYPES,
 } from "@/lib/post-images";
-import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import {
   isR2Configured,
   newStagingKey,
   presignImagePut,
 } from "@/lib/server/r2";
+import { withAction } from "@/lib/server/with-action";
 import { hasUmaminPlus } from "@/lib/utils";
 
 const presignSchema = z.object({
@@ -36,22 +35,16 @@ const presignSchema = z.object({
  * staged objects. Umamin+ only — re-checked here since the composer gate is
  * UX-only.
  */
-export async function presignPostImagesAction(
-  values: z.infer<typeof presignSchema>,
-) {
-  try {
-    const params = presignSchema.safeParse(values);
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { session, user } = await getSession();
-
-    if (!session || !user) {
-      throw new Error("Unauthorized");
-    }
-
+export const presignPostImagesAction = withAction(
+  {
+    schema: presignSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `imgup:${session.userId}`,
+    },
+  },
+  async ({ images }, { session, user }) => {
     if (!isR2Configured()) {
       return { error: "Image uploads aren't available right now." };
     }
@@ -60,12 +53,8 @@ export async function presignPostImagesAction(
       return { error: PLUS_REQUIRED_ERROR };
     }
 
-    if (!(await checkRateLimit("write", `imgup:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
     const uploads = await Promise.all(
-      params.data.images.map(async (image) => {
+      images.map(async (image) => {
         const key = newStagingKey(session.userId, image.contentType);
         const url = await presignImagePut({
           key,
@@ -81,11 +70,8 @@ export async function presignPostImagesAction(
     }
 
     return { success: true, uploads: uploads.filter((u) => u !== null) };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
 const presignAvatarSchema = z.object({
   contentType: z.enum(UPLOAD_CONTENT_TYPES),
@@ -97,35 +83,24 @@ const presignAvatarSchema = z.object({
  * available to every signed-in user (not Umamin+ gated) with a much smaller
  * size cap; updateProfilePhotoAction claims the staged object.
  */
-export async function presignAvatarUploadAction(
-  values: z.infer<typeof presignAvatarSchema>,
-) {
-  try {
-    const params = presignAvatarSchema.safeParse(values);
-
-    if (!params.success) {
-      return { error: "Invalid input" };
-    }
-
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
+export const presignAvatarUploadAction = withAction(
+  {
+    schema: presignAvatarSchema,
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `avatarup:${session.userId}`,
+    },
+  },
+  async ({ contentType, contentLength }, { session }) => {
     if (!isR2Configured()) {
       return { error: "Photo uploads aren't available right now." };
     }
 
-    if (!(await checkRateLimit("write", `avatarup:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
-    const key = newStagingKey(session.userId, params.data.contentType);
+    const key = newStagingKey(session.userId, contentType);
     const url = await presignImagePut({
       key,
-      contentType: params.data.contentType,
-      contentLength: params.data.contentLength,
+      contentType,
+      contentLength,
     });
 
     if (!url) {
@@ -133,8 +108,5 @@ export async function presignAvatarUploadAction(
     }
 
     return { success: true, key, url };
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);

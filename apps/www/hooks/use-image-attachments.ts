@@ -123,8 +123,11 @@ export function useImageAttachments() {
         images: [{ contentType, contentLength: blob.size }],
       });
 
-      if (res.error || !res.uploads?.[0]) {
-        throw new Error(res.error ?? "Upload failed. Please try again.");
+      if (!("uploads" in res) || !res.uploads?.[0]) {
+        throw new Error(
+          ("error" in res ? res.error : undefined) ??
+            "Upload failed. Please try again.",
+        );
       }
 
       if (isRemoved(id)) return;

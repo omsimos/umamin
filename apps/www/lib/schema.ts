@@ -1,5 +1,8 @@
 import * as z from "zod";
 
+// Shared micro-schema for single-id action args (was re-declared per file).
+export const idSchema = z.string().min(1);
+
 export const registerSchema = z
   .object({
     username: z

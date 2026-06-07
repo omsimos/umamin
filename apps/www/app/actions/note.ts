@@ -6,8 +6,10 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
-import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
+import { idSchema } from "@/lib/schema";
 import { getCurrentNoteData } from "@/lib/server/data";
+import { UNAUTHENTICATED_ERROR } from "@/lib/server/errors";
+import { withAction } from "@/lib/server/with-action";
 import { formatContent } from "@/lib/utils";
 
 const createNoteSchema = z.object({
@@ -19,28 +21,18 @@ const createNoteSchema = z.object({
     .max(500, { error: "Content cannot exceed 500 characters" }),
 });
 
-export async function createNoteAction(
-  params: z.infer<typeof createNoteSchema>,
-) {
-  const result = createNoteSchema.safeParse(params);
-
-  if (!result.success) {
-    return { error: result.error.issues[0].message };
-  }
-
-  const { isAnonymous, content } = result.data;
-
-  try {
-    const { session } = await getSession();
-
-    if (!session?.userId) {
-      return { error: "User not authenticated" };
-    }
-
-    if (!(await checkRateLimit("write", `note:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const createNoteAction = withAction(
+  {
+    schema: createNoteSchema,
+    invalidInput: (error) => error.issues[0].message,
+    authError: UNAUTHENTICATED_ERROR,
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `note:${session.userId}`,
+    },
+    errorMessage: "Failed to create note",
+  },
+  async ({ isAnonymous, content }, { session }) => {
     const formattedContent = formatContent(content);
 
     // Every submit rewrites the same note slot, so reactions from the previous
@@ -49,7 +41,7 @@ export async function createNoteAction(
       const [row] = await tx
         .insert(noteTable)
         .values({
-          userId: session?.userId,
+          userId: session.userId,
           content: formattedContent,
           isAnonymous,
           reactionCount: 0,
@@ -86,11 +78,8 @@ export async function createNoteAction(
       success: true,
       note: await getCurrentNoteData(session.userId),
     };
-  } catch (error) {
-    console.log("Error creating note:", error);
-    return { error: "Failed to create note" };
-  }
-}
+  },
+);
 
 export const getCurrentNoteAction = async () => {
   const { session } = await getSession();
@@ -102,18 +91,16 @@ export const getCurrentNoteAction = async () => {
   return getCurrentNoteData(session.userId);
 };
 
-export const clearNoteAction = async () => {
-  try {
-    const { session } = await getSession();
-
-    if (!session?.userId) {
-      return { error: "User not authenticated" };
-    }
-
-    if (!(await checkRateLimit("write", `note:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const clearNoteAction = withAction(
+  {
+    authError: UNAUTHENTICATED_ERROR,
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `note:${session.userId}`,
+    },
+    errorMessage: "Failed to clear note",
+  },
+  async (_input, { session }) => {
     await db.transaction(async (tx) => {
       const [row] = await tx
         .update(noteTable)
@@ -132,29 +119,18 @@ export const clearNoteAction = async () => {
     revalidateTag("notes", "max");
 
     return { success: true };
-  } catch (error) {
-    console.log("Error clearing note:", error);
-    return { error: "Failed to clear note" };
-  }
-};
+  },
+);
 
-const noteIdSchema = z.string().min(1);
-
-export async function addNoteReactionAction({ noteId }: { noteId: string }) {
-  try {
-    if (!noteIdSchema.safeParse(noteId).success) {
-      return { error: "Invalid input" };
-    }
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `notereact:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const addNoteReactionAction = withAction(
+  {
+    schema: z.object({ noteId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `notereact:${session.userId}`,
+    },
+  },
+  async ({ noteId }, { session }) => {
     const result = await db.transaction(async (tx) => {
       const inserted = await tx
         .insert(noteReactionTable)
@@ -180,27 +156,18 @@ export async function addNoteReactionAction({ noteId }: { noteId: string }) {
     updateTag(`note:${noteId}:reacted:${session.userId}`);
 
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);
 
-export async function removeNoteReactionAction({ noteId }: { noteId: string }) {
-  try {
-    if (!noteIdSchema.safeParse(noteId).success) {
-      return { error: "Invalid input" };
-    }
-    const { session } = await getSession();
-
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!(await checkRateLimit("write", `notereact:${session.userId}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
+export const removeNoteReactionAction = withAction(
+  {
+    schema: z.object({ noteId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `notereact:${session.userId}`,
+    },
+  },
+  async ({ noteId }, { session }) => {
     const result = await db.transaction(async (tx) => {
       const removed = await tx
         .delete(noteReactionTable)
@@ -230,8 +197,5 @@ export async function removeNoteReactionAction({ noteId }: { noteId: string }) {
     updateTag(`note:${noteId}:reacted:${session.userId}`);
 
     return result;
-  } catch (err) {
-    console.log(err);
-    return { error: "An error occurred" };
-  }
-}
+  },
+);

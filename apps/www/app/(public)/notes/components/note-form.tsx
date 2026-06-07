@@ -56,7 +56,8 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
           `optimistic-${crypto.randomUUID()}`,
         userId: currentUser.id,
         content: nextValues.content,
-        isAnonymous: nextValues.isAnonymous,
+        // Mirrors the schema's .default(false) — the input type is optional.
+        isAnonymous: nextValues.isAnonymous ?? false,
         // Server resets reactions on every upsert — mirror that optimistically.
         reactionCount: 0,
         createdAt:
@@ -81,7 +82,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       };
     },
     onSuccess: (data, _values, ctx) => {
-      if (data?.error) {
+      if (data && "error" in data && data.error) {
         // The action returns { error } without throwing, so roll back the
         // optimistic note here (onError never fires for this path).
         queryClient.setQueryData<NoteItem | null>(
@@ -95,7 +96,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         return;
       }
 
-      if (data?.note) {
+      if (data && "note" in data && data.note) {
         queryClient.setQueryData<NoteItem | null>(
           queryKeys.currentNote(),
           data.note,
