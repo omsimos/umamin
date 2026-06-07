@@ -11,7 +11,9 @@ export function Footer() {
   }
 
   return (
-    <footer className="pb-24 lg:pb-8 flex flex-col items-center text-muted-foreground text-sm">
+    // mt clears the virtualized lists above: their height is the
+    // virtualizer's estimate, which can briefly lag the real rows mid-scroll.
+    <footer className="mt-16 pb-24 lg:pb-8 flex flex-col items-center text-muted-foreground text-sm">
       <div>
         <span>developed</span> by{" "}
         <Link

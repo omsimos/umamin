@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.9.1] - 2026-06-07
+
+### Fixed
+
+- The "developed by" footer no longer overlaps posts while scrolling to the bottom of the feed, profile, and notes lists.
+
 ## [5.9.0] - 2026-06-07
 
 ### Added
@@ -581,6 +587,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.9.1]: https://github.com/omsimos/umamin/compare/v5.9.0...v5.9.1
 [5.9.0]: https://github.com/omsimos/umamin/compare/v5.8.0...v5.9.0
 [5.8.0]: https://github.com/omsimos/umamin/compare/v5.7.0...v5.8.0
 [5.7.0]: https://github.com/omsimos/umamin/compare/v5.6.0...v5.7.0

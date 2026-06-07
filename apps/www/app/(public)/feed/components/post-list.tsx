@@ -155,7 +155,11 @@ export function PostList({
 
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
-    estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
+    // Slightly OVER the typical post/ad height on purpose: rows mounted
+    // mid-scroll measure a beat late, and an under-estimate puts the page
+    // footer inside the feed during that window. Over-estimating degrades to
+    // a transient gap instead.
+    estimateSize: () => 380,
     paddingEnd: 100,
     overscan: 5,
     scrollMargin,
