@@ -609,6 +609,9 @@ async function main() {
             pollEndsAt: new Date(Date.now() - 2 * DAY_MS),
             createdAt: endedCreatedAt,
             updatedAt: endedCreatedAt,
+            // Must equal the option voteCounts below (2 + 1), like
+            // votePollAction keeps them in lockstep.
+            pollVoteCount: 3,
           })
           .returning({ id: postTable.id });
 

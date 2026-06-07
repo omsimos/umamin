@@ -9,25 +9,40 @@ const redisMock = vi.hoisted(() => ({
   zadd: vi.fn(),
   zrem: vi.fn(),
   zremrangebyrank: vi.fn(),
+  del: vi.fn(),
 }));
 
 vi.mock("@/lib/redis", () => ({ redis: redisMock }));
 
 import { db } from "@umamin/db";
+import { getHotScore } from "@/lib/server/hot-score";
 import {
   getRedisHotPostIdsPage,
   isRedisHotCursor,
   refreshHotPostRank,
   removeHotPostRank,
+  seedHotPostRanks,
 } from "./feed-rank";
 
-const HOT_FEED_KEY = "feed:hot:v1";
+const HOT_FEED_KEY = "feed:hot:v2";
+const LEGACY_HOT_FEED_KEY = "feed:hot:v1";
 
-// Drizzle select chain that resolves `.limit()` to `rows`.
+// Drizzle select chain that resolves `.limit()` to `rows` (single-post read).
 function selectReturning(rows: unknown[]) {
   return {
     from: () => ({
       where: () => ({
+        limit: () => Promise.resolve(rows),
+      }),
+    }),
+  };
+}
+
+// Drizzle select chain for the seed's ordered scan.
+function selectOrdered(rows: unknown[]) {
+  return {
+    from: () => ({
+      orderBy: () => ({
         limit: () => Promise.resolve(rows),
       }),
     }),
@@ -164,18 +179,21 @@ describe("getRedisHotPostIdsPage", () => {
 });
 
 describe("refreshHotPostRank", () => {
-  it("zadds the documented score and trims to the max item count", async () => {
-    const post = {
-      id: "post-1",
-      createdAt: new Date("2026-06-04T00:00:00.000Z"),
-      likeCount: 5,
-      commentCount: 2,
-      repostCount: 1,
-    };
+  const post = {
+    id: "post-1",
+    createdAt: new Date("2026-06-04T00:00:00.000Z"),
+    likeCount: 5,
+    pollVoteCount: 4,
+    commentCount: 2,
+    repostCount: 1,
+  };
+
+  it("zadds the shared log-dampened score and trims when the member is new", async () => {
     vi.mocked(db.select).mockReturnValue(
       // biome-ignore lint/suspicious/noExplicitAny: drizzle chain stub
       selectReturning([post]) as any,
     );
+    redisMock.zadd.mockResolvedValue(1); // brand-new member
 
     await refreshHotPostRank("post-1");
 
@@ -183,20 +201,33 @@ describe("refreshHotPostRank", () => {
     const [key, arg] = redisMock.zadd.mock.calls[0];
     expect(key).toBe(HOT_FEED_KEY);
     expect(arg.member).toBe("post-1");
+    expect(arg.score).toBe(getHotScore(post));
 
-    const engagement =
-      post.likeCount + post.commentCount * 3 + post.repostCount * 4;
+    // engagement = 5 likes + 4 poll votes + 2*3 comments + 1*4 reposts = 19
     const expectedScore =
-      post.createdAt.getTime() / 10_000 + engagement * 1_000;
+      post.createdAt.getTime() / 10_000 + Math.log1p(19) * 1500;
     expect(arg.score).toBe(expectedScore);
 
-    // Trims oldest-ranked entries beyond HOT_FEED_MAX_ITEMS (2000).
+    // A new member can push the set past the cap (2000) — trim runs.
     expect(redisMock.zremrangebyrank).toHaveBeenCalledWith(
       HOT_FEED_KEY,
       0,
       -2001,
     );
     expect(redisMock.zrem).not.toHaveBeenCalled();
+  });
+
+  it("skips the trim when zadd only re-scored an existing member", async () => {
+    vi.mocked(db.select).mockReturnValue(
+      // biome-ignore lint/suspicious/noExplicitAny: drizzle chain stub
+      selectReturning([post]) as any,
+    );
+    redisMock.zadd.mockResolvedValue(0); // existing member re-scored
+
+    await refreshHotPostRank("post-1");
+
+    expect(redisMock.zadd).toHaveBeenCalledTimes(1);
+    expect(redisMock.zremrangebyrank).not.toHaveBeenCalled();
   });
 
   it("zrems the id when the post no longer exists", async () => {
@@ -213,22 +244,50 @@ describe("refreshHotPostRank", () => {
   });
 
   it("scores a zero-engagement post on recency alone", async () => {
-    const post = {
+    const coldPost = {
       id: "post-2",
       createdAt: new Date("2026-01-01T00:00:00.000Z"),
       likeCount: 0,
+      pollVoteCount: 0,
       commentCount: 0,
       repostCount: 0,
     };
     vi.mocked(db.select).mockReturnValue(
       // biome-ignore lint/suspicious/noExplicitAny: drizzle chain stub
-      selectReturning([post]) as any,
+      selectReturning([coldPost]) as any,
     );
 
     await refreshHotPostRank("post-2");
 
     const { score } = redisMock.zadd.mock.calls[0][1];
-    expect(score).toBe(post.createdAt.getTime() / 10_000);
+    expect(score).toBe(coldPost.createdAt.getTime() / 10_000);
+  });
+
+  it("swallows a Redis failure — rank upkeep must not fail a committed action", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(db.select).mockReturnValue(
+      // biome-ignore lint/suspicious/noExplicitAny: drizzle chain stub
+      selectReturning([post]) as any,
+    );
+    redisMock.zadd.mockRejectedValueOnce(new Error("upstash down"));
+
+    await expect(refreshHotPostRank("post-1")).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+
+    errorSpy.mockRestore();
+  });
+
+  it("swallows a DB failure on the counter read", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(db.select).mockImplementationOnce(() => {
+      throw new Error("turso blip");
+    });
+
+    await expect(refreshHotPostRank("post-1")).resolves.toBeUndefined();
+    expect(redisMock.zadd).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+
+    errorSpy.mockRestore();
   });
 });
 
@@ -237,6 +296,74 @@ describe("removeHotPostRank", () => {
     await removeHotPostRank("post-9");
 
     expect(redisMock.zrem).toHaveBeenCalledWith(HOT_FEED_KEY, "post-9");
+  });
+
+  it("swallows a Redis failure", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    redisMock.zrem.mockRejectedValueOnce(new Error("upstash down"));
+
+    await expect(removeHotPostRank("post-9")).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+
+    errorSpy.mockRestore();
+  });
+});
+
+describe("seedHotPostRanks", () => {
+  const posts = [
+    {
+      id: "post-1",
+      createdAt: new Date("2026-06-04T00:00:00.000Z"),
+      likeCount: 5,
+      pollVoteCount: 0,
+      commentCount: 2,
+      repostCount: 1,
+    },
+    {
+      id: "post-2",
+      createdAt: new Date("2026-06-03T00:00:00.000Z"),
+      likeCount: 0,
+      pollVoteCount: 8,
+      commentCount: 0,
+      repostCount: 0,
+    },
+  ];
+
+  it("zadds every post with its score in one call and deletes the legacy key", async () => {
+    vi.mocked(db.select).mockReturnValue(
+      // biome-ignore lint/suspicious/noExplicitAny: drizzle chain stub
+      selectOrdered(posts) as any,
+    );
+
+    const seeded = await seedHotPostRanks();
+
+    expect(seeded).toBe(2);
+    expect(redisMock.zadd).toHaveBeenCalledExactlyOnceWith(
+      HOT_FEED_KEY,
+      { score: getHotScore(posts[0]), member: "post-1" },
+      { score: getHotScore(posts[1]), member: "post-2" },
+    );
+    // Pre-seed organic members could put the set over the cap — seed trims.
+    expect(redisMock.zremrangebyrank).toHaveBeenCalledWith(
+      HOT_FEED_KEY,
+      0,
+      -2001,
+    );
+    expect(redisMock.del).toHaveBeenCalledWith(LEGACY_HOT_FEED_KEY);
+  });
+
+  it("still deletes the legacy key when there is nothing to seed", async () => {
+    vi.mocked(db.select).mockReturnValue(
+      // biome-ignore lint/suspicious/noExplicitAny: drizzle chain stub
+      selectOrdered([]) as any,
+    );
+
+    const seeded = await seedHotPostRanks();
+
+    expect(seeded).toBe(0);
+    expect(redisMock.zadd).not.toHaveBeenCalled();
+    expect(redisMock.zremrangebyrank).not.toHaveBeenCalled();
+    expect(redisMock.del).toHaveBeenCalledWith(LEGACY_HOT_FEED_KEY);
   });
 });
 
@@ -255,6 +382,7 @@ describe("when the redis binding is null", () => {
     await expect(mod.getRedisHotPostIdsPage(null, 20, 10)).resolves.toBeNull();
     await expect(mod.refreshHotPostRank("x")).resolves.toBeUndefined();
     await expect(mod.removeHotPostRank("x")).resolves.toBeUndefined();
+    await expect(mod.seedHotPostRanks()).resolves.toBeNull();
 
     // No db read is attempted when redis is absent.
     const { db: nullRedisDb } = await import("@umamin/db");

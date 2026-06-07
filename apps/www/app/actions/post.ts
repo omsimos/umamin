@@ -44,10 +44,18 @@ import { withAction } from "@/lib/server/with-action";
 import { formatContent, hasUmaminPlus } from "@/lib/utils";
 
 // Records the newest feed-edge timestamp so the client can show a "new posts"
-// pill without polling Turso. No-ops when Redis isn't configured.
+// pill without polling Turso. No-ops when Redis isn't configured. Best-effort
+// like refreshHotPostRank: it runs after the action's DB write has committed,
+// so a Redis blip must not fail the action.
 async function bumpFeedLatest(createdAt: Date) {
-  if (redis) {
+  if (!redis) {
+    return;
+  }
+
+  try {
     await redis.set("feed:latest", createdAt.getTime());
+  } catch (err) {
+    console.error("bumpFeedLatest failed", { err });
   }
 }
 
@@ -557,16 +565,26 @@ export const votePollAction = withAction(
         })
         .where(eq(pollOptionTable.id, optionId));
 
+      // Votes are final (unique per poll, no un-vote), so the denormalized
+      // post total only ever increments — same transaction so it can't drift
+      // from the option counts.
+      await tx
+        .update(postTable)
+        .set({
+          pollVoteCount: sql`${postTable.pollVoteCount} + 1`,
+        })
+        .where(eq(postTable.id, postId));
+
       return { success: true, votedOptionId: optionId };
     });
 
     updateTag(`post:${postId}`);
     // Like likes: counts in the public feed are eventually consistent (<=120s);
-    // only the viewer's own vote state needs to be fresh. No "posts" bust, and
-    // no hot-rank refresh — votes don't feed the engagement score.
+    // only the viewer's own vote state needs to be fresh. No "posts" bust.
     updateTag(`post:${postId}:poll-voted:${session.userId}`);
 
     if (!("alreadyVoted" in result)) {
+      await refreshHotPostRank(postId);
       await notify({
         recipientId: target.authorId,
         type: "vote",
