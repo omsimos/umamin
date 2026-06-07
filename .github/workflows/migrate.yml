@@ -1,0 +1,53 @@
+name: Migrate
+
+# Applies pending Drizzle migrations to the branch's database the moment a
+# push lands — Vercel deploys on the same push, so running this first/fast
+# minimizes the window where new code can hit an old schema. drizzle-kit
+# migrate is journal-based (idempotent), so re-runs are safe.
+on:
+  push:
+    branches: ["dev", "main"]
+    paths:
+      - "packages/db/migrations/**"
+  # Manual catch-up (e.g. first run after adding this workflow, or a re-apply).
+  workflow_dispatch:
+
+# Queue, never cancel: a mid-flight migration must not be killed.
+concurrency:
+  group: migrate-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Apply database migrations
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    # Same secret NAMES in both environments, different VALUES — the
+    # environment (not the workflow) decides which Turso database is targeted.
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        env:
+          TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: pnpm --filter=@umamin/db migrate
