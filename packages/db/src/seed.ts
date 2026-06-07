@@ -357,6 +357,8 @@ for (let i = 0; i < additionalMessageCount; i += 1) {
     }
   }
 
+  const reply = randomReply();
+
   messageSeeds.push({
     receiverUsername: receiver.username,
     senderUsername: faker.datatype.boolean({ probability: 0.7 })
@@ -364,7 +366,13 @@ for (let i = 0; i < additionalMessageCount; i += 1) {
       : undefined,
     question: userQuestions.get(receiver.username) ?? DEFAULT_PROMPT,
     content: randomContent(),
-    reply: randomReply(),
+    reply,
+    // Same invariant as the testuser seeds: a replied message was necessarily
+    // opened (the reply menu is unreachable while sealed).
+    openedAt:
+      reply || faker.datatype.boolean({ probability: 0.6 })
+        ? new Date()
+        : undefined,
   });
 }
 

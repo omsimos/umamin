@@ -3,6 +3,7 @@
 import type { InfiniteData } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import type { SelectMessage } from "@umamin/db/schema/message";
+import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { MailIcon } from "lucide-react";
@@ -14,14 +15,19 @@ import { patchMessage } from "@/lib/query-cache";
 import type { MessagesResponse } from "@/lib/query-types";
 import { ReceivedMessageMenu } from "./received-card-menu";
 
+// Session-scoped, not component state: the virtualized row unmounts when
+// scrolled away, and an in-flight refetch can clobber the optimistic cache
+// patch with the stale sealed row — without this, a remount re-seals a
+// message the user already read.
+const revealedIds = new Set<string>();
+
 export function ReceivedMessageCard({ data }: { data: SelectMessage }) {
   const queryClient = useQueryClient();
-  // Survives a failed/throttled open action plus a stale refetch of the
-  // still-sealed server row — a message must never re-seal mid-session.
-  const [revealed, setRevealed] = useState(false);
+  const [revealed, setRevealed] = useState(() => revealedIds.has(data.id));
   const sealed = !data.openedAt && !revealed;
 
   const handleOpen = () => {
+    revealedIds.add(data.id);
     setRevealed(true);
     vibrate(10);
     queryClient.setQueryData<InfiniteData<MessagesResponse>>(
@@ -38,29 +44,29 @@ export function ReceivedMessageCard({ data }: { data: SelectMessage }) {
   };
 
   if (sealed) {
+    const receivedAgo = formatDistanceToNow(data.createdAt, {
+      addSuffix: true,
+    });
+
     return (
-      <button
+      <Button
         type="button"
+        variant="outline"
         onClick={handleOpen}
-        aria-label={`Open anonymous message, received ${formatDistanceToNow(
-          data.createdAt,
-          { addSuffix: true },
-        )}`}
-        className="w-full bg-card p-6 rounded-xl border flex flex-col items-center gap-1.5 text-center cursor-pointer hover:bg-accent/40 transition-colors"
+        aria-label={`Open anonymous message, received ${receivedAgo}`}
+        className="h-auto w-full flex-col gap-1.5 whitespace-normal rounded-xl bg-card p-6 text-center hover:bg-accent/40"
       >
         <MailIcon
           aria-hidden
-          className="size-7 text-muted-foreground mb-1"
+          className="mb-1 size-7 text-muted-foreground"
           strokeWidth={1.5}
         />
         <p className="font-semibold">You received an anonymous message</p>
         <p className="text-sm text-muted-foreground">Tap to open</p>
-        <p className="text-muted-foreground text-xs mt-2 italic">
-          {formatDistanceToNow(data.createdAt, {
-            addSuffix: true,
-          })}
+        <p className="mt-2 text-muted-foreground text-xs italic">
+          {receivedAgo}
         </p>
-      </button>
+      </Button>
     );
   }
 

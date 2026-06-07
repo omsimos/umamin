@@ -50,8 +50,10 @@ beforeEach(() => {
 });
 
 describe("ReceivedMessageCard", () => {
+  // Distinct ids per test: the card remembers revealed ids in module scope
+  // (per-session re-seal guard), which would leak across tests otherwise.
   it("conceals a sealed message behind an open button", () => {
-    renderCard(makeMessage());
+    renderCard(makeMessage({ id: "msg-sealed" }));
 
     expect(
       screen.getByRole("button", { name: /open anonymous message/i }),
@@ -62,7 +64,7 @@ describe("ReceivedMessageCard", () => {
   });
 
   it("renders an already-opened message in full with no open button", () => {
-    renderCard(makeMessage({ openedAt: new Date() }));
+    renderCard(makeMessage({ id: "msg-opened", openedAt: new Date() }));
 
     expect(screen.getByText("send me a secret")).toBeInTheDocument();
     expect(screen.getByText(/you're the reason/)).toBeInTheDocument();
@@ -73,7 +75,7 @@ describe("ReceivedMessageCard", () => {
   });
 
   it("reveals on tap, fires the action once, and buzzes", () => {
-    renderCard(makeMessage());
+    renderCard(makeMessage({ id: "msg-revealed" }));
 
     fireEvent.click(
       screen.getByRole("button", { name: /open anonymous message/i }),
@@ -82,8 +84,26 @@ describe("ReceivedMessageCard", () => {
     expect(screen.getByText("send me a secret")).toBeInTheDocument();
     expect(screen.getByText(/you're the reason/)).toBeInTheDocument();
     expect(openMessageAction).toHaveBeenCalledExactlyOnceWith({
-      messageId: "msg-1",
+      messageId: "msg-revealed",
     });
     expect(vibrate).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays revealed on remount within the session", () => {
+    // Simulates the virtualized row unmounting and remounting after a stale
+    // refetch clobbered the optimistic cache patch (openedAt back to null).
+    const data = makeMessage({ id: "msg-remount" });
+    const first = renderCard(data);
+    fireEvent.click(
+      screen.getByRole("button", { name: /open anonymous message/i }),
+    );
+    first.unmount();
+
+    renderCard(data);
+
+    expect(screen.getByText(/you're the reason/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /open anonymous message/i }),
+    ).not.toBeInTheDocument();
   });
 });
