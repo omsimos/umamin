@@ -42,6 +42,7 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import { vibrate } from "@/lib/haptics";
 import { queryKeys } from "@/lib/query";
 import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
 import type { FeedResponse, PostResponse } from "@/lib/query-types";
@@ -144,6 +145,11 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
     const prevLikes = likes;
     const nextLiked = !prevLiked;
     const nextLikes = prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1;
+
+    // Micro-tick on like only — undoing one isn't a moment.
+    if (nextLiked) {
+      vibrate(5);
+    }
 
     setLiked(nextLiked);
     setLikes(nextLikes);

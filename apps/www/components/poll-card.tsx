@@ -12,6 +12,7 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import { vibrate } from "@/lib/haptics";
 import {
   isPollEnded,
   POLL_ENDED_ERROR,
@@ -100,6 +101,9 @@ export function PollCard({ postId, poll, isAuthenticated }: PollCardProps) {
     if (!isAuthenticated || hasVoted || ended) return;
     // Optimistic posts carry placeholder option ids until the server swap.
     if (optionId.startsWith("optimistic-")) return;
+
+    // Votes are final and once-per-poll — a consequential tap.
+    vibrate(10);
 
     const prevCounts = counts;
     const optionIndex = poll.options.findIndex(

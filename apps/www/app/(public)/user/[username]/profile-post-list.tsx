@@ -89,7 +89,10 @@ export function ProfilePostList({
 
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
-    estimateSize: () => 160,
+    // Over-estimated on purpose (same PostCard as the feed): a late
+    // mid-scroll measurement under an under-estimate drags the page footer
+    // into the list; over-estimating degrades to a transient gap.
+    estimateSize: () => 380,
     paddingEnd: 100,
     overscan: 5,
     scrollMargin,

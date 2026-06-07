@@ -2323,6 +2323,9 @@ export async function getMessagesPage(params: {
 
       return {
         ...message,
+        // Opened state is the receiver's alone — stripping it here (not in the
+        // UI) is what keeps senders from reading it off the wire.
+        openedAt: null,
         content,
         reply,
       };

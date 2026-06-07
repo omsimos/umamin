@@ -93,7 +93,9 @@ export function NoteList({
 
   const virtualizer = useWindowVirtualizer({
     count: totalRows,
-    estimateSize: () => 250, // average height for post/ad; virtualizer will remeasure
+    // Slightly above the real note-card height: under-estimates pull the
+    // page footer into the list while late mid-scroll measurements settle.
+    estimateSize: () => 300,
     paddingEnd: 100,
     overscan: 5,
     scrollMargin,

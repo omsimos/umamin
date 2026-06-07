@@ -18,6 +18,17 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.10.0] - 2026-06-08
+
+### Added
+
+- Anonymous messages now arrive sealed. A new message shows as a closed envelope in your inbox — tap to open it and reveal the question and message, with a subtle reveal animation. Messages you received before this update are already open. Whether you've opened a message is yours alone; senders are never told.
+- Subtle haptic feedback on supported devices when you open a sealed message, like a post, vote on a poll, or react to a note. Off automatically when your system asks for reduced motion.
+
+### Fixed
+
+- The "developed by" footer no longer overlaps posts while scrolling to the bottom of the feed, profile, and notes lists.
+
 ## [5.9.0] - 2026-06-07
 
 ### Added
@@ -581,6 +592,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.10.0]: https://github.com/omsimos/umamin/compare/v5.9.0...v5.10.0
 [5.9.0]: https://github.com/omsimos/umamin/compare/v5.8.0...v5.9.0
 [5.8.0]: https://github.com/omsimos/umamin/compare/v5.7.0...v5.8.0
 [5.7.0]: https://github.com/omsimos/umamin/compare/v5.6.0...v5.7.0

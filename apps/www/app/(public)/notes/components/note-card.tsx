@@ -36,6 +36,7 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import { vibrate } from "@/lib/haptics";
 import { queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
@@ -113,6 +114,11 @@ export function NoteCard({
     const prevCount = reactions;
     const nextReacted = !prevReacted;
     const nextCount = prevReacted ? Math.max(prevCount - 1, 0) : prevCount + 1;
+
+    // Micro-tick on reacting only, matching the like button.
+    if (nextReacted) {
+      vibrate(5);
+    }
 
     setReacted(nextReacted);
     setReactions(nextCount);
