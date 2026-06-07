@@ -15,6 +15,24 @@ import { patchMessage } from "@/lib/query-cache";
 import type { MessagesResponse } from "@/lib/query-types";
 import { ReceivedMessageMenu } from "./received-card-menu";
 
+const SEALED_TITLES = [
+  "You received an anonymous message",
+  "Someone left you a note",
+  "A secret is waiting for you",
+  "Something came in for your eyes only",
+];
+
+// Deterministic per message (no Math.random): stacked sealed cards vary so
+// they don't read as copy-paste, but each card's title is stable across
+// renders, remounts, and sessions.
+function sealedTitleFor(id: string) {
+  let sum = 0;
+  for (let i = 0; i < id.length; i += 1) {
+    sum += id.charCodeAt(i);
+  }
+  return SEALED_TITLES[sum % SEALED_TITLES.length];
+}
+
 // Session-scoped, not component state: the virtualized row unmounts when
 // scrolled away, and an in-flight refetch can clobber the optimistic cache
 // patch with the stale sealed row — without this, a remount re-seals a
@@ -48,24 +66,26 @@ export function ReceivedMessageCard({ data }: { data: SelectMessage }) {
       addSuffix: true,
     });
 
+    // min-h matches the smallest revealed card so the swap never shrinks the
+    // row; the aria-label stays uniform — the title variety is visual only.
     return (
       <Button
         type="button"
         variant="outline"
         onClick={handleOpen}
         aria-label={`Open anonymous message, received ${receivedAgo}`}
-        className="h-auto w-full flex-col gap-1.5 whitespace-normal rounded-xl bg-card p-6 text-center hover:bg-accent/40"
+        className="h-auto min-h-48 w-full flex-col justify-center gap-1.5 whitespace-normal rounded-xl bg-card p-6 text-center hover:bg-accent/40"
       >
         <MailIcon
           aria-hidden
           className="mb-1 size-7 text-muted-foreground"
           strokeWidth={1.5}
         />
-        <p className="font-semibold">You received an anonymous message</p>
-        <p className="text-sm text-muted-foreground">Tap to open</p>
-        <p className="mt-2 text-muted-foreground text-xs italic">
+        <span className="font-semibold">{sealedTitleFor(data.id)}</span>
+        <span className="text-muted-foreground text-sm">Tap to open</span>
+        <span className="mt-2 text-muted-foreground text-xs italic">
           {receivedAgo}
-        </p>
+        </span>
       </Button>
     );
   }
