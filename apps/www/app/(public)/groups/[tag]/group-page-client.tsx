@@ -32,14 +32,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@umamin/ui/components/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@umamin/ui/components/dropdown-menu";
 import { Input } from "@umamin/ui/components/input";
 import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
   CheckIcon,
+  EllipsisIcon,
   Loader2Icon,
   ScanFaceIcon,
   SquarePenIcon,
+  Trash2Icon,
   UserMinusIcon,
   UserPlusIcon,
   UsersRoundIcon,
@@ -96,6 +105,7 @@ export function GroupPageClient({
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteUsername, setInviteUsername] = useState("");
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: group } = useQuery({
     queryKey: queryKeys.group(tag),
@@ -387,10 +397,11 @@ export function GroupPageClient({
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {isMember && (
+      {isMember && (
+        <div className="flex items-center gap-2">
           <Button
             variant={equipped ? "default" : "outline"}
+            className="flex-1"
             disabled={equipMutation.isPending}
             onClick={() => equipMutation.mutate()}
           >
@@ -402,73 +413,58 @@ export function GroupPageClient({
               "Wear tag"
             )}
           </Button>
-        )}
 
-        {isOwner && (
-          <Button variant="outline" onClick={() => setInviteOpen(true)}>
-            <UserPlusIcon /> Invite
-          </Button>
-        )}
+          {isOwner && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" aria-label="Manage group">
+                  <EllipsisIcon />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onSelect={() => setInviteOpen(true)}>
+                  <UserPlusIcon /> Invite members
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+                  <SquarePenIcon /> Edit group
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={() => setDeleteOpen(true)}
+                >
+                  <Trash2Icon /> Delete group
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
-        {isOwner && (
-          <Button variant="outline" onClick={() => setEditOpen(true)}>
-            <SquarePenIcon /> Edit
-          </Button>
-        )}
-
-        {isOwner ? (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={deleteMutation.isPending}>
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete this group?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This removes the tag from all {group.memberCount} members and
-                  can't be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction asChild>
-                  <Button
-                    variant="destructive"
-                    onClick={() => deleteMutation.mutate()}
-                  >
-                    Delete group
-                  </Button>
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        ) : relationship === "member" ? (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" disabled={leaveMutation.isPending}>
-                Leave
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Leave this group?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Your tag will be removed and you'll need a new invite to
-                  rejoin.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => leaveMutation.mutate()}>
+          {relationship === "member" && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" disabled={leaveMutation.isPending}>
                   Leave
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        ) : null}
-      </div>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Leave this group?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Your tag will be removed and you'll need a new invite to
+                    rejoin.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => leaveMutation.mutate()}>
+                    Leave
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      )}
 
       {/* Non-member CTAs: invited (accept/decline), requested (pending), or
           can request to join. */}
@@ -732,6 +728,31 @@ export function GroupPageClient({
           routeTag={tag}
           onClose={() => setEditOpen(false)}
         />
+      )}
+
+      {isOwner && (
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this group?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This removes the tag from all {group.memberCount} members and
+                can't be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteMutation.mutate()}
+                >
+                  Delete group
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );
