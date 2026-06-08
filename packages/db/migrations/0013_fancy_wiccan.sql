@@ -41,4 +41,5 @@ CREATE TABLE `group` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `group_tag_norm_uidx` ON `group` (`tag_norm`);--> statement-breakpoint
 CREATE INDEX `group_creator_idx` ON `group` (`creator_id`);--> statement-breakpoint
-ALTER TABLE `user` ADD `equipped_group_id` text;
+ALTER TABLE `user` ADD `equipped_group_id` text;--> statement-breakpoint
+CREATE INDEX `user_equipped_group_idx` ON `user` (`equipped_group_id`) WHERE "user"."equipped_group_id" IS NOT NULL;

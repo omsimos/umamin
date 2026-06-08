@@ -1590,6 +1590,12 @@
           "name": "user_username_unique",
           "columns": ["username"],
           "isUnique": true
+        },
+        "user_equipped_group_idx": {
+          "name": "user_equipped_group_idx",
+          "columns": ["equipped_group_id"],
+          "isUnique": false,
+          "where": "\"user\".\"equipped_group_id\" IS NOT NULL"
         }
       },
       "foreignKeys": {},
