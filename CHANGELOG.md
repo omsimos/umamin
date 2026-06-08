@@ -24,7 +24,7 @@ any that are empty.
 
 - Groups: Umamin+ members can create a group with a name, an optional description, a unique 4-character tag, and an icon and color of their choice. Find your groups under Groups on your profile — and anyone can open the Groups page, with a prompt to upgrade if they're not Umamin+ yet.
 - Members can wear their group's tag as a small badge next to their name across the feed, posts, notes, and their profile — one badge at a time, switchable anytime. Tapping any badge opens that group's page.
-- Groups are private and invite-only. Owners invite people by username, and anyone can request to join from the group's page; the owner approves or declines. Owners can also remove members or delete the group. Notifications cover invites received, join requests, and new members.
+- Groups are private and invite-only. Owners invite people by username, and anyone can request to join from the group's page; the owner approves or declines. Owners can edit their group's name, description, icon, and color, remove members, or delete the group. Notifications cover invites received, join requests, and new members.
 - Joining is free for everyone — only creating a group needs Umamin+.
 - An account menu, opened from your avatar — quick access to your profile, groups, settings, theme, and sign-out in one place.
 

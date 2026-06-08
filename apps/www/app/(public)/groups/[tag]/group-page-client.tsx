@@ -39,6 +39,7 @@ import {
   CheckIcon,
   Loader2Icon,
   ScanFaceIcon,
+  SquarePenIcon,
   UserMinusIcon,
   UserPlusIcon,
   UsersRoundIcon,
@@ -59,6 +60,7 @@ import {
   respondToInviteAction,
   respondToJoinRequestAction,
 } from "@/app/actions/group";
+import { GroupEditDialog } from "@/components/group-edit-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import type { GroupAccent, GroupIcon } from "@/lib/group";
 import { GROUP_ACCENT_CLASSES, GROUP_ICON_MAP } from "@/lib/group-icons";
@@ -93,6 +95,7 @@ export function GroupPageClient({
   const router = useRouter();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteUsername, setInviteUsername] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: group } = useQuery({
     queryKey: queryKeys.group(tag),
@@ -407,6 +410,12 @@ export function GroupPageClient({
           </Button>
         )}
 
+        {isOwner && (
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <SquarePenIcon /> Edit
+          </Button>
+        )}
+
         {isOwner ? (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -715,6 +724,14 @@ export function GroupPageClient({
             </form>
           </DialogContent>
         </Dialog>
+      )}
+
+      {isOwner && editOpen && (
+        <GroupEditDialog
+          group={group}
+          routeTag={tag}
+          onClose={() => setEditOpen(false)}
+        />
       )}
     </div>
   );
