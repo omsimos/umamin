@@ -125,7 +125,6 @@ import {
   GROUP_OWNER_CANNOT_LEAVE_ERROR,
   GROUP_PLUS_REQUIRED_ERROR,
   GROUP_REQUEST_PENDING_ERROR,
-  GROUP_TAG_RESERVED_ERROR,
   GROUP_TAG_TAKEN_ERROR,
   GROUP_TARGET_CAPPED_ERROR,
   GROUP_USER_NOT_FOUND_ERROR,
@@ -197,12 +196,12 @@ describe("createGroupAction", () => {
     expect(insertSpy).not.toHaveBeenCalled();
   });
 
-  it("rejects reserved tags, including leetspeak evasion", async () => {
+  it("rejects reserved tags as taken, including leetspeak evasion", async () => {
     expect(await createGroupAction({ ...validCreate, tag: "MODS" })).toEqual({
-      error: GROUP_TAG_RESERVED_ERROR,
+      error: GROUP_TAG_TAKEN_ERROR,
     });
     expect(await createGroupAction({ ...validCreate, tag: "m0d5" })).toEqual({
-      error: GROUP_TAG_RESERVED_ERROR,
+      error: GROUP_TAG_TAKEN_ERROR,
     });
     expect(insertSpy).not.toHaveBeenCalled();
   });

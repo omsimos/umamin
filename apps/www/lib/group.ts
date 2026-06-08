@@ -11,8 +11,9 @@ export const JOINED_GROUPS_CAP = 5;
 
 export const GROUP_PLUS_REQUIRED_ERROR =
   "Creating a group is an Umamin+ perk — unlocked once your account is a year old.";
+// Reserved tags surface as "taken" too — exposing a tag as specifically
+// reserved just invites people to probe the blocklist.
 export const GROUP_TAG_TAKEN_ERROR = "That tag is taken.";
-export const GROUP_TAG_RESERVED_ERROR = "That tag is reserved.";
 export const GROUP_FULL_ERROR = "This group is full.";
 export const GROUP_OWNED_CAP_ERROR = "You already own a group.";
 export const GROUP_JOINED_CAP_ERROR = `You can be in up to ${JOINED_GROUPS_CAP} groups.`;

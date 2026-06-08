@@ -24,7 +24,6 @@ import {
   GROUP_OWNER_CANNOT_LEAVE_ERROR,
   GROUP_PLUS_REQUIRED_ERROR,
   GROUP_REQUEST_PENDING_ERROR,
-  GROUP_TAG_RESERVED_ERROR,
   GROUP_TAG_TAKEN_ERROR,
   GROUP_TARGET_CAPPED_ERROR,
   GROUP_USER_NOT_FOUND_ERROR,
@@ -167,8 +166,9 @@ export const createGroupAction = withAction(
       return { error: GROUP_PLUS_REQUIRED_ERROR };
     }
 
+    // Reserved tags read as "taken" — don't reveal the blocklist to probers.
     if (isReservedGroupTag(tag)) {
-      return { error: GROUP_TAG_RESERVED_ERROR };
+      return { error: GROUP_TAG_TAKEN_ERROR };
     }
 
     const result = await db.transaction(async (tx) => {
