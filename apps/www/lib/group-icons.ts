@@ -1,5 +1,6 @@
 import {
   AnchorIcon,
+  AtomIcon,
   BotIcon,
   BugIcon,
   CatIcon,
@@ -19,6 +20,7 @@ import {
   MicIcon,
   MoonIcon,
   MusicIcon,
+  PencilIcon,
   PizzaIcon,
   RocketIcon,
   ShieldIcon,
@@ -35,6 +37,7 @@ import type { GroupAccent, GroupIcon } from "@/lib/group";
 
 export const GROUP_ICON_MAP: Record<GroupIcon, LucideIcon> = {
   anchor: AnchorIcon,
+  atom: AtomIcon,
   bot: BotIcon,
   bug: BugIcon,
   cat: CatIcon,
@@ -53,6 +56,7 @@ export const GROUP_ICON_MAP: Record<GroupIcon, LucideIcon> = {
   mic: MicIcon,
   moon: MoonIcon,
   music: MusicIcon,
+  pencil: PencilIcon,
   pizza: PizzaIcon,
   rocket: RocketIcon,
   shield: ShieldIcon,

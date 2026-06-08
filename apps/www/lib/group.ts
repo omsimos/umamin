@@ -36,6 +36,7 @@ export const GROUP_NOT_MEMBER_ERROR = "You're not a member of this group.";
 // shipping every icon or rendering nothing).
 export const GROUP_ICONS = [
   "anchor",
+  "atom",
   "bot",
   "bug",
   "cat",
@@ -54,6 +55,7 @@ export const GROUP_ICONS = [
   "mic",
   "moon",
   "music",
+  "pencil",
   "pizza",
   "rocket",
   "shield",
