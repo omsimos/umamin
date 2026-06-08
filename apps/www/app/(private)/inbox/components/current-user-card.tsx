@@ -1,5 +1,5 @@
-import { EditProfileButton } from "@/components/edit-profile-button";
 import { UserCard } from "@/components/user-card";
+import { getGroupBadge } from "@/lib/server/data";
 import type { PublicUser } from "@/types/user";
 
 export async function CurrentUserCard({ user }: { user: PublicUser | null }) {
@@ -7,5 +7,9 @@ export async function CurrentUserCard({ user }: { user: PublicUser | null }) {
     return null;
   }
 
-  return <UserCard user={user} action={<EditProfileButton />} />;
+  const groupBadge = user.equippedGroupId
+    ? await getGroupBadge(user.equippedGroupId)
+    : null;
+
+  return <UserCard user={{ ...user, groupBadge }} />;
 }

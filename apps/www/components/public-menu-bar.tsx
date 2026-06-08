@@ -8,7 +8,6 @@ import {
   LogInIcon,
   MessagesSquareIcon,
   ScrollTextIcon,
-  UserCogIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,6 +18,8 @@ import {
 } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import { ChatPromo } from "./chat-promo";
+import { MenubarLink } from "./menubar-link";
+import { NavNotifications } from "./nav-notifications";
 
 // Client-side auth (currentUser cache) so the (public) layout stays static —
 // logged-in viewers still get a Profile/Share/Settings nav, not the all-/login
@@ -47,33 +48,31 @@ export function PublicMenubar() {
     >
       <ChatPromo />
 
-      <Link href="/notes" title="Notes">
+      <MenubarLink href="/notes" title="Notes">
         <ScrollTextIcon className="h-6 w-6" />
-      </Link>
+      </MenubarLink>
 
       {username ? (
         // Lands on the profile's Posts tab; Received/Sent are one tap away.
-        <Link
+        <MenubarLink
           href={`/user/${username}`}
-          aria-label="Your profile"
+          ariaLabel="Your profile"
           title="Profile"
         >
           <CircleUserRoundIcon className="h-6 w-6" />
-        </Link>
+        </MenubarLink>
       ) : (
         <Link href="/login" aria-label="home button" title="Inbox">
           <LayoutDashboardIcon />
         </Link>
       )}
 
-      <Link href="/feed" title="Social">
+      <MenubarLink href="/feed" title="Social">
         <MessagesSquareIcon className="h-6 w-6" />
-      </Link>
+      </MenubarLink>
 
       {isAuthenticated ? (
-        <Link href="/settings" title="Settings">
-          <UserCogIcon className="w-6 h-6" />
-        </Link>
+        <NavNotifications />
       ) : (
         <Link href="/login" title="Login">
           <LogInIcon className="h-6 w-6" />

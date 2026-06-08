@@ -59,8 +59,8 @@ export default async function Settings({
 
   return (
     <div className="w-full mx-auto max-w-lg container min-h-screen pb-24">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl tracking-tight font-semibold">Settings</h2>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-2xl tracking-tight font-semibold">Settings</h1>
         <form action={logout}>
           <SignOutButton />
         </form>
