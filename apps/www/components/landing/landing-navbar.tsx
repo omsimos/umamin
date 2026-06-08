@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
+import Image from "next/image";
 import Link from "next/link";
 import {
   infiniteQueryDefaults,
@@ -9,8 +10,6 @@ import {
   queryKeys,
 } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
-import { ThemeToggleButton } from "../theme-toggle-button";
-import { UmaminLogo } from "../umamin-logo";
 
 // Marketing-only top bar: logo + a GitHub link, theme toggle, and an entry CTA
 // (Open app when signed in, otherwise Log in). Separate from the in-app Navbar
@@ -28,8 +27,22 @@ export function LandingNavbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" aria-label="umamin" className="flex items-center">
-          <UmaminLogo className="size-7" />
+        <Link
+          href="/"
+          aria-label="umamin"
+          className="flex items-center gap-x-2"
+        >
+          <Image
+            src="/umamin-chat-logo.png"
+            alt=""
+            width={24}
+            height={24}
+            className="size-6 rounded-md"
+          />
+
+          <h2 className="font-display font-bold tracking-tighter text-lg">
+            umamin
+          </h2>
         </Link>
 
         <div className="flex items-center gap-1 sm:gap-2">
@@ -38,8 +51,6 @@ export function LandingNavbar() {
               GitHub
             </Link>
           </Button>
-
-          <ThemeToggleButton />
 
           <Button asChild className="rounded-full">
             <Link href={isAuthenticated ? "/feed" : "/login"}>
