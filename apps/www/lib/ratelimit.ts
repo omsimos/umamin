@@ -10,7 +10,13 @@ export const RATE_LIMIT_ERROR =
 // `redis` is the shared Upstash client (lib/redis.ts), built only when the KV
 // integration env is present; otherwise null so the limiter no-ops (local dev).
 
-type LimiterName = "auth" | "message" | "read" | "write";
+type LimiterName =
+  | "auth"
+  | "message"
+  | "read"
+  | "write"
+  | "group-join"
+  | "group-edit";
 
 // analytics:false keeps the Upstash command count (and cost) minimal; flip it on
 // per-limiter if you want the Upstash dashboard insights. Each limiter gets its
@@ -39,6 +45,25 @@ const limiters: Record<LimiterName, Ratelimit> | null = redis
         redis,
         limiter: Ratelimit.slidingWindow(30, "60 s"),
         prefix: "rl:write",
+        ephemeralCache: new Map(),
+        analytics: false,
+      }),
+      // Group joins — invite codes are unguessable (~95-bit nanoid), so this
+      // caps scripted join/leave churn and its cache-revalidation cost, not
+      // brute force.
+      "group-join": new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(8, "60 s"),
+        prefix: "rl:group-join",
+        ephemeralCache: new Map(),
+        analytics: false,
+      }),
+      // Group meta edits — a name/icon change ripples to every member's badge
+      // through the shared feed caches, so edits get a hard daily cooldown.
+      "group-edit": new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(2, "1 d"),
+        prefix: "rl:group-edit",
         ephemeralCache: new Map(),
         analytics: false,
       }),

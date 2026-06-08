@@ -1,5 +1,6 @@
 import type { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 import * as z from "zod";
+import type { GroupBadgeData } from "./group";
 
 // lastSeenNotificationsAt is the viewer's own notification watermark and
 // blockedWords the viewer's own message filter — private state, never part of
@@ -8,7 +9,14 @@ export type PublicUser = Omit<
   SelectUser,
   "passwordHash" | "lastSeenNotificationsAt" | "blockedWords"
 >;
-export type CurrentUserClient = PublicUser & {
+
+// Author shape on badge-rendering surfaces. Optional so optimistic client
+// items can omit it (the badge appears on the server swap); null = no badge
+// equipped or the group is gone.
+export type PublicUserWithBadge = PublicUser & {
+  groupBadge?: GroupBadgeData | null;
+};
+export type CurrentUserClient = PublicUserWithBadge & {
   hasPassword: boolean;
   blockedWords: string[] | null;
 };

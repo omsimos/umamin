@@ -39,6 +39,7 @@ import {
 } from "@umamin/ui/components/tabs";
 import {
   AlertCircleIcon,
+  BadgeCheckIcon,
   Loader2Icon,
   UserCheckIcon,
   UserPlusIcon,
@@ -49,6 +50,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { followUserAction, unfollowUserAction } from "@/app/actions/user";
+import { GroupBadge } from "@/components/group-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   infiniteQueryDefaults,
@@ -378,13 +380,16 @@ function FollowUserRow({
     followMutation.mutate(user.isFollowing);
   };
 
+  const isVerified = process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
+    ",",
+  ).includes(user.username);
+
   return (
     <div className="flex items-center gap-3 py-3">
-      <Link
-        href={`/user/${user.username}`}
-        className="flex min-w-0 flex-1 items-center gap-3"
-      >
-        <Avatar className="size-10 shrink-0">
+      {/* Avatar and name are separate links so the group badge (also a link)
+          sits beside them without nesting anchors. */}
+      <Link href={`/user/${user.username}`} className="shrink-0">
+        <Avatar className="size-10">
           <AvatarImage
             src={user.imageUrl ?? ""}
             alt={`${user.username}'s avatar`}
@@ -393,15 +398,24 @@ function FollowUserRow({
             {user.username.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="min-w-0">
-          <p className="truncate font-medium text-sm">
-            {user.displayName ? user.displayName : user.username}
-          </p>
-          <p className="truncate text-muted-foreground text-sm">
-            @{user.username}
-          </p>
-        </div>
       </Link>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/user/${user.username}`}
+            className="truncate font-medium text-sm hover:underline"
+          >
+            {user.displayName ? user.displayName : user.username}
+          </Link>
+          {isVerified && (
+            <BadgeCheckIcon className="size-3.5 shrink-0 text-pink-500" />
+          )}
+          <GroupBadge badge={user.groupBadge} />
+        </div>
+        <p className="truncate text-muted-foreground text-sm">
+          @{user.username}
+        </p>
+      </div>
 
       {!isSelf ? (
         <Button

@@ -30,6 +30,7 @@ import {
   removeNoteReactionAction,
 } from "@/app/actions/note";
 import { BlockUserDialog } from "@/components/block-user-dialog";
+import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { PostBody } from "@/components/post-body";
 import {
@@ -226,20 +227,27 @@ export function NoteCard({
                       anonymous
                     </span>
                   ) : (
-                    <Link
-                      href={`/user/${username}`}
-                      className="flex items-center space-x-1"
-                    >
-                      <span className="font-semibold flex-none text-base leading-none">
-                        {user?.displayName ? user.displayName : user?.username}
-                      </span>
-                      {username &&
-                        process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
-                          ",",
-                        ).includes(username) && (
-                          <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
-                        )}
-                    </Link>
+                    // The badge is its own link — a sibling, never nested
+                    // inside the profile anchor.
+                    <div className="flex items-center space-x-1">
+                      <Link
+                        href={`/user/${username}`}
+                        className="flex items-center space-x-1"
+                      >
+                        <span className="font-semibold flex-none text-base leading-none">
+                          {user?.displayName
+                            ? user.displayName
+                            : user?.username}
+                        </span>
+                        {username &&
+                          process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(
+                            ",",
+                          ).includes(username) && (
+                            <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
+                          )}
+                      </Link>
+                      <GroupBadge badge={user?.groupBadge} />
+                    </div>
                   )}
 
                   {!data.isAnonymous && (

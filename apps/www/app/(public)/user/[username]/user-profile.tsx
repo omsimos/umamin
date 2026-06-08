@@ -17,7 +17,6 @@ import {
   unblockUserAction,
   unfollowUserAction,
 } from "@/app/actions/user";
-import { EditProfileButton } from "@/components/edit-profile-button";
 import { Menu } from "@/components/menu";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
@@ -45,12 +44,12 @@ import type {
   UserProfileViewerResponse,
 } from "@/lib/query-types";
 import { getActionError } from "@/lib/utils";
-import type { PublicUser } from "@/types/user";
+import type { PublicUserWithBadge } from "@/types/user";
 import { ProfilePostList } from "./profile-post-list";
 
 type Props = {
   username: string;
-  initialUser: PublicUser;
+  initialUser: PublicUserWithBadge;
 };
 
 export function UserProfile({ username, initialUser }: Props) {
@@ -398,10 +397,7 @@ export function UserProfile({ username, initialUser }: Props) {
 
   return (
     <>
-      <UserCard
-        user={profile}
-        action={isSelf ? <EditProfileButton /> : undefined}
-      />
+      <UserCard user={profile} />
 
       {isSelf ? null : (
         <div className="flex gap-2 mt-6 w-full">

@@ -6,11 +6,16 @@ import type {
   CurrentUserResponse,
   FeedResponse,
   FollowListResponse,
+  GroupMembersResponse,
+  GroupPageData,
+  GroupRequestsResponse,
+  GroupViewerResponse,
   MessagesResponse,
   NotesResponse,
   NotificationBadgeResponse,
   NotificationsResponse,
   PostResponse,
+  UserGroupsResponse,
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "@/lib/query-types";
@@ -164,4 +169,34 @@ export async function fetchMessagesPage(
     : `/api/messages?type=${type}`;
 
   return fetchJson<MessagesResponse>(url);
+}
+
+export async function fetchUserGroups() {
+  return fetchJson<UserGroupsResponse>("/api/groups");
+}
+
+export async function fetchGroup(tagOrId: string) {
+  return fetchJson<GroupPageData | null>(`/api/groups/${tagOrId}`);
+}
+
+export async function fetchGroupViewer(tagOrId: string) {
+  return fetchJson<GroupViewerResponse>(`/api/groups/${tagOrId}/viewer`);
+}
+
+export async function fetchGroupMembersPage(
+  tagOrId: string,
+  cursor: string | null,
+) {
+  return fetchJson<GroupMembersResponse>(
+    appendCursor(`/api/groups/${tagOrId}/members`, cursor),
+  );
+}
+
+export async function fetchGroupRequestsPage(
+  tagOrId: string,
+  cursor: string | null,
+) {
+  return fetchJson<GroupRequestsResponse>(
+    appendCursor(`/api/groups/${tagOrId}/requests`, cursor),
+  );
 }

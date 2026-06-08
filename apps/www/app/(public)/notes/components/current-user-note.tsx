@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { clearNoteAction } from "@/app/actions/note";
+import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { PostBody } from "@/components/post-body";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
@@ -39,9 +40,13 @@ import {
   saveImage,
   shortTimeAgo,
 } from "@/lib/utils";
-import type { PublicUser } from "@/types/user";
+import type { PublicUserWithBadge } from "@/types/user";
 
-export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
+export function CurrentUserNote({
+  currentUser,
+}: {
+  currentUser: PublicUserWithBadge;
+}) {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<NoteItem | null>({
     ...pageQueryOptions(queryKeys.currentNote(), fetchCurrentNote),
@@ -199,6 +204,7 @@ export function CurrentUserNote({ currentUser }: { currentUser: PublicUser }) {
                     ).includes(currentUser.username) && (
                       <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
                     )}
+                    <GroupBadge badge={currentUser.groupBadge} />
                   </div>
 
                   <span className="text-muted-foreground truncate">

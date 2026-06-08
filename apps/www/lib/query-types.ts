@@ -1,9 +1,14 @@
+import type { GroupMemberRole } from "@umamin/db/schema/group";
 import type { SelectMessage } from "@umamin/db/schema/message";
 import type { SelectNote } from "@umamin/db/schema/note";
 import type { NotificationType } from "@umamin/db/schema/notification";
 import type { SelectAccount } from "@umamin/db/schema/user";
 import type { CommentData, FeedItem, PostData } from "@/types/post";
-import type { CurrentUserClient, PublicUser } from "@/types/user";
+import type {
+  CurrentUserClient,
+  PublicUser,
+  PublicUserWithBadge,
+} from "@/types/user";
 
 export type CursorPage<T> = {
   data: T[];
@@ -17,7 +22,7 @@ export type PostResponse = PostData | null;
 export type CommentsResponse = CursorPage<CommentData>;
 
 export type NoteItem = SelectNote & {
-  user?: PublicUser;
+  user?: PublicUserWithBadge;
   isReacted?: boolean;
 };
 
@@ -71,7 +76,7 @@ export type BlockedUser = PublicUser & {
 
 export type BlockedUsersResponse = CursorPage<BlockedUser>;
 
-export type FollowListUser = PublicUser & {
+export type FollowListUser = PublicUserWithBadge & {
   isFollowing: boolean;
 };
 
@@ -81,7 +86,63 @@ export type FollowListResponse = {
   viewerId: string | null;
 };
 
-export type UserProfileResponse = PublicUser | null;
+export type UserProfileResponse = PublicUserWithBadge | null;
+
+export type GroupPageData = {
+  id: string;
+  name: string;
+  description: string | null;
+  tag: string;
+  icon: string;
+  accent: string | null;
+  memberCount: number;
+  createdAt: Date;
+  // Accountability line ("Created by") — null if the account is mid-delete.
+  creator: { username: string; displayName: string | null } | null;
+};
+
+export type GroupMemberItem = {
+  id: string;
+  role: GroupMemberRole;
+  joinedAt: Date;
+  user: PublicUser;
+};
+
+export type GroupMembersResponse = CursorPage<GroupMemberItem>;
+
+export type UserGroupItem = {
+  group: {
+    id: string;
+    name: string;
+    tag: string;
+    icon: string;
+    accent: string | null;
+    memberCount: number;
+  };
+  role: GroupMemberRole;
+  joinedAt: Date;
+};
+
+export type UserGroupsResponse = {
+  data: UserGroupItem[];
+};
+
+// "owner"/"member" are active membership; "invited"/"requested" are pending.
+export type GroupRelationship = "owner" | "member" | "invited" | "requested";
+
+export type GroupViewerResponse = {
+  isAuthenticated: boolean;
+  // null = signed in but no relationship to the group.
+  relationship: GroupRelationship | null;
+};
+
+export type GroupRequestItem = {
+  id: string;
+  requestedAt: Date;
+  user: PublicUser;
+};
+
+export type GroupRequestsResponse = CursorPage<GroupRequestItem>;
 
 export type UserProfileViewerResponse = {
   currentUserId: string | null;

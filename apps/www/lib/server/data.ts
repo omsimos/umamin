@@ -1,6 +1,11 @@
 import "server-only";
 
 import { db } from "@umamin/db";
+import {
+  groupMemberTable,
+  groupPendingTable,
+  groupTable,
+} from "@umamin/db/schema/group";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import { notificationTable } from "@umamin/db/schema/notification";
@@ -27,6 +32,7 @@ import {
   desc,
   eq,
   exists,
+  gt,
   inArray,
   isNull,
   lt,
@@ -37,18 +43,28 @@ import {
 import { unionAll } from "drizzle-orm/sqlite-core";
 import { cacheLife, cacheTag } from "next/cache";
 import type { FeedSort } from "@/lib/feed-sort";
+import {
+  GROUP_TAG_LENGTH,
+  JOINED_GROUPS_CAP,
+  normalizeGroupTag,
+} from "@/lib/group";
 import type {
   BlockedUsersResponse,
   CommentsResponse,
   CurrentUserResponse,
   FeedResponse,
   FollowListResponse,
+  GroupMembersResponse,
+  GroupPageData,
+  GroupRelationship,
+  GroupRequestsResponse,
   MessagesResponse,
   NoteItem,
   NotesResponse,
   NotificationBadgeResponse,
   NotificationsResponse,
   PostResponse,
+  UserGroupsResponse,
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "@/lib/query-types";
@@ -59,6 +75,7 @@ import {
 } from "@/lib/server/feed-rank";
 import { diversifyHotCandidates, getHotScoreKey } from "@/lib/server/hot-score";
 import { countUnseen } from "@/lib/server/notifications";
+import type { GroupBadgeData } from "@/types/group";
 import type {
   CommentData,
   FeedItem,
@@ -66,7 +83,7 @@ import type {
   PollOptionData,
   QuotedPostData,
 } from "@/types/post";
-import type { CurrentUserClient, PublicUser } from "@/types/user";
+import type { CurrentUserClient, PublicUserWithBadge } from "@/types/user";
 
 const PUBLIC_REVALIDATE_SECONDS = 120;
 const PRIVATE_REVALIDATE_SECONDS = 30;
@@ -77,6 +94,7 @@ const HOT_FEED_CANDIDATE_SIZE = 100;
 const COMMENTS_PAGE_SIZE = 20;
 const MESSAGES_PAGE_SIZE = 20;
 const FOLLOW_LIST_PAGE_SIZE = 20;
+const GROUP_MEMBERS_PAGE_SIZE = 20;
 const NOTIFICATIONS_PAGE_SIZE = 20;
 // The badge displays "9+" past nine — scanning further buys nothing.
 const NOTIFICATION_BADGE_LIMIT = 10;
@@ -118,11 +136,61 @@ const publicUserColumns = {
   quietMode: userTable.quietMode,
   question: userTable.question,
   pinnedPostId: userTable.pinnedPostId,
+  equippedGroupId: userTable.equippedGroupId,
   followerCount: userTable.followerCount,
   followingCount: userTable.followingCount,
   createdAt: userTable.createdAt,
   updatedAt: userTable.updatedAt,
 };
+
+/**
+ * Resolves the equipped group badges for a page of already-fetched users: one
+ * bounded inArray on the group PK, only when someone on the page wears a
+ * badge (usually far fewer distinct groups than authors). Runs INSIDE the
+ * callers' "use cache" boundaries so the badge ships in the cached payload —
+ * never a join on the feed union, never per-row lookups.
+ */
+async function getGroupBadgeMap(
+  users: { equippedGroupId: string | null }[],
+): Promise<Map<string, GroupBadgeData>> {
+  const ids = Array.from(
+    new Set(
+      users.flatMap((user) =>
+        user.equippedGroupId ? [user.equippedGroupId] : [],
+      ),
+    ),
+  );
+
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const groups = await db
+    .select({
+      id: groupTable.id,
+      tag: groupTable.tag,
+      icon: groupTable.icon,
+      accent: groupTable.accent,
+    })
+    .from(groupTable)
+    .where(inArray(groupTable.id, ids));
+
+  return new Map(groups.map((group) => [group.id, group] as const));
+}
+
+// A dangling equippedGroupId (deleted group — soft ref) resolves to null and
+// renders no badge, the same husk degradation as quoted posts.
+function withGroupBadge<U extends { equippedGroupId: string | null }>(
+  user: U,
+  badgeMap: Map<string, GroupBadgeData>,
+): U & { groupBadge: GroupBadgeData | null } {
+  return {
+    ...user,
+    groupBadge: user.equippedGroupId
+      ? (badgeMap.get(user.equippedGroupId) ?? null)
+      : null,
+  };
+}
 
 /**
  * Resolves the quoted posts embedded in a page of posts: one bounded inArray
@@ -488,13 +556,16 @@ async function getPublicLatestPostsPage(
       : [],
   ]);
 
-  const [quotedMap, pollMap] = await Promise.all([
+  const [quotedMap, pollMap, badgeMap] = await Promise.all([
     getQuotedPostMap(posts),
     getPollOptionsMap(posts),
+    getGroupBadgeMap(users),
   ]);
 
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
-  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const userMap = new Map(
+    users.map((user) => [user.id, withGroupBadge(user, badgeMap)] as const),
+  );
   const data: FeedItem[] = pageRows.flatMap<FeedItem>((edge) => {
     const post = postMap.get(edge.postId);
     const author = userMap.get(edge.authorId);
@@ -570,13 +641,16 @@ async function getRedisHotPostsPage(
           .where(inArray(userTable.id, authorIds))
       : [];
 
-  const [quotedMap, pollMap] = await Promise.all([
+  const [quotedMap, pollMap, badgeMap] = await Promise.all([
     getQuotedPostMap(posts),
     getPollOptionsMap(posts),
+    getGroupBadgeMap(users),
   ]);
 
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
-  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const userMap = new Map(
+    users.map((user) => [user.id, withGroupBadge(user, badgeMap)] as const),
+  );
   // scoreKeys recomputed from the hydrated counters (no extra Redis reads);
   // they can drift from a stale zset float only within this page, which at
   // worst nudges the same-author spacing below.
@@ -655,12 +729,15 @@ async function getCachedPublicHotPostsPage(
           .where(inArray(userTable.id, authorIds))
       : [];
 
-  const [quotedMap, pollMap] = await Promise.all([
+  const [quotedMap, pollMap, badgeMap] = await Promise.all([
     getQuotedPostMap(pageRows.map((candidate) => candidate.post)),
     getPollOptionsMap(pageRows.map((candidate) => candidate.post)),
+    getGroupBadgeMap(users),
   ]);
 
-  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const userMap = new Map(
+    users.map((user) => [user.id, withGroupBadge(user, badgeMap)] as const),
+  );
   const data: FeedItem[] = pageRows.flatMap<FeedItem>(({ post }) => {
     const author = userMap.get(post.authorId);
 
@@ -833,13 +910,16 @@ async function getFollowingPostsPage(
       : [],
   ]);
 
-  const [quotedMap, pollMap] = await Promise.all([
+  const [quotedMap, pollMap, badgeMap] = await Promise.all([
     getQuotedPostMap(posts),
     getPollOptionsMap(posts),
+    getGroupBadgeMap(users),
   ]);
 
   const postMap = new Map(posts.map((post) => [post.id, post] as const));
-  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const userMap = new Map(
+    users.map((user) => [user.id, withGroupBadge(user, badgeMap)] as const),
+  );
   const data: FeedItem[] = pageRows.flatMap<FeedItem>((edge) => {
     const post = postMap.get(edge.postId);
     const author = userMap.get(edge.authorId);
@@ -1155,9 +1235,13 @@ async function getPublicUserPostsPage(
     ...(pinnedRow ? [pinnedRow.post] : []),
     ...rows.map((row) => row.post),
   ];
-  const [quotedMap, pollMap] = await Promise.all([
+  const [quotedMap, pollMap, badgeMap] = await Promise.all([
     getQuotedPostMap(pagePosts),
     getPollOptionsMap(pagePosts),
+    getGroupBadgeMap([
+      ...rows.map((row) => row.author),
+      ...(pinnedRow ? [pinnedRow.author] : []),
+    ]),
   ]);
 
   const toFeedItem = (
@@ -1167,7 +1251,7 @@ async function getPublicUserPostsPage(
     type: "post" as const,
     post: {
       ...row.post,
-      author: row.author,
+      author: withGroupBadge(row.author, badgeMap),
       quotedPost: resolveQuotedPost(row.post, quotedMap),
       poll: resolvePoll(row.post, pollMap),
       isLiked: false,
@@ -1250,14 +1334,15 @@ async function getPublicPost(postId: string): Promise<PostResponse> {
     return null;
   }
 
-  const [quotedMap, pollMap] = await Promise.all([
+  const [quotedMap, pollMap, badgeMap] = await Promise.all([
     getQuotedPostMap([row.post]),
     getPollOptionsMap([row.post]),
+    getGroupBadgeMap([row.author]),
   ]);
 
   return {
     ...row.post,
-    author: row.author,
+    author: withGroupBadge(row.author, badgeMap),
     quotedPost: resolveQuotedPost(row.post, quotedMap),
     poll: resolvePoll(row.post, pollMap),
     isLiked: false,
@@ -1422,6 +1507,10 @@ async function getPublicCommentsPage(
     .orderBy(desc(postCommentTable.createdAt), desc(postCommentTable.id))
     .limit(COMMENTS_PAGE_SIZE + 1);
 
+  const badgeMap = await getGroupBadgeMap(
+    rows.flatMap((row) => (row.author ? [row.author] : [])),
+  );
+
   const data: CommentData[] = rows.flatMap(({ comment, author }) => {
     if (!author) {
       return [];
@@ -1430,7 +1519,7 @@ async function getPublicCommentsPage(
     return [
       {
         ...comment,
-        author,
+        author: withGroupBadge(author, badgeMap),
         isLiked: false,
       },
     ];
@@ -1593,12 +1682,19 @@ async function getPublicNotesPage(
     ? baseQuery.where(cursorCondition)
     : baseQuery);
 
+  // Anonymous notes never resolve a badge — identity stays suppressed.
+  const badgeMap = await getGroupBadgeMap(
+    rows.flatMap((row) =>
+      !row.note.isAnonymous && row.user ? [row.user] : [],
+    ),
+  );
+
   const data = rows.map(({ note, user }) =>
     note.isAnonymous
       ? ({ ...note } as NoteItem)
       : ({
           ...note,
-          user: user ?? undefined,
+          user: user ? withGroupBadge(user, badgeMap) : undefined,
         } as NoteItem),
   );
 
@@ -1747,7 +1843,17 @@ export async function getCurrentUserData(
       .where(eq(userTable.id, userId))
       .limit(1);
 
-    return userRecord;
+    if (!userRecord) {
+      return userRecord;
+    }
+
+    // Resolve the equipped badge from its own (cached) group row so the
+    // viewer's own surfaces (notes card, inbox card, composer) show it.
+    const groupBadge = userRecord.equippedGroupId
+      ? await getGroupBadge(userRecord.equippedGroupId)
+      : null;
+
+    return { ...userRecord, groupBadge };
   };
 
   const getAccounts = async () => {
@@ -1798,6 +1904,7 @@ export async function getPublicUserProfileData(
       question: userTable.question,
       quietMode: userTable.quietMode,
       pinnedPostId: userTable.pinnedPostId,
+      equippedGroupId: userTable.equippedGroupId,
       followerCount: userTable.followerCount,
       followingCount: userTable.followingCount,
       createdAt: userTable.createdAt,
@@ -1808,6 +1915,27 @@ export async function getPublicUserProfileData(
     .limit(1);
 
   return user ?? null;
+}
+
+/**
+ * Profile + resolved badge. The 7-day profile cache stores only the
+ * equippedGroupId pointer; the badge text/icon comes from the group's own
+ * 120s `group:{id}`-tagged entry, so a group edit/delete refreshes profiles
+ * without touching the long-lived profile cache.
+ */
+export async function getPublicUserProfileWithBadge(
+  username: string,
+): Promise<UserProfileResponse> {
+  const profile = await getPublicUserProfileData(username);
+
+  if (!profile?.equippedGroupId) {
+    return profile;
+  }
+
+  return {
+    ...profile,
+    groupBadge: await getGroupBadge(profile.equippedGroupId),
+  };
 }
 
 async function getUserProfileViewerOverlay(
@@ -1929,7 +2057,7 @@ async function getPublicFollowListPage(
   userId: string,
   cursor: string | null,
   direction: FollowDirection,
-): Promise<{ users: PublicUser[]; nextCursor: string | null }> {
+): Promise<{ users: PublicUserWithBadge[]; nextCursor: string | null }> {
   "use cache";
   cacheTag(
     direction === "followers"
@@ -1987,9 +2115,15 @@ async function getPublicFollowListPage(
           .where(inArray(userTable.id, listedIds))
       : [];
 
+  // Equipped badges for the page — one bounded inArray on the group PK,
+  // baked into this cached page (same pattern as the feed author batch).
+  const badgeMap = await getGroupBadgeMap(users);
+
   // Preserve the follow-edge order (newest first); a missing user row (e.g. a
   // mid-flight delete) just drops out.
-  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const userMap = new Map(
+    users.map((user) => [user.id, withGroupBadge(user, badgeMap)] as const),
+  );
   const orderedUsers = pageRows.flatMap((row) => {
     const user = userMap.get(row.listedUserId);
     return user ? [user] : [];
@@ -2433,6 +2567,287 @@ export async function getNotificationsPage(params: {
     nextCursor:
       hasMore && lastRow
         ? `${lastRow.updatedAt.getTime()}.${lastRow.id}`
+        : null,
+  };
+}
+
+/**
+ * Badge data for a single group, cached under its own tag so a group edit or
+ * delete refreshes it instantly (updateTag) — for surfaces whose own cache
+ * outlives the group, like the 7-day profile page that only stores the
+ * equippedGroupId pointer.
+ */
+export async function getGroupBadge(
+  groupId: string,
+): Promise<GroupBadgeData | null> {
+  "use cache";
+  cacheTag(`group:${groupId}`);
+  cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
+
+  const [group] = await db
+    .select({
+      id: groupTable.id,
+      tag: groupTable.tag,
+      icon: groupTable.icon,
+      accent: groupTable.accent,
+    })
+    .from(groupTable)
+    .where(eq(groupTable.id, groupId))
+    .limit(1);
+
+  return group ?? null;
+}
+
+/**
+ * Public group page meta (name/description/tag/icon/memberCount/creator) —
+ * the roster stays members-only. Resolves a 4-char param as a (folded) tag
+ * and anything longer as a group id (21-char nanoid) so notifications can
+ * deep-link by id; tags are immutable, so the param→group mapping never
+ * goes stale.
+ */
+export async function getGroupPageData(
+  tagOrId: string,
+): Promise<GroupPageData | null> {
+  "use cache";
+  cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
+
+  const condition =
+    tagOrId.length === GROUP_TAG_LENGTH
+      ? eq(groupTable.tagNorm, normalizeGroupTag(tagOrId))
+      : eq(groupTable.id, tagOrId);
+
+  const [row] = await db
+    .select({
+      id: groupTable.id,
+      name: groupTable.name,
+      description: groupTable.description,
+      tag: groupTable.tag,
+      icon: groupTable.icon,
+      accent: groupTable.accent,
+      memberCount: groupTable.memberCount,
+      createdAt: groupTable.createdAt,
+      creatorUsername: userTable.username,
+      creatorDisplayName: userTable.displayName,
+    })
+    .from(groupTable)
+    .leftJoin(userTable, eq(groupTable.creatorId, userTable.id))
+    .where(condition)
+    .limit(1);
+
+  if (!row) {
+    return null;
+  }
+
+  // Tagged with the resolved id so tag-keyed and id-keyed entries for the
+  // same group invalidate together.
+  cacheTag(`group:${row.id}`);
+
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    tag: row.tag,
+    icon: row.icon,
+    accent: row.accent,
+    memberCount: row.memberCount,
+    createdAt: row.createdAt,
+    creator: row.creatorUsername
+      ? { username: row.creatorUsername, displayName: row.creatorDisplayName }
+      : null,
+  };
+}
+
+/**
+ * Roster page in founding order (the owner's row is the oldest). The payload
+ * is viewer-independent and cached per group — the members-only gate is the
+ * calling route's job, checked before this is returned.
+ */
+export async function getGroupMembersPage(
+  groupId: string,
+  cursor: string | null,
+): Promise<GroupMembersResponse> {
+  "use cache";
+  cacheTag(`group-members:${groupId}`);
+  cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
+
+  const parsedCursor = parseCursor(cursor);
+  // Ascending keyset on group_member_group_created_idx — never a full-roster
+  // scan.
+  const cursorCondition = parsedCursor
+    ? or(
+        gt(groupMemberTable.createdAt, parsedCursor.cursorDate),
+        and(
+          eq(groupMemberTable.createdAt, parsedCursor.cursorDate),
+          gt(groupMemberTable.id, parsedCursor.cursorId),
+        ),
+      )
+    : undefined;
+
+  const baseCondition = eq(groupMemberTable.groupId, groupId);
+
+  const rows = await db
+    .select({
+      id: groupMemberTable.id,
+      role: groupMemberTable.role,
+      joinedAt: groupMemberTable.createdAt,
+      user: publicUserColumns,
+    })
+    .from(groupMemberTable)
+    .innerJoin(userTable, eq(groupMemberTable.userId, userTable.id))
+    .where(
+      cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
+    )
+    .orderBy(asc(groupMemberTable.createdAt), asc(groupMemberTable.id))
+    .limit(GROUP_MEMBERS_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(rows, GROUP_MEMBERS_PAGE_SIZE);
+  const lastRow = pageRows[pageRows.length - 1];
+
+  return {
+    data: pageRows,
+    nextCursor:
+      hasMore && lastRow ? `${lastRow.joinedAt.getTime()}.${lastRow.id}` : null,
+  };
+}
+
+/**
+ * The viewer's active memberships for the /groups hub + equip picker, bounded
+ * by the joined-groups cap. Private per-user payload (no-store route).
+ */
+export async function getUserGroups(
+  userId: string,
+): Promise<UserGroupsResponse> {
+  "use cache";
+  cacheTag(`user-groups:${userId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  const rows = await db
+    .select({
+      role: groupMemberTable.role,
+      joinedAt: groupMemberTable.createdAt,
+      group: {
+        id: groupTable.id,
+        name: groupTable.name,
+        tag: groupTable.tag,
+        icon: groupTable.icon,
+        accent: groupTable.accent,
+        memberCount: groupTable.memberCount,
+      },
+    })
+    .from(groupMemberTable)
+    .innerJoin(groupTable, eq(groupMemberTable.groupId, groupTable.id))
+    .where(eq(groupMemberTable.userId, userId))
+    .orderBy(asc(groupMemberTable.createdAt))
+    .limit(JOINED_GROUPS_CAP);
+
+  return {
+    data: rows.map((row) => ({
+      group: row.group,
+      role: row.role,
+      joinedAt: row.joinedAt,
+    })),
+  };
+}
+
+/**
+ * The viewer's relationship to a group — drives the page's CTA (join request
+ * vs accept-invite vs owner controls) and the members-only roster gate.
+ * "owner"/"member" come from group_member; "invited"/"requested" from
+ * group_pending. Tagged on the viewer's user-groups (membership + pending
+ * changes invalidate it) and the roster.
+ */
+export async function getGroupViewerRelationship(
+  viewerId: string,
+  groupId: string,
+): Promise<GroupRelationship | null> {
+  "use cache";
+  cacheTag(`user-groups:${viewerId}`);
+  cacheTag(`group-members:${groupId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  const [membership, pending] = await Promise.all([
+    db
+      .select({ role: groupMemberTable.role })
+      .from(groupMemberTable)
+      .where(
+        and(
+          eq(groupMemberTable.groupId, groupId),
+          eq(groupMemberTable.userId, viewerId),
+        ),
+      )
+      .limit(1),
+    db
+      .select({ kind: groupPendingTable.kind })
+      .from(groupPendingTable)
+      .where(
+        and(
+          eq(groupPendingTable.groupId, groupId),
+          eq(groupPendingTable.userId, viewerId),
+        ),
+      )
+      .limit(1),
+  ]);
+
+  if (membership[0]) {
+    return membership[0].role;
+  }
+  if (pending[0]) {
+    return pending[0].kind === "invite" ? "invited" : "requested";
+  }
+  return null;
+}
+
+/**
+ * The creator's pending join-requests (kind="request" only — invites are
+ * outbound and don't await the creator). Keyset-paginated on
+ * group_pending_group_created_idx; the calling route enforces creator-only.
+ */
+export async function getGroupPendingRequestsPage(
+  groupId: string,
+  cursor: string | null,
+): Promise<GroupRequestsResponse> {
+  "use cache";
+  cacheTag(`group-requests:${groupId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  const parsedCursor = parseCursor(cursor);
+  const cursorCondition = parsedCursor
+    ? or(
+        gt(groupPendingTable.createdAt, parsedCursor.cursorDate),
+        and(
+          eq(groupPendingTable.createdAt, parsedCursor.cursorDate),
+          gt(groupPendingTable.id, parsedCursor.cursorId),
+        ),
+      )
+    : undefined;
+
+  const baseCondition = and(
+    eq(groupPendingTable.groupId, groupId),
+    eq(groupPendingTable.kind, "request"),
+  );
+
+  const rows = await db
+    .select({
+      id: groupPendingTable.id,
+      requestedAt: groupPendingTable.createdAt,
+      user: publicUserColumns,
+    })
+    .from(groupPendingTable)
+    .innerJoin(userTable, eq(groupPendingTable.userId, userTable.id))
+    .where(
+      cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
+    )
+    .orderBy(asc(groupPendingTable.createdAt), asc(groupPendingTable.id))
+    .limit(GROUP_MEMBERS_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(rows, GROUP_MEMBERS_PAGE_SIZE);
+  const lastRow = pageRows[pageRows.length - 1];
+
+  return {
+    data: pageRows,
+    nextCursor:
+      hasMore && lastRow
+        ? `${lastRow.requestedAt.getTime()}.${lastRow.id}`
         : null,
   };
 }

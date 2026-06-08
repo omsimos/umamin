@@ -15,22 +15,15 @@ import {
   MoonIcon,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import type { ReactNode } from "react";
 import { hasUmaminPlus } from "@/lib/utils";
-import type { PublicUser } from "@/types/user";
+import type { PublicUserWithBadge } from "@/types/user";
 import { FollowListDrawer } from "./follow-list-drawer";
+import { GroupBadge } from "./group-badge";
 import { ShareButton } from "./share-button";
 
 const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
 
-export function UserCard({
-  user,
-  // Optional top-right header slot (e.g. Edit profile on your own card).
-  action,
-}: {
-  user: PublicUser;
-  action?: ReactNode;
-}) {
+export function UserCard({ user }: { user: PublicUserWithBadge }) {
   return (
     <div>
       <section className="flex gap-4">
@@ -58,16 +51,13 @@ export function UserCard({
               {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
                 user.username,
               ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+              <GroupBadge badge={user.groupBadge} />
             </div>
 
             <ShareButton username={user.username} />
           </div>
           <p className="text-muted-foreground text-sm">@{user.username}</p>
         </div>
-
-        {action ? (
-          <div className="ml-auto shrink-0 self-start">{action}</div>
-        ) : null}
       </section>
 
       <section className="mt-4">

@@ -4,7 +4,10 @@ import { notFound } from "next/navigation";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { getQueryClient } from "@/lib/get-query-client";
 import { queryKeys } from "@/lib/query";
-import { getPublicUserProfileData } from "@/lib/server/data";
+import {
+  getPublicUserProfileData,
+  getPublicUserProfileWithBadge,
+} from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
 import { UserProfile } from "./user-profile";
 
@@ -64,7 +67,7 @@ export default async function Page({
 }) {
   const { username } = await params;
   const formattedUsername = formatUsername(username);
-  const user = await getPublicUserProfileData(formattedUsername);
+  const user = await getPublicUserProfileWithBadge(formattedUsername);
 
   if (!user) {
     notFound();

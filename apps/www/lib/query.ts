@@ -32,6 +32,11 @@ export const queryKeys = {
   sentMessages: () => ["sent_messages"] as const,
   notifications: () => ["notifications"] as const,
   notificationBadge: () => ["notification_badge"] as const,
+  userGroups: () => ["user_groups"] as const,
+  group: (tagOrId: string) => ["group", tagOrId] as const,
+  groupMembers: (tagOrId: string) => ["group-members", tagOrId] as const,
+  groupRequests: (tagOrId: string) => ["group-requests", tagOrId] as const,
+  groupViewer: (tagOrId: string) => ["group-viewer", tagOrId] as const,
 };
 
 export const infiniteQueryDefaults = {
