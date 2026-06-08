@@ -35,7 +35,7 @@ const FREE_PERKS: Perk[] = [
   {
     icon: MailIcon,
     title: "Anonymous inbox",
-    detail: "Receive end-to-end encrypted anonymous messages.",
+    detail: "Receive anonymous messages, encrypted at rest.",
   },
   {
     icon: MessagesSquareIcon,
