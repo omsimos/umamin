@@ -33,6 +33,7 @@ import {
   removeRepostAction,
 } from "@/app/actions/post";
 import { ComposeDialog } from "@/components/compose-dialog";
+import { GroupBadge } from "@/components/group-badge";
 import { PollCard } from "@/components/poll-card";
 import { PostBody } from "@/components/post-body";
 import { PostImages } from "@/components/post-images";
@@ -254,6 +255,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
               process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
                 author.username,
               ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+            <GroupBadge badge={author.groupBadge} />
             <span className="text-muted-foreground">@{author.username}</span>
           </div>
 

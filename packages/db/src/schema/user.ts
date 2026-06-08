@@ -9,41 +9,58 @@ import {
 import { nanoid } from "nanoid";
 import { messageTable } from "./message";
 
-export const userTable = sqliteTable("user", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => nanoid()),
-  displayName: text("display_name"),
-  username: text("username").notNull().unique(),
-  passwordHash: text("password_hash"),
-  bio: text("bio"),
-  imageUrl: text("image_url"),
-  quietMode: integer("quiet_mode", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  question: text("question").notNull().default("Send me an anonymous message!"),
-  // Owner-private message filter; must never ride a public payload — kept out
-  // of publicUserColumns and stripped from PublicUser (see apps/www toPublicUser).
-  blockedWords: text("blocked_words", { mode: "json" }).$type<string[]>(),
-  // Pinned profile post: soft reference, no FK — an FK to postTable would
-  // create a circular schema import (post.ts already references userTable).
-  // deletePostAction clears it; a dangling id just renders no pin.
-  pinnedPostId: text("pinned_post_id"),
-  followerCount: integer("follower_count").notNull().default(0),
-  followingCount: integer("following_count").notNull().default(0),
-  // Watermark for the notification badge: unread = notification rows with
-  // updatedAt past this. Mark-all-seen is one user-row write instead of
-  // flipping a read flag on N notification rows.
-  lastSeenNotificationsAt: integer("last_seen_notifications_at", {
-    mode: "timestamp",
-  }),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
-    () => new Date(),
-  ),
-});
+export const userTable = sqliteTable(
+  "user",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    displayName: text("display_name"),
+    username: text("username").notNull().unique(),
+    passwordHash: text("password_hash"),
+    bio: text("bio"),
+    imageUrl: text("image_url"),
+    quietMode: integer("quiet_mode", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    question: text("question")
+      .notNull()
+      .default("Send me an anonymous message!"),
+    // Owner-private message filter; must never ride a public payload — kept out
+    // of publicUserColumns and stripped from PublicUser (see apps/www toPublicUser).
+    blockedWords: text("blocked_words", { mode: "json" }).$type<string[]>(),
+    // Pinned profile post: soft reference, no FK — an FK to postTable would
+    // create a circular schema import (post.ts already references userTable).
+    // deletePostAction clears it; a dangling id just renders no pin.
+    pinnedPostId: text("pinned_post_id"),
+    // Equipped group badge: soft reference, no FK (group.ts already references
+    // userTable). Cleared in the same transaction as leave/kick/group-delete;
+    // a dangling id just renders no badge.
+    equippedGroupId: text("equipped_group_id"),
+    followerCount: integer("follower_count").notNull().default(0),
+    followingCount: integer("following_count").notNull().default(0),
+    // Watermark for the notification badge: unread = notification rows with
+    // updatedAt past this. Mark-all-seen is one user-row write instead of
+    // flipping a read flag on N notification rows.
+    lastSeenNotificationsAt: integer("last_seen_notifications_at", {
+      mode: "timestamp",
+    }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
+      () => new Date(),
+    ),
+  },
+  // Group delete + account delete null this soft ref for every wearer; a
+  // partial index keeps that sweep on the handful of badge-wearers instead of
+  // scanning the whole user table (Turso bills per row scanned).
+  (t) => [
+    index("user_equipped_group_idx")
+      .on(t.equippedGroupId)
+      .where(sql`${t.equippedGroupId} IS NOT NULL`),
+  ],
+);
 
 export const sessionTable = sqliteTable(
   "session",

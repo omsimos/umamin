@@ -6,11 +6,16 @@ import type {
   CurrentUserResponse,
   FeedResponse,
   FollowListResponse,
+  GroupMembersResponse,
+  GroupPageData,
+  GroupRequestsResponse,
+  GroupViewerResponse,
   MessagesResponse,
   NotesResponse,
   NotificationBadgeResponse,
   NotificationsResponse,
   PostResponse,
+  UserGroupsResponse,
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "@/lib/query-types";
@@ -164,4 +169,65 @@ export async function fetchMessagesPage(
     : `/api/messages?type=${type}`;
 
   return fetchJson<MessagesResponse>(url);
+}
+
+export async function fetchUserGroups() {
+  return fetchJson<UserGroupsResponse>("/api/groups");
+}
+
+export async function fetchGroup(tagOrId: string) {
+  const response = await fetch(`/api/groups/${tagOrId}`, {
+    credentials: "include",
+  });
+
+  // A group deleted mid-view 404s — resolve to null so the page renders its
+  // husk instead of throwing an unhandled query error.
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for /api/groups/${tagOrId}`);
+  }
+
+  return (await response.json()) as GroupPageData | null;
+}
+
+export async function fetchGroupViewer(tagOrId: string) {
+  return fetchJson<GroupViewerResponse>(`/api/groups/${tagOrId}/viewer`);
+}
+
+export async function fetchGroupMembersPage(
+  tagOrId: string,
+  cursor: string | null,
+): Promise<GroupMembersResponse> {
+  const url = appendCursor(`/api/groups/${tagOrId}/members`, cursor);
+  const response = await fetch(url, { credentials: "include" });
+
+  // 403 (relationship went stale — kicked/left) or 404 (group gone) degrade
+  // to an empty roster rather than an unhandled error.
+  if (response.status === 403 || response.status === 404) {
+    return { data: [], nextCursor: null };
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}`);
+  }
+
+  return (await response.json()) as GroupMembersResponse;
+}
+
+export async function fetchGroupRequestsPage(
+  tagOrId: string,
+  cursor: string | null,
+): Promise<GroupRequestsResponse> {
+  const url = appendCursor(`/api/groups/${tagOrId}/requests`, cursor);
+  const response = await fetch(url, { credentials: "include" });
+
+  if (response.status === 403 || response.status === 404) {
+    return { data: [], nextCursor: null };
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}`);
+  }
+
+  return (await response.json()) as GroupRequestsResponse;
 }

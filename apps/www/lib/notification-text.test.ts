@@ -61,4 +61,13 @@ describe("formatNotificationText", () => {
       "Someone replied to your message",
     );
   });
+
+  it("aggregates group joins", () => {
+    expect(formatNotificationText("group_join", 1, "Alice")).toBe(
+      "Alice joined your group",
+    );
+    expect(formatNotificationText("group_join", 4, "Alice")).toBe(
+      "Alice and 3 others joined your group",
+    );
+  });
 });

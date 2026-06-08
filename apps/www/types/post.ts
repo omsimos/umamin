@@ -3,7 +3,7 @@ import type {
   SelectPost,
   SelectPostComment,
 } from "@umamin/db/schema/post";
-import type { PublicUser } from "./user";
+import type { PublicUser, PublicUserWithBadge } from "./user";
 
 export type PostImageDisplay = PostImage & {
   // Local object URL carried by the optimistic post so the just-attached
@@ -43,7 +43,7 @@ export type PostData = Omit<SelectPost, "images"> & {
   quotedPost?: QuotedPostData | null;
   // Set when pollEndsAt is set; null only if the option rows are missing.
   poll?: PollData | null;
-  author: PublicUser;
+  author: PublicUserWithBadge;
   comments?: SelectPostComment[];
   isLiked?: boolean;
   isReposted?: boolean;
@@ -66,7 +66,7 @@ export function toQuotedPostData(post: PostData): QuotedPostData {
 }
 
 export type CommentData = SelectPostComment & {
-  author: PublicUser;
+  author: PublicUserWithBadge;
   isLiked?: boolean;
 };
 
@@ -74,7 +74,7 @@ export type RepostData = {
   id: string;
   postId: string;
   createdAt: Date;
-  user: PublicUser;
+  user: PublicUserWithBadge;
 };
 
 export type FeedItem =

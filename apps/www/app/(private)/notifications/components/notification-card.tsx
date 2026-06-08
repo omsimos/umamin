@@ -25,6 +25,12 @@ function notificationHref(notification: NotificationItem): string | null {
       return "/inbox";
     case "reply":
       return "/inbox?tab=sent";
+    case "group_join":
+    case "group_invite":
+    case "group_request":
+    case "group_accept":
+      // targetId is the group id — the group page resolves tag-or-id.
+      return `/groups/${notification.targetId}`;
     default:
       return null;
   }

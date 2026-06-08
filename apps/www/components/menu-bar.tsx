@@ -4,11 +4,12 @@ import {
   LogInIcon,
   MessagesSquareIcon,
   ScrollTextIcon,
-  UserCogIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { ChatPromo } from "./chat-promo";
+import { MenubarLink } from "./menubar-link";
+import { NavNotifications } from "./nav-notifications";
 
 export async function Menubar() {
   const { user, session } = await getSession();
@@ -17,33 +18,31 @@ export async function Menubar() {
     <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto flex max-w-screen-sm items-center justify-center gap-3 bg-bg bg-opacity-40 bg-clip-padding p-2 text-3xl backdrop-blur-xl backdrop-filter sm:px-10 lg:bottom-auto lg:top-0 lg:z-50 lg:bg-transparent lg:px-14 lg:text-[1.75rem] lg:backdrop-blur-none [&>*:hover]:bg-muted *:flex *:w-full *:justify-center *:rounded-lg *:py-5 *:text-center *:text-muted-foreground *:transition-colors *:duration-300">
       <ChatPromo />
 
-      <Link href="/notes" title="Notes">
+      <MenubarLink href="/notes" title="Notes">
         <ScrollTextIcon className="h-6 w-6" />
-      </Link>
+      </MenubarLink>
 
       {user?.username ? (
         // Lands on the profile's Posts tab; Received/Sent are one tap away.
-        <Link
+        <MenubarLink
           href={`/user/${user.username}`}
-          aria-label="Your profile"
+          ariaLabel="Your profile"
           title="Profile"
         >
           <CircleUserRoundIcon className="h-6 w-6" />
-        </Link>
+        </MenubarLink>
       ) : (
         <Link href="/login" aria-label="Login" title="Login">
           <LayoutDashboardIcon />
         </Link>
       )}
 
-      <Link href="/feed" title="Social">
+      <MenubarLink href="/feed" title="Social">
         <MessagesSquareIcon className="h-6 w-6" />
-      </Link>
+      </MenubarLink>
 
       {session ? (
-        <Link href="/settings" title="Settings">
-          <UserCogIcon className="w-6 h-6" />
-        </Link>
+        <NavNotifications />
       ) : (
         <Link href="/login" title="Login">
           <LogInIcon className="h-6 w-6" />

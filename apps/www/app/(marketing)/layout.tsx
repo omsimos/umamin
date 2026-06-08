@@ -1,10 +1,9 @@
 import { Suspense } from "react";
+import { LandingNavbar } from "@/components/landing/landing-navbar";
 import { SiteFooter } from "@/components/landing/site-footer";
-import { Navbar } from "@/components/navbar";
-import { PublicMenubar } from "@/components/public-menu-bar";
 
-// Same shell as (public) but without its pt-24 wrapper, so the landing's
-// backgrounds can run underneath the fixed navbar.
+// Marketing shell: its own navbar + footer, no in-app chrome (no bottom
+// menubar). Backgrounds run underneath the fixed navbar (no pt-24 wrapper).
 export default function MarketingLayout({
   children,
 }: {
@@ -13,10 +12,7 @@ export default function MarketingLayout({
   return (
     <>
       <Suspense fallback={null}>
-        <Navbar />
-      </Suspense>
-      <Suspense fallback={null}>
-        <PublicMenubar />
+        <LandingNavbar />
       </Suspense>
       {children}
       <SiteFooter />
