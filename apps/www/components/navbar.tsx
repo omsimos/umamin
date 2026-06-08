@@ -28,6 +28,7 @@ export function Navbar() {
     pathname === "/inbox" ||
     pathname === "/notifications" ||
     pathname === "/settings" ||
+    pathname === "/tiers" ||
     pathname.startsWith("/groups") ||
     pathname.startsWith("/user/");
 
