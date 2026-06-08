@@ -29,6 +29,10 @@ export const userTable = sqliteTable("user", {
   // create a circular schema import (post.ts already references userTable).
   // deletePostAction clears it; a dangling id just renders no pin.
   pinnedPostId: text("pinned_post_id"),
+  // Equipped group badge: soft reference, no FK (group.ts already references
+  // userTable). Cleared in the same transaction as leave/kick/group-delete;
+  // a dangling id just renders no badge.
+  equippedGroupId: text("equipped_group_id"),
   followerCount: integer("follower_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
   // Watermark for the notification badge: unread = notification rows with
