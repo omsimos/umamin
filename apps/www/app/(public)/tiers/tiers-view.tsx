@@ -11,7 +11,6 @@ import {
 import {
   BanIcon,
   BarChart3Icon,
-  CircleFadingPlusIcon,
   HeartIcon,
   ImagePlusIcon,
   type LucideIcon,
@@ -126,8 +125,7 @@ export function TiersView() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col items-center gap-1 text-center">
-        <CircleFadingPlusIcon className="size-10" />
+      <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Umamin Plus</h1>
         <p className="text-sm text-muted-foreground">
           More ways to express yourself, anonymously.
