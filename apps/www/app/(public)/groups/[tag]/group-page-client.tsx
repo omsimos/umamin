@@ -607,6 +607,18 @@ export function GroupPageClient({
       {isMember && (
         <section className="space-y-2">
           <h2 className="text-sm font-medium text-muted-foreground">Members</h2>
+
+          {members.isLoading ? (
+            <p className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+              <Loader2Icon className="size-4 animate-spin" />
+              Loading members…
+            </p>
+          ) : memberRows.length === 0 ? (
+            <p className="py-3 text-sm text-muted-foreground">
+              Couldn't load members right now.
+            </p>
+          ) : null}
+
           <ul className="divide-y">
             {memberRows.map((member) => (
               <li key={member.id} className="flex items-center gap-3 py-3">
@@ -665,40 +677,45 @@ export function GroupPageClient({
         </section>
       )}
 
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Invite a member</DialogTitle>
-            <DialogDescription>
-              Enter a username to invite. They'll get a notification to accept.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleInvite} className="flex gap-2">
-            <Input
-              value={inviteUsername}
-              placeholder="username"
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              maxLength={20}
-              disabled={inviteMutation.isPending}
-              onChange={(e) =>
-                setInviteUsername(e.target.value.replace(/^@/, "").trim())
-              }
-            />
-            <Button
-              type="submit"
-              disabled={inviteMutation.isPending || !inviteUsername.trim()}
-            >
-              {inviteMutation.isPending ? (
-                <Loader2Icon className="animate-spin" />
-              ) : (
-                "Invite"
-              )}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Owners are the only ones who can invite, so the dialog (and its Radix
+          bundle work) is only mounted for them. */}
+      {isOwner && (
+        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Invite a member</DialogTitle>
+              <DialogDescription>
+                Enter a username to invite. They'll get a notification to
+                accept.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleInvite} className="flex gap-2">
+              <Input
+                value={inviteUsername}
+                placeholder="username"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={20}
+                disabled={inviteMutation.isPending}
+                onChange={(e) =>
+                  setInviteUsername(e.target.value.replace(/^@/, "").trim())
+                }
+              />
+              <Button
+                type="submit"
+                disabled={inviteMutation.isPending || !inviteUsername.trim()}
+              >
+                {inviteMutation.isPending ? (
+                  <Loader2Icon className="animate-spin" />
+                ) : (
+                  "Invite"
+                )}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

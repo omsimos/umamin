@@ -26,6 +26,7 @@ import {
   GROUP_REQUEST_PENDING_ERROR,
   GROUP_TAG_RESERVED_ERROR,
   GROUP_TAG_TAKEN_ERROR,
+  GROUP_TARGET_CAPPED_ERROR,
   GROUP_USER_NOT_FOUND_ERROR,
   inviteToGroupSchema,
   JOINED_GROUPS_CAP,
@@ -51,10 +52,23 @@ function revalidateBadgeFeeds() {
 }
 
 // Both caps throw inside the transaction so the member insert + count bump
-// roll back together — surfaced here as their own messages.
+// roll back together — surfaced here as their own messages. Self-acting paths
+// (request / accept-invite) keep the first-person cap message.
 function mapMembershipError(err: unknown) {
   if (err instanceof Error && err.message === GROUP_JOINED_CAP_ERROR) {
     return { error: GROUP_JOINED_CAP_ERROR };
+  }
+  if (err instanceof Error && err.message === GROUP_FULL_ERROR) {
+    return { error: GROUP_FULL_ERROR };
+  }
+  return undefined;
+}
+
+// Owner-acting paths (invite auto-accept / approve request): the OTHER person
+// is the one who hit the joined cap, so re-word it for the actor.
+function mapMembershipErrorForTarget(err: unknown) {
+  if (err instanceof Error && err.message === GROUP_JOINED_CAP_ERROR) {
+    return { error: GROUP_TARGET_CAPPED_ERROR };
   }
   if (err instanceof Error && err.message === GROUP_FULL_ERROR) {
     return { error: GROUP_FULL_ERROR };
@@ -212,12 +226,15 @@ export const createGroupAction = withAction(
       return result;
     }
 
+    const { group } = result;
     updateTag(`user:${session.userId}`);
     updateTag(`user:${user.username}`);
     updateTag(`user-groups:${session.userId}`);
+    // Bust any cached 404 for this tag so a page/probe before creation doesn't
+    // keep serving "not found" for up to the revalidate window.
+    updateTag(`group-tag:${group.tagNorm}`);
     revalidateBadgeFeeds();
 
-    const { group } = result;
     return {
       success: true,
       group: {
@@ -239,7 +256,9 @@ export const inviteToGroupAction = withAction(
       name: "write",
       key: ({ session }) => `group:${session.userId}`,
     },
-    onError: mapMembershipError,
+    // Crossing a pending request auto-adds the invitee, so the cap that throws
+    // is the INVITEE's — re-word it for the owner.
+    onError: mapMembershipErrorForTarget,
   },
   async ({ groupId, username }, { session }) => {
     const [group] = await db
@@ -390,6 +409,19 @@ export const requestToJoinGroupAction = withAction(
 
     if (member) {
       return { error: GROUP_ALREADY_MEMBER_ERROR };
+    }
+
+    // Reject at request time when already at the joined cap — otherwise the
+    // request sits un-approvable and the owner hits the cap error on approval.
+    // (Approval still re-enforces the cap atomically inside addActiveMember.)
+    const memberships = await db
+      .select({ id: groupMemberTable.id })
+      .from(groupMemberTable)
+      .where(eq(groupMemberTable.userId, session.userId))
+      .limit(JOINED_GROUPS_CAP);
+
+    if (memberships.length >= JOINED_GROUPS_CAP) {
+      return { error: GROUP_JOINED_CAP_ERROR };
     }
 
     const outcome = await db.transaction(async (tx) => {
@@ -569,7 +601,8 @@ export const respondToJoinRequestAction = withAction(
       name: "write",
       key: ({ session }) => `group:${session.userId}`,
     },
-    onError: mapMembershipError,
+    // Approving adds the REQUESTER, so a cap throw is theirs — re-word it.
+    onError: mapMembershipErrorForTarget,
   },
   async ({ groupId, userId, accept }, { session }) => {
     const [group] = await db

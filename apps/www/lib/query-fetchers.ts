@@ -176,7 +176,20 @@ export async function fetchUserGroups() {
 }
 
 export async function fetchGroup(tagOrId: string) {
-  return fetchJson<GroupPageData | null>(`/api/groups/${tagOrId}`);
+  const response = await fetch(`/api/groups/${tagOrId}`, {
+    credentials: "include",
+  });
+
+  // A group deleted mid-view 404s — resolve to null so the page renders its
+  // husk instead of throwing an unhandled query error.
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for /api/groups/${tagOrId}`);
+  }
+
+  return (await response.json()) as GroupPageData | null;
 }
 
 export async function fetchGroupViewer(tagOrId: string) {
@@ -186,17 +199,35 @@ export async function fetchGroupViewer(tagOrId: string) {
 export async function fetchGroupMembersPage(
   tagOrId: string,
   cursor: string | null,
-) {
-  return fetchJson<GroupMembersResponse>(
-    appendCursor(`/api/groups/${tagOrId}/members`, cursor),
-  );
+): Promise<GroupMembersResponse> {
+  const url = appendCursor(`/api/groups/${tagOrId}/members`, cursor);
+  const response = await fetch(url, { credentials: "include" });
+
+  // 403 (relationship went stale — kicked/left) or 404 (group gone) degrade
+  // to an empty roster rather than an unhandled error.
+  if (response.status === 403 || response.status === 404) {
+    return { data: [], nextCursor: null };
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}`);
+  }
+
+  return (await response.json()) as GroupMembersResponse;
 }
 
 export async function fetchGroupRequestsPage(
   tagOrId: string,
   cursor: string | null,
-) {
-  return fetchJson<GroupRequestsResponse>(
-    appendCursor(`/api/groups/${tagOrId}/requests`, cursor),
-  );
+): Promise<GroupRequestsResponse> {
+  const url = appendCursor(`/api/groups/${tagOrId}/requests`, cursor);
+  const response = await fetch(url, { credentials: "include" });
+
+  if (response.status === 403 || response.status === 404) {
+    return { data: [], nextCursor: null };
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}`);
+  }
+
+  return (await response.json()) as GroupRequestsResponse;
 }

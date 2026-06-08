@@ -119,6 +119,7 @@ import {
   GROUP_CANNOT_INVITE_SELF_ERROR,
   GROUP_FULL_ERROR,
   GROUP_INVITE_PENDING_ERROR,
+  GROUP_JOINED_CAP_ERROR,
   GROUP_NOT_PENDING_ERROR,
   GROUP_OWNED_CAP_ERROR,
   GROUP_OWNER_CANNOT_LEAVE_ERROR,
@@ -126,6 +127,7 @@ import {
   GROUP_REQUEST_PENDING_ERROR,
   GROUP_TAG_RESERVED_ERROR,
   GROUP_TAG_TAKEN_ERROR,
+  GROUP_TARGET_CAPPED_ERROR,
   GROUP_USER_NOT_FOUND_ERROR,
 } from "@/lib/group";
 import { UNAUTHORIZED_ERROR } from "@/lib/server/errors";
@@ -379,8 +381,22 @@ describe("requestToJoinGroupAction", () => {
     expect(res).toEqual({ error: GROUP_ALREADY_MEMBER_ERROR });
   });
 
+  it("rejects when the requester is already at the joined-groups cap", async () => {
+    state.selects = [
+      [groupRow],
+      [], // not a member
+      Array.from({ length: 5 }, (_, i) => ({ id: `m${i}` })), // joined-cap reached
+    ];
+
+    const res = await requestToJoinGroupAction({ groupId: "g1" });
+
+    expect(res).toEqual({ error: GROUP_JOINED_CAP_ERROR });
+    expect(insertSpy).not.toHaveBeenCalled();
+  });
+
   it("creates a request and notifies the creator", async () => {
-    state.selects = [[groupRow], [], []]; // group, not member, no pending
+    // group, not member, under joined-cap, no pending
+    state.selects = [[groupRow], [], [], []];
 
     const res = await requestToJoinGroupAction({ groupId: "g1" });
 
@@ -404,8 +420,9 @@ describe("requestToJoinGroupAction", () => {
     state.selects = [
       [groupRow],
       [], // not a member
-      [{ kind: "invite" }], // crossing invite
-      [], // joined-cap check
+      [], // under joined-cap (request-time pre-check)
+      [{ kind: "invite" }], // crossing invite (inside tx)
+      [], // joined-cap check inside addActiveMember
     ];
     state.deletes = [[{ id: "p1" }]];
     state.inserts = [[{ id: "m1" }]];
@@ -428,7 +445,7 @@ describe("requestToJoinGroupAction", () => {
   });
 
   it("reports an existing pending request", async () => {
-    state.selects = [[groupRow], [], [{ kind: "request" }]];
+    state.selects = [[groupRow], [], [], [{ kind: "request" }]];
 
     const res = await requestToJoinGroupAction({ groupId: "g1" });
 
@@ -569,6 +586,26 @@ describe("respondToJoinRequestAction", () => {
     });
 
     expect(res).toEqual({ error: GROUP_FULL_ERROR });
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("re-words the cap error for the owner when the requester is at their cap", async () => {
+    state.selects = [
+      [{ creatorId: "owner-1", name: "The Bros" }],
+      [{ id: "p1" }],
+      Array.from({ length: 5 }, (_, i) => ({ id: `m${i}` })), // requester at cap
+    ];
+    state.deletes = [[{ id: "p1" }]];
+    state.inserts = [[{ id: "m1" }]];
+
+    const res = await respondToJoinRequestAction({
+      groupId: "g1",
+      userId: "bob",
+      accept: true,
+    });
+
+    // Owner-facing, not the first-person "You can be in up to 5 groups."
+    expect(res).toEqual({ error: GROUP_TARGET_CAPPED_ERROR });
     expect(notify).not.toHaveBeenCalled();
   });
 

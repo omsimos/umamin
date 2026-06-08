@@ -123,8 +123,23 @@ export type UserGroupItem = {
   joinedAt: Date;
 };
 
+export type UserGroupInviteItem = {
+  group: {
+    id: string;
+    name: string;
+    tag: string;
+    icon: string;
+    accent: string | null;
+    memberCount: number;
+  };
+  invitedAt: Date;
+};
+
 export type UserGroupsResponse = {
   data: UserGroupItem[];
+  // Pending invites this user can accept/decline — surfaced in the hub so a
+  // forgotten invite isn't stranded once its notification ages out.
+  invites: UserGroupInviteItem[];
 };
 
 // "owner"/"member" are active membership; "invited"/"requested" are pending.

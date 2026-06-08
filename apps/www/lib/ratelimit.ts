@@ -48,9 +48,9 @@ const limiters: Record<LimiterName, Ratelimit> | null = redis
         ephemeralCache: new Map(),
         analytics: false,
       }),
-      // Group joins — invite codes are unguessable (~95-bit nanoid), so this
-      // caps scripted join/leave churn and its cache-revalidation cost, not
-      // brute force.
+      // Caps how fast a user can fire join requests (requestToJoinGroupAction).
+      // Each request notifies a group owner, so this bounds request spam; the
+      // join/accept/approve actions themselves run under the `write` limiter.
       "group-join": new Ratelimit({
         redis,
         limiter: Ratelimit.slidingWindow(8, "60 s"),

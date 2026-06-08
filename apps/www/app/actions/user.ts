@@ -2,6 +2,7 @@
 
 import { hash, verify } from "@node-rs/argon2";
 import { db } from "@umamin/db";
+import { groupTable } from "@umamin/db/schema/group";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import {
@@ -18,7 +19,7 @@ import {
   userTable,
 } from "@umamin/db/schema/user";
 import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
-import { updateTag } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
@@ -282,6 +283,23 @@ export async function deleteAccountAction(confirmation?: string) {
           ),
         );
 
+      // Members of groups this user OWNS keep a soft-ref equippedGroupId that
+      // the FK cascade (which deletes those groups when the user row goes)
+      // would otherwise leave dangling — null it first so nobody is stuck
+      // wearing a deleted group's badge with no way to clear it.
+      await tx
+        .update(userTable)
+        .set({ equippedGroupId: null })
+        .where(
+          inArray(
+            userTable.equippedGroupId,
+            tx
+              .select({ id: groupTable.id })
+              .from(groupTable)
+              .where(eq(groupTable.creatorId, uid)),
+          ),
+        );
+
       // Remove the user's own data. Deleting the user row cascades the join
       // and authored-post rows; messages/accounts/notes have no FK cascade.
       await tx.delete(messageTable).where(eq(messageTable.receiverId, uid));
@@ -308,6 +326,10 @@ export async function deleteAccountAction(confirmation?: string) {
     updateTag(`user:${user.username}`);
     updateTag(`user:${user.id}`);
     updateTag(`user:${user.id}:accounts`);
+    // Clear any badges baked into the shared feeds for members whose equipped
+    // group was just torn down with this owner's account (background SWR).
+    revalidateTag("posts", "max");
+    revalidateTag("notes", "max");
   } catch (err) {
     console.log(err);
   }

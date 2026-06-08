@@ -9,11 +9,15 @@ import {
   PlusIcon,
   SettingsIcon,
   UsersRoundIcon,
+  XIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { equipGroupBadgeAction } from "@/app/actions/group";
+import {
+  equipGroupBadgeAction,
+  respondToInviteAction,
+} from "@/app/actions/group";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import {
@@ -70,6 +74,7 @@ export function GroupsHub() {
   });
 
   const memberships = groups?.data ?? [];
+  const invites = groups?.invites ?? [];
   const ownsGroup = memberships.some((m) => m.role === "owner");
 
   const equipMutation = useMutation({
@@ -82,6 +87,24 @@ export function GroupsHub() {
     },
     onSuccess: () => {
       vibrate();
+      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const respondInvite = useSingleFlightAction(respondToInviteAction);
+  const inviteMutation = useMutation({
+    mutationFn: async (vars: { groupId: string; accept: boolean }) => {
+      const res = await respondInvite(vars);
+      if (res && "error" in res && res.error) {
+        throw new Error(res.error);
+      }
+      return vars.accept;
+    },
+    onSuccess: (accepted) => {
+      if (accepted) vibrate();
+      toast.success(accepted ? "Joined!" : "Invite declined.");
+      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups() });
       queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
     },
     onError: (err) => toast.error(err.message),
@@ -119,6 +142,55 @@ export function GroupsHub() {
         </div>
       )}
 
+      {invites.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground">Invites</h2>
+          <ul className="space-y-2">
+            {invites.map(({ group }) => (
+              <li
+                key={group.id}
+                className="flex items-center gap-3 rounded-lg border p-3"
+              >
+                <GroupGlyph icon={group.icon} accent={group.accent} />
+                <Link href={`/groups/${group.tag}`} className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{group.name}</span>
+                    <Badge
+                      variant="secondary"
+                      className="font-mono text-[10px]"
+                    >
+                      {group.tag}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Invited you</p>
+                </Link>
+                <Button
+                  size="sm"
+                  disabled={inviteMutation.isPending}
+                  onClick={() =>
+                    inviteMutation.mutate({ groupId: group.id, accept: true })
+                  }
+                >
+                  <CheckIcon /> Accept
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Decline invite"
+                  disabled={inviteMutation.isPending}
+                  onClick={() =>
+                    inviteMutation.mutate({ groupId: group.id, accept: false })
+                  }
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <XIcon className="size-4" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="space-y-2">
         <h2 className="text-sm font-medium text-muted-foreground">
           Your groups
@@ -126,7 +198,8 @@ export function GroupsHub() {
 
         {memberships.length === 0 ? (
           <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            You're not in any groups yet. Join one with an invite link.
+            You're not in any groups yet. Ask a group owner to invite you, or
+            request to join one.
           </p>
         ) : (
           <ul className="space-y-2">

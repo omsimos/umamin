@@ -16,6 +16,9 @@ export const GROUP_TAG_RESERVED_ERROR = "That tag is reserved.";
 export const GROUP_FULL_ERROR = "This group is full.";
 export const GROUP_OWNED_CAP_ERROR = "You already own a group.";
 export const GROUP_JOINED_CAP_ERROR = `You can be in up to ${JOINED_GROUPS_CAP} groups.`;
+// Owner-facing variant: the OTHER person is at their joined-groups cap.
+export const GROUP_TARGET_CAPPED_ERROR =
+  "That person is already in the maximum number of groups.";
 export const GROUP_OWNER_CANNOT_LEAVE_ERROR =
   "Group owners can't leave — delete the group instead.";
 export const GROUP_USER_NOT_FOUND_ERROR = "We couldn't find that user.";

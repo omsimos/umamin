@@ -2611,10 +2611,16 @@ export async function getGroupPageData(
   "use cache";
   cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
 
-  const condition =
-    tagOrId.length === GROUP_TAG_LENGTH
-      ? eq(groupTable.tagNorm, normalizeGroupTag(tagOrId))
-      : eq(groupTable.id, tagOrId);
+  const isTag = tagOrId.length === GROUP_TAG_LENGTH;
+  const tagNorm = isTag ? normalizeGroupTag(tagOrId) : null;
+  // Tag the lookup form up front so even a negative (no-match) result is
+  // bustable — createGroupAction busts `group-tag:${tagNorm}`, so a 404 cached
+  // before the group existed doesn't linger after it's created.
+  cacheTag(tagNorm ? `group-tag:${tagNorm}` : `group-id:${tagOrId}`);
+
+  const condition = tagNorm
+    ? eq(groupTable.tagNorm, tagNorm)
+    : eq(groupTable.id, tagOrId);
 
   const [row] = await db
     .select({
@@ -2710,9 +2716,21 @@ export async function getGroupMembersPage(
   };
 }
 
+// Group columns reused for the hub's membership + invite lists.
+const groupCardColumns = {
+  id: groupTable.id,
+  name: groupTable.name,
+  tag: groupTable.tag,
+  icon: groupTable.icon,
+  accent: groupTable.accent,
+  memberCount: groupTable.memberCount,
+};
+
 /**
- * The viewer's active memberships for the /groups hub + equip picker, bounded
- * by the joined-groups cap. Private per-user payload (no-store route).
+ * The viewer's active memberships AND pending invites for the /groups hub +
+ * equip picker. Both bounded reads, run in parallel, under one cache entry so
+ * an invite create/accept/decline (which all bust user-groups) refreshes both.
+ * Private per-user payload (no-store route).
  */
 export async function getUserGroups(
   userId: string,
@@ -2721,30 +2739,46 @@ export async function getUserGroups(
   cacheTag(`user-groups:${userId}`);
   cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
 
-  const rows = await db
-    .select({
-      role: groupMemberTable.role,
-      joinedAt: groupMemberTable.createdAt,
-      group: {
-        id: groupTable.id,
-        name: groupTable.name,
-        tag: groupTable.tag,
-        icon: groupTable.icon,
-        accent: groupTable.accent,
-        memberCount: groupTable.memberCount,
-      },
-    })
-    .from(groupMemberTable)
-    .innerJoin(groupTable, eq(groupMemberTable.groupId, groupTable.id))
-    .where(eq(groupMemberTable.userId, userId))
-    .orderBy(asc(groupMemberTable.createdAt))
-    .limit(JOINED_GROUPS_CAP);
+  const [rows, inviteRows] = await Promise.all([
+    db
+      .select({
+        role: groupMemberTable.role,
+        joinedAt: groupMemberTable.createdAt,
+        group: groupCardColumns,
+      })
+      .from(groupMemberTable)
+      .innerJoin(groupTable, eq(groupMemberTable.groupId, groupTable.id))
+      .where(eq(groupMemberTable.userId, userId))
+      .orderBy(asc(groupMemberTable.createdAt))
+      .limit(JOINED_GROUPS_CAP),
+    // Pending invites awaiting this user's accept/decline. Keyset index
+    // group_pending_user_created_idx; bounded so spam can't unbound the read.
+    db
+      .select({
+        invitedAt: groupPendingTable.createdAt,
+        group: groupCardColumns,
+      })
+      .from(groupPendingTable)
+      .innerJoin(groupTable, eq(groupPendingTable.groupId, groupTable.id))
+      .where(
+        and(
+          eq(groupPendingTable.userId, userId),
+          eq(groupPendingTable.kind, "invite"),
+        ),
+      )
+      .orderBy(asc(groupPendingTable.createdAt))
+      .limit(GROUP_MEMBERS_PAGE_SIZE),
+  ]);
 
   return {
     data: rows.map((row) => ({
       group: row.group,
       role: row.role,
       joinedAt: row.joinedAt,
+    })),
+    invites: inviteRows.map((row) => ({
+      group: row.group,
+      invitedAt: row.invitedAt,
     })),
   };
 }
