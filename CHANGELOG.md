@@ -26,6 +26,12 @@ any that are empty.
 - Members can wear their group's tag as a small badge next to their name across the feed, posts, notes, and their profile — one badge at a time, switchable anytime. Tapping any badge opens that group's page.
 - Groups are private and invite-only. Owners invite people by username, and anyone can request to join from the group's page; the owner approves or declines. Owners can also remove members or delete the group. Notifications cover invites received, join requests, and new members.
 - Joining is free for everyone — only creating a group needs Umamin+.
+- An account menu, opened from your avatar — quick access to your profile, groups, settings, theme, and sign-out in one place.
+
+### Changed
+
+- Navigation refresh: notifications now live in the bottom bar, your profile, inbox, notifications, and settings open as focused pages with a back button, and the active section is highlighted.
+- The landing page has its own streamlined navigation.
 
 ### Security & Privacy
 
