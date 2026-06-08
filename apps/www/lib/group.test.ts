@@ -110,6 +110,13 @@ describe("isReservedGroupTag", () => {
     expect(isReservedGroupTag("5T4F")).toBe(true);
   });
 
+  it("blocks letter-swap variants and numeric hate codes", () => {
+    expect(isReservedGroupTag("MODZ")).toBe(true);
+    expect(isReservedGroupTag("FVCK")).toBe(true);
+    // "1488" folds to IABB (neo-nazi numeric code).
+    expect(isReservedGroupTag("1488")).toBe(true);
+  });
+
   it("is case-insensitive", () => {
     expect(isReservedGroupTag("mods")).toBe(true);
   });
