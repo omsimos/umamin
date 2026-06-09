@@ -103,23 +103,22 @@ export function UserCard({
         </div>
       </div>
 
-      <section className="mt-11">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center space-x-1">
-              <p className="font-semibold md:text-xl">
-                {user.displayName ? user.displayName : user.username}
-              </p>
-              {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-                user.username,
-              ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
-              <GroupBadge badge={user.groupBadge} />
-            </div>
-            <p className="text-muted-foreground text-sm">@{user.username}</p>
-          </div>
+      {/* Follow sits just below the banner, right-aligned (other profiles). */}
+      {primaryAction && (
+        <div className="mt-3 flex justify-end">{primaryAction}</div>
+      )}
 
-          {primaryAction && <div className="shrink-0">{primaryAction}</div>}
+      <section className={primaryAction ? "mt-3" : "mt-11"}>
+        <div className="flex items-center space-x-1">
+          <p className="font-semibold md:text-xl">
+            {user.displayName ? user.displayName : user.username}
+          </p>
+          {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
+            user.username,
+          ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+          <GroupBadge badge={user.groupBadge} />
         </div>
+        <p className="text-muted-foreground text-sm">@{user.username}</p>
 
         <div className="mt-4">
           <p

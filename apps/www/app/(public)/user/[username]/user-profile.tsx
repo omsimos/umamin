@@ -10,9 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@umamin/ui/components/dropdown-menu";
+import { cn } from "@umamin/ui/lib/utils";
 import {
   EllipsisIcon,
-  MessageSquareMoreIcon,
+  MessageCircleIcon,
   MessageSquareXIcon,
   Share2Icon,
   UserCheckIcon,
@@ -444,7 +445,7 @@ export function UserProfile({ username, initialUser }: Props) {
         className="rounded-full bg-background/70 backdrop-blur"
         onClick={handleMessage}
       >
-        <MessageSquareMoreIcon className="size-4" />
+        <MessageCircleIcon className="size-4" />
       </Button>
 
       <DropdownMenu modal={false}>
@@ -481,12 +482,17 @@ export function UserProfile({ username, initialUser }: Props) {
     </>
   );
 
-  // Follow sits right-aligned on the name row.
+  // Follow sits right-aligned just below the banner — a white pill when you can
+  // follow, an outline pill once following.
   const primaryAction = (
     <Button
       variant={isFollowing ? "outline" : "default"}
       disabled={actionsDisabled}
       onClick={handleFollow}
+      className={cn(
+        "rounded-full",
+        !isFollowing && "bg-white text-black hover:bg-white/90",
+      )}
     >
       {isFollowing ? <UserCheckIcon /> : <UserPlusIcon />}
       {isFollowing ? "Following" : "Follow"}
