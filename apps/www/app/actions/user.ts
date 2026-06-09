@@ -346,6 +346,7 @@ export async function deleteAccountAction(confirmation?: string) {
     // delete them from storage rather than letting them orphan forever.
     await deletePostImages(postImageRows.flatMap((row) => row.images ?? []));
     await deleteR2Avatar(user.imageUrl);
+    await deleteR2Banner(user.bannerImageUrl);
 
     // Invalidate user's cached data by tag
     updateTag(`user:${user.username}`);
