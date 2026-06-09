@@ -8,7 +8,8 @@ const VERBS: Record<
   | "group_join"
   | "group_invite"
   | "group_request"
-  | "group_accept",
+  | "group_accept"
+  | "group_mention",
   string
 > = {
   like: "liked your post",
@@ -20,6 +21,7 @@ const VERBS: Record<
   group_invite: "invited you to a group",
   group_request: "asked to join your group",
   group_accept: "added you to a group",
+  group_mention: "mentioned you in a group",
 };
 
 export function formatNotificationText(

@@ -3,6 +3,7 @@ import type { SelectMessage } from "@umamin/db/schema/message";
 import type { SelectNote } from "@umamin/db/schema/note";
 import type { NotificationType } from "@umamin/db/schema/notification";
 import type { SelectAccount } from "@umamin/db/schema/user";
+import type { GroupBadgeData } from "@/types/group";
 import type { CommentData, FeedItem, PostData } from "@/types/post";
 import type {
   CurrentUserClient,
@@ -158,6 +159,76 @@ export type GroupRequestItem = {
 };
 
 export type GroupRequestsResponse = CursorPage<GroupRequestItem>;
+
+// Compact author projection — only what a chat bubble renders, so the poll
+// payload (Fast Origin Transfer) stays small. NOT the full PublicUser.
+export type GroupChatSender = {
+  id: string;
+  username: string;
+  displayName: string | null;
+  imageUrl: string | null;
+  equippedGroupId: string | null;
+  groupBadge: GroupBadgeData | null;
+};
+
+// Compact quoted preview of the replied-to message (content truncated
+// server-side to keep the poll payload small).
+export type GroupChatReplyPreview = {
+  id: string;
+  content: string;
+  senderName: string;
+};
+
+export type GroupChatMessage = {
+  id: string;
+  // Decrypted server-side; encrypted at rest.
+  content: string;
+  createdAt: Date;
+  sender: GroupChatSender;
+  replyTo: GroupChatReplyPreview | null;
+};
+
+export type GroupChatResponse = CursorPage<GroupChatMessage>;
+
+// Newest message marker (createdAt ms) + reaction version, CDN-cached so
+// members' polls collapse to one edge hit. null = Redis unconfigured (client
+// polls the delta directly; reaction updates become eventual on reload).
+export type GroupChatHeadResponse = {
+  tail: number | null;
+  rxn: number | null;
+};
+
+// Aggregate reaction state for one message + the viewer's own pick. Only
+// messages that actually have reactions are returned (compact payload).
+export type GroupMessageReactionState = {
+  messageId: string;
+  reactions: { emoji: string; count: number }[];
+  viewerReaction: string | null;
+};
+
+export type GroupChatReactionsResponse = GroupMessageReactionState[];
+
+// One reactor + the emoji they used, for the "who reacted" drawer.
+export type GroupMessageReactor = {
+  emoji: string;
+  user: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    imageUrl: string | null;
+  };
+};
+
+export type GroupReactorsResponse = GroupMessageReactor[];
+
+// Per-group unread flag for the hub dot — derived from the group's
+// lastMessageAt vs the viewer's read watermark (no COUNT, no scan).
+export type GroupUnreadState = {
+  groupId: string;
+  hasUnread: boolean;
+};
+
+export type GroupUnreadResponse = GroupUnreadState[];
 
 export type UserProfileViewerResponse = {
   currentUserId: string | null;

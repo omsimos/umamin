@@ -46,6 +46,7 @@ import {
   CheckIcon,
   EllipsisIcon,
   Loader2Icon,
+  MessageCircleIcon,
   ScanFaceIcon,
   SquarePenIcon,
   Trash2Icon,
@@ -399,9 +400,14 @@ export function GroupPageClient({
 
       {isMember && (
         <div className="flex items-center gap-2">
+          <Button asChild className="flex-1">
+            <Link href={`/groups/${tag}/chat`}>
+              <MessageCircleIcon /> Open chat
+            </Link>
+          </Button>
+
           <Button
             variant={equipped ? "default" : "outline"}
-            className="flex-1"
             disabled={equipMutation.isPending}
             onClick={() => equipMutation.mutate()}
           >

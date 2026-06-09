@@ -20,7 +20,8 @@ export type NotificationType =
   | "group_join"
   | "group_invite"
   | "group_request"
-  | "group_accept";
+  | "group_accept"
+  | "group_mention";
 
 // One row per (recipient, type, target), aggregated via upsert — a viral post
 // produces a single "like" notification row, not one per liker. Keeps rows

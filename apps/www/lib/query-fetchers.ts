@@ -6,9 +6,14 @@ import type {
   CurrentUserResponse,
   FeedResponse,
   FollowListResponse,
+  GroupChatHeadResponse,
+  GroupChatReactionsResponse,
+  GroupChatResponse,
   GroupMembersResponse,
   GroupPageData,
+  GroupReactorsResponse,
   GroupRequestsResponse,
+  GroupUnreadResponse,
   GroupViewerResponse,
   MessagesResponse,
   NotesResponse,
@@ -213,6 +218,96 @@ export async function fetchGroupMembersPage(
   }
 
   return (await response.json()) as GroupMembersResponse;
+}
+
+// Older history page (or first page when cursor is null). 403/404 (kicked /
+// group gone) degrade to an empty page rather than throwing.
+export async function fetchGroupChatPage(
+  tag: string,
+  cursor: string | null,
+): Promise<GroupChatResponse> {
+  const url = appendCursor(`/api/groups/${tag}/chat`, cursor);
+  const response = await fetch(url, { credentials: "include" });
+
+  if (response.status === 403 || response.status === 404) {
+    return { data: [], nextCursor: null };
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}`);
+  }
+
+  return (await response.json()) as GroupChatResponse;
+}
+
+// Live delta: messages newer than `since` (the client's newest edge).
+export async function fetchGroupChatSince(
+  tag: string,
+  since: string,
+): Promise<GroupChatResponse> {
+  const url = `/api/groups/${tag}/chat?since=${since}`;
+  const response = await fetch(url, { credentials: "include" });
+
+  if (response.status === 403 || response.status === 404) {
+    return { data: [], nextCursor: null };
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}`);
+  }
+
+  return (await response.json()) as GroupChatResponse;
+}
+
+// Per-viewer unread flags for the groups hub dot.
+export async function fetchGroupUnread(): Promise<GroupUnreadResponse> {
+  return fetchJson<GroupUnreadResponse>("/api/groups/unread");
+}
+
+// Cheap CDN-cached "anything new?" marker, keyed by group id. Fields are null
+// when Redis is unconfigured (the caller then polls the delta directly).
+export async function fetchGroupChatHead(
+  tag: string,
+  groupId: string,
+): Promise<GroupChatHeadResponse> {
+  return fetchJson<GroupChatHeadResponse>(
+    `/api/groups/${tag}/chat/head?id=${groupId}`,
+  );
+}
+
+// Reaction overlay for a set of loaded message ids.
+export async function fetchGroupChatReactions(
+  tag: string,
+  ids: string[],
+): Promise<GroupChatReactionsResponse> {
+  if (ids.length === 0) return [];
+  const url = `/api/groups/${tag}/chat/reactions?ids=${ids.join(",")}`;
+  const response = await fetch(url, { credentials: "include" });
+
+  if (response.status === 403 || response.status === 404) {
+    return [];
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}`);
+  }
+
+  return (await response.json()) as GroupChatReactionsResponse;
+}
+
+// The "who reacted" list for one message (reactions drawer).
+export async function fetchGroupMessageReactors(
+  tag: string,
+  messageId: string,
+): Promise<GroupReactorsResponse> {
+  const url = `/api/groups/${tag}/chat/reactions/${messageId}`;
+  const response = await fetch(url, { credentials: "include" });
+
+  if (response.status === 403 || response.status === 404) {
+    return [];
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}`);
+  }
+
+  return (await response.json()) as GroupReactorsResponse;
 }
 
 export async function fetchGroupRequestsPage(
