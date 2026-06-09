@@ -385,6 +385,12 @@ export function UserProfile({ username, initialUser }: Props) {
     },
   });
 
+  const actionsDisabled =
+    isBlocked ||
+    isBlockedBy ||
+    followMutation.isPending ||
+    blockMutation.isPending;
+
   const handleBlock = async () => {
     if (blockMutation.isPending) return;
 
@@ -396,40 +402,95 @@ export function UserProfile({ username, initialUser }: Props) {
     blockMutation.mutate(resolvedViewer.isBlocked);
   };
 
-  // Other profiles fold Share + Block into one overflow menu at the banner's
-  // top-right (self gets edit + share instead, handled inside UserCard).
-  const profileMenu = (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          size="icon"
-          variant="secondary"
-          aria-label="More options"
-          className="rounded-full bg-background/70 backdrop-blur"
-        >
-          <EllipsisIcon className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => shareProfile(profile.username)}>
-          <span className="flex items-center gap-2">
-            <Share2Icon className="size-4" />
-            Share
-          </span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled={blockMutation.isPending}
-          onClick={handleBlock}
-          className="text-red-500"
-        >
-          <span className="flex items-center gap-2">
-            <MessageSquareXIcon className="size-4" />
-            {isBlocked ? "Unblock" : "Block"}
-          </span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+  const handleFollow = async () => {
+    if (blockMutation.isPending) return;
+
+    const resolvedViewer = await requireAuthenticatedViewer();
+    if (
+      !resolvedViewer ||
+      resolvedViewer.currentUserId === profile.id ||
+      resolvedViewer.isBlocked ||
+      resolvedViewer.isBlockedBy
+    ) {
+      return;
+    }
+
+    followMutation.mutate(resolvedViewer.isFollowing);
+  };
+
+  const handleMessage = async () => {
+    const resolvedViewer = await requireAuthenticatedViewer();
+    if (
+      !resolvedViewer ||
+      resolvedViewer.currentUserId === profile.id ||
+      resolvedViewer.isBlocked ||
+      resolvedViewer.isBlockedBy
+    ) {
+      return;
+    }
+
+    router.push(`/to/${profile.username}`);
+  };
+
+  // Other profiles get a Message icon + an overflow menu (Share + Block) at the
+  // banner's top-right; self gets edit + share, handled inside UserCard.
+  const headerActions = (
+    <>
+      <Button
+        size="icon"
+        variant="secondary"
+        aria-label="Message"
+        disabled={actionsDisabled}
+        className="rounded-full bg-background/70 backdrop-blur"
+        onClick={handleMessage}
+      >
+        <MessageSquareMoreIcon className="size-4" />
+      </Button>
+
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="icon"
+            variant="secondary"
+            aria-label="More options"
+            className="rounded-full bg-background/70 backdrop-blur"
+          >
+            <EllipsisIcon className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => shareProfile(profile.username)}>
+            <span className="flex items-center gap-2">
+              <Share2Icon className="size-4" />
+              Share
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={blockMutation.isPending}
+            onClick={handleBlock}
+            className="text-red-500"
+          >
+            <span className="flex items-center gap-2">
+              <MessageSquareXIcon className="size-4" />
+              {isBlocked ? "Unblock" : "Block"}
+            </span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+
+  // Follow sits right-aligned on the name row.
+  const primaryAction = (
+    <Button
+      variant={isFollowing ? "outline" : "default"}
+      disabled={actionsDisabled}
+      onClick={handleFollow}
+    >
+      {isFollowing ? <UserCheckIcon /> : <UserPlusIcon />}
+      {isFollowing ? "Following" : "Follow"}
+    </Button>
   );
 
   return (
@@ -437,70 +498,9 @@ export function UserProfile({ username, initialUser }: Props) {
       <UserCard
         user={profile}
         isSelf={isSelf}
-        headerActions={isSelf ? undefined : profileMenu}
+        headerActions={isSelf ? undefined : headerActions}
+        primaryAction={isSelf ? undefined : primaryAction}
       />
-
-      {isSelf ? null : (
-        <div className="flex gap-2 mt-6 w-full">
-          <Button
-            variant="outline"
-            disabled={
-              isSelf ||
-              isBlocked ||
-              isBlockedBy ||
-              followMutation.isPending ||
-              blockMutation.isPending
-            }
-            className="flex-1"
-            onClick={async () => {
-              if (blockMutation.isPending) return;
-
-              const resolvedViewer = await requireAuthenticatedViewer();
-              if (
-                !resolvedViewer ||
-                resolvedViewer.currentUserId === profile.id ||
-                resolvedViewer.isBlocked ||
-                resolvedViewer.isBlockedBy
-              ) {
-                return;
-              }
-
-              followMutation.mutate(resolvedViewer.isFollowing);
-            }}
-          >
-            {isFollowing ? <UserCheckIcon /> : <UserPlusIcon />}
-            {isFollowing ? "Following" : "Follow"}
-          </Button>
-
-          <Button
-            variant="outline"
-            className="flex-1"
-            disabled={
-              isSelf ||
-              isBlocked ||
-              isBlockedBy ||
-              followMutation.isPending ||
-              blockMutation.isPending
-            }
-            onClick={async () => {
-              const resolvedViewer = await requireAuthenticatedViewer();
-              if (
-                !resolvedViewer ||
-                resolvedViewer.currentUserId === profile.id ||
-                resolvedViewer.isBlocked ||
-                resolvedViewer.isBlockedBy
-              ) {
-                return;
-              }
-
-              router.push(`/to/${profile.username}`);
-            }}
-          >
-            <MessageSquareMoreIcon />
-            Message
-          </Button>
-        </div>
-      )}
 
       {isSelf ? <YouTabs username={profile.username} active="posts" /> : null}
 
