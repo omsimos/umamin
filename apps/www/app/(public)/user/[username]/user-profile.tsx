@@ -490,7 +490,9 @@ export function UserProfile({ username, initialUser }: Props) {
       onClick={handleFollow}
       className={cn(
         "rounded-full px-6",
-        !isFollowing && "bg-white text-black hover:bg-white/90",
+        // Theme-aware high-contrast pill: white-on-dark in dark mode,
+        // dark-on-white in light mode (a hardcoded white bg vanishes on light).
+        !isFollowing && "bg-foreground text-background hover:bg-foreground/90",
       )}
     >
       {isFollowing ? "Following" : "Follow"}

@@ -38,7 +38,8 @@ export function UserCard({
   // Banner top-right slot. Self shows edit + share; other profiles pass the
   // Message + overflow (Share/Block) buttons here.
   headerActions?: ReactNode;
-  // Right-aligned action on the name row — the Follow button on other profiles.
+  // Right-aligned action just below the banner — the Follow button on other
+  // profiles.
   primaryAction?: ReactNode;
 }) {
   return (

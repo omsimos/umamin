@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.13.3] - 2026-06-10
+
+### Changed
+
+- Tidied up the actions on other people's profiles: Message and an overflow menu (Share, Block) now sit at the top of the banner, with Follow as a compact pill just below it — replacing the full-width row of buttons.
+
 ## [5.13.2] - 2026-06-10
 
 ### Security & Privacy
@@ -651,6 +657,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.13.3]: https://github.com/omsimos/umamin/compare/v5.13.2...v5.13.3
 [5.13.2]: https://github.com/omsimos/umamin/compare/v5.13.1...v5.13.2
 [5.13.1]: https://github.com/omsimos/umamin/compare/v5.13.0...v5.13.1
 [5.13.0]: https://github.com/omsimos/umamin/compare/v5.12.0...v5.13.0
