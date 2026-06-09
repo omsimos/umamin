@@ -489,7 +489,7 @@ export function UserProfile({ username, initialUser }: Props) {
       disabled={actionsDisabled}
       onClick={handleFollow}
       className={cn(
-        "rounded-full",
+        "rounded-full px-6",
         !isFollowing && "bg-white text-black hover:bg-white/90",
       )}
     >

@@ -77,7 +77,7 @@ export default async function Page({
   queryClient.setQueryData(queryKeys.userProfile(formattedUsername), user);
 
   return (
-    <section className="max-w-xl mx-auto min-h-screen px-5">
+    <section className="max-w-xl mx-auto min-h-screen container">
       <HydrationBoundary state={dehydrate(queryClient)}>
         <UserProfile username={formattedUsername} initialUser={user} />
       </HydrationBoundary>
