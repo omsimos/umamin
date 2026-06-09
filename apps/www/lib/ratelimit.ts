@@ -16,7 +16,9 @@ type LimiterName =
   | "read"
   | "write"
   | "group-join"
-  | "group-edit";
+  | "group-edit"
+  | "group-message"
+  | "group-read";
 
 // analytics:false keeps the Upstash command count (and cost) minimal; flip it on
 // per-limiter if you want the Upstash dashboard insights. Each limiter gets its
@@ -74,6 +76,25 @@ const limiters: Record<LimiterName, Ratelimit> | null = redis
         redis,
         limiter: Ratelimit.slidingWindow(100, "60 s"),
         prefix: "rl:read",
+        ephemeralCache: new Map(),
+        analytics: false,
+      }),
+      // Group-chat sends (one row + one tail SET each). Bounds spam without
+      // throttling a lively conversation.
+      "group-message": new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(30, "60 s"),
+        prefix: "rl:group-message",
+        ephemeralCache: new Map(),
+        analytics: false,
+      }),
+      // The chat poll/delta read, keyed PER USER (not per IP like `read`) so a
+      // NAT'd room of members polling can't throttle one another. The CDN-cached
+      // head-check absorbs idle ticks; this only fires on real delta fetches.
+      "group-read": new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(60, "60 s"),
+        prefix: "rl:group-read",
         ephemeralCache: new Map(),
         analytics: false,
       }),

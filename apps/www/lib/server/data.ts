@@ -6,6 +6,11 @@ import {
   groupPendingTable,
   groupTable,
 } from "@umamin/db/schema/group";
+import {
+  groupMessageReactionTable,
+  groupMessageReadTable,
+  groupMessageTable,
+} from "@umamin/db/schema/group-message";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import { notificationTable } from "@umamin/db/schema/notification";
@@ -44,6 +49,7 @@ import { unionAll } from "drizzle-orm/sqlite-core";
 import { cacheLife, cacheTag } from "next/cache";
 import type { FeedSort } from "@/lib/feed-sort";
 import {
+  GROUP_MEMBER_CAP,
   GROUP_TAG_LENGTH,
   JOINED_GROUPS_CAP,
   normalizeGroupTag,
@@ -54,10 +60,16 @@ import type {
   CurrentUserResponse,
   FeedResponse,
   FollowListResponse,
+  GroupChatMessage,
+  GroupChatReplyPreview,
+  GroupChatResponse,
   GroupMembersResponse,
+  GroupMessageReactionState,
+  GroupMessageReactor,
   GroupPageData,
   GroupRelationship,
   GroupRequestsResponse,
+  GroupUnreadState,
   MessagesResponse,
   NoteItem,
   NotesResponse,
@@ -95,6 +107,7 @@ const COMMENTS_PAGE_SIZE = 20;
 const MESSAGES_PAGE_SIZE = 20;
 const FOLLOW_LIST_PAGE_SIZE = 20;
 const GROUP_MEMBERS_PAGE_SIZE = 20;
+const GROUP_CHAT_PAGE_SIZE = 30;
 const NOTIFICATIONS_PAGE_SIZE = 20;
 // The badge displays "9+" past nine — scanning further buys nothing.
 const NOTIFICATION_BADGE_LIMIT = 10;
@@ -2714,6 +2727,366 @@ export async function getGroupMembersPage(
     nextCursor:
       hasMore && lastRow ? `${lastRow.joinedAt.getTime()}.${lastRow.id}` : null,
   };
+}
+
+// Compact author projection for chat bubbles — far smaller than
+// publicUserColumns so the poll/delta payload (Fast Origin Transfer) stays
+// lean. equippedGroupId feeds withGroupBadge.
+const chatSenderColumns = {
+  id: userTable.id,
+  username: userTable.username,
+  displayName: userTable.displayName,
+  imageUrl: userTable.imageUrl,
+  equippedGroupId: userTable.equippedGroupId,
+};
+
+const GROUP_REPLY_PREVIEW_MAX = 120;
+
+type GroupMessageRow = {
+  id: string;
+  content: string;
+  createdAt: Date;
+  replyToMessageId: string | null;
+  sender: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    imageUrl: string | null;
+    equippedGroupId: string | null;
+  };
+};
+
+// Resolve badges + reply previews once per page (bounded inArray reads on the
+// group PK) then decrypt each body. Shared by the cached history page and the
+// uncached live delta. Reply previews are truncated server-side so the payload
+// (Fast Origin Transfer) stays small.
+async function toGroupChatMessages(
+  rows: GroupMessageRow[],
+): Promise<GroupChatMessage[]> {
+  const badgeMap = await getGroupBadgeMap(rows.map((row) => row.sender));
+
+  const parentIds = Array.from(
+    new Set(
+      rows.flatMap((row) =>
+        row.replyToMessageId ? [row.replyToMessageId] : [],
+      ),
+    ),
+  );
+
+  const replyMap = new Map<string, GroupChatReplyPreview>();
+  if (parentIds.length > 0) {
+    const parents = await db
+      .select({
+        id: groupMessageTable.id,
+        content: groupMessageTable.content,
+        username: userTable.username,
+        displayName: userTable.displayName,
+      })
+      .from(groupMessageTable)
+      .innerJoin(userTable, eq(groupMessageTable.senderId, userTable.id))
+      .where(inArray(groupMessageTable.id, parentIds));
+
+    for (const parent of parents) {
+      replyMap.set(parent.id, {
+        id: parent.id,
+        content: (await aesDecrypt(parent.content)).slice(
+          0,
+          GROUP_REPLY_PREVIEW_MAX,
+        ),
+        senderName: parent.displayName ?? parent.username,
+      });
+    }
+  }
+
+  return Promise.all(
+    rows.map(async (row) => ({
+      id: row.id,
+      content: await aesDecrypt(row.content),
+      createdAt: row.createdAt,
+      sender: withGroupBadge(row.sender, badgeMap),
+      replyTo: row.replyToMessageId
+        ? (replyMap.get(row.replyToMessageId) ?? null)
+        : null,
+    })),
+  );
+}
+
+/**
+ * Newest-first chat history (initial load + scroll-up via `cursor` = the
+ * oldest loaded edge). Cached + busted by the send action's
+ * `group-messages:${groupId}` updateTag, so the first page is read-your-writes
+ * while older pages stay warm. The members-only gate is the calling route's
+ * job. Keyset on group_message_group_created_id_idx — never a full-room SCAN.
+ */
+export async function getGroupMessagesPage(
+  groupId: string,
+  cursor: string | null,
+): Promise<GroupChatResponse> {
+  "use cache";
+  cacheTag(`group-messages:${groupId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  const parsedCursor = parseCursor(cursor);
+  const cursorCondition = parsedCursor
+    ? or(
+        lt(groupMessageTable.createdAt, parsedCursor.cursorDate),
+        and(
+          eq(groupMessageTable.createdAt, parsedCursor.cursorDate),
+          lt(groupMessageTable.id, parsedCursor.cursorId),
+        ),
+      )
+    : undefined;
+
+  const baseCondition = eq(groupMessageTable.groupId, groupId);
+
+  const rows = await db
+    .select({
+      id: groupMessageTable.id,
+      content: groupMessageTable.content,
+      createdAt: groupMessageTable.createdAt,
+      replyToMessageId: groupMessageTable.replyToMessageId,
+      sender: chatSenderColumns,
+    })
+    .from(groupMessageTable)
+    .innerJoin(userTable, eq(groupMessageTable.senderId, userTable.id))
+    .where(
+      cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
+    )
+    .orderBy(desc(groupMessageTable.createdAt), desc(groupMessageTable.id))
+    .limit(GROUP_CHAT_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(rows, GROUP_CHAT_PAGE_SIZE);
+  const lastRow = pageRows[pageRows.length - 1];
+
+  return {
+    data: await toGroupChatMessages(pageRows),
+    nextCursor:
+      hasMore && lastRow
+        ? `${lastRow.createdAt.getTime()}.${lastRow.id}`
+        : null,
+  };
+}
+
+/**
+ * The live tail: messages strictly newer than `since` (the client's newest
+ * loaded edge), oldest→newest so the client appends in order. Deliberately NOT
+ * cached — the cursor churns every poll, so caching would never hit. Bounded
+ * LIMIT keeps a backlog catch-up from unbounding the read; a full page implies
+ * more, surfaced via nextCursor. A missing/empty cursor returns nothing (the
+ * client always sends its newest before polling).
+ */
+export async function getGroupMessagesSince(
+  groupId: string,
+  since: string | null,
+): Promise<GroupChatResponse> {
+  const parsedCursor = parseCursor(since);
+  if (!parsedCursor) {
+    return { data: [], nextCursor: null };
+  }
+
+  const rows = await db
+    .select({
+      id: groupMessageTable.id,
+      content: groupMessageTable.content,
+      createdAt: groupMessageTable.createdAt,
+      replyToMessageId: groupMessageTable.replyToMessageId,
+      sender: chatSenderColumns,
+    })
+    .from(groupMessageTable)
+    .innerJoin(userTable, eq(groupMessageTable.senderId, userTable.id))
+    .where(
+      and(
+        eq(groupMessageTable.groupId, groupId),
+        or(
+          gt(groupMessageTable.createdAt, parsedCursor.cursorDate),
+          and(
+            eq(groupMessageTable.createdAt, parsedCursor.cursorDate),
+            gt(groupMessageTable.id, parsedCursor.cursorId),
+          ),
+        ),
+      ),
+    )
+    .orderBy(asc(groupMessageTable.createdAt), asc(groupMessageTable.id))
+    .limit(GROUP_CHAT_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(rows, GROUP_CHAT_PAGE_SIZE);
+  const lastRow = pageRows[pageRows.length - 1];
+
+  return {
+    data: await toGroupChatMessages(pageRows),
+    nextCursor:
+      hasMore && lastRow
+        ? `${lastRow.createdAt.getTime()}.${lastRow.id}`
+        : null,
+  };
+}
+
+/**
+ * Per-group unread flags for the /groups hub dot. Two bounded reads over the
+ * viewer's <=JOINED_GROUPS_CAP groups + their read watermarks — never a COUNT
+ * or a message scan. `hasUnread` = the group has messages newer than the
+ * viewer's last read. Cached per viewer; busted on mark-read (read-your-writes
+ * when you open a room). A new message from someone else surfaces within the
+ * revalidate window — eventual consistency is fine for a dot.
+ */
+export async function getGroupUnreadStates(
+  userId: string,
+): Promise<GroupUnreadState[]> {
+  "use cache";
+  cacheTag(`unread-groups:${userId}`);
+  cacheLife({ revalidate: PRIVATE_REVALIDATE_SECONDS });
+
+  const memberships = await db
+    .select({
+      groupId: groupMemberTable.groupId,
+      lastMessageAt: groupTable.lastMessageAt,
+    })
+    .from(groupMemberTable)
+    .innerJoin(groupTable, eq(groupMemberTable.groupId, groupTable.id))
+    .where(eq(groupMemberTable.userId, userId))
+    .limit(JOINED_GROUPS_CAP);
+
+  if (memberships.length === 0) {
+    return [];
+  }
+
+  const reads = await db
+    .select({
+      groupId: groupMessageReadTable.groupId,
+      lastReadAt: groupMessageReadTable.lastReadAt,
+    })
+    .from(groupMessageReadTable)
+    .where(
+      and(
+        eq(groupMessageReadTable.userId, userId),
+        inArray(
+          groupMessageReadTable.groupId,
+          memberships.map((m) => m.groupId),
+        ),
+      ),
+    );
+
+  const readMap = new Map(reads.map((r) => [r.groupId, r.lastReadAt]));
+
+  return memberships.map((m) => {
+    const lastRead = readMap.get(m.groupId);
+    return {
+      groupId: m.groupId,
+      hasUnread:
+        m.lastMessageAt != null &&
+        (!lastRead || m.lastMessageAt.getTime() > lastRead.getTime()),
+    };
+  });
+}
+
+// Cap on how many message ids a single reaction-overlay request resolves —
+// bounds the read regardless of how far the client has scrolled.
+const GROUP_REACTION_IDS_MAX = 80;
+
+/**
+ * Reaction overlay for a set of loaded messages: the aggregate emoji counts per
+ * message + the viewer's own pick. NOT cached (per-viewer, and reads are the
+ * abundant axis here). Bounded by the id cap; only messages that actually have
+ * reactions are returned so the payload stays small. The join scopes to
+ * `groupId` so a client can't read reaction counts for a message in another
+ * group by passing a foreign id (IDOR) — the route only authorizes this group.
+ */
+export async function getGroupMessageReactions(
+  messageIds: string[],
+  viewerId: string,
+  groupId: string,
+): Promise<GroupMessageReactionState[]> {
+  const ids = messageIds.slice(0, GROUP_REACTION_IDS_MAX);
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const rows = await db
+    .select({
+      messageId: groupMessageReactionTable.messageId,
+      emoji: groupMessageReactionTable.emoji,
+      userId: groupMessageReactionTable.userId,
+    })
+    .from(groupMessageReactionTable)
+    .innerJoin(
+      groupMessageTable,
+      eq(groupMessageReactionTable.messageId, groupMessageTable.id),
+    )
+    .where(
+      and(
+        inArray(groupMessageReactionTable.messageId, ids),
+        eq(groupMessageTable.groupId, groupId),
+      ),
+    );
+
+  const byMessage = new Map<
+    string,
+    { counts: Map<string, number>; viewer: string | null }
+  >();
+
+  for (const row of rows) {
+    let entry = byMessage.get(row.messageId);
+    if (!entry) {
+      entry = { counts: new Map(), viewer: null };
+      byMessage.set(row.messageId, entry);
+    }
+    entry.counts.set(row.emoji, (entry.counts.get(row.emoji) ?? 0) + 1);
+    if (row.userId === viewerId) {
+      entry.viewer = row.emoji;
+    }
+  }
+
+  return Array.from(byMessage, ([messageId, entry]) => ({
+    messageId,
+    reactions: Array.from(entry.counts, ([emoji, count]) => ({ emoji, count })),
+    viewerReaction: entry.viewer,
+  }));
+}
+
+/**
+ * The "who reacted" list for one message — each reactor + the emoji they used,
+ * for the reactions drawer. Scoped to `groupId` (IDOR-safe) and bounded by the
+ * member cap (one reaction per user, ≤ members).
+ */
+export async function getGroupMessageReactors(
+  messageId: string,
+  groupId: string,
+): Promise<GroupMessageReactor[]> {
+  const rows = await db
+    .select({
+      emoji: groupMessageReactionTable.emoji,
+      id: userTable.id,
+      username: userTable.username,
+      displayName: userTable.displayName,
+      imageUrl: userTable.imageUrl,
+    })
+    .from(groupMessageReactionTable)
+    .innerJoin(
+      groupMessageTable,
+      eq(groupMessageReactionTable.messageId, groupMessageTable.id),
+    )
+    .innerJoin(userTable, eq(groupMessageReactionTable.userId, userTable.id))
+    .where(
+      and(
+        eq(groupMessageReactionTable.messageId, messageId),
+        eq(groupMessageTable.groupId, groupId),
+      ),
+    )
+    .orderBy(
+      asc(groupMessageReactionTable.emoji),
+      asc(groupMessageReactionTable.createdAt),
+    )
+    .limit(GROUP_MEMBER_CAP);
+
+  return rows.map((row) => ({
+    emoji: row.emoji,
+    user: {
+      id: row.id,
+      username: row.username,
+      displayName: row.displayName,
+      imageUrl: row.imageUrl,
+    },
+  }));
 }
 
 // Group columns reused for the hub's membership + invite lists.

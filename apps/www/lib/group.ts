@@ -9,6 +9,18 @@ export const GROUP_MEMBER_CAP = 50;
 export const OWNED_GROUPS_CAP = 1;
 export const JOINED_GROUPS_CAP = 5;
 
+// Fixed group-chat reaction set — same emojis as apps/chat for consistency.
+// Gates the picker (UX) AND the react action (server-side validation), so the
+// emoji column can never hold arbitrary client content.
+export const GROUP_CHAT_REACTION_EMOJIS = [
+  "❤️",
+  "😂",
+  "🔥",
+  "😮",
+  "👍",
+  "😢",
+] as const;
+
 export const GROUP_PLUS_REQUIRED_ERROR =
   "Creating a group is an Umamin+ perk — unlocked once your account is a year old.";
 // Reserved tags surface as "taken" too — exposing a tag as specifically
