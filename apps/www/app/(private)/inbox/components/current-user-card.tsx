@@ -18,5 +18,7 @@ export async function CurrentUserCard({
     ? await getGroupBadge(user.equippedGroupId)
     : null;
 
-  return <UserCard user={{ ...user, groupBadge, bannerImageUrl }} />;
+  // The inbox header is the viewer's own profile (same header the Posts tab
+  // shows), so it gets the edit pencil too.
+  return <UserCard user={{ ...user, groupBadge, bannerImageUrl }} isSelf />;
 }

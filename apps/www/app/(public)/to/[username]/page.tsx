@@ -67,7 +67,10 @@ export default async function SendMessage({
               user.username,
             ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
 
-            <ShareButton username={user.username} />
+            <ShareButton
+              username={user.username}
+              className="text-muted-foreground"
+            />
           </div>
 
           <span className="font-medium text-muted-foreground">umamin</span>

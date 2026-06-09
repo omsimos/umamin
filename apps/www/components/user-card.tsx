@@ -47,19 +47,27 @@ export function UserCard({
           )}
         </div>
 
-        {isSelf && (
-          <Button
-            asChild
-            size="icon"
+        <div className="absolute right-3 top-3 flex items-center gap-2">
+          {isSelf && (
+            <Button
+              asChild
+              size="icon"
+              variant="secondary"
+              aria-label="Edit profile"
+              className="rounded-full bg-background/70 backdrop-blur"
+            >
+              <Link href="/settings">
+                <PencilIcon className="size-4" />
+              </Link>
+            </Button>
+          )}
+
+          <ShareButton
+            username={user.username}
             variant="secondary"
-            aria-label="Edit profile"
-            className="absolute right-3 top-3 rounded-full bg-background/70 backdrop-blur"
-          >
-            <Link href="/settings">
-              <PencilIcon className="size-4" />
-            </Link>
-          </Button>
-        )}
+            className="rounded-full bg-background/70 backdrop-blur"
+          />
+        </div>
 
         {/* Avatar straddles the banner's bottom-left edge (cover-photo layout). */}
         <Avatar
@@ -80,18 +88,14 @@ export function UserCard({
       </div>
 
       <section className="mt-11">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center space-x-1">
-            <p className="font-semibold md:text-xl">
-              {user.displayName ? user.displayName : user.username}
-            </p>
-            {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
-              user.username,
-            ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
-            <GroupBadge badge={user.groupBadge} />
-          </div>
-
-          <ShareButton username={user.username} />
+        <div className="flex items-center space-x-1">
+          <p className="font-semibold md:text-xl">
+            {user.displayName ? user.displayName : user.username}
+          </p>
+          {process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
+            user.username,
+          ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+          <GroupBadge badge={user.groupBadge} />
         </div>
         <p className="text-muted-foreground text-sm">@{user.username}</p>
 
