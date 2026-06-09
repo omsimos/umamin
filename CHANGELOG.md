@@ -24,6 +24,10 @@ any that are empty.
 
 - A profile photo with the Umamin+ shine now sits overlapping the banner like every other avatar, instead of dropping below it.
 
+### Security & Privacy
+
+- Deleting your account now also removes an uploaded banner from storage, the same as your profile photo.
+
 ## [5.13.0] - 2026-06-10
 
 ### Added
