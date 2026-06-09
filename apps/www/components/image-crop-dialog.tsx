@@ -263,8 +263,7 @@ export function ImageCropDialog({
           </div>
 
           <p className="text-center text-xs text-muted-foreground">
-            Drag to reposition
-            {round ? "" : ", scroll or use the slider to zoom"}.
+            Drag to reposition, scroll or use the slider to zoom.
           </p>
         </div>
 
