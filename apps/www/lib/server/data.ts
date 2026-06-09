@@ -1844,6 +1844,9 @@ export async function getCurrentUserData(
     const [userRecord] = await db
       .select({
         ...publicUserColumns,
+        // Profile-header-only (kept out of publicUserColumns so author payloads
+        // stay compact); included here so settings can preview the current one.
+        bannerImageUrl: userTable.bannerImageUrl,
         // Owner-private (like hasPassword): this record is only ever served to
         // its own session — keep blockedWords out of publicUserColumns.
         blockedWords: userTable.blockedWords,
@@ -1913,6 +1916,7 @@ export async function getPublicUserProfileData(
       username: userTable.username,
       displayName: userTable.displayName,
       imageUrl: userTable.imageUrl,
+      bannerImageUrl: userTable.bannerImageUrl,
       bio: userTable.bio,
       question: userTable.question,
       quietMode: userTable.quietMode,

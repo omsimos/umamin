@@ -2,6 +2,7 @@
 
 import { Button } from "@umamin/ui/components/button";
 import { Share2Icon } from "lucide-react";
+import type { ComponentProps } from "react";
 import { toast } from "sonner";
 
 const onShare = (username: string) => {
@@ -25,16 +26,27 @@ const onShare = (username: string) => {
   }
 };
 
-export function ShareButton({ username }: { username: string }) {
+export function ShareButton({
+  username,
+  variant = "ghost",
+  className,
+}: {
+  username: string;
+  variant?: ComponentProps<typeof Button>["variant"];
+  className?: string;
+}) {
   return (
     <Button
       type="button"
-      variant="ghost"
+      variant={variant}
       size="icon"
       aria-label="Share profile"
+      // Icon inherits the button's text color (currentColor) so callers can
+      // tune it via className — muted on /to, default-foreground on the banner.
+      className={className}
       onClick={() => onShare(username)}
     >
-      <Share2Icon className="size-4 text-muted-foreground" />
+      <Share2Icon className="size-4" />
     </Button>
   );
 }

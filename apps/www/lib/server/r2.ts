@@ -5,6 +5,7 @@ import { AwsClient, AwsV4Signer } from "aws4fetch";
 import { nanoid } from "nanoid";
 import {
   AVATAR_MAX_BYTES,
+  BANNER_MAX_BYTES,
   imageExtension,
   isOwnStagingKey,
   MAX_IMAGE_BYTES,
@@ -297,5 +298,46 @@ export async function deleteR2Avatar(imageUrl: string | null | undefined) {
     await deleteObject(key);
   } catch (err) {
     console.error("[r2] deleteR2Avatar failed", err);
+  }
+}
+
+/**
+ * Claims a staged banner upload: validates, copies to the permanent banners/
+ * prefix, and returns the final key (null on any failure). Mirrors
+ * claimStagedAvatar with the banner size cap. Staging delete is best-effort.
+ */
+export async function claimStagedBanner(
+  userId: string,
+  key: string,
+): Promise<string | null> {
+  if (!r2) return null;
+  if (!isOwnStagingKey(key, userId)) return null;
+
+  const meta = await validateStagedImage(key, BANNER_MAX_BYTES);
+  if (!meta) return null;
+
+  const finalKey = `banners/${userId}/${nanoid()}.${imageExtension(meta.contentType)}`;
+  const copied = await copyObject(key, finalKey, meta.contentType);
+  if (!copied) return null;
+
+  deleteObject(key).catch(() => {});
+
+  return finalKey;
+}
+
+/**
+ * Best-effort delete of a replaced/removed banner. Only acts on URLs that
+ * resolve to our own banners/ prefix.
+ */
+export async function deleteR2Banner(imageUrl: string | null | undefined) {
+  if (!r2) return;
+
+  const key = r2KeyFromPublicUrl(imageUrl);
+  if (!key?.startsWith("banners/")) return;
+
+  try {
+    await deleteObject(key);
+  } catch (err) {
+    console.error("[r2] deleteR2Banner failed", err);
   }
 }

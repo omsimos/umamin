@@ -397,7 +397,7 @@ export function UserProfile({ username, initialUser }: Props) {
 
   return (
     <>
-      <UserCard user={profile} />
+      <UserCard user={profile} isSelf={isSelf} />
 
       {isSelf ? null : (
         <div className="flex gap-2 mt-6 w-full">

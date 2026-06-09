@@ -1,14 +1,21 @@
+import type { CropArea } from "@/lib/image-crop";
 import {
   AVATAR_EDGE,
   AVATAR_MAX_BYTES,
   AVATAR_TARGET_BYTES,
+  BANNER_EDGE,
+  BANNER_MAX_BYTES,
+  BANNER_TARGET_BYTES,
   MAX_AVATAR_SOURCE_BYTES,
+  MAX_BANNER_SOURCE_BYTES,
   MAX_IMAGE_BYTES,
   MAX_IMAGE_EDGE,
   MAX_POST_SOURCE_BYTES,
   TARGET_IMAGE_BYTES,
   type UploadContentType,
 } from "@/lib/post-images";
+
+export type { CropArea } from "@/lib/image-crop";
 
 export type CompressedImage = {
   blob: Blob;
@@ -64,6 +71,19 @@ const AVATAR_PRESET: CompressPreset = {
   maxBytes: AVATAR_MAX_BYTES,
   maxSourceBytes: MAX_AVATAR_SOURCE_BYTES,
   square: true,
+};
+
+// 3:1 cover banner — the user's manual crop rect supplies the aspect, so no
+// `square`; the plan just downscales the cropped region. Exported for tests.
+export const BANNER_PRESET: CompressPreset = {
+  plan: [
+    { edge: BANNER_EDGE, quality: 0.72 },
+    { edge: BANNER_EDGE, quality: 0.62 },
+    { edge: 960, quality: 0.62 },
+  ],
+  targetBytes: BANNER_TARGET_BYTES,
+  maxBytes: BANNER_MAX_BYTES,
+  maxSourceBytes: MAX_BANNER_SOURCE_BYTES,
 };
 
 // Fit (width, height) inside a square of `edge`, never upscaling.
@@ -125,6 +145,7 @@ function renderToCanvas(
   width: number,
   height: number,
   square: boolean,
+  crop?: CropArea,
 ) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -138,7 +159,20 @@ function renderToCanvas(
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  if (square) {
+  if (crop) {
+    // The user framed this rect themselves — it wins over the square default.
+    ctx.drawImage(
+      bitmap,
+      crop.x,
+      crop.y,
+      crop.width,
+      crop.height,
+      0,
+      0,
+      width,
+      height,
+    );
+  } else if (square) {
     // Center-crop the largest source square (cover semantics).
     const side = Math.min(bitmap.width, bitmap.height);
     const sx = Math.floor((bitmap.width - side) / 2);
@@ -152,22 +186,23 @@ function renderToCanvas(
 }
 
 /**
- * Aggressive lossy pipeline: decode (EXIF orientation applied), downscale to
- * the preset's largest edge, then walk its plan until the encode lands under
- * the byte target. WebP where the browser can encode it, JPEG on Safari.
- * Re-encoding also strips EXIF metadata (GPS etc.) as a side effect.
+ * Decode a picked file with EXIF orientation applied, rejecting non-images,
+ * oversized files (fail fast before the full decode), and pixel bombs. Shared
+ * by the crop dialog (live preview) and compressImage so both work in the same
+ * oriented coordinate space — a crop rect picked against this bitmap maps 1:1
+ * when compressImage re-decodes the same file.
  */
-export async function compressImage(
-  file: File,
-  preset: CompressPreset = POST_PRESET,
-): Promise<CompressedImage> {
+export async function decodeOriented(
+  file: Blob,
+  maxSourceBytes: number,
+): Promise<ImageBitmap> {
   if (file.type === "image/gif") {
     throw new ImageCompressError("GIFs aren't supported.");
   }
 
-  if (file.size > preset.maxSourceBytes) {
+  if (file.size > maxSourceBytes) {
     throw new ImageCompressError(
-      `Choose an image under ${Math.round(preset.maxSourceBytes / (1024 * 1024))}MB.`,
+      `Choose an image under ${Math.round(maxSourceBytes / (1024 * 1024))}MB.`,
     );
   }
 
@@ -182,11 +217,28 @@ export async function compressImage(
     );
   }
 
-  try {
-    if (bitmap.width * bitmap.height > MAX_SOURCE_PIXELS) {
-      throw new ImageCompressError("This image is too large.");
-    }
+  if (bitmap.width * bitmap.height > MAX_SOURCE_PIXELS) {
+    bitmap.close();
+    throw new ImageCompressError("This image is too large.");
+  }
 
+  return bitmap;
+}
+
+/**
+ * Aggressive lossy pipeline: decode (EXIF orientation applied), downscale to
+ * the preset's largest edge, then walk its plan until the encode lands under
+ * the byte target. WebP where the browser can encode it, JPEG on Safari.
+ * Re-encoding also strips EXIF metadata (GPS etc.) as a side effect.
+ */
+export async function compressImage(
+  file: File,
+  preset: CompressPreset = POST_PRESET,
+  crop?: CropArea,
+): Promise<CompressedImage> {
+  const bitmap = await decodeOriented(file, preset.maxSourceBytes);
+
+  try {
     const contentType: UploadContentType = (await supportsWebpEncode())
       ? "image/webp"
       : "image/jpeg";
@@ -202,17 +254,29 @@ export async function compressImage(
     const canvases = new Map<string, HTMLCanvasElement>();
 
     for (const step of preset.plan) {
-      const sourceWidth = preset.square
-        ? Math.min(bitmap.width, bitmap.height)
-        : bitmap.width;
-      const sourceHeight = preset.square
-        ? Math.min(bitmap.width, bitmap.height)
-        : bitmap.height;
+      // A manual crop rect dictates the source geometry; otherwise the square
+      // center-crop (avatars) or the full image.
+      const sourceWidth = crop
+        ? crop.width
+        : preset.square
+          ? Math.min(bitmap.width, bitmap.height)
+          : bitmap.width;
+      const sourceHeight = crop
+        ? crop.height
+        : preset.square
+          ? Math.min(bitmap.width, bitmap.height)
+          : bitmap.height;
       const { width, height } = fitWithin(sourceWidth, sourceHeight, step.edge);
 
       let canvas = canvases.get(`${width}x${height}`);
       if (!canvas) {
-        canvas = renderToCanvas(bitmap, width, height, preset.square === true);
+        canvas = renderToCanvas(
+          bitmap,
+          width,
+          height,
+          preset.square === true,
+          crop,
+        );
         canvases.set(`${width}x${height}`, canvas);
       }
 
@@ -249,7 +313,17 @@ export async function compressImage(
   }
 }
 
-/** Profile photos: square center-crop at 256px, ~48KB target. */
-export function compressAvatar(file: File) {
-  return compressImage(file, AVATAR_PRESET);
+/**
+ * Profile photos: 256px, ~48KB target. With a manual crop rect (natural px)
+ * the user's 1:1 framing is used; without one it center-crops the largest
+ * square.
+ */
+export function compressAvatar(file: File, crop?: CropArea) {
+  return compressImage(file, AVATAR_PRESET, crop);
+}
+
+/** Profile banners: 3:1 cover, ~1200px long edge, ~150KB target. `crop` is the
+ * region the user framed (natural px). */
+export function compressBanner(file: File, crop: CropArea) {
+  return compressImage(file, BANNER_PRESET, crop);
 }

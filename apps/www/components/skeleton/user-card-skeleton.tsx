@@ -1,39 +1,29 @@
-import { Avatar, AvatarFallback } from "@umamin/ui/components/avatar";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { CalendarDaysIcon, Link2Icon } from "lucide-react";
 
 export function UserCardSkeleton() {
   return (
     <div>
-      <section className="flex gap-4">
-        <Avatar className="md:h-20 md:w-20 h-16 w-16">
-          <AvatarFallback>
-            <Skeleton className="w-full h-full rounded-full" />
-          </AvatarFallback>
-        </Avatar>
+      <div className="relative">
+        <Skeleton className="aspect-[3/1] w-full rounded-xl" />
+        {/* Mirrors UserCard: avatar straddling the banner's bottom-left. */}
+        <Skeleton className="absolute -bottom-8 left-4 size-16 rounded-full ring-4 ring-background md:size-20" />
+      </div>
 
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center space-x-1">
-              <Skeleton className="h-6 w-32 md:h-7 md:w-40" />
-            </div>
-            <Skeleton className="h-4 w-4" />
-          </div>
-          <Skeleton className="h-4 w-24 mt-1" />
-        </div>
-      </section>
+      <section className="mt-11">
+        <Skeleton className="h-6 w-32 md:h-7 md:w-40" />
+        <Skeleton className="mt-1 h-4 w-24" />
 
-      <section className="mt-4">
         <div className="mt-4 space-y-1">
           <div className="text-muted-foreground flex items-center">
-            <Link2Icon className="h-4 w-4 mr-2" />
-            <Skeleton className="w-48 h-5" />
+            <Link2Icon className="mr-2 h-4 w-4" />
+            <Skeleton className="h-5 w-48" />
           </div>
 
           <div className="text-muted-foreground text-sm flex items-center">
-            <CalendarDaysIcon className="h-4 w-4 mr-2" />
+            <CalendarDaysIcon className="mr-2 h-4 w-4" />
             <span>Joined </span>
-            <Skeleton className="w-20 h-4 ml-1" />
+            <Skeleton className="ml-1 h-4 w-20" />
           </div>
         </div>
       </section>

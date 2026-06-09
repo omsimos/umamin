@@ -12,6 +12,7 @@ import type {
   UserProfileResponse,
 } from "@/lib/query-types";
 import { generalSettingsSchema, type UserWithAccount } from "@/types/user";
+import { ProfileMedia } from "./profile-media";
 
 export function GeneralSettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
@@ -96,79 +97,83 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
   });
 
   return (
-    <form
-      className="space-y-6 w-full"
-      onSubmit={(e) => {
-        e.preventDefault();
-        form.handleSubmit();
-      }}
-    >
-      <form.AppField
-        name="displayName"
-        children={(field) => (
-          <field.TextField
-            label="Display Name"
-            placeholder="Umamin"
-            disabled={mutation.isPending}
-          />
-        )}
-      />
+    <div className="space-y-8 w-full">
+      <ProfileMedia user={user} />
 
-      <form.AppField
-        name="username"
-        children={(field) => (
-          <div className="space-y-2">
+      <form
+        className="space-y-6 w-full"
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
+        <form.AppField
+          name="displayName"
+          children={(field) => (
             <field.TextField
-              label="Username"
-              placeholder="umamin"
-              isRequired
-              transform={(value) => value.toLowerCase()}
-              disabled={!user.account || mutation.isPending}
+              label="Display Name"
+              placeholder="Umamin"
+              disabled={mutation.isPending}
             />
-            {user.account ? (
-              <p className="text-sm text-muted-foreground">
-                Your previous username will be available to other users.
-              </p>
-            ) : (
-              <p className="text-sm text-yellow-600 flex items-center gap-1">
-                <InfoIcon className="h-4 w-4" /> Google account required to
-                change username
-              </p>
-            )}
-          </div>
-        )}
-      />
+          )}
+        />
 
-      <form.AppField
-        name="question"
-        children={(field) => (
-          <field.TextareaField
-            label="Custom Message"
-            placeholder="Send me an anonymous message!"
-            className="min-h-[100px] resize-none"
-            isRequired
-            disabled={mutation.isPending}
-          />
-        )}
-      />
+        <form.AppField
+          name="username"
+          children={(field) => (
+            <div className="space-y-2">
+              <field.TextField
+                label="Username"
+                placeholder="umamin"
+                isRequired
+                transform={(value) => value.toLowerCase()}
+                disabled={!user.account || mutation.isPending}
+              />
+              {user.account ? (
+                <p className="text-sm text-muted-foreground">
+                  Your previous username will be available to other users.
+                </p>
+              ) : (
+                <p className="text-sm text-yellow-600 flex items-center gap-1">
+                  <InfoIcon className="h-4 w-4" /> Google account required to
+                  change username
+                </p>
+              )}
+            </div>
+          )}
+        />
 
-      <form.AppField
-        name="bio"
-        children={(field) => (
-          <field.TextareaField
-            label="Bio"
-            placeholder="Tell us a little bit about yourself"
-            className="min-h-[100px] resize-none"
-            disabled={mutation.isPending}
-          />
-        )}
-      />
+        <form.AppField
+          name="question"
+          children={(field) => (
+            <field.TextareaField
+              label="Custom Message"
+              placeholder="Send me an anonymous message!"
+              className="min-h-[100px] resize-none"
+              isRequired
+              disabled={mutation.isPending}
+            />
+          )}
+        />
 
-      <div className="flex justify-end">
-        <form.AppForm>
-          <form.SubmitButton icon={CheckIcon} label="Save Changes" />
-        </form.AppForm>
-      </div>
-    </form>
+        <form.AppField
+          name="bio"
+          children={(field) => (
+            <field.TextareaField
+              label="Bio"
+              placeholder="Tell us a little bit about yourself"
+              className="min-h-[100px] resize-none"
+              disabled={mutation.isPending}
+            />
+          )}
+        />
+
+        <div className="flex justify-end">
+          <form.AppForm>
+            <form.SubmitButton icon={CheckIcon} label="Save Changes" />
+          </form.AppForm>
+        </div>
+      </form>
+    </div>
   );
 }

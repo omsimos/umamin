@@ -73,7 +73,10 @@ export default async function InboxPage({
   return (
     <main className="max-w-xl mx-auto min-h-screen container">
       <Suspense fallback={<UserCardSkeleton />}>
-        <CurrentUserCard user={user ? toPublicUser(user) : null} />
+        <CurrentUserCard
+          user={user ? toPublicUser(user) : null}
+          bannerImageUrl={user?.bannerImageUrl}
+        />
       </Suspense>
 
       {user?.username ? (

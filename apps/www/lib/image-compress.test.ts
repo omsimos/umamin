@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { COMPRESSION_PLAN, fitWithin, pickBestAttempt } from "./image-compress";
 import {
+  BANNER_PRESET,
+  COMPRESSION_PLAN,
+  fitWithin,
+  pickBestAttempt,
+} from "./image-compress";
+import {
+  BANNER_EDGE,
   MAX_IMAGE_BYTES,
   MAX_IMAGE_EDGE,
   TARGET_IMAGE_BYTES,
@@ -41,6 +47,30 @@ describe("COMPRESSION_PLAN", () => {
       expect(step.quality).toBeGreaterThanOrEqual(0.6);
       expect(step.quality).toBeLessThanOrEqual(0.72);
     }
+  });
+});
+
+describe("BANNER_PRESET", () => {
+  it("starts at the banner edge and only walks downward", () => {
+    expect(BANNER_PRESET.plan[0].edge).toBe(BANNER_EDGE);
+
+    for (let i = 1; i < BANNER_PRESET.plan.length; i++) {
+      const prev = BANNER_PRESET.plan[i - 1];
+      const step = BANNER_PRESET.plan[i];
+      expect(
+        step.edge < prev.edge ||
+          (step.edge === prev.edge && step.quality < prev.quality),
+      ).toBe(true);
+    }
+  });
+
+  it("keeps quality above the banding floor and is not square-cropped", () => {
+    for (const step of BANNER_PRESET.plan) {
+      expect(step.quality).toBeGreaterThanOrEqual(0.6);
+      expect(step.quality).toBeLessThanOrEqual(0.72);
+    }
+    // The user's manual crop supplies the aspect — no auto square center-crop.
+    expect(BANNER_PRESET.square).toBeUndefined();
   });
 });
 
