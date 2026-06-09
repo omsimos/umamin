@@ -18,6 +18,19 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.13.0] - 2026-06-10
+
+### Added
+
+- Profile banners: add a cover image to your profile and frame it just how you want with a built-in crop-and-zoom tool. Your banner shows behind your avatar on your profile and at the top of your inbox, and you can change or remove it anytime from Settings. Free for everyone.
+- The same crop-and-zoom tool now applies when you set a profile photo, so you can choose exactly how it's framed instead of relying on an automatic crop.
+- A quick edit shortcut on your profile and inbox headers jumps straight to Settings.
+
+### Changed
+
+- Profile photo controls moved from the Privacy tab to General in Settings, alongside the new banner.
+- The profile header was refreshed to a cover-photo layout, with your avatar overlapping the banner and the Share button moved up beside the edit shortcut.
+
 ## [5.12.0] - 2026-06-09
 
 ### Added
@@ -626,6 +639,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.13.0]: https://github.com/omsimos/umamin/compare/v5.12.0...v5.13.0
 [5.12.0]: https://github.com/omsimos/umamin/compare/v5.11.0...v5.12.0
 [5.11.0]: https://github.com/omsimos/umamin/compare/v5.10.0...v5.11.0
 [5.10.0]: https://github.com/omsimos/umamin/compare/v5.9.0...v5.10.0
