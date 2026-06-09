@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.13.1] - 2026-06-10
+
+### Fixed
+
+- A profile photo with the Umamin+ shine now sits overlapping the banner like every other avatar, instead of dropping below it.
+
 ## [5.13.0] - 2026-06-10
 
 ### Added
@@ -639,6 +645,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.13.1]: https://github.com/omsimos/umamin/compare/v5.13.0...v5.13.1
 [5.13.0]: https://github.com/omsimos/umamin/compare/v5.12.0...v5.13.0
 [5.12.0]: https://github.com/omsimos/umamin/compare/v5.11.0...v5.12.0
 [5.11.0]: https://github.com/omsimos/umamin/compare/v5.10.0...v5.11.0
