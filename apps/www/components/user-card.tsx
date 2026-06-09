@@ -69,22 +69,26 @@ export function UserCard({
           />
         </div>
 
-        {/* Avatar straddles the banner's bottom-left edge (cover-photo layout). */}
-        <Avatar
-          className={cn(
-            "absolute -bottom-8 left-4 size-16 ring-4 ring-background md:size-20",
-            { "avatar-shine": hasUmaminPlus(user?.createdAt) },
-          )}
-        >
-          <AvatarImage
-            className="rounded-full"
-            src={user?.imageUrl ?? ""}
-            alt={`${user?.username}'s avatar`}
-          />
-          <AvatarFallback className="md:text-4xl text-xl">
-            {user?.username?.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        {/* Avatar straddles the banner's bottom-left edge (cover-photo layout).
+            Positioning lives on the wrapper because `.avatar-shine` sets
+            position: relative (unlayered, so it would override Tailwind's
+            absolute utility and drop the avatar below the banner). */}
+        <div className="absolute -bottom-8 left-4">
+          <Avatar
+            className={cn("size-16 ring-4 ring-background md:size-20", {
+              "avatar-shine": hasUmaminPlus(user?.createdAt),
+            })}
+          >
+            <AvatarImage
+              className="rounded-full"
+              src={user?.imageUrl ?? ""}
+              alt={`${user?.username}'s avatar`}
+            />
+            <AvatarFallback className="md:text-4xl text-xl">
+              {user?.username?.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </div>
       </div>
 
       <section className="mt-11">
