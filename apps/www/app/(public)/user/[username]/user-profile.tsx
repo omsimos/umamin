@@ -4,8 +4,17 @@ import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@umamin/ui/components/dropdown-menu";
+import {
+  EllipsisIcon,
   MessageSquareMoreIcon,
   MessageSquareXIcon,
+  Share2Icon,
   UserCheckIcon,
   UserPlusIcon,
 } from "lucide-react";
@@ -17,7 +26,7 @@ import {
   unblockUserAction,
   unfollowUserAction,
 } from "@/app/actions/user";
-import { Menu } from "@/components/menu";
+import { shareProfile } from "@/components/share-button";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
 import {
@@ -376,28 +385,60 @@ export function UserProfile({ username, initialUser }: Props) {
     },
   });
 
-  const menuItems = [
-    {
-      title: isBlocked ? "Unblock" : "Block",
-      onClick: async () => {
-        if (blockMutation.isPending) return;
+  const handleBlock = async () => {
+    if (blockMutation.isPending) return;
 
-        const resolvedViewer = await requireAuthenticatedViewer();
-        if (!resolvedViewer || resolvedViewer.currentUserId === profile.id) {
-          return;
-        }
+    const resolvedViewer = await requireAuthenticatedViewer();
+    if (!resolvedViewer || resolvedViewer.currentUserId === profile.id) {
+      return;
+    }
 
-        blockMutation.mutate(resolvedViewer.isBlocked);
-      },
-      className: "text-red-500",
-      icon: <MessageSquareXIcon className="h-4 w-4" />,
-      disabled: isSelf || blockMutation.isPending,
-    },
-  ];
+    blockMutation.mutate(resolvedViewer.isBlocked);
+  };
+
+  // Other profiles fold Share + Block into one overflow menu at the banner's
+  // top-right (self gets edit + share instead, handled inside UserCard).
+  const profileMenu = (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="icon"
+          variant="secondary"
+          aria-label="More options"
+          className="rounded-full bg-background/70 backdrop-blur"
+        >
+          <EllipsisIcon className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => shareProfile(profile.username)}>
+          <span className="flex items-center gap-2">
+            <Share2Icon className="size-4" />
+            Share
+          </span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={blockMutation.isPending}
+          onClick={handleBlock}
+          className="text-red-500"
+        >
+          <span className="flex items-center gap-2">
+            <MessageSquareXIcon className="size-4" />
+            {isBlocked ? "Unblock" : "Block"}
+          </span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <>
-      <UserCard user={profile} isSelf={isSelf} />
+      <UserCard
+        user={profile}
+        isSelf={isSelf}
+        headerActions={isSelf ? undefined : profileMenu}
+      />
 
       {isSelf ? null : (
         <div className="flex gap-2 mt-6 w-full">
@@ -458,8 +499,6 @@ export function UserProfile({ username, initialUser }: Props) {
             <MessageSquareMoreIcon />
             Message
           </Button>
-
-          <Menu menuItems={menuItems} />
         </div>
       )}
 
