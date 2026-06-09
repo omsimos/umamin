@@ -3,6 +3,7 @@
 import * as z from "zod";
 import {
   AVATAR_MAX_BYTES,
+  BANNER_MAX_BYTES,
   MAX_IMAGE_BYTES,
   MAX_POST_IMAGES,
   PLUS_REQUIRED_ERROR,
@@ -94,6 +95,44 @@ export const presignAvatarUploadAction = withAction(
   async ({ contentType, contentLength }, { session }) => {
     if (!isR2Configured()) {
       return { error: "Photo uploads aren't available right now." };
+    }
+
+    const key = newStagingKey(session.userId, contentType);
+    const url = await presignImagePut({
+      key,
+      contentType,
+      contentLength,
+    });
+
+    if (!url) {
+      return { error: "An error occurred" };
+    }
+
+    return { success: true, key, url };
+  },
+);
+
+const presignBannerSchema = z.object({
+  contentType: z.enum(UPLOAD_CONTENT_TYPES),
+  contentLength: z.number().int().min(1).max(BANNER_MAX_BYTES),
+});
+
+/**
+ * Presigned PUT for a profile banner. Same staging flow as avatars and free to
+ * every signed-in user (banners aren't Plus-gated), with a banner-sized cap;
+ * updateProfileBannerAction claims the staged object.
+ */
+export const presignBannerUploadAction = withAction(
+  {
+    schema: presignBannerSchema,
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `bannerup:${session.userId}`,
+    },
+  },
+  async ({ contentType, contentLength }, { session }) => {
+    if (!isR2Configured()) {
+      return { error: "Banner uploads aren't available right now." };
     }
 
     const key = newStagingKey(session.userId, contentType);

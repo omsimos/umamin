@@ -18,12 +18,21 @@ export const AVATAR_EDGE = 256;
 export const AVATAR_TARGET_BYTES = 48 * 1024;
 export const AVATAR_MAX_BYTES = 256 * 1024;
 
+// Profile banners: 3:1 cover (X-style), stored at the long edge below — the
+// profile column maxes at ~576 CSS px, so 1200 stays sharp on retina. Wider
+// than an avatar, so a roomier byte budget, but still well under a post image.
+export const BANNER_ASPECT = 3;
+export const BANNER_EDGE = 1200;
+export const BANNER_TARGET_BYTES = 150 * 1024;
+export const BANNER_MAX_BYTES = 400 * 1024;
+
 // Caps on the *picked* file, pre-compression (platform-conventional: 5MB
 // photos, 2MB profile photos). These never reach our servers — they bound
 // client decode memory and reject absurd files fast; what's stored is the
 // compressed result above.
 export const MAX_POST_SOURCE_BYTES = 5 * 1024 * 1024;
 export const MAX_AVATAR_SOURCE_BYTES = 2 * 1024 * 1024;
+export const MAX_BANNER_SOURCE_BYTES = 5 * 1024 * 1024;
 
 // WebP everywhere it can be encoded; JPEG is the Safari fallback (no canvas
 // WebP *encode* support in any Safari as of 2026 — decode is fine).

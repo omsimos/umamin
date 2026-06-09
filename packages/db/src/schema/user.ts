@@ -20,6 +20,7 @@ export const userTable = sqliteTable(
     passwordHash: text("password_hash"),
     bio: text("bio"),
     imageUrl: text("image_url"),
+    bannerImageUrl: text("banner_image_url"),
     quietMode: integer("quiet_mode", { mode: "boolean" })
       .notNull()
       .default(false),

@@ -1,0 +1,1 @@
+ALTER TABLE `user` ADD `banner_image_url` text;

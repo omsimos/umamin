@@ -32,8 +32,10 @@ import { isUniqueConstraintViolation } from "@/lib/server/errors";
 import { notify } from "@/lib/server/notifications";
 import {
   claimStagedAvatar,
+  claimStagedBanner,
   deletePostImages,
   deleteR2Avatar,
+  deleteR2Banner,
   isR2Configured,
 } from "@/lib/server/r2";
 import { withAction } from "@/lib/server/with-action";
@@ -82,6 +84,29 @@ async function swapUserImageUrl(userId: string, imageUrl: string | null) {
       .where(eq(userTable.id, userId));
 
     return row?.imageUrl ?? null;
+  });
+}
+
+// Banner counterpart of swapUserImageUrl: set the banner and return the value
+// it replaced (read in the same transaction) so R2 cleanup targets the object
+// that actually became unreachable.
+async function swapUserBannerUrl(
+  userId: string,
+  bannerImageUrl: string | null,
+) {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ bannerImageUrl: userTable.bannerImageUrl })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+
+    await tx
+      .update(userTable)
+      .set({ bannerImageUrl })
+      .where(eq(userTable.id, userId));
+
+    return row?.bannerImageUrl ?? null;
   });
 }
 
@@ -928,5 +953,80 @@ export const updateProfilePhotoAction = withAction(
     updateTag(`user:${user.id}:accounts`);
 
     return { success: true, imageUrl };
+  },
+);
+
+const profileBannerSchema = z.object({
+  key: z.string().min(1).max(200),
+});
+
+/**
+ * Applies an uploaded banner: claims the staged R2 object (magic-byte + size
+ * validated, copied to banners/), stores its public URL, and deletes the
+ * previous banner so a change never leaves an orphaned object. Mirrors
+ * updateProfilePhotoAction; free to every signed-in user.
+ */
+export const updateProfileBannerAction = withAction(
+  {
+    schema: profileBannerSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      // Shared with presignBannerUploadAction so presign+claim draw from ONE
+      // budget (the claim fans out to ~4 R2 operations).
+      key: ({ user }) => `bannerup:${user.id}`,
+    },
+  },
+  async ({ key }, { user }) => {
+    if (!isR2Configured()) {
+      return { error: "Banner uploads aren't available right now." };
+    }
+
+    const finalKey = await claimStagedBanner(user.id, key);
+
+    if (!finalKey) {
+      return { error: "Couldn't apply this banner. Please try again." };
+    }
+
+    const bannerImageUrl = publicImageUrl(finalKey);
+    let previousBannerUrl: string | null;
+
+    try {
+      previousBannerUrl = await swapUserBannerUrl(user.id, bannerImageUrl);
+    } catch (err) {
+      // The claimed object must not outlive a failed update (storage leak).
+      await deleteR2Banner(bannerImageUrl);
+      throw err;
+    }
+
+    await deleteR2Banner(previousBannerUrl);
+
+    updateTag(`user:${user.username}`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
+
+    return { success: true, bannerImageUrl };
+  },
+);
+
+/** Clears the banner and deletes the stored object. */
+export const removeProfileBannerAction = withAction(
+  {
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ user }) => `bannerup:${user.id}`,
+    },
+  },
+  async (_input, { user }) => {
+    const previousBannerUrl = await swapUserBannerUrl(user.id, null);
+
+    await deleteR2Banner(previousBannerUrl);
+
+    updateTag(`user:${user.username}`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
+
+    return { success: true };
   },
 );

@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   AVATAR_MAX_BYTES,
+  BANNER_MAX_BYTES,
+  BANNER_TARGET_BYTES,
   imageExtension,
   isOwnStagingKey,
   MAX_AVATAR_SOURCE_BYTES,
+  MAX_BANNER_SOURCE_BYTES,
   MAX_IMAGE_BYTES,
   MAX_POST_SOURCE_BYTES,
   postImageInputSchema,
@@ -16,6 +19,14 @@ describe("upload byte caps", () => {
     expect(AVATAR_MAX_BYTES).toBeLessThan(MAX_AVATAR_SOURCE_BYTES);
     expect(MAX_IMAGE_BYTES).toBeLessThan(MAX_POST_SOURCE_BYTES);
     expect(MAX_AVATAR_SOURCE_BYTES).toBeLessThan(MAX_POST_SOURCE_BYTES);
+  });
+
+  it("keeps banner caps ordered: target < stored <= picked", () => {
+    expect(BANNER_TARGET_BYTES).toBeLessThan(BANNER_MAX_BYTES);
+    expect(BANNER_MAX_BYTES).toBeLessThanOrEqual(MAX_BANNER_SOURCE_BYTES);
+    // Wider than an avatar, lighter than a post image.
+    expect(BANNER_MAX_BYTES).toBeGreaterThan(AVATAR_MAX_BYTES);
+    expect(BANNER_MAX_BYTES).toBeLessThan(MAX_IMAGE_BYTES);
   });
 });
 
