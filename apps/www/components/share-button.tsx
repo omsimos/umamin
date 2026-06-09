@@ -5,7 +5,7 @@ import { Share2Icon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { toast } from "sonner";
 
-const onShare = (username: string) => {
+export function shareProfile(username: string) {
   try {
     if (typeof window !== "undefined") {
       const url = `${window.location.origin}/user/${username}`;
@@ -24,7 +24,7 @@ const onShare = (username: string) => {
   } catch (err) {
     console.log(err);
   }
-};
+}
 
 export function ShareButton({
   username,
@@ -44,7 +44,7 @@ export function ShareButton({
       // Icon inherits the button's text color (currentColor) so callers can
       // tune it via className — muted on /to, default-foreground on the banner.
       className={className}
-      onClick={() => onShare(username)}
+      onClick={() => shareProfile(username)}
     >
       <Share2Icon className="size-4" />
     </Button>

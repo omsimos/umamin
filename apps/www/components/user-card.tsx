@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { hasUmaminPlus } from "@/lib/utils";
 import type { PublicUserWithBadge } from "@/types/user";
 import { FollowListDrawer } from "./follow-list-drawer";
@@ -29,9 +30,17 @@ const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
 export function UserCard({
   user,
   isSelf,
+  headerActions,
+  primaryAction,
 }: {
   user: PublicUserWithBadge;
   isSelf?: boolean;
+  // Banner top-right slot. Self shows edit + share; other profiles pass the
+  // Message + overflow (Share/Block) buttons here.
+  headerActions?: ReactNode;
+  // Right-aligned action just below the banner — the Follow button on other
+  // profiles.
+  primaryAction?: ReactNode;
 }) {
   return (
     <div>
@@ -48,25 +57,29 @@ export function UserCard({
         </div>
 
         <div className="absolute right-3 top-3 flex items-center gap-2">
-          {isSelf && (
-            <Button
-              asChild
-              size="icon"
-              variant="secondary"
-              aria-label="Edit profile"
-              className="rounded-full bg-background/70 backdrop-blur"
-            >
-              <Link href="/settings">
-                <PencilIcon className="size-4" />
-              </Link>
-            </Button>
-          )}
+          {isSelf ? (
+            <>
+              <Button
+                asChild
+                size="icon"
+                variant="secondary"
+                aria-label="Edit profile"
+                className="rounded-full bg-background/70 backdrop-blur"
+              >
+                <Link href="/settings">
+                  <PencilIcon className="size-4" />
+                </Link>
+              </Button>
 
-          <ShareButton
-            username={user.username}
-            variant="secondary"
-            className="rounded-full bg-background/70 backdrop-blur"
-          />
+              <ShareButton
+                username={user.username}
+                variant="secondary"
+                className="rounded-full bg-background/70 backdrop-blur"
+              />
+            </>
+          ) : (
+            headerActions
+          )}
         </div>
 
         {/* Avatar straddles the banner's bottom-left edge (cover-photo layout).
@@ -91,7 +104,12 @@ export function UserCard({
         </div>
       </div>
 
-      <section className="mt-11">
+      {/* Follow sits just below the banner, right-aligned (other profiles). */}
+      {primaryAction && (
+        <div className="mt-3 flex justify-end">{primaryAction}</div>
+      )}
+
+      <section className={primaryAction ? "mt-3" : "mt-11"}>
         <div className="flex items-center space-x-1">
           <p className="font-semibold md:text-xl">
             {user.displayName ? user.displayName : user.username}

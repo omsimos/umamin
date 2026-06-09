@@ -4,10 +4,18 @@ import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import {
-  MessageSquareMoreIcon,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@umamin/ui/components/dropdown-menu";
+import { cn } from "@umamin/ui/lib/utils";
+import {
+  EllipsisIcon,
+  MessageCircleIcon,
   MessageSquareXIcon,
-  UserCheckIcon,
-  UserPlusIcon,
+  Share2Icon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -17,7 +25,7 @@ import {
   unblockUserAction,
   unfollowUserAction,
 } from "@/app/actions/user";
-import { Menu } from "@/components/menu";
+import { shareProfile } from "@/components/share-button";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
 import {
@@ -376,92 +384,129 @@ export function UserProfile({ username, initialUser }: Props) {
     },
   });
 
-  const menuItems = [
-    {
-      title: isBlocked ? "Unblock" : "Block",
-      onClick: async () => {
-        if (blockMutation.isPending) return;
+  const actionsDisabled =
+    isBlocked ||
+    isBlockedBy ||
+    followMutation.isPending ||
+    blockMutation.isPending;
 
-        const resolvedViewer = await requireAuthenticatedViewer();
-        if (!resolvedViewer || resolvedViewer.currentUserId === profile.id) {
-          return;
-        }
+  const handleBlock = async () => {
+    if (blockMutation.isPending) return;
 
-        blockMutation.mutate(resolvedViewer.isBlocked);
-      },
-      className: "text-red-500",
-      icon: <MessageSquareXIcon className="h-4 w-4" />,
-      disabled: isSelf || blockMutation.isPending,
-    },
-  ];
+    const resolvedViewer = await requireAuthenticatedViewer();
+    if (!resolvedViewer || resolvedViewer.currentUserId === profile.id) {
+      return;
+    }
+
+    blockMutation.mutate(resolvedViewer.isBlocked);
+  };
+
+  const handleFollow = async () => {
+    if (blockMutation.isPending) return;
+
+    const resolvedViewer = await requireAuthenticatedViewer();
+    if (
+      !resolvedViewer ||
+      resolvedViewer.currentUserId === profile.id ||
+      resolvedViewer.isBlocked ||
+      resolvedViewer.isBlockedBy
+    ) {
+      return;
+    }
+
+    followMutation.mutate(resolvedViewer.isFollowing);
+  };
+
+  const handleMessage = async () => {
+    const resolvedViewer = await requireAuthenticatedViewer();
+    if (
+      !resolvedViewer ||
+      resolvedViewer.currentUserId === profile.id ||
+      resolvedViewer.isBlocked ||
+      resolvedViewer.isBlockedBy
+    ) {
+      return;
+    }
+
+    router.push(`/to/${profile.username}`);
+  };
+
+  // Other profiles get a Message icon + an overflow menu (Share + Block) at the
+  // banner's top-right; self gets edit + share, handled inside UserCard.
+  const headerActions = (
+    <>
+      <Button
+        size="icon"
+        variant="secondary"
+        aria-label="Message"
+        disabled={actionsDisabled}
+        className="rounded-full bg-background/70 backdrop-blur"
+        onClick={handleMessage}
+      >
+        <MessageCircleIcon className="size-4" />
+      </Button>
+
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="icon"
+            variant="secondary"
+            aria-label="More options"
+            className="rounded-full bg-background/70 backdrop-blur"
+          >
+            <EllipsisIcon className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => shareProfile(profile.username)}>
+            <span className="flex items-center gap-2">
+              <Share2Icon className="size-4" />
+              Share
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={blockMutation.isPending}
+            onClick={handleBlock}
+            className="text-red-500"
+          >
+            <span className="flex items-center gap-2">
+              <MessageSquareXIcon className="size-4" />
+              {isBlocked ? "Unblock" : "Block"}
+            </span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+
+  // Follow sits right-aligned just below the banner — a white pill when you can
+  // follow, an outline pill once following.
+  const primaryAction = (
+    <Button
+      size="sm"
+      variant={isFollowing ? "outline" : "default"}
+      disabled={actionsDisabled}
+      onClick={handleFollow}
+      className={cn(
+        "rounded-full px-6",
+        // Theme-aware high-contrast pill: white-on-dark in dark mode,
+        // dark-on-white in light mode (a hardcoded white bg vanishes on light).
+        !isFollowing && "bg-foreground text-background hover:bg-foreground/90",
+      )}
+    >
+      {isFollowing ? "Following" : "Follow"}
+    </Button>
+  );
 
   return (
     <>
-      <UserCard user={profile} isSelf={isSelf} />
-
-      {isSelf ? null : (
-        <div className="flex gap-2 mt-6 w-full">
-          <Button
-            variant="outline"
-            disabled={
-              isSelf ||
-              isBlocked ||
-              isBlockedBy ||
-              followMutation.isPending ||
-              blockMutation.isPending
-            }
-            className="flex-1"
-            onClick={async () => {
-              if (blockMutation.isPending) return;
-
-              const resolvedViewer = await requireAuthenticatedViewer();
-              if (
-                !resolvedViewer ||
-                resolvedViewer.currentUserId === profile.id ||
-                resolvedViewer.isBlocked ||
-                resolvedViewer.isBlockedBy
-              ) {
-                return;
-              }
-
-              followMutation.mutate(resolvedViewer.isFollowing);
-            }}
-          >
-            {isFollowing ? <UserCheckIcon /> : <UserPlusIcon />}
-            {isFollowing ? "Following" : "Follow"}
-          </Button>
-
-          <Button
-            variant="outline"
-            className="flex-1"
-            disabled={
-              isSelf ||
-              isBlocked ||
-              isBlockedBy ||
-              followMutation.isPending ||
-              blockMutation.isPending
-            }
-            onClick={async () => {
-              const resolvedViewer = await requireAuthenticatedViewer();
-              if (
-                !resolvedViewer ||
-                resolvedViewer.currentUserId === profile.id ||
-                resolvedViewer.isBlocked ||
-                resolvedViewer.isBlockedBy
-              ) {
-                return;
-              }
-
-              router.push(`/to/${profile.username}`);
-            }}
-          >
-            <MessageSquareMoreIcon />
-            Message
-          </Button>
-
-          <Menu menuItems={menuItems} />
-        </div>
-      )}
+      <UserCard
+        user={profile}
+        isSelf={isSelf}
+        headerActions={isSelf ? undefined : headerActions}
+        primaryAction={isSelf ? undefined : primaryAction}
+      />
 
       {isSelf ? <YouTabs username={profile.username} active="posts" /> : null}
 
