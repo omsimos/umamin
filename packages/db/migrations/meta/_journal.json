@@ -99,6 +99,13 @@
       "when": 1780859391484,
       "tag": "0013_fancy_wiccan",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1780998337672,
+      "tag": "0014_easy_crystal",
+      "breakpoints": true
     }
   ]
 }

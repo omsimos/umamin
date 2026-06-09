@@ -31,6 +31,9 @@ function notificationHref(notification: NotificationItem): string | null {
     case "group_accept":
       // targetId is the group id — the group page resolves tag-or-id.
       return `/groups/${notification.targetId}`;
+    case "group_mention":
+      // Deep-link into the chat (group page resolves tag-or-id).
+      return `/groups/${notification.targetId}/chat`;
     default:
       return null;
   }

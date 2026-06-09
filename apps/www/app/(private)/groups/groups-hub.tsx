@@ -34,6 +34,7 @@ import {
 } from "@/lib/query";
 import {
   fetchCurrentUserOptional,
+  fetchGroupUnread,
   fetchUserGroups,
 } from "@/lib/query-fetchers";
 import { hasUmaminPlus } from "@/lib/utils";
@@ -72,6 +73,18 @@ export function GroupsHub() {
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
   });
+
+  // Unread dots — refetched on focus so returning to the hub reflects new
+  // activity (and clears once a room is opened + marked read).
+  const { data: unread } = useQuery({
+    queryKey: queryKeys.groupUnread(),
+    queryFn: fetchGroupUnread,
+    staleTime: PRIVATE_STALE_TIME,
+    refetchOnWindowFocus: true,
+  });
+  const unreadIds = new Set(
+    (unread ?? []).filter((u) => u.hasUnread).map((u) => u.groupId),
+  );
 
   const memberships = groups?.data ?? [];
   const invites = groups?.invites ?? [];
@@ -205,12 +218,22 @@ export function GroupsHub() {
           <ul className="space-y-2">
             {memberships.map(({ group, role }) => {
               const equipped = equippedGroupId === group.id;
+              const hasUnread = unreadIds.has(group.id);
               return (
                 <li
                   key={group.id}
                   className="flex items-center gap-3 rounded-lg border p-3"
                 >
-                  <GroupGlyph icon={group.icon} accent={group.accent} />
+                  <div className="relative">
+                    <GroupGlyph icon={group.icon} accent={group.accent} />
+                    {hasUnread && (
+                      <span
+                        role="img"
+                        className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-primary ring-2 ring-background"
+                        aria-label="Unread messages"
+                      />
+                    )}
+                  </div>
 
                   <Link
                     href={`/groups/${group.tag}`}

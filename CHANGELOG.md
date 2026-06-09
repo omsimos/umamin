@@ -18,6 +18,20 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.12.0] - 2026-06-09
+
+### Added
+
+- Group chat: members can now message each other inside a group. Open it from the group's page, read the history, and send messages that show up for everyone within a few seconds. Conversations are kept, with scroll-back through earlier messages.
+- An unread dot on the Groups page marks groups with new messages, and clears once you open the chat.
+- Reply to a specific message (shown as a quote) and @mention members — mentioned members get a notification.
+- React to messages with an emoji (❤️ 😂 🔥 😮 👍 😢) — one per message, tap again to remove; reactions show under each message and update live.
+- Delete your own messages; group owners can remove any message.
+
+### Security & Privacy
+
+- Group chat is members-only on every read and send — leaving or being removed from a group cuts off access immediately — and messages are encrypted at rest, the same as direct messages.
+
 ## [5.11.0] - 2026-06-08
 
 ### Added
@@ -612,6 +626,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.12.0]: https://github.com/omsimos/umamin/compare/v5.11.0...v5.12.0
 [5.11.0]: https://github.com/omsimos/umamin/compare/v5.10.0...v5.11.0
 [5.10.0]: https://github.com/omsimos/umamin/compare/v5.9.0...v5.10.0
 [5.9.0]: https://github.com/omsimos/umamin/compare/v5.8.0...v5.9.0

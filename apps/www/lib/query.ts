@@ -37,6 +37,9 @@ export const queryKeys = {
   groupMembers: (tagOrId: string) => ["group-members", tagOrId] as const,
   groupRequests: (tagOrId: string) => ["group-requests", tagOrId] as const,
   groupViewer: (tagOrId: string) => ["group-viewer", tagOrId] as const,
+  groupChat: (tagOrId: string) => ["group-chat", tagOrId] as const,
+  groupChatHead: (groupId: string) => ["group-chat-head", groupId] as const,
+  groupUnread: () => ["group-unread"] as const,
 };
 
 export const infiniteQueryDefaults = {

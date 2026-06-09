@@ -38,6 +38,10 @@ export const groupTable = sqliteTable(
     // Denormalized; ±1 inside the member mutations' transactions so the cap
     // check and the page header never COUNT(*) the roster.
     memberCount: integer("member_count").notNull().default(1),
+    // Denormalized newest group-chat message time — drives the hub's unread dot
+    // (compared per-viewer against group_message_read) without a COUNT or scan.
+    // Bumped in the same path as a message insert.
+    lastMessageAt: integer("last_message_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
