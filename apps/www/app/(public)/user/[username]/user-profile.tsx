@@ -16,8 +16,6 @@ import {
   MessageCircleIcon,
   MessageSquareXIcon,
   Share2Icon,
-  UserCheckIcon,
-  UserPlusIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -486,6 +484,7 @@ export function UserProfile({ username, initialUser }: Props) {
   // follow, an outline pill once following.
   const primaryAction = (
     <Button
+      size="sm"
       variant={isFollowing ? "outline" : "default"}
       disabled={actionsDisabled}
       onClick={handleFollow}
@@ -494,7 +493,6 @@ export function UserProfile({ username, initialUser }: Props) {
         !isFollowing && "bg-white text-black hover:bg-white/90",
       )}
     >
-      {isFollowing ? <UserCheckIcon /> : <UserPlusIcon />}
       {isFollowing ? "Following" : "Follow"}
     </Button>
   );
