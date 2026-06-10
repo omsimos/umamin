@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { GridPattern } from "@/components/grid-pattern";
 import { CipherText } from "@/components/landing/cipher-text";
 import { DemoChat } from "@/components/landing/demo-chat";
@@ -17,7 +16,7 @@ import { DemoNotes } from "@/components/landing/demo-notes";
 import { DemoSocial } from "@/components/landing/demo-social";
 import { Marquee } from "@/components/landing/marquee";
 import { ProductCard } from "@/components/landing/product-card";
-import { PwaRedirectGate } from "@/components/pwa-redirect-gate";
+import { PwaRedirect } from "@/components/pwa-redirect";
 import { umaminChatUrl } from "@/lib/chat-link";
 
 export const metadata: Metadata = {
@@ -27,9 +26,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main className="overflow-x-clip pb-16">
-      <Suspense fallback={null}>
-        <PwaRedirectGate />
-      </Suspense>
+      <PwaRedirect />
 
       <section className="relative px-6 pb-20 pt-36 md:pb-28 md:pt-44">
         <div

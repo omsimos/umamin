@@ -13,11 +13,11 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "en",
     dir: "ltr",
     categories: ["social", "communication"],
-    // Public, always-200 entry. /inbox is auth-only (redirects to /login) and
-    // robots-disallowed, which fails PWA installability/start_url audits.
-    // PwaRedirectGate forwards standalone users by auth: signed-in -> /inbox,
-    // signed-out -> /login (so a TWA launch never bounces /inbox -> /login). [#35]
-    start_url: "/",
+    // The installed app launches straight into the feed (its home) rather than
+    // the marketing landing. /feed is a public, always-200 route, so PWA
+    // installability/start_url audits still pass. scope stays "/" so the whole
+    // origin is in-app; PwaRedirect also bounces any in-app hit on "/" to /feed. [#35]
+    start_url: "/feed",
     scope: "/",
     display: "standalone",
     display_override: ["standalone", "minimal-ui", "browser"],

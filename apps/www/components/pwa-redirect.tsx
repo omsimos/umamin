@@ -4,18 +4,17 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { isStandaloneMode } from "@/lib/pwa";
 
-// A TWA / installed PWA always launches at start_url ("/") in standalone mode,
-// so the marketing landing must not trap users here. The auth-aware target is
-// computed server-side (PwaRedirectGate); we only act once we know we're
-// standalone, and replace() so the landing never enters history. [#35]
-export function PwaRedirect({ target }: { target: string }) {
+// The installed app launches at /feed (manifest start_url), so it never loads
+// the marketing landing. This is the safety net for the rare in-app navigation
+// back to "/": standalone users are sent to the app home instead. [#35]
+export function PwaRedirect() {
   const router = useRouter();
 
   useEffect(() => {
     if (isStandaloneMode()) {
-      router.replace(target);
+      router.replace("/feed");
     }
-  }, [router, target]);
+  }, [router]);
 
   return null;
 }
