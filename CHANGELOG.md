@@ -23,10 +23,13 @@ any that are empty.
 ### Added
 
 - Install Umamin as an app: a polished home-screen experience with a crisp app icon, and long-press shortcuts that jump straight to your feed or notes.
+- A branded launch screen when you open the installed app on iOS.
+- An "Install" button on the landing page when your browser supports it (with iOS add-to-home-screen guidance).
 
 ### Changed
 
-- Opening the installed app now takes you to the right place — your inbox when you're signed in, or the login screen when you're not — instead of getting stuck.
+- The installed app now opens straight to your feed — the marketing landing page no longer shows up inside the app.
+- The installed app feels more native: no rubber-band overscroll bounce when you reach the end of a list, and no grey flash when you tap.
 
 ### Fixed
 
