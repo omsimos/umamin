@@ -18,6 +18,25 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.14.0] - 2026-06-10
+
+### Added
+
+- Install Umamin as an app: a polished home-screen experience with a crisp app icon, and long-press shortcuts that jump straight to your feed or notes.
+
+### Changed
+
+- Opening the installed app now takes you to the right place — your inbox when you're signed in, or the login screen when you're not — instead of getting stuck.
+
+### Fixed
+
+- In the installed app, the bottom navigation and top header no longer tuck under the phone's home indicator or notch.
+- The app now refreshes to the latest version after an update, instead of occasionally holding on to an older screen.
+
+### Accessibility
+
+- You can now pinch to zoom anywhere in the app.
+
 ## [5.13.3] - 2026-06-10
 
 ### Changed
@@ -657,6 +676,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.14.0]: https://github.com/omsimos/umamin/compare/v5.13.3...v5.14.0
 [5.13.3]: https://github.com/omsimos/umamin/compare/v5.13.2...v5.13.3
 [5.13.2]: https://github.com/omsimos/umamin/compare/v5.13.1...v5.13.2
 [5.13.1]: https://github.com/omsimos/umamin/compare/v5.13.0...v5.13.1
