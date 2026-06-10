@@ -16,7 +16,7 @@ export function ComposeFab() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Create post"
-        className="fixed bottom-24 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-pink-500 text-white shadow-lg transition-colors hover:bg-pink-600 lg:bottom-8"
+        className="fixed bottom-[calc(6rem_+_env(safe-area-inset-bottom))] right-4 z-40 flex size-14 items-center justify-center rounded-full bg-pink-500 text-white shadow-lg transition-colors hover:bg-pink-600 lg:bottom-8"
       >
         <PlusIcon className="size-6" />
       </button>

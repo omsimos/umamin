@@ -8,8 +8,12 @@ export function ServiceWorker() {
       return;
     }
 
+    // Version the script URL so a new release re-registers the worker, which
+    // installs fresh versioned caches and purges the old ones (see sw.js).
+    const version = process.env.NEXT_PUBLIC_VERSION ?? "dev";
+
     const register = () => {
-      navigator.serviceWorker.register("/sw.js").catch((err) => {
+      navigator.serviceWorker.register(`/sw.js?v=${version}`).catch((err) => {
         console.error("Service worker registration failed:", err);
       });
     };

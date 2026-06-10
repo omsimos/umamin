@@ -1,17 +1,28 @@
-const STATIC_CACHE = "umamin-static-v1";
-const PAGE_CACHE = "umamin-pages-v1";
+// Cache names are tied to the app version (registered as /sw.js?v=<version> in
+// components/service-worker.tsx, read back here from self.location) so every
+// release installs fresh caches and the activate handler purges the old ones.
+// Without this an installed/PWA user can be stuck on stale assets after a deploy.
+const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
+const STATIC_CACHE = `umamin-static-${VERSION}`;
+const PAGE_CACHE = `umamin-pages-${VERSION}`;
 
+// Only real static files here. /manifest.webmanifest is a dynamic Next route, and
+// caches.addAll() rejects the whole batch if any entry is non-OK, which would
+// abort install and silently disable offline support — so it's intentionally out.
 const PRECACHE_URLS = [
   "/offline.html",
   "/icon-192x192.png",
   "/icon-512x512.png",
-  "/manifest.webmanifest",
 ];
 
+// Auth-gated or per-user/per-post dynamic routes: never cache their HTML, so one
+// viewer's page can't be served to another and authed content never goes stale.
 const DYNAMIC_NAVIGATION_PREFIXES = [
   "/feed",
+  "/groups",
   "/inbox",
   "/notes",
+  "/notifications",
   "/post",
   "/settings",
   "/to",
