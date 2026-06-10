@@ -23,6 +23,7 @@ const RESOURCES = [
   },
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
+  { label: "Child Safety", href: "/child-safety" },
 ];
 
 function FooterLinks({
