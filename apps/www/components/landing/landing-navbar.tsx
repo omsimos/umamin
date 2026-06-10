@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import Image from "next/image";
 import Link from "next/link";
+import { PwaInstallButton } from "@/components/pwa-install-button";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -51,6 +52,8 @@ export function LandingNavbar() {
               GitHub
             </Link>
           </Button>
+
+          <PwaInstallButton />
 
           <Button asChild className="rounded-full">
             <Link href={isAuthenticated ? "/feed" : "/login"}>
