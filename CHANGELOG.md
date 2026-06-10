@@ -25,6 +25,7 @@ any that are empty.
 - Install Umamin as an app: a polished home-screen experience with a crisp app icon, and long-press shortcuts that jump straight to your feed or notes.
 - A branded launch screen when you open the installed app on iOS.
 - An "Install" button on the landing page when your browser supports it (with iOS add-to-home-screen guidance).
+- A Child Safety Standards page (linked in the footer) describing our zero-tolerance approach to child sexual abuse and exploitation.
 
 ### Changed
 
