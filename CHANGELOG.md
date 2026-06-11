@@ -18,6 +18,23 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.16.0] - 2026-06-12
+
+### Added
+
+- Umamin Chat: whisper messages — send a secret that arrives blurred, reveals when your partner taps it, and burns away about 10 seconds later for both of you. The text is withheld and later deleted on the server, not just hidden on screen.
+- Umamin Chat: send with confetti or hearts — pick an effect from the new "+" button next to the message box and your message lands with a full-screen burst on both sides.
+- Umamin Chat: mini-games — deal a "This or That" or "Would You Rather" card from the "+" button. You both pick privately, the answers reveal together, and a score chip in the header tracks how often you match. Every finished round stays in the conversation, so you can scroll back through what you both picked.
+- Umamin Chat: share the vibe — when a chat ends, generate a story-size receipt image (avatars, duration, message and reaction counts, shared interests, your game score — never the conversation itself) to post or save.
+- Umamin Chat: your invite card — share a story-size card with your avatar and your short umamin.chat link from the lobby. Anyone who opens your link lands directly on you while you're searching, or simply gets matched with someone new if you're not around.
+- Share your profile as a story-size card — the share button on your own profile banner now offers "Share your card" (an image with your banner, avatar, name, and your anonymous-message link, ready for stories) alongside a quick copy-link.
+
+## [5.15.0] - 2026-06-11
+
+### Added
+
+- Umamin Chat: reply to a specific message — tap a message and pick Reply next to the reactions; your message is sent quoting the original. Tapping the quote jumps back to the original message, which briefly lights up.
+
 ## [5.14.0] - 2026-06-10
 
 ### Added
@@ -680,6 +697,8 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.16.0]: https://github.com/omsimos/umamin/compare/v5.15.0...v5.16.0
+[5.15.0]: https://github.com/omsimos/umamin/compare/v5.14.0...v5.15.0
 [5.14.0]: https://github.com/omsimos/umamin/compare/v5.13.3...v5.14.0
 [5.13.3]: https://github.com/omsimos/umamin/compare/v5.13.2...v5.13.3
 [5.13.2]: https://github.com/omsimos/umamin/compare/v5.13.1...v5.13.2
