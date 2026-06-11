@@ -69,6 +69,44 @@ describe("chat.send server-side bounding", () => {
     expect(await countMessages(t)).toBe(0);
   });
 
+  it("rejects an unknown send effect and stores nothing", async () => {
+    const t = await matched();
+    await expect(
+      t.mutation(api.chat.send, {
+        ...auth("a"),
+        text: "hi",
+        effect: "fireworks",
+      }),
+    ).rejects.toThrow(/Unsupported effect/);
+    expect(await countMessages(t)).toBe(0);
+  });
+
+  it("stores an allowed effect visible to both viewers", async () => {
+    const t = await matched();
+    await t.mutation(api.chat.send, {
+      ...auth("a"),
+      text: "hi",
+      effect: "confetti",
+    });
+    for (const id of ["a", "b"]) {
+      const [msg] = await t.query(api.chat.messages, auth(id));
+      expect(msg.effect).toBe("confetti");
+    }
+  });
+
+  it("drops the effect when the message is a whisper", async () => {
+    const t = await matched();
+    await t.mutation(api.chat.send, {
+      ...auth("a"),
+      text: "hi",
+      whisper: true,
+      effect: "confetti",
+    });
+    const [msg] = await t.query(api.chat.messages, auth("a"));
+    expect(msg.whisper?.state).toBe("hidden");
+    expect(msg.effect).toBeUndefined();
+  });
+
   it("silently no-ops when the sender has no active match", async () => {
     const t = convexTest(schema, modules);
     registerRateLimiter(t);

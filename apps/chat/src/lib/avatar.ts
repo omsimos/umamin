@@ -1,3 +1,6 @@
+import { loreleiNeutral, notionistsNeutral } from "@dicebear/collection";
+import { createAvatar } from "@dicebear/core";
+
 const PALETTE = [
   ["#db2777", "#7c3aed"],
   ["#0ea5e9", "#22c55e"],
@@ -27,4 +30,12 @@ export function avatarGradient(seed: string): { backgroundImage: string } {
 
 export function seedIndex(seed: string, count: number): number {
   return hash(seed) % count;
+}
+
+/** Deterministic per-seed avatar as an SVG data: URI — the single source of
+ *  truth for the style pick, shared by <SeedAvatar> and the share cards. */
+export function avatarDataUri(seed: string): string {
+  return seedIndex(seed, 2) === 0
+    ? createAvatar(notionistsNeutral, { seed }).toDataUri()
+    : createAvatar(loreleiNeutral, { seed }).toDataUri();
 }

@@ -49,6 +49,13 @@ if (!window.matchMedia) {
     }) as MediaQueryList;
 }
 
+// jsdom has no URL.createObjectURL; the share-card download/preview path
+// builds object URLs for generated blobs.
+if (typeof URL.createObjectURL !== "function") {
+  URL.createObjectURL = () => "blob:mock";
+  URL.revokeObjectURL = () => {};
+}
+
 // jsdom has no IntersectionObserver; lazy AdContainer constructs one on mount.
 if (!("IntersectionObserver" in globalThis)) {
   class MockIntersectionObserver {

@@ -3,6 +3,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { REPLY_PREVIEW_LEN } from "./constants";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -166,6 +167,65 @@ describe("chat", () => {
     expect(msgs).toHaveLength(100);
     expect(msgs[0].text).toBe("m50");
     expect(msgs[msgs.length - 1].text).toBe("m149");
+  });
+
+  it("reply resolves the quoted target to each viewer's perspective", async () => {
+    const t = await matched();
+    await t.mutation(api.chat.send, { ...auth("a"), text: "original" });
+    const [target] = await t.query(api.chat.messages, auth("b"));
+    await t.mutation(api.chat.send, {
+      ...auth("b"),
+      text: "a reply",
+      replyToId: target.id,
+    });
+
+    const a = await t.query(api.chat.messages, auth("a"));
+    expect(a.at(-1)?.replyTo).toEqual({
+      id: target.id,
+      author: "self",
+      text: "original",
+    });
+    const b = await t.query(api.chat.messages, auth("b"));
+    expect(b.at(-1)?.replyTo).toEqual({
+      id: target.id,
+      author: "partner",
+      text: "original",
+    });
+  });
+
+  it("truncates the reply preview to REPLY_PREVIEW_LEN", async () => {
+    const t = await matched();
+    await t.mutation(api.chat.send, {
+      ...auth("a"),
+      text: "x".repeat(REPLY_PREVIEW_LEN + 50),
+    });
+    const [target] = await t.query(api.chat.messages, auth("a"));
+    await t.mutation(api.chat.send, {
+      ...auth("b"),
+      text: "reply",
+      replyToId: target.id,
+    });
+    const msgs = await t.query(api.chat.messages, auth("a"));
+    expect(msgs.at(-1)?.replyTo?.text).toBe("x".repeat(REPLY_PREVIEW_LEN));
+  });
+
+  it("drops a reply reference targeting another match but keeps the message", async () => {
+    const t = await matched();
+    await t.mutation(api.chat.send, { ...auth("a"), text: "pair one" });
+    const [foreign] = await t.query(api.chat.messages, auth("a"));
+
+    // A second pair: d replies to a message that belongs to the a/b match.
+    await t.mutation(api.match.enqueueAndMatch, self("c"));
+    await t.mutation(api.match.enqueueAndMatch, self("d"));
+    await t.mutation(api.chat.send, {
+      ...auth("d"),
+      text: "cross-match reply",
+      replyToId: foreign.id,
+    });
+
+    const d = await t.query(api.chat.messages, auth("d"));
+    expect(d.at(-1)?.text).toBe("cross-match reply");
+    expect(d.at(-1)?.replyTo).toBeUndefined();
   });
 
   it("leave ends the match for the survivor", async () => {

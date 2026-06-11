@@ -15,6 +15,10 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   typing: { kind: "token bucket", rate: 30, period: 10 * SECOND, capacity: 10 },
   // Radar pings every QUEUE_PING_MS (10s); slack for visibility-triggered beats.
   queuePing: { kind: "token bucket", rate: 12, period: MINUTE, capacity: 6 },
+  // Dealing/dismissing a game round is deliberate and low-frequency.
+  gameDeal: { kind: "token bucket", rate: 6, period: MINUTE, capacity: 3 },
+  // At most one effective answer per round; slack for stale-round retries.
+  gameAnswer: { kind: "token bucket", rate: 15, period: MINUTE, capacity: 5 },
   // Global brakes are keyless, so every call hits the same bucket — sharded so
   // high-frequency mutations (esp. the per-client heartbeat) don't all contend
   // on one rateLimits document and trigger OCC write-conflict retries. Shard
@@ -62,6 +66,20 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     capacity: 400,
     shards: 8,
   },
+  globalGameDeal: {
+    kind: "token bucket",
+    rate: 600,
+    period: MINUTE,
+    capacity: 200,
+    shards: 5,
+  },
+  globalGameAnswer: {
+    kind: "token bucket",
+    rate: 1500,
+    period: MINUTE,
+    capacity: 500,
+    shards: 5,
+  },
 });
 
 /** Per-session policies must always pass a key. Keep this wrapper as the only
@@ -72,7 +90,9 @@ export type SessionRateLimitName =
   | "findMatch"
   | "react"
   | "typing"
-  | "queuePing";
+  | "queuePing"
+  | "gameDeal"
+  | "gameAnswer";
 
 export type GlobalRateLimitName =
   | "globalFindMatch"
@@ -80,7 +100,9 @@ export type GlobalRateLimitName =
   | "globalReact"
   | "globalTyping"
   | "globalPresenceHeartbeat"
-  | "globalQueuePing";
+  | "globalQueuePing"
+  | "globalGameDeal"
+  | "globalGameAnswer";
 
 export function limitPerSession(
   ctx: RunMutationCtx,

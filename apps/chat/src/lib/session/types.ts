@@ -30,13 +30,69 @@ export interface MessageReaction {
   by: "self" | "partner";
 }
 
+/** Snapshot of a quoted reply target, resolved server-side to the viewer's
+ *  perspective; text is truncated to REPLY_PREVIEW_LEN. */
+export interface ReplyPreview {
+  id: string;
+  author: "self" | "partner";
+  text: string;
+}
+
+export type SendEffect = "confetti" | "hearts";
+
+/** Burn-on-read lifecycle. While "hidden" the recipient's `text` is empty —
+ *  the plaintext is withheld server-side until they reveal; after "burned"
+ *  both sides get an empty `text`. `viewedAt` is present only while
+ *  "revealed" and anchors the client countdown. */
+export interface WhisperState {
+  state: "hidden" | "revealed" | "burned";
+  viewedAt?: number;
+}
+
+/** A completed game round recorded in the conversation, viewer-relative.
+ *  Such rows carry no text and render as a centered system-style card. */
+export interface GameResult {
+  cardId: string;
+  selfPick: "A" | "B";
+  partnerPick: "A" | "B";
+}
+
 export interface ChatMessage {
   id: string;
   author: "self" | "partner";
   text: string;
   ts: number;
   reactions: MessageReaction[];
+  replyTo?: ReplyPreview;
+  whisper?: WhisperState;
+  effect?: SendEffect;
+  gameResult?: GameResult;
 }
+
+export interface SendOpts {
+  replyToId?: string;
+  whisper?: boolean;
+  effect?: SendEffect;
+}
+
+export type GamePick = "A" | "B";
+
+/** The active game round, viewer-relative. `partnerPick` is present only once
+ *  both sides have answered — the server withholds it until the reveal. */
+export interface GameRound {
+  cardId: string;
+  dealtBy: "self" | "partner";
+  selfPick: GamePick | null;
+  partnerAnswered: boolean;
+  partnerPick?: GamePick;
+}
+
+export interface GameTally {
+  rounds: number;
+  matched: number;
+}
+
+export const EMPTY_TALLY: GameTally = { rounds: 0, matched: 0 };
 
 export interface SessionSnapshot {
   phase: SessionPhase;
@@ -46,6 +102,8 @@ export interface SessionSnapshot {
   partner: Partner | null;
   messages: ChatMessage[];
   stayConnected: { self: boolean; partner: boolean };
+  game: GameRound | null;
+  gameTally: GameTally;
   endedReason?: EndedReason;
 }
 
@@ -63,12 +121,30 @@ export type SnapshotMeta = Omit<SessionSnapshot, "messages">;
  * shape later (subscribe ~ useQuery, getSnapshot ~ initial query value, the
  * action methods ~ mutations). The UI never imports a concrete transport.
  */
+export interface FindMatchOptions {
+  /** Caller's own shareable code — stamped on their queue row so deep-link
+   *  visitors can land on them whenever they're searching. */
+  inviteCode?: string;
+  /** One-shot code from a ?join= deep link. Never persisted, never replayed
+   *  on a rematch. */
+  joinCode?: string;
+  /** The joinCode's owner wasn't claimable (absent/stale/self) — the caller
+   *  was matched normally instead. */
+  onInviteMiss?: () => void;
+}
+
 export interface ChatTransport {
   subscribe(listener: (snapshot: SessionSnapshot) => void): () => void;
   getSnapshot(): SessionSnapshot;
-  findMatch(self: SelfIdentity): void;
-  send(text: string): void;
+  findMatch(self: SelfIdentity, options?: FindMatchOptions): void;
+  send(text: string, opts?: SendOpts): void;
   react(messageId: string, emoji: string): void;
+  /** Recipient-only: reveal a whisper and start its burn timer. */
+  viewWhisper(messageId: string): void;
+  /** Deal a game card to both players — replaces any round in flight. */
+  dealCard(cardId: string): void;
+  answerCard(cardId: string, pick: GamePick): void;
+  dismissGame(): void;
   /** Best-effort: delivery is not guaranteed. */
   setTyping(isTyping: boolean): void;
   signalStayConnected(): void;
@@ -88,6 +164,8 @@ export const IDLE_SNAPSHOT: SessionSnapshot = {
   partner: null,
   messages: [],
   stayConnected: { self: false, partner: false },
+  game: null,
+  gameTally: EMPTY_TALLY,
 };
 
 /** Returned by the Convex transport while the snapshot query is unresolved, so

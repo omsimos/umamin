@@ -1,12 +1,15 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
+import { internalMutation, type MutationCtx } from "./_generated/server";
 import {
+  ALLOWED_EFFECTS,
   ALLOWED_REACTIONS,
   GRACE_MS,
   MAX_MESSAGE_LEN,
   MESSAGE_CAP,
+  REPLY_PREVIEW_LEN,
+  WHISPER_BURN_MS,
 } from "./constants";
 import { limitGlobal, limitPerSession } from "./lib/rateLimits";
 import { sessionMutation, sessionQuery } from "./lib/sessions";
@@ -18,6 +21,8 @@ const EMPTY = {
   self: { alias: "", avatarSeed: "", interests: [] as string[] },
   partner: null,
   stayConnected: { self: false, partner: false },
+  game: null,
+  gameTally: { rounds: 0, matched: 0 },
 };
 
 const snapshotMetaValidator = v.object({
@@ -48,6 +53,18 @@ const snapshotMetaValidator = v.object({
     }),
   ),
   stayConnected: v.object({ self: v.boolean(), partner: v.boolean() }),
+  game: v.union(
+    v.null(),
+    v.object({
+      cardId: v.string(),
+      dealtBy: v.union(v.literal("self"), v.literal("partner")),
+      selfPick: v.union(v.null(), v.literal("A"), v.literal("B")),
+      partnerAnswered: v.boolean(),
+      // Present ONLY once both sides have answered — the server-side gate.
+      partnerPick: v.optional(v.union(v.literal("A"), v.literal("B"))),
+    }),
+  ),
+  gameTally: v.object({ rounds: v.number(), matched: v.number() }),
   endedReason: v.optional(
     v.union(v.literal("self-ended"), v.literal("partner-left")),
   ),
@@ -64,7 +81,37 @@ const messageValidator = v.object({
       by: v.union(v.literal("self"), v.literal("partner")),
     }),
   ),
+  replyTo: v.optional(
+    v.object({
+      id: v.id("messages"),
+      author: v.union(v.literal("self"), v.literal("partner")),
+      text: v.string(),
+    }),
+  ),
+  whisper: v.optional(
+    v.object({
+      state: v.union(
+        v.literal("hidden"),
+        v.literal("revealed"),
+        v.literal("burned"),
+      ),
+      viewedAt: v.optional(v.number()),
+    }),
+  ),
+  effect: v.optional(v.union(v.literal("confetti"), v.literal("hearts"))),
+  gameResult: v.optional(
+    v.object({
+      cardId: v.string(),
+      selfPick: v.union(v.literal("A"), v.literal("B")),
+      partnerPick: v.union(v.literal("A"), v.literal("B")),
+    }),
+  ),
 });
+
+/** Placeholder for quoted whispers — a reply preview must not outlive the burn. */
+const WHISPER_PREVIEW = "🔥 Whisper";
+/** Placeholder for quoted game rows (they carry no text). */
+const GAME_PREVIEW = "⚡ Game round";
 
 // Match meta WITHOUT the message list: partner status / typing / stay-connected
 // changes invalidate this query (small reads) but never re-read the messages.
@@ -124,6 +171,10 @@ export const snapshot = sessionQuery({
           ? "typing"
           : "online";
 
+    const g = match.game;
+    const myPick = g ? (iAmA ? g.answerA : g.answerB) : undefined;
+    const theirPick = g ? (iAmA ? g.answerB : g.answerA) : undefined;
+
     return {
       phase: ended ? ("ended" as const) : ("active" as const),
       matchId: match._id,
@@ -140,6 +191,21 @@ export const snapshot = sessionQuery({
         self: iAmA ? match.stayConnectedA : match.stayConnectedB,
         partner: iAmA ? match.stayConnectedB : match.stayConnectedA,
       },
+      // Anti-leak: the partner's pick is emitted only once BOTH have answered
+      // — before that the viewer only learns that the partner has picked.
+      game: g
+        ? {
+            cardId: g.cardId,
+            dealtBy:
+              g.dealtBy === ctx.sessionId
+                ? ("self" as const)
+                : ("partner" as const),
+            selfPick: myPick ?? null,
+            partnerAnswered: Boolean(theirPick),
+            ...(myPick && theirPick ? { partnerPick: theirPick } : {}),
+          }
+        : null,
+      gameTally: match.gameTally ?? { rounds: 0, matched: 0 },
       ...(ended
         ? { endedReason: match.endedReason ?? ("partner-left" as const) }
         : {}),
@@ -167,37 +233,100 @@ export const messages = sessionQuery({
       .order("desc")
       .take(MESSAGE_CAP);
     rows.reverse();
-    return rows.map((m) => ({
-      id: m._id,
-      author:
-        m.author === ctx.sessionId ? ("self" as const) : ("partner" as const),
-      text: m.text,
-      ts: m._creationTime,
-      // Side-keyed reactions resolved to the viewer's perspective; sessionIds
-      // never leave the server. A-then-B order keeps the array deterministic.
-      reactions: [
-        ...(m.reactionA
-          ? [
-              {
-                emoji: m.reactionA,
-                by: iAmA ? ("self" as const) : ("partner" as const),
-              },
-            ]
-          : []),
-        ...(m.reactionB
-          ? [
-              {
-                emoji: m.reactionB,
-                by: iAmA ? ("partner" as const) : ("self" as const),
-              },
-            ]
-          : []),
-      ],
-    }));
+    return Promise.all(
+      rows.map(async (m) => {
+        // Quoted replies resolve by reference at read time, so the preview
+        // stays available even after the target rolls out of the cap window.
+        const target = m.replyToId ? await ctx.db.get(m.replyToId) : null;
+        const isAuthor = m.author === ctx.sessionId;
+        const whisperState =
+          m.kind !== "whisper"
+            ? null
+            : m.burned
+              ? ("burned" as const)
+              : m.whisperViewedAt
+                ? ("revealed" as const)
+                : ("hidden" as const);
+        // Anti-leak: a hidden whisper's plaintext never reaches the recipient's
+        // payload — blur alone would be theater. The author keeps their own
+        // text until the burn redacts it for both sides.
+        const text =
+          whisperState === null
+            ? m.text
+            : whisperState === "burned"
+              ? ""
+              : isAuthor || whisperState === "revealed"
+                ? m.text
+                : "";
+        return {
+          id: m._id,
+          author: isAuthor ? ("self" as const) : ("partner" as const),
+          text,
+          ts: m._creationTime,
+          // Side-keyed reactions resolved to the viewer's perspective; sessionIds
+          // never leave the server. A-then-B order keeps the array deterministic.
+          reactions: [
+            ...(m.reactionA
+              ? [
+                  {
+                    emoji: m.reactionA,
+                    by: iAmA ? ("self" as const) : ("partner" as const),
+                  },
+                ]
+              : []),
+            ...(m.reactionB
+              ? [
+                  {
+                    emoji: m.reactionB,
+                    by: iAmA ? ("partner" as const) : ("self" as const),
+                  },
+                ]
+              : []),
+          ],
+          ...(target
+            ? {
+                replyTo: {
+                  id: target._id,
+                  author:
+                    target.author === ctx.sessionId
+                      ? ("self" as const)
+                      : ("partner" as const),
+                  text:
+                    target.kind === "whisper"
+                      ? WHISPER_PREVIEW
+                      : target.kind === "game"
+                        ? GAME_PREVIEW
+                        : target.text.slice(0, REPLY_PREVIEW_LEN),
+                },
+              }
+            : {}),
+          ...(whisperState
+            ? {
+                whisper: {
+                  state: whisperState,
+                  ...(whisperState === "revealed" && m.whisperViewedAt
+                    ? { viewedAt: m.whisperViewedAt }
+                    : {}),
+                },
+              }
+            : {}),
+          ...(m.effect ? { effect: m.effect } : {}),
+          ...(m.kind === "game" && m.game
+            ? {
+                gameResult: {
+                  cardId: m.game.cardId,
+                  selfPick: iAmA ? m.game.pickA : m.game.pickB,
+                  partnerPick: iAmA ? m.game.pickB : m.game.pickA,
+                },
+              }
+            : {}),
+        };
+      }),
+    );
   },
 });
 
-async function activeMatchFor(
+export async function activeMatchFor(
   ctx: MutationCtx,
   session: Doc<"sessions"> | null,
 ): Promise<Doc<"matches"> | null> {
@@ -207,8 +336,13 @@ async function activeMatchFor(
 }
 
 export const send = sessionMutation({
-  args: { text: v.string() },
-  handler: async (ctx, { text }) => {
+  args: {
+    text: v.string(),
+    replyToId: v.optional(v.id("messages")),
+    whisper: v.optional(v.boolean()),
+    effect: v.optional(v.string()),
+  },
+  handler: async (ctx, { text, replyToId, whisper, effect }) => {
     const trimmed = text.trim();
     if (!trimmed) return;
     // Server-side cap: `send` is a public mutation callable directly, so the
@@ -216,15 +350,58 @@ export const send = sessionMutation({
     if (trimmed.length > MAX_MESSAGE_LEN) {
       throw new ConvexError("Message is too long.");
     }
+    if (effect && !(ALLOWED_EFFECTS as readonly string[]).includes(effect)) {
+      throw new ConvexError("Unsupported effect.");
+    }
     const match = await activeMatchFor(ctx, ctx.session);
     if (!match) return;
+    // A reply target outside this match (cross-match probe, or a stale id from
+    // a previous match) drops the reference rather than the message.
+    const target = replyToId ? await ctx.db.get(replyToId) : null;
+    const validReplyTo =
+      target && target.matchId === match._id ? target._id : undefined;
     await limitGlobal(ctx, "globalSendMessage");
     await limitPerSession(ctx, "sendMessage", ctx.sessionId);
     await ctx.db.insert("messages", {
       matchId: match._id,
       author: ctx.sessionId,
       text: trimmed,
+      ...(validReplyTo ? { replyToId: validReplyTo } : {}),
+      // Whisper and effect are mutually exclusive — a burned bubble must not
+      // carry a spectacle, and the composer can't produce both anyway.
+      ...(whisper ? { kind: "whisper" as const } : {}),
+      ...(effect && !whisper
+        ? { effect: effect as (typeof ALLOWED_EFFECTS)[number] }
+        : {}),
     });
+  },
+});
+
+export const viewWhisper = sessionMutation({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, { messageId }) => {
+    const match = await activeMatchFor(ctx, ctx.session);
+    if (!match) return;
+    const msg = await ctx.db.get(messageId);
+    if (!msg || msg.matchId !== match._id) return;
+    // Only the recipient can start the burn; idempotent so a double-tap or
+    // reload can't restart the countdown.
+    if (msg.author === ctx.sessionId) return;
+    if (msg.kind !== "whisper" || msg.burned || msg.whisperViewedAt) return;
+    await ctx.db.patch(messageId, { whisperViewedAt: Date.now() });
+    await ctx.scheduler.runAfter(WHISPER_BURN_MS, internal.chat.burnWhisper, {
+      messageId,
+    });
+  },
+});
+
+export const burnWhisper = internalMutation({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, { messageId }) => {
+    // The row may already be gone (match swept) — no-op.
+    const msg = await ctx.db.get(messageId);
+    if (msg?.kind !== "whisper" || msg.burned) return;
+    await ctx.db.patch(messageId, { burned: true, text: "" });
   },
 });
 

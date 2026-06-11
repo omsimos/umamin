@@ -24,6 +24,7 @@ describe("MessageList", () => {
         messages={[makeMessage()]}
         partnerStatus="online"
         onReact={() => {}}
+        onReply={() => {}}
         self={SELF}
         partner={PARTNER}
       />,
@@ -35,6 +36,7 @@ describe("MessageList", () => {
         messages={[makeMessage()]}
         partnerStatus="typing"
         onReact={() => {}}
+        onReply={() => {}}
         self={SELF}
         partner={PARTNER}
       />,
@@ -48,6 +50,7 @@ describe("MessageList", () => {
         messages={[makeMessage({ text: "first message" })]}
         partnerStatus="online"
         onReact={() => {}}
+        onReply={() => {}}
         self={SELF}
         partner={PARTNER}
         header={<div>ice breaker</div>}

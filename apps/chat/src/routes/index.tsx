@@ -1,25 +1,41 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@umamin/ui/components/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Share2 } from "lucide-react";
 import { useEffect } from "react";
+import { toast } from "sonner";
+import { MAX_INVITE_CODE_LEN } from "../../convex/constants";
 import { AdContainer } from "../components/ads/ad-container";
 import { Attribution } from "../components/attribution";
 import { IdentityCard } from "../components/lobby/identity-card";
 import { InterestPicker } from "../components/lobby/interest-picker";
+import { InviteBanner } from "../components/lobby/invite-banner";
 import { PlatformPromo } from "../components/promo/platform-promo";
+import { ShareCardAction } from "../components/share/share-card-action";
 import { AppShell, Wordmark } from "../components/shell/app-shell";
 import { ThemeToggle } from "../components/theme-toggle";
 import { useIdentityDraft } from "../lib/identity/use-identity-draft";
+import { getInviteCode } from "../lib/invite/invite-code";
 import { useChatSession } from "../lib/session/chat-context";
+import { loadCardAssets } from "../lib/share-card/assets";
+import { buildInviteCard } from "../lib/share-card/invite-template";
+import { INVITE_BASE_URL } from "../lib/share-card/theme";
 
 const maintenanceMode = import.meta.env.VITE_MAINTENANCE === "true";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): { join?: string } => {
+    const join =
+      typeof search.join === "string"
+        ? search.join.trim().slice(0, MAX_INVITE_CODE_LEN)
+        : "";
+    return join ? { join } : {};
+  },
   component: Lobby,
 });
 
 function Lobby() {
   const navigate = useNavigate();
+  const { join } = Route.useSearch();
   const { snapshot, findMatch } = useChatSession();
   const draft = useIdentityDraft();
 
@@ -33,11 +49,20 @@ function Lobby() {
   }, [snapshot.phase, navigate]);
 
   function start() {
-    findMatch({
-      alias: draft.alias.trim() || "Anonymous",
-      avatarSeed: draft.avatarSeed,
-      interests: draft.interests,
-    });
+    findMatch(
+      {
+        alias: draft.alias.trim() || "Anonymous",
+        avatarSeed: draft.avatarSeed,
+        interests: draft.interests,
+      },
+      join
+        ? {
+            joinCode: join,
+            onInviteMiss: () =>
+              toast("They're not around — finding you someone new"),
+          }
+        : undefined,
+    );
     navigate({ to: "/chat" });
   }
 
@@ -88,6 +113,14 @@ function Lobby() {
               it. No history, nothing saved.
             </p>
 
+            {join && (
+              <InviteBanner
+                onDismiss={() =>
+                  navigate({ to: "/", search: {}, replace: true })
+                }
+              />
+            )}
+
             <p className="text-muted-foreground mt-6 mb-2 text-[11px] font-medium tracking-wide uppercase">
               Your interests
             </p>
@@ -110,6 +143,36 @@ function Lobby() {
                   ? `${draft.interests.length} selected · matches on at least one`
                   : "no interests picked · we'll match you with anyone"}
               </p>
+              <div className="mt-4 flex justify-center">
+                <ShareCardAction
+                  label="Share your card"
+                  title="Your invite card"
+                  description="Post it to your story, then copy your link and add it with a link sticker where the dashed guide shows (the guide isn't on the shared image). Anyone who taps it lands on you while you're searching."
+                  filename="umamin-chat-invite.png"
+                  copyUrl={`${INVITE_BASE_URL}/?join=${getInviteCode()}`}
+                  build={async () =>
+                    buildInviteCard(
+                      {
+                        alias: draft.alias.trim() || "Anonymous",
+                        avatarSeed: draft.avatarSeed,
+                        interests: draft.interests,
+                      },
+                      await loadCardAssets(),
+                    )
+                  }
+                  trigger={(open) => (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={open}
+                      className="text-muted-foreground rounded-full"
+                    >
+                      <Share2 className="size-3.5" />
+                      Share your card
+                    </Button>
+                  )}
+                />
+              </div>
             </div>
 
             <AdContainer placement="lobby" className="mt-6" />

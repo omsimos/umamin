@@ -12,6 +12,8 @@ import type * as chat from "../chat.js";
 import type * as cleanup from "../cleanup.js";
 import type * as constants from "../constants.js";
 import type * as crons from "../crons.js";
+import type * as decks from "../decks.js";
+import type * as games from "../games.js";
 import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as lib_sessions from "../lib/sessions.js";
 import type * as match from "../match.js";
@@ -28,6 +30,8 @@ declare const fullApi: ApiFromModules<{
   cleanup: typeof cleanup;
   constants: typeof constants;
   crons: typeof crons;
+  decks: typeof decks;
+  games: typeof games;
   "lib/rateLimits": typeof lib_rateLimits;
   "lib/sessions": typeof lib_sessions;
   match: typeof match;

@@ -130,6 +130,28 @@ describe("ChatHeader", () => {
     expect(statusP("● left").className).toContain("text-muted-foreground");
   });
 
+  it("shows the game tally chip only once a round has completed", () => {
+    const { rerender } = render(
+      <ChatHeader
+        partner={makePartner()}
+        stayConnectedActive={false}
+        onStayConnected={() => {}}
+        gameTally={{ rounds: 0, matched: 0 }}
+      />,
+    );
+    expect(screen.queryByText(/0\/0/)).toBeNull();
+
+    rerender(
+      <ChatHeader
+        partner={makePartner()}
+        stayConnectedActive={false}
+        onStayConnected={() => {}}
+        gameTally={{ rounds: 3, matched: 2 }}
+      />,
+    );
+    expect(screen.getByText(/2\/3/)).toBeInTheDocument();
+  });
+
   it("shows the shared-interest badge only when present", () => {
     const { rerender } = render(
       <ChatHeader

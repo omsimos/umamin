@@ -41,7 +41,8 @@ function fakeClient(initialMeta: unknown) {
         localQueryResult: () => w.result,
       };
     },
-    mutation: vi.fn(async () => {}),
+    // Loosely typed: tests stub per-case resolutions ({viaInvite}, throws, …).
+    mutation: vi.fn(async (): Promise<unknown> => undefined),
     _emit: (next: unknown) => emitTo(0, next),
     _emitMessages: (next: unknown) => emitTo(1, next),
   };
@@ -95,6 +96,54 @@ describe("convexTransport", () => {
         sessionId: "s1",
         sessionSecret: "s1-secret",
         text: "hi",
+      }),
+    );
+  });
+
+  it("send forwards a reply target and omits the field when absent", () => {
+    const client = fakeClient({ ...IDLE_SNAPSHOT });
+    // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+    const t = createConvexTransport(client as any, credentials);
+    t.send("hi", { replyToId: "m9" });
+    expect(client.mutation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ text: "hi", replyToId: "m9" }),
+    );
+    t.send("plain");
+    const [, args] = (client.mutation as ReturnType<typeof vi.fn>).mock
+      .calls[1];
+    expect(args).not.toHaveProperty("replyToId");
+    expect(args).not.toHaveProperty("whisper");
+    expect(args).not.toHaveProperty("effect");
+  });
+
+  it("send forwards whisper and effect options", () => {
+    const client = fakeClient({ ...IDLE_SNAPSHOT });
+    // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+    const t = createConvexTransport(client as any, credentials);
+    t.send("psst", { whisper: true });
+    expect(client.mutation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ text: "psst", whisper: true }),
+    );
+    t.send("yay", { effect: "confetti" });
+    expect(client.mutation).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ text: "yay", effect: "confetti" }),
+    );
+  });
+
+  it("viewWhisper calls the mutation with session args", () => {
+    const client = fakeClient({ ...IDLE_SNAPSHOT });
+    // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+    const t = createConvexTransport(client as any, credentials);
+    t.viewWhisper("m3");
+    expect(client.mutation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        sessionId: "s1",
+        sessionSecret: "s1-secret",
+        messageId: "m3",
       }),
     );
   });
@@ -181,6 +230,49 @@ describe("convexTransport", () => {
         sessionSecret: "s1-secret",
       }),
     );
+  });
+
+  it("forwards invite/join codes and reports a miss only on a failed join", async () => {
+    const client = fakeClient({ ...IDLE_SNAPSHOT });
+    client.mutation = vi.fn(async () => ({ viaInvite: false }));
+    const onInviteMiss = vi.fn();
+    // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+    const t = createConvexTransport(client as any, credentials);
+    t.findMatch(
+      { alias: "a", avatarSeed: "seed", interests: [] },
+      { inviteCode: "mine", joinCode: "theirs", onInviteMiss },
+    );
+    expect(client.mutation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ inviteCode: "mine", joinCode: "theirs" }),
+    );
+    await vi.waitFor(() => expect(onInviteMiss).toHaveBeenCalledTimes(1));
+
+    // A successful join never reports a miss.
+    client.mutation = vi.fn(async () => ({ viaInvite: true }));
+    const onHit = vi.fn();
+    t.findMatch(
+      { alias: "a", avatarSeed: "seed", interests: [] },
+      { joinCode: "theirs", onInviteMiss: onHit },
+    );
+    await vi.waitFor(() => expect(client.mutation).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(onHit).not.toHaveBeenCalled();
+  });
+
+  it("does not report a miss without a joinCode", async () => {
+    const client = fakeClient({ ...IDLE_SNAPSHOT });
+    client.mutation = vi.fn(async () => ({ viaInvite: false }));
+    const onInviteMiss = vi.fn();
+    // biome-ignore lint/suspicious/noExplicitAny: fake client mirrors the used slice
+    const t = createConvexTransport(client as any, credentials);
+    t.findMatch(
+      { alias: "a", avatarSeed: "seed", interests: [] },
+      { inviteCode: "mine", onInviteMiss },
+    );
+    await vi.waitFor(() => expect(client.mutation).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(onInviteMiss).not.toHaveBeenCalled();
   });
 
   it("optimistically reports matching the instant findMatch is called", () => {
