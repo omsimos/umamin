@@ -82,7 +82,7 @@ export function PwaInstallButton() {
     return (
       <Button
         variant="outline"
-        size="sm"
+        className="rounded-full"
         onClick={async () => {
           await installPrompt.prompt();
           await installPrompt.userChoice;
@@ -99,7 +99,7 @@ export function PwaInstallButton() {
     return (
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" className="rounded-full">
             <DownloadIcon className="h-4 w-4" />
             Install
           </Button>
