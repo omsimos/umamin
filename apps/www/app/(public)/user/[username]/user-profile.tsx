@@ -71,15 +71,6 @@ export function UserProfile({ username, initialUser }: Props) {
     ),
     initialData: initialUser,
   });
-  const viewerQueryOptions = pageQueryOptions(
-    queryKeys.userProfileViewer(username),
-    () => fetchUserProfileViewer(username),
-    PRIVATE_STALE_TIME,
-  );
-  const { data: viewer } = useQuery({
-    ...viewerQueryOptions,
-    enabled: false,
-  });
 
   const profile = user ?? initialUser;
 
@@ -90,6 +81,17 @@ export function UserProfile({ username, initialUser }: Props) {
     queryFn: fetchCurrentUserOptional,
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
+  });
+
+  const viewerQueryOptions = pageQueryOptions(
+    queryKeys.userProfileViewer(username),
+    () => fetchUserProfileViewer(username),
+    PRIVATE_STALE_TIME,
+  );
+  const { data: viewer } = useQuery({
+    ...viewerQueryOptions,
+    enabled:
+      Boolean(currentUser?.user?.id) && currentUser?.user?.id !== profile.id,
   });
 
   const isFollowing = viewer?.isFollowing === true;
