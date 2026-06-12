@@ -6,6 +6,16 @@
     sans-serif;
   --font-display:
     "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  /* Fun-pack animation vocabulary. Transform/opacity only (compositor-thread);
+     decorative uses must be pointer-events-none and reduced-motion-gated. */
+  --animate-pop-in: pop-in 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-bubble-in: bubble-in 180ms ease-out both;
+  --animate-shimmer-sweep: shimmer-sweep 900ms ease-in-out both;
+  --animate-ring-pulse: ring-pulse 700ms ease-out 2 both;
+  --animate-card-flip: card-flip 480ms ease-in-out both;
+  --animate-flame-flicker: flame-flicker 600ms ease-in-out infinite;
+  --animate-streak-glow: streak-glow 700ms ease-out both;
+  --animate-drift: drift 6s ease-in-out infinite;
 }
 
 @layer base {
@@ -27,5 +37,111 @@
   100% {
     transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1);
     opacity: 0;
+  }
+}
+
+/* Spring-feel entrance for chips, badges, tiles, pills. */
+@keyframes pop-in {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Subtle entrance for fresh message bubbles (history renders static). */
+@keyframes bubble-in {
+  0% {
+    transform: scale(0.96) translateY(4px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* One diagonal translucent band sweeping a container; the element IS the band
+   (a skewed gradient strip), so only transform/opacity animate. */
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-120%) skewX(-12deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(220%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+/* Halo pulse: apply to a pseudo-element/overlay carrying a static shadow or
+   ring color — opacity+scale animate, never box-shadow itself. */
+@keyframes ring-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* 3D flip for the handle-reveal cards (pair with backface-hidden faces). */
+@keyframes card-flip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(180deg);
+  }
+}
+
+/* Live combo chip jitter — small element, only while a streak is hot. */
+@keyframes flame-flicker {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-2deg) scale(1.04);
+  }
+  75% {
+    transform: rotate(2deg) scale(0.98);
+  }
+}
+
+/* Viewport edge pulse for combo milestones: a fixed overlay with a static
+   inset shadow, faded via opacity. */
+@keyframes streak-glow {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Slow ambient float for radar ghosts. */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(4px, -6px);
   }
 }

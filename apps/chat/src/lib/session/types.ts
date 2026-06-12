@@ -38,7 +38,7 @@ export interface ReplyPreview {
   text: string;
 }
 
-export type SendEffect = "confetti" | "hearts";
+export type SendEffect = "confetti" | "hearts" | "sparkles" | "poof" | "golden";
 
 /** Burn-on-read lifecycle. While "hidden" the recipient's `text` is empty —
  *  the plaintext is withheld server-side until they reveal; after "burned"
@@ -49,12 +49,20 @@ export interface WhisperState {
   viewedAt?: number;
 }
 
+/** "match" — both answer for themselves, equal picks score. "guess" (Mind
+ *  Reader) — the dealer answers truthfully and the partner predicts the
+ *  dealer's pick; a correct prediction scores. */
+export type GameMode = "match" | "guess";
+
 /** A completed game round recorded in the conversation, viewer-relative.
- *  Such rows carry no text and render as a centered system-style card. */
+ *  Such rows carry no text and render as a centered system-style card.
+ *  mode/dealtBy are absent on pre-deploy rows (read as a "match" round). */
 export interface GameResult {
   cardId: string;
   selfPick: "A" | "B";
   partnerPick: "A" | "B";
+  mode?: GameMode;
+  dealtBy?: "self" | "partner";
 }
 
 export interface ChatMessage {
@@ -82,6 +90,7 @@ export type GamePick = "A" | "B";
 export interface GameRound {
   cardId: string;
   dealtBy: "self" | "partner";
+  mode: GameMode;
   selfPick: GamePick | null;
   partnerAnswered: boolean;
   partnerPick?: GamePick;
@@ -94,6 +103,51 @@ export interface GameTally {
 
 export const EMPTY_TALLY: GameTally = { rounds: 0, matched: 0 };
 
+export interface GuessTally {
+  rounds: number;
+  correct: number;
+}
+
+export const EMPTY_GUESS_TALLY: GuessTally = { rounds: 0, correct: 0 };
+
+/** Consecutive successful rounds across both modes; `best` is the high-water
+ *  mark for the match. */
+export interface GameStreak {
+  current: number;
+  best: number;
+}
+
+export const EMPTY_STREAK: GameStreak = { current: 0, best: 0 };
+
+/** Shared per-match chemistry — identical for both viewers; levels unlock
+ *  decks, modes, effects, and reactions. */
+export interface VibeState {
+  score: number;
+  level: number;
+}
+
+export const EMPTY_VIBE: VibeState = { score: 0, level: 1 };
+
+export interface RevealSide {
+  submitted: boolean;
+  /** Self: own echo, always present once submitted. Partner: present ONLY
+   *  once both sides have submitted — the server withholds it until then. */
+  handle?: string;
+}
+
+/** Stay-connected reveal. `unlocked` = both tapped the heart. */
+export interface RevealState {
+  unlocked: boolean;
+  self: RevealSide;
+  partner: RevealSide;
+}
+
+export const EMPTY_REVEAL: RevealState = {
+  unlocked: false,
+  self: { submitted: false },
+  partner: { submitted: false },
+};
+
 export interface SessionSnapshot {
   phase: SessionPhase;
   /** Stable id for the current match; "" when idle. */
@@ -104,6 +158,10 @@ export interface SessionSnapshot {
   stayConnected: { self: boolean; partner: boolean };
   game: GameRound | null;
   gameTally: GameTally;
+  guessTally: GuessTally;
+  gameStreak: GameStreak;
+  vibe: VibeState;
+  reveal: RevealState;
   endedReason?: EndedReason;
 }
 
@@ -142,12 +200,16 @@ export interface ChatTransport {
   /** Recipient-only: reveal a whisper and start its burn timer. */
   viewWhisper(messageId: string): void;
   /** Deal a game card to both players — replaces any round in flight. */
-  dealCard(cardId: string): void;
+  dealCard(cardId: string, mode?: GameMode): void;
   answerCard(cardId: string, pick: GamePick): void;
   dismissGame(): void;
   /** Best-effort: delivery is not guaranteed. */
   setTyping(isTyping: boolean): void;
   signalStayConnected(): void;
+  /** Submit (or replace, pre-reveal) the own stay-connected handle. */
+  submitRevealHandle(handle: string): void;
+  /** Withdraw the own handle — no-op once mutually revealed. */
+  withdrawRevealHandle(): void;
   leave(reason?: EndedReason): void;
 }
 
@@ -166,6 +228,10 @@ export const IDLE_SNAPSHOT: SessionSnapshot = {
   stayConnected: { self: false, partner: false },
   game: null,
   gameTally: EMPTY_TALLY,
+  guessTally: EMPTY_GUESS_TALLY,
+  gameStreak: EMPTY_STREAK,
+  vibe: EMPTY_VIBE,
+  reveal: EMPTY_REVEAL,
 };
 
 /** Returned by the Convex transport while the snapshot query is unresolved, so

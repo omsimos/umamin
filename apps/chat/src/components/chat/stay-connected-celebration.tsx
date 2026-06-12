@@ -8,17 +8,20 @@ export function StayConnectedCelebration({
   partnerAlias,
   partnerSeed,
   onContinue,
+  onDropHandle,
 }: {
   selfAlias: string;
   selfSeed: string;
   partnerAlias: string;
   partnerSeed: string;
   onContinue: () => void;
+  /** Opens the handle exchange — the payoff mutual hearts unlocked. */
+  onDropHandle?: () => void;
 }) {
   const titleId = useId();
-  const continueRef = useRef<HTMLButtonElement>(null);
+  const primaryRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    continueRef.current?.focus();
+    primaryRef.current?.focus();
   }, []);
 
   return (
@@ -48,10 +51,31 @@ export function StayConnectedCelebration({
       </h2>
       <p className="text-muted-foreground mt-1 mb-5 max-w-xs text-sm">
         You and {partnerAlias} both want to keep talking.
+        {onDropHandle &&
+          " Want this to outlive the poof? Swap handles — only revealed if you both do."}
       </p>
-      <Button ref={continueRef} className="rounded-full" onClick={onContinue}>
-        Keep chatting
-      </Button>
+      {onDropHandle ? (
+        <>
+          <Button
+            ref={primaryRef}
+            className="rounded-full"
+            onClick={onDropHandle}
+          >
+            Drop a handle 🔗
+          </Button>
+          <Button
+            variant="ghost"
+            className="text-muted-foreground mt-2"
+            onClick={onContinue}
+          >
+            Keep chatting
+          </Button>
+        </>
+      ) : (
+        <Button ref={primaryRef} className="rounded-full" onClick={onContinue}>
+          Keep chatting
+        </Button>
+      )}
     </div>
   );
 }

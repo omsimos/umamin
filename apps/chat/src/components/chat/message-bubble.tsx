@@ -12,6 +12,7 @@ import { groupReactions } from "../../lib/reactions";
 import type { ChatMessage, GameResult } from "../../lib/session/types";
 import { ReactionDetails, type Reactor } from "./reaction-details";
 import { ReactionPicker } from "./reaction-picker";
+import { SystemMoment } from "./system-moment";
 
 function GameResultRow({
   result,
@@ -26,23 +27,36 @@ function GameResultRow({
   const matched = result.selfPick === result.partnerPick;
   const label = (pick: "A" | "B") =>
     pick === "A" ? card.optionA : card.optionB;
+  // Guess rounds are asymmetric: the dealer's pick was the truth, the other
+  // side's a prediction of it — the copy follows who read whom.
+  const guess = result.mode === "guess";
+  const iDealt = result.dealtBy === "self";
+  const picksLine = guess
+    ? iDealt
+      ? `You: ${label(result.selfPick)} · ${partnerAlias} guessed: ${label(result.partnerPick)}`
+      : `${partnerAlias}: ${label(result.partnerPick)} · You guessed: ${label(result.selfPick)}`
+    : `You: ${label(result.selfPick)} · ${partnerAlias}: ${label(result.partnerPick)}`;
+  const verdict = guess
+    ? iDealt
+      ? matched
+        ? `🔮 ${partnerAlias} read your mind!`
+        : `${partnerAlias} guessed wrong 😏`
+      : matched
+        ? "🔮 You read their mind!"
+        : "Way off — full of surprises 😏"
+    : matched
+      ? "⚡ It's a match!"
+      : "Opposites attract 🤷";
 
   return (
-    <div className="flex w-full justify-center">
-      <div className="bg-muted/40 text-muted-foreground max-w-[90%] rounded-xl border border-dashed px-4 py-2 text-center text-xs">
-        <p className="font-medium">
-          <span aria-hidden>{meta.emoji}</span> {meta.label} · {card.optionA} vs{" "}
-          {card.optionB}
-        </p>
-        <p className="mt-0.5">
-          You: {label(result.selfPick)} · {partnerAlias}:{" "}
-          {label(result.partnerPick)}
-        </p>
-        <p className="text-foreground mt-0.5 font-semibold">
-          {matched ? "⚡ It's a match!" : "Opposites attract 🤷"}
-        </p>
-      </div>
-    </div>
+    <SystemMoment>
+      <p className="font-medium">
+        <span aria-hidden>{guess ? "🔮" : meta.emoji}</span>{" "}
+        {guess ? "Mind Reader" : meta.label} · {card.optionA} vs {card.optionB}
+      </p>
+      <p className="mt-0.5">{picksLine}</p>
+      <p className="text-foreground mt-0.5 font-semibold">{verdict}</p>
+    </SystemMoment>
   );
 }
 
@@ -172,6 +186,7 @@ export function MessageBubble({
   highlighted = false,
   self,
   partner,
+  vibeLevel = 1,
 }: {
   message: ChatMessage;
   onReact: (emoji: string) => void;
@@ -184,6 +199,8 @@ export function MessageBubble({
   highlighted?: boolean;
   self: Reactor;
   partner: Reactor;
+  /** Gates which reaction emojis the picker offers. */
+  vibeLevel?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -273,6 +290,7 @@ export function MessageBubble({
             <div className="flex items-center gap-0.5">
               <ReactionPicker
                 current={selfReaction}
+                vibeLevel={vibeLevel}
                 onPick={(emoji) => {
                   onReact(emoji);
                   setOpen(false);
@@ -299,10 +317,13 @@ export function MessageBubble({
               type="button"
               aria-label="View reactions"
               onClick={() => setDetailsOpen(true)}
+              // Keyed by the reaction signature: a new/changed reaction
+              // remounts the chip so it pings (pop-in) for both sides.
+              key={groups.map((g) => `${g.emoji}${g.count}`).join("|")}
               className={cn(
                 "bg-popover absolute -bottom-3 flex items-center gap-1 rounded-full border px-2 py-0.5 text-base leading-none shadow-sm",
                 "focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
-                "transition-transform active:scale-95",
+                "animate-pop-in motion-reduce:animate-none transition-transform active:scale-95",
                 mine ? "left-2" : "right-2",
               )}
             >

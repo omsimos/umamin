@@ -5,15 +5,40 @@ import { internalMutation, type MutationCtx } from "./_generated/server";
 import {
   ALLOWED_EFFECTS,
   ALLOWED_REACTIONS,
+  EFFECT_MIN_LEVEL,
   GRACE_MS,
   MAX_MESSAGE_LEN,
   MESSAGE_CAP,
+  REACTION_MIN_LEVEL,
   REPLY_PREVIEW_LEN,
   WHISPER_BURN_MS,
 } from "./constants";
 import { limitGlobal, limitPerSession } from "./lib/rateLimits";
 import { sessionMutation, sessionQuery } from "./lib/sessions";
 import { memberPresence } from "./presence";
+import {
+  computeVibe,
+  EMPTY_VIBE_COUNTERS,
+  VIBE_MSG_COUNT_CAP,
+  VIBE_REACTION_CAP,
+  VIBE_WHISPER_CAP,
+} from "./vibe";
+
+/** The shared (deliberately NOT viewer-relative) chemistry for a match —
+ *  computed from one row, so the two clients can't desync. */
+export function matchVibe(match: Doc<"matches">): {
+  score: number;
+  level: number;
+} {
+  const tally = match.gameTally ?? { rounds: 0, matched: 0 };
+  const guesses = match.guessTally ?? { rounds: 0, correct: 0 };
+  return computeVibe({
+    ...(match.vibe ?? EMPTY_VIBE_COUNTERS),
+    rounds: tally.rounds + guesses.rounds,
+    successes: tally.matched + guesses.correct,
+    mutualStayConnected: match.stayConnectedA && match.stayConnectedB,
+  });
+}
 
 const EMPTY = {
   phase: "idle" as const,
@@ -23,6 +48,14 @@ const EMPTY = {
   stayConnected: { self: false, partner: false },
   game: null,
   gameTally: { rounds: 0, matched: 0 },
+  guessTally: { rounds: 0, correct: 0 },
+  gameStreak: { current: 0, best: 0 },
+  vibe: { score: 0, level: 1 },
+  reveal: {
+    unlocked: false,
+    self: { submitted: false },
+    partner: { submitted: false },
+  },
 };
 
 const snapshotMetaValidator = v.object({
@@ -58,6 +91,7 @@ const snapshotMetaValidator = v.object({
     v.object({
       cardId: v.string(),
       dealtBy: v.union(v.literal("self"), v.literal("partner")),
+      mode: v.union(v.literal("match"), v.literal("guess")),
       selfPick: v.union(v.null(), v.literal("A"), v.literal("B")),
       partnerAnswered: v.boolean(),
       // Present ONLY once both sides have answered — the server-side gate.
@@ -65,6 +99,24 @@ const snapshotMetaValidator = v.object({
     }),
   ),
   gameTally: v.object({ rounds: v.number(), matched: v.number() }),
+  guessTally: v.object({ rounds: v.number(), correct: v.number() }),
+  gameStreak: v.object({ current: v.number(), best: v.number() }),
+  // Shared chemistry — identical for both viewers by construction.
+  vibe: v.object({ score: v.number(), level: v.number() }),
+  // Stay-connected reveal. The partner's handle is emitted ONLY once both
+  // sides have submitted — before that the viewer only learns THAT the
+  // partner left something (the tease), never WHAT.
+  reveal: v.object({
+    unlocked: v.boolean(),
+    self: v.object({
+      submitted: v.boolean(),
+      handle: v.optional(v.string()),
+    }),
+    partner: v.object({
+      submitted: v.boolean(),
+      handle: v.optional(v.string()),
+    }),
+  }),
   endedReason: v.optional(
     v.union(v.literal("self-ended"), v.literal("partner-left")),
   ),
@@ -98,12 +150,22 @@ const messageValidator = v.object({
       viewedAt: v.optional(v.number()),
     }),
   ),
-  effect: v.optional(v.union(v.literal("confetti"), v.literal("hearts"))),
+  effect: v.optional(
+    v.union(
+      v.literal("confetti"),
+      v.literal("hearts"),
+      v.literal("sparkles"),
+      v.literal("poof"),
+      v.literal("golden"),
+    ),
+  ),
   gameResult: v.optional(
     v.object({
       cardId: v.string(),
       selfPick: v.union(v.literal("A"), v.literal("B")),
       partnerPick: v.union(v.literal("A"), v.literal("B")),
+      mode: v.optional(v.union(v.literal("match"), v.literal("guess"))),
+      dealtBy: v.optional(v.union(v.literal("self"), v.literal("partner"))),
     }),
   ),
 });
@@ -175,6 +237,13 @@ export const snapshot = sessionQuery({
     const myPick = g ? (iAmA ? g.answerA : g.answerB) : undefined;
     const theirPick = g ? (iAmA ? g.answerB : g.answerA) : undefined;
 
+    // The reveal stays in the snapshot through the ended grace window — the
+    // ended view is exactly where a mutually-revealed handle gets copied
+    // before deleteMatch erases it forever.
+    const myReveal = iAmA ? match.revealA : match.revealB;
+    const theirReveal = iAmA ? match.revealB : match.revealA;
+    const bothRevealed = Boolean(match.revealA && match.revealB);
+
     return {
       phase: ended ? ("ended" as const) : ("active" as const),
       matchId: match._id,
@@ -200,12 +269,28 @@ export const snapshot = sessionQuery({
               g.dealtBy === ctx.sessionId
                 ? ("self" as const)
                 : ("partner" as const),
+            mode: g.mode ?? ("match" as const),
             selfPick: myPick ?? null,
             partnerAnswered: Boolean(theirPick),
             ...(myPick && theirPick ? { partnerPick: theirPick } : {}),
           }
         : null,
       gameTally: match.gameTally ?? { rounds: 0, matched: 0 },
+      guessTally: match.guessTally ?? { rounds: 0, correct: 0 },
+      gameStreak: match.gameStreak ?? { current: 0, best: 0 },
+      vibe: matchVibe(match),
+      reveal: {
+        unlocked: match.stayConnectedA && match.stayConnectedB,
+        // Own echo (reload-safe); the partner's handle only after BOTH are in.
+        self: {
+          submitted: Boolean(myReveal),
+          ...(myReveal ? { handle: myReveal } : {}),
+        },
+        partner: {
+          submitted: Boolean(theirReveal),
+          ...(bothRevealed && theirReveal ? { handle: theirReveal } : {}),
+        },
+      },
       ...(ended
         ? { endedReason: match.endedReason ?? ("partner-left" as const) }
         : {}),
@@ -317,6 +402,15 @@ export const messages = sessionQuery({
                   cardId: m.game.cardId,
                   selfPick: iAmA ? m.game.pickA : m.game.pickB,
                   partnerPick: iAmA ? m.game.pickB : m.game.pickA,
+                  ...(m.game.mode === "guess" ? { mode: m.game.mode } : {}),
+                  ...(m.game.dealtBy
+                    ? {
+                        dealtBy:
+                          m.game.dealtBy === ctx.sessionId
+                            ? ("self" as const)
+                            : ("partner" as const),
+                      }
+                    : {}),
                 },
               }
             : {}),
@@ -355,6 +449,14 @@ export const send = sessionMutation({
     }
     const match = await activeMatchFor(ctx, ctx.session);
     if (!match) return;
+    // Unlock gate: the composer's dimmed tiles are UX only — this is the guard.
+    if (effect) {
+      const minLevel =
+        (EFFECT_MIN_LEVEL as Record<string, number>)[effect] ?? 1;
+      if (minLevel > matchVibe(match).level) {
+        throw new ConvexError("Effect locked.");
+      }
+    }
     // A reply target outside this match (cross-match probe, or a stale id from
     // a previous match) drops the reference rather than the message.
     const target = replyToId ? await ctx.db.get(replyToId) : null;
@@ -374,6 +476,16 @@ export const send = sessionMutation({
         ? { effect: effect as (typeof ALLOWED_EFFECTS)[number] }
         : {}),
     });
+    // Vibe bookkeeping: saturates at the cap, after which sends stop patching
+    // the match row entirely.
+    const counters = match.vibe ?? EMPTY_VIBE_COUNTERS;
+    const side =
+      match.a === ctx.sessionId ? ("msgsA" as const) : ("msgsB" as const);
+    if (counters[side] < VIBE_MSG_COUNT_CAP) {
+      await ctx.db.patch(match._id, {
+        vibe: { ...counters, [side]: counters[side] + 1 },
+      });
+    }
   },
 });
 
@@ -392,6 +504,14 @@ export const viewWhisper = sessionMutation({
     await ctx.scheduler.runAfter(WHISPER_BURN_MS, internal.chat.burnWhisper, {
       messageId,
     });
+    // A whisper reveal is genuinely two-sided (one sent, one tapped) — worth
+    // more vibe than a plain message. Saturates like the other counters.
+    const counters = match.vibe ?? EMPTY_VIBE_COUNTERS;
+    if (counters.whispers < VIBE_WHISPER_CAP) {
+      await ctx.db.patch(match._id, {
+        vibe: { ...counters, whispers: counters.whispers + 1 },
+      });
+    }
   },
 });
 
@@ -421,10 +541,21 @@ export const react = sessionMutation({
     // current emoji clears it, a different one replaces it.
     const field = match.a === ctx.sessionId ? "reactionA" : "reactionB";
     const next = msg[field] === emoji ? undefined : emoji;
+    // Unlock gate on SET only — clearing a reaction is always allowed.
+    if (next && (REACTION_MIN_LEVEL[emoji] ?? 1) > matchVibe(match).level) {
+      throw new ConvexError("Reaction locked.");
+    }
     await ctx.db.patch(
       messageId,
       field === "reactionA" ? { reactionA: next } : { reactionB: next },
     );
+    // Set events feed the vibe; toggling off never decrements.
+    const counters = match.vibe ?? EMPTY_VIBE_COUNTERS;
+    if (next && counters.reactions < VIBE_REACTION_CAP) {
+      await ctx.db.patch(match._id, {
+        vibe: { ...counters, reactions: counters.reactions + 1 },
+      });
+    }
   },
 });
 

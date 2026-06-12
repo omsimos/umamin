@@ -58,18 +58,56 @@ function OptionButton({
   );
 }
 
+/** Result line, viewer-relative. In guess mode the success copy depends on
+ *  who was the mind reader — the dealer's pick was the truth. */
+function resultLine(round: GameRound, partnerAlias: string, matched: boolean) {
+  if (round.mode !== "guess") {
+    return matched ? "⚡ It's a match!" : "Opposites attract 🤷";
+  }
+  if (round.dealtBy === "partner") {
+    return matched
+      ? "🔮 You read their mind!"
+      : "Way off — they're full of surprises 😏";
+  }
+  return matched
+    ? `🔮 ${partnerAlias} read you like a book!`
+    : `${partnerAlias} guessed wrong 😏`;
+}
+
+function hintLine(round: GameRound, partnerAlias: string) {
+  const guessing = round.mode === "guess" && round.dealtBy === "partner";
+  if (round.selfPick !== null) {
+    return round.mode === "guess" && round.dealtBy === "self"
+      ? `${partnerAlias} is reading your mind…`
+      : `Waiting for ${partnerAlias}…`;
+  }
+  if (round.partnerAnswered) {
+    return guessing
+      ? `${partnerAlias} answered — what did they pick? 🔮`
+      : `${partnerAlias} picked — your turn 👀`;
+  }
+  if (guessing) return `Trust your gut — what did ${partnerAlias} pick? 🔮`;
+  if (round.mode === "guess") {
+    return `Answer honestly — ${partnerAlias} is guessing your pick`;
+  }
+  return "Pick one — answers reveal together";
+}
+
 export function GameRoundCard({
   round,
   partnerAlias,
+  streak = 0,
   onAnswer,
   onDismiss,
   onPlayAgain,
 }: {
   round: GameRound;
   partnerAlias: string;
+  /** Current consecutive-success streak (incl. this round once revealed). */
+  streak?: number;
   onAnswer: (pick: GamePick) => void;
   onDismiss: () => void;
-  /** Deals another random card from the same deck. */
+  /** Deals another random card from the same deck (and mode). */
   onPlayAgain: () => void;
 }) {
   const card = cardById(round.cardId);
@@ -77,15 +115,25 @@ export function GameRoundCard({
   const meta = DECK_META[card.deck];
   const revealed = round.partnerPick !== undefined && round.selfPick !== null;
   const matched = revealed && round.selfPick === round.partnerPick;
+  const guess = round.mode === "guess";
 
   return (
     <section
-      aria-label={`${meta.label} round`}
+      aria-label={guess ? "Mind Reader round" : `${meta.label} round`}
       className="border-primary/30 from-primary/10 mx-4 mb-2 rounded-xl border bg-gradient-to-br to-transparent p-3"
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-muted-foreground text-[11px] font-medium">
-          <span aria-hidden>{meta.emoji}</span> {meta.label} ·{" "}
+          {guess ? (
+            <>
+              <span aria-hidden>🔮</span> Mind Reader · {meta.label}
+            </>
+          ) : (
+            <>
+              <span aria-hidden>{meta.emoji}</span> {meta.label}
+            </>
+          )}{" "}
+          ·{" "}
           {round.dealtBy === "self"
             ? "dealt by you"
             : `dealt by ${partnerAlias}`}
@@ -121,8 +169,23 @@ export function GameRoundCard({
       <div className="mt-2 flex min-h-7 items-center justify-between gap-2">
         {revealed ? (
           <>
-            <p className="animate-in zoom-in-95 fade-in text-sm font-semibold">
-              {matched ? "⚡ It's a match!" : "Opposites attract 🤷"}
+            <p className="animate-in zoom-in-95 fade-in flex items-center gap-1.5 text-sm font-semibold">
+              {resultLine(round, partnerAlias, matched)}
+              {matched && streak >= 2 && (
+                <span className="animate-pop-in motion-reduce:animate-none bg-primary/15 text-primary inline-flex rounded-full px-2 py-0.5 text-[11px] tabular-nums">
+                  <span
+                    className={cn(
+                      streak >= 3 &&
+                        "animate-flame-flicker motion-reduce:animate-none",
+                    )}
+                  >
+                    🔥×{streak}
+                  </span>
+                  <span className="sr-only">
+                    {streak} successful rounds in a row
+                  </span>
+                </span>
+              )}
             </p>
             <Button
               type="button"
@@ -134,20 +197,25 @@ export function GameRoundCard({
               Play another
             </Button>
           </>
-        ) : round.selfPick !== null ? (
-          <p className="text-muted-foreground animate-pulse text-xs">
-            Waiting for {partnerAlias}…
-          </p>
-        ) : round.partnerAnswered ? (
-          <p className="text-muted-foreground text-xs">
-            {partnerAlias} picked — your turn 👀
-          </p>
         ) : (
-          <p className="text-muted-foreground text-xs">
-            Pick one — answers reveal together
+          <p
+            className={cn(
+              "text-muted-foreground text-xs",
+              round.selfPick !== null && "animate-pulse",
+            )}
+          >
+            {hintLine(round, partnerAlias)}
           </p>
         )}
       </div>
+      {/* Viewport edge pulse for a hot streak — static inset shadow, faded via
+          opacity only; base opacity-0 keeps it invisible under reduced motion. */}
+      {matched && streak >= 3 && (
+        <div
+          aria-hidden
+          className="animate-streak-glow motion-reduce:animate-none shadow-primary/50 pointer-events-none fixed inset-0 z-20 opacity-0 shadow-[inset_0_0_60px_12px]"
+        />
+      )}
     </section>
   );
 }

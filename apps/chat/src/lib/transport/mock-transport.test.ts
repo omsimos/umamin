@@ -203,6 +203,7 @@ describe("mockTransport", () => {
     expect(latest(t).game).toEqual({
       cardId,
       dealtBy: "self",
+      mode: "match",
       selfPick: null,
       partnerAnswered: false,
     });
@@ -222,6 +223,7 @@ describe("mockTransport", () => {
       cardId,
       selfPick: "A",
       partnerPick: "A",
+      dealtBy: "self",
     });
   });
 
@@ -260,6 +262,54 @@ describe("mockTransport", () => {
     vi.advanceTimersByTime(1000);
     t.dealCard("nope");
     expect(latest(t).game).toBeNull();
+  });
+
+  it("simulates the reveal: tease first, handles only after both are in", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000);
+    // No-op before mutual hearts.
+    t.submitRevealHandle("@too-early");
+    expect(latest(t).reveal.self.submitted).toBe(false);
+
+    t.signalStayConnected();
+    vi.advanceTimersByTime(1400); // partner reciprocates
+    expect(latest(t).reveal.unlocked).toBe(true);
+    vi.advanceTimersByTime(2600); // partner drops a handle — withheld
+    expect(latest(t).reveal.partner).toEqual({ submitted: true });
+
+    t.submitRevealHandle("@me");
+    const r = latest(t).reveal;
+    expect(r.self.handle).toBe("@me");
+    expect(r.partner.handle).toMatch(/^@/);
+  });
+
+  it("withdraw clears the own side pre-reveal only", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000);
+    t.signalStayConnected();
+    vi.advanceTimersByTime(1400);
+    t.submitRevealHandle("@me");
+    t.withdrawRevealHandle();
+    expect(latest(t).reveal.self).toEqual({ submitted: false });
+  });
+
+  it("a guess round feeds guessTally and the streak, not gameTally", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000);
+    const cardId = GAME_DECKS["this-or-that"][0].id;
+    t.dealCard(cardId, "guess");
+    expect(latest(t).game?.mode).toBe("guess");
+    t.answerCard(cardId, "A");
+    vi.advanceTimersByTime(1600); // partner predicts A (random()=0)
+    expect(latest(t).guessTally).toEqual({ rounds: 1, correct: 1 });
+    expect(latest(t).gameTally).toEqual({ rounds: 0, matched: 0 });
+    expect(latest(t).gameStreak).toEqual({ current: 1, best: 1 });
+    const row = latest(t).messages.at(-1)?.gameResult;
+    expect(row?.mode).toBe("guess");
+    expect(row?.dealtBy).toBe("self");
   });
 
   it("signalStayConnected becomes mutual after the partner reciprocates", () => {

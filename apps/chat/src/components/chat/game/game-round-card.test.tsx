@@ -12,6 +12,7 @@ function makeRound(overrides: Partial<GameRound> = {}): GameRound {
   return {
     cardId: CARD.id,
     dealtBy: "self",
+    mode: "match",
     selfPick: null,
     partnerAnswered: false,
     ...overrides,
@@ -25,11 +26,13 @@ function renderCard(
     onDismiss: () => void;
     onPlayAgain: () => void;
   }> = {},
+  streak = 0,
 ) {
   return render(
     <GameRoundCard
       round={round}
       partnerAlias="Blue Fox"
+      streak={streak}
       onAnswer={handlers.onAnswer ?? (() => {})}
       onDismiss={handlers.onDismiss ?? (() => {})}
       onPlayAgain={handlers.onPlayAgain ?? (() => {})}
@@ -97,5 +100,60 @@ describe("GameRoundCard", () => {
   it("renders nothing for an unknown card", () => {
     const { container } = renderCard(makeRound({ cardId: "nope" }));
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("guess mode: the guesser is asked to read the dealer's mind", () => {
+    renderCard(makeRound({ mode: "guess", dealtBy: "partner" }));
+    expect(screen.getByText(/what did Blue Fox pick\? 🔮/)).toBeInTheDocument();
+  });
+
+  it("guess mode: the dealer is told to answer honestly", () => {
+    renderCard(makeRound({ mode: "guess" }));
+    expect(
+      screen.getByText(/Blue Fox is guessing your pick/),
+    ).toBeInTheDocument();
+  });
+
+  it("guess mode: a correct read reveals viewer-relative copy", () => {
+    renderCard(
+      makeRound({
+        mode: "guess",
+        dealtBy: "partner",
+        selfPick: "A",
+        partnerAnswered: true,
+        partnerPick: "A",
+      }),
+    );
+    expect(screen.getByText("🔮 You read their mind!")).toBeInTheDocument();
+  });
+
+  it("guess mode: the dealer sees who read whom", () => {
+    renderCard(
+      makeRound({
+        mode: "guess",
+        selfPick: "B",
+        partnerAnswered: true,
+        partnerPick: "A",
+      }),
+    );
+    expect(screen.getByText(/Blue Fox guessed wrong/)).toBeInTheDocument();
+  });
+
+  it("shows the combo chip from two successes in a row", () => {
+    renderCard(
+      makeRound({ selfPick: "A", partnerAnswered: true, partnerPick: "A" }),
+      {},
+      2,
+    );
+    expect(screen.getByText("🔥×2")).toBeInTheDocument();
+  });
+
+  it("hides the combo chip on a miss and below two", () => {
+    renderCard(
+      makeRound({ selfPick: "A", partnerAnswered: true, partnerPick: "B" }),
+      {},
+      2,
+    );
+    expect(screen.queryByText(/🔥×/)).not.toBeInTheDocument();
   });
 });

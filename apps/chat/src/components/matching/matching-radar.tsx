@@ -2,6 +2,7 @@ import { Button } from "@umamin/ui/components/button";
 import { useEffect, useState } from "react";
 import { interestById, MATCH_TIPS } from "../../lib/content";
 import { SeedAvatar } from "../seed-avatar";
+import { WarmupCard } from "./warmup-card";
 
 function formatElapsed(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -19,10 +20,13 @@ export function MatchingRadar({
   self,
   interests,
   onCancel,
+  onWarmupPick,
 }: {
   self: { alias: string; avatarSeed: string };
   interests: string[];
   onCancel: () => void;
+  /** Latest warm-up pick, offered as an ice-breaker once matched. */
+  onWarmupPick?: (prompt: string) => void;
 }) {
   const [elapsed, setElapsed] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
@@ -42,12 +46,12 @@ export function MatchingRadar({
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center p-6 text-center">
-      {GHOSTS.map((pos) => (
+      {GHOSTS.map((pos, i) => (
         <span
           key={`${pos.top ?? pos.bottom}-${pos.left ?? pos.right}`}
           aria-hidden
-          className="bg-muted absolute size-9 rounded-full opacity-40 blur-[1px]"
-          style={pos}
+          className="bg-muted animate-drift motion-reduce:animate-none absolute size-9 rounded-full opacity-40 blur-[1px]"
+          style={{ ...pos, animationDelay: `${i * 1.7}s` }}
         />
       ))}
 
@@ -93,6 +97,8 @@ export function MatchingRadar({
       <p className="text-muted-foreground mt-5 max-w-xs text-xs">
         <span className="font-medium">Tip:</span> {MATCH_TIPS[tipIndex]}
       </p>
+
+      <WarmupCard onPick={onWarmupPick} />
 
       <Button
         variant="outline"

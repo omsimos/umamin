@@ -7,6 +7,7 @@ import {
   type ChatMessage,
   type ChatTransport,
   type FindMatchOptions,
+  type GameMode,
   type GamePick,
   IDLE_SNAPSHOT,
   LOADING_SNAPSHOT,
@@ -178,8 +179,8 @@ export function createConvexTransport(
     viewWhisper(messageId: string) {
       call(api.chat.viewWhisper, { messageId });
     },
-    dealCard(cardId: string) {
-      call(api.games.dealCard, { cardId });
+    dealCard(cardId: string, mode?: GameMode) {
+      call(api.games.dealCard, { cardId, ...(mode ? { mode } : {}) });
     },
     answerCard(cardId: string, pick: GamePick) {
       call(api.games.answerCard, { cardId, pick });
@@ -195,6 +196,12 @@ export function createConvexTransport(
     },
     signalStayConnected() {
       call(api.chat.signalStayConnected, {});
+    },
+    submitRevealHandle(handle: string) {
+      call(api.reveal.submitReveal, { handle });
+    },
+    withdrawRevealHandle() {
+      call(api.reveal.withdrawReveal, {});
     },
     leave() {
       // Clear any optimistic "matching" so cancelling doesn't strand the UI.

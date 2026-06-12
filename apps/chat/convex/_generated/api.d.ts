@@ -18,6 +18,8 @@ import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as lib_sessions from "../lib/sessions.js";
 import type * as match from "../match.js";
 import type * as presence from "../presence.js";
+import type * as reveal from "../reveal.js";
+import type * as vibe from "../vibe.js";
 
 import type {
   ApiFromModules,
@@ -36,6 +38,8 @@ declare const fullApi: ApiFromModules<{
   "lib/sessions": typeof lib_sessions;
   match: typeof match;
   presence: typeof presence;
+  reveal: typeof reveal;
+  vibe: typeof vibe;
 }>;
 
 /**

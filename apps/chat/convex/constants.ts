@@ -29,13 +29,29 @@ export const REPLY_PREVIEW_LEN = 140;
 /** How long a revealed whisper stays readable before the server redacts it. */
 export const WHISPER_BURN_MS = 10 * SECOND;
 /** Send effects are a fixed allowlist, not arbitrary user content. */
-export const ALLOWED_EFFECTS = ["confetti", "hearts"] as const;
+export const ALLOWED_EFFECTS = [
+  "confetti",
+  "hearts",
+  "sparkles",
+  "poof",
+  "golden",
+] as const;
 export type SendEffect = (typeof ALLOWED_EFFECTS)[number];
+/** Vibe level required to send an effect (absent = 1). Enforced in `send` —
+ *  the dimmed tiles in the composer sheet are UX, not the guard. */
+export const EFFECT_MIN_LEVEL: Partial<Record<SendEffect, number>> = {
+  sparkles: 3,
+  poof: 4,
+  golden: 5,
+};
 /** Client-generated anonymous session credentials. */
 export const MAX_SESSION_ID_LEN = 128;
 export const MAX_SESSION_SECRET_LEN = 128;
 /** Invite codes are client-generated and opaque; only their length is bounded. */
 export const MAX_INVITE_CODE_LEN = 32;
+/** The stay-connected reveal handle — the one deliberate PII exception in the
+ *  app. Bounded, never logged or echoed, deleted with the match row. */
+export const MAX_REVEAL_HANDLE_LEN = 64;
 /** Server-side bounds on client-supplied identity. The lobby caps these too, but
  *  the matchmaking mutation is publicly callable, so the server must as well. */
 export const MAX_ALIAS_LEN = 40;
@@ -44,7 +60,22 @@ export const MAX_INTERESTS = 24;
 export const MAX_INTEREST_LEN = 48;
 /** Reactions are a fixed UI affordance, not arbitrary user content. Each
  *  participant gets one reaction per message (reactionA/reactionB columns). */
-export const ALLOWED_REACTIONS = ["❤️", "😂", "🔥", "😮", "👍", "😢"];
+export const ALLOWED_REACTIONS = [
+  "❤️",
+  "😂",
+  "🔥",
+  "😮",
+  "👍",
+  "😢",
+  "🫶",
+  "🥹",
+];
+/** Vibe level required to SET a reaction (absent = 1); clearing is always
+ *  allowed. Enforced in `react`. */
+export const REACTION_MIN_LEVEL: Record<string, number> = {
+  "🫶": 2,
+  "🥹": 3,
+};
 /** Messages deleted per teardown transaction; a match with more pages re-arms
  *  deleteMatch so cleanup can't exceed a single mutation's write limit. */
 export const MESSAGE_DELETE_PAGE = 256;

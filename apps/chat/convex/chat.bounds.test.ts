@@ -2,7 +2,11 @@ import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
-import { ALLOWED_REACTIONS, MAX_MESSAGE_LEN } from "./constants";
+import {
+  ALLOWED_REACTIONS,
+  MAX_MESSAGE_LEN,
+  REACTION_MIN_LEVEL,
+} from "./constants";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -123,8 +127,12 @@ describe("chat.react server-side bounding", () => {
     await t.mutation(api.chat.send, { ...auth("a"), text: "hi" });
     const [message] = await t.query(api.chat.messages, auth("a"));
 
-    // Cycling through every allowed emoji leaves only the last one standing.
-    for (const emoji of ALLOWED_REACTIONS) {
+    // Cycling through every level-1 emoji leaves only the last one standing
+    // (gated emojis are exercised in vibe.test.ts).
+    const base = ALLOWED_REACTIONS.filter(
+      (e) => (REACTION_MIN_LEVEL[e] ?? 1) === 1,
+    );
+    for (const emoji of base) {
       await t.mutation(api.chat.react, {
         ...auth("a"),
         messageId: message.id,
@@ -132,9 +140,7 @@ describe("chat.react server-side bounding", () => {
       });
     }
     const [after] = await t.query(api.chat.messages, auth("a"));
-    expect(after.reactions).toEqual([
-      { emoji: ALLOWED_REACTIONS.at(-1), by: "self" },
-    ]);
+    expect(after.reactions).toEqual([{ emoji: base.at(-1), by: "self" }]);
   });
 
   it("ignores a reaction targeting a message outside the caller's match", async () => {

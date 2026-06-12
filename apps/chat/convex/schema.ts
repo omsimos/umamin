@@ -45,10 +45,14 @@ export default defineSchema({
     // cleared by dismiss). dealtBy is a sessionId — resolved viewer-relative
     // in snapshot, never emitted. answerA/answerB are side-keyed like
     // typingA/typingB; "revealed" is derived (both present), never stored.
+    // mode "guess": the dealer's answer is the truth, the partner's is a
+    // prediction of it — storage is identical, only the tally semantics
+    // change. Absent mode (pre-field rows) reads as "match".
     game: v.optional(
       v.object({
         cardId: v.string(),
         dealtBy: v.string(),
+        mode: v.optional(v.union(v.literal("match"), v.literal("guess"))),
         answerA: v.optional(v.union(v.literal("A"), v.literal("B"))),
         answerB: v.optional(v.union(v.literal("A"), v.literal("B"))),
         dealtAt: v.number(),
@@ -58,6 +62,31 @@ export default defineSchema({
     gameTally: v.optional(
       v.object({ rounds: v.number(), matched: v.number() }),
     ),
+    // Guess rounds tally separately — "guessed right" and "matched" mean
+    // different things and feed different UI lines.
+    guessTally: v.optional(
+      v.object({ rounds: v.number(), correct: v.number() }),
+    ),
+    // Consecutive successful rounds across BOTH modes; best is the high-water
+    // mark. Replaced/dismissed rounds never touch it (they never complete).
+    gameStreak: v.optional(v.object({ current: v.number(), best: v.number() })),
+    // Saturating event counters (see vibe.ts caps) — the shared vibe
+    // score/level is DERIVED from these in snapshot, never stored. Once a
+    // counter saturates the mutation stops patching, bounding write churn.
+    vibe: v.optional(
+      v.object({
+        msgsA: v.number(),
+        msgsB: v.number(),
+        reactions: v.number(),
+        whispers: v.number(),
+      }),
+    ),
+    // Stay-connected reveal handles, side-keyed like stayConnectedA/B. The
+    // ONE deliberate PII exception: bounded (MAX_REVEAL_HANDLE_LEN), never
+    // logged, revealed to the partner only when BOTH are present, and gone
+    // forever when deleteMatch removes the row.
+    revealA: v.optional(v.string()),
+    revealB: v.optional(v.string()),
     status: v.union(v.literal("active"), v.literal("ended")),
     endedReason: v.optional(
       v.union(v.literal("self-ended"), v.literal("partner-left")),
@@ -95,14 +124,26 @@ export default defineSchema({
     // kind === "game" payload: side-keyed picks (like the match row's
     // answerA/answerB), resolved viewer-relative at read time. Only written
     // once BOTH sides have answered, so the row can't leak an early pick.
+    // dealtBy (a sessionId, never emitted raw) is needed because a guess
+    // result is asymmetric — who predicted whom changes the copy.
     game: v.optional(
       v.object({
         cardId: v.string(),
         pickA: v.union(v.literal("A"), v.literal("B")),
         pickB: v.union(v.literal("A"), v.literal("B")),
+        mode: v.optional(v.union(v.literal("match"), v.literal("guess"))),
+        dealtBy: v.optional(v.string()),
       }),
     ),
     // One-shot fullscreen effect, allowlist-validated in send.
-    effect: v.optional(v.union(v.literal("confetti"), v.literal("hearts"))),
+    effect: v.optional(
+      v.union(
+        v.literal("confetti"),
+        v.literal("hearts"),
+        v.literal("sparkles"),
+        v.literal("poof"),
+        v.literal("golden"),
+      ),
+    ),
   }).index("by_match", ["matchId"]),
 });
