@@ -535,8 +535,6 @@ export const react = sessionMutation({
     if (!match) return;
     const msg = await ctx.db.get(messageId);
     if (!msg || msg.matchId !== match._id) return;
-    await limitGlobal(ctx, "globalReact");
-    await limitPerSession(ctx, "react", ctx.sessionId);
     // One reaction per participant (own messages included): repeating the
     // current emoji clears it, a different one replaces it.
     const field = match.a === ctx.sessionId ? "reactionA" : "reactionB";
@@ -545,13 +543,20 @@ export const react = sessionMutation({
     if (next && (REACTION_MIN_LEVEL[emoji] ?? 1) > matchVibe(match).level) {
       throw new ConvexError("Reaction locked.");
     }
+    await limitGlobal(ctx, "globalReact");
+    await limitPerSession(ctx, "react", ctx.sessionId);
     await ctx.db.patch(
       messageId,
       field === "reactionA" ? { reactionA: next } : { reactionB: next },
     );
-    // Set events feed the vibe; toggling off never decrements.
+    // Set events on the PARTNER's messages feed the vibe (shared chemistry —
+    // self-reacts don't count); toggling off never decrements.
     const counters = match.vibe ?? EMPTY_VIBE_COUNTERS;
-    if (next && counters.reactions < VIBE_REACTION_CAP) {
+    if (
+      next &&
+      msg.author !== ctx.sessionId &&
+      counters.reactions < VIBE_REACTION_CAP
+    ) {
       await ctx.db.patch(match._id, {
         vibe: { ...counters, reactions: counters.reactions + 1 },
       });
@@ -564,12 +569,14 @@ export const signalStayConnected = sessionMutation({
   handler: async (ctx) => {
     const match = await activeMatchFor(ctx, ctx.session);
     if (!match) return;
-    await ctx.db.patch(
-      match._id,
+    // One-way latch: a repeat tap is a no-op, not a rewrite — skipping the
+    // patch also skips a pointless snapshot invalidation for both clients.
+    const field =
       match.a === ctx.sessionId
-        ? { stayConnectedA: true }
-        : { stayConnectedB: true },
-    );
+        ? ("stayConnectedA" as const)
+        : ("stayConnectedB" as const);
+    if (match[field]) return;
+    await ctx.db.patch(match._id, { [field]: true });
   },
 });
 

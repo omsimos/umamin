@@ -459,8 +459,9 @@ export function createMockTransport(
           };
         }),
       });
-      // Set events feed the vibe; toggling off never decrements.
-      if (setting) {
+      // Set events on the partner's messages feed the vibe (self-reacts
+      // don't count); toggling off never decrements. Mirrors the server.
+      if (setting && target.author === "partner") {
         vibeCounters.reactions += 1;
         refreshVibe();
       }

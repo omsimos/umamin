@@ -74,6 +74,19 @@ describe("computeVibe", () => {
     });
     expect(lonely.score).toBe(0);
   });
+
+  it("game grinding alone caps below the top level", () => {
+    // Deal-spam with zero conversation: the clamped game component tops out
+    // at level 4 — level 5 always requires real two-sided engagement.
+    const grinder = computeVibe({
+      ...EMPTY_VIBE_COUNTERS,
+      rounds: 500,
+      successes: 500,
+      mutualStayConnected: false,
+    });
+    expect(grinder.score).toBe(120);
+    expect(grinder.level).toBe(4);
+  });
 });
 
 describe("vibe on the match", () => {
@@ -119,6 +132,19 @@ describe("vibe on the match", () => {
       emoji: "🔥",
     });
     expect((await score(t, "a")).score).toBe(before + 2);
+  });
+
+  it("self-reacts don't feed the meter", async () => {
+    const t = await matched();
+    await t.mutation(api.chat.send, { ...auth("a"), text: "hey" });
+    const [msg] = await t.query(api.chat.messages, auth("a"));
+    const before = (await score(t, "a")).score;
+    await t.mutation(api.chat.react, {
+      ...auth("a"),
+      messageId: msg.id,
+      emoji: "🔥",
+    });
+    expect((await score(t, "a")).score).toBe(before);
   });
 
   it("a whisper reveal bumps the meter", async () => {

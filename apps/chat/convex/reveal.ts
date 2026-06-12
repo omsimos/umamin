@@ -46,13 +46,13 @@ export const withdrawReveal = sessionMutation({
     if (!match) return;
     // Locked once mutually revealed, same as submit.
     if (match.revealA && match.revealB) return;
+    // Nothing to withdraw → no write, no snapshot invalidation for either side.
+    const field =
+      match.a === ctx.sessionId ? ("revealA" as const) : ("revealB" as const);
+    if (!match[field]) return;
+    await limitGlobal(ctx, "globalReveal");
     // Shares the submit budget — withdrawing is the same deliberate action.
     await limitPerSession(ctx, "revealSubmit", ctx.sessionId);
-    await ctx.db.patch(
-      match._id,
-      match.a === ctx.sessionId
-        ? { revealA: undefined }
-        : { revealB: undefined },
-    );
+    await ctx.db.patch(match._id, { [field]: undefined });
   },
 });

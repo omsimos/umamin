@@ -15,6 +15,11 @@ export const MAX_VIBE_LEVEL = VIBE_LEVEL_THRESHOLDS.length;
 export const VIBE_MSG_COUNT_CAP = 60;
 export const VIBE_REACTION_CAP = 10;
 export const VIBE_WHISPER_CAP = 3;
+/** Game contributions clamp too (score-side only — the tallies themselves
+ *  keep counting): grinding deals alone caps at level 4, so the top level
+ *  always requires real two-sided conversation. */
+export const VIBE_ROUNDS_CAP = 12;
+export const VIBE_SUCCESSES_CAP = 12;
 
 export interface VibeCounters {
   msgsA: number;
@@ -47,8 +52,8 @@ export function computeVibe(input: VibeInput): {
   const pairs = Math.min(input.msgsA, input.msgsB, VIBE_MSG_COUNT_CAP);
   const score =
     2 * pairs +
-    5 * input.rounds +
-    5 * input.successes +
+    5 * Math.min(input.rounds, VIBE_ROUNDS_CAP) +
+    5 * Math.min(input.successes, VIBE_SUCCESSES_CAP) +
     2 * Math.min(input.reactions, VIBE_REACTION_CAP) +
     6 * Math.min(input.whispers, VIBE_WHISPER_CAP) +
     (input.mutualStayConnected ? 20 : 0);
