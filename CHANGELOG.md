@@ -18,6 +18,25 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.16.0] - 2026-06-13
+
+### Added
+
+- Umamin Chat: a shared vibe meter — the ring around your partner's avatar fills as you both talk, play, match answers, and react. Tap it to see your level, progress toward the next one, and the unlock track; level-ups bring a brief shimmer and a toast naming what you unlocked together.
+- Umamin Chat: vibe levels unlock things for both of you — Mind Reader mode at level 2, the Hot Takes deck plus a sparkles effect and new reactions at level 3, the Never Have I Ever deck plus a poof effect at level 4, and golden hearts at level 5. Locked items stay visible in the menu with the level that opens them; the basics are never gated.
+- Umamin Chat: Mind Reader mode — instead of both answering a card, the dealer answers honestly and the other player predicts their pick. Correct reads get their own score, separate from matched answers.
+- Umamin Chat: combo streaks — consecutive matched answers or correct reads build a streak with a flame chip in the header and escalating celebrations; your best combo lands on the receipt.
+- Umamin Chat: swap handles after mutual hearts — once you both tap the heart, each of you can drop a handle that's revealed only when both have shared, with a simultaneous card-flip moment. If your partner shares first you're told something is waiting, never what. Handles can still be copied from the ended screen for a minute, then vanish with the chat — and they never appear on receipts.
+- Umamin Chat: a warm-up question while you wait — pick a side on the matching screen and your latest pick becomes a ready-made opener once you're matched.
+- Umamin Chat: the ended screen now shows an afterglow card with your final vibe level, best combo, and game scores, and the receipt gains vibe level, mind reads, best combo, and stayed-connected lines.
+
+### Changed
+
+- Umamin Chat: the "+" menu is now a bottom sheet on phones, organized into play, next-message, and send-with sections to fit the new decks, mode, and effects.
+- Umamin Chat: the header game-score chip moved into the vibe details sheet; a live combo chip takes its place during a streak.
+- Umamin Chat: new messages, reactions, interest pills, and the matching screen gained subtle motion; every animation respects your reduced-motion setting.
+- Umamin Chat: the receipt image compresses its layout when it carries many stat lines, so the paper never overlaps the logo at the bottom of the card.
+
 ## [5.15.0] - 2026-06-12
 
 ### Added
