@@ -1,6 +1,7 @@
 import { isRateLimitError } from "@convex-dev/rate-limiter";
 import type { ConvexReactClient } from "convex/react";
 import type { FunctionReference } from "convex/server";
+import { ConvexError } from "convex/values";
 import { api } from "../../../convex/_generated/api";
 import type { SessionCredentials } from "../session/session-id";
 import {
@@ -115,7 +116,16 @@ export function createConvexTransport(
     }
     // Fire-and-forget mutations (the transport API is void): a rethrow would
     // become an unhandled rejection that reaches no UI. Log + surface instead.
-    console.error("chat mutation failed", error);
+    // Sanitized: a validation error's message echoes the full args — which
+    // include the session credentials — so never log the raw error object.
+    console.error(
+      "chat mutation failed",
+      error instanceof ConvexError
+        ? error.data
+        : error instanceof Error
+          ? error.name
+          : typeof error,
+    );
     onError?.(error);
   }
 
