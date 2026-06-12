@@ -7,6 +7,7 @@ import {
   useRef,
   useSyncExternalStore,
 } from "react";
+import { getInviteCode } from "../invite/invite-code";
 import { createMockTransport } from "../transport/mock-transport";
 import type { ChatTransport, SessionSnapshot } from "./types";
 
@@ -15,6 +16,10 @@ interface ChatSessionValue {
   findMatch: ChatTransport["findMatch"];
   send: ChatTransport["send"];
   react: ChatTransport["react"];
+  viewWhisper: ChatTransport["viewWhisper"];
+  dealCard: ChatTransport["dealCard"];
+  answerCard: ChatTransport["answerCard"];
+  dismissGame: ChatTransport["dismissGame"];
   setTyping: ChatTransport["setTyping"];
   signalStayConnected: ChatTransport["signalStayConnected"];
   leave: ChatTransport["leave"];
@@ -40,9 +45,17 @@ export function ChatSessionProvider({
   const value = useMemo<ChatSessionValue>(
     () => ({
       snapshot,
-      findMatch: (self) => t.findMatch(self),
-      send: (text) => t.send(text),
+      // The caller's own invite code rides along on every search, so a
+      // shared deep link can land on them whenever they're waiting — no
+      // call site has to remember to pass it.
+      findMatch: (self, options) =>
+        t.findMatch(self, { inviteCode: getInviteCode(), ...options }),
+      send: (text, opts) => t.send(text, opts),
       react: (id, emoji) => t.react(id, emoji),
+      viewWhisper: (id) => t.viewWhisper(id),
+      dealCard: (cardId) => t.dealCard(cardId),
+      answerCard: (cardId, pick) => t.answerCard(cardId, pick),
+      dismissGame: () => t.dismissGame(),
       setTyping: (isTyping) => t.setTyping(isTyping),
       signalStayConnected: () => t.signalStayConnected(),
       leave: (reason) => t.leave(reason),

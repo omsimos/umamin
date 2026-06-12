@@ -2,11 +2,15 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { cardById, GAME_DECKS } from "../../convex/decks";
 import { ChatHeader } from "../components/chat/chat-header";
+import type { ComposerMode } from "../components/chat/composer-actions";
 import { EndedView } from "../components/chat/ended-view";
+import { GameRoundCard } from "../components/chat/game/game-round-card";
 import { IceBreakerBanner } from "../components/chat/ice-breaker-banner";
 import { MessageComposer } from "../components/chat/message-composer";
 import { MessageList } from "../components/chat/message-list";
+import { SendEffectOverlay } from "../components/chat/send-effect-overlay";
 import { StayConnectedCelebration } from "../components/chat/stay-connected-celebration";
 import { MatchingRadar } from "../components/matching/matching-radar";
 import { MatchPresence } from "../components/presence/match-presence";
@@ -14,6 +18,9 @@ import { QueueHeartbeat } from "../components/presence/queue-heartbeat";
 import { AppShell, Wordmark } from "../components/shell/app-shell";
 import { SessionRail } from "../components/shell/session-rail";
 import { useChatSession } from "../lib/session/chat-context";
+import type { ChatMessage } from "../lib/session/types";
+import { useChatStats } from "../lib/share-card/use-chat-stats";
+import { useSendEffects } from "../lib/use-send-effects";
 
 // Presence heartbeats only flow against a real Convex backend; on the mock
 // there's no ConvexProvider, so MatchPresence (which calls Convex hooks) stays
@@ -32,6 +39,10 @@ function Session() {
     snapshot,
     send,
     react,
+    viewWhisper,
+    dealCard,
+    answerCard,
+    dismissGame,
     setTyping,
     signalStayConnected,
     leave,
@@ -51,12 +62,36 @@ function Session() {
 
   const [iceBreakerDismissed, setIceBreakerDismissed] = useState(false);
   const [celebrationDismissed, setCelebrationDismissed] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on match identity
   useEffect(() => {
     setIceBreakerDismissed(false);
     setCelebrationDismissed(false);
+    setReplyTarget(null);
   }, [snapshot.matchId]);
+
+  const { active: activeEffect, clear: clearEffect } = useSendEffects(
+    messages,
+    snapshot.matchId,
+  );
+  const receiptStats = useChatStats(snapshot);
+
+  function sendWithMode(text: string, mode: ComposerMode) {
+    send(text, {
+      replyToId: replyTarget?.id,
+      whisper: mode.whisper || undefined,
+      effect: mode.effect,
+    });
+    setReplyTarget(null);
+  }
+
+  function playAnother() {
+    const deck = cardById(snapshot.game?.cardId ?? "")?.deck;
+    if (!deck) return;
+    const cards = GAME_DECKS[deck];
+    dealCard(cards[Math.floor(Math.random() * cards.length)].id);
+  }
 
   function newMatch() {
     leave();
@@ -125,11 +160,14 @@ function Session() {
               partner={partner}
               stayConnectedActive={stayConnected.self}
               onStayConnected={signalStayConnected}
+              gameTally={snapshot.gameTally}
             />
             <MessageList
               messages={messages}
               partnerStatus={partner.status}
               onReact={react}
+              onReply={setReplyTarget}
+              onViewWhisper={viewWhisper}
               self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
               partner={{
                 alias: partner.alias,
@@ -148,7 +186,37 @@ function Session() {
                 ) : undefined
               }
             />
-            <MessageComposer onSend={send} onTyping={setTyping} />
+            {snapshot.game && (
+              // Keyed by round so a re-deal remounts: reveal animations stay
+              // one-shot and stale option state can't leak across deals.
+              <GameRoundCard
+                key={snapshot.game.cardId}
+                round={snapshot.game}
+                partnerAlias={partner.alias}
+                onAnswer={(pick) => {
+                  if (snapshot.game) answerCard(snapshot.game.cardId, pick);
+                }}
+                onDismiss={dismissGame}
+                onPlayAgain={playAnother}
+              />
+            )}
+            <MessageComposer
+              onSend={sendWithMode}
+              onTyping={setTyping}
+              onDealCard={dealCard}
+              replyTo={
+                replyTarget
+                  ? {
+                      authorLabel:
+                        replyTarget.author === "self"
+                          ? "yourself"
+                          : partner.alias,
+                      text: replyTarget.text,
+                    }
+                  : null
+              }
+              onCancelReply={() => setReplyTarget(null)}
+            />
           </>
         )}
 
@@ -156,9 +224,14 @@ function Session() {
           <EndedView
             reason={snapshot.endedReason}
             partnerAlias={partner?.alias}
+            stats={receiptStats}
             onFindNew={() => findMatch(self)}
             onBackToLobby={() => navigate({ to: "/" })}
           />
+        )}
+
+        {phase === "active" && activeEffect && (
+          <SendEffectOverlay effect={activeEffect} onDone={clearEffect} />
         )}
 
         {phase === "active" && mutual && !celebrationDismissed && partner && (

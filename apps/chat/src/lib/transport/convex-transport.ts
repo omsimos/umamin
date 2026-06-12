@@ -6,9 +6,12 @@ import type { SessionCredentials } from "../session/session-id";
 import {
   type ChatMessage,
   type ChatTransport,
+  type FindMatchOptions,
+  type GamePick,
   IDLE_SNAPSHOT,
   LOADING_SNAPSHOT,
   type SelfIdentity,
+  type SendOpts,
   type SessionSnapshot,
   type SnapshotMeta,
 } from "../session/types";
@@ -132,7 +135,7 @@ export function createConvexTransport(
     getSnapshot() {
       return current();
     },
-    findMatch(self: SelfIdentity) {
+    findMatch(self: SelfIdentity, options?: FindMatchOptions) {
       // Show "matching" immediately (held across a rematch via the match we're
       // leaving) so the lobby -> /chat hop never bounces and a rematch never
       // flashes the old chat; roll back if the enqueue fails so the route can
@@ -146,6 +149,13 @@ export function createConvexTransport(
           alias: self.alias,
           avatarSeed: self.avatarSeed,
           interests: self.interests,
+          ...(options?.inviteCode ? { inviteCode: options.inviteCode } : {}),
+          ...(options?.joinCode ? { joinCode: options.joinCode } : {}),
+        })
+        .then((result: { viaInvite: boolean } | undefined) => {
+          if (options?.joinCode && !result?.viaInvite) {
+            options.onInviteMiss?.();
+          }
         })
         .catch((error: unknown) => {
           pending = null;
@@ -154,11 +164,28 @@ export function createConvexTransport(
           surfaceError(error);
         });
     },
-    send(text: string) {
-      call(api.chat.send, { text });
+    send(text: string, opts?: SendOpts) {
+      call(api.chat.send, {
+        text,
+        ...(opts?.replyToId ? { replyToId: opts.replyToId } : {}),
+        ...(opts?.whisper ? { whisper: true } : {}),
+        ...(opts?.effect ? { effect: opts.effect } : {}),
+      });
     },
     react(messageId: string, emoji: string) {
       call(api.chat.react, { messageId, emoji });
+    },
+    viewWhisper(messageId: string) {
+      call(api.chat.viewWhisper, { messageId });
+    },
+    dealCard(cardId: string) {
+      call(api.games.dealCard, { cardId });
+    },
+    answerCard(cardId: string, pick: GamePick) {
+      call(api.games.answerCard, { cardId, pick });
+    },
+    dismissGame() {
+      call(api.games.dismissGame, {});
     },
     setTyping(isTyping: boolean) {
       // Best-effort presence signal — never toast or throw on failure.

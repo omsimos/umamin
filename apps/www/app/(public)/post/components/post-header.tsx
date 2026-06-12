@@ -35,7 +35,11 @@ export function PostHeader({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background/80 px-2 py-2 backdrop-blur">
+    <header
+      className="sticky top-0 z-30 flex items-center justify-between border-b bg-background/80 px-2 pb-2 backdrop-blur"
+      // Standalone clears the notch; a normal browser resolves the inset to 0.
+      style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top))" }}
+    >
       <Button
         type="button"
         variant="ghost"

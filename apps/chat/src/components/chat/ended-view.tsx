@@ -1,17 +1,24 @@
 import { Button } from "@umamin/ui/components/button";
 import { ArrowRight } from "lucide-react";
 import type { EndedReason } from "../../lib/session/types";
+import { loadCardAssets } from "../../lib/share-card/assets";
+import { buildReceiptCard } from "../../lib/share-card/receipt-template";
+import type { ChatReceiptStats } from "../../lib/share-card/types";
 import { AdContainer } from "../ads/ad-container";
+import { ShareCardAction } from "../share/share-card-action";
 
 // Normal document flow (not an overlay) so the ad below is AdSense-policy-compliant.
 export function EndedView({
   reason,
   partnerAlias,
+  stats,
   onFindNew,
   onBackToLobby,
 }: {
   reason: EndedReason | undefined;
   partnerAlias: string | undefined;
+  /** Frozen receipt stats; null hides the share button (e.g. partner unknown). */
+  stats?: ChatReceiptStats | null;
   onFindNew: () => void;
   onBackToLobby: () => void;
 }) {
@@ -36,6 +43,15 @@ export function EndedView({
         Find someone new
         <ArrowRight />
       </Button>
+      {stats && (
+        <div className="mt-2">
+          <ShareCardAction
+            label="Share the vibe"
+            filename="umamin-chat-receipt.png"
+            build={async () => buildReceiptCard(stats, await loadCardAssets())}
+          />
+        </div>
+      )}
       <Button
         variant="ghost"
         className="text-muted-foreground mt-2"

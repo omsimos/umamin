@@ -18,11 +18,24 @@ function makeMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
 const SELF = { alias: "Calm Otter", avatarSeed: "self-seed" };
 const PARTNER = { alias: "Blue Fox", avatarSeed: "partner-seed" };
 
-function renderBubble(message: ChatMessage, onReact: () => void = () => {}) {
+function renderBubble(
+  message: ChatMessage,
+  {
+    onReact = () => {},
+    onReply = () => {},
+    onJumpTo,
+  }: {
+    onReact?: () => void;
+    onReply?: () => void;
+    onJumpTo?: (id: string) => void;
+  } = {},
+) {
   return render(
     <MessageBubble
       message={message}
       onReact={onReact}
+      onReply={onReply}
+      onJumpTo={onJumpTo}
       self={SELF}
       partner={PARTNER}
     />,
@@ -48,7 +61,7 @@ describe("MessageBubble", () => {
 
   it("calls onReact and closes the picker when an emoji is chosen", async () => {
     const onReact = vi.fn();
-    renderBubble(makeMessage(), onReact);
+    renderBubble(makeMessage(), { onReact });
 
     await userEvent.click(screen.getByRole("button", { name: BUBBLE_NAME }));
     const emojiButton = screen.getAllByRole("button", { name: /^React / })[0];
@@ -66,6 +79,7 @@ describe("MessageBubble", () => {
       <MessageBubble
         message={makeMessage({ reactions: [{ emoji: "🔥", by: "partner" }] })}
         onReact={() => {}}
+        onReply={() => {}}
         self={SELF}
         partner={PARTNER}
       />,
@@ -121,5 +135,171 @@ describe("MessageBubble", () => {
       "aria-pressed",
       "false",
     );
+  });
+
+  it("calls onReply and closes the popover when Reply is chosen", async () => {
+    const onReply = vi.fn();
+    renderBubble(makeMessage(), { onReply });
+
+    await userEvent.click(screen.getByRole("button", { name: BUBBLE_NAME }));
+    await userEvent.click(screen.getByRole("button", { name: "Reply" }));
+
+    expect(onReply).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Reply" })).toBeNull();
+  });
+
+  it("renders the quoted reply preview with a viewer-relative label", () => {
+    renderBubble(
+      makeMessage({
+        replyTo: { id: "m0", author: "self", text: "the original" },
+      }),
+    );
+    expect(screen.getByText("Blue Fox replied to you")).toBeInTheDocument();
+    expect(screen.getByText("the original")).toBeInTheDocument();
+  });
+
+  it("labels a self-reply to the partner's message", () => {
+    renderBubble(
+      makeMessage({
+        author: "self",
+        replyTo: { id: "m0", author: "partner", text: "the original" },
+      }),
+    );
+    expect(screen.getByText("You replied to Blue Fox")).toBeInTheDocument();
+  });
+
+  it("jumps to the quoted message when the preview is tapped", async () => {
+    const onJumpTo = vi.fn();
+    renderBubble(
+      makeMessage({
+        replyTo: { id: "m0", author: "self", text: "the original" },
+      }),
+      { onJumpTo },
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Go to replied-to message/ }),
+    );
+    expect(onJumpTo).toHaveBeenCalledWith("m0");
+  });
+
+  it("hides a received whisper's text and reveals on tap", async () => {
+    const onViewWhisper = vi.fn();
+    render(
+      <MessageBubble
+        message={makeMessage({ text: "", whisper: { state: "hidden" } })}
+        onReact={() => {}}
+        onReply={() => {}}
+        onViewWhisper={onViewWhisper}
+        self={SELF}
+        partner={PARTNER}
+      />,
+    );
+    expect(screen.queryByText("hello there")).toBeNull();
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Whisper received/ }),
+    );
+    expect(onViewWhisper).toHaveBeenCalledWith("m1");
+  });
+
+  it("shows the sender's own whisper text with an unseen caption", () => {
+    render(
+      <MessageBubble
+        message={makeMessage({
+          author: "self",
+          text: "my secret",
+          whisper: { state: "hidden" },
+        })}
+        onReact={() => {}}
+        onReply={() => {}}
+        self={SELF}
+        partner={PARTNER}
+      />,
+    );
+    expect(screen.getByText("my secret")).toBeInTheDocument();
+    expect(screen.getByText(/Whisper · unseen/)).toBeInTheDocument();
+  });
+
+  it("shows a countdown for a revealed whisper and a placeholder once burned", () => {
+    const { rerender } = render(
+      <MessageBubble
+        message={makeMessage({
+          whisper: { state: "revealed", viewedAt: Date.now() },
+        })}
+        onReact={() => {}}
+        onReply={() => {}}
+        self={SELF}
+        partner={PARTNER}
+      />,
+    );
+    expect(screen.getByText("hello there")).toBeInTheDocument();
+    expect(screen.getByText(/burns in \d+s/)).toBeInTheDocument();
+
+    rerender(
+      <MessageBubble
+        message={makeMessage({ text: "", whisper: { state: "burned" } })}
+        onReact={() => {}}
+        onReply={() => {}}
+        self={SELF}
+        partner={PARTNER}
+      />,
+    );
+    expect(screen.getByText(/Whisper burned/)).toBeInTheDocument();
+    expect(screen.queryByText("hello there")).toBeNull();
+  });
+
+  it("renders a game-result row with both picks and the verdict", () => {
+    renderBubble(
+      makeMessage({
+        text: "",
+        gameResult: { cardId: "tot-coffee", selfPick: "A", partnerPick: "A" },
+      }),
+    );
+    expect(screen.getByText(/This or That/)).toBeInTheDocument();
+    expect(
+      screen.getByText("You: Coffee · Blue Fox: Coffee"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("⚡ It's a match!")).toBeInTheDocument();
+  });
+
+  it("renders a mismatch verdict and no popover on game rows", async () => {
+    renderBubble(
+      makeMessage({
+        text: "",
+        gameResult: { cardId: "tot-coffee", selfPick: "A", partnerPick: "B" },
+      }),
+    );
+    expect(screen.getByText(/Opposites attract/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText(/Opposites attract/));
+    expect(screen.queryByRole("button", { name: /^React / })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Reply" })).toBeNull();
+  });
+
+  it("renders nothing for a game row with an unknown card", () => {
+    const { container } = renderBubble(
+      makeMessage({
+        text: "",
+        gameResult: { cardId: "nope", selfPick: "A", partnerPick: "B" },
+      }),
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("whispers have no reaction/reply popover", async () => {
+    render(
+      <MessageBubble
+        message={makeMessage({
+          author: "self",
+          text: "my secret",
+          whisper: { state: "hidden" },
+        })}
+        onReact={() => {}}
+        onReply={() => {}}
+        self={SELF}
+        partner={PARTNER}
+      />,
+    );
+    await userEvent.click(screen.getByText("my secret"));
+    expect(screen.queryByRole("button", { name: /^React / })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Reply" })).toBeNull();
   });
 });

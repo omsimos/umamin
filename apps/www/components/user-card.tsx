@@ -23,7 +23,7 @@ import { hasUmaminPlus } from "@/lib/utils";
 import type { PublicUserWithBadge } from "@/types/user";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { GroupBadge } from "./group-badge";
-import { ShareButton } from "./share-button";
+import { ProfileShareMenu } from "./share-button";
 
 const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
 
@@ -71,9 +71,8 @@ export function UserCard({
                 </Link>
               </Button>
 
-              <ShareButton
-                username={user.username}
-                variant="secondary"
+              <ProfileShareMenu
+                user={user}
                 className="rounded-full bg-background/70 backdrop-blur"
               />
             </>

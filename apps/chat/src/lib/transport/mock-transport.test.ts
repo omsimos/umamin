@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { GAME_DECKS } from "../../../convex/decks";
 import type { SelfIdentity, SessionSnapshot } from "../session/types";
 import { createMockTransport } from "./mock-transport";
 
@@ -31,6 +32,15 @@ describe("mockTransport", () => {
   it("starts idle", () => {
     const t = createMockTransport(opts);
     expect(latest(t).phase).toBe("idle");
+  });
+
+  it("a joinCode reports a miss once and still produces a normal match", () => {
+    const t = createMockTransport(opts);
+    const onInviteMiss = vi.fn();
+    t.findMatch(SELF, { joinCode: "abc", onInviteMiss });
+    expect(onInviteMiss).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(1000);
+    expect(latest(t).phase).toBe("active");
   });
 
   it("findMatch goes matching then active with a partner", () => {
@@ -76,6 +86,96 @@ describe("mockTransport", () => {
     expect(latest(t).partner?.status).toBe("online");
   });
 
+  it("send with a reply target attaches a viewer-relative preview", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000 + 500 + 500); // match + greeting
+    const greetingMsg = latest(t).messages[0];
+    t.send("replying to you", { replyToId: greetingMsg.id });
+    const reply = latest(t).messages.at(-1);
+    expect(reply?.replyTo).toEqual({
+      id: greetingMsg.id,
+      author: "partner",
+      text: greetingMsg.text,
+    });
+  });
+
+  it("send drops an unknown reply target but keeps the message", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000 + 500 + 500);
+    t.send("orphan reply", { replyToId: "nope" });
+    const msg = latest(t).messages.at(-1);
+    expect(msg?.text).toBe("orphan reply");
+    expect(msg?.replyTo).toBeUndefined();
+  });
+
+  it("a sent whisper is viewed by the partner, then burns", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000 + 500 + 500);
+    t.send("my secret", { whisper: true });
+    const sent = latest(t).messages.find(
+      (m) => m.author === "self" && m.whisper,
+    );
+    expect(sent?.text).toBe("my secret"); // sender keeps their own text
+    expect(sent?.whisper).toEqual({ state: "hidden" });
+
+    vi.advanceTimersByTime(2500); // whisperViewDelay — partner "taps" it
+    const viewed = latest(t).messages.find((m) => m.id === sent?.id);
+    expect(viewed?.whisper?.state).toBe("revealed");
+    expect(viewed?.whisper?.viewedAt).toEqual(expect.any(Number));
+
+    vi.advanceTimersByTime(10_000); // WHISPER_BURN_MS
+    const burned = latest(t).messages.find((m) => m.id === sent?.id);
+    expect(burned?.whisper).toEqual({ state: "burned" });
+    expect(burned?.text).toBe("");
+  });
+
+  it("a partner whisper hides its text until viewWhisper reveals it", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000 + 500 + 500);
+    t.send("my secret", { whisper: true });
+    vi.advanceTimersByTime(500 + 500); // partner reply delay + typing
+    const incoming = latest(t).messages.find(
+      (m) => m.author === "partner" && m.whisper,
+    );
+    // Anti-leak: the snapshot never carries the plaintext while hidden.
+    expect(incoming?.text).toBe("");
+    expect(incoming?.whisper?.state).toBe("hidden");
+
+    if (!incoming) throw new Error("no incoming whisper");
+    t.viewWhisper(incoming.id);
+    const revealed = latest(t).messages.find((m) => m.id === incoming.id);
+    expect(revealed?.text).not.toBe("");
+    expect(revealed?.whisper?.state).toBe("revealed");
+
+    vi.advanceTimersByTime(10_000);
+    const burned = latest(t).messages.find((m) => m.id === incoming.id);
+    expect(burned?.whisper?.state).toBe("burned");
+    expect(burned?.text).toBe("");
+  });
+
+  it("viewWhisper ignores own messages and non-whispers", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000 + 500 + 500);
+    t.send("normal", {});
+    const own = latest(t).messages.at(-1);
+    if (!own) throw new Error("no message");
+    t.viewWhisper(own.id);
+    expect(latest(t).messages.at(-1)?.whisper).toBeUndefined();
+  });
+
+  it("send carries an effect on the self message", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000 + 500 + 500);
+    t.send("party", { effect: "confetti" });
+    expect(latest(t).messages.at(-1)?.effect).toBe("confetti");
+  });
+
   it("react sets, replaces, and clears the self reaction", () => {
     const t = createMockTransport(opts);
     t.findMatch(SELF);
@@ -92,6 +192,74 @@ describe("mockTransport", () => {
     ]);
     t.react(id, "🔥");
     expect(latest(t).messages[0].reactions).toEqual([]);
+  });
+
+  it("deal exposes a round; the partner's pick stays hidden until reveal", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000);
+    const cardId = GAME_DECKS["this-or-that"][0].id;
+    t.dealCard(cardId);
+    expect(latest(t).game).toEqual({
+      cardId,
+      dealtBy: "self",
+      selfPick: null,
+      partnerAnswered: false,
+    });
+
+    vi.advanceTimersByTime(1600); // gameAnswerDelay — partner picks
+    // Anti-leak: partnerAnswered flips but the pick itself is withheld.
+    expect(latest(t).game?.partnerAnswered).toBe(true);
+    expect(latest(t).game?.partnerPick).toBeUndefined();
+
+    t.answerCard(cardId, "A");
+    const g = latest(t).game;
+    expect(g?.selfPick).toBe("A");
+    expect(g?.partnerPick).toBe("A"); // random()=0 -> partner picked A
+    expect(latest(t).gameTally).toEqual({ rounds: 1, matched: 1 });
+    // The completed round also lands in the conversation.
+    expect(latest(t).messages.at(-1)?.gameResult).toEqual({
+      cardId,
+      selfPick: "A",
+      partnerPick: "A",
+    });
+  });
+
+  it("answering before the partner reveals once their pick lands", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000);
+    const cardId = GAME_DECKS["this-or-that"][0].id;
+    t.dealCard(cardId);
+    t.answerCard(cardId, "B");
+    expect(latest(t).game?.partnerPick).toBeUndefined();
+    vi.advanceTimersByTime(1600);
+    expect(latest(t).game?.partnerPick).toBe("A");
+    expect(latest(t).gameTally).toEqual({ rounds: 1, matched: 0 });
+  });
+
+  it("dismiss clears the round; findMatch resets the tally", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000);
+    const cardId = GAME_DECKS["this-or-that"][0].id;
+    t.dealCard(cardId);
+    t.answerCard(cardId, "A");
+    vi.advanceTimersByTime(1600);
+    t.dismissGame();
+    expect(latest(t).game).toBeNull();
+    expect(latest(t).gameTally.rounds).toBe(1);
+
+    t.findMatch(SELF);
+    expect(latest(t).gameTally).toEqual({ rounds: 0, matched: 0 });
+  });
+
+  it("dealCard ignores unknown card ids", () => {
+    const t = createMockTransport(opts);
+    t.findMatch(SELF);
+    vi.advanceTimersByTime(1000);
+    t.dealCard("nope");
+    expect(latest(t).game).toBeNull();
   });
 
   it("signalStayConnected becomes mutual after the partner reciprocates", () => {

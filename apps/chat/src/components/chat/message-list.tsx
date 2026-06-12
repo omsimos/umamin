@@ -1,13 +1,17 @@
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { ChatMessage, PartnerStatus } from "../../lib/session/types";
 import { MessageBubble } from "./message-bubble";
 import type { Reactor } from "./reaction-details";
 import { TypingIndicator } from "./typing-indicator";
 
+const HIGHLIGHT_MS = 1500;
+
 export function MessageList({
   messages,
   partnerStatus,
   onReact,
+  onReply,
+  onViewWhisper,
   header,
   self,
   partner,
@@ -15,12 +19,15 @@ export function MessageList({
   messages: ChatMessage[];
   partnerStatus: PartnerStatus | undefined;
   onReact: (messageId: string, emoji: string) => void;
+  onReply: (message: ChatMessage) => void;
+  onViewWhisper?: (messageId: string) => void;
   header?: ReactNode;
   self: Reactor;
   partner: Reactor;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const didInitialScroll = useRef(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   // Scroll the container itself (never scrollIntoView — that scrolls outer
   // ancestors too and can shove the whole chat off-screen). Jump on first
@@ -47,6 +54,34 @@ export function MessageList({
     }
   }, [messages.length, partnerStatus]);
 
+  useEffect(() => {
+    if (!highlightId) return;
+    const t = setTimeout(() => setHighlightId(null), HIGHLIGHT_MS);
+    return () => clearTimeout(t);
+  }, [highlightId]);
+
+  // Same scroll-the-container rule as above. A target older than the message
+  // cap isn't rendered, so the jump is a no-op rather than an error.
+  function jumpTo(messageId: string) {
+    const c = containerRef.current;
+    if (!c) return;
+    const el = c.querySelector<HTMLElement>(
+      `[data-message-id="${CSS.escape(messageId)}"]`,
+    );
+    if (!el) return;
+    const top =
+      el.getBoundingClientRect().top -
+      c.getBoundingClientRect().top +
+      c.scrollTop -
+      72;
+    if (typeof c.scrollTo === "function") {
+      c.scrollTo({ top, behavior: "smooth" });
+    } else {
+      c.scrollTop = top;
+    }
+    setHighlightId(messageId);
+  }
+
   return (
     <div
       ref={containerRef}
@@ -54,13 +89,18 @@ export function MessageList({
     >
       {header}
       {messages.map((m) => (
-        <MessageBubble
-          key={m.id}
-          message={m}
-          onReact={(e) => onReact(m.id, e)}
-          self={self}
-          partner={partner}
-        />
+        <div key={m.id} data-message-id={m.id}>
+          <MessageBubble
+            message={m}
+            onReact={(e) => onReact(m.id, e)}
+            onReply={() => onReply(m)}
+            onJumpTo={jumpTo}
+            onViewWhisper={onViewWhisper}
+            highlighted={m.id === highlightId}
+            self={self}
+            partner={partner}
+          />
+        </div>
       ))}
       {partnerStatus === "typing" && <TypingIndicator />}
     </div>

@@ -1,28 +1,58 @@
 import { Button } from "@umamin/ui/components/button";
 import { Input } from "@umamin/ui/components/input";
-import { Send } from "lucide-react";
+import { cn } from "@umamin/ui/lib/utils";
+import { Flame, Send, X } from "lucide-react";
 import {
   type ChangeEvent,
   type FormEvent,
+  type KeyboardEvent,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
+import {
+  ComposerActions,
+  type ComposerMode,
+  IDLE_MODE,
+} from "./composer-actions";
 
 const TYPING_IDLE_MS = 2500;
+
+export interface ComposerReplyTo {
+  /** Viewer-relative name of the quoted author ("yourself" or the partner's alias). */
+  authorLabel: string;
+  text: string;
+}
+
+function modeLabel(mode: ComposerMode): string {
+  if (mode.whisper) return "Whisper — disappears ~10s after it's read";
+  if (mode.effect === "confetti") return "🎉 Sends with confetti";
+  if (mode.effect === "hearts") return "💖 Sends with hearts";
+  return "";
+}
 
 export function MessageComposer({
   onSend,
   onTyping,
+  onDealCard,
+  replyTo,
+  onCancelReply,
 }: {
-  onSend: (text: string) => void;
+  onSend: (text: string, mode: ComposerMode) => void;
   onTyping?: (isTyping: boolean) => void;
+  /** Deal a game card from the actions popover. Absent = games hidden. */
+  onDealCard?: (cardId: string) => void;
+  replyTo?: ComposerReplyTo | null;
+  onCancelReply?: () => void;
 }) {
   const [value, setValue] = useState("");
+  const [mode, setMode] = useState<ComposerMode>(IDLE_MODE);
   const typingRef = useRef(false);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const canSend = value.trim().length > 0;
+  const modeActive = mode.whisper || mode.effect;
 
   const stopTyping = useCallback(() => {
     if (idleTimer.current) {
@@ -50,35 +80,105 @@ export function MessageComposer({
     idleTimer.current = setTimeout(stopTyping, TYPING_IDLE_MS);
   }
 
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape" && replyTo) {
+      e.preventDefault();
+      onCancelReply?.();
+    }
+  }
+
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!canSend) return;
-    onSend(value.trim());
+    onSend(value.trim(), mode);
     setValue("");
+    setMode(IDLE_MODE);
     stopTyping();
   }
 
   useEffect(() => stopTyping, [stopTyping]);
 
+  // Starting a reply is an intent to type — pull focus to the input.
+  useEffect(() => {
+    if (replyTo) inputRef.current?.focus();
+  }, [replyTo]);
+
   return (
-    <form onSubmit={submit} className="flex items-center gap-2 border-t p-3">
-      <Input
-        value={value}
-        onChange={handleChange}
-        placeholder="Type a message…"
-        aria-label="Message"
-        maxLength={2000}
-        className="rounded-full"
-      />
-      <Button
-        type="submit"
-        size="icon"
-        aria-label="Send"
-        disabled={!canSend}
-        className="rounded-full"
-      >
-        <Send />
-      </Button>
-    </form>
+    <div className="border-t">
+      {replyTo && (
+        <div className="bg-muted/40 flex items-center justify-between gap-3 border-b px-4 py-2">
+          <div className="min-w-0">
+            <p className="text-xs font-medium">
+              Replying to {replyTo.authorLabel}
+            </p>
+            <p className="text-muted-foreground truncate text-xs">
+              {replyTo.text}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Cancel reply"
+            onClick={onCancelReply}
+            className="shrink-0 rounded-full"
+          >
+            <X />
+          </Button>
+        </div>
+      )}
+      {modeActive && (
+        <div className="bg-muted/40 flex items-center justify-between gap-3 border-b px-4 py-1.5">
+          <p className="flex min-w-0 items-center gap-1.5 truncate text-xs font-medium">
+            {mode.whisper && (
+              <Flame
+                aria-hidden
+                className="size-3.5 shrink-0 text-orange-500"
+              />
+            )}
+            {modeLabel(mode)}
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Clear message option"
+            onClick={() => setMode(IDLE_MODE)}
+            className="size-7 shrink-0 rounded-full"
+          >
+            <X />
+          </Button>
+        </div>
+      )}
+      <form onSubmit={submit} className="flex items-center gap-2 p-3">
+        <ComposerActions
+          mode={mode}
+          onModeChange={setMode}
+          onDealCard={onDealCard}
+        />
+        <Input
+          ref={inputRef}
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder={mode.whisper ? "Whisper something…" : "Type a message…"}
+          aria-label="Message"
+          maxLength={2000}
+          className={cn(
+            "rounded-full",
+            mode.whisper && "ring-2 ring-orange-500/30",
+          )}
+        />
+        <Button
+          type="submit"
+          size="icon"
+          aria-label="Send"
+          disabled={!canSend}
+          className="rounded-full"
+        >
+          <Send />
+        </Button>
+      </form>
+    </div>
   );
 }

@@ -23,9 +23,19 @@ export const MAX_QUEUE_WAIT_MS = 5 * MINUTE;
 export const MESSAGE_CAP = 100;
 /** Max characters in a single message (anti-abuse; far under Convex's 1 MiB doc cap). */
 export const MAX_MESSAGE_LEN = 2000;
+/** Quoted-reply previews are truncated server-side so a reply to a max-length
+ *  message doesn't double the reactive payload of the message list. */
+export const REPLY_PREVIEW_LEN = 140;
+/** How long a revealed whisper stays readable before the server redacts it. */
+export const WHISPER_BURN_MS = 10 * SECOND;
+/** Send effects are a fixed allowlist, not arbitrary user content. */
+export const ALLOWED_EFFECTS = ["confetti", "hearts"] as const;
+export type SendEffect = (typeof ALLOWED_EFFECTS)[number];
 /** Client-generated anonymous session credentials. */
 export const MAX_SESSION_ID_LEN = 128;
 export const MAX_SESSION_SECRET_LEN = 128;
+/** Invite codes are client-generated and opaque; only their length is bounded. */
+export const MAX_INVITE_CODE_LEN = 32;
 /** Server-side bounds on client-supplied identity. The lobby caps these too, but
  *  the matchmaking mutation is publicly callable, so the server must as well. */
 export const MAX_ALIAS_LEN = 40;

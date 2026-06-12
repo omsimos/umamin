@@ -10,6 +10,7 @@ import {
   MAX_AVATAR_SEED_LEN,
   MAX_INTEREST_LEN,
   MAX_INTERESTS,
+  MAX_INVITE_CODE_LEN,
   QUEUE_FRESH_MS,
   RECONCILE_MS,
 } from "./constants";
@@ -54,6 +55,15 @@ function normalizeIdentity(args: {
   return { alias, avatarSeed, interests };
 }
 
+function normalizeCode(code: string | undefined): string | undefined {
+  const trimmed = code?.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.length > MAX_INVITE_CODE_LEN) {
+    throw new ConvexError("Invalid invite code.");
+  }
+  return trimmed;
+}
+
 async function pair(
   ctx: MutationCtx,
   aSessionId: string,
@@ -89,10 +99,17 @@ export const enqueueAndMatch = sessionMutation({
     alias: v.string(),
     avatarSeed: v.string(),
     interests: v.array(v.string()),
+    // The caller's own shareable code, stamped on their queue row.
+    inviteCode: v.optional(v.string()),
+    // A ?join= deep link's code — try to land on its owner directly.
+    joinCode: v.optional(v.string()),
   },
+  returns: v.object({ viaInvite: v.boolean() }),
   handler: async (ctx, args) => {
     // The lobby bounds these, but this mutation is publicly callable.
     const identity = normalizeIdentity(args);
+    const inviteCode = normalizeCode(args.inviteCode);
+    const joinCode = normalizeCode(args.joinCode);
     await limitGlobal(ctx, "globalFindMatch");
     await limitPerSession(ctx, "findMatch", ctx.sessionId);
     const now = Date.now();
@@ -140,6 +157,28 @@ export const enqueueAndMatch = sessionMutation({
       .unique();
     if (mine) await ctx.db.delete(mine._id);
 
+    const overlap = (q: { interests: string[] }) =>
+      q.interests.filter((i) => identity.interests.includes(i));
+
+    // Direct invite claim: a deep-linked visitor lands on the link's owner if
+    // they're waiting and fresh. Skips the interest filter — this is a direct
+    // request, not discovery. Absent/stale/self falls through to the normal
+    // flow: the visitor still converts into a regular match.
+    if (joinCode) {
+      const target = await ctx.db
+        .query("queue")
+        .withIndex("by_inviteCode", (q) => q.eq("inviteCode", joinCode))
+        .first();
+      if (
+        target &&
+        target.sessionId !== ctx.sessionId &&
+        isFresh(target, now)
+      ) {
+        await pair(ctx, ctx.sessionId, target, overlap(target));
+        return { viaInvite: true };
+      }
+    }
+
     // Interest-preferred claim over the oldest waiting (bounded — no full scan).
     const waiting = await ctx.db
       .query("queue")
@@ -149,12 +188,10 @@ export const enqueueAndMatch = sessionMutation({
     const others = waiting.filter(
       (q) => q.sessionId !== ctx.sessionId && isFresh(q, now),
     );
-    const overlap = (q: { interests: string[] }) =>
-      q.interests.filter((i) => identity.interests.includes(i));
     const partner = others.find((q) => overlap(q).length > 0);
     if (partner) {
       await pair(ctx, ctx.sessionId, partner, overlap(partner));
-      return;
+      return { viaInvite: false };
     }
 
     await ctx.db.insert("queue", {
@@ -162,10 +199,12 @@ export const enqueueAndMatch = sessionMutation({
       interests: identity.interests,
       enqueuedAt: now,
       lastPingAt: now,
+      ...(inviteCode ? { inviteCode } : {}),
     });
     await ctx.scheduler.runAfter(FALLBACK_MS, internal.match.fallbackPair, {
       sessionId: ctx.sessionId,
     });
+    return { viaInvite: false };
   },
 });
 

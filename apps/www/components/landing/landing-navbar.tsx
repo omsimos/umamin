@@ -57,7 +57,7 @@ export function LandingNavbar() {
 
           <Button asChild className="rounded-full">
             <Link href={isAuthenticated ? "/feed" : "/login"}>
-              {isAuthenticated ? "Open app" : "Log in"}
+              {isAuthenticated ? "Open" : "Log in"}
             </Link>
           </Button>
         </div>

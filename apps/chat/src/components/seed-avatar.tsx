@@ -1,8 +1,6 @@
-import { loreleiNeutral, notionistsNeutral } from "@dicebear/collection";
-import { createAvatar } from "@dicebear/core";
 import { cn } from "@umamin/ui/lib/utils";
 import { useMemo } from "react";
-import { avatarGradient, seedIndex } from "../lib/avatar";
+import { avatarDataUri, avatarGradient } from "../lib/avatar";
 
 export function SeedAvatar({
   seed,
@@ -13,13 +11,7 @@ export function SeedAvatar({
   alias: string;
   className?: string;
 }) {
-  const src = useMemo(
-    () =>
-      seedIndex(seed, 2) === 0
-        ? createAvatar(notionistsNeutral, { seed }).toDataUri()
-        : createAvatar(loreleiNeutral, { seed }).toDataUri(),
-    [seed],
-  );
+  const src = useMemo(() => avatarDataUri(seed), [seed]);
   return (
     <span
       role="img"
