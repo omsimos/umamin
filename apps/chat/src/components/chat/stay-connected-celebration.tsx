@@ -1,5 +1,6 @@
 import { Button } from "@umamin/ui/components/button";
 import { useEffect, useId, useRef } from "react";
+import { useModalTrap } from "../../lib/use-modal-trap";
 import { SeedAvatar } from "../seed-avatar";
 
 export function StayConnectedCelebration({
@@ -19,13 +20,16 @@ export function StayConnectedCelebration({
   onDropHandle?: () => void;
 }) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const primaryRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     primaryRef.current?.focus();
   }, []);
+  useModalTrap(dialogRef, onContinue);
 
   return (
     <div
+      ref={dialogRef}
       role="alertdialog"
       aria-modal="true"
       aria-labelledby={titleId}

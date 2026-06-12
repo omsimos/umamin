@@ -174,6 +174,7 @@ export function GameRoundCard({
               {matched && streak >= 2 && (
                 <span className="animate-pop-in motion-reduce:animate-none bg-primary/15 text-primary inline-flex rounded-full px-2 py-0.5 text-[11px] tabular-nums">
                   <span
+                    aria-hidden
                     className={cn(
                       streak >= 3 &&
                         "animate-flame-flicker motion-reduce:animate-none",

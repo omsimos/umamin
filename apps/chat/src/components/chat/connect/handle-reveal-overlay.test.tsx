@@ -36,4 +36,16 @@ describe("HandleRevealOverlay", () => {
     );
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("dismisses on Escape and wraps Tab within the overlay", async () => {
+    const onClose = vi.fn();
+    renderOverlay(onClose);
+    // Focus starts on "Keep chatting" (the last focusable) — Tab must wrap
+    // back to the first copy button instead of escaping into the page.
+    expect(screen.getByRole("button", { name: "Keep chatting" })).toHaveFocus();
+    await userEvent.tab();
+    expect(screen.getAllByRole("button", { name: /Copy/ })[0]).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

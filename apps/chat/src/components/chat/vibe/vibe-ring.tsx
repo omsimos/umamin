@@ -42,6 +42,8 @@ export function VibeRing({
       {pulse && (
         <span
           aria-hidden
+          // Keyed by level so back-to-back level-ups re-mount (= re-pulse).
+          key={vibe.level}
           className="animate-ring-pulse motion-reduce:animate-none pointer-events-none absolute inset-0 rounded-full opacity-0 shadow-[0_0_0_3px]"
           style={{ color: to }}
         />

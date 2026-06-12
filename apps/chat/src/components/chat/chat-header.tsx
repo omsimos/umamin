@@ -13,6 +13,7 @@ export function ChatHeader({
   stayConnectedActive,
   mutual = false,
   revealTease = false,
+  ringPulse = false,
   onStayConnected,
   onOpenConnect,
   onShowVibe,
@@ -21,6 +22,8 @@ export function ChatHeader({
   vibe: VibeState;
   gameStreak?: GameStreak;
   stayConnectedActive: boolean;
+  /** A level-up just landed — pulse the vibe ring once. */
+  ringPulse?: boolean;
   /** Both tapped the heart — it now opens the handle exchange instead. */
   mutual?: boolean;
   /** Partner left a handle you haven't matched yet — badge the heart. */
@@ -59,7 +62,7 @@ export function ChatHeader({
           "transition-[filter] active:brightness-90",
         )}
       >
-        <VibeRing vibe={vibe}>
+        <VibeRing vibe={vibe} pulse={ringPulse}>
           <SeedAvatar
             seed={partner.avatarSeed}
             alias={partner.alias}
@@ -100,7 +103,15 @@ export function ChatHeader({
       <Button
         variant="ghost"
         size="icon"
-        aria-label={mutual ? "Open connection" : "Stay connected"}
+        // aria-label wins accessible-name computation, so the tease must live
+        // in the label itself — an sr-only child would be dead text.
+        aria-label={
+          revealTease
+            ? `${partner.alias} shared a handle — open connection`
+            : mutual
+              ? "Open connection"
+              : "Stay connected"
+        }
         className={cn(
           "relative ml-auto rounded-full",
           stayConnectedActive && "text-primary",
@@ -109,15 +120,10 @@ export function ChatHeader({
       >
         <Heart className={cn(stayConnectedActive && "fill-current")} />
         {revealTease && (
-          <>
-            <span
-              aria-hidden
-              className="bg-primary absolute top-1 right-1 size-2 rounded-full"
-            />
-            <span className="sr-only">
-              {partner.alias} shared a handle — open connection
-            </span>
-          </>
+          <span
+            aria-hidden
+            className="bg-primary absolute top-1 right-1 size-2 rounded-full"
+          />
         )}
       </Button>
     </header>

@@ -251,6 +251,7 @@ function Session() {
               stayConnectedActive={stayConnected.self}
               mutual={mutual}
               revealTease={reveal.partner.submitted && !bothRevealed}
+              ringPulse={levelUp !== null}
               onStayConnected={signalStayConnected}
               onOpenConnect={() => setConnectOpen(true)}
               onShowVibe={() => setVibeSheetOpen(true)}

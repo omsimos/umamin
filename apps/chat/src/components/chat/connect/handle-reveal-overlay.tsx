@@ -2,6 +2,7 @@ import { Button } from "@umamin/ui/components/button";
 import { Copy } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useModalTrap } from "../../../lib/use-modal-trap";
 import { SeedAvatar } from "../../seed-avatar";
 import type { Reactor } from "../reaction-details";
 import { SendEffectOverlay } from "../send-effect-overlay";
@@ -99,6 +100,7 @@ export function HandleRevealOverlay({
   onClose: () => void;
 }) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const [burst, setBurst] = useState(!reduced);
@@ -107,9 +109,11 @@ export function HandleRevealOverlay({
     closeRef.current?.focus();
     navigator.vibrate?.([15, 40, 15]);
   }, []);
+  useModalTrap(dialogRef, onClose);
 
   return (
     <div
+      ref={dialogRef}
       role="alertdialog"
       aria-modal="true"
       aria-labelledby={titleId}
