@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { sharePng } from "./share";
+import { isIOS, sharePng } from "./share";
+
+const realUA = navigator.userAgent;
+function setUserAgent(ua: string) {
+  Object.defineProperty(navigator, "userAgent", {
+    configurable: true,
+    value: ua,
+  });
+}
 
 const blob = new Blob(["png-bytes"], { type: "image/png" });
 
@@ -19,7 +27,23 @@ function stubShare(opts: {
 
 afterEach(() => {
   stubShare({});
+  setUserAgent(realUA);
   vi.restoreAllMocks();
+});
+
+describe("isIOS", () => {
+  it("is true for an iPhone UA and false for Android/desktop", () => {
+    setUserAgent(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+    );
+    expect(isIOS()).toBe(true);
+    setUserAgent("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36");
+    expect(isIOS()).toBe(false);
+    setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    );
+    expect(isIOS()).toBe(false);
+  });
 });
 
 describe("sharePng", () => {

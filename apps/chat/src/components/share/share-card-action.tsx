@@ -17,7 +17,7 @@ import { Download, Link2, Loader2, Share2 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { rasterizeCardToPng } from "../../lib/share-card/rasterize";
-import { downloadBlob, sharePng } from "../../lib/share-card/share";
+import { downloadBlob, isIOS, sharePng } from "../../lib/share-card/share";
 import type { CardRender } from "../../lib/share-card/types";
 import { useMediaQuery } from "../../lib/use-media-query";
 
@@ -70,15 +70,19 @@ function PreviewBody({
           <Share2 />
           Share
         </Button>
-        <Button
-          variant="outline"
-          className="rounded-full"
-          aria-label="Download image"
-          onClick={() => downloadBlob(card.blob, filename)}
-        >
-          <Download />
-          Save
-        </Button>
+        {/* iOS's native Share already saves to Photos — an explicit download
+            there only lands in Files, so hide it. Android/desktop keep it. */}
+        {!isIOS() && (
+          <Button
+            variant="outline"
+            className="rounded-full"
+            aria-label="Download image"
+            onClick={() => downloadBlob(card.blob, filename)}
+          >
+            <Download />
+            Save
+          </Button>
+        )}
         {copyUrl && (
           <Button
             variant="outline"

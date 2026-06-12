@@ -23,7 +23,7 @@ import {
   type ProfileCardUser,
   renderProfileCard,
 } from "@/lib/share-card/profile-card";
-import { downloadBlob, sharePng } from "@/lib/share-card/share";
+import { downloadBlob, isIOS, sharePng } from "@/lib/share-card/share";
 
 interface GeneratedCard {
   /** The clean image — what Share/Save export. */
@@ -79,14 +79,18 @@ function PreviewBody({
           <Share2Icon />
           Share
         </Button>
-        <Button
-          variant="outline"
-          className="rounded-full"
-          onClick={() => downloadBlob(card.blob, filename)}
-        >
-          <DownloadIcon />
-          Save
-        </Button>
+        {/* iOS's native Share already saves to Photos — an explicit download
+            there only lands in Files, so hide it. Android/desktop keep it. */}
+        {!isIOS() && (
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={() => downloadBlob(card.blob, filename)}
+          >
+            <DownloadIcon />
+            Save
+          </Button>
+        )}
         <Button
           variant="outline"
           className="rounded-full"

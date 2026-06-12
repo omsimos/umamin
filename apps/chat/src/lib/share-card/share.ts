@@ -34,3 +34,19 @@ export function downloadBlob(blob: Blob, filename: string): void {
   // Safari needs the URL alive past the click.
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** iOS hides the explicit "Save" affordance: its native share sheet already
+ *  saves to Photos (and shares to story apps), whereas an `<a download>` on
+ *  iOS Safari just drops the file into Files. Android/desktop keep "Save"
+ *  since a download lands straight in the gallery. */
+export function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  // iPadOS 13+ presents a Mac UA; disambiguate with touch support.
+  return (
+    /iPad|iPhone|iPod/.test(ua) ||
+    (ua.includes("Macintosh") &&
+      typeof document !== "undefined" &&
+      "ontouchend" in document)
+  );
+}
