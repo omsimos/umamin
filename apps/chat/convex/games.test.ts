@@ -26,6 +26,16 @@ async function matched() {
   return t;
 }
 
+/** Saturate the vibe counters so level gates (guess mode, gated decks) pass. */
+const boostVibe = (t: ReturnType<typeof convexTest>) =>
+  t.run(async (ctx) => {
+    const match = await ctx.db.query("matches").first();
+    if (!match) throw new Error("no match to boost");
+    await ctx.db.patch(match._id, {
+      vibe: { msgsA: 60, msgsB: 60, reactions: 10, whispers: 3 },
+    });
+  });
+
 describe("games", () => {
   it("deal shows the round to both players, viewer-relative", async () => {
     const t = await matched();
@@ -34,6 +44,7 @@ describe("games", () => {
     expect(a.game).toEqual({
       cardId: CARD,
       dealtBy: "self",
+      mode: "match",
       selfPick: null,
       partnerAnswered: false,
     });
@@ -110,12 +121,14 @@ describe("games", () => {
       cardId: CARD,
       selfPick: "A",
       partnerPick: "B",
+      dealtBy: "self",
     });
     const bMsgs = await t.query(api.chat.messages, auth("b"));
     expect(bMsgs.at(-1)?.gameResult).toEqual({
       cardId: CARD,
       selfPick: "B",
       partnerPick: "A",
+      dealtBy: "partner",
     });
   });
 
@@ -301,5 +314,168 @@ describe("games", () => {
         }
       })(),
     ).rejects.toThrow();
+  });
+});
+
+describe("guess mode (Mind Reader)", () => {
+  it("deal carries the mode to both viewers", async () => {
+    const t = await matched();
+    await boostVibe(t);
+    await t.mutation(api.games.dealCard, {
+      ...auth("a"),
+      cardId: CARD,
+      mode: "guess",
+    });
+    const a = await t.query(api.chat.snapshot, auth("a"));
+    expect(a.game?.mode).toBe("guess");
+    expect(a.game?.dealtBy).toBe("self");
+    const b = await t.query(api.chat.snapshot, auth("b"));
+    expect(b.game?.mode).toBe("guess");
+    expect(b.game?.dealtBy).toBe("partner");
+  });
+
+  it("withholds the dealer's truth until the guess lands", async () => {
+    const t = await matched();
+    await boostVibe(t);
+    await t.mutation(api.games.dealCard, {
+      ...auth("a"),
+      cardId: CARD,
+      mode: "guess",
+    });
+    await t.mutation(api.games.answerCard, {
+      ...auth("a"),
+      cardId: CARD,
+      pick: "A",
+    });
+    const b = await t.query(api.chat.snapshot, auth("b"));
+    expect(b.game?.partnerAnswered).toBe(true);
+    expect(b.game?.partnerPick).toBeUndefined();
+  });
+
+  it("a correct guess tallies guessTally and leaves gameTally untouched", async () => {
+    const t = await matched();
+    await boostVibe(t);
+    await t.mutation(api.games.dealCard, {
+      ...auth("a"),
+      cardId: CARD,
+      mode: "guess",
+    });
+    await t.mutation(api.games.answerCard, {
+      ...auth("a"),
+      cardId: CARD,
+      pick: "A",
+    });
+    await t.mutation(api.games.answerCard, {
+      ...auth("b"),
+      cardId: CARD,
+      pick: "A",
+    });
+    const a = await t.query(api.chat.snapshot, auth("a"));
+    expect(a.guessTally).toEqual({ rounds: 1, correct: 1 });
+    expect(a.gameTally).toEqual({ rounds: 0, matched: 0 });
+  });
+
+  it("a wrong guess tallies a round without a hit", async () => {
+    const t = await matched();
+    await boostVibe(t);
+    await t.mutation(api.games.dealCard, {
+      ...auth("a"),
+      cardId: CARD,
+      mode: "guess",
+    });
+    await t.mutation(api.games.answerCard, {
+      ...auth("a"),
+      cardId: CARD,
+      pick: "A",
+    });
+    await t.mutation(api.games.answerCard, {
+      ...auth("b"),
+      cardId: CARD,
+      pick: "B",
+    });
+    const b = await t.query(api.chat.snapshot, auth("b"));
+    expect(b.guessTally).toEqual({ rounds: 1, correct: 0 });
+  });
+
+  it("the completion row carries mode and viewer-relative dealtBy", async () => {
+    const t = await matched();
+    await boostVibe(t);
+    await t.mutation(api.games.dealCard, {
+      ...auth("a"),
+      cardId: CARD,
+      mode: "guess",
+    });
+    for (const id of ["a", "b"]) {
+      await t.mutation(api.games.answerCard, {
+        ...auth(id),
+        cardId: CARD,
+        pick: "A",
+      });
+    }
+    const aRow = (await t.query(api.chat.messages, auth("a"))).at(-1);
+    expect(aRow?.gameResult?.mode).toBe("guess");
+    expect(aRow?.gameResult?.dealtBy).toBe("self");
+    const bRow = (await t.query(api.chat.messages, auth("b"))).at(-1);
+    expect(bRow?.gameResult?.dealtBy).toBe("partner");
+  });
+});
+
+describe("game streak", () => {
+  async function playRound(
+    t: Awaited<ReturnType<typeof matched>>,
+    cardId: string,
+    bPick: "A" | "B",
+    mode?: "guess",
+  ) {
+    await t.mutation(api.games.dealCard, {
+      ...auth("a"),
+      cardId,
+      ...(mode ? { mode } : {}),
+    });
+    await t.mutation(api.games.answerCard, { ...auth("a"), cardId, pick: "A" });
+    await t.mutation(api.games.answerCard, {
+      ...auth("b"),
+      cardId,
+      pick: bPick,
+    });
+  }
+
+  it("successes extend it; a miss resets current but keeps best", async () => {
+    const t = await matched();
+    const cards = GAME_DECKS["this-or-that"];
+    await playRound(t, cards[0].id, "A");
+    await playRound(t, cards[1].id, "A");
+    let s = await t.query(api.chat.snapshot, auth("a"));
+    expect(s.gameStreak).toEqual({ current: 2, best: 2 });
+    await playRound(t, cards[2].id, "B");
+    s = await t.query(api.chat.snapshot, auth("a"));
+    expect(s.gameStreak).toEqual({ current: 0, best: 2 });
+  });
+
+  it("a correct guess extends the same streak as a match", async () => {
+    const t = await matched();
+    await boostVibe(t);
+    const cards = GAME_DECKS["this-or-that"];
+    await playRound(t, cards[0].id, "A");
+    await playRound(t, cards[1].id, "A", "guess");
+    const s = await t.query(api.chat.snapshot, auth("b"));
+    expect(s.gameStreak).toEqual({ current: 2, best: 2 });
+  });
+
+  it("re-deals and dismissals never touch it", async () => {
+    const t = await matched();
+    const cards = GAME_DECKS["this-or-that"];
+    await playRound(t, cards[0].id, "A");
+    // An abandoned round (answered once, then replaced, then dismissed).
+    await t.mutation(api.games.dealCard, { ...auth("a"), cardId: cards[1].id });
+    await t.mutation(api.games.answerCard, {
+      ...auth("a"),
+      cardId: cards[1].id,
+      pick: "A",
+    });
+    await t.mutation(api.games.dealCard, { ...auth("b"), cardId: cards[2].id });
+    await t.mutation(api.games.dismissGame, auth("a"));
+    const s = await t.query(api.chat.snapshot, auth("a"));
+    expect(s.gameStreak).toEqual({ current: 1, best: 1 });
   });
 });

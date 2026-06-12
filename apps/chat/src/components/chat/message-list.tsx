@@ -1,10 +1,15 @@
+import { cn } from "@umamin/ui/lib/utils";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { ChatMessage, PartnerStatus } from "../../lib/session/types";
 import { MessageBubble } from "./message-bubble";
 import type { Reactor } from "./reaction-details";
+import { SystemMoment } from "./system-moment";
 import { TypingIndicator } from "./typing-indicator";
 
 const HIGHLIGHT_MS = 1500;
+/** One-shot in-stream milestone; drifts once the message window rolls past
+ *  the cap — acceptable for an ephemeral novelty. */
+const MILESTONE_AT = 50;
 
 export function MessageList({
   messages,
@@ -15,6 +20,7 @@ export function MessageList({
   header,
   self,
   partner,
+  vibeLevel,
 }: {
   messages: ChatMessage[];
   partnerStatus: PartnerStatus | undefined;
@@ -24,10 +30,19 @@ export function MessageList({
   header?: ReactNode;
   self: Reactor;
   partner: Reactor;
+  /** Gates which reaction emojis the picker offers. */
+  vibeLevel?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const didInitialScroll = useRef(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  // Entrance animation for fresh arrivals only: whatever was present at mount
+  // is history and renders static (lazy ref init — the set never mutates).
+  const initialIds = useRef<Set<string> | null>(null);
+  if (initialIds.current === null) {
+    initialIds.current = new Set(messages.map((m) => m.id));
+  }
 
   // Scroll the container itself (never scrollIntoView — that scrolls outer
   // ancestors too and can shove the whole chat off-screen). Jump on first
@@ -88,8 +103,16 @@ export function MessageList({
       className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-4"
     >
       {header}
-      {messages.map((m) => (
-        <div key={m.id} data-message-id={m.id}>
+      {messages.map((m, i) => (
+        <div
+          key={m.id}
+          data-message-id={m.id}
+          className={cn(
+            !initialIds.current?.has(m.id) &&
+              "animate-bubble-in motion-reduce:animate-none",
+            m.author === "self" ? "origin-bottom-right" : "origin-bottom-left",
+          )}
+        >
           <MessageBubble
             message={m}
             onReact={(e) => onReact(m.id, e)}
@@ -99,7 +122,18 @@ export function MessageList({
             highlighted={m.id === highlightId}
             self={self}
             partner={partner}
+            vibeLevel={vibeLevel}
           />
+          {i === MILESTONE_AT - 1 && messages.length >= MILESTONE_AT && (
+            <div className="pt-2.5">
+              <SystemMoment animate={messages.length === MILESTONE_AT}>
+                <p className="text-foreground font-semibold">
+                  ✨ {MILESTONE_AT} messages deep ✨
+                </p>
+                <p className="mt-0.5">you two have a lot to say</p>
+              </SystemMoment>
+            </div>
+          )}
         </div>
       ))}
       {partnerStatus === "typing" && <TypingIndicator />}

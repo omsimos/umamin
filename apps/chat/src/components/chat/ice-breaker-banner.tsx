@@ -4,10 +4,13 @@ import { ICE_BREAKER_PROMPTS, interestById } from "../../lib/content";
 
 export function IceBreakerBanner({
   sharedInterests,
+  extraPrompt,
   onPrompt,
   onDismiss,
 }: {
   sharedInterests: string[];
+  /** The radar warm-up's last pick — wait-time turned into an opener. */
+  extraPrompt?: string | null;
   onPrompt: (text: string) => void;
   onDismiss: () => void;
 }) {
@@ -32,6 +35,15 @@ export function IceBreakerBanner({
         {labels ? `You both like ${labels}` : "Say hi 👋"}
       </p>
       <div className="flex flex-wrap gap-1.5">
+        {extraPrompt && (
+          <button
+            type="button"
+            onClick={() => onPrompt(extraPrompt)}
+            className="border-primary/30 bg-primary/5 text-foreground hover:bg-primary/15 animate-pop-in motion-reduce:animate-none rounded-full border px-2.5 py-1 text-xs transition-colors"
+          >
+            {extraPrompt}
+          </button>
+        )}
         {ICE_BREAKER_PROMPTS.map((prompt) => (
           <button
             key={prompt}

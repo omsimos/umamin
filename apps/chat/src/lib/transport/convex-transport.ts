@@ -1,12 +1,14 @@
 import { isRateLimitError } from "@convex-dev/rate-limiter";
 import type { ConvexReactClient } from "convex/react";
 import type { FunctionReference } from "convex/server";
+import { ConvexError } from "convex/values";
 import { api } from "../../../convex/_generated/api";
 import type { SessionCredentials } from "../session/session-id";
 import {
   type ChatMessage,
   type ChatTransport,
   type FindMatchOptions,
+  type GameMode,
   type GamePick,
   IDLE_SNAPSHOT,
   LOADING_SNAPSHOT,
@@ -114,7 +116,16 @@ export function createConvexTransport(
     }
     // Fire-and-forget mutations (the transport API is void): a rethrow would
     // become an unhandled rejection that reaches no UI. Log + surface instead.
-    console.error("chat mutation failed", error);
+    // Sanitized: a validation error's message echoes the full args — which
+    // include the session credentials — so never log the raw error object.
+    console.error(
+      "chat mutation failed",
+      error instanceof ConvexError
+        ? error.data
+        : error instanceof Error
+          ? error.name
+          : typeof error,
+    );
     onError?.(error);
   }
 
@@ -178,8 +189,8 @@ export function createConvexTransport(
     viewWhisper(messageId: string) {
       call(api.chat.viewWhisper, { messageId });
     },
-    dealCard(cardId: string) {
-      call(api.games.dealCard, { cardId });
+    dealCard(cardId: string, mode?: GameMode) {
+      call(api.games.dealCard, { cardId, ...(mode ? { mode } : {}) });
     },
     answerCard(cardId: string, pick: GamePick) {
       call(api.games.answerCard, { cardId, pick });
@@ -195,6 +206,12 @@ export function createConvexTransport(
     },
     signalStayConnected() {
       call(api.chat.signalStayConnected, {});
+    },
+    submitRevealHandle(handle: string) {
+      call(api.reveal.submitReveal, { handle });
+    },
+    withdrawRevealHandle() {
+      call(api.reveal.withdrawReveal, {});
     },
     leave() {
       // Clear any optimistic "matching" so cancelling doesn't strand the UI.

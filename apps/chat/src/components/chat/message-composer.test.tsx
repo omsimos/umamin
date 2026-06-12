@@ -1,7 +1,26 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MessageComposer } from "./message-composer";
+
+// Desktop (popover) path for the actions menu: vaul's drawer leaves
+// aria-hidden behind after close in jsdom, hiding the composer itself.
+const originalMatchMedia = window.matchMedia;
+beforeEach(() => {
+  window.matchMedia = ((query: string) => ({
+    matches: true,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia;
+});
+afterEach(() => {
+  window.matchMedia = originalMatchMedia;
+});
 
 describe("MessageComposer", () => {
   it("disables send when the input is empty or whitespace", async () => {

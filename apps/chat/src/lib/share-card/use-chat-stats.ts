@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { MESSAGE_CAP } from "../../../convex/constants";
-import type { GameTally, SessionSnapshot } from "../session/types";
-import type { ChatReceiptStats } from "./types";
+import type { GameTally, GuessTally, SessionSnapshot } from "../session/types";
+import { vibeLevelMeta } from "../vibe-levels";
+import type { ChatReceiptStats, ReceiptExtra } from "./types";
 
 interface Accumulator {
   matchId: string;
@@ -15,6 +16,12 @@ interface Accumulator {
   partner: { alias: string; avatarSeed: string } | null;
   sharedInterests: string[];
   tally: GameTally;
+  guesses: GuessTally;
+  bestStreak: number;
+  vibeLevel: number;
+  // Mutual hearts only — the receipt must NEVER touch snapshot.reveal (a
+  // shareable image leaking a partner's handle would be a privacy failure).
+  mutual: boolean;
 }
 
 /**
@@ -54,6 +61,10 @@ export function useChatStats(
         partner: null,
         sharedInterests: [],
         tally: { rounds: 0, matched: 0 },
+        guesses: { rounds: 0, correct: 0 },
+        bestStreak: 0,
+        vibeLevel: 1,
+        mutual: false,
       };
       accRef.current = acc;
       if (phase === "active") setFrozen(null);
@@ -86,6 +97,12 @@ export function useChatStats(
       avatarSeed: snapshot.self.avatarSeed,
     };
     if (snapshot.gameTally.rounds > 0) acc.tally = snapshot.gameTally;
+    if (snapshot.guessTally.rounds > 0) acc.guesses = snapshot.guessTally;
+    acc.bestStreak = Math.max(acc.bestStreak, snapshot.gameStreak.best);
+    acc.vibeLevel = Math.max(acc.vibeLevel, snapshot.vibe.level);
+    acc.mutual =
+      acc.mutual ||
+      (snapshot.stayConnected.self && snapshot.stayConnected.partner);
 
     if (phase === "ended" && acc.partner) {
       setFrozen((prev) => {
@@ -101,6 +118,31 @@ export function useChatStats(
                 acc.lastTs > acc.firstTs
               ? acc.lastTs - acc.firstTs
               : undefined;
+        const extras: ReceiptExtra[] = [];
+        if (acc.vibeLevel >= 2) {
+          extras.push({
+            label: "VIBE",
+            value: `Level ${acc.vibeLevel} — ${vibeLevelMeta(acc.vibeLevel).name}`,
+          });
+        }
+        if (acc.tally.rounds > 0) {
+          extras.push({
+            label: "VIBE CHECK",
+            value: `${acc.tally.matched}/${acc.tally.rounds} matched`,
+          });
+        }
+        if (acc.guesses.rounds > 0) {
+          extras.push({
+            label: "MIND READS",
+            value: `${acc.guesses.correct}/${acc.guesses.rounds} right`,
+          });
+        }
+        if (acc.bestStreak >= 2) {
+          extras.push({ label: "BEST COMBO", value: `x${acc.bestStreak}` });
+        }
+        if (acc.mutual) {
+          extras.push({ label: "STAYED CONNECTED", value: "it's mutual" });
+        }
         return {
           matchId,
           self: acc.self,
@@ -111,15 +153,7 @@ export function useChatStats(
           messageCountCapped: acc.capped,
           reactionCount: acc.reactionHighWater,
           endedAt,
-          extras:
-            acc.tally.rounds > 0
-              ? [
-                  {
-                    label: "VIBE CHECK",
-                    value: `${acc.tally.matched}/${acc.tally.rounds} matched`,
-                  },
-                ]
-              : [],
+          extras,
         };
       });
     }

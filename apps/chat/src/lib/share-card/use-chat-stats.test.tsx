@@ -137,6 +137,56 @@ describe("useChatStats", () => {
     expect(result.current?.messageCount).toBe(1);
   });
 
+  it("builds the full extras set and never leaks a reveal handle", () => {
+    const { result, rerender } = renderHook(
+      ({ s }: { s: SessionSnapshot }) => useChatStats(s),
+      {
+        initialProps: {
+          s: snap({
+            phase: "active",
+            messages: [msg("m1", 10)],
+            gameTally: { rounds: 4, matched: 3 },
+            guessTally: { rounds: 2, correct: 1 },
+            gameStreak: { current: 0, best: 3 },
+            vibe: { score: 70, level: 3 },
+            stayConnected: { self: true, partner: true },
+            reveal: {
+              unlocked: true,
+              self: { submitted: true, handle: "@secret-self" },
+              partner: { submitted: true, handle: "@secret-partner" },
+            },
+          }),
+        },
+      },
+    );
+    rerender({
+      s: snap({
+        phase: "ended",
+        messages: [msg("m1", 10)],
+        gameTally: { rounds: 4, matched: 3 },
+        guessTally: { rounds: 2, correct: 1 },
+        gameStreak: { current: 0, best: 3 },
+        vibe: { score: 70, level: 3 },
+        stayConnected: { self: true, partner: true },
+        reveal: {
+          unlocked: true,
+          self: { submitted: true, handle: "@secret-self" },
+          partner: { submitted: true, handle: "@secret-partner" },
+        },
+      }),
+    });
+    expect(result.current?.extras).toEqual([
+      { label: "VIBE", value: "Level 3 \u2014 Clicking" },
+      { label: "VIBE CHECK", value: "3/4 matched" },
+      { label: "MIND READS", value: "1/2 right" },
+      { label: "BEST COMBO", value: "x3" },
+      { label: "STAYED CONNECTED", value: "it's mutual" },
+    ]);
+    // The receipt is a shareable artifact — a handle anywhere in it is a
+    // privacy failure, structurally.
+    expect(JSON.stringify(result.current)).not.toContain("@secret");
+  });
+
   it("counts messages past the window via the seen-id set", () => {
     const first = Array.from({ length: 3 }, (_, i) => msg(`a${i}`, i));
     const rotated = Array.from({ length: 3 }, (_, i) => msg(`b${i}`, 10 + i));

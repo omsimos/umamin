@@ -4,6 +4,9 @@ import type { SendEffect } from "../../lib/session/types";
 const EFFECT_EMOJI: Record<SendEffect, string[]> = {
   confetti: ["🎉", "✨", "🎊"],
   hearts: ["💖", "💕", "❤️"],
+  sparkles: ["✨", "💫", "⭐"],
+  poof: ["💨", "🌫️", "✨"],
+  golden: ["👑", "💛", "✨", "💖"],
 };
 
 const PARTICLE_COUNT = 24;

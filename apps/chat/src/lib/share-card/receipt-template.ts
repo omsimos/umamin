@@ -52,7 +52,10 @@ export function receiptLines(stats: ChatReceiptStats): ReceiptExtra[] {
 const PAD = 92;
 const BODY_X = 100;
 const BODY_W = CARD_W - BODY_X * 2;
-const AVATAR_R = 110;
+
+/** The footer (logo + domain) tops out here — the paper must stay above it.
+ *  Exported for the geometry regression test. */
+export const RECEIPT_FOOTER_TOP = CARD_H - 230;
 
 /** Story-size receipt in the brand pubmat language: the paper receipt floats
  *  on the near-black, magenta-glow backdrop, under a left-aligned eyebrow and
@@ -63,12 +66,20 @@ export function buildReceiptCard(
 ): CardRender {
   const lines = receiptLines(stats);
 
-  const top = 330; // receipt body top
-  const avatarCy = top + 150;
-  const lineStartY = top + 590;
-  const lineStep = 86;
+  // The story height is fixed, so past five line items the whole layout
+  // compresses (smaller avatars, tighter header and row spacing) — at the
+  // maximum nine rows the paper bottom still clears the footer.
+  const compact = lines.length >= 6;
+  const top = compact ? 280 : 330; // receipt body top
+  const avatarR = compact ? 92 : 110;
+  const avatarCy = top + (compact ? 120 : 150);
+  const titleY = top + (compact ? 300 : 360);
+  const subY = top + (compact ? 356 : 420);
+  const dateY = top + (compact ? 408 : 480);
+  const lineStartY = top + (compact ? 490 : 590);
+  const lineStep = compact ? 74 : 86;
   const linesEndY = lineStartY + lines.length * lineStep;
-  const barcodeY = linesEndY + 60;
+  const barcodeY = linesEndY + (compact ? 40 : 60);
   const bodyBottom = barcodeY + 180;
   const cx = CARD_W / 2;
 
@@ -99,12 +110,12 @@ export function buildReceiptCard(
     `<rect x="${BODY_X}" y="${top}" width="${BODY_W}" height="${bodyBottom - top}" rx="28" fill="${CARD_COLORS.paper}" />`,
     `<line x1="${BODY_X + 40}" y1="${top + 50}" x2="${BODY_X + BODY_W - 40}" y2="${top + 50}" stroke="${CARD_COLORS.faint}" stroke-width="3" stroke-dasharray="2 14" />`,
     `<line x1="${BODY_X + 40}" y1="${bodyBottom - 50}" x2="${BODY_X + BODY_W - 40}" y2="${bodyBottom - 50}" stroke="${CARD_COLORS.faint}" stroke-width="3" stroke-dasharray="2 14" />`,
-    `<clipPath id="rc-self"><circle cx="${cx - 90}" cy="${avatarCy}" r="${AVATAR_R}" /></clipPath>`,
-    `<clipPath id="rc-partner"><circle cx="${cx + 90}" cy="${avatarCy}" r="${AVATAR_R}" /></clipPath>`,
-    `<circle cx="${cx - 90}" cy="${avatarCy}" r="${AVATAR_R + 8}" fill="#ffffff" stroke="${CARD_COLORS.faint}" stroke-width="3" />`,
-    `<circle cx="${cx + 90}" cy="${avatarCy}" r="${AVATAR_R + 8}" fill="#ffffff" stroke="${CARD_COLORS.faint}" stroke-width="3" />`,
-    `<image href="${partnerUri}" x="${cx + 90 - AVATAR_R}" y="${avatarCy - AVATAR_R}" width="${AVATAR_R * 2}" height="${AVATAR_R * 2}" clip-path="url(#rc-partner)" />`,
-    `<image href="${selfUri}" x="${cx - 90 - AVATAR_R}" y="${avatarCy - AVATAR_R}" width="${AVATAR_R * 2}" height="${AVATAR_R * 2}" clip-path="url(#rc-self)" />`,
+    `<clipPath id="rc-self"><circle cx="${cx - 90}" cy="${avatarCy}" r="${avatarR}" /></clipPath>`,
+    `<clipPath id="rc-partner"><circle cx="${cx + 90}" cy="${avatarCy}" r="${avatarR}" /></clipPath>`,
+    `<circle cx="${cx - 90}" cy="${avatarCy}" r="${avatarR + 8}" fill="#ffffff" stroke="${CARD_COLORS.faint}" stroke-width="3" />`,
+    `<circle cx="${cx + 90}" cy="${avatarCy}" r="${avatarR + 8}" fill="#ffffff" stroke="${CARD_COLORS.faint}" stroke-width="3" />`,
+    `<image href="${partnerUri}" x="${cx + 90 - avatarR}" y="${avatarCy - avatarR}" width="${avatarR * 2}" height="${avatarR * 2}" clip-path="url(#rc-partner)" />`,
+    `<image href="${selfUri}" x="${cx - 90 - avatarR}" y="${avatarCy - avatarR}" width="${avatarR * 2}" height="${avatarR * 2}" clip-path="url(#rc-self)" />`,
     ...lines.map(
       (_, i) =>
         `<line x1="${BODY_X + 60}" y1="${lineStartY + (i + 1) * lineStep - 54}" x2="${BODY_X + BODY_W - 60}" y2="${lineStartY + (i + 1) * lineStep - 54}" stroke="${CARD_COLORS.faint}" stroke-width="2" stroke-dasharray="2 10" />`,
@@ -116,7 +127,7 @@ export function buildReceiptCard(
     {
       text: `${stats.self.alias} × ${stats.partner.alias}`,
       x: cx,
-      y: top + 360,
+      y: titleY,
       font: `800 64px ${DISPLAY_FONT}`,
       fill: CARD_COLORS.ink,
       align: "center",
@@ -125,7 +136,7 @@ export function buildReceiptCard(
     {
       text: "ANONYMOUS CHAT RECEIPT",
       x: cx,
-      y: top + 420,
+      y: subY,
       font: `500 28px ${SANS_FONT}`,
       fill: CARD_COLORS.muted,
       align: "center",
@@ -134,7 +145,7 @@ export function buildReceiptCard(
     {
       text: new Date(stats.endedAt).toISOString().slice(0, 10),
       x: cx,
-      y: top + 480,
+      y: dateY,
       font: `400 26px ${SANS_FONT}`,
       fill: CARD_COLORS.muted,
       align: "center",

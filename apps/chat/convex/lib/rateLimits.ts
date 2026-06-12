@@ -19,6 +19,8 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   gameDeal: { kind: "token bucket", rate: 6, period: MINUTE, capacity: 3 },
   // At most one effective answer per round; slack for stale-round retries.
   gameAnswer: { kind: "token bucket", rate: 15, period: MINUTE, capacity: 5 },
+  // Submitting/withdrawing a reveal handle is rare and deliberate.
+  revealSubmit: { kind: "token bucket", rate: 4, period: MINUTE, capacity: 3 },
   // Global brakes are keyless, so every call hits the same bucket — sharded so
   // high-frequency mutations (esp. the per-client heartbeat) don't all contend
   // on one rateLimits document and trigger OCC write-conflict retries. Shard
@@ -80,6 +82,13 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     capacity: 500,
     shards: 5,
   },
+  globalReveal: {
+    kind: "token bucket",
+    rate: 300,
+    period: MINUTE,
+    capacity: 100,
+    shards: 5,
+  },
 });
 
 /** Per-session policies must always pass a key. Keep this wrapper as the only
@@ -92,7 +101,8 @@ export type SessionRateLimitName =
   | "typing"
   | "queuePing"
   | "gameDeal"
-  | "gameAnswer";
+  | "gameAnswer"
+  | "revealSubmit";
 
 export type GlobalRateLimitName =
   | "globalFindMatch"
@@ -102,7 +112,8 @@ export type GlobalRateLimitName =
   | "globalPresenceHeartbeat"
   | "globalQueuePing"
   | "globalGameDeal"
-  | "globalGameAnswer";
+  | "globalGameAnswer"
+  | "globalReveal";
 
 export function limitPerSession(
   ctx: RunMutationCtx,

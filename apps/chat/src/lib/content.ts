@@ -38,4 +38,6 @@ export const ICE_BREAKER_PROMPTS = [
   "How's your day going?",
 ];
 
-export const REACTION_EMOJIS = ["❤️", "😂", "🔥", "😮", "👍", "😢"];
+// Mirror of the server's ALLOWED_REACTIONS; 🫶/🥹 are vibe-level unlocks
+// (REACTION_MIN_LEVEL in convex/constants.ts) and only appear once unlocked.
+export const REACTION_EMOJIS = ["❤️", "😂", "🔥", "😮", "👍", "😢", "🫶", "🥹"];

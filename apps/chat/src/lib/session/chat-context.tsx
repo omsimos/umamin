@@ -22,6 +22,8 @@ interface ChatSessionValue {
   dismissGame: ChatTransport["dismissGame"];
   setTyping: ChatTransport["setTyping"];
   signalStayConnected: ChatTransport["signalStayConnected"];
+  submitRevealHandle: ChatTransport["submitRevealHandle"];
+  withdrawRevealHandle: ChatTransport["withdrawRevealHandle"];
   leave: ChatTransport["leave"];
 }
 
@@ -53,11 +55,13 @@ export function ChatSessionProvider({
       send: (text, opts) => t.send(text, opts),
       react: (id, emoji) => t.react(id, emoji),
       viewWhisper: (id) => t.viewWhisper(id),
-      dealCard: (cardId) => t.dealCard(cardId),
+      dealCard: (cardId, mode) => t.dealCard(cardId, mode),
       answerCard: (cardId, pick) => t.answerCard(cardId, pick),
       dismissGame: () => t.dismissGame(),
       setTyping: (isTyping) => t.setTyping(isTyping),
       signalStayConnected: () => t.signalStayConnected(),
+      submitRevealHandle: (handle) => t.submitRevealHandle(handle),
+      withdrawRevealHandle: () => t.withdrawRevealHandle(),
       leave: (reason) => t.leave(reason),
     }),
     [snapshot, t],

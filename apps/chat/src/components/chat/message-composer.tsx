@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { GameMode } from "../../lib/session/types";
 import {
   ComposerActions,
   type ComposerMode,
@@ -25,10 +26,17 @@ export interface ComposerReplyTo {
   text: string;
 }
 
+const EFFECT_LABELS: Record<string, string> = {
+  confetti: "🎉 Sends with confetti",
+  hearts: "💖 Sends with hearts",
+  sparkles: "✨ Sends with sparkles",
+  poof: "💨 Sends with a poof",
+  golden: "👑 Sends with golden hearts",
+};
+
 function modeLabel(mode: ComposerMode): string {
   if (mode.whisper) return "Whisper — disappears ~10s after it's read";
-  if (mode.effect === "confetti") return "🎉 Sends with confetti";
-  if (mode.effect === "hearts") return "💖 Sends with hearts";
+  if (mode.effect) return EFFECT_LABELS[mode.effect] ?? "";
   return "";
 }
 
@@ -38,13 +46,18 @@ export function MessageComposer({
   onDealCard,
   replyTo,
   onCancelReply,
+  vibeLevel,
+  onShowVibe,
 }: {
   onSend: (text: string, mode: ComposerMode) => void;
   onTyping?: (isTyping: boolean) => void;
-  /** Deal a game card from the actions popover. Absent = games hidden. */
-  onDealCard?: (cardId: string) => void;
+  /** Deal a game card from the actions sheet. Absent = games hidden. */
+  onDealCard?: (cardId: string, gameMode?: GameMode) => void;
   replyTo?: ComposerReplyTo | null;
   onCancelReply?: () => void;
+  /** Gates locked play/effect tiles in the actions sheet. */
+  vibeLevel?: number;
+  onShowVibe?: () => void;
 }) {
   const [value, setValue] = useState("");
   const [mode, setMode] = useState<ComposerMode>(IDLE_MODE);
@@ -155,6 +168,8 @@ export function MessageComposer({
           mode={mode}
           onModeChange={setMode}
           onDealCard={onDealCard}
+          vibeLevel={vibeLevel}
+          onShowVibe={onShowVibe}
         />
         <Input
           ref={inputRef}

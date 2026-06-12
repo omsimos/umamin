@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { buildReceiptCard, receiptLines } from "./receipt-template";
+import {
+  buildReceiptCard,
+  RECEIPT_FOOTER_TOP,
+  receiptLines,
+} from "./receipt-template";
 import { CARD_H, CARD_W, escapeXml, formatDuration } from "./theme";
 import type { ChatReceiptStats } from "./types";
+
+/** The paper receipt is the first paper-colored rect; returns its bottom y. */
+function paperBottom(svg: string): number {
+  const m = svg.match(/<rect x="100" y="(\d+)" width="\d+" height="(\d+)"/);
+  if (!m) throw new Error("paper rect not found");
+  return Number(m[1]) + Number(m[2]);
+}
 
 function makeStats(
   overrides: Partial<ChatReceiptStats> = {},
@@ -87,6 +98,24 @@ describe("buildReceiptCard", () => {
       expect(typeof t.text).toBe("string");
     }
     expect(card.texts.some((t) => t.text.includes("42"))).toBe(true);
+  });
+
+  it("keeps the paper above the footer at every possible line count", () => {
+    // 4 base lines + the 5 gamification extras = the 9-row maximum.
+    const maxed = makeStats({
+      extras: [
+        { label: "VIBE", value: "Level 5 — Kindred" },
+        { label: "VIBE CHECK", value: "9/12 matched" },
+        { label: "MIND READS", value: "4/6 right" },
+        { label: "BEST COMBO", value: "x5" },
+        { label: "STAYED CONNECTED", value: "it's mutual" },
+      ],
+    });
+    expect(receiptLines(maxed)).toHaveLength(9);
+    for (const stats of [makeStats(), maxed]) {
+      const bottom = paperBottom(buildReceiptCard(stats).svg);
+      expect(bottom).toBeLessThanOrEqual(RECEIPT_FOOTER_TOP);
+    }
   });
 
   it("escapes XML-unsafe characters in interpolated values", () => {

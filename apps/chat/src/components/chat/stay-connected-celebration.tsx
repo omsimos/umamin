@@ -1,5 +1,6 @@
 import { Button } from "@umamin/ui/components/button";
 import { useEffect, useId, useRef } from "react";
+import { useModalTrap } from "../../lib/use-modal-trap";
 import { SeedAvatar } from "../seed-avatar";
 
 export function StayConnectedCelebration({
@@ -8,21 +9,27 @@ export function StayConnectedCelebration({
   partnerAlias,
   partnerSeed,
   onContinue,
+  onDropHandle,
 }: {
   selfAlias: string;
   selfSeed: string;
   partnerAlias: string;
   partnerSeed: string;
   onContinue: () => void;
+  /** Opens the handle exchange — the payoff mutual hearts unlocked. */
+  onDropHandle?: () => void;
 }) {
   const titleId = useId();
-  const continueRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const primaryRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    continueRef.current?.focus();
+    primaryRef.current?.focus();
   }, []);
+  useModalTrap(dialogRef, onContinue);
 
   return (
     <div
+      ref={dialogRef}
       role="alertdialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -48,10 +55,31 @@ export function StayConnectedCelebration({
       </h2>
       <p className="text-muted-foreground mt-1 mb-5 max-w-xs text-sm">
         You and {partnerAlias} both want to keep talking.
+        {onDropHandle &&
+          " Want this to outlive the poof? Swap handles — only revealed if you both do."}
       </p>
-      <Button ref={continueRef} className="rounded-full" onClick={onContinue}>
-        Keep chatting
-      </Button>
+      {onDropHandle ? (
+        <>
+          <Button
+            ref={primaryRef}
+            className="rounded-full"
+            onClick={onDropHandle}
+          >
+            Drop a handle 🔗
+          </Button>
+          <Button
+            variant="ghost"
+            className="text-muted-foreground mt-2"
+            onClick={onContinue}
+          >
+            Keep chatting
+          </Button>
+        </>
+      ) : (
+        <Button ref={primaryRef} className="rounded-full" onClick={onContinue}>
+          Keep chatting
+        </Button>
+      )}
     </div>
   );
 }
