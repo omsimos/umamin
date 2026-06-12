@@ -33,6 +33,7 @@ any that are empty.
 ### Fixed
 
 - Profile follow buttons now remember when you're already following someone after reloading their profile, instead of showing "Follow" until clicked.
+- In the installed app, the top bar no longer covers the page below it — feed posts and the profile banner's buttons are reachable again instead of hidden under the header with no way to scroll up.
 
 ## [5.14.0] - 2026-06-10
 
