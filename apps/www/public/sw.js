@@ -110,3 +110,50 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// Web Push. Payloads are generic, type-derived strings (lib/server/push.ts) —
+// never message content. Push-only: no caching here, so RSC/PPR is untouched.
+self.addEventListener("push", (event) => {
+  if (!event.data) {
+    return;
+  }
+
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    return;
+  }
+  if (!data?.title) {
+    return;
+  }
+
+  // Title-only by design: payloads never carry message content (privacy).
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      icon: "/icon-192x192.png",
+      badge: "/icon-192x192-maskable.png",
+      data: { url: data.url || "/feed" },
+      tag: data.tag,
+      renotify: Boolean(data.tag),
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/feed";
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(url) && "focus" in client) {
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(url);
+      }),
+  );
+});

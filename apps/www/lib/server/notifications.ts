@@ -7,6 +7,7 @@ import {
 } from "@umamin/db/schema/notification";
 import { sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
+import { after } from "next/server";
 
 const PREVIEW_MAX_LENGTH = 80;
 
@@ -80,6 +81,18 @@ export async function notify({
     // without busting the list cache the page just populated.
     updateTag(`notifications:${recipientId}`);
     updateTag(`notifications-badge:${recipientId}`);
+
+    // Fire a best-effort Web Push off the response's critical path. The sender
+    // is dynamically imported so web-push's Node-only deps never bundle into
+    // this module (imported across the action graph). It must never throw into
+    // the parent action — hence the inner .catch and after()'s own isolation.
+    after(() => {
+      void import("./push")
+        .then((m) =>
+          m.sendPushForNotification({ recipientId, type, targetId, actorId }),
+        )
+        .catch((err) => console.error("push send failed", err));
+    });
   } catch (err) {
     console.error("notify failed", err);
   }

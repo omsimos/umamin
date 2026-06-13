@@ -96,6 +96,7 @@ describe("UserProfile", () => {
         username: "viewer",
         hasPassword: true,
         blockedWords: null,
+        pushPrefs: 0,
         accounts: [],
       },
     } satisfies CurrentUserResponse);

@@ -2,14 +2,19 @@ import type { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 import * as z from "zod";
 import type { GroupBadgeData } from "./group";
 
-// lastSeenNotificationsAt is the viewer's own notification watermark and
-// blockedWords the viewer's own message filter — private state, never part of
-// a public (or even own-profile) payload. bannerImageUrl is profile-header-only
-// (re-added on PublicUserWithBadge), kept out of the per-author payloads that
+// lastSeenNotificationsAt is the viewer's own notification watermark,
+// blockedWords the viewer's own message filter, and pushPrefs the viewer's own
+// push-notification setting — private state, never part of a public (or even
+// own-profile) payload. bannerImageUrl is profile-header-only (re-added on
+// PublicUserWithBadge), kept out of the per-author payloads that
 // publicUserColumns feeds so feed/note/comment lists stay compact.
 export type PublicUser = Omit<
   SelectUser,
-  "passwordHash" | "lastSeenNotificationsAt" | "blockedWords" | "bannerImageUrl"
+  | "passwordHash"
+  | "lastSeenNotificationsAt"
+  | "blockedWords"
+  | "bannerImageUrl"
+  | "pushPrefs"
 >;
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
@@ -45,6 +50,9 @@ export type FeedAuthorWithBadge = FeedAuthor & {
 export type CurrentUserClient = PublicUserWithBadge & {
   hasPassword: boolean;
   blockedWords: string[] | null;
+  // Push-notification preference bitmask (0 = off). Owner-private — only ever
+  // served to the user's own session (mirrors blockedWords/hasPassword).
+  pushPrefs: number;
 };
 export type UserWithAccount = CurrentUserClient & {
   account: SelectAccount | null;
@@ -56,6 +64,7 @@ export function toPublicUser(user: SelectUser): PublicUser {
     lastSeenNotificationsAt: _lastSeenNotificationsAt,
     blockedWords: _blockedWords,
     bannerImageUrl: _bannerImageUrl,
+    pushPrefs: _pushPrefs,
     ...rest
   } = user;
   return rest;
