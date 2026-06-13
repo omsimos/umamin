@@ -70,7 +70,10 @@ import type {
 } from "@/lib/query-types";
 import { ReactionsDrawer } from "./reactions-drawer";
 
-const HEAD_POLL_MS = 5000;
+// 8s (was 5s): the head poll is the only continuous interval poller and each
+// tick is a billed Vercel edge request — 8s trims ~37% of them with minimal
+// perceived latency. Keep aligned with HEAD_CACHE_SECONDS in the head route.
+const HEAD_POLL_MS = 8000;
 const GROUP_MESSAGE_MAX = 1000;
 // Cursor for an empty room: "everything since epoch" (bounded) so a brand-new
 // room still discovers its first message via the delta path.

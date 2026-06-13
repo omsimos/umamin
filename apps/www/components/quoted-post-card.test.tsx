@@ -7,14 +7,11 @@ const author = {
   id: "user_1",
   username: "alice",
   displayName: "Alice",
-  bio: null,
   imageUrl: null,
   quietMode: false,
-  question: "",
-  followerCount: 0,
-  followingCount: 0,
+  equippedGroupId: null,
+  points: 0,
   createdAt: new Date("2024-01-01"),
-  updatedAt: null,
 } as QuotedPostData["author"];
 
 function makeQuoted(overrides: Partial<QuotedPostData> = {}): QuotedPostData {

@@ -19,6 +19,7 @@ import {
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import { ChatPromo } from "./chat-promo";
 import { MenubarLink } from "./menubar-link";
+import { NavGroups } from "./nav-groups";
 import { NavNotifications } from "./nav-notifications";
 
 // Client-side auth (currentUser cache) so the (public) layout stays static —
@@ -46,7 +47,9 @@ export function PublicMenubar() {
         isPostDetail && "lg:hidden",
       )}
     >
-      <ChatPromo />
+      {/* Authed users get Groups (with an unread dot); logged-out viewers keep
+          the anonymous-chat cross-promo (their no-signup audience). */}
+      {isAuthenticated ? <NavGroups /> : <ChatPromo />}
 
       <MenubarLink href="/notes" title="Notes">
         <ScrollTextIcon className="h-6 w-6" />

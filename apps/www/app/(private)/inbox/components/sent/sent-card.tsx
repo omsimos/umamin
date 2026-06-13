@@ -9,12 +9,12 @@ import { formatDistanceToNow } from "date-fns";
 import { CircleUserIcon } from "lucide-react";
 import { ChatList } from "@/components/chat-list";
 import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
-import type { PublicUser } from "@/types/user";
+import type { FeedAuthor } from "@/types/user";
 
 export function SentMessageCard({
   data,
 }: {
-  data: SelectMessage & { receiver: PublicUser };
+  data: SelectMessage & { receiver: FeedAuthor };
 }) {
   return (
     <Card>

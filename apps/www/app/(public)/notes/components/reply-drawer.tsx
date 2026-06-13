@@ -21,10 +21,10 @@ import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatContent } from "@/lib/utils";
-import type { PublicUser } from "@/types/user";
+import type { FeedAuthorWithBadge } from "@/types/user";
 
 type ChatFormProps = {
-  note: SelectNote & { user: PublicUser };
+  note: SelectNote & { user: FeedAuthorWithBadge };
 };
 
 type ReplyDrawerProps = {
