@@ -49,6 +49,7 @@ import {
   MessageCircleIcon,
   ScanFaceIcon,
   SquarePenIcon,
+  TagIcon,
   Trash2Icon,
   UserMinusIcon,
   UserPlusIcon,
@@ -399,76 +400,88 @@ export function GroupPageClient({
       )}
 
       {isMember && (
-        <div className="flex items-center gap-2">
-          <Button asChild className="flex-1">
+        <div className="space-y-2">
+          {/* Open chat is the sole primary action; the tag toggle stays
+              secondary so two filled CTAs never compete. */}
+          <Button asChild className="w-full">
             <Link href={`/groups/${tag}/chat`}>
               <MessageCircleIcon /> Open chat
             </Link>
           </Button>
 
-          <Button
-            variant={equipped ? "default" : "outline"}
-            disabled={equipMutation.isPending}
-            onClick={() => equipMutation.mutate()}
-          >
-            {equipped ? (
-              <>
-                <CheckIcon /> Wearing tag
-              </>
-            ) : (
-              "Wear tag"
+          <div className="flex items-center gap-2">
+            <Button
+              variant={equipped ? "secondary" : "outline"}
+              className="flex-1"
+              disabled={equipMutation.isPending}
+              onClick={() => equipMutation.mutate()}
+              aria-pressed={equipped}
+            >
+              {equipped ? (
+                <>
+                  <CheckIcon /> Wearing tag
+                </>
+              ) : (
+                <>
+                  <TagIcon /> Wear tag
+                </>
+              )}
+            </Button>
+
+            {isOwner && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="Manage group"
+                  >
+                    <EllipsisIcon />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onSelect={() => setInviteOpen(true)}>
+                    <UserPlusIcon /> Invite members
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+                    <SquarePenIcon /> Edit group
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => setDeleteOpen(true)}
+                  >
+                    <Trash2Icon /> Delete group
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
-          </Button>
 
-          {isOwner && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" aria-label="Manage group">
-                  <EllipsisIcon />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onSelect={() => setInviteOpen(true)}>
-                  <UserPlusIcon /> Invite members
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setEditOpen(true)}>
-                  <SquarePenIcon /> Edit group
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={() => setDeleteOpen(true)}
-                >
-                  <Trash2Icon /> Delete group
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {relationship === "member" && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" disabled={leaveMutation.isPending}>
-                  Leave
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Leave this group?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Your tag will be removed and you'll need a new invite to
-                    rejoin.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => leaveMutation.mutate()}>
+            {relationship === "member" && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" disabled={leaveMutation.isPending}>
                     Leave
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Leave this group?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Your tag will be removed and you'll need a new invite to
+                      rejoin.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => leaveMutation.mutate()}>
+                      Leave
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
       )}
 
