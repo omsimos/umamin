@@ -14,7 +14,9 @@ import {
 // coarse activity markers, and group metadata is already public. Both null
 // without Redis — the client then polls the delta directly and reactions become
 // eventual on reload.
-const HEAD_CACHE_SECONDS = 5;
+// Aligned with the client HEAD_POLL_MS (8s) so many members' polls keep
+// collapsing to one CDN hit per window.
+const HEAD_CACHE_SECONDS = 8;
 
 export async function GET(req: NextRequest) {
   const groupId = new URL(req.url).searchParams.get("id");

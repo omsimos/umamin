@@ -97,7 +97,11 @@ import type {
 } from "@/types/post";
 import type { CurrentUserClient, PublicUserWithBadge } from "@/types/user";
 
-const PUBLIC_REVALIDATE_SECONDS = 120;
+// 180s (was 120s): public reads are eventually-consistent and every surface
+// busts its per-entity tag on write, so this only governs passive-staleness /
+// cold-cache recompute frequency — widening it trims function CPU at no
+// freshness cost (the feed's "new posts" pill covers perceived latency).
+const PUBLIC_REVALIDATE_SECONDS = 180;
 const PRIVATE_REVALIDATE_SECONDS = 30;
 // 20 matches comments/messages and the virtualized above-the-fold (overscan 5);
 // 40 over-fetched ~2x the rows + payload per page on a per-row-billed DB.
