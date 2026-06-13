@@ -7,7 +7,8 @@ import type { GroupBadgeData } from "@/types/group";
 import type { CommentData, FeedItem, PostData } from "@/types/post";
 import type {
   CurrentUserClient,
-  PublicUser,
+  FeedAuthor,
+  FeedAuthorWithBadge,
   PublicUserWithBadge,
 } from "@/types/user";
 
@@ -23,14 +24,14 @@ export type PostResponse = PostData | null;
 export type CommentsResponse = CursorPage<CommentData>;
 
 export type NoteItem = SelectNote & {
-  user?: PublicUserWithBadge;
+  user?: FeedAuthorWithBadge;
   isReacted?: boolean;
 };
 
 export type NotesResponse = CursorPage<NoteItem>;
 
 export type MessageWithReceiver = SelectMessage & {
-  receiver: PublicUser;
+  receiver: FeedAuthor;
 };
 
 export type MessagesResponse = {
@@ -71,13 +72,13 @@ export type CurrentUserResponse = {
   user?: CurrentUserData;
 };
 
-export type BlockedUser = PublicUser & {
+export type BlockedUser = FeedAuthor & {
   blockedAt: Date;
 };
 
 export type BlockedUsersResponse = CursorPage<BlockedUser>;
 
-export type FollowListUser = PublicUserWithBadge & {
+export type FollowListUser = FeedAuthorWithBadge & {
   isFollowing: boolean;
 };
 
@@ -106,7 +107,7 @@ export type GroupMemberItem = {
   id: string;
   role: GroupMemberRole;
   joinedAt: Date;
-  user: PublicUser;
+  user: FeedAuthor;
 };
 
 export type GroupMembersResponse = CursorPage<GroupMemberItem>;
@@ -155,7 +156,7 @@ export type GroupViewerResponse = {
 export type GroupRequestItem = {
   id: string;
   requestedAt: Date;
-  user: PublicUser;
+  user: FeedAuthor;
 };
 
 export type GroupRequestsResponse = CursorPage<GroupRequestItem>;

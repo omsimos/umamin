@@ -3,14 +3,14 @@
 import { BadgeCheckIcon, Repeat2Icon } from "lucide-react";
 import Link from "next/link";
 import { shortTimeAgo } from "@/lib/utils";
-import type { PublicUser } from "@/types/user";
+import type { FeedAuthor } from "@/types/user";
 
 // Plain-repost attribution line — quotes are real posts with their own card.
 export function RepostHeader({
   user,
   createdAt,
 }: {
-  user: PublicUser;
+  user: FeedAuthor;
   createdAt: Date;
 }) {
   const verified =

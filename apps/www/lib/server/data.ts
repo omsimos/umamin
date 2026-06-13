@@ -95,7 +95,7 @@ import type {
   PollOptionData,
   QuotedPostData,
 } from "@/types/post";
-import type { CurrentUserClient, PublicUserWithBadge } from "@/types/user";
+import type { CurrentUserClient, FeedAuthorWithBadge } from "@/types/user";
 
 // 180s (was 120s): public reads are eventually-consistent and every surface
 // busts its per-entity tag on write, so this only governs passive-staleness /
@@ -159,6 +159,23 @@ const publicUserColumns = {
   points: userTable.points,
   createdAt: userTable.createdAt,
   updatedAt: userTable.updatedAt,
+};
+
+// Lean list-author projection — drops bio/question/follower+followingCount/
+// updatedAt/pinnedPostId (none rendered on any list surface) to cut Fast Origin
+// Transfer. createdAt drives the Umamin+ shine ring; equippedGroupId feeds
+// withGroupBadge; points kept for forward-compat. The FULL publicUserColumns
+// stays on the current-user + profile reads (which render bio/counts). Must
+// match the FeedAuthor type in types/user.ts (8 keys).
+const feedAuthorColumns = {
+  id: userTable.id,
+  username: userTable.username,
+  displayName: userTable.displayName,
+  imageUrl: userTable.imageUrl,
+  quietMode: userTable.quietMode,
+  equippedGroupId: userTable.equippedGroupId,
+  points: userTable.points,
+  createdAt: userTable.createdAt,
 };
 
 /**
@@ -237,7 +254,7 @@ async function getQuotedPostMap(
   const authors =
     authorIds.length > 0
       ? await db
-          .select(publicUserColumns)
+          .select(feedAuthorColumns)
           .from(userTable)
           .where(inArray(userTable.id, authorIds))
       : [];
@@ -568,7 +585,7 @@ async function getPublicLatestPostsPage(
       : [],
     userIds.length > 0
       ? db
-          .select(publicUserColumns)
+          .select(feedAuthorColumns)
           .from(userTable)
           .where(inArray(userTable.id, userIds))
       : [],
@@ -654,7 +671,7 @@ async function getRedisHotPostsPage(
   const users =
     authorIds.length > 0
       ? await db
-          .select(publicUserColumns)
+          .select(feedAuthorColumns)
           .from(userTable)
           .where(inArray(userTable.id, authorIds))
       : [];
@@ -742,7 +759,7 @@ async function getCachedPublicHotPostsPage(
   const users =
     authorIds.length > 0
       ? await db
-          .select(publicUserColumns)
+          .select(feedAuthorColumns)
           .from(userTable)
           .where(inArray(userTable.id, authorIds))
       : [];
@@ -922,7 +939,7 @@ async function getFollowingPostsPage(
       : [],
     userIds.length > 0
       ? db
-          .select(publicUserColumns)
+          .select(feedAuthorColumns)
           .from(userTable)
           .where(inArray(userTable.id, userIds))
       : [],
@@ -1225,7 +1242,7 @@ async function getPublicUserPostsPage(
 
   // Keyset pagination on post_author_created_at_idx (author_id, created_at, id).
   const rows = await db
-    .select({ post: postTable, author: publicUserColumns })
+    .select({ post: postTable, author: feedAuthorColumns })
     .from(postTable)
     .innerJoin(userTable, eq(postTable.authorId, userTable.id))
     .where(whereCondition)
@@ -1237,7 +1254,7 @@ async function getPublicUserPostsPage(
   const [pinnedRow] =
     !cursor && pinnedPostId
       ? await db
-          .select({ post: postTable, author: publicUserColumns })
+          .select({ post: postTable, author: feedAuthorColumns })
           .from(postTable)
           .innerJoin(userTable, eq(postTable.authorId, userTable.id))
           .where(
@@ -1340,9 +1357,9 @@ async function getPublicPost(postId: string): Promise<PostResponse> {
   // Explicit join over the relational `with: { author: true }`: the relation
   // selects every user column (passwordHash, blockedWords, ...) and a type
   // cast can't strip them at runtime — this payload is client-bound and
-  // CDN-cached, so the author must be projected through publicUserColumns.
+  // CDN-cached, so the author must be projected through feedAuthorColumns.
   const [row] = await db
-    .select({ post: postTable, author: publicUserColumns })
+    .select({ post: postTable, author: feedAuthorColumns })
     .from(postTable)
     .innerJoin(userTable, eq(postTable.authorId, userTable.id))
     .where(eq(postTable.id, postId))
@@ -1517,7 +1534,7 @@ async function getPublicCommentsPage(
   const rows = await db
     .select({
       comment: postCommentTable,
-      author: publicUserColumns,
+      author: feedAuthorColumns,
     })
     .from(postCommentTable)
     .leftJoin(userTable, eq(postCommentTable.authorId, userTable.id))
@@ -1689,7 +1706,7 @@ async function getPublicNotesPage(
   const baseQuery = db
     .select({
       note: noteTable,
-      user: publicUserColumns,
+      user: feedAuthorColumns,
     })
     .from(noteTable)
     .leftJoin(userTable, eq(noteTable.userId, userTable.id))
@@ -2080,7 +2097,7 @@ async function getPublicFollowListPage(
   userId: string,
   cursor: string | null,
   direction: FollowDirection,
-): Promise<{ users: PublicUserWithBadge[]; nextCursor: string | null }> {
+): Promise<{ users: FeedAuthorWithBadge[]; nextCursor: string | null }> {
   "use cache";
   cacheTag(
     direction === "followers"
@@ -2133,7 +2150,7 @@ async function getPublicFollowListPage(
   const users =
     listedIds.length > 0
       ? await db
-          .select(publicUserColumns)
+          .select(feedAuthorColumns)
           .from(userTable)
           .where(inArray(userTable.id, listedIds))
       : [];
@@ -2299,7 +2316,7 @@ export async function getBlockedUsersPage(params: {
   const users =
     blockedIds.length > 0
       ? await db
-          .select(publicUserColumns)
+          .select(feedAuthorColumns)
           .from(userTable)
           .where(inArray(userTable.id, blockedIds))
       : [];
@@ -2421,7 +2438,7 @@ export async function getMessagesPage(params: {
     const rows = await db
       .select({
         message: messageTable,
-        receiver: publicUserColumns,
+        receiver: feedAuthorColumns,
       })
       .from(messageTable)
       .innerJoin(userTable, eq(messageTable.receiverId, userTable.id))
@@ -2719,7 +2736,7 @@ export async function getGroupMembersPage(
       id: groupMemberTable.id,
       role: groupMemberTable.role,
       joinedAt: groupMemberTable.createdAt,
-      user: publicUserColumns,
+      user: feedAuthorColumns,
     })
     .from(groupMemberTable)
     .innerJoin(userTable, eq(groupMemberTable.userId, userTable.id))
@@ -3252,7 +3269,7 @@ export async function getGroupPendingRequestsPage(
     .select({
       id: groupPendingTable.id,
       requestedAt: groupPendingTable.createdAt,
-      user: publicUserColumns,
+      user: feedAuthorColumns,
     })
     .from(groupPendingTable)
     .innerJoin(userTable, eq(groupPendingTable.userId, userTable.id))

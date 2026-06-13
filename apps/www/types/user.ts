@@ -20,6 +20,28 @@ export type PublicUserWithBadge = PublicUser & {
   groupBadge?: GroupBadgeData | null;
   bannerImageUrl?: string | null;
 };
+
+// Lean author shape for LIST surfaces (feed/notes/comments/messages/follow/
+// members) — structurally matches feedAuthorColumns in lib/server/data.ts.
+// Drops bio/question/follower+followingCount/updatedAt/pinnedPostId that no list
+// renderer reads, to cut Fast Origin Transfer. Distinct from PublicUser so the
+// compiler rejects any list code that reaches for a dropped field. The full
+// PublicUser stays on profile + current-user reads.
+export type FeedAuthor = Omit<
+  PublicUser,
+  | "bio"
+  | "question"
+  | "followerCount"
+  | "followingCount"
+  | "updatedAt"
+  | "pinnedPostId"
+>;
+
+export type FeedAuthorWithBadge = FeedAuthor & {
+  groupBadge?: GroupBadgeData | null;
+  bannerImageUrl?: string | null;
+};
+
 export type CurrentUserClient = PublicUserWithBadge & {
   hasPassword: boolean;
   blockedWords: string[] | null;
