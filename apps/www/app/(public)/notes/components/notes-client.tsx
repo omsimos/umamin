@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { SquarePenIcon } from "lucide-react";
 import Link from "next/link";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -30,6 +31,7 @@ export function NotesClient() {
     <div className="space-y-12">
       {user ? (
         <div className="space-y-12">
+          <ClientOnlyAdContainer placement="notes_input_top" />
           <NoteForm currentUser={user} />
           <CurrentUserNote currentUser={user} />
         </div>
