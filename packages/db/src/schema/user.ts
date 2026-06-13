@@ -45,6 +45,12 @@ export const userTable = sqliteTable(
     // Cosmetic in v1 (no tiers/unlocks). Maintained like the counters above — a
     // cheap PK point-update, never a COUNT scan (Turso bills per row scanned).
     points: integer("points").notNull().default(0),
+    // Push-notification preferences as a bitmask of enabled categories (0 = off,
+    // opt-in). v1 ships a single master toggle that sets/clears all current
+    // category bits at once; per-category toggles are a later code-only change
+    // (no migration). Owner-private — omitted from PublicUser/publicUserColumns,
+    // surfaced only on the current-user read. See apps/www lib/push-prefs.ts.
+    pushPrefs: integer("push_prefs").notNull().default(0),
     // Watermark for the notification badge: unread = notification rows with
     // updatedAt past this. Mark-all-seen is one user-row write instead of
     // flipping a read flag on N notification rows.
