@@ -18,6 +18,16 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.19.0] - 2026-06-13
+
+### Added
+
+- Group chats are now one tap from the main navigation, with a dot that lights up when one of your groups has new messages and clears once you open the room. Your Groups list also gains a chat shortcut on each group.
+
+### Changed
+
+- The Umamin Chat shortcut moved from the navigation bar into your account menu. It stays in the bar when you're signed out.
+
 ## [5.18.0] - 2026-06-13
 
 ### Added
@@ -732,6 +742,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.19.0]: https://github.com/omsimos/umamin/compare/v5.18.0...v5.19.0
 [5.18.0]: https://github.com/omsimos/umamin/compare/v5.17.0...v5.18.0
 [5.17.0]: https://github.com/omsimos/umamin/compare/v5.16.0...v5.17.0
 [5.16.0]: https://github.com/omsimos/umamin/compare/v5.15.0...v5.16.0
