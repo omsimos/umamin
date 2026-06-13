@@ -24,6 +24,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { sanitizeBlockedWords } from "@/lib/blocked-words";
+import {
+  AURA_POINTS,
+  awardAura,
+  isAuraEligibleActor,
+  reverseAura,
+} from "@/lib/points";
 import { publicImageUrl } from "@/lib/post-images";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { idSchema } from "@/lib/schema";
@@ -226,6 +232,32 @@ export async function deleteAccountAction(confirmation?: string) {
               .where(eq(userFollowTable.followerId, uid)),
           ),
         );
+
+      // Users I follow earned +follow aura from me — reverse it (mirrors the
+      // follower_count decrement above; same bounded subquery set). Gated on
+      // MY account age to parity with the award path (awardAura no-ops for an
+      // under-age actor): a fresh account awarded zero follow-aura, so it must
+      // reverse nothing — without this guard, deleting a <3-day alt that
+      // mass-followed real users would drain aura they never received. Other
+      // engagement-aura (likes/comments/reposts) this account generated for
+      // others is left as documented drift in v1 — not audit-grade until the
+      // per-event ledger lands.
+      if (isAuraEligibleActor(user.createdAt)) {
+        await tx
+          .update(userTable)
+          .set({
+            points: sql`CASE WHEN ${userTable.points} >= ${AURA_POINTS.follow} THEN ${userTable.points} - ${AURA_POINTS.follow} ELSE 0 END`,
+          })
+          .where(
+            inArray(
+              userTable.id,
+              tx
+                .select({ id: userFollowTable.followingId })
+                .from(userFollowTable)
+                .where(eq(userFollowTable.followerId, uid)),
+            ),
+          );
+      }
 
       // Users who follow me -> their following_count.
       await tx
@@ -488,6 +520,16 @@ export const followUserAction = withAction(
         })
         .where(eq(userTable.id, userId));
 
+      // Followed user earns follow-aura. self + block already rejected above;
+      // the age gate (new-account farming) is enforced inside awardAura. The
+      // beneficiary's user:<username> tag is already invalidated below.
+      await awardAura(tx, {
+        beneficiaryId: userId,
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.follow,
+      });
+
       return { success: true };
     });
 
@@ -566,6 +608,15 @@ export const unfollowUserAction = withAction(
         })
         .where(eq(userTable.id, userId));
 
+      // Mirror followUserAction's award. Beneficiary's user:<username> tag is
+      // already invalidated below.
+      await reverseAura(tx, {
+        beneficiaryId: userId,
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.follow,
+      });
+
       return { success: true };
     });
 
@@ -596,7 +647,11 @@ export const blockUserAction = withAction(
     }
 
     const [target] = await db
-      .select({ id: userTable.id, username: userTable.username })
+      .select({
+        id: userTable.id,
+        username: userTable.username,
+        createdAt: userTable.createdAt,
+      })
       .from(userTable)
       .where(eq(userTable.id, userId))
       .limit(1);
@@ -646,6 +701,14 @@ export const blockUserAction = withAction(
             followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
           })
           .where(eq(userTable.id, userId));
+
+        // Reverse the follow-aura this user granted the blocked user.
+        await reverseAura(tx, {
+          beneficiaryId: userId,
+          actorId: session.userId,
+          actorCreatedAt: user?.createdAt,
+          delta: AURA_POINTS.follow,
+        });
       }
 
       const removedIncoming = await tx
@@ -672,6 +735,15 @@ export const blockUserAction = withAction(
             followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
           })
           .where(eq(userTable.id, session.userId));
+
+        // Reverse the follow-aura the blocked user granted this user (their age
+        // gates the original award, so it gates the reversal too).
+        await reverseAura(tx, {
+          beneficiaryId: session.userId,
+          actorId: userId,
+          actorCreatedAt: target.createdAt,
+          delta: AURA_POINTS.follow,
+        });
       }
 
       return { success: true };

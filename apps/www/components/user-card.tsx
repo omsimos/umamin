@@ -15,6 +15,7 @@ import {
   MessageSquareXIcon,
   MoonIcon,
   PencilIcon,
+  ShieldUserIcon,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -136,6 +137,16 @@ export function UserCard({
           />
 
           <div className="mt-4 space-y-1">
+            <div className="text-muted-foreground text-sm flex items-center gap-2">
+              <ShieldUserIcon className="size-4" />
+              <span>
+                <span className="font-medium text-foreground">
+                  {user.points.toLocaleString()}
+                </span>{" "}
+                aura points
+              </span>
+            </div>
+
             {user.quietMode && (
               <div className="flex items-center gap-2 text-muted-foreground text-sm">
                 <MessageSquareXIcon className="size-4" />
