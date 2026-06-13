@@ -40,6 +40,11 @@ export const userTable = sqliteTable(
     equippedGroupId: text("equipped_group_id"),
     followerCount: integer("follower_count").notNull().default(0),
     followingCount: integer("following_count").notNull().default(0),
+    // "Aura": denormalized engagement score, incremented in-transaction with the
+    // event that earns it (others liking/commenting/reposting/following you).
+    // Cosmetic in v1 (no tiers/unlocks). Maintained like the counters above — a
+    // cheap PK point-update, never a COUNT scan (Turso bills per row scanned).
+    points: integer("points").notNull().default(0),
     // Watermark for the notification badge: unread = notification rows with
     // updatedAt past this. Mark-all-seen is one user-row write instead of
     // flipping a read flag on N notification rows.

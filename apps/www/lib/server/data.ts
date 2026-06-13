@@ -152,6 +152,7 @@ const publicUserColumns = {
   equippedGroupId: userTable.equippedGroupId,
   followerCount: userTable.followerCount,
   followingCount: userTable.followingCount,
+  points: userTable.points,
   createdAt: userTable.createdAt,
   updatedAt: userTable.updatedAt,
 };
@@ -1924,6 +1925,7 @@ export async function getPublicUserProfileData(
       equippedGroupId: userTable.equippedGroupId,
       followerCount: userTable.followerCount,
       followingCount: userTable.followingCount,
+      points: userTable.points,
       createdAt: userTable.createdAt,
       updatedAt: userTable.updatedAt,
     })

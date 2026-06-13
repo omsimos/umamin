@@ -20,6 +20,7 @@
     "migrate": "drizzle-kit migrate",
     "studio": "drizzle-kit studio",
     "seed": "tsx --env-file=.env ./src/seed.ts",
+    "backfill:aura": "tsx --env-file=.env ./src/backfill-aura.ts",
     "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {

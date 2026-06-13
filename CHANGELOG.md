@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.18.0] - 2026-06-13
+
+### Added
+
+- Aura: your profile now shows a score that grows as others engage with what you share — liking, commenting on, reposting, quoting, and voting on your posts, plus following you. Engaging with your own content doesn't count, and brand-new accounts don't add to anyone's score yet.
+
 ## [5.17.0] - 2026-06-13
 
 ### Added
@@ -726,6 +732,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.18.0]: https://github.com/omsimos/umamin/compare/v5.17.0...v5.18.0
 [5.17.0]: https://github.com/omsimos/umamin/compare/v5.16.0...v5.17.0
 [5.16.0]: https://github.com/omsimos/umamin/compare/v5.15.0...v5.16.0
 [5.15.0]: https://github.com/omsimos/umamin/compare/v5.14.0...v5.15.0

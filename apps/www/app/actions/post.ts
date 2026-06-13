@@ -11,10 +11,11 @@ import {
   postTable,
 } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import { AURA_POINTS, awardAura, reverseAura } from "@/lib/points";
 import {
   POLL_DURATIONS,
   POLL_ENDED_ERROR,
@@ -158,6 +159,7 @@ export const createPostAction = withAction(
 
     let createdPost: typeof postTable.$inferSelect;
     let createdPollOptions: (typeof pollOptionTable.$inferSelect)[] = [];
+    let quoteAuraUsername: string | null = null;
 
     try {
       const created = await db.transaction(async (tx) => {
@@ -192,12 +194,22 @@ export const createPostAction = withAction(
         // A quote counts toward the quoted post's combined repost count, in
         // the same transaction so the count can't drift from the row.
         if (quotedPostId) {
-          await tx
+          const [bumped] = await tx
             .update(postTable)
             .set({
               repostCount: sql`${postTable.repostCount} + 1`,
             })
-            .where(eq(postTable.id, quotedPostId));
+            .where(eq(postTable.id, quotedPostId))
+            .returning({ authorId: postTable.authorId });
+
+          if (bumped) {
+            quoteAuraUsername = await awardAura(tx, {
+              beneficiaryId: bumped.authorId,
+              actorId: session.userId,
+              actorCreatedAt: user.createdAt,
+              delta: AURA_POINTS.quote,
+            });
+          }
         }
 
         return { post: inserted, pollOptions: insertedOptions };
@@ -221,6 +233,9 @@ export const createPostAction = withAction(
       // feed shows its bumped count eventually (<=120s), same as likes.
       updateTag(`post:${quotedPostId}`);
       await refreshHotPostRank(quotedPostId);
+    }
+    if (quoteAuraUsername) {
+      updateTag(`user:${quoteAuraUsername}`);
     }
     await bumpFeedLatest(createdPost.createdAt);
 
@@ -251,7 +266,7 @@ export const deletePostAction = withAction(
       key: ({ session }) => `delpost:${session.userId}`,
     },
   },
-  async ({ postId }, { session }) => {
+  async ({ postId }, { session, user }) => {
     const post = await db.query.postTable.findFirst({
       columns: { id: true, authorId: true, images: true, quotedPostId: true },
       where: eq(postTable.id, postId),
@@ -261,18 +276,30 @@ export const deletePostAction = withAction(
       return { error: "Post not found" };
     }
 
+    let quoteAuraUsername: string | null = null;
+
     await db.transaction(async (tx) => {
       await tx.delete(postTable).where(eq(postTable.id, postId));
 
       // Inverse of the quote bump in createPostAction; guarded against
       // underflow, no-op when the quoted post is already gone.
       if (post.quotedPostId) {
-        await tx
+        const [bumped] = await tx
           .update(postTable)
           .set({
             repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
           })
-          .where(eq(postTable.id, post.quotedPostId));
+          .where(eq(postTable.id, post.quotedPostId))
+          .returning({ authorId: postTable.authorId });
+
+        if (bumped) {
+          quoteAuraUsername = await reverseAura(tx, {
+            beneficiaryId: bumped.authorId,
+            actorId: session.userId,
+            actorCreatedAt: user?.createdAt,
+            delta: AURA_POINTS.quote,
+          });
+        }
       }
 
       // Deleting the pinned post unpins it (soft reference — no FK cascade).
@@ -306,6 +333,9 @@ export const deletePostAction = withAction(
       updateTag(`post:${post.quotedPostId}`);
       await refreshHotPostRank(post.quotedPostId);
     }
+    if (quoteAuraUsername) {
+      updateTag(`user:${quoteAuraUsername}`);
+    }
 
     return { success: true };
   },
@@ -328,9 +358,10 @@ export const createCommentAction = withAction(
       key: ({ session }) => `comment:${session.userId}`,
     },
   },
-  async ({ content, postId }, { session }) => {
+  async ({ content, postId }, { session, user }) => {
     let createdComment: typeof postCommentTable.$inferSelect | undefined;
     let postAuthorId: string | undefined;
+    let auraUsername: string | null = null;
 
     await db.transaction(async (tx) => {
       const [comment] = await tx
@@ -354,6 +385,31 @@ export const createCommentAction = withAction(
         .returning({ authorId: postTable.authorId });
 
       postAuthorId = updated?.authorId;
+
+      // First-comment-per-post only: post_comment has no (post,user) UNIQUE, so
+      // award the +5 once per (post, commenter) to keep it unfarmable.
+      if (updated?.authorId && comment) {
+        const prior = await tx
+          .select({ id: postCommentTable.id })
+          .from(postCommentTable)
+          .where(
+            and(
+              eq(postCommentTable.authorId, session.userId),
+              eq(postCommentTable.postId, postId),
+              ne(postCommentTable.id, comment.id),
+            ),
+          )
+          .limit(1);
+
+        if (prior.length === 0) {
+          auraUsername = await awardAura(tx, {
+            beneficiaryId: updated.authorId,
+            actorId: session.userId,
+            actorCreatedAt: user?.createdAt,
+            delta: AURA_POINTS.comment,
+          });
+        }
+      }
     });
 
     // Note: not invalidating the "posts" feed tag — a new comment only bumps
@@ -362,6 +418,9 @@ export const createCommentAction = withAction(
     // below refresh immediately. Avoids a full feed re-scan on every comment.
     updateTag(`post:${postId}`);
     updateTag(`post-comments:${postId}`);
+    if (auraUsername) {
+      updateTag(`user:${auraUsername}`);
+    }
     await refreshHotPostRank(postId);
     if (postAuthorId && createdComment) {
       await notify({
@@ -385,7 +444,7 @@ export const deleteCommentAction = withAction(
       key: ({ session }) => `delcomment:${session.userId}`,
     },
   },
-  async ({ commentId }, { session }) => {
+  async ({ commentId }, { session, user }) => {
     // Resolve + authorize server-side (don't trust a client-supplied postId).
     const comment = await db.query.postCommentTable.findFirst({
       columns: { id: true, authorId: true, postId: true },
@@ -395,6 +454,8 @@ export const deleteCommentAction = withAction(
     if (!comment || comment.authorId !== session.userId) {
       return { error: "Comment not found" };
     }
+
+    let auraUsername: string | null = null;
 
     await db.transaction(async (tx) => {
       // The comment's own likes cascade via FK (post_comment_like → comment).
@@ -408,18 +469,46 @@ export const deleteCommentAction = withAction(
       }
 
       // Inverse of createCommentAction's increment; guarded against underflow.
-      await tx
+      const [updated] = await tx
         .update(postTable)
         .set({
           commentCount: sql`CASE WHEN ${postTable.commentCount} > 0 THEN ${postTable.commentCount} - 1 ELSE 0 END`,
         })
-        .where(eq(postTable.id, comment.postId));
+        .where(eq(postTable.id, comment.postId))
+        .returning({ authorId: postTable.authorId });
+
+      // Mirror the first-comment award: reverse the +5 only when the author
+      // has no comment left on this post (fully retracted their commenting).
+      if (updated?.authorId) {
+        const remaining = await tx
+          .select({ id: postCommentTable.id })
+          .from(postCommentTable)
+          .where(
+            and(
+              eq(postCommentTable.authorId, comment.authorId),
+              eq(postCommentTable.postId, comment.postId),
+            ),
+          )
+          .limit(1);
+
+        if (remaining.length === 0) {
+          auraUsername = await reverseAura(tx, {
+            beneficiaryId: updated.authorId,
+            actorId: comment.authorId,
+            actorCreatedAt: user?.createdAt,
+            delta: AURA_POINTS.comment,
+          });
+        }
+      }
     });
 
     // Mirror createCommentAction: refresh the single post + its thread, leave
     // the feed's commentCount eventually-consistent (<=120s).
     updateTag(`post:${comment.postId}`);
     updateTag(`post-comments:${comment.postId}`);
+    if (auraUsername) {
+      updateTag(`user:${auraUsername}`);
+    }
     await refreshHotPostRank(comment.postId);
 
     return { success: true, postId: comment.postId };
@@ -434,10 +523,11 @@ export const addLikeAction = withAction(
       key: ({ session }) => `like:${session.userId}`,
     },
   },
-  async ({ postId }, { session }) => {
+  async ({ postId }, { session, user }) => {
     // Captured via .returning() on the count update — the like notification's
     // recipient (post author) and preview come free, no extra row read.
     let likedPost: { authorId: string; content: string } | undefined;
+    let auraUsername: string | null = null;
 
     const result = await db.transaction(async (tx) => {
       const inserted = await tx
@@ -466,6 +556,15 @@ export const addLikeAction = withAction(
 
       likedPost = updated;
 
+      if (updated) {
+        auraUsername = await awardAura(tx, {
+          beneficiaryId: updated.authorId,
+          actorId: session.userId,
+          actorCreatedAt: user?.createdAt,
+          delta: AURA_POINTS.like,
+        });
+      }
+
       return { success: true };
     });
 
@@ -475,6 +574,9 @@ export const addLikeAction = withAction(
     // consistent (<=120s). The per-viewer liked tag below keeps the viewer's
     // own like state fresh. This avoids a full feed-cache miss on every like.
     updateTag(`post:${postId}:liked:${session.userId}`);
+    if (auraUsername) {
+      updateTag(`user:${auraUsername}`);
+    }
     if (!("alreadyLiked" in result)) {
       await refreshHotPostRank(postId);
     }
@@ -499,7 +601,7 @@ export const votePollAction = withAction(
       key: ({ session }) => `pollvote:${session.userId}`,
     },
   },
-  async ({ optionId }, { session }) => {
+  async ({ optionId }, { session, user }) => {
     // The post is derived from the option server-side — a client-supplied
     // postId could pair a foreign option with another poll's unique slot.
     const [target] = await db
@@ -525,6 +627,7 @@ export const votePollAction = withAction(
     }
 
     const postId = target.postId;
+    let auraUsername: string | null = null;
 
     const result = await db.transaction(async (tx) => {
       const inserted = await tx
@@ -575,6 +678,13 @@ export const votePollAction = withAction(
         })
         .where(eq(postTable.id, postId));
 
+      auraUsername = await awardAura(tx, {
+        beneficiaryId: target.authorId,
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.pollVote,
+      });
+
       return { success: true, votedOptionId: optionId };
     });
 
@@ -582,6 +692,9 @@ export const votePollAction = withAction(
     // Like likes: counts in the public feed are eventually consistent (<=120s);
     // only the viewer's own vote state needs to be fresh. No "posts" bust.
     updateTag(`post:${postId}:poll-voted:${session.userId}`);
+    if (auraUsername) {
+      updateTag(`user:${auraUsername}`);
+    }
 
     if (!("alreadyVoted" in result)) {
       await refreshHotPostRank(postId);
@@ -606,7 +719,9 @@ export const removeLikeAction = withAction(
       key: ({ session }) => `like:${session.userId}`,
     },
   },
-  async ({ postId }, { session }) => {
+  async ({ postId }, { session, user }) => {
+    let auraUsername: string | null = null;
+
     const result = await db.transaction(async (tx) => {
       const removed = await tx
         .delete(postLikeTable)
@@ -622,12 +737,22 @@ export const removeLikeAction = withAction(
         return { success: true, alreadyRemoved: true };
       }
 
-      await tx
+      const [updated] = await tx
         .update(postTable)
         .set({
           likeCount: sql`CASE WHEN ${postTable.likeCount} > 0 THEN ${postTable.likeCount} - 1 ELSE 0 END`,
         })
-        .where(eq(postTable.id, postId));
+        .where(eq(postTable.id, postId))
+        .returning({ authorId: postTable.authorId });
+
+      if (updated) {
+        auraUsername = await reverseAura(tx, {
+          beneficiaryId: updated.authorId,
+          actorId: session.userId,
+          actorCreatedAt: user?.createdAt,
+          delta: AURA_POINTS.like,
+        });
+      }
 
       return { success: true };
     });
@@ -636,6 +761,9 @@ export const removeLikeAction = withAction(
     // See addLikeAction: skip the "posts" feed tag; likeCount is eventually
     // consistent in the feed, and the per-viewer tag below stays fresh.
     updateTag(`post:${postId}:liked:${session.userId}`);
+    if (auraUsername) {
+      updateTag(`user:${auraUsername}`);
+    }
     if (!("alreadyRemoved" in result)) {
       await refreshHotPostRank(postId);
     }
@@ -652,7 +780,9 @@ export const addCommentLikeAction = withAction(
       key: ({ session }) => `commentlike:${session.userId}`,
     },
   },
-  async ({ commentId }, { session }) => {
+  async ({ commentId }, { session, user }) => {
+    let auraUsername: string | null = null;
+
     const result = await db.transaction(async (tx) => {
       const inserted = await tx
         .insert(postCommentLikeTable)
@@ -667,12 +797,22 @@ export const addCommentLikeAction = withAction(
         return { success: true, alreadyLiked: true };
       }
 
-      await tx
+      const [updated] = await tx
         .update(postCommentTable)
         .set({
           likeCount: sql`${postCommentTable.likeCount} + 1`,
         })
-        .where(eq(postCommentTable.id, commentId));
+        .where(eq(postCommentTable.id, commentId))
+        .returning({ authorId: postCommentTable.authorId });
+
+      if (updated) {
+        auraUsername = await awardAura(tx, {
+          beneficiaryId: updated.authorId,
+          actorId: session.userId,
+          actorCreatedAt: user?.createdAt,
+          delta: AURA_POINTS.commentLike,
+        });
+      }
 
       return { success: true };
     });
@@ -683,6 +823,9 @@ export const addCommentLikeAction = withAction(
     // comment + author join for all viewers), and the bare comment:<id> tag was
     // dead — no matching cacheTag exists. [audit #13, #18]
     updateTag(`comment:${commentId}:liked:${session.userId}`);
+    if (auraUsername) {
+      updateTag(`user:${auraUsername}`);
+    }
     return result;
   },
 );
@@ -695,7 +838,9 @@ export const removeCommentLikeAction = withAction(
       key: ({ session }) => `commentlike:${session.userId}`,
     },
   },
-  async ({ commentId }, { session }) => {
+  async ({ commentId }, { session, user }) => {
+    let auraUsername: string | null = null;
+
     const result = await db.transaction(async (tx) => {
       const removed = await tx
         .delete(postCommentLikeTable)
@@ -711,12 +856,22 @@ export const removeCommentLikeAction = withAction(
         return { success: true, alreadyRemoved: true };
       }
 
-      await tx
+      const [updated] = await tx
         .update(postCommentTable)
         .set({
           likeCount: sql`CASE WHEN ${postCommentTable.likeCount} > 0 THEN ${postCommentTable.likeCount} - 1 ELSE 0 END`,
         })
-        .where(eq(postCommentTable.id, commentId));
+        .where(eq(postCommentTable.id, commentId))
+        .returning({ authorId: postCommentTable.authorId });
+
+      if (updated) {
+        auraUsername = await reverseAura(tx, {
+          beneficiaryId: updated.authorId,
+          actorId: session.userId,
+          actorCreatedAt: user?.createdAt,
+          delta: AURA_POINTS.commentLike,
+        });
+      }
 
       return { success: true };
     });
@@ -727,6 +882,9 @@ export const removeCommentLikeAction = withAction(
     // comment + author join for all viewers), and the bare comment:<id> tag was
     // dead — no matching cacheTag exists. [audit #13, #18]
     updateTag(`comment:${commentId}:liked:${session.userId}`);
+    if (auraUsername) {
+      updateTag(`user:${auraUsername}`);
+    }
     return result;
   },
 );
@@ -744,7 +902,9 @@ export const addRepostAction = withAction(
       key: ({ session }) => `repost:${session.userId}`,
     },
   },
-  async ({ postId }, { session }) => {
+  async ({ postId }, { session, user }) => {
+    let auraUsername: string | null = null;
+
     const result = await db.transaction(async (tx) => {
       const [repost] = await tx
         .insert(postRepostTable)
@@ -759,12 +919,22 @@ export const addRepostAction = withAction(
         return { success: true, alreadyReposted: true };
       }
 
-      await tx
+      const [updated] = await tx
         .update(postTable)
         .set({
           repostCount: sql`${postTable.repostCount} + 1`,
         })
-        .where(eq(postTable.id, postId));
+        .where(eq(postTable.id, postId))
+        .returning({ authorId: postTable.authorId });
+
+      if (updated) {
+        auraUsername = await awardAura(tx, {
+          beneficiaryId: updated.authorId,
+          actorId: session.userId,
+          actorCreatedAt: user?.createdAt,
+          delta: AURA_POINTS.repost,
+        });
+      }
 
       return { success: true, repost };
     });
@@ -776,6 +946,9 @@ export const addRepostAction = withAction(
     // + the feed:latest "new posts" pill (bumped below); the actor's own state
     // is kept fresh by the per-viewer reposted tag + syncRepostCache.
     updateTag(`post:${postId}:reposted:${session.userId}`);
+    if (auraUsername) {
+      updateTag(`user:${auraUsername}`);
+    }
     if (!("alreadyReposted" in result)) {
       await refreshHotPostRank(postId);
     }
@@ -794,7 +967,9 @@ export const removeRepostAction = withAction(
       key: ({ session }) => `repost:${session.userId}`,
     },
   },
-  async ({ postId }, { session }) => {
+  async ({ postId }, { session, user }) => {
+    let auraUsername: string | null = null;
+
     const result = await db.transaction(async (tx) => {
       const removed = await tx
         .delete(postRepostTable)
@@ -810,12 +985,22 @@ export const removeRepostAction = withAction(
         return { success: true, alreadyRemoved: true };
       }
 
-      await tx
+      const [updated] = await tx
         .update(postTable)
         .set({
           repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
         })
-        .where(eq(postTable.id, postId));
+        .where(eq(postTable.id, postId))
+        .returning({ authorId: postTable.authorId });
+
+      if (updated) {
+        auraUsername = await reverseAura(tx, {
+          beneficiaryId: updated.authorId,
+          actorId: session.userId,
+          actorCreatedAt: user?.createdAt,
+          delta: AURA_POINTS.repost,
+        });
+      }
 
       return { success: true };
     });
@@ -824,6 +1009,9 @@ export const removeRepostAction = withAction(
     // See addRepostAction: skip the global "posts" recompute; the removed edge
     // ages out via the 120s revalidate, and the per-viewer tag stays fresh.
     updateTag(`post:${postId}:reposted:${session.userId}`);
+    if (auraUsername) {
+      updateTag(`user:${auraUsername}`);
+    }
     if (!("alreadyRemoved" in result)) {
       await refreshHotPostRank(postId);
     }

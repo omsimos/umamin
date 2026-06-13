@@ -133,6 +133,10 @@ export const postCommentTable = sqliteTable(
   (t) => [
     index("post_comment_post_created_idx").on(t.postId, t.createdAt, t.id),
     index("post_comment_author_created_idx").on(t.authorId, t.createdAt, t.id),
+    // Backs the aura first-comment-per-post existence checks (createComment /
+    // deleteComment): an exact (post, author) two-column seek instead of
+    // scanning the actor's whole comment history (the table runs no ANALYZE).
+    index("post_comment_post_author_idx").on(t.postId, t.authorId),
   ],
 );
 
