@@ -1,0 +1,1 @@
+CREATE INDEX `post_comment_post_author_idx` ON `post_comment` (`post_id`,`author_id`);
