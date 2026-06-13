@@ -2946,6 +2946,9 @@ export async function getGroupUnreadStates(
     .select({
       groupId: groupMemberTable.groupId,
       lastMessageAt: groupTable.lastMessageAt,
+      // Join time baselines a never-opened room so a new member isn't shown
+      // unread for the entire pre-join back-history (already-indexed column).
+      memberCreatedAt: groupMemberTable.createdAt,
     })
     .from(groupMemberTable)
     .innerJoin(groupTable, eq(groupMemberTable.groupId, groupTable.id))
@@ -2975,12 +2978,14 @@ export async function getGroupUnreadStates(
   const readMap = new Map(reads.map((r) => [r.groupId, r.lastReadAt]));
 
   return memberships.map((m) => {
-    const lastRead = readMap.get(m.groupId);
+    // Fall back to join time when the member has never opened the room, so the
+    // dot only reflects messages sent since they joined.
+    const baseline = readMap.get(m.groupId) ?? m.memberCreatedAt;
     return {
       groupId: m.groupId,
       hasUnread:
         m.lastMessageAt != null &&
-        (!lastRead || m.lastMessageAt.getTime() > lastRead.getTime()),
+        (baseline == null || m.lastMessageAt.getTime() > baseline.getTime()),
     };
   });
 }

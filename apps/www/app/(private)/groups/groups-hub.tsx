@@ -6,6 +6,7 @@ import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import {
   CheckIcon,
+  MessageCircleIcon,
   PlusIcon,
   SettingsIcon,
   UsersRoundIcon,
@@ -232,6 +233,19 @@ export function GroupsHub() {
                       {group.memberCount === 1 ? "member" : "members"}
                     </p>
                   </Link>
+
+                  {/* Row → info page (unchanged); this icon jumps straight to
+                      chat. The unread dot lives on the glyph above. */}
+                  <Button
+                    asChild
+                    size="icon"
+                    variant="ghost"
+                    aria-label={`Open ${group.name} chat`}
+                  >
+                    <Link href={`/groups/${group.tag}/chat`}>
+                      <MessageCircleIcon />
+                    </Link>
+                  </Button>
 
                   {role === "owner" && (
                     <Button
