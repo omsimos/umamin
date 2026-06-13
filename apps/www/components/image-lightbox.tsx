@@ -72,7 +72,7 @@ export function ImageLightbox({
             goTo(dx < 0 ? index + 1 : index - 1);
           }
         }}
-        className="top-0 left-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 rounded-none border-0 bg-black/95 p-0 shadow-none"
+        className="inset-0! left-0! top-0! h-dvh! w-screen! max-w-none! translate-x-0! translate-y-0! rounded-none border-0 bg-black/95 p-0 shadow-none ring-0 sm:max-w-none!"
       >
         <DialogTitle className="sr-only">Image viewer</DialogTitle>
         <DialogDescription className="sr-only">

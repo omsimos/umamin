@@ -83,6 +83,8 @@ export default async function InboxPage({
         <YouTabs username={user.username} active={tab} />
       ) : null}
 
+      <ClientOnlyAdContainer className="mt-5" placement="inbox_top" />
+
       <HydrationBoundary state={dehydrate(queryClient)}>
         <div className="mt-5">
           {tab === "sent" ? <SentMessages /> : <ReceivedMessages />}

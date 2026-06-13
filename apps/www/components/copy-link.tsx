@@ -39,7 +39,9 @@ export default function CopyLink({ username }: { username: string }) {
     >
       <span className="flex items-center gap-2">
         <Link2Icon className="size-4" />
-        <Badge variant="secondary">{url.replace(/(^\w+:|^)\/\//, "")}</Badge>
+        <Badge variant="secondary">
+          {url.replace(/(^\w+:|^)\/\//, "").replace(/^www\./, "")}
+        </Badge>
       </span>
     </Button>
   );

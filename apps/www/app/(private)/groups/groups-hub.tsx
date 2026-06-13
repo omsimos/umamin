@@ -14,10 +14,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  equipGroupBadgeAction,
-  respondToInviteAction,
-} from "@/app/actions/group";
+import { respondToInviteAction } from "@/app/actions/group";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import {
@@ -55,7 +52,6 @@ function GroupGlyph({ icon, accent }: { icon: string; accent: string | null }) {
 export function GroupsHub() {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
-  const equip = useSingleFlightAction(equipGroupBadgeAction);
 
   const { data: currentUser } = useQuery({
     queryKey: queryKeys.currentUser(),
@@ -65,7 +61,6 @@ export function GroupsHub() {
   });
   const user = currentUser?.user ?? null;
   const isPlus = hasUmaminPlus(user?.createdAt);
-  const equippedGroupId = user?.equippedGroupId ?? null;
 
   const { data: groups } = useQuery({
     queryKey: queryKeys.userGroups(),
@@ -90,21 +85,6 @@ export function GroupsHub() {
   const invites = groups?.invites ?? [];
   const ownsGroup = memberships.some((m) => m.role === "owner");
 
-  const equipMutation = useMutation({
-    mutationFn: async (groupId: string | null) => {
-      const res = await equip({ groupId });
-      if ("error" in res) {
-        throw new Error(res.error);
-      }
-      return res;
-    },
-    onSuccess: () => {
-      vibrate();
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
   const respondInvite = useSingleFlightAction(respondToInviteAction);
   const inviteMutation = useMutation({
     mutationFn: async (vars: { groupId: string; accept: boolean }) => {
@@ -122,11 +102,6 @@ export function GroupsHub() {
     },
     onError: (err) => toast.error(err.message),
   });
-
-  const toggleEquip = (groupId: string) => {
-    if (equipMutation.isPending) return;
-    equipMutation.mutate(equippedGroupId === groupId ? null : groupId);
-  };
 
   return (
     <div className="space-y-8">
@@ -217,7 +192,6 @@ export function GroupsHub() {
         ) : (
           <ul className="space-y-2">
             {memberships.map(({ group, role }) => {
-              const equipped = equippedGroupId === group.id;
               const hasUnread = unreadIds.has(group.id);
               return (
                 <li
@@ -258,23 +232,6 @@ export function GroupsHub() {
                       {group.memberCount === 1 ? "member" : "members"}
                     </p>
                   </Link>
-
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={equipped ? "default" : "outline"}
-                    disabled={equipMutation.isPending}
-                    onClick={() => toggleEquip(group.id)}
-                    aria-pressed={equipped}
-                  >
-                    {equipped ? (
-                      <>
-                        <CheckIcon /> Wearing
-                      </>
-                    ) : (
-                      "Wear tag"
-                    )}
-                  </Button>
 
                   {role === "owner" && (
                     <Button

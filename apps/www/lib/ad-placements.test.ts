@@ -8,10 +8,14 @@ const EXPECTED_KEYS = [
   "notes_inline",
   "profile_bottom",
   "post_detail",
+  "to_user",
+  "profile_top",
+  "inbox_top",
+  "notes_input_top",
 ] as const;
 
-// Only profile_bottom is below the fold; everything else is above-the-fold.
-const LAZY_KEY = "profile_bottom";
+// Below-the-fold placements lazy-load on scroll; the rest are eager.
+const LAZY_KEYS = new Set<string>(["profile_bottom", "to_user", "profile_top"]);
 
 describe("adPlacements", () => {
   it("exposes exactly the expected keys", () => {
@@ -27,17 +31,9 @@ describe("adPlacements", () => {
     expect(typeof entry.lazy).toBe("boolean");
   });
 
-  it("lazy-loads only profile_bottom", () => {
+  it("lazy-loads exactly the below-the-fold placements", () => {
     for (const key of EXPECTED_KEYS) {
-      expect(adPlacements[key].lazy).toBe(key === LAZY_KEY);
-    }
-  });
-
-  it("eagerly loads every above-the-fold placement", () => {
-    for (const key of EXPECTED_KEYS) {
-      if (key !== LAZY_KEY) {
-        expect(adPlacements[key].lazy).toBe(false);
-      }
+      expect(adPlacements[key].lazy).toBe(LAZY_KEYS.has(key));
     }
   });
 });

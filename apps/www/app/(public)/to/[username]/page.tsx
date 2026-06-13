@@ -1,6 +1,7 @@
 import { BadgeCheckIcon, LockIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { ShareButton } from "@/components/share-button";
 import { getPublicUserProfileData } from "@/lib/server/data";
 import { formatUsername } from "@/lib/utils";
@@ -78,6 +79,8 @@ export default async function SendMessage({
 
         <ChatForm user={user} />
       </section>
+
+      <ClientOnlyAdContainer className="mt-4" placement="to_user" />
 
       <div className="mt-4 text-muted-foreground text-sm flex items-center justify-center">
         <LockIcon className="h-4 w-4 mr-2" />

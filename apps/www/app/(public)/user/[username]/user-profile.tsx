@@ -25,6 +25,7 @@ import {
   unblockUserAction,
   unfollowUserAction,
 } from "@/app/actions/user";
+import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { shareProfile } from "@/components/share-button";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
@@ -511,6 +512,8 @@ export function UserProfile({ username, initialUser }: Props) {
       />
 
       {isSelf ? <YouTabs username={profile.username} active="posts" /> : null}
+
+      <ClientOnlyAdContainer className="mt-6" placement="profile_top" />
 
       <ProfilePostList username={username} showDivider={!isSelf} />
     </>
