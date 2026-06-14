@@ -20,6 +20,12 @@ export const noteTable = sqliteTable(
     content: text("content").notNull(),
     isAnonymous: integer("is_anonymous", { mode: "boolean" }).notNull(),
     reactionCount: integer("reaction_count").notNull().default(0),
+    // Optional embedded Spotify track. Only the id is authoritative (validated
+    // server-side); title + thumbnail are best-effort oEmbed metadata cached for
+    // the feed preview. All null when no song is attached.
+    spotifyTrackId: text("spotify_track_id"),
+    spotifyTitle: text("spotify_title"),
+    spotifyThumbnail: text("spotify_thumbnail"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

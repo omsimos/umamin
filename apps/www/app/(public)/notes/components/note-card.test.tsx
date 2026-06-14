@@ -40,6 +40,9 @@ function makeNote(overrides: Partial<NoteItem> = {}): NoteItem {
     content: "currently overthinking about tests",
     isAnonymous: true,
     reactionCount: 0,
+    spotifyTrackId: null,
+    spotifyTitle: null,
+    spotifyThumbnail: null,
     createdAt: new Date("2026-06-01T00:00:00Z"),
     updatedAt: new Date("2026-06-01T00:00:00Z"),
     ...overrides,
@@ -149,5 +152,36 @@ describe("NoteCard reactions", () => {
     const mention = screen.getByRole("link", { name: "@josh" });
     expect(mention).toHaveAttribute("href", "/user/josh");
     expect(screen.getByText("https://example.com")).toBeInTheDocument();
+  });
+});
+
+describe("NoteCard Spotify embed", () => {
+  it("shows a facade and lazily mounts the iframe on tap", () => {
+    renderCard(
+      makeNote({
+        spotifyTrackId: "4cOdK2wGLETKBW3PvgPWqT",
+        spotifyTitle: "Never Gonna Give You Up",
+      }),
+    );
+
+    // Lazy: no iframe until the listener taps the facade.
+    expect(document.querySelector("iframe")).toBeNull();
+
+    const play = screen.getByRole("button", {
+      name: /play never gonna give you up on spotify/i,
+    });
+    fireEvent.click(play);
+
+    const frame = document.querySelector("iframe");
+    expect(frame).not.toBeNull();
+    expect(frame).toHaveAttribute(
+      "src",
+      "https://open.spotify.com/embed/track/4cOdK2wGLETKBW3PvgPWqT",
+    );
+  });
+
+  it("renders no embed when the note has no track", () => {
+    renderCard(makeNote());
+    expect(screen.queryByRole("button", { name: /on spotify/i })).toBeNull();
   });
 });

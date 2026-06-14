@@ -191,11 +191,31 @@ export const saveImage = async (id: string, isPost?: boolean) => {
 
   const toastId = toast.loading("Saving...");
 
+  // Collapse excluded nodes (e.g. the Spotify embed) for the duration of the
+  // capture. display:none removes them from layout so their height isn't baked
+  // into the export as a blank gap — the `filter` below only drops their pixels,
+  // not the space they reserved. Restored in `finally`; the brief on-screen blink
+  // never reaches the captured image.
+  const excluded = Array.from(
+    target.querySelectorAll<HTMLElement>("[data-export-exclude]"),
+  );
+  const prevDisplay = excluded.map((el) => el.style.display);
+  for (const el of excluded) {
+    el.style.display = "none";
+  }
+
   try {
     const rawDataUrl = await domToPng(target, {
       quality: 1,
       scale: 4,
       backgroundColor: EXPORT_BG,
+      // Belt-and-suspenders for an already-expanded iframe: a cross-origin frame
+      // can't be rasterized, so drop excluded nodes' pixels too.
+      filter: (node) =>
+        !(
+          node instanceof HTMLElement &&
+          node.dataset.exportExclude !== undefined
+        ),
       style: {
         ...(isPost
           ? {
@@ -246,6 +266,10 @@ export const saveImage = async (id: string, isPost?: boolean) => {
   } catch (err) {
     console.log(err);
     toast.error("An error occured!", { id: toastId });
+  } finally {
+    excluded.forEach((el, i) => {
+      el.style.display = prevDisplay[i];
+    });
   }
 };
 

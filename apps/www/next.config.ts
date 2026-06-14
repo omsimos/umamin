@@ -67,6 +67,8 @@ function buildContentSecurityPolicy() {
         "https://googleads.g.doubleclick.net",
         "https://tpc.googlesyndication.com",
         "https://*.googlesyndication.com",
+        // Embedded Spotify track players on /notes.
+        "https://open.spotify.com",
       ],
     ],
     ["manifest-src", ["'self'"]],
