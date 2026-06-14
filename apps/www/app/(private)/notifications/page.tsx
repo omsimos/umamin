@@ -7,6 +7,7 @@ import { queryKeys } from "@/lib/query";
 import type { NotificationsResponse } from "@/lib/query-types";
 import { getNotificationsPage } from "@/lib/server/data";
 import { NotificationsList } from "./components/notifications-list";
+import { PushPrompt } from "./components/push-prompt";
 
 export const metadata: Metadata = {
   title: "Umamin — Notifications",
@@ -43,11 +44,12 @@ export default async function NotificationsPage() {
     <main className="max-w-xl mx-auto min-h-screen container">
       <h1 className="text-lg font-semibold">Notifications</h1>
 
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <div className="mt-5">
+      <div className="mt-5">
+        <PushPrompt />
+        <HydrationBoundary state={dehydrate(queryClient)}>
           <NotificationsList />
-        </div>
-      </HydrationBoundary>
+        </HydrationBoundary>
+      </div>
     </main>
   );
 }

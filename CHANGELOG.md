@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.21.0] - 2026-06-14
+
+### Added
+
+- The notifications page now has a one-tap prompt to turn on push notifications — so replies, follows, and messages reach you even when Umamin is closed. Dismiss it once and it won't ask again.
+
 ## [5.20.0] - 2026-06-14
 
 ### Added
@@ -752,6 +758,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.21.0]: https://github.com/omsimos/umamin/compare/v5.20.0...v5.21.0
 [5.20.0]: https://github.com/omsimos/umamin/compare/v5.19.0...v5.20.0
 [5.19.0]: https://github.com/omsimos/umamin/compare/v5.18.0...v5.19.0
 [5.18.0]: https://github.com/omsimos/umamin/compare/v5.17.0...v5.18.0
