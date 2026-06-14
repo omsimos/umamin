@@ -19,6 +19,7 @@ import type {
 import type { UserWithAccount } from "@/types/user";
 import { BlockedUsersSection } from "./blocked-users-section";
 import { BlockedWordsSection } from "./blocked-words-section";
+import { PushNotificationToggle } from "./push-notification-toggle";
 
 export function PrivacySettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
@@ -140,6 +141,8 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             onCheckedChange={() => quietModeMutation.mutate()}
           />
         </div>
+
+        <PushNotificationToggle />
       </section>
 
       <BlockedWordsSection user={user} />

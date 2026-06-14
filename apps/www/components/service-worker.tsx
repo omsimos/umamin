@@ -13,9 +13,13 @@ export function ServiceWorker() {
     const version = process.env.NEXT_PUBLIC_VERSION ?? "dev";
 
     const register = () => {
-      navigator.serviceWorker.register(`/sw.js?v=${version}`).catch((err) => {
-        console.error("Service worker registration failed:", err);
-      });
+      // updateViaCache:"none" so the SW script itself is never served from the
+      // HTTP cache — new push/notificationclick handlers ship on every release.
+      navigator.serviceWorker
+        .register(`/sw.js?v=${version}`, { updateViaCache: "none" })
+        .catch((err) => {
+          console.error("Service worker registration failed:", err);
+        });
     };
 
     window.addEventListener("load", register);

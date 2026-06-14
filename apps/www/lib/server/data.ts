@@ -1872,6 +1872,8 @@ export async function getCurrentUserData(
         // Owner-private (like hasPassword): this record is only ever served to
         // its own session — keep blockedWords out of publicUserColumns.
         blockedWords: userTable.blockedWords,
+        // Owner-private push-notification preference bitmask (see types/user.ts).
+        pushPrefs: userTable.pushPrefs,
         hasPassword:
           sql<number>`CASE WHEN ${userTable.passwordHash} IS NOT NULL THEN 1 ELSE 0 END`.as(
             "hasPassword",

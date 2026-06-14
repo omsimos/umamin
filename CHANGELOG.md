@@ -18,6 +18,16 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.20.0] - 2026-06-14
+
+### Added
+
+- Push notifications: turn them on from Settings to be notified about replies, new followers, anonymous messages, and group activity even when Umamin isn't open. They're off until you opt in, never show message contents, and keep anonymous messages anonymous. Works on Android and desktop browsers, and on iPhone or iPad once you add Umamin to your Home Screen.
+
+### Fixed
+
+- When Umamin runs as an installed app, the post composer, account menu, and full-screen image viewer no longer overlap the status bar or notch.
+
 ## [5.19.0] - 2026-06-13
 
 ### Added
@@ -742,6 +752,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.20.0]: https://github.com/omsimos/umamin/compare/v5.19.0...v5.20.0
 [5.19.0]: https://github.com/omsimos/umamin/compare/v5.18.0...v5.19.0
 [5.18.0]: https://github.com/omsimos/umamin/compare/v5.17.0...v5.18.0
 [5.17.0]: https://github.com/omsimos/umamin/compare/v5.16.0...v5.17.0
