@@ -41,6 +41,7 @@ import {
   shortTimeAgo,
 } from "@/lib/utils";
 import type { PublicUserWithBadge } from "@/types/user";
+import { NoteSpotifyEmbed } from "./note-spotify-embed";
 
 export function CurrentUserNote({
   currentUser,
@@ -81,7 +82,8 @@ export function CurrentUserNote({
     },
   });
 
-  if (!data?.content) {
+  // A note may be song-only (empty content), so render when there's either.
+  if (!data?.content && !data?.spotifyTrackId) {
     return null;
   }
 
@@ -219,6 +221,14 @@ export function CurrentUserNote({
             content={data.content}
             className="font-display text-lg leading-snug"
           />
+
+          {data.spotifyTrackId && (
+            <NoteSpotifyEmbed
+              trackId={data.spotifyTrackId}
+              title={data.spotifyTitle}
+              thumbnail={data.spotifyThumbnail}
+            />
+          )}
         </CardContent>
 
         {(data.reactionCount ?? 0) > 0 && (

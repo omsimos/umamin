@@ -62,6 +62,7 @@ import {
   saveImage,
   shortTimeAgo,
 } from "@/lib/utils";
+import { NoteSpotifyEmbed } from "./note-spotify-embed";
 import { ReplyDrawer } from "./reply-drawer";
 
 type Props = {
@@ -396,11 +397,18 @@ export function NoteCard({
             </div>
           </CardHeader>
 
-          <CardContent className="flex w-full gap-3">
+          <CardContent className="flex w-full flex-col gap-3">
             <PostBody
               content={data.content}
               className="font-display text-lg leading-snug"
             />
+            {data.spotifyTrackId && (
+              <NoteSpotifyEmbed
+                trackId={data.spotifyTrackId}
+                title={data.spotifyTitle}
+                thumbnail={data.spotifyThumbnail}
+              />
+            )}
           </CardContent>
 
           <CardFooter className="w-full pt-0">

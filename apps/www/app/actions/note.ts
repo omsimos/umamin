@@ -10,17 +10,30 @@ import { idSchema } from "@/lib/schema";
 import { getCurrentNoteData } from "@/lib/server/data";
 import { UNAUTHENTICATED_ERROR } from "@/lib/server/errors";
 import { isModerator } from "@/lib/server/moderation";
+import { fetchSpotifyTrackMeta } from "@/lib/server/spotify";
 import { withAction } from "@/lib/server/with-action";
+import { parseSpotifyTrackId } from "@/lib/spotify";
 import { formatContent } from "@/lib/utils";
 
-const createNoteSchema = z.object({
-  isAnonymous: z.boolean().default(false),
-  content: z
-    .string()
-    .trim()
-    .min(1, { error: "Content cannot be empty" })
-    .max(500, { error: "Content cannot exceed 500 characters" }),
-});
+const createNoteSchema = z
+  .object({
+    isAnonymous: z.boolean().default(false),
+    content: z
+      .string()
+      .trim()
+      .max(500, { error: "Content cannot exceed 500 characters" })
+      .default(""),
+    // Optional Spotify track link; the server is the source of truth for
+    // parsing/validating it (the client only pre-checks for instant feedback).
+    spotifyUrl: z.string().trim().max(300).optional(),
+  })
+  // A note may be text-only, song-only, or both — but never empty.
+  .refine((v) => v.content.length > 0 || !!v.spotifyUrl, {
+    error: "Add a few words or a song.",
+  })
+  .refine((v) => !v.spotifyUrl || parseSpotifyTrackId(v.spotifyUrl) !== null, {
+    error: "That doesn't look like a Spotify track link.",
+  });
 
 export const createNoteAction = withAction(
   {
@@ -33,8 +46,16 @@ export const createNoteAction = withAction(
     },
     errorMessage: "Failed to create note",
   },
-  async ({ isAnonymous, content }, { session }) => {
+  async ({ isAnonymous, content, spotifyUrl }, { session }) => {
     const formattedContent = formatContent(content);
+
+    // The refine above guarantees a present spotifyUrl parses to a track id.
+    // Resolve metadata BEFORE the transaction so a slow oEmbed never holds it
+    // open; a null id (no song / cleared) wipes any previously attached track.
+    const spotifyTrackId = spotifyUrl ? parseSpotifyTrackId(spotifyUrl) : null;
+    const { title: spotifyTitle, thumbnail: spotifyThumbnail } = spotifyTrackId
+      ? await fetchSpotifyTrackMeta(spotifyTrackId)
+      : { title: null, thumbnail: null };
 
     // Every submit rewrites the same note slot, so reactions from the previous
     // content no longer apply — reset them with the upsert.
@@ -46,6 +67,9 @@ export const createNoteAction = withAction(
           content: formattedContent,
           isAnonymous,
           reactionCount: 0,
+          spotifyTrackId,
+          spotifyTitle,
+          spotifyThumbnail,
           // updated_at is the notes-feed sort key + pagination cursor. Set it on
           // insert (it has no SQL default) so new notes sort to the top and never
           // produce a NULL -> NaN cursor.
@@ -57,6 +81,9 @@ export const createNoteAction = withAction(
             content: formattedContent,
             isAnonymous,
             reactionCount: 0,
+            spotifyTrackId,
+            spotifyTitle,
+            spotifyThumbnail,
             updatedAt: sql`(unixepoch())`,
           },
         })
@@ -105,7 +132,13 @@ export const clearNoteAction = withAction(
     await db.transaction(async (tx) => {
       const [row] = await tx
         .update(noteTable)
-        .set({ content: "", reactionCount: 0 })
+        .set({
+          content: "",
+          reactionCount: 0,
+          spotifyTrackId: null,
+          spotifyTitle: null,
+          spotifyThumbnail: null,
+        })
         .where(eq(noteTable.userId, session.userId))
         .returning({ id: noteTable.id });
 
