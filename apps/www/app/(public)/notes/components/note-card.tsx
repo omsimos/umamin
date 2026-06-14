@@ -1,5 +1,15 @@
 import type { InfiniteData } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@umamin/ui/components/alert-dialog";
 import {
   Avatar,
   AvatarFallback,
@@ -20,6 +30,7 @@ import {
   MessageSquareTextIcon,
   MessageSquareXIcon,
   ScanFaceIcon,
+  ShieldXIcon,
   UserXIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +38,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   addNoteReactionAction,
+  removeNoteAction,
   removeNoteReactionAction,
 } from "@/app/actions/note";
 import { BlockUserDialog } from "@/components/block-user-dialog";
@@ -38,8 +50,9 @@ import {
   useBurstAction,
 } from "@/hooks/use-burst-action";
 import { vibrate } from "@/lib/haptics";
-import { queryKeys } from "@/lib/query";
+import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
+import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import {
   getActionError,
@@ -70,6 +83,7 @@ export function NoteCard({
   const username = user?.username;
   const [replyOpen, setReplyOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Anonymous notes have no identified author to block.
@@ -79,6 +93,20 @@ export function NoteCard({
     !!user?.id &&
     !!currentUserId &&
     currentUserId !== user.id;
+
+  // Shared, deduped current-user cache — read only for the maintainer flag.
+  const { data: currentUser } = useQuery({
+    queryKey: queryKeys.currentUser(),
+    queryFn: fetchCurrentUserOptional,
+    staleTime: PRIVATE_STALE_TIME,
+    enabled: isAuthenticated,
+  });
+  // A maintainer can remove any note that isn't clearly their own. Anonymous
+  // notes ship no author to the client, so they're always removable by a mod
+  // (a mod clearing their own anonymous note is harmless).
+  const isOwnNote = !!user?.id && !!currentUserId && user.id === currentUserId;
+  const canModerate =
+    isAuthenticated && currentUser?.user?.isModerator === true && !isOwnNote;
 
   const [reacted, setReacted] = useState(data.isReacted === true);
   const [reactions, setReactions] = useState(data.reactionCount ?? 0);
@@ -146,6 +174,26 @@ export function NoteCard({
     }
   };
 
+  const removeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await removeNoteAction({ noteId: data.id });
+      if (res && "error" in res && res.error) {
+        throw new Error(res.error);
+      }
+    },
+    onSuccess: () => {
+      queryClient.setQueriesData<InfiniteData<NotesResponse>>(
+        { queryKey: queryKeys.notesRoot() },
+        (current) => patchNote(current, data.id, () => null),
+      );
+      toast.success("Note removed.");
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Couldn't remove note.");
+    },
+  });
+
   return (
     // Tilt lives outside the export element so saved images stay straight.
     <div
@@ -180,6 +228,32 @@ export function NoteCard({
               });
             }}
           />
+        )}
+
+        {canModerate && (
+          <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove this note?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently removes the note from the feed. You're acting
+                  as a moderator.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <Button
+                    disabled={removeMutation.isPending}
+                    variant="destructive"
+                    onClick={() => removeMutation.mutate()}
+                  >
+                    Continue
+                  </Button>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
 
         <Card
@@ -302,6 +376,16 @@ export function NoteCard({
                               onClick: () => setBlockOpen(true),
                               className: "text-red-500",
                               icon: <UserXIcon className="h-4 w-4" />,
+                            },
+                          ]
+                        : []),
+                      ...(canModerate
+                        ? [
+                            {
+                              title: "Remove note",
+                              onClick: () => setRemoveOpen(true),
+                              className: "text-red-600",
+                              icon: <ShieldXIcon className="h-4 w-4" />,
                             },
                           ]
                         : []),

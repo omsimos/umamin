@@ -86,6 +86,7 @@ import {
   isRedisHotCursor,
 } from "@/lib/server/feed-rank";
 import { diversifyHotCandidates, getHotScoreKey } from "@/lib/server/hot-score";
+import { isModerator } from "@/lib/server/moderation";
 import { countUnseen } from "@/lib/server/notifications";
 import type { GroupBadgeData } from "@/types/group";
 import type {
@@ -1923,6 +1924,9 @@ export async function getCurrentUserData(
       ...(userRecord as Omit<CurrentUserClient, "hasPassword">),
       hasPassword: Boolean(userRecord.hasPassword),
       accounts,
+      // Derived from the env roster outside the cached user read, so a roster
+      // change takes effect on the next request without a tag bust.
+      isModerator: isModerator({ username: userRecord.username }),
     },
   };
 }

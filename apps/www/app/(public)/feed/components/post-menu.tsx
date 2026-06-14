@@ -17,6 +17,7 @@ import {
   PinIcon,
   PinOffIcon,
   Share2Icon,
+  ShieldXIcon,
   Trash2Icon,
   UserXIcon,
 } from "lucide-react";
@@ -61,15 +62,18 @@ export function PostMenu({
   const canDelete = !!currentUserId && currentUserId === authorId;
   const canBlock = !!currentUserId && !!authorId && currentUserId !== authorId;
 
-  // Shared app-wide cache (usually a hit); carries pinnedPostId for the
-  // pin/unpin menu state on own posts.
+  // Shared app-wide cache (deduped across every card, almost always a warm
+  // hit); carries pinnedPostId for the pin/unpin menu state and the maintainer
+  // flag for the moderator "Remove" action.
   const { data: currentUser } = useQuery({
     queryKey: queryKeys.currentUser(),
     queryFn: fetchCurrentUserOptional,
     staleTime: PRIVATE_STALE_TIME,
-    enabled: canDelete,
+    enabled: isAuthenticated,
   });
   const isPinned = currentUser?.user?.pinnedPostId === postId;
+  // A maintainer viewing someone else's post (own posts use canDelete).
+  const canModerate = currentUser?.user?.isModerator === true && canBlock;
 
   const pinMutation = useMutation({
     mutationFn: async () => {
@@ -160,7 +164,7 @@ export function PostMenu({
       );
       queryClient.setQueryData(queryKeys.post(postId), null);
       queryClient.removeQueries({ queryKey: queryKeys.postComments(postId) });
-      toast.success("Post deleted.");
+      toast.success(canModerate ? "Post removed." : "Post deleted.");
       onDeleted?.();
     },
     onError: (err) => {
@@ -213,18 +217,31 @@ export function PostMenu({
           },
         ]
       : []),
+    ...(canModerate
+      ? [
+          {
+            title: "Remove post",
+            onClick: () => setOpen(true),
+            className: "text-red-600",
+            icon: <ShieldXIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
   ];
 
   return (
     <>
-      {canDelete && (
+      {(canDelete || canModerate) && (
         <AlertDialog open={open} onOpenChange={setOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+              <AlertDialogTitle>
+                {canModerate ? "Remove this post?" : "Delete this post?"}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. The post and its comments will be
-                removed.
+                {canModerate
+                  ? `This permanently removes ${authorUsername ? `@${authorUsername}'s` : "this member's"} post and its comments. You're acting as a moderator.`
+                  : "This action cannot be undone. The post and its comments will be removed."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

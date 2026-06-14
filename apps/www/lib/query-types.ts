@@ -66,6 +66,10 @@ export type NotificationBadgeResponse = {
 
 export type CurrentUserData = CurrentUserClient & {
   accounts: SelectAccount[];
+  // Server-computed maintainer flag (from MODERATOR_USERS). Gates the in-app
+  // "Remove" action on others' content; the roster itself never reaches the
+  // client. See lib/server/moderation.ts.
+  isModerator: boolean;
 };
 
 export type CurrentUserResponse = {

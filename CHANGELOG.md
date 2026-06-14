@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.22.0] - 2026-06-14
+
+### Added
+
+- Content moderation: maintainers can now remove any post, comment, or note that breaks the rules right from its menu, not only their own. Everyone else's menus are unchanged.
+
 ## [5.21.0] - 2026-06-14
 
 ### Added
@@ -758,6 +764,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.22.0]: https://github.com/omsimos/umamin/compare/v5.21.0...v5.22.0
 [5.21.0]: https://github.com/omsimos/umamin/compare/v5.20.0...v5.21.0
 [5.20.0]: https://github.com/omsimos/umamin/compare/v5.19.0...v5.20.0
 [5.19.0]: https://github.com/omsimos/umamin/compare/v5.18.0...v5.19.0

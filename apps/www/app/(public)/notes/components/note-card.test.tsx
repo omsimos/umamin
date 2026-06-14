@@ -7,6 +7,12 @@ import { NoteCard } from "./note-card";
 vi.mock("@/app/actions/note", () => ({
   addNoteReactionAction: vi.fn(),
   removeNoteReactionAction: vi.fn(),
+  removeNoteAction: vi.fn(),
+}));
+// The card reads the shared current-user cache only for the maintainer flag;
+// stub it so the moderator "Remove" path stays off in these tests.
+vi.mock("@/lib/query-fetchers", () => ({
+  fetchCurrentUserOptional: vi.fn().mockResolvedValue({}),
 }));
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn() },
