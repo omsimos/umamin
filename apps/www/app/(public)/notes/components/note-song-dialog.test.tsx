@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NoteSongDrawer } from "./note-song-drawer";
+import { NoteSongDialog } from "./note-song-dialog";
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn() },
@@ -19,18 +19,6 @@ function setClipboard(value: { readText: () => Promise<string> } | undefined) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // Force the desktop (Dialog) branch — Radix is friendlier than Vaul in jsdom.
-  window.matchMedia = (query: string) =>
-    ({
-      matches: true,
-      media: query,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    }) as MediaQueryList;
 });
 
 function setup(value = "") {
@@ -38,7 +26,7 @@ function setup(value = "") {
   const onRemove = vi.fn();
   const onOpenChange = vi.fn();
   render(
-    <NoteSongDrawer
+    <NoteSongDialog
       open
       onOpenChange={onOpenChange}
       value={value}
@@ -49,7 +37,7 @@ function setup(value = "") {
   return { onAttach, onRemove, onOpenChange };
 }
 
-describe("NoteSongDrawer", () => {
+describe("NoteSongDialog", () => {
   it("fills the field from the clipboard and attaches a valid track", async () => {
     setClipboard({ readText: vi.fn().mockResolvedValue(TRACK) });
     const { onAttach, onOpenChange } = setup();

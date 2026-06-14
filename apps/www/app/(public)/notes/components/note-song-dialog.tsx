@@ -4,19 +4,15 @@ import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
   DialogTitle,
 } from "@umamin/ui/components/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from "@umamin/ui/components/drawer";
 import { Input } from "@umamin/ui/components/input";
 import { cn } from "@umamin/ui/lib/utils";
 import { CheckIcon, ClipboardPasteIcon, Music2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { parseSpotifyTrackId } from "@/lib/spotify";
 
 type Props = {
@@ -28,79 +24,58 @@ type Props = {
   onRemove: () => void;
 };
 
-export function NoteSongDrawer({
+// A centered Dialog (not a bottom Drawer): the soft keyboard pushes a bottom
+// sheet around and breaks its layout, whereas a Dialog stays put and the
+// browser scrolls the focused input into view.
+export function NoteSongDialog({
   open,
   onOpenChange,
   value,
   onAttach,
   onRemove,
 }: Props) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-
-  // Draft lives here, not in SongForm, so it survives the Dialog<->Drawer swap
-  // when the viewport crosses the breakpoint mid-edit (each primitive unmounts
-  // its content, remounting SongForm). Re-seed from the committed value only as
-  // the sheet opens.
-  const [draft, setDraft] = useState(value);
-  useEffect(() => {
-    if (open) {
-      setDraft(value);
-    }
-  }, [open, value]);
-
-  const form = (
-    <SongForm
-      draft={draft}
-      setDraft={setDraft}
-      value={value}
-      onAttach={(url) => {
-        onAttach(url);
-        onOpenChange(false);
-      }}
-      onRemove={() => {
-        onRemove();
-        onOpenChange(false);
-      }}
-      onCancel={() => onOpenChange(false)}
-    />
-  );
-
-  if (isDesktop) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="p-0">
-          <DialogTitle className="sr-only">Add a song</DialogTitle>
-          {form}
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="grid place-items-center">
-        <DrawerTitle className="sr-only">Add a song</DrawerTitle>
-        {form}
-      </DrawerContent>
-    </Drawer>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add a song</DialogTitle>
+          <DialogDescription>
+            Paste a Spotify track link and it'll play right on your note.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Radix unmounts content on close, so SongForm remounts each open and
+            re-seeds its draft from `value`. */}
+        <SongForm
+          value={value}
+          onAttach={(url) => {
+            onAttach(url);
+            onOpenChange(false);
+          }}
+          onRemove={() => {
+            onRemove();
+            onOpenChange(false);
+          }}
+          onCancel={() => onOpenChange(false)}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function SongForm({
-  draft,
-  setDraft,
   value,
   onAttach,
   onRemove,
   onCancel,
 }: {
-  draft: string;
-  setDraft: (value: string) => void;
   value: string;
   onAttach: (url: string) => void;
   onRemove: () => void;
   onCancel: () => void;
 }) {
+  const [draft, setDraft] = useState(value);
+
   const trimmed = draft.trim();
   const trackId = trimmed ? parseSpotifyTrackId(trimmed) : null;
   const invalid = trimmed.length > 0 && !trackId;
@@ -123,16 +98,7 @@ function SongForm({
   };
 
   return (
-    // Full-width so the bottom sheet spans the drawer (no centered side gaps);
-    // the desktop Dialog constrains it via its own max-w-lg.
-    <div className="w-full space-y-4 px-5 py-6 sm:px-6">
-      <div className="space-y-1">
-        <h2 className="font-semibold text-lg">Add a song</h2>
-        <p className="text-muted-foreground text-sm">
-          Paste a Spotify track link and it'll play right on your note.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Music2Icon
