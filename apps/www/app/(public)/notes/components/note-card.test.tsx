@@ -19,7 +19,7 @@ vi.mock("sonner", () => ({
 }));
 // Severs the heavy message/user-action import chains; neither is rendered for
 // anonymous notes.
-vi.mock("./reply-drawer", () => ({ ReplyDrawer: () => null }));
+vi.mock("./reply-dialog", () => ({ ReplyDialog: () => null }));
 vi.mock("@/components/block-user-dialog", () => ({
   BlockUserDialog: () => null,
 }));

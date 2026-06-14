@@ -63,7 +63,7 @@ import {
   shortTimeAgo,
 } from "@/lib/utils";
 import { NoteSpotifyEmbed } from "./note-spotify-embed";
-import { ReplyDrawer } from "./reply-drawer";
+import { ReplyDialog } from "./reply-dialog";
 
 type Props = {
   data: NoteItem;
@@ -205,7 +205,7 @@ export function NoteCard({
     >
       <div id={`umamin-${data.id}`}>
         {isAuthenticated && !data.isAnonymous && user && (
-          <ReplyDrawer
+          <ReplyDialog
             isOpen={replyOpen}
             setIsOpen={setReplyOpen}
             note={{ ...data, user }}

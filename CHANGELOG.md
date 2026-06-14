@@ -28,6 +28,10 @@ any that are empty.
 
 - In the installed app, the screen no longer pinch-zooms, so taps and scrolling feel more like a native app. Pinch-zoom still works in the browser.
 
+### Fixed
+
+- The reply box on a note no longer gets pushed around by the on-screen keyboard.
+
 ## [5.22.0] - 2026-06-14
 
 ### Added
