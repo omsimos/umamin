@@ -18,11 +18,7 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
-## [5.23.0] - 2026-06-14
-
-### Added
-
-- Notes can now carry a song: paste a Spotify track link when you post a note and it shows up as a tappable player in the feed. Notes can be just a song, just words, or both.
+## [5.23.1] - 2026-06-14
 
 ### Changed
 
@@ -30,7 +26,13 @@ any that are empty.
 
 ### Fixed
 
-- The reply box on a note no longer gets pushed around by the on-screen keyboard.
+- The song-link box and reply box on a note no longer get pushed around by the on-screen keyboard.
+
+## [5.23.0] - 2026-06-14
+
+### Added
+
+- Notes can now carry a song: paste a Spotify track link when you post a note and it shows up as a tappable player in the feed. Notes can be just a song, just words, or both.
 
 ## [5.22.0] - 2026-06-14
 
@@ -778,6 +780,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.23.1]: https://github.com/omsimos/umamin/compare/v5.23.0...v5.23.1
 [5.23.0]: https://github.com/omsimos/umamin/compare/v5.22.0...v5.23.0
 [5.22.0]: https://github.com/omsimos/umamin/compare/v5.21.0...v5.22.0
 [5.21.0]: https://github.com/omsimos/umamin/compare/v5.20.0...v5.21.0
