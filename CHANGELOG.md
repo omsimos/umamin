@@ -24,6 +24,10 @@ any that are empty.
 
 - Push notifications: turn them on from Settings to be notified about replies, new followers, anonymous messages, and group activity even when Umamin isn't open. They're off until you opt in, never show message contents, and keep anonymous messages anonymous. Works on Android and desktop browsers, and on iPhone or iPad once you add Umamin to your Home Screen.
 
+### Fixed
+
+- When Umamin runs as an installed app, the post composer, account menu, and full-screen image viewer no longer overlap the status bar or notch.
+
 ## [5.19.0] - 2026-06-13
 
 ### Added

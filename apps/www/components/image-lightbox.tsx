@@ -87,6 +87,7 @@ export function ImageLightbox({
               size="icon"
               aria-label="Close image viewer"
               className="absolute top-3 left-3 z-10 rounded-full bg-black/60 text-white hover:bg-black/80 hover:text-white"
+              style={{ top: "calc(0.75rem + env(safe-area-inset-top))" }}
             >
               <XIcon />
             </Button>
@@ -96,6 +97,7 @@ export function ImageLightbox({
             <span
               aria-live="polite"
               className="absolute top-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs text-white"
+              style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
             >
               {index + 1} / {images.length}
             </span>
