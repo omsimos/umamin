@@ -1,7 +1,7 @@
 "use client";
 
 import type { InfiniteData } from "@tanstack/react-query";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,18 +13,19 @@ import {
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
 import { Button } from "@umamin/ui/components/button";
-import { Trash2Icon, UserXIcon } from "lucide-react";
+import { ShieldXIcon, Trash2Icon, UserXIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteCommentAction } from "@/app/actions/post";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
-import { queryKeys } from "@/lib/query";
+import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import {
   patchPostAcrossFeed,
   patchPostResponse,
   removeComment,
 } from "@/lib/query-cache";
+import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type {
   CommentsResponse,
   FeedResponse,
@@ -53,6 +54,16 @@ export function CommentMenu({
   const [blockOpen, setBlockOpen] = useState(false);
   const canDelete = !!currentUserId && currentUserId === authorId;
   const canBlock = !!currentUserId && !!authorId && currentUserId !== authorId;
+
+  // Shared, deduped current-user cache (warm on any authed page); read only for
+  // the maintainer flag that gates the moderator "Remove" action.
+  const { data: currentUser } = useQuery({
+    queryKey: queryKeys.currentUser(),
+    queryFn: fetchCurrentUserOptional,
+    staleTime: PRIVATE_STALE_TIME,
+    enabled: isAuthenticated,
+  });
+  const canModerate = currentUser?.user?.isModerator === true && canBlock;
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -87,7 +98,7 @@ export function CommentMenu({
           })),
       );
 
-      toast.success("Comment deleted.");
+      toast.success(canModerate ? "Comment removed." : "Comment deleted.");
     },
     onError: (err) => {
       console.error(err);
@@ -118,20 +129,33 @@ export function CommentMenu({
           },
         ]
       : []),
+    ...(canModerate
+      ? [
+          {
+            title: "Remove comment",
+            onClick: () => setOpen(true),
+            className: "text-red-600",
+            icon: <ShieldXIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
   ];
 
   if (menuItems.length === 0) return null;
 
   return (
     <>
-      {canDelete && (
+      {(canDelete || canModerate) && (
         <AlertDialog open={open} onOpenChange={setOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+              <AlertDialogTitle>
+                {canModerate ? "Remove this comment?" : "Delete this comment?"}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. Your comment will be permanently
-                removed.
+                {canModerate
+                  ? `This permanently removes ${authorUsername ? `@${authorUsername}'s` : "this member's"} comment. You're acting as a moderator.`
+                  : "This action cannot be undone. Your comment will be permanently removed."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

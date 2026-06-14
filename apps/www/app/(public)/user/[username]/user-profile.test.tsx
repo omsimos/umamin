@@ -98,6 +98,7 @@ describe("UserProfile", () => {
         blockedWords: null,
         pushPrefs: 0,
         accounts: [],
+        isModerator: false,
       },
     } satisfies CurrentUserResponse);
   });

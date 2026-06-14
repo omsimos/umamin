@@ -9,6 +9,7 @@ import { getSession } from "@/lib/auth";
 import { idSchema } from "@/lib/schema";
 import { getCurrentNoteData } from "@/lib/server/data";
 import { UNAUTHENTICATED_ERROR } from "@/lib/server/errors";
+import { isModerator } from "@/lib/server/moderation";
 import { withAction } from "@/lib/server/with-action";
 import { formatContent } from "@/lib/utils";
 
@@ -116,6 +117,52 @@ export const clearNoteAction = withAction(
     });
 
     updateTag(`current-note:${session.userId}`);
+    revalidateTag("notes", "max");
+
+    return { success: true };
+  },
+);
+
+// Maintainer-only removal of another user's note. Unlike clearNoteAction (which
+// blanks the actor's own note slot in place), this hard-deletes the row so it
+// leaves the public feed outright; reactions cascade via the note FK, but we
+// clear them explicitly to mirror clearNoteAction and not lean on FK behavior.
+export const removeNoteAction = withAction(
+  {
+    schema: z.object({ noteId: idSchema }),
+    authError: UNAUTHENTICATED_ERROR,
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `modnote:${session.userId}`,
+    },
+    errorMessage: "Failed to remove note",
+  },
+  async ({ noteId }, { user }) => {
+    // Return the same "not found" string whether the caller lacks the role or
+    // the note is gone — don't leak which.
+    if (!isModerator(user)) {
+      return { error: "Note not found" };
+    }
+
+    const [note] = await db
+      .select({ id: noteTable.id, userId: noteTable.userId })
+      .from(noteTable)
+      .where(eq(noteTable.id, noteId))
+      .limit(1);
+
+    if (!note) {
+      return { error: "Note not found" };
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(noteReactionTable)
+        .where(eq(noteReactionTable.noteId, noteId));
+      await tx.delete(noteTable).where(eq(noteTable.id, noteId));
+    });
+
+    // Key the author's own note-slot cache, not the moderator's.
+    updateTag(`current-note:${note.userId}`);
     revalidateTag("notes", "max");
 
     return { success: true };

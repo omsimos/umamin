@@ -35,6 +35,7 @@ import { redis } from "@/lib/redis";
 import { idSchema } from "@/lib/schema";
 import { getPostById } from "@/lib/server/data";
 import { refreshHotPostRank, removeHotPostRank } from "@/lib/server/feed-rank";
+import { isModerator } from "@/lib/server/moderation";
 import { notify } from "@/lib/server/notifications";
 import {
   claimStagedImages,
@@ -272,10 +273,17 @@ export const deletePostAction = withAction(
       where: eq(postTable.id, postId),
     });
 
-    if (!post || post.authorId !== session.userId) {
+    // A maintainer can remove anyone's post; owners still delete their own.
+    const isOwner = !!post && post.authorId === session.userId;
+    const isMod = isModerator(user);
+
+    if (!post || (!isOwner && !isMod)) {
       return { error: "Post not found" };
     }
 
+    // Owner-scoped side effects key on the CONTENT owner, not the actor — so a
+    // mod removal purges the right user's profile/pin caches.
+    const ownerId = post.authorId;
     let quoteAuraUsername: string | null = null;
 
     await db.transaction(async (tx) => {
@@ -293,10 +301,14 @@ export const deletePostAction = withAction(
           .returning({ authorId: postTable.authorId });
 
         if (bumped) {
+          // The aura actor is the quote's author, not the deleter. On a mod
+          // removal we lack the author's account age, so we pass undefined —
+          // reverseAura then no-ops (conservative: never drains points it can't
+          // confirm were awarded). Owner deletes keep the exact prior behavior.
           quoteAuraUsername = await reverseAura(tx, {
             beneficiaryId: bumped.authorId,
-            actorId: session.userId,
-            actorCreatedAt: user?.createdAt,
+            actorId: ownerId,
+            actorCreatedAt: isOwner ? user?.createdAt : undefined,
             delta: AURA_POINTS.quote,
           });
         }
@@ -307,10 +319,7 @@ export const deletePostAction = withAction(
         .update(userTable)
         .set({ pinnedPostId: null })
         .where(
-          and(
-            eq(userTable.id, session.userId),
-            eq(userTable.pinnedPostId, postId),
-          ),
+          and(eq(userTable.id, ownerId), eq(userTable.pinnedPostId, postId)),
         );
     });
 
@@ -321,14 +330,16 @@ export const deletePostAction = withAction(
     // SWR like createPostAction — avoid the blocking full feed re-scan.
     revalidateTag("posts", "max");
     await removeHotPostRank(postId);
-    updateTag(`user-posts:${session.userId}`);
+    updateTag(`user-posts:${ownerId}`);
     updateTag(`post:${postId}`);
     updateTag(`post-comments:${postId}`);
+    // Per-viewer overlays — bust the actor's own read-your-writes; the post is
+    // already globally gone via the post/posts tags above.
     updateTag(`post:${postId}:liked:${session.userId}`);
     updateTag(`post:${postId}:reposted:${session.userId}`);
     updateTag(`post:${postId}:poll-voted:${session.userId}`);
     // Covers the pin-clear above: /api/me carries pinnedPostId for menu state.
-    updateTag(`user:${session.userId}`);
+    updateTag(`user:${ownerId}`);
     if (post.quotedPostId) {
       updateTag(`post:${post.quotedPostId}`);
       await refreshHotPostRank(post.quotedPostId);
@@ -451,7 +462,11 @@ export const deleteCommentAction = withAction(
       where: eq(postCommentTable.id, commentId),
     });
 
-    if (!comment || comment.authorId !== session.userId) {
+    // A maintainer can remove anyone's comment; authors still delete their own.
+    const isOwner = !!comment && comment.authorId === session.userId;
+    const isMod = isModerator(user);
+
+    if (!comment || (!isOwner && !isMod)) {
       return { error: "Comment not found" };
     }
 
@@ -492,10 +507,12 @@ export const deleteCommentAction = withAction(
           .limit(1);
 
         if (remaining.length === 0) {
+          // actorCreatedAt is the commenter's age; the deleter may be a mod, so
+          // only trust it when the owner is deleting (else reverseAura no-ops).
           auraUsername = await reverseAura(tx, {
             beneficiaryId: updated.authorId,
             actorId: comment.authorId,
-            actorCreatedAt: user?.createdAt,
+            actorCreatedAt: isOwner ? user?.createdAt : undefined,
             delta: AURA_POINTS.comment,
           });
         }
