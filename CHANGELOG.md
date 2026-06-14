@@ -24,6 +24,10 @@ any that are empty.
 
 - Notes can now carry a song: paste a Spotify track link when you post a note and it shows up as a tappable player in the feed. Notes can be just a song, just words, or both.
 
+### Changed
+
+- In the installed app, the screen no longer pinch-zooms, so taps and scrolling feel more like a native app. Pinch-zoom still works in the browser.
+
 ## [5.22.0] - 2026-06-14
 
 ### Added
