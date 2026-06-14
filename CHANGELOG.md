@@ -27,6 +27,7 @@ any that are empty.
 ### Fixed
 
 - The song-link box and reply box on a note no longer get pushed around by the on-screen keyboard.
+- In the installed app, opening the menu after scrolling the feed or notes no longer jitters — its links navigate again instead of getting stuck.
 
 ## [5.23.0] - 2026-06-14
 
