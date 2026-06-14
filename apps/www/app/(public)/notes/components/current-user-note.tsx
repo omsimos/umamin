@@ -104,7 +104,7 @@ export function CurrentUserNote({
   if (isLoading || clearNoteMutation.isPending) {
     return (
       <div>
-        <Card className="flex flex-col items-start justify-between">
+        <Card className="flex flex-col items-start gap-3 py-4">
           <CardHeader className="w-full flex items-center justify-between text-muted-foreground">
             <div className="flex items-center gap-2">
               <Skeleton className="size-4" />
@@ -133,7 +133,7 @@ export function CurrentUserNote({
     <div id={`umamin-${data.id}`}>
       <Card
         className={cn(
-          "flex flex-col items-start justify-between",
+          "flex flex-col items-start gap-3 py-4",
           data.isAnonymous && "border-dashed",
         )}
       >
