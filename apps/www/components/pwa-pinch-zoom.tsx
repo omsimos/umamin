@@ -8,9 +8,10 @@ import { useEffect } from "react";
 //
 // Two mechanisms because no single one covers every engine:
 //  - Android/Chromium (the Play Store TWA): the viewport meta governs page zoom,
-//    so we tighten it to maximum-scale=1 / user-scalable=no at runtime.
+//    so we tighten it to maximum-scale=1 / user-scalable=no at runtime. The
+//    gesture events below never fire here, so the meta is Android's only lever.
 //  - iOS home-screen apps: Safari ignores user-scalable, so we also block the
-//    native pinch gesture events directly.
+//    proprietary pinch gesture events directly.
 export function PwaPinchZoom() {
   useEffect(() => {
     const standalone =
@@ -21,10 +22,15 @@ export function PwaPinchZoom() {
 
     const viewport = document.querySelector('meta[name="viewport"]');
     const original = viewport?.getAttribute("content") ?? null;
-    viewport?.setAttribute(
-      "content",
-      "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no",
-    );
+    // Append to whatever Next set rather than hardcoding the whole string, so a
+    // future viewport config change (in app/layout.tsx) isn't silently dropped
+    // for PWA users. Guard against double-applying.
+    if (viewport && original !== null && !original.includes("user-scalable")) {
+      viewport.setAttribute(
+        "content",
+        `${original}, maximum-scale=1, user-scalable=no`,
+      );
+    }
 
     const preventGesture = (e: Event) => e.preventDefault();
     document.addEventListener("gesturestart", preventGesture, {

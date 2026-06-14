@@ -4,6 +4,7 @@ import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "@umamin/ui/components/dialog";
 import { Textarea } from "@umamin/ui/components/textarea";
@@ -31,8 +32,11 @@ type ReplyDialogProps = {
 export function ReplyDialog({ isOpen, setIsOpen, note }: ReplyDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="p-0" aria-describedby={undefined}>
+      <DialogContent className="p-0">
         <DialogTitle className="sr-only">Reply to note</DialogTitle>
+        <DialogDescription className="sr-only">
+          Send an anonymous reply to this note, up to 500 characters.
+        </DialogDescription>
         <ChatForm note={note} />
       </DialogContent>
     </Dialog>
