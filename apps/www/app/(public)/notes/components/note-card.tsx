@@ -63,7 +63,7 @@ import {
   shortTimeAgo,
 } from "@/lib/utils";
 import { NoteSpotifyEmbed } from "./note-spotify-embed";
-import { ReplyDrawer } from "./reply-drawer";
+import { ReplyDialog } from "./reply-dialog";
 
 type Props = {
   data: NoteItem;
@@ -205,7 +205,7 @@ export function NoteCard({
     >
       <div id={`umamin-${data.id}`}>
         {isAuthenticated && !data.isAnonymous && user && (
-          <ReplyDrawer
+          <ReplyDialog
             isOpen={replyOpen}
             setIsOpen={setReplyOpen}
             note={{ ...data, user }}
@@ -259,7 +259,8 @@ export function NoteCard({
 
         <Card
           className={cn(
-            "flex flex-col items-start justify-between",
+            // Tighter than the default gap-6/py-6 — a note is a compact card.
+            "flex flex-col items-start gap-3 py-4",
             data.isAnonymous && "border-dashed",
             isHighlighted &&
               "ring-2 ring-orange-500 ring-offset-2 ring-offset-background motion-safe:animate-pulse",
@@ -397,7 +398,7 @@ export function NoteCard({
             </div>
           </CardHeader>
 
-          <CardContent className="flex w-full flex-col gap-3">
+          <CardContent className="flex w-full flex-col">
             <PostBody
               content={data.content}
               className="font-display text-lg leading-snug"

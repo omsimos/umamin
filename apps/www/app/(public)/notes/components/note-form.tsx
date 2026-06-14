@@ -20,7 +20,7 @@ import { upsertNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import { parseSpotifyTrackId } from "@/lib/spotify";
 import type { PublicUser } from "@/types/user";
-import { NoteSongDrawer } from "./note-song-drawer";
+import { NoteSongDialog } from "./note-song-dialog";
 
 const PROMPTS = [
   "currently overthinking about…",
@@ -189,7 +189,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         </div>
       )}
 
-      <NoteSongDrawer
+      <NoteSongDialog
         open={songOpen}
         onOpenChange={setSongOpen}
         value={spotifyUrl}

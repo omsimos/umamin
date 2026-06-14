@@ -81,7 +81,8 @@
 /* Native-app feel for the installed PWA / TWA (standalone only — the browser
    keeps its normal behavior). Removes the two biggest "this is a website" tells:
    the rubber-band / pull-to-refresh overscroll and the grey tap-highlight flash.
-   Text selection and pinch-zoom are intentionally left intact. */
+   Text selection stays intact; page pinch-zoom is disabled here too, but via JS
+   (components/pwa-pinch-zoom.tsx) so it stays on in the browser for a11y. */
 @media (display-mode: standalone) {
   html {
     overscroll-behavior-y: none;
@@ -89,8 +90,7 @@
   body {
     -webkit-tap-highlight-color: transparent;
   }
-  /* Snappier taps on controls (kills the double-tap-zoom delay) without
-     disabling page-level pinch-zoom, which stays available for a11y. */
+  /* Snappier taps on controls (kills the double-tap-zoom delay). */
   a,
   button,
   [role="button"] {

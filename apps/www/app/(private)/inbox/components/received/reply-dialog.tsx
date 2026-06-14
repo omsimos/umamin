@@ -3,10 +3,10 @@ import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "@umamin/ui/components/dialog";
 import { Textarea } from "@umamin/ui/components/textarea";
-import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2Icon, SendIcon } from "lucide-react";
 import { useState } from "react";
@@ -72,41 +72,42 @@ export function ReplyDialog(props: Props) {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="sm:max-w-xl p-0">
+      <DialogContent className="p-0 sm:max-w-xl">
         <DialogTitle className="sr-only">Reply to message</DialogTitle>
-        <div
-          className={cn(
-            "h-full max-h-[500px] overflow-scroll px-5 sm:px-7 py-10",
-            !reply ? "pb-28" : "",
-          )}
-        >
-          <h3 className="font-bold text-center leading-normal text-lg min-w-0 break-words mb-10">
-            {props.data.question}
-          </h3>
+        <DialogDescription className="sr-only">
+          Reply to this anonymous message, up to 500 characters.
+        </DialogDescription>
 
-          <ChatList
-            question={props.data.content}
-            reply={props.data.reply ?? reply}
-          />
+        {/* In-flow column (not a fixed footer): the soft keyboard would push a
+            position:fixed input around and cover it. */}
+        <div className="flex flex-col gap-6 px-5 py-6 sm:px-7">
+          <div className="max-h-[50dvh] overflow-y-auto">
+            <h3 className="font-bold text-center leading-normal text-lg min-w-0 break-words mb-10">
+              {props.data.question}
+            </h3>
 
-          {reply && updatedAt && (
-            <div className="text-muted-foreground text-sm italic w-full text-center mt-10">
-              replied{" "}
-              {formatDistanceToNow(updatedAt, {
-                addSuffix: true,
-              })}
-            </div>
-          )}
-        </div>
+            <ChatList
+              question={props.data.content}
+              reply={props.data.reply ?? reply}
+            />
 
-        {!reply && (
-          <div className="fixed px-5 sm:px-7 bottom-0 left-1/2 -translate-x-1/2 w-full pb-4 rounded-b-lg bg-background pt-3 max-w-xl">
+            {reply && updatedAt && (
+              <div className="text-muted-foreground text-sm italic w-full text-center mt-10">
+                replied{" "}
+                {formatDistanceToNow(updatedAt, {
+                  addSuffix: true,
+                })}
+              </div>
+            )}
+          </div>
+
+          {!reply && (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 mutation.mutate();
               }}
-              className="flex items-center space-x-2 w-full self-center"
+              className="flex items-center gap-2"
             >
               <Textarea
                 id="message"
@@ -129,8 +130,8 @@ export function ReplyDialog(props: Props) {
                 <span className="sr-only">Send</span>
               </Button>
             </form>
-          </div>
-        )}
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

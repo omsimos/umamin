@@ -234,31 +234,33 @@ export function GroupsHub() {
                     </p>
                   </Link>
 
-                  {/* Row → info page (unchanged); this icon jumps straight to
+                  <div>
+                    {/* Row → info page (unchanged); this icon jumps straight to
                       chat. The unread dot lives on the glyph above. */}
-                  <Button
-                    asChild
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`Open ${group.name} chat`}
-                  >
-                    <Link href={`/groups/${group.tag}/chat`}>
-                      <MessageCircleIcon />
-                    </Link>
-                  </Button>
-
-                  {role === "owner" && (
                     <Button
                       asChild
                       size="icon"
                       variant="ghost"
-                      aria-label="Manage group"
+                      aria-label={`Open ${group.name} chat`}
                     >
-                      <Link href={`/groups/${group.tag}`}>
-                        <SettingsIcon />
+                      <Link href={`/groups/${group.tag}/chat`}>
+                        <MessageCircleIcon />
                       </Link>
                     </Button>
-                  )}
+
+                    {role === "owner" && (
+                      <Button
+                        asChild
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Manage group"
+                      >
+                        <Link href={`/groups/${group.tag}`}>
+                          <SettingsIcon />
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 </li>
               );
             })}

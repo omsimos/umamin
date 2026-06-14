@@ -18,6 +18,17 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.23.1] - 2026-06-14
+
+### Changed
+
+- In the installed app, the screen no longer pinch-zooms, so taps and scrolling feel more like a native app. Pinch-zoom still works in the browser.
+
+### Fixed
+
+- The song-link box and the reply boxes (on notes and in your inbox) no longer get pushed around by the on-screen keyboard.
+- In the installed app, opening the menu after scrolling the feed or notes no longer jitters — its links navigate again instead of getting stuck.
+
 ## [5.23.0] - 2026-06-14
 
 ### Added
@@ -770,6 +781,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.23.1]: https://github.com/omsimos/umamin/compare/v5.23.0...v5.23.1
 [5.23.0]: https://github.com/omsimos/umamin/compare/v5.22.0...v5.23.0
 [5.22.0]: https://github.com/omsimos/umamin/compare/v5.21.0...v5.22.0
 [5.21.0]: https://github.com/omsimos/umamin/compare/v5.20.0...v5.21.0
