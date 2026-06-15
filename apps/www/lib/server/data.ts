@@ -2047,6 +2047,7 @@ async function getUserProfileViewerOverlay(
 export async function getUserProfileViewerData(
   username: string,
   viewerId?: string | null,
+  opts?: { viewerIsModerator?: boolean },
 ): Promise<UserProfileViewerResponse | null> {
   const user = await getPublicUserProfileData(username);
 
@@ -2061,6 +2062,7 @@ export async function getUserProfileViewerData(
       isFollowing: false,
       isBlocked: false,
       isBlockedBy: false,
+      isBanned: false,
     };
   }
 
@@ -2070,10 +2072,24 @@ export async function getUserProfileViewerData(
     user.id,
   );
 
+  // Ban state is moderator-only and read FRESH (not cached) so a moderator sees
+  // the current status immediately after a ban/unban. Non-moderators always get
+  // false — ban state must never leak.
+  let isBanned = false;
+  if (opts?.viewerIsModerator) {
+    const [row] = await db
+      .select({ bannedAt: userTable.bannedAt })
+      .from(userTable)
+      .where(eq(userTable.id, user.id))
+      .limit(1);
+    isBanned = Boolean(row?.bannedAt);
+  }
+
   return {
     currentUserId: viewerId,
     isAuthenticated: true,
     ...overlay,
+    isBanned,
   };
 }
 

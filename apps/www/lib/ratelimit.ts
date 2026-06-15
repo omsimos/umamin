@@ -2,6 +2,7 @@ import "server-only";
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { headers } from "next/headers";
+import { extractClientIp } from "./ip";
 import { redis } from "./redis";
 
 export const RATE_LIMIT_ERROR =
@@ -112,20 +113,11 @@ if (!limiters && process.env.NODE_ENV === "production") {
   );
 }
 
-/**
- * Best-effort client IP for keying limits. Prefer the headers Vercel's edge
- * sets itself (`x-real-ip` / `x-vercel-forwarded-for`) — these are NOT
- * client-spoofable. The left-most `x-forwarded-for` entry is a last-resort
- * fallback (a client can prepend it), and a constant covers local dev so
- * behaviour stays deterministic.
- */
+// Best-effort client IP for keying limits and the denylist. See lib/ip.ts for
+// the header-priority rationale (non-spoofable edge headers first).
 export async function getClientIp(): Promise<string> {
   const h = await headers();
-  const ip =
-    h.get("x-real-ip")?.trim() ||
-    h.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return ip || "127.0.0.1";
+  return extractClientIp((name) => h.get(name));
 }
 
 /**

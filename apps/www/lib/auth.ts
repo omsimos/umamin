@@ -15,6 +15,8 @@ import {
 } from "./cookies";
 import { checkRateLimit, getClientIp, RATE_LIMIT_ERROR } from "./ratelimit";
 import { registerSchema } from "./schema";
+import { ACCESS_BLOCKED_ERROR, accountSuspendedMessage } from "./server/errors";
+import { isIpDenied } from "./server/ip-denylist";
 import {
   createSession,
   deleteSessionTokenCookie,
@@ -105,6 +107,9 @@ export async function login(_initialState: unknown, formData: FormData) {
   // Throttle before the DB lookup + Argon2 verify so brute force can't burn
   // CPU. No-ops until Redis is configured (e.g. local dev).
   const ip = await getClientIp();
+  if (await isIpDenied(ip)) {
+    return { error: ACCESS_BLOCKED_ERROR };
+  }
   if (!(await checkRateLimit("auth", `login:${ip}`))) {
     return { error: RATE_LIMIT_ERROR };
   }
@@ -144,6 +149,12 @@ export async function login(_initialState: unknown, formData: FormData) {
       };
     }
 
+    // Reveal the suspension only AFTER a correct password — never before, or it
+    // would leak which usernames exist/are banned to a guesser.
+    if (existingUser.bannedAt) {
+      return { error: accountSuspendedMessage(existingUser.banReason) };
+    }
+
     await setSession(existingUser.id);
   } catch (err) {
     console.error("Login error:", err);
@@ -170,6 +181,9 @@ export async function signup(data: z.infer<typeof registerSchema>) {
   // Throttle before Argon2 hashing so mass signups can't burn CPU.
   // No-ops until Redis is configured (e.g. local dev).
   const ip = await getClientIp();
+  if (await isIpDenied(ip)) {
+    return { error: ACCESS_BLOCKED_ERROR };
+  }
   if (!(await checkRateLimit("auth", `signup:${ip}`))) {
     return { error: RATE_LIMIT_ERROR };
   }

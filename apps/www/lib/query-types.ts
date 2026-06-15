@@ -241,4 +241,8 @@ export type UserProfileViewerResponse = {
   isFollowing: boolean;
   isBlocked: boolean;
   isBlockedBy: boolean;
+  // Moderator-only: whether the profile owner is currently banned. Always false
+  // for non-moderators (ban state never leaks). Gates the profile "Unban"/"Ban"
+  // menu entry. See getUserProfileViewerData.
+  isBanned: boolean;
 };

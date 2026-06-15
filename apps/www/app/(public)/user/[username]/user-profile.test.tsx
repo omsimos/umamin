@@ -32,6 +32,12 @@ vi.mock("@/components/share-button", () => ({
   shareProfile: vi.fn(),
 }));
 
+// Stub the moderator dialog so the test doesn't pull in its server-action graph
+// (@umamin/db builds a client on import).
+vi.mock("@/components/ban-user-dialog", () => ({
+  BanUserDialog: () => null,
+}));
+
 vi.mock("@/components/user-card", () => ({
   UserCard: ({ primaryAction }: { primaryAction?: React.ReactNode }) => (
     <div>{primaryAction}</div>
@@ -110,6 +116,7 @@ describe("UserProfile", () => {
       isFollowing: true,
       isBlocked: false,
       isBlockedBy: false,
+      isBanned: false,
     });
 
     renderProfile();

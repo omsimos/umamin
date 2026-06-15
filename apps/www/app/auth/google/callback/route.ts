@@ -15,6 +15,7 @@ import {
 } from "@/lib/cookies";
 import { google } from "@/lib/oauth";
 import { checkRateLimit, getClientIp } from "@/lib/ratelimit";
+import { isIpDenied } from "@/lib/server/ip-denylist";
 import {
   createSession,
   generateSessionToken,
@@ -107,6 +108,9 @@ export async function GET(req: NextRequest) {
   // already gate CSRF; this stops floods of forged callbacks burning egress and
   // invocations before the expensive validateAuthorizationCode call.
   const ip = await getClientIp();
+  if (await isIpDenied(ip)) {
+    return new Response(null, { status: 403 });
+  }
   if (!(await checkRateLimit("auth", `oauth:google:${ip}`))) {
     return new Response(null, { status: 429 });
   }
@@ -188,6 +192,22 @@ export async function GET(req: NextRequest) {
     }
 
     if (existingUser) {
+      // Google has proven this identity, so a banned account can be told why
+      // (no enumeration risk here, unlike password login) — send it to /banned
+      // instead of minting a session.
+      const [targetUser] = await db
+        .select({ bannedAt: userTable.bannedAt })
+        .from(userTable)
+        .where(eq(userTable.id, existingUser.userId))
+        .limit(1);
+
+      if (targetUser?.bannedAt) {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: "/banned" },
+        });
+      }
+
       const sessionToken = generateSessionToken();
       const session = await createSession(sessionToken, existingUser.userId);
       await setSessionTokenCookie(sessionToken, new Date(session.expiresAt));

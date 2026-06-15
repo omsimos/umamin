@@ -12,12 +12,15 @@ import {
 } from "@umamin/ui/components/dropdown-menu";
 import { cn } from "@umamin/ui/lib/utils";
 import {
+  BanIcon,
   EllipsisIcon,
   MessageCircleIcon,
   MessageSquareXIcon,
   Share2Icon,
+  ShieldCheckIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   blockUserAction,
@@ -26,6 +29,7 @@ import {
   unfollowUserAction,
 } from "@/app/actions/user";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { BanUserDialog } from "@/components/ban-user-dialog";
 import { shareProfile } from "@/components/share-button";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
@@ -99,6 +103,9 @@ export function UserProfile({ username, initialUser }: Props) {
   const isBlocked = viewer?.isBlocked === true;
   const isBlockedBy = viewer?.isBlockedBy === true;
   const isSelf = !!currentUser?.user?.id && currentUser.user.id === profile.id;
+  const isModeratorViewer = currentUser?.user?.isModerator === true;
+  const isBanned = viewer?.isBanned === true;
+  const [banOpen, setBanOpen] = useState(false);
 
   const resolveViewer = async () => {
     const cached = queryClient.getQueryData<UserProfileViewerResponse>(
@@ -478,6 +485,24 @@ export function UserProfile({ username, initialUser }: Props) {
               {isBlocked ? "Unblock" : "Block"}
             </span>
           </DropdownMenuItem>
+          {isModeratorViewer && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setBanOpen(true)}
+                className="text-red-600"
+              >
+                <span className="flex items-center gap-2">
+                  {isBanned ? (
+                    <ShieldCheckIcon className="size-4" />
+                  ) : (
+                    <BanIcon className="size-4" />
+                  )}
+                  {isBanned ? "Unban user" : "Ban user"}
+                </span>
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </>
@@ -504,6 +529,15 @@ export function UserProfile({ username, initialUser }: Props) {
 
   return (
     <>
+      {isModeratorViewer && !isSelf && (
+        <BanUserDialog
+          username={profile.username}
+          banned={isBanned}
+          open={banOpen}
+          onOpenChange={setBanOpen}
+        />
+      )}
+
       <UserCard
         user={profile}
         isSelf={isSelf}

@@ -5,8 +5,17 @@ import {
   readCookieValue,
   SESSION_COOKIE_NAME,
 } from "./lib/cookies";
+import { extractClientIp } from "./lib/ip";
+import { isIpDenied } from "./lib/server/ip-denylist";
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
+  // Front-door IP denylist for all non-API traffic (the matcher excludes /api;
+  // API mutations are covered by withAction). In-process-cached SET; no-ops
+  // without Redis. NOTE: per-IP, so it blocks shared egress IPs (CGNAT) too.
+  if (await isIpDenied(extractClientIp((name) => request.headers.get(name)))) {
+    return new NextResponse("Access blocked", { status: 403 });
+  }
+
   if (request.method === "GET") {
     const response = NextResponse.next();
     const token = readCookieValue(

@@ -10,6 +10,8 @@ import * as z from "zod";
 import { matchesBlockedWords } from "@/lib/blocked-words";
 import { getClientIp } from "@/lib/ratelimit";
 import { idSchema } from "@/lib/schema";
+import { ACCESS_BLOCKED_ERROR } from "@/lib/server/errors";
+import { isIpDenied } from "@/lib/server/ip-denylist";
 import { notify } from "@/lib/server/notifications";
 import { withAction } from "@/lib/server/with-action";
 import { formatContent } from "@/lib/utils";
@@ -146,6 +148,12 @@ export const sendMessageAction = withAction(
     },
   },
   async ({ question, content, receiverId }, { session }) => {
+    // Block the main anonymous spam vector from denylisted IPs (the rate-limit
+    // key above already resolved the IP). No-ops without Redis.
+    if (await isIpDenied(await getClientIp())) {
+      return { error: ACCESS_BLOCKED_ERROR };
+    }
+
     const senderId = session?.userId ?? null;
 
     if (receiverId === senderId) {
