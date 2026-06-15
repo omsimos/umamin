@@ -3,6 +3,7 @@ import type { SelectMessage } from "@umamin/db/schema/message";
 import type { SelectNote } from "@umamin/db/schema/note";
 import type { NotificationType } from "@umamin/db/schema/notification";
 import type { SelectAccount } from "@umamin/db/schema/user";
+import type { MusicAttachment } from "@/lib/music";
 import type { GroupBadgeData } from "@/types/group";
 import type { CommentData, FeedItem, PostData } from "@/types/post";
 import type {
@@ -23,9 +24,22 @@ export type PostResponse = PostData | null;
 
 export type CommentsResponse = CursorPage<CommentData>;
 
-export type NoteItem = SelectNote & {
+// The raw note columns carrying a song attachment are replaced by a single lean
+// `music` object (see resolveNoteMusic in lib/server/data.ts) so the payload
+// stays compact and the legacy spotify_* columns never reach the client.
+export type NoteItem = Omit<
+  SelectNote,
+  | "musicProvider"
+  | "musicId"
+  | "musicTitle"
+  | "musicThumbnail"
+  | "spotifyTrackId"
+  | "spotifyTitle"
+  | "spotifyThumbnail"
+> & {
   user?: FeedAuthorWithBadge;
   isReacted?: boolean;
+  music: MusicAttachment | null;
 };
 
 export type NotesResponse = CursorPage<NoteItem>;
@@ -241,4 +255,8 @@ export type UserProfileViewerResponse = {
   isFollowing: boolean;
   isBlocked: boolean;
   isBlockedBy: boolean;
+  // Moderator-only: whether the profile owner is currently banned. Always false
+  // for non-moderators (ban state never leaks). Gates the profile "Unban"/"Ban"
+  // menu entry. See getUserProfileViewerData.
+  isBanned: boolean;
 };

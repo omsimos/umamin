@@ -10,5 +10,6 @@ export const GET = withPrivateRead("fetching current note", async () => {
     return privateJson({ error: "Unauthorized" }, { status: 401 });
   }
 
-  return getCurrentNoteData(session.userId);
+  const note = await getCurrentNoteData(session.userId);
+  return note ?? privateJson(null);
 });

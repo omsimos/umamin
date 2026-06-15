@@ -18,6 +18,18 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.24.0] - 2026-06-15
+
+### Added
+
+- Moderators can now suspend an account. A suspended member is signed out immediately, can't sign back in, and sees a notice explaining the suspension (with its reason) — their existing posts and notes stay visible. A suspension can be lifted at any time.
+- A moderator tool to block a specific IP address from Umamin, for abuse that isn't tied to a single account.
+- Notes can now carry a song from Apple Music, SoundCloud, or YouTube Music too — not just Spotify. Paste any track link and Umamin detects the platform automatically; it plays inline on your note with the same tap-to-play card.
+
+### Security & Privacy
+
+- A suspended account is turned away at every entry point — page loads, actions, password login, and Google sign-in — and all of its active sessions end the moment it's suspended.
+
 ## [5.23.1] - 2026-06-14
 
 ### Changed
@@ -781,6 +793,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.24.0]: https://github.com/omsimos/umamin/compare/v5.23.1...v5.24.0
 [5.23.1]: https://github.com/omsimos/umamin/compare/v5.23.0...v5.23.1
 [5.23.0]: https://github.com/omsimos/umamin/compare/v5.22.0...v5.23.0
 [5.22.0]: https://github.com/omsimos/umamin/compare/v5.21.0...v5.22.0

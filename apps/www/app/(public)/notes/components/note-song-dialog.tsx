@@ -13,7 +13,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { CheckIcon, ClipboardPasteIcon, Music2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { parseSpotifyTrackId } from "@/lib/spotify";
+import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 
 type Props = {
   open: boolean;
@@ -40,7 +40,8 @@ export function NoteSongDialog({
         <DialogHeader>
           <DialogTitle>Add a song</DialogTitle>
           <DialogDescription>
-            Paste a Spotify track link and it'll play right on your note.
+            Paste a link from Spotify, Apple Music, SoundCloud, or YouTube Music
+            and it'll play right on your note.
           </DialogDescription>
         </DialogHeader>
 
@@ -77,8 +78,8 @@ function SongForm({
   const [draft, setDraft] = useState(value);
 
   const trimmed = draft.trim();
-  const trackId = trimmed ? parseSpotifyTrackId(trimmed) : null;
-  const invalid = trimmed.length > 0 && !trackId;
+  const music = trimmed ? parseMusicUrl(trimmed) : null;
+  const invalid = trimmed.length > 0 && !music;
 
   const handlePaste = async () => {
     // Unavailable on insecure contexts / older browsers — tell the user rather
@@ -106,7 +107,7 @@ function SongForm({
               "-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 transition-colors",
               invalid
                 ? "text-destructive"
-                : trackId
+                : music
                   ? "text-emerald-500"
                   : "text-muted-foreground",
             )}
@@ -117,7 +118,7 @@ function SongForm({
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Paste a Spotify song link"
+            placeholder="Paste a song link"
             aria-invalid={invalid}
             className="pl-9 text-sm"
           />
@@ -130,15 +131,17 @@ function SongForm({
 
       {invalid ? (
         <p className="text-destructive text-xs">
-          That doesn't look like a Spotify track link.
+          That doesn't look like a supported song link.
         </p>
-      ) : trackId ? (
+      ) : music ? (
         <p className="flex items-center gap-1 text-emerald-500 text-xs">
-          <CheckIcon className="size-3" /> Looks good
+          <CheckIcon className="size-3" /> Detected a{" "}
+          {MUSIC_PROVIDER_LABEL[music.provider]} song
         </p>
       ) : (
         <p className="text-muted-foreground text-xs">
-          In Spotify: a track's Share menu &rarr; Copy link.
+          Use a track's Share menu &rarr; Copy link. Paste the full link (short
+          links aren't supported).
         </p>
       )}
 
@@ -158,8 +161,8 @@ function SongForm({
         </Button>
         <Button
           type="button"
-          disabled={!trackId}
-          onClick={() => trackId && onAttach(trimmed)}
+          disabled={!music}
+          onClick={() => music && onAttach(trimmed)}
         >
           Attach song
         </Button>

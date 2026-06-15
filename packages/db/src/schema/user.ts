@@ -57,6 +57,16 @@ export const userTable = sqliteTable(
     lastSeenNotificationsAt: integer("last_seen_notifications_at", {
       mode: "timestamp",
     }),
+    // Account ban (moderator action). bannedAt null = active; a non-null date
+    // locks the account: the user is force-logged-out on ban and rejected at
+    // every session resolve + login/OAuth. Lock-only — their existing content
+    // stays visible. banReason/bannedBy are moderator-private (stripped from
+    // PublicUser, never selected into publicUserColumns). bannedBy is a soft
+    // reference (no FK — SQLite ALTER TABLE ADD COLUMN can't carry an FK action,
+    // so it would silently degrade to NO ACTION; a dangling id just renders).
+    bannedAt: integer("banned_at", { mode: "timestamp" }),
+    banReason: text("ban_reason"),
+    bannedBy: text("banned_by"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -71,6 +81,11 @@ export const userTable = sqliteTable(
     index("user_equipped_group_idx")
       .on(t.equippedGroupId)
       .where(sql`${t.equippedGroupId} IS NOT NULL`),
+    // Keeps a "list/sweep banned users" query off a full user scan (Turso bills
+    // per row scanned) — only the handful of banned rows are indexed.
+    index("user_banned_idx")
+      .on(t.bannedAt)
+      .where(sql`${t.bannedAt} IS NOT NULL`),
   ],
 );
 

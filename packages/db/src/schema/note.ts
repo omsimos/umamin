@@ -20,9 +20,17 @@ export const noteTable = sqliteTable(
     content: text("content").notNull(),
     isAnonymous: integer("is_anonymous", { mode: "boolean" }).notNull(),
     reactionCount: integer("reaction_count").notNull().default(0),
-    // Optional embedded Spotify track. Only the id is authoritative (validated
-    // server-side); title + thumbnail are best-effort oEmbed metadata cached for
-    // the feed preview. All null when no song is attached.
+    // Optional embedded song from any supported platform (spotify/apple/
+    // soundcloud/youtube). Provider + id are authoritative (validated
+    // server-side, id is a canonical token — see lib/music.ts); title +
+    // thumbnail are best-effort oEmbed metadata cached for the feed preview
+    // (Apple has none). All null when no song is attached.
+    musicProvider: text("music_provider"),
+    musicId: text("music_id"),
+    musicTitle: text("music_title"),
+    musicThumbnail: text("music_thumbnail"),
+    // Legacy Spotify columns (pre-5.24.0). Backfilled into music_* in 0021 and
+    // read only as a deploy-window fallback; drop in a later contract release.
     spotifyTrackId: text("spotify_track_id"),
     spotifyTitle: text("spotify_title"),
     spotifyThumbnail: text("spotify_thumbnail"),

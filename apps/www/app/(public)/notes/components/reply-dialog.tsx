@@ -1,5 +1,4 @@
 import { useMutation } from "@tanstack/react-query";
-import type { SelectNote } from "@umamin/db/schema/note";
 import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
@@ -14,11 +13,12 @@ import { toast } from "sonner";
 import { sendMessageAction } from "@/app/actions/message";
 import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import type { NoteItem } from "@/lib/query-types";
 import { formatContent } from "@/lib/utils";
 import type { FeedAuthorWithBadge } from "@/types/user";
 
 type ChatFormProps = {
-  note: SelectNote & { user: FeedAuthorWithBadge };
+  note: NoteItem & { user: FeedAuthorWithBadge };
 };
 
 type ReplyDialogProps = {

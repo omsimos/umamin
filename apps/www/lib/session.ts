@@ -33,6 +33,7 @@ function reviveCachedUser(user: SelectUser): SelectUser {
     ...user,
     createdAt: new Date(user.createdAt),
     updatedAt: user.updatedAt ? new Date(user.updatedAt) : null,
+    bannedAt: user.bannedAt ? new Date(user.bannedAt) : null,
   };
 }
 
@@ -71,10 +72,14 @@ export async function validateSessionToken(
     const cached = await redis.get<CachedSession>(cacheKey);
     if (cached) {
       if (Date.now() < cached.session.expiresAt) {
-        return {
-          session: cached.session,
-          user: reviveCachedUser(cached.user),
-        };
+        const user = reviveCachedUser(cached.user);
+        // Banned accounts resolve to no session everywhere (full lockout). A
+        // ban force-deletes session rows AND busts this cache, so a stale
+        // pre-ban blob shouldn't reach here — this is the backstop if it does.
+        if (user.bannedAt) {
+          return { session: null, user: null };
+        }
+        return { session: cached.session, user };
       }
       await redis.del(cacheKey);
     }
@@ -97,6 +102,11 @@ export async function validateSessionToken(
   const { session, user } = result;
   if (Date.now() >= session.expiresAt) {
     await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
+    return { session: null, user: null };
+  }
+  // Full lockout — never serve (or cache below) a banned account's session. The
+  // ban action force-deletes their session rows; this also catches any linger.
+  if (user.bannedAt) {
     return { session: null, user: null };
   }
   if (Date.now() >= session.expiresAt - 1000 * 60 * 60 * 24 * 15) {

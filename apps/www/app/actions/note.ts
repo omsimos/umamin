@@ -6,13 +6,13 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidateTag, updateTag } from "next/cache";
 import * as z from "zod";
 import { getSession } from "@/lib/auth";
+import { parseMusicUrl } from "@/lib/music";
 import { idSchema } from "@/lib/schema";
 import { getCurrentNoteData } from "@/lib/server/data";
 import { UNAUTHENTICATED_ERROR } from "@/lib/server/errors";
 import { isModerator } from "@/lib/server/moderation";
-import { fetchSpotifyTrackMeta } from "@/lib/server/spotify";
+import { fetchMusicMeta } from "@/lib/server/music";
 import { withAction } from "@/lib/server/with-action";
-import { parseSpotifyTrackId } from "@/lib/spotify";
 import { formatContent } from "@/lib/utils";
 
 const createNoteSchema = z
@@ -23,16 +23,17 @@ const createNoteSchema = z
       .trim()
       .max(500, { error: "Content cannot exceed 500 characters" })
       .default(""),
-    // Optional Spotify track link; the server is the source of truth for
-    // parsing/validating it (the client only pre-checks for instant feedback).
-    spotifyUrl: z.string().trim().max(300).optional(),
+    // Optional song link from any supported platform (spotify/apple/soundcloud/
+    // youtube); the server is the source of truth for parsing/validating it (the
+    // client only pre-checks for instant feedback). Apple Music URLs can be long.
+    musicUrl: z.string().trim().max(2048).optional(),
   })
   // A note may be text-only, song-only, or both — but never empty.
-  .refine((v) => v.content.length > 0 || !!v.spotifyUrl, {
+  .refine((v) => v.content.length > 0 || !!v.musicUrl, {
     error: "Add a few words or a song.",
   })
-  .refine((v) => !v.spotifyUrl || parseSpotifyTrackId(v.spotifyUrl) !== null, {
-    error: "That doesn't look like a Spotify track link.",
+  .refine((v) => !v.musicUrl || parseMusicUrl(v.musicUrl) !== null, {
+    error: "That doesn't look like a supported song link.",
   });
 
 export const createNoteAction = withAction(
@@ -46,16 +47,27 @@ export const createNoteAction = withAction(
     },
     errorMessage: "Failed to create note",
   },
-  async ({ isAnonymous, content, spotifyUrl }, { session }) => {
+  async ({ isAnonymous, content, musicUrl }, { session }) => {
     const formattedContent = formatContent(content);
 
-    // The refine above guarantees a present spotifyUrl parses to a track id.
-    // Resolve metadata BEFORE the transaction so a slow oEmbed never holds it
-    // open; a null id (no song / cleared) wipes any previously attached track.
-    const spotifyTrackId = spotifyUrl ? parseSpotifyTrackId(spotifyUrl) : null;
-    const { title: spotifyTitle, thumbnail: spotifyThumbnail } = spotifyTrackId
-      ? await fetchSpotifyTrackMeta(spotifyTrackId)
+    // The refine above guarantees a present musicUrl parses. Resolve metadata
+    // BEFORE the transaction so a slow oEmbed never holds it open; a null ref
+    // (no song / cleared) wipes any previously attached song.
+    const music = musicUrl ? parseMusicUrl(musicUrl) : null;
+    const { title: musicTitle, thumbnail: musicThumbnail } = music
+      ? await fetchMusicMeta(music)
       : { title: null, thumbnail: null };
+
+    const musicProvider = music?.provider ?? null;
+    const musicId = music?.id ?? null;
+
+    // New code stops writing the legacy spotify_* columns; null them on every
+    // save so re-saving a pre-5.24.0 note clears its old values.
+    const legacyMusic = {
+      spotifyTrackId: null,
+      spotifyTitle: null,
+      spotifyThumbnail: null,
+    };
 
     // Every submit rewrites the same note slot, so reactions from the previous
     // content no longer apply — reset them with the upsert.
@@ -67,9 +79,11 @@ export const createNoteAction = withAction(
           content: formattedContent,
           isAnonymous,
           reactionCount: 0,
-          spotifyTrackId,
-          spotifyTitle,
-          spotifyThumbnail,
+          musicProvider,
+          musicId,
+          musicTitle,
+          musicThumbnail,
+          ...legacyMusic,
           // updated_at is the notes-feed sort key + pagination cursor. Set it on
           // insert (it has no SQL default) so new notes sort to the top and never
           // produce a NULL -> NaN cursor.
@@ -81,9 +95,11 @@ export const createNoteAction = withAction(
             content: formattedContent,
             isAnonymous,
             reactionCount: 0,
-            spotifyTrackId,
-            spotifyTitle,
-            spotifyThumbnail,
+            musicProvider,
+            musicId,
+            musicTitle,
+            musicThumbnail,
+            ...legacyMusic,
             updatedAt: sql`(unixepoch())`,
           },
         })
@@ -135,6 +151,10 @@ export const clearNoteAction = withAction(
         .set({
           content: "",
           reactionCount: 0,
+          musicProvider: null,
+          musicId: null,
+          musicTitle: null,
+          musicThumbnail: null,
           spotifyTrackId: null,
           spotifyTitle: null,
           spotifyThumbnail: null,

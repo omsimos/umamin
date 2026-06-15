@@ -141,6 +141,20 @@
       "when": 1781445915656,
       "tag": "0019_strange_ikaris",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1781513325443,
+      "tag": "0020_peaceful_carmella_unuscione",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1781517077762,
+      "tag": "0021_fat_sleeper",
+      "breakpoints": true
     }
   ]
 }

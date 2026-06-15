@@ -15,6 +15,11 @@ export type PublicUser = Omit<
   | "blockedWords"
   | "bannerImageUrl"
   | "pushPrefs"
+  // Moderation state is server-only — never expose ban status (or its reason/
+  // author) on any payload. Surfaced to moderators via the profile-viewer read.
+  | "bannedAt"
+  | "banReason"
+  | "bannedBy"
 >;
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
@@ -65,6 +70,9 @@ export function toPublicUser(user: SelectUser): PublicUser {
     blockedWords: _blockedWords,
     bannerImageUrl: _bannerImageUrl,
     pushPrefs: _pushPrefs,
+    bannedAt: _bannedAt,
+    banReason: _banReason,
+    bannedBy: _bannedBy,
     ...rest
   } = user;
   return rest;

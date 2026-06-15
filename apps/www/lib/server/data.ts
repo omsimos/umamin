@@ -12,7 +12,11 @@ import {
   groupMessageTable,
 } from "@umamin/db/schema/group-message";
 import { messageTable } from "@umamin/db/schema/message";
-import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
+import {
+  noteReactionTable,
+  noteTable,
+  type SelectNote,
+} from "@umamin/db/schema/note";
 import { notificationTable } from "@umamin/db/schema/notification";
 import {
   pollOptionTable,
@@ -54,6 +58,11 @@ import {
   JOINED_GROUPS_CAP,
   normalizeGroupTag,
 } from "@/lib/group";
+import {
+  type MusicAttachment,
+  type MusicProvider,
+  safeMusicThumbnail,
+} from "@/lib/music";
 import type {
   BlockedUsersResponse,
   CommentsResponse,
@@ -1685,6 +1694,68 @@ export async function getPostCommentsPage(params: {
   };
 }
 
+const MUSIC_PROVIDERS: readonly MusicProvider[] = [
+  "spotify",
+  "apple",
+  "soundcloud",
+  "youtube",
+];
+
+// Single source of truth for turning a raw note row into the client `music`
+// object. Stored thumbnails are RE-VALIDATED here (not just at write time) so a
+// bad value in the column can never become an <img src> — mirrors the embed-URL
+// rebuild invariant in lib/music.ts.
+//
+// Precedence is legacy spotify_* FIRST during the 5.24.0 expand/contract
+// transition: new code NULLS spotify_* on every save, so a non-null
+// spotify_track_id reliably means OLD code wrote this note's song most recently
+// (old code can't touch music_*). Once old code is retired every save nulls
+// spotify_*, so notes converge to the music_* path; the later contract migration
+// that drops spotify_* finalizes it.
+function resolveNoteMusic(note: SelectNote): MusicAttachment | null {
+  if (note.spotifyTrackId) {
+    return {
+      provider: "spotify",
+      id: note.spotifyTrackId,
+      title: note.spotifyTitle ?? null,
+      thumbnail: safeMusicThumbnail("spotify", note.spotifyThumbnail),
+    };
+  }
+  if (
+    note.musicProvider &&
+    note.musicId &&
+    MUSIC_PROVIDERS.includes(note.musicProvider as MusicProvider)
+  ) {
+    const provider = note.musicProvider as MusicProvider;
+    return {
+      provider,
+      id: note.musicId,
+      title: note.musicTitle ?? null,
+      thumbnail: safeMusicThumbnail(provider, note.musicThumbnail),
+    };
+  }
+  return null;
+}
+
+// Emit the lean NoteItem: a single `music` object, with the raw music_*/legacy
+// spotify_* columns dropped so they never ride the client payload.
+function toNoteItem(
+  note: SelectNote,
+  extra?: Pick<NoteItem, "user" | "isReacted">,
+): NoteItem {
+  const {
+    musicProvider: _mp,
+    musicId: _mi,
+    musicTitle: _mt,
+    musicThumbnail: _mth,
+    spotifyTrackId: _st,
+    spotifyTitle: _stt,
+    spotifyThumbnail: _sth,
+    ...rest
+  } = note;
+  return { ...rest, music: resolveNoteMusic(note), ...extra };
+}
+
 async function getPublicNotesPage(
   cursor: string | null,
 ): Promise<NotesResponse> {
@@ -1727,11 +1798,10 @@ async function getPublicNotesPage(
 
   const data = rows.map(({ note, user }) =>
     note.isAnonymous
-      ? ({ ...note } as NoteItem)
-      : ({
-          ...note,
+      ? toNoteItem(note)
+      : toNoteItem(note, {
           user: user ? withGroupBadge(user, badgeMap) : undefined,
-        } as NoteItem),
+        }),
   );
 
   const { hasMore, pageRows } = getPageRows(data, FEED_PAGE_SIZE);
@@ -1838,7 +1908,9 @@ export async function getNotesPage(params: {
   };
 }
 
-export async function getCurrentNoteData(userId: string) {
+export async function getCurrentNoteData(
+  userId: string,
+): Promise<NoteItem | null> {
   const getCachedData = async () => {
     "use cache";
     cacheTag(`current-note:${userId}`);
@@ -1853,7 +1925,8 @@ export async function getCurrentNoteData(userId: string) {
     return data ?? null;
   };
 
-  return getCachedData();
+  const data = await getCachedData();
+  return data ? toNoteItem(data) : null;
 }
 
 export async function getCurrentUserData(
@@ -2047,6 +2120,7 @@ async function getUserProfileViewerOverlay(
 export async function getUserProfileViewerData(
   username: string,
   viewerId?: string | null,
+  opts?: { viewerIsModerator?: boolean },
 ): Promise<UserProfileViewerResponse | null> {
   const user = await getPublicUserProfileData(username);
 
@@ -2061,6 +2135,7 @@ export async function getUserProfileViewerData(
       isFollowing: false,
       isBlocked: false,
       isBlockedBy: false,
+      isBanned: false,
     };
   }
 
@@ -2070,10 +2145,24 @@ export async function getUserProfileViewerData(
     user.id,
   );
 
+  // Ban state is moderator-only and read FRESH (not cached) so a moderator sees
+  // the current status immediately after a ban/unban. Non-moderators always get
+  // false — ban state must never leak.
+  let isBanned = false;
+  if (opts?.viewerIsModerator) {
+    const [row] = await db
+      .select({ bannedAt: userTable.bannedAt })
+      .from(userTable)
+      .where(eq(userTable.id, user.id))
+      .limit(1);
+    isBanned = Boolean(row?.bannedAt);
+  }
+
   return {
     currentUserId: viewerId,
     isAuthenticated: true,
     ...overlay,
+    isBanned,
   };
 }
 
