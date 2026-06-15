@@ -62,7 +62,7 @@ import {
   saveImage,
   shortTimeAgo,
 } from "@/lib/utils";
-import { NoteSpotifyEmbed } from "./note-spotify-embed";
+import { NoteMusicEmbed } from "./note-music-embed";
 import { ReplyDialog } from "./reply-dialog";
 
 type Props = {
@@ -403,13 +403,7 @@ export function NoteCard({
               content={data.content}
               className="font-display text-lg leading-snug"
             />
-            {data.spotifyTrackId && (
-              <NoteSpotifyEmbed
-                trackId={data.spotifyTrackId}
-                title={data.spotifyTitle}
-                thumbnail={data.spotifyThumbnail}
-              />
-            )}
+            {data.music && <NoteMusicEmbed music={data.music} />}
           </CardContent>
 
           <CardFooter className="w-full pt-0">

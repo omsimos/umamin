@@ -24,6 +24,7 @@ any that are empty.
 
 - Moderators can now suspend an account. A suspended member is signed out immediately, can't sign back in, and sees a notice explaining the suspension (with its reason) — their existing posts and notes stay visible. A suspension can be lifted at any time.
 - A moderator tool to block a specific IP address from Umamin, for abuse that isn't tied to a single account.
+- Notes can now carry a song from Apple Music, SoundCloud, or YouTube Music too — not just Spotify. Paste any track link and Umamin detects the platform automatically; it plays inline on your note with the same tap-to-play card.
 
 ### Security & Privacy
 

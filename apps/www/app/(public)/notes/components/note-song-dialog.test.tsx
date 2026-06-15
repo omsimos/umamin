@@ -47,9 +47,9 @@ describe("NoteSongDialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /paste/i }));
 
-    const input = screen.getByPlaceholderText(/spotify song link/i);
+    const input = screen.getByPlaceholderText(/song link/i);
     await waitFor(() => expect(input).toHaveValue(TRACK));
-    expect(screen.getByText(/looks good/i)).toBeInTheDocument();
+    expect(screen.getByText(/detected a spotify song/i)).toBeInTheDocument();
     expect(attach).toBeEnabled();
 
     fireEvent.click(attach);
@@ -57,7 +57,7 @@ describe("NoteSongDialog", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("keeps attach disabled for a non-Spotify clipboard value", async () => {
+  it("keeps attach disabled for an unsupported clipboard value", async () => {
     setClipboard({
       readText: vi.fn().mockResolvedValue("https://example.com/song"),
     });
@@ -66,7 +66,7 @@ describe("NoteSongDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /paste/i }));
 
     expect(
-      await screen.findByText(/doesn't look like a spotify track/i),
+      await screen.findByText(/doesn't look like a supported song/i),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /attach song/i })).toBeDisabled();
   });
@@ -84,9 +84,7 @@ describe("NoteSongDialog", () => {
     setClipboard({ readText: vi.fn() });
     const { onRemove, onOpenChange } = setup(TRACK);
 
-    expect(screen.getByPlaceholderText(/spotify song link/i)).toHaveValue(
-      TRACK,
-    );
+    expect(screen.getByPlaceholderText(/song link/i)).toHaveValue(TRACK);
 
     fireEvent.click(screen.getByRole("button", { name: /^remove$/i }));
     expect(onRemove).toHaveBeenCalled();

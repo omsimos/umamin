@@ -1,4 +1,3 @@
-import type { SelectNote } from "@umamin/db/schema/note";
 import type { FeedSort } from "@/lib/feed-sort";
 import type {
   BlockedUsersResponse,
@@ -16,6 +15,7 @@ import type {
   GroupUnreadResponse,
   GroupViewerResponse,
   MessagesResponse,
+  NoteItem,
   NotesResponse,
   NotificationBadgeResponse,
   NotificationsResponse,
@@ -96,7 +96,7 @@ export async function fetchUserPostsPage(
 }
 
 export async function fetchCurrentNote() {
-  return fetchJson<SelectNote | null>(`/api/notes/current`);
+  return fetchJson<NoteItem | null>(`/api/notes/current`);
 }
 
 // Newest feed-edge timestamp (Redis-backed, briefly CDN-cached). Drives the

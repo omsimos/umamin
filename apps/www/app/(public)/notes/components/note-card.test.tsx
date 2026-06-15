@@ -40,9 +40,7 @@ function makeNote(overrides: Partial<NoteItem> = {}): NoteItem {
     content: "currently overthinking about tests",
     isAnonymous: true,
     reactionCount: 0,
-    spotifyTrackId: null,
-    spotifyTitle: null,
-    spotifyThumbnail: null,
+    music: null,
     createdAt: new Date("2026-06-01T00:00:00Z"),
     updatedAt: new Date("2026-06-01T00:00:00Z"),
     ...overrides,
@@ -155,12 +153,16 @@ describe("NoteCard reactions", () => {
   });
 });
 
-describe("NoteCard Spotify embed", () => {
-  it("shows a facade and lazily mounts the iframe on tap", () => {
+describe("NoteCard music embed", () => {
+  it("shows a Spotify facade and lazily mounts the iframe on tap", () => {
     renderCard(
       makeNote({
-        spotifyTrackId: "4cOdK2wGLETKBW3PvgPWqT",
-        spotifyTitle: "Never Gonna Give You Up",
+        music: {
+          provider: "spotify",
+          id: "4cOdK2wGLETKBW3PvgPWqT",
+          title: "Never Gonna Give You Up",
+          thumbnail: null,
+        },
       }),
     );
 
@@ -180,7 +182,31 @@ describe("NoteCard Spotify embed", () => {
     );
   });
 
-  it("renders no embed when the note has no track", () => {
+  it("builds a YouTube Music nocookie embed on tap", () => {
+    renderCard(
+      makeNote({
+        music: {
+          provider: "youtube",
+          id: "dQw4w9WgXcQ",
+          title: "Never Gonna Give You Up",
+          thumbnail: null,
+        },
+      }),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /play never gonna give you up on youtube music/i,
+      }),
+    );
+
+    expect(document.querySelector("iframe")).toHaveAttribute(
+      "src",
+      "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+    );
+  });
+
+  it("renders no embed when the note has no song", () => {
     renderCard(makeNote());
     expect(screen.queryByRole("button", { name: /on spotify/i })).toBeNull();
   });

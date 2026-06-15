@@ -15,10 +15,10 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createNoteAction } from "@/app/actions/note";
+import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 import { queryKeys } from "@/lib/query";
 import { upsertNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
-import { parseSpotifyTrackId } from "@/lib/spotify";
 import type { PublicUser } from "@/types/user";
 import { NoteSongDialog } from "./note-song-dialog";
 
@@ -35,13 +35,13 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [songOpen, setSongOpen] = useState(false);
-  // Only ever holds "" or a validated track URL — the drawer commits valid links
+  // Only ever holds "" or a validated song URL — the dialog commits valid links
   // only, so the composer never has to reason about a half-typed bad one.
-  const [spotifyUrl, setSpotifyUrl] = useState("");
+  const [musicUrl, setMusicUrl] = useState("");
 
-  const parsedTrackId = spotifyUrl ? parseSpotifyTrackId(spotifyUrl) : null;
+  const parsedMusic = musicUrl ? parseMusicUrl(musicUrl) : null;
   // A note needs words or a song.
-  const canSubmit = content.trim().length > 0 || !!parsedTrackId;
+  const canSubmit = content.trim().length > 0 || !!parsedMusic;
   // Randomized after mount — picking during render would mismatch the SSR HTML.
   const [placeholder, setPlaceholder] = useState(PROMPTS[0]);
 
@@ -65,6 +65,12 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         InfiniteData<NotesResponse>
       >({ queryKey: queryKeys.notesRoot() });
 
+      // Show the song immediately; title + cover fill in from the server's
+      // oEmbed lookup when the action resolves.
+      const optimisticRef = nextValues.musicUrl
+        ? parseMusicUrl(nextValues.musicUrl)
+        : null;
+
       const optimisticNote: NoteItem = {
         id:
           (previousNote as NoteItem | null | undefined)?.id ??
@@ -76,13 +82,9 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         isAnonymous: nextValues.isAnonymous ?? false,
         // Server resets reactions on every upsert — mirror that optimistically.
         reactionCount: 0,
-        // Show the song immediately; title + cover fill in from the server's
-        // oEmbed lookup when the action resolves.
-        spotifyTrackId: nextValues.spotifyUrl
-          ? parseSpotifyTrackId(nextValues.spotifyUrl)
+        music: optimisticRef
+          ? { ...optimisticRef, title: null, thumbnail: null }
           : null,
-        spotifyTitle: null,
-        spotifyThumbnail: null,
         createdAt:
           (previousNote as NoteItem | null | undefined)?.createdAt ??
           new Date(),
@@ -120,16 +122,17 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       }
 
       if (data && "note" in data && data.note) {
+        const note = data.note;
         queryClient.setQueryData<NoteItem | null>(
           queryKeys.currentNote(),
-          data.note,
+          note,
         );
         queryClient.setQueriesData<InfiniteData<NotesResponse>>(
           { queryKey: queryKeys.notesRoot() },
           (current) =>
             upsertNote(current, {
-              ...data.note,
-              user: data.note.isAnonymous ? undefined : currentUser,
+              ...note,
+              user: note.isAnonymous ? undefined : currentUser,
             }),
         );
       }
@@ -137,7 +140,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       toast.success("Note's out there.");
 
       setContent("");
-      setSpotifyUrl("");
+      setMusicUrl("");
       setSongOpen(false);
     },
     onError: (err, _values, ctx) => {
@@ -164,7 +167,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         className="font-display md:text-base"
       />
 
-      {parsedTrackId && (
+      {parsedMusic && (
         <div className="mt-2 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
           <Music2Icon className="size-4 shrink-0 text-emerald-500" />
           <button
@@ -173,7 +176,8 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
             disabled={updateNoteMutation.isPending}
             className="flex-1 truncate text-left text-sm hover:underline disabled:no-underline"
           >
-            Song attached &middot; tap to change
+            {MUSIC_PROVIDER_LABEL[parsedMusic.provider]} song attached &middot;
+            tap to change
           </button>
           <Button
             type="button"
@@ -181,7 +185,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
             size="icon"
             aria-label="Remove song"
             disabled={updateNoteMutation.isPending}
-            onClick={() => setSpotifyUrl("")}
+            onClick={() => setMusicUrl("")}
             className="size-7"
           >
             <XIcon />
@@ -192,9 +196,9 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       <NoteSongDialog
         open={songOpen}
         onOpenChange={setSongOpen}
-        value={spotifyUrl}
-        onAttach={setSpotifyUrl}
-        onRemove={() => setSpotifyUrl("")}
+        value={musicUrl}
+        onAttach={setMusicUrl}
+        onRemove={() => setMusicUrl("")}
       />
 
       <div className="flex items-center justify-between mt-2">
@@ -214,7 +218,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {!parsedTrackId && (
+          {!parsedMusic && (
             <Button
               type="button"
               variant="ghost"
@@ -233,7 +237,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
               updateNoteMutation.mutate({
                 content: content.trim(),
                 isAnonymous,
-                spotifyUrl: parsedTrackId ? spotifyUrl : undefined,
+                musicUrl: parsedMusic ? musicUrl : undefined,
               })
             }
           >
