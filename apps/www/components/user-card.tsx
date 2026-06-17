@@ -24,6 +24,7 @@ import { hasUmaminPlus } from "@/lib/utils";
 import type { PublicUserWithBadge } from "@/types/user";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { GroupBadge } from "./group-badge";
+import { MusicEmbed } from "./music-embed";
 import { ProfileShareMenu } from "./share-button";
 
 const CopyLink = dynamic(() => import("./copy-link"), { ssr: false });
@@ -122,13 +123,15 @@ export function UserCard({
         <p className="text-muted-foreground text-sm">@{user.username}</p>
 
         <div className="mt-4">
-          <p
-            className={cn("min-w-0 text-sm break-words", {
-              "break-all": user?.bio?.split(" ").length === 1,
-            })}
-          >
-            {user?.bio}
-          </p>
+          {user?.bio && (
+            <p
+              className={cn("min-w-0 text-sm break-words", {
+                "break-all": user.bio.split(" ").length === 1,
+              })}
+            >
+              {user.bio}
+            </p>
+          )}
 
           <FollowListDrawer
             username={user.username}
@@ -136,7 +139,7 @@ export function UserCard({
             followingCount={user.followingCount ?? 0}
           />
 
-          <div className="mt-4 space-y-1">
+          <div className="mt-3 space-y-1">
             <div className="text-muted-foreground text-sm flex items-center gap-2">
               <ShieldUserIcon className="size-4" />
               <span>
@@ -166,6 +169,8 @@ export function UserCard({
               })}
             </div>
           </div>
+
+          {user.music && <MusicEmbed music={user.music} />}
         </div>
       </section>
     </div>

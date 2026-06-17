@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { clearNoteAction } from "@/app/actions/note";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
+import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
@@ -41,7 +42,6 @@ import {
   shortTimeAgo,
 } from "@/lib/utils";
 import type { PublicUserWithBadge } from "@/types/user";
-import { NoteMusicEmbed } from "./note-music-embed";
 
 export function CurrentUserNote({
   currentUser,
@@ -222,7 +222,7 @@ export function CurrentUserNote({
             className="font-display text-lg leading-snug"
           />
 
-          {data.music && <NoteMusicEmbed music={data.music} />}
+          {data.music && <MusicEmbed music={data.music} />}
         </CardContent>
 
         {(data.reactionCount ?? 0) > 0 && (

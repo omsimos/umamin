@@ -60,7 +60,7 @@ import {
 } from "@/lib/group";
 import {
   type MusicAttachment,
-  type MusicProvider,
+  resolveMusicAttachment,
   safeMusicThumbnail,
 } from "@/lib/music";
 import type {
@@ -1694,17 +1694,10 @@ export async function getPostCommentsPage(params: {
   };
 }
 
-const MUSIC_PROVIDERS: readonly MusicProvider[] = [
-  "spotify",
-  "apple",
-  "soundcloud",
-  "youtube",
-];
-
-// Single source of truth for turning a raw note row into the client `music`
-// object. Stored thumbnails are RE-VALIDATED here (not just at write time) so a
-// bad value in the column can never become an <img src> — mirrors the embed-URL
-// rebuild invariant in lib/music.ts.
+// Turns a raw note row into the client `music` object. The shared
+// resolveMusicAttachment (lib/music.ts) handles the music_* columns and the
+// thumbnail re-validation; this wrapper only adds the note-specific legacy
+// spotify_* fallback.
 //
 // Precedence is legacy spotify_* FIRST during the 5.24.0 expand/contract
 // transition: new code NULLS spotify_* on every save, so a non-null
@@ -1721,20 +1714,7 @@ function resolveNoteMusic(note: SelectNote): MusicAttachment | null {
       thumbnail: safeMusicThumbnail("spotify", note.spotifyThumbnail),
     };
   }
-  if (
-    note.musicProvider &&
-    note.musicId &&
-    MUSIC_PROVIDERS.includes(note.musicProvider as MusicProvider)
-  ) {
-    const provider = note.musicProvider as MusicProvider;
-    return {
-      provider,
-      id: note.musicId,
-      title: note.musicTitle ?? null,
-      thumbnail: safeMusicThumbnail(provider, note.musicThumbnail),
-    };
-  }
-  return null;
+  return resolveMusicAttachment(note);
 }
 
 // Emit the lean NoteItem: a single `music` object, with the raw music_*/legacy
@@ -1948,6 +1928,12 @@ export async function getCurrentUserData(
         blockedWords: userTable.blockedWords,
         // Owner-private push-notification preference bitmask (see types/user.ts).
         pushPrefs: userTable.pushPrefs,
+        // Profile song (resolved into a lean `music` object below, raw columns
+        // dropped) so settings can preview/edit the attached song.
+        musicProvider: userTable.musicProvider,
+        musicId: userTable.musicId,
+        musicTitle: userTable.musicTitle,
+        musicThumbnail: userTable.musicThumbnail,
         hasPassword:
           sql<number>`CASE WHEN ${userTable.passwordHash} IS NOT NULL THEN 1 ELSE 0 END`.as(
             "hasPassword",
@@ -1967,7 +1953,20 @@ export async function getCurrentUserData(
       ? await getGroupBadge(userRecord.equippedGroupId)
       : null;
 
-    return { ...userRecord, groupBadge };
+    // Drop the raw music_* columns and emit the lean `music` object (same
+    // contract as the public profile read).
+    const { musicProvider, musicId, musicTitle, musicThumbnail, ...rest } =
+      userRecord;
+    return {
+      ...rest,
+      groupBadge,
+      music: resolveMusicAttachment({
+        musicProvider,
+        musicId,
+        musicTitle,
+        musicThumbnail,
+      }),
+    };
   };
 
   const getAccounts = async () => {
@@ -2028,12 +2027,31 @@ export async function getPublicUserProfileData(
       points: userTable.points,
       createdAt: userTable.createdAt,
       updatedAt: userTable.updatedAt,
+      musicProvider: userTable.musicProvider,
+      musicId: userTable.musicId,
+      musicTitle: userTable.musicTitle,
+      musicThumbnail: userTable.musicThumbnail,
     })
     .from(userTable)
     .where(eq(userTable.username, username))
     .limit(1);
 
-  return user ?? null;
+  if (!user) {
+    return null;
+  }
+
+  // Drop the raw music_* columns and emit a single lean, re-validated `music`
+  // object — the same contract as NoteItem.music (see resolveNoteMusic).
+  const { musicProvider, musicId, musicTitle, musicThumbnail, ...rest } = user;
+  return {
+    ...rest,
+    music: resolveMusicAttachment({
+      musicProvider,
+      musicId,
+      musicTitle,
+      musicThumbnail,
+    }),
+  };
 }
 
 /**

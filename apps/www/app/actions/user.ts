@@ -24,6 +24,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { sanitizeBlockedWords } from "@/lib/blocked-words";
+import { type MusicAttachment, parseMusicUrl } from "@/lib/music";
 import {
   AURA_POINTS,
   awardAura,
@@ -35,6 +36,7 @@ import { checkRateLimit } from "@/lib/ratelimit";
 import { idSchema } from "@/lib/schema";
 import { getCurrentUserData, getUserProfileData } from "@/lib/server/data";
 import { isUniqueConstraintViolation } from "@/lib/server/errors";
+import { fetchMusicMeta } from "@/lib/server/music";
 import { notify } from "@/lib/server/notifications";
 import {
   claimStagedAvatar,
@@ -173,6 +175,61 @@ export const generalSettingsAction = withAction(
       success: true,
       user: normalized,
     };
+  },
+);
+
+const profileMusicSchema = z
+  .object({
+    // Absent/empty clears the profile song; a present link is the source of
+    // truth for parsing/validating (the client only pre-checks for instant
+    // feedback). Apple Music URLs can be long. Mirrors createNoteAction.
+    musicUrl: z.string().trim().max(2048).optional(),
+  })
+  .refine((v) => !v.musicUrl || parseMusicUrl(v.musicUrl) !== null, {
+    error: "That doesn't look like a supported song link.",
+  });
+
+// Standalone profile-song control (like avatar/banner — NOT part of the general
+// settings form, so saving the form never wipes or re-prompts for the song).
+// A present, valid musicUrl sets the song; an absent one clears it.
+export const updateProfileMusicAction = withAction(
+  {
+    schema: profileMusicSchema,
+    auth: "user",
+    invalidInput: (error) => error.issues[0].message,
+    rateLimit: {
+      name: "write",
+      key: ({ user }) => `profilemusic:${user.id}`,
+    },
+    errorMessage: "Failed to update profile song",
+  },
+  async ({ musicUrl }, { user }) => {
+    // The refine guarantees a present musicUrl parses. Resolve oEmbed metadata
+    // from our own sanitized token (no SSRF); a null ref clears the song.
+    const ref = musicUrl ? parseMusicUrl(musicUrl) : null;
+    const { title, thumbnail } = ref
+      ? await fetchMusicMeta(ref)
+      : { title: null, thumbnail: null };
+
+    await db
+      .update(userTable)
+      .set({
+        musicProvider: ref?.provider ?? null,
+        musicId: ref?.id ?? null,
+        musicTitle: title,
+        musicThumbnail: thumbnail,
+      })
+      .where(eq(userTable.id, user.id));
+
+    updateTag(`user:${user.username}`);
+    updateTag(`user:${user.id}`);
+    updateTag(`user:${user.id}:accounts`);
+
+    const music: MusicAttachment | null = ref
+      ? { provider: ref.provider, id: ref.id, title, thumbnail }
+      : null;
+
+    return { success: true, music };
   },
 );
 

@@ -3,6 +3,7 @@ import {
   musicEmbedUrl,
   musicSourceUrl,
   parseMusicUrl,
+  resolveMusicAttachment,
   safeMusicThumbnail,
 } from "./music";
 
@@ -212,5 +213,58 @@ describe("musicSourceUrl", () => {
     expect(
       musicSourceUrl({ provider: "apple", id: "us/1441164359" }),
     ).toBeNull();
+  });
+});
+
+describe("resolveMusicAttachment", () => {
+  it("decodes stored music_* columns into an attachment", () => {
+    expect(
+      resolveMusicAttachment({
+        musicProvider: "spotify",
+        musicId: SPOTIFY_ID,
+        musicTitle: "Never Gonna Give You Up",
+        musicThumbnail: "https://i.scdn.co/image/abc",
+      }),
+    ).toEqual({
+      provider: "spotify",
+      id: SPOTIFY_ID,
+      title: "Never Gonna Give You Up",
+      thumbnail: "https://i.scdn.co/image/abc",
+    });
+  });
+
+  it("returns null when no song is attached or the provider is unknown", () => {
+    expect(
+      resolveMusicAttachment({
+        musicProvider: null,
+        musicId: null,
+        musicTitle: null,
+        musicThumbnail: null,
+      }),
+    ).toBeNull();
+    expect(
+      resolveMusicAttachment({
+        musicProvider: "myspace",
+        musicId: "x",
+        musicTitle: null,
+        musicThumbnail: null,
+      }),
+    ).toBeNull();
+  });
+
+  it("re-validates a tampered thumbnail at read time", () => {
+    expect(
+      resolveMusicAttachment({
+        musicProvider: "spotify",
+        musicId: SPOTIFY_ID,
+        musicTitle: null,
+        musicThumbnail: "https://evil.com/x.jpg",
+      }),
+    ).toEqual({
+      provider: "spotify",
+      id: SPOTIFY_ID,
+      title: null,
+      thumbnail: null,
+    });
   });
 });

@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.25.0] - 2026-06-17
+
+### Added
+
+- You can now pin a song to your profile. Add a track from Spotify, Apple Music, SoundCloud, or YouTube Music in Settings and it plays right on your profile with the same tap-to-play card as notes.
+
 ## [5.24.0] - 2026-06-15
 
 ### Added
@@ -793,6 +799,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.25.0]: https://github.com/omsimos/umamin/compare/v5.24.0...v5.25.0
 [5.24.0]: https://github.com/omsimos/umamin/compare/v5.23.1...v5.24.0
 [5.23.1]: https://github.com/omsimos/umamin/compare/v5.23.0...v5.23.1
 [5.23.0]: https://github.com/omsimos/umamin/compare/v5.22.0...v5.23.0

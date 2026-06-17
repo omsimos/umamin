@@ -67,6 +67,16 @@ export const userTable = sqliteTable(
     bannedAt: integer("banned_at", { mode: "timestamp" }),
     banReason: text("ban_reason"),
     bannedBy: text("banned_by"),
+    // Profile song: an optional track embedded on the user's profile — the same
+    // multi-platform attachment as /notes (Spotify/Apple Music/SoundCloud/
+    // YouTube). musicId is a canonical, validated token (never a raw URL); title/
+    // thumbnail are a best-effort oEmbed cache, re-validated on every read. These
+    // raw columns are dropped from PublicUser and resolved into a single lean
+    // `music` object on the profile read. See apps/www lib/music.ts.
+    musicProvider: text("music_provider"),
+    musicId: text("music_id"),
+    musicTitle: text("music_title"),
+    musicThumbnail: text("music_thumbnail"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

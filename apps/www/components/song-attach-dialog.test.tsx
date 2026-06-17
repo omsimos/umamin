@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NoteSongDialog } from "./note-song-dialog";
+import { SongAttachDialog } from "./song-attach-dialog";
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn() },
@@ -26,7 +26,7 @@ function setup(value = "") {
   const onRemove = vi.fn();
   const onOpenChange = vi.fn();
   render(
-    <NoteSongDialog
+    <SongAttachDialog
       open
       onOpenChange={onOpenChange}
       value={value}
@@ -37,7 +37,7 @@ function setup(value = "") {
   return { onAttach, onRemove, onOpenChange };
 }
 
-describe("NoteSongDialog", () => {
+describe("SongAttachDialog", () => {
   it("fills the field from the clipboard and attaches a valid track", async () => {
     setClipboard({ readText: vi.fn().mockResolvedValue(TRACK) });
     const { onAttach, onOpenChange } = setup();

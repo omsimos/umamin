@@ -24,12 +24,56 @@ export type MusicAttachment = MusicRef & {
   thumbnail: string | null;
 };
 
+export const MUSIC_PROVIDERS: readonly MusicProvider[] = [
+  "spotify",
+  "apple",
+  "soundcloud",
+  "youtube",
+];
+
 export const MUSIC_PROVIDER_LABEL: Record<MusicProvider, string> = {
   spotify: "Spotify",
   apple: "Apple Music",
   soundcloud: "SoundCloud",
   youtube: "YouTube Music",
 };
+
+// The raw `music_*` columns any table carries to store a song attachment
+// (note + user share the exact same shape). Decoded into a MusicAttachment by
+// resolveMusicAttachment — the storage layer (which table) is the only thing
+// that differs between surfaces.
+export type MusicColumns = {
+  musicProvider: string | null;
+  musicId: string | null;
+  musicTitle: string | null;
+  musicThumbnail: string | null;
+};
+
+/**
+ * Decodes the stored `music_*` columns into a validated MusicAttachment, or
+ * null when no song is attached / the provider is unknown. Shared by every
+ * surface that embeds a song (notes, profiles). The thumbnail is RE-VALIDATED
+ * here (not just at write time), mirroring the embed-URL rebuild invariant: a
+ * bad value in the column can never become an <img src>.
+ */
+export function resolveMusicAttachment(
+  row: MusicColumns,
+): MusicAttachment | null {
+  if (
+    row.musicProvider &&
+    row.musicId &&
+    MUSIC_PROVIDERS.includes(row.musicProvider as MusicProvider)
+  ) {
+    const provider = row.musicProvider as MusicProvider;
+    return {
+      provider,
+      id: row.musicId,
+      title: row.musicTitle ?? null,
+      thumbnail: safeMusicThumbnail(provider, row.musicThumbnail),
+    };
+  }
+  return null;
+}
 
 // Cover art must live on the platform's own image CDN. Apple has no oEmbed, so
 // it never produces a thumbnail.

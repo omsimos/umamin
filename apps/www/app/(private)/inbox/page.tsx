@@ -7,6 +7,7 @@ import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
 import { YouTabs } from "@/components/you-tabs";
 import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
+import { resolveMusicAttachment } from "@/lib/music";
 import { queryKeys } from "@/lib/query";
 import type { MessagesResponse } from "@/lib/query-types";
 import { getMessagesPage } from "@/lib/server/data";
@@ -76,6 +77,7 @@ export default async function InboxPage({
         <CurrentUserCard
           user={user ? toPublicUser(user) : null}
           bannerImageUrl={user?.bannerImageUrl}
+          music={user ? resolveMusicAttachment(user) : null}
         />
       </Suspense>
 
