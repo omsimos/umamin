@@ -155,6 +155,13 @@
       "when": 1781517077762,
       "tag": "0021_fat_sleeper",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1781707287956,
+      "tag": "0022_grey_guardsmen",
+      "breakpoints": true
     }
   ]
 }

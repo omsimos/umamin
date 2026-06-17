@@ -15,12 +15,12 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createNoteAction } from "@/app/actions/note";
+import { SongAttachDialog } from "@/components/song-attach-dialog";
 import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 import { queryKeys } from "@/lib/query";
 import { upsertNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import type { PublicUser } from "@/types/user";
-import { NoteSongDialog } from "./note-song-dialog";
 
 const PROMPTS = [
   "currently overthinking about…",
@@ -193,12 +193,13 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         </div>
       )}
 
-      <NoteSongDialog
+      <SongAttachDialog
         open={songOpen}
         onOpenChange={setSongOpen}
         value={musicUrl}
         onAttach={setMusicUrl}
         onRemove={() => setMusicUrl("")}
+        description="Paste a link from Spotify, Apple Music, SoundCloud, or YouTube Music and it'll play right on your note."
       />
 
       <div className="flex items-center justify-between mt-2">

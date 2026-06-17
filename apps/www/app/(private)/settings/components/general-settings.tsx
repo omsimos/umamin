@@ -13,6 +13,7 @@ import type {
 } from "@/lib/query-types";
 import { generalSettingsSchema, type UserWithAccount } from "@/types/user";
 import { ProfileMedia } from "./profile-media";
+import { ProfileSong } from "./profile-song";
 
 export function GeneralSettings({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
@@ -99,6 +100,8 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
   return (
     <div className="space-y-8 w-full">
       <ProfileMedia user={user} />
+
+      <ProfileSong user={user} />
 
       <form
         className="space-y-6 w-full"

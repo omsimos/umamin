@@ -31,11 +31,13 @@ type Props = {
   className?: string;
 };
 
-// Lazy by design: the feed renders many notes, so we never mount a third-party
-// player iframe until the listener taps the facade — one tap, one player, no
-// wall of frames. The whole element carries data-export-exclude so the saved-note
-// image omits the song (a cross-origin iframe can't be captured — see saveImage).
-export function NoteMusicEmbed({ music, className }: Props) {
+// A shared, surface-agnostic song embed (notes + profiles). Lazy by design: a
+// feed/profile can render many of these, so we never mount a third-party player
+// iframe until the listener taps the facade — one tap, one player, no wall of
+// frames. The whole element carries data-export-exclude so a saved-as-image
+// surface omits the song (a cross-origin iframe can't be captured — see
+// saveImage). Spacing is the default mt-3; callers override via className.
+export function MusicEmbed({ music, className }: Props) {
   const [loaded, setLoaded] = useState(false);
   const src = musicEmbedUrl(music);
   if (!src) return null;

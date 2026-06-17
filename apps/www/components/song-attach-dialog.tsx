@@ -11,7 +11,7 @@ import {
 import { Input } from "@umamin/ui/components/input";
 import { cn } from "@umamin/ui/lib/utils";
 import { CheckIcon, ClipboardPasteIcon, Music2Icon } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 
@@ -22,17 +22,21 @@ type Props = {
   value: string;
   onAttach: (url: string) => void;
   onRemove: () => void;
+  /** Surface-specific helper copy under the title (where the song will play). */
+  description?: ReactNode;
 };
 
 // A centered Dialog (not a bottom Drawer): the soft keyboard pushes a bottom
 // sheet around and breaks its layout, whereas a Dialog stays put and the
-// browser scrolls the focused input into view.
-export function NoteSongDialog({
+// browser scrolls the focused input into view. Shared across surfaces that
+// attach a song (notes composer, profile settings).
+export function SongAttachDialog({
   open,
   onOpenChange,
   value,
   onAttach,
   onRemove,
+  description,
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,8 +44,8 @@ export function NoteSongDialog({
         <DialogHeader>
           <DialogTitle>Add a song</DialogTitle>
           <DialogDescription>
-            Paste a link from Spotify, Apple Music, SoundCloud, or YouTube Music
-            and it'll play right on your note.
+            {description ??
+              "Paste a link from Spotify, Apple Music, SoundCloud, or YouTube Music."}
           </DialogDescription>
         </DialogHeader>
 

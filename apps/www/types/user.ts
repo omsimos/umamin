@@ -1,5 +1,6 @@
 import type { SelectAccount, SelectUser } from "@umamin/db/schema/user";
 import * as z from "zod";
+import type { MusicAttachment } from "@/lib/music";
 import type { GroupBadgeData } from "./group";
 
 // lastSeenNotificationsAt is the viewer's own notification watermark,
@@ -7,7 +8,9 @@ import type { GroupBadgeData } from "./group";
 // push-notification setting — private state, never part of a public (or even
 // own-profile) payload. bannerImageUrl is profile-header-only (re-added on
 // PublicUserWithBadge), kept out of the per-author payloads that
-// publicUserColumns feeds so feed/note/comment lists stay compact.
+// publicUserColumns feeds so feed/note/comment lists stay compact. The raw
+// music_* columns are dropped too — the profile read resolves them into a lean
+// `music` object (re-added on PublicUserWithBadge), mirroring NoteItem.music.
 export type PublicUser = Omit<
   SelectUser,
   | "passwordHash"
@@ -15,6 +18,10 @@ export type PublicUser = Omit<
   | "blockedWords"
   | "bannerImageUrl"
   | "pushPrefs"
+  | "musicProvider"
+  | "musicId"
+  | "musicTitle"
+  | "musicThumbnail"
   // Moderation state is server-only — never expose ban status (or its reason/
   // author) on any payload. Surfaced to moderators via the profile-viewer read.
   | "bannedAt"
@@ -24,11 +31,13 @@ export type PublicUser = Omit<
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
 // items can omit it (the badge appears on the server swap); null = no badge
-// equipped or the group is gone. bannerImageUrl is only selected on the profile
-// + current-user reads — undefined on author payloads (and so never rendered).
+// equipped or the group is gone. bannerImageUrl + music are only selected on
+// the profile + current-user reads — undefined on author payloads (and so never
+// rendered). music = the resolved profile song (null = none attached).
 export type PublicUserWithBadge = PublicUser & {
   groupBadge?: GroupBadgeData | null;
   bannerImageUrl?: string | null;
+  music?: MusicAttachment | null;
 };
 
 // Lean author shape for LIST surfaces (feed/notes/comments/messages/follow/
@@ -70,6 +79,10 @@ export function toPublicUser(user: SelectUser): PublicUser {
     blockedWords: _blockedWords,
     bannerImageUrl: _bannerImageUrl,
     pushPrefs: _pushPrefs,
+    musicProvider: _musicProvider,
+    musicId: _musicId,
+    musicTitle: _musicTitle,
+    musicThumbnail: _musicThumbnail,
     bannedAt: _bannedAt,
     banReason: _banReason,
     bannedBy: _bannedBy,

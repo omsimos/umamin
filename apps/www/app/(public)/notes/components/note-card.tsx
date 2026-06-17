@@ -44,6 +44,7 @@ import {
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
+import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
 import {
   BURST_ACTION_REJECT_MESSAGE,
@@ -62,7 +63,6 @@ import {
   saveImage,
   shortTimeAgo,
 } from "@/lib/utils";
-import { NoteMusicEmbed } from "./note-music-embed";
 import { ReplyDialog } from "./reply-dialog";
 
 type Props = {
@@ -403,7 +403,7 @@ export function NoteCard({
               content={data.content}
               className="font-display text-lg leading-snug"
             />
-            {data.music && <NoteMusicEmbed music={data.music} />}
+            {data.music && <MusicEmbed music={data.music} />}
           </CardContent>
 
           <CardFooter className="w-full pt-0">
