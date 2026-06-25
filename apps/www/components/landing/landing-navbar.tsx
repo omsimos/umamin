@@ -46,7 +46,7 @@ export function LandingNavbar() {
           </h2>
         </Link>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-2">
           <Button variant="ghost" asChild className="hidden sm:inline-flex">
             <Link href="https://github.com/omsimos/umamin" target="_blank">
               GitHub

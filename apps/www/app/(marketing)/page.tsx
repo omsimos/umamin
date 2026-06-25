@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { GridPattern } from "@/components/grid-pattern";
 import { CipherText } from "@/components/landing/cipher-text";
 import { DemoChat } from "@/components/landing/demo-chat";
 import { DemoMessage } from "@/components/landing/demo-message";
@@ -29,26 +28,7 @@ export default function Home() {
       <PwaRedirect />
 
       <section className="relative px-6 pb-20 pt-36 md:pb-28 md:pt-44">
-        <div
-          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-          aria-hidden="true"
-        >
-          <div className="absolute inset-0 opacity-20">
-            <GridPattern />
-          </div>
-          <div className="absolute -top-24 right-[6%] size-96 rounded-full bg-primary/15 blur-3xl" />
-          <div className="absolute bottom-0 left-[2%] size-72 rounded-full bg-violet-500/10 blur-3xl" />
-        </div>
-
         <div className="mx-auto max-w-5xl">
-          <p className="inline-flex animate-rise items-center gap-2 rounded-full border border-dashed px-3 py-1 text-xs uppercase tracking-widest text-muted-foreground">
-            <span className="relative flex size-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75 motion-reduce:animate-none" />
-              <span className="relative inline-flex size-2 rounded-full bg-primary" />
-            </span>
-            The platform for anonymity
-          </p>
-
           <h1 className="animate-rise pt-6 font-display text-5xl font-extrabold leading-[0.95] tracking-tighter [animation-delay:100ms] sm:text-7xl md:text-8xl">
             Say what you
             <br />
@@ -142,23 +122,6 @@ export default function Home() {
             </ProductCard>
           </div>
         </div>
-      </section>
-
-      <section className="px-6 py-10">
-        <p className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-4 gap-y-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          <span>AES-256 at rest</span>
-          <span className="text-primary">✦</span>
-          <a
-            href="https://github.com/omsimos/umamin"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-4 transition-colors hover:text-foreground"
-          >
-            Open source on GitHub
-          </a>
-          <span className="text-primary">✦</span>
-          <span>Free forever</span>
-        </p>
       </section>
 
       <section className="relative overflow-hidden px-6 py-24 md:py-32">
