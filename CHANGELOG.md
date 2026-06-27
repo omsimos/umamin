@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [5.26.0] - 2026-06-27
+
+### Changed
+
+- Posting images no longer requires Umamin+ — it now unlocks at 50 aura instead, so anyone can earn their way to it. Aura grows as others like, comment on, repost, quote, and vote on what you share, and when people follow you.
+
 ## [5.25.0] - 2026-06-17
 
 ### Added
@@ -799,6 +805,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[5.26.0]: https://github.com/omsimos/umamin/compare/v5.25.0...v5.26.0
 [5.25.0]: https://github.com/omsimos/umamin/compare/v5.24.0...v5.25.0
 [5.24.0]: https://github.com/omsimos/umamin/compare/v5.23.1...v5.24.0
 [5.23.1]: https://github.com/omsimos/umamin/compare/v5.23.0...v5.23.1

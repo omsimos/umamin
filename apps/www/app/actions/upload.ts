@@ -4,9 +4,10 @@ import * as z from "zod";
 import {
   AVATAR_MAX_BYTES,
   BANNER_MAX_BYTES,
+  hasImagePostingAura,
+  IMAGE_AURA_REQUIRED_ERROR,
   MAX_IMAGE_BYTES,
   MAX_POST_IMAGES,
-  PLUS_REQUIRED_ERROR,
   UPLOAD_CONTENT_TYPES,
 } from "@/lib/post-images";
 import {
@@ -15,7 +16,6 @@ import {
   presignImagePut,
 } from "@/lib/server/r2";
 import { withAction } from "@/lib/server/with-action";
-import { hasUmaminPlus } from "@/lib/utils";
 
 const presignSchema = z.object({
   images: z
@@ -33,8 +33,8 @@ const presignSchema = z.object({
  * Mints presigned PUT URLs for direct browser→R2 uploads (file bytes never
  * touch the server). Each URL is pinned to the approved type + exact byte
  * count and targets a per-user staging key; createPostAction later claims the
- * staged objects. Umamin+ only — re-checked here since the composer gate is
- * UX-only.
+ * staged objects. Requires a minimum Aura — re-checked here since the composer
+ * gate is UX-only.
  */
 export const presignPostImagesAction = withAction(
   {
@@ -50,8 +50,8 @@ export const presignPostImagesAction = withAction(
       return { error: "Image uploads aren't available right now." };
     }
 
-    if (!hasUmaminPlus(user.createdAt)) {
-      return { error: PLUS_REQUIRED_ERROR };
+    if (!hasImagePostingAura(user.points)) {
+      return { error: IMAGE_AURA_REQUIRED_ERROR };
     }
 
     const uploads = await Promise.all(

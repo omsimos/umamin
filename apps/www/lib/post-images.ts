@@ -39,8 +39,17 @@ export const MAX_BANNER_SOURCE_BYTES = 5 * 1024 * 1024;
 export const UPLOAD_CONTENT_TYPES = ["image/webp", "image/jpeg"] as const;
 export type UploadContentType = (typeof UPLOAD_CONTENT_TYPES)[number];
 
-export const PLUS_REQUIRED_ERROR =
-  "Image uploads are an Umamin+ perk — unlocked once your account is a year old.";
+// Posting images requires a minimum Aura score — a low engagement bar that
+// keeps zero-history throwaway accounts out without the old 1-year Umamin+
+// gate. Aura is earned only from OTHER users' engagement (see lib/points.ts),
+// and that path has its own account-age guard, so it can't be self-farmed.
+export const MIN_AURA_FOR_IMAGES = 50;
+
+export const IMAGE_AURA_REQUIRED_ERROR = `Posting images unlocks at ${MIN_AURA_FOR_IMAGES} aura — keep engaging to get there.`;
+
+export function hasImagePostingAura(points: number | null | undefined) {
+  return (points ?? 0) >= MIN_AURA_FOR_IMAGES;
+}
 
 export function imageExtension(contentType: UploadContentType) {
   return contentType === "image/webp" ? "webp" : "jpg";
