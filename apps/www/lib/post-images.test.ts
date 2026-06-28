@@ -3,12 +3,14 @@ import {
   AVATAR_MAX_BYTES,
   BANNER_MAX_BYTES,
   BANNER_TARGET_BYTES,
+  hasImagePostingAura,
   imageExtension,
   isOwnStagingKey,
   MAX_AVATAR_SOURCE_BYTES,
   MAX_BANNER_SOURCE_BYTES,
   MAX_IMAGE_BYTES,
   MAX_POST_SOURCE_BYTES,
+  MIN_AURA_FOR_IMAGES,
   postImageInputSchema,
   publicImageUrl,
   r2KeyFromPublicUrl,
@@ -52,6 +54,20 @@ describe("isOwnStagingKey", () => {
 
   it("rejects a key whose user segment merely prefixes the id", () => {
     expect(isOwnStagingKey("staging/user_12/abc.webp", "user_1")).toBe(false);
+  });
+});
+
+describe("hasImagePostingAura", () => {
+  it("gates exactly at the threshold", () => {
+    expect(hasImagePostingAura(MIN_AURA_FOR_IMAGES)).toBe(true);
+    expect(hasImagePostingAura(MIN_AURA_FOR_IMAGES + 1)).toBe(true);
+    expect(hasImagePostingAura(MIN_AURA_FOR_IMAGES - 1)).toBe(false);
+  });
+
+  it("treats zero and missing points as ineligible", () => {
+    expect(hasImagePostingAura(0)).toBe(false);
+    expect(hasImagePostingAura(null)).toBe(false);
+    expect(hasImagePostingAura(undefined)).toBe(false);
   });
 });
 

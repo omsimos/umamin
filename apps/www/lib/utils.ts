@@ -294,8 +294,9 @@ export const sharePost = (postId: string) => {
 };
 
 /**
- * Umamin+ — perks (avatar shine, image uploads) unlocked once an account is
- * over a year old. Client-side gate only; mutations re-check server-side.
+ * Umamin+ — perks (avatar shine, polls, group creation) unlocked once an
+ * account is over a year old. Client-side gate only; mutations re-check
+ * server-side.
  */
 export function hasUmaminPlus(createdAt?: Date | string | null) {
   if (!createdAt) return false;

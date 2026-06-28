@@ -27,8 +27,9 @@ import {
   sanitizePollOptions,
 } from "@/lib/poll";
 import {
+  hasImagePostingAura,
+  IMAGE_AURA_REQUIRED_ERROR,
   MAX_POST_IMAGES,
-  PLUS_REQUIRED_ERROR,
   postImageInputSchema,
 } from "@/lib/post-images";
 import { redis } from "@/lib/redis";
@@ -145,8 +146,8 @@ export const createPostAction = withAction(
       }
 
       // Re-checked server-side: the composer gate is UX-only.
-      if (!hasUmaminPlus(user.createdAt)) {
-        return { error: PLUS_REQUIRED_ERROR };
+      if (!hasImagePostingAura(user.points)) {
+        return { error: IMAGE_AURA_REQUIRED_ERROR };
       }
 
       claimedImages = await claimStagedImages(session.userId, images);

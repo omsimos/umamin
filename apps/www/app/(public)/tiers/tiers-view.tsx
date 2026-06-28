@@ -21,6 +21,7 @@ import {
   SparklesIcon,
   UsersRoundIcon,
 } from "lucide-react";
+import { MIN_AURA_FOR_IMAGES } from "@/lib/post-images";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -43,6 +44,11 @@ const FREE_PERKS: Perk[] = [
     detail: "Post, react, repost, and reply across the feed.",
   },
   {
+    icon: ImagePlusIcon,
+    title: "Post images",
+    detail: `Attach photos to any post once you reach ${MIN_AURA_FOR_IMAGES} aura.`,
+  },
+  {
     icon: ScrollTextIcon,
     title: "Notes",
     detail: "Share a fleeting note that strangers can react to.",
@@ -59,11 +65,6 @@ const PLUS_PERKS: Perk[] = [
     icon: UsersRoundIcon,
     title: "Create groups",
     detail: "Start your own group with a unique tag and icon.",
-  },
-  {
-    icon: ImagePlusIcon,
-    title: "Post images",
-    detail: "Attach images to your posts.",
   },
   {
     icon: BarChart3Icon,

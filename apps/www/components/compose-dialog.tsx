@@ -33,8 +33,9 @@ import {
   sanitizePollOptions,
 } from "@/lib/poll";
 import {
+  hasImagePostingAura,
+  IMAGE_AURA_REQUIRED_ERROR,
   MAX_POST_IMAGES,
-  PLUS_REQUIRED_ERROR,
   postImagesEnabled,
 } from "@/lib/post-images";
 import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
@@ -77,6 +78,7 @@ export function ComposeDialog({
   const attachments = useImageAttachments();
 
   const isPlus = hasUmaminPlus(user?.createdAt);
+  const canPostImages = hasImagePostingAura(user?.points);
   const imagesAvailable = postImagesEnabled();
 
   const count = content.length;
@@ -133,8 +135,8 @@ export function ComposeDialog({
   };
 
   const handlePickImages = () => {
-    if (!isPlus) {
-      toast.info(PLUS_REQUIRED_ERROR);
+    if (!canPostImages) {
+      toast.info(IMAGE_AURA_REQUIRED_ERROR);
       return;
     }
     if (poll) return;
@@ -153,8 +155,8 @@ export function ComposeDialog({
   };
 
   const acceptFiles = (files: Iterable<File>) => {
-    // Poll XOR images — drag/paste must respect it too.
-    if (!isPlus || poll) return;
+    // Poll XOR images, and images need the Aura gate — drag/paste respect both.
+    if (!canPostImages || poll) return;
     attachments.addFiles(files);
   };
 
@@ -166,7 +168,7 @@ export function ComposeDialog({
         onDragOver={(e) => {
           if (!imagesAvailable) return;
           e.preventDefault();
-          if (isPlus && !poll) setDragging(true);
+          if (canPostImages && !poll) setDragging(true);
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => {
@@ -254,7 +256,7 @@ export function ComposeDialog({
                 onChange={(e) => setContent(e.target.value)}
                 onPaste={(e) => {
                   const files = e.clipboardData?.files;
-                  if (imagesAvailable && isPlus && files?.length) {
+                  if (imagesAvailable && canPostImages && files?.length) {
                     e.preventDefault();
                     acceptFiles(files);
                   }
@@ -340,7 +342,7 @@ export function ComposeDialog({
             </Button>
             {!isPlus && (
               <Badge variant="secondary" className="text-muted-foreground">
-                Requires Umamin+
+                Polls require Umamin+
               </Badge>
             )}
             {attachments.hasErrors && (
