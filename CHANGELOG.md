@@ -18,6 +18,19 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [6.0.0] - 2026-07-04
+
+### Added
+
+- Umamin for Organizations: a new standalone app for organizations to collect anonymous messages. Share your organization's link and anyone can send you an anonymous message — no account needed.
+- A focused dashboard for everything you receive: messages arrive in a grid you can page through, tap any message to read it in full, save one as an image, or delete it.
+- One-click sharing: download all your messages — or just the ones you select — as social-ready images in a single step. Choose how they look with a color theme (pick a preset or set your own colors), previewed live so the download matches exactly.
+- Invite-only accounts: organizations sign in with a username and password, set a new password on first sign-in, and can edit the prompt shown to senders or pause new submissions anytime from Settings.
+
+### Security & Privacy
+
+- Messages sent to an organization are anonymous — senders are never identified — and are encrypted at rest, the same as direct messages on Umamin.
+
 ## [5.26.0] - 2026-06-27
 
 ### Changed
@@ -805,6 +818,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[6.0.0]: https://github.com/omsimos/umamin/compare/v5.26.0...v6.0.0
 [5.26.0]: https://github.com/omsimos/umamin/compare/v5.25.0...v5.26.0
 [5.25.0]: https://github.com/omsimos/umamin/compare/v5.24.0...v5.25.0
 [5.24.0]: https://github.com/omsimos/umamin/compare/v5.23.1...v5.24.0

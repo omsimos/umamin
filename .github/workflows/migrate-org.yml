@@ -1,0 +1,47 @@
+name: Migrate (org)
+
+# Applies pending Drizzle migrations to the ORG database when org-db migration
+# files change. Mirrors migrate.yml but targets a separate Turso database via
+# the org-* GitHub environments (same secret NAMES, different VALUES).
+on:
+  push:
+    branches: ["dev", "main"]
+    paths:
+      - "packages/org-db/migrations/**"
+  workflow_dispatch:
+
+# Queue, never cancel: a mid-flight migration must not be killed.
+concurrency:
+  group: migrate-org-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Apply org database migrations
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'org-production' || 'org-development' }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        env:
+          TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: pnpm --filter=@umamin/org-db migrate

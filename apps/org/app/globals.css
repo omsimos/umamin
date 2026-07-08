@@ -1,0 +1,9 @@
+@import "@umamin/ui/globals.css";
+
+/* next/font sets these vars on <body>; inline so utilities resolve at runtime */
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  --font-display:
+    var(--font-bricolage), var(--font-geist-sans), ui-sans-serif, sans-serif;
+}
