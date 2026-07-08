@@ -18,7 +18,8 @@
         "VITE_CONVEX_URL",
         "CONVEX_DEPLOYMENT",
         "R2_*",
-        "NEXT_PUBLIC_R2_PUBLIC_URL"
+        "NEXT_PUBLIC_R2_PUBLIC_URL",
+        "NEXT_PUBLIC_APP_URL"
       ]
     },
     "lint": {

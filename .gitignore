@@ -33,6 +33,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Local SQLite dev database (drizzle file: url)
+local.db
+local.db-shm
+local.db-wal
+
+# Playwright MCP artifacts
+.playwright-mcp
+
 # Misc
 .DS_Store
 *.pem

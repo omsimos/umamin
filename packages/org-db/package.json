@@ -1,0 +1,44 @@
+{
+  "name": "@umamin/org-db",
+  "private": true,
+  "version": "0.1.0",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.mjs"
+    },
+    "./auth": {
+      "types": "./src/auth.ts",
+      "import": "./src/auth.ts"
+    },
+    "./schema/*": {
+      "types": "./src/schema/*.ts",
+      "import": "./src/schema/*.ts"
+    }
+  },
+  "scripts": {
+    "dev": "tsdown --watch ./src  & turso dev --db-file local.db",
+    "build": "tsdown",
+    "check-types": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio",
+    "create-org": "tsx --env-file=.env ./src/create-org.ts",
+    "reset-password": "tsx --env-file=.env ./src/reset-password.ts",
+    "clean": "rm -rf .turbo node_modules"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.3",
+    "@node-rs/argon2": "^2.0.2",
+    "@umamin/encryption": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "nanoid": "^5.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.4",
+    "drizzle-kit": "^0.31.10",
+    "tsdown": "^0.21.10",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  }
+}
