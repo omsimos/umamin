@@ -5,6 +5,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { UsersRoundIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { GROUP_CHAT_ENABLED } from "@/lib/group";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -31,7 +32,8 @@ export function NavGroups() {
   const { data: unread } = useQuery({
     queryKey: queryKeys.groupUnread(),
     queryFn: fetchGroupUnread,
-    enabled: !!data?.user,
+    // Off while group chat is disabled — no messages means no unread signal.
+    enabled: GROUP_CHAT_ENABLED && !!data?.user,
     staleTime: PRIVATE_STALE_TIME,
     refetchOnMount: false,
     refetchOnReconnect: false,

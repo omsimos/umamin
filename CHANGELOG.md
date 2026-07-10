@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [6.0.1] - 2026-07-10
+
+### Changed
+
+- Group chat is temporarily unavailable while we work on it. Groups, tags, members, and invites are unaffected — opening a group now shows a short notice in place of the chat.
+
 ## [6.0.0] - 2026-07-04
 
 ### Added
@@ -818,6 +824,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[6.0.1]: https://github.com/omsimos/umamin/compare/v6.0.0...v6.0.1
 [6.0.0]: https://github.com/omsimos/umamin/compare/v5.26.0...v6.0.0
 [5.26.0]: https://github.com/omsimos/umamin/compare/v5.25.0...v5.26.0
 [5.25.0]: https://github.com/omsimos/umamin/compare/v5.24.0...v5.25.0

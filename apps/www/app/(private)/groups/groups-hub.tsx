@@ -19,6 +19,7 @@ import { respondToInviteAction } from "@/app/actions/group";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import {
+  GROUP_CHAT_ENABLED,
   type GroupAccent,
   type GroupIcon,
   OWNED_GROUPS_CAP,
@@ -71,10 +72,12 @@ export function GroupsHub() {
   });
 
   // Unread dots — refetched on focus so returning to the hub reflects new
-  // activity (and clears once a room is opened + marked read).
+  // activity (and clears once a room is opened + marked read). Skipped while
+  // group chat is off so the hub stops polling /api/groups/unread.
   const { data: unread } = useQuery({
     queryKey: queryKeys.groupUnread(),
     queryFn: fetchGroupUnread,
+    enabled: GROUP_CHAT_ENABLED,
     staleTime: PRIVATE_STALE_TIME,
     refetchOnWindowFocus: true,
   });
@@ -237,16 +240,18 @@ export function GroupsHub() {
                   <div>
                     {/* Row → info page (unchanged); this icon jumps straight to
                       chat. The unread dot lives on the glyph above. */}
-                    <Button
-                      asChild
-                      size="icon"
-                      variant="ghost"
-                      aria-label={`Open ${group.name} chat`}
-                    >
-                      <Link href={`/groups/${group.tag}/chat`}>
-                        <MessageCircleIcon />
-                      </Link>
-                    </Button>
+                    {GROUP_CHAT_ENABLED && (
+                      <Button
+                        asChild
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`Open ${group.name} chat`}
+                      >
+                        <Link href={`/groups/${group.tag}/chat`}>
+                          <MessageCircleIcon />
+                        </Link>
+                      </Button>
+                    )}
 
                     {role === "owner" && (
                       <Button

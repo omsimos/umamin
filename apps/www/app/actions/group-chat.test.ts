@@ -82,6 +82,14 @@ vi.mock("@umamin/encryption", () => ({
   aesEncrypt: vi.fn(async (s: string) => `enc:${s}`),
 }));
 
+// Group chat ships OFF behind a kill switch; force it on here so these tests
+// verify the underlying send/react/delete logic (which must still work when the
+// flag is flipped back on).
+vi.mock("@/lib/group", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/group")>()),
+  GROUP_CHAT_ENABLED: true,
+}));
+
 import {
   deleteGroupMessageAction,
   reactToGroupMessageAction,

@@ -12,7 +12,11 @@ import { aesEncrypt } from "@umamin/encryption";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import * as z from "zod";
-import { GROUP_CHAT_REACTION_EMOJIS } from "@/lib/group";
+import {
+  GROUP_CHAT_DISABLED_ERROR,
+  GROUP_CHAT_ENABLED,
+  GROUP_CHAT_REACTION_EMOJIS,
+} from "@/lib/group";
 import { redis } from "@/lib/redis";
 import { idSchema } from "@/lib/schema";
 import { UNAUTHORIZED_ERROR } from "@/lib/server/errors";
@@ -74,6 +78,9 @@ export const sendGroupMessageAction = withAction(
     },
   },
   async ({ groupId, content, replyToMessageId }, { session }) => {
+    if (!GROUP_CHAT_ENABLED) {
+      return { error: GROUP_CHAT_DISABLED_ERROR };
+    }
     if (!(await isGroupMember(groupId, session.userId))) {
       return { error: UNAUTHORIZED_ERROR };
     }
@@ -185,6 +192,9 @@ export const markGroupChatReadAction = withAction(
     },
   },
   async ({ groupId, lastReadMessageId }, { session }) => {
+    if (!GROUP_CHAT_ENABLED) {
+      return { error: GROUP_CHAT_DISABLED_ERROR };
+    }
     if (!(await isGroupMember(groupId, session.userId))) {
       return { error: UNAUTHORIZED_ERROR };
     }
@@ -220,6 +230,9 @@ export const deleteGroupMessageAction = withAction(
     },
   },
   async ({ groupId, messageId }, { session }) => {
+    if (!GROUP_CHAT_ENABLED) {
+      return { error: GROUP_CHAT_DISABLED_ERROR };
+    }
     const [message] = await db
       .select({ senderId: groupMessageTable.senderId })
       .from(groupMessageTable)
@@ -298,6 +311,9 @@ export const reactToGroupMessageAction = withAction(
     },
   },
   async ({ groupId, messageId, emoji }, { session }) => {
+    if (!GROUP_CHAT_ENABLED) {
+      return { error: GROUP_CHAT_DISABLED_ERROR };
+    }
     if (!(GROUP_CHAT_REACTION_EMOJIS as readonly string[]).includes(emoji)) {
       return { error: "Invalid reaction" };
     }

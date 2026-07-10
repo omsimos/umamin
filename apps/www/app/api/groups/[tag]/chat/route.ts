@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
+import { GROUP_CHAT_DISABLED_ERROR, GROUP_CHAT_ENABLED } from "@/lib/group";
 import { privateJson } from "@/lib/private-json";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import {
@@ -20,6 +21,10 @@ export async function GET(
   ctx: { params: Promise<{ tag: string }> },
 ) {
   try {
+    if (!GROUP_CHAT_ENABLED) {
+      return privateJson({ error: GROUP_CHAT_DISABLED_ERROR }, { status: 403 });
+    }
+
     const { session } = await getSession();
     if (!session) {
       return privateJson({ error: "Unauthorized" }, { status: 401 });
