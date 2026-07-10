@@ -47,6 +47,7 @@ import {
   EllipsisIcon,
   Loader2Icon,
   MessageCircleIcon,
+  MessageCircleOffIcon,
   ScanFaceIcon,
   SquarePenIcon,
   TagIcon,
@@ -73,7 +74,11 @@ import {
 } from "@/app/actions/group";
 import { GroupEditDialog } from "@/components/group-edit-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
-import type { GroupAccent, GroupIcon } from "@/lib/group";
+import {
+  GROUP_CHAT_ENABLED,
+  type GroupAccent,
+  type GroupIcon,
+} from "@/lib/group";
 import { GROUP_ACCENT_CLASSES, GROUP_ICON_MAP } from "@/lib/group-icons";
 import { vibrate } from "@/lib/haptics";
 import {
@@ -402,12 +407,20 @@ export function GroupPageClient({
       {isMember && (
         <div className="space-y-2">
           {/* Open chat is the sole primary action; the tag toggle stays
-              secondary so two filled CTAs never compete. */}
-          <Button asChild className="w-full">
-            <Link href={`/groups/${tag}/chat`}>
-              <MessageCircleIcon /> Open chat
-            </Link>
-          </Button>
+              secondary so two filled CTAs never compete. While chat is off it's
+              a quiet notice (not a CTA), leaving the tag toggle as the action. */}
+          {GROUP_CHAT_ENABLED ? (
+            <Button asChild className="w-full">
+              <Link href={`/groups/${tag}/chat`}>
+                <MessageCircleIcon /> Open chat
+              </Link>
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2.5 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+              <MessageCircleOffIcon className="size-4 shrink-0" />
+              <span>Group chat is temporarily unavailable.</span>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <Button

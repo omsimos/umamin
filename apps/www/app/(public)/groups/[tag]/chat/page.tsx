@@ -1,7 +1,11 @@
+import { Button } from "@umamin/ui/components/button";
+import { MessageCircleOffIcon } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getSession } from "@/lib/auth";
+import { GROUP_CHAT_ENABLED } from "@/lib/group";
 import {
   getGroupPageData,
   getGroupViewerRelationship,
@@ -27,8 +31,32 @@ export default function GroupChatPage({
   );
 }
 
+function ChatDisabled({ tag }: { tag: string }) {
+  return (
+    <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-6 text-center">
+      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+        <MessageCircleOffIcon className="size-7 text-muted-foreground" />
+      </div>
+      <h1 className="mt-4 text-lg font-semibold">Group chat is unavailable</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        We've temporarily turned off group chat while we work on it. Your group
+        and its members are unchanged — check back soon.
+      </p>
+      <Button asChild variant="outline" className="mt-6">
+        <Link href={`/groups/${tag}`}>Back to group</Link>
+      </Button>
+    </div>
+  );
+}
+
 async function ChatLoader({ params }: { params: Promise<{ tag: string }> }) {
   const { tag } = await params;
+
+  // Feature is off — bail before any session/DB work and show a disabled state.
+  if (!GROUP_CHAT_ENABLED) {
+    return <ChatDisabled tag={tag} />;
+  }
+
   const [group, { session }] = await Promise.all([
     getGroupPageData(tag),
     getSession(),

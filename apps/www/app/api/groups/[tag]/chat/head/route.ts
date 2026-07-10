@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { GROUP_CHAT_ENABLED } from "@/lib/group";
 import { publicJson } from "@/lib/public-json";
 import { redis } from "@/lib/redis";
 import {
@@ -19,6 +20,12 @@ import {
 const HEAD_CACHE_SECONDS = 8;
 
 export async function GET(req: NextRequest) {
+  // Chat is off — keep the response cacheable so stale clients' polls collapse
+  // at the CDN and never touch Redis.
+  if (!GROUP_CHAT_ENABLED) {
+    return publicJson({ tail: null, rxn: null }, HEAD_CACHE_SECONDS);
+  }
+
   const groupId = new URL(req.url).searchParams.get("id");
 
   if (!redis || !groupId) {
