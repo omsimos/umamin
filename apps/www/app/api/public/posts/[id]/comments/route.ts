@@ -9,4 +9,5 @@ export const GET = withPublicRead<{ id: string }>(
     const cursor = req.nextUrl.searchParams.get("cursor");
     return getPostCommentsPage({ postId, cursor });
   },
+  60,
 );

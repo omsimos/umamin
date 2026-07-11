@@ -15,4 +15,5 @@ export const GET = withPublicRead<{ id: string }>(
 
     return result;
   },
+  60,
 );
