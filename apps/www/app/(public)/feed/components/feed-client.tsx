@@ -1,39 +1,29 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { ComposeFab } from "@/components/compose-fab";
 import type { FeedSort } from "@/lib/feed-sort";
-import {
-  infiniteQueryDefaults,
-  PRIVATE_STALE_TIME,
-  queryKeys,
-} from "@/lib/query";
-import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import { PostList } from "./post-list";
 
-export function FeedClient({ sort }: { sort: FeedSort }) {
-  const router = useRouter();
-  const { data: currentUser } = useQuery({
-    queryKey: queryKeys.currentUser(),
-    queryFn: fetchCurrentUserOptional,
-    staleTime: PRIVATE_STALE_TIME,
-    ...infiniteQueryDefaults,
-  });
-  const user = currentUser?.user;
-  const isAuthResolved = currentUser !== undefined;
-
-  useEffect(() => {
-    if (sort === "following" && isAuthResolved && !user) {
-      router.replace("/login");
-    }
-  }, [isAuthResolved, router, sort, user]);
-
+// The viewer is resolved on the server (see feed/page.tsx) and passed in, so
+// the list renders under the correct viewer key from the first paint — no
+// client /api/me round trip before page 1, and no second full-page fetch.
+export function FeedClient({
+  sort,
+  initialUserId,
+  isAuthenticated,
+}: {
+  sort: FeedSort;
+  initialUserId: string | null;
+  isAuthenticated: boolean;
+}) {
   return (
     <>
-      <PostList sort={sort} isAuthenticated={!!user} currentUserId={user?.id} />
-      {user && <ComposeFab />}
+      <PostList
+        sort={sort}
+        isAuthenticated={isAuthenticated}
+        currentUserId={initialUserId ?? undefined}
+      />
+      {isAuthenticated && <ComposeFab />}
     </>
   );
 }
