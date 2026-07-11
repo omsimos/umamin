@@ -1,5 +1,5 @@
 import type { InfiniteData } from "@tanstack/react-query";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,6 @@ import {
   ShieldXIcon,
   UserXIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -43,6 +42,7 @@ import {
 } from "@/app/actions/note";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { GroupBadge } from "@/components/group-badge";
+import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
@@ -50,10 +50,10 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { vibrate } from "@/lib/haptics";
-import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
+import { queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
-import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/query-types";
 import {
   getActionError,
@@ -96,12 +96,7 @@ export function NoteCard({
     currentUserId !== user.id;
 
   // Shared, deduped current-user cache — read only for the maintainer flag.
-  const { data: currentUser } = useQuery({
-    queryKey: queryKeys.currentUser(),
-    queryFn: fetchCurrentUserOptional,
-    staleTime: PRIVATE_STALE_TIME,
-    enabled: isAuthenticated,
-  });
+  const { data: currentUser } = useCurrentUser(isAuthenticated);
   // A maintainer can remove any note that isn't clearly their own. Anonymous
   // notes ship no author to the client, so they're always removable by a mod
   // (a mod clearing their own anonymous note is harmless).
@@ -276,7 +271,7 @@ export function NoteCard({
                     </AvatarFallback>
                   </Avatar>
                 ) : (
-                  <Link
+                  <HoverPrefetchLink
                     href={`/user/${username}`}
                     className="font-semibold relative"
                   >
@@ -294,7 +289,7 @@ export function NoteCard({
                         <ScanFaceIcon />
                       </AvatarFallback>
                     </Avatar>
-                  </Link>
+                  </HoverPrefetchLink>
                 )}
 
                 <div className="flex flex-col mt-1">
@@ -306,7 +301,7 @@ export function NoteCard({
                     // The badge is its own link — a sibling, never nested
                     // inside the profile anchor.
                     <div className="flex items-center space-x-1">
-                      <Link
+                      <HoverPrefetchLink
                         href={`/user/${username}`}
                         className="flex items-center space-x-1"
                       >
@@ -321,7 +316,7 @@ export function NoteCard({
                           ).includes(username) && (
                             <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
                           )}
-                      </Link>
+                      </HoverPrefetchLink>
                       <GroupBadge badge={user?.groupBadge} />
                     </div>
                   )}

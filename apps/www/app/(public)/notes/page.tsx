@@ -1,10 +1,10 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
-import { connection } from "next/server";
 import { Suspense } from "react";
 import { ChatAnnouncement } from "@/components/chat-announcement";
+import { getSession } from "@/lib/auth";
 import { getQueryClient } from "@/lib/get-query-client";
-import { queryKeys } from "@/lib/query";
+import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
 import type { NotesResponse } from "@/lib/query-types";
 import { getNotesPage } from "@/lib/server/data";
 import { NoteCardSkeleton } from "./components/note-card-skeleton";
@@ -39,29 +39,33 @@ export const metadata: Metadata = {
   },
 };
 
-// Request-time hole (like /feed's searchParams access): a build-time prefetch
-// would need a live, migrated, authorized Turso during `next build` — CI broke
-// on exactly that. The data itself still comes from the shared "use cache"
-// page, so per-request cost stays one cache read.
+// Session-dependent prefetch in a request-time hole: reading cookies via
+// getSession forces request-time rendering (so a build-time prefetch can't hit
+// a live Turso — CI broke on exactly that) AND lets us hydrate the exact
+// viewer-keyed query the client renders, so an authed first page is served once
+// from SSR instead of re-fetched under a different key. The data itself still
+// comes from the shared "use cache" page, so per-request cost stays cache reads.
 async function HydratedNotes() {
-  await connection();
+  const { user } = await getSession();
+  const viewerId = user?.id ?? null;
 
   const queryClient = getQueryClient();
 
   await queryClient.prefetchInfiniteQuery({
-    queryKey: queryKeys.notes(),
+    queryKey: queryKeys.notes(viewerId ?? "public"),
     queryFn: ({ pageParam }) =>
       getNotesPage({
         cursor: (pageParam as string | null) ?? null,
+        viewerId,
       }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage: NotesResponse) => lastPage.nextCursor ?? null,
-    staleTime: 120_000,
+    staleTime: viewerId ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME,
   });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotesClient />
+      <NotesClient initialUserId={viewerId} isAuthenticated={!!user} />
     </HydrationBoundary>
   );
 }

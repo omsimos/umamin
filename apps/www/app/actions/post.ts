@@ -32,7 +32,6 @@ import {
   MAX_POST_IMAGES,
   postImageInputSchema,
 } from "@/lib/post-images";
-import { redis } from "@/lib/redis";
 import { idSchema } from "@/lib/schema";
 import { getPostById } from "@/lib/server/data";
 import { refreshHotPostRank, removeHotPostRank } from "@/lib/server/feed-rank";
@@ -45,22 +44,6 @@ import {
 } from "@/lib/server/r2";
 import { withAction } from "@/lib/server/with-action";
 import { formatContent, hasUmaminPlus } from "@/lib/utils";
-
-// Records the newest feed-edge timestamp so the client can show a "new posts"
-// pill without polling Turso. No-ops when Redis isn't configured. Best-effort
-// like refreshHotPostRank: it runs after the action's DB write has committed,
-// so a Redis blip must not fail the action.
-async function bumpFeedLatest(createdAt: Date) {
-  if (!redis) {
-    return;
-  }
-
-  try {
-    await redis.set("feed:latest", createdAt.getTime());
-  } catch (err) {
-    console.error("bumpFeedLatest failed", { err });
-  }
-}
 
 const createPostSchema = z
   .object({
@@ -239,7 +222,6 @@ export const createPostAction = withAction(
     if (quoteAuraUsername) {
       updateTag(`user:${quoteAuraUsername}`);
     }
-    await bumpFeedLatest(createdPost.createdAt);
 
     return {
       success: true,
@@ -960,18 +942,15 @@ export const addRepostAction = withAction(
     updateTag(`post:${postId}`);
     // Intentionally NOT invalidating the global "posts" feed tag: a full feed
     // recompute (union + inArray lookups) on every repost is the exact Turso
-    // cost the like path avoids. The new edge surfaces via the 120s revalidate
-    // + the feed:latest "new posts" pill (bumped below); the actor's own state
-    // is kept fresh by the per-viewer reposted tag + syncRepostCache.
+    // cost the like path avoids. The new edge surfaces via the 120s revalidate;
+    // the actor's own state is kept fresh by the per-viewer reposted tag +
+    // syncRepostCache.
     updateTag(`post:${postId}:reposted:${session.userId}`);
     if (auraUsername) {
       updateTag(`user:${auraUsername}`);
     }
     if (!("alreadyReposted" in result)) {
       await refreshHotPostRank(postId);
-    }
-    if ("repost" in result && result.repost) {
-      await bumpFeedLatest(result.repost.createdAt);
     }
     return result;
   },

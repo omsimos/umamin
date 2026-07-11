@@ -42,13 +42,16 @@ export function withPrivateRead<P = Record<string, never>>(
 
 /**
  * Same scaffold for the CDN-cached public GET routes: success responses get
- * `publicJson(result, maxAgeSeconds)`; 429/500 use maxAge 0 so errors are
- * never CDN-cached.
+ * `publicJson(result, maxAgeSeconds, { browserMaxAgeSeconds })`; 429/500 use
+ * maxAge 0 so errors are never cached. `browserMaxAgeSeconds` (default 0) sets a
+ * browser TTL for non-live public data so a reload within it skips the edge
+ * round trip entirely — an Edge Request saved, not just a function invocation.
  */
 export function withPublicRead<P = Record<string, never>>(
   label: string,
   maxAgeSeconds: number,
   handler: ReadHandler<P>,
+  browserMaxAgeSeconds = 0,
 ) {
   return async (req: NextRequest, ctx: RouteContext<P>): Promise<Response> => {
     try {
@@ -59,7 +62,7 @@ export function withPublicRead<P = Record<string, never>>(
       const result = await handler(req, ctx);
       return result instanceof Response
         ? result
-        : publicJson(result, maxAgeSeconds);
+        : publicJson(result, maxAgeSeconds, { browserMaxAgeSeconds });
     } catch (error) {
       console.error(`Error ${label}:`, error);
       return publicJson({ error: INTERNAL_SERVER_ERROR }, 0, { status: 500 });

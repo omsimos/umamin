@@ -17,4 +17,5 @@ export const GET = withPublicRead<{ username: string }>(
 
     return result;
   },
+  300,
 );

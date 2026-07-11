@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { publicJson } from "./public-json";
 
 describe("publicJson", () => {
-  it("sets the exact public Cache-Control with the s-maxage/SWR window", async () => {
+  it("defaults to browser max-age=0 (revalidate at the edge) with the s-maxage/SWR window", async () => {
     const res = publicJson({ ok: true }, 60);
 
     expect(res.headers.get("Cache-Control")).toBe(
@@ -11,13 +11,21 @@ describe("publicJson", () => {
     expect(await res.json()).toEqual({ ok: true });
   });
 
-  it("interpolates the maxAge into both directives, including 0", async () => {
+  it("interpolates the maxAge into the CDN directives, including 0", async () => {
     expect(publicJson(null, 0).headers.get("Cache-Control")).toBe(
       "public, max-age=0, s-maxage=0, stale-while-revalidate=0",
     );
     expect(publicJson(null, 3600).headers.get("Cache-Control")).toBe(
       "public, max-age=0, s-maxage=3600, stale-while-revalidate=3600",
     );
+  });
+
+  it("sets a browser max-age when browserMaxAgeSeconds is given, keeping the CDN window", () => {
+    expect(
+      publicJson({ ok: true }, 180, { browserMaxAgeSeconds: 60 }).headers.get(
+        "Cache-Control",
+      ),
+    ).toBe("public, max-age=60, s-maxage=180, stale-while-revalidate=180");
   });
 
   it("round-trips a complex body", async () => {
@@ -42,6 +50,17 @@ describe("publicJson", () => {
     expect(res.headers.get("X-Custom")).toBe("v1");
     expect(res.headers.get("Cache-Control")).toBe(
       "public, max-age=0, s-maxage=30, stale-while-revalidate=30",
+    );
+  });
+
+  it("does not leak browserMaxAgeSeconds into the response body/status", () => {
+    const res = publicJson({ ok: true }, 90, {
+      status: 201,
+      browserMaxAgeSeconds: 120,
+    });
+    expect(res.status).toBe(201);
+    expect(res.headers.get("Cache-Control")).toBe(
+      "public, max-age=120, s-maxage=90, stale-while-revalidate=90",
     );
   });
 

@@ -673,9 +673,26 @@ async function getRedisHotPostsPage(
     return null;
   }
 
+  // The rank read above stays live (two cheap Redis ops), so the ordering is
+  // always current. The expensive hydration below is cached per id-set: within
+  // a revalidate window the top-of-feed ids are stable, so repeated first-page
+  // requests reuse one hydrated, viewer-independent payload instead of
+  // re-running ~5 Turso queries each. The per-viewer overlay (blocks/likes/
+  // reposts) is layered on by the caller.
+  return {
+    data: await hydrateHotPostIds(page.ids),
+    nextCursor: page.nextCursor,
+  };
+}
+
+async function hydrateHotPostIds(ids: string[]): Promise<FeedItem[]> {
+  "use cache";
+  cacheTag("posts");
+  cacheLife({ revalidate: PUBLIC_REVALIDATE_SECONDS });
+
   const posts =
-    page.ids.length > 0
-      ? await db.select().from(postTable).where(inArray(postTable.id, page.ids))
+    ids.length > 0
+      ? await db.select().from(postTable).where(inArray(postTable.id, ids))
       : [];
   const authorIds = Array.from(new Set(posts.map((post) => post.authorId)));
   const users =
@@ -699,38 +716,31 @@ async function getRedisHotPostsPage(
   // scoreKeys recomputed from the hydrated counters (no extra Redis reads);
   // they can drift from a stale zset float only within this page, which at
   // worst nudges the same-author spacing below.
-  const candidates = page.ids.flatMap((postId) => {
+  const candidates = ids.flatMap((postId) => {
     const post = postMap.get(postId);
     return post ? [{ post, scoreKey: getHotScoreKey(post) }] : [];
   });
-  const data: FeedItem[] = diversifyHotCandidates(candidates).flatMap<FeedItem>(
-    ({ post }) => {
-      const author = userMap.get(post.authorId);
+  return diversifyHotCandidates(candidates).flatMap<FeedItem>(({ post }) => {
+    const author = userMap.get(post.authorId);
 
-      if (!author) {
-        return [];
-      }
+    if (!author) {
+      return [];
+    }
 
-      return [
-        {
-          type: "post" as const,
-          post: {
-            ...post,
-            author,
-            quotedPost: resolveQuotedPost(post, quotedMap),
-            poll: resolvePoll(post, pollMap),
-            isLiked: false,
-            isReposted: false,
-          },
+    return [
+      {
+        type: "post" as const,
+        post: {
+          ...post,
+          author,
+          quotedPost: resolveQuotedPost(post, quotedMap),
+          poll: resolvePoll(post, pollMap),
+          isLiked: false,
+          isReposted: false,
         },
-      ];
-    },
-  );
-
-  return {
-    data,
-    nextCursor: page.nextCursor,
-  };
+      },
+    ];
+  });
 }
 
 async function getCachedPublicHotPostsPage(

@@ -17,4 +17,5 @@ export const GET = withPublicRead<{ tag: string }>(
 
     return result;
   },
+  60,
 );

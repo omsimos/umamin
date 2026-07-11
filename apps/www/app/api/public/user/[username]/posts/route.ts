@@ -18,4 +18,5 @@ export const GET = withPublicRead<{ username: string }>(
     const cursor = req.nextUrl.searchParams.get("cursor");
     return getUserPostsPage({ authorId: user.id, cursor });
   },
+  60,
 );

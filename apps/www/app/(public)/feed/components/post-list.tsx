@@ -1,23 +1,13 @@
 "use client";
 
-import type { InfiniteData } from "@tanstack/react-query";
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { Button } from "@umamin/ui/components/button";
-import {
-  AlertCircleIcon,
-  ArrowUpIcon,
-  MessageCircleDashedIcon,
-} from "lucide-react";
+import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useMemo } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { LinkTabs } from "@/components/link-tabs";
@@ -30,7 +20,7 @@ import {
   PUBLIC_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
-import { fetchFeedHead, fetchPostsPage } from "@/lib/query-fetchers";
+import { fetchPostsPage } from "@/lib/query-fetchers";
 import type { FeedResponse } from "@/lib/query-types";
 import type { FeedItem } from "@/types/post";
 import { PostCard } from "./post-card";
@@ -55,7 +45,6 @@ export function PostList({
     hasNextPage,
     isFetching,
     isFetchingNextPage,
-    refetch,
   } = useInfiniteQuery<FeedResponse>({
     queryKey: queryKeys.posts(sort, viewerKey),
     enabled: sort !== "following" || isAuthenticated,
@@ -72,19 +61,6 @@ export function PostList({
   });
   const hasResolvedData = data !== undefined;
 
-  const queryClient = useQueryClient();
-
-  // Cheap "new posts" head-check: a Redis-backed (or CDN-cached) timestamp,
-  // polled while the tab is visible (refetchInterval pauses when hidden). Never
-  // touches Turso. Inactive when Redis is unset (latest === null).
-  const { data: head } = useQuery({
-    queryKey: ["feed-head"],
-    queryFn: fetchFeedHead,
-    enabled: sort === "latest",
-    refetchInterval: 60_000,
-    staleTime: 30_000,
-  });
-
   // De-duplicate feed items across pages
   const allItems: FeedItem[] = (() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
@@ -98,40 +74,6 @@ export function PostList({
     }
     return Array.from(map.values());
   })();
-
-  const topItem = allItems[0];
-  const topCreatedAtMs = topItem
-    ? new Date(
-        topItem.type === "post"
-          ? topItem.post.createdAt
-          : topItem.repost.createdAt,
-      ).getTime()
-    : 0;
-  const showNewPosts =
-    sort === "latest" &&
-    !!head?.latest &&
-    topCreatedAtMs > 0 &&
-    head.latest > topCreatedAtMs;
-
-  // Refetch only page 1 (drop later pages — we're scrolling back to top anyway)
-  // so the cost stays bounded; the dedupe map above absorbs any overlap.
-  const handleShowNewPosts = async () => {
-    queryClient.setQueryData<InfiniteData<FeedResponse>>(
-      queryKeys.posts(sort, viewerKey),
-      (old) =>
-        old
-          ? {
-              ...old,
-              pages: old.pages.slice(0, 1),
-              pageParams: old.pageParams.slice(0, 1),
-            }
-          : old,
-    );
-    await refetch();
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
 
   const AD_FREQUENCY = 8;
 
@@ -232,19 +174,6 @@ export function PostList({
           },
         ]}
       />
-
-      {showNewPosts && (
-        <div className="sticky top-2 z-20 mb-4 flex justify-center">
-          <Button
-            type="button"
-            onClick={handleShowNewPosts}
-            className="h-auto flex items-center gap-1.5 rounded-full bg-pink-500 px-4 py-1.5 text-sm font-medium text-white shadow-lg transition-colors hover:bg-pink-600 hover:text-white"
-          >
-            <ArrowUpIcon className="size-4" />
-            Show new posts
-          </Button>
-        </div>
-      )}
 
       {hasResolvedData && allItems.length === 0 && !isFetching && (
         <Alert>

@@ -1,7 +1,7 @@
 "use client";
 
 import type { InfiniteData } from "@tanstack/react-query";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,13 +19,13 @@ import { toast } from "sonner";
 import { deleteCommentAction } from "@/app/actions/post";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
-import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { queryKeys } from "@/lib/query";
 import {
   patchPostAcrossFeed,
   patchPostResponse,
   removeComment,
 } from "@/lib/query-cache";
-import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type {
   CommentsResponse,
   FeedResponse,
@@ -57,12 +57,7 @@ export function CommentMenu({
 
   // Shared, deduped current-user cache (warm on any authed page); read only for
   // the maintainer flag that gates the moderator "Remove" action.
-  const { data: currentUser } = useQuery({
-    queryKey: queryKeys.currentUser(),
-    queryFn: fetchCurrentUserOptional,
-    staleTime: PRIVATE_STALE_TIME,
-    enabled: isAuthenticated,
-  });
+  const { data: currentUser } = useCurrentUser(isAuthenticated);
   const canModerate = currentUser?.user?.isModerator === true && canBlock;
 
   const deleteMutation = useMutation({

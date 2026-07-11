@@ -99,12 +99,6 @@ export async function fetchCurrentNote() {
   return fetchJson<NoteItem | null>(`/api/notes/current`);
 }
 
-// Newest feed-edge timestamp (Redis-backed, briefly CDN-cached). Drives the
-// "new posts" pill without polling Turso. `latest` is null when Redis is unset.
-export async function fetchFeedHead() {
-  return fetchJson<{ latest: number | null }>("/api/feed/head");
-}
-
 export async function fetchCurrentUser() {
   return fetchJson<CurrentUserResponse>("/api/me");
 }
