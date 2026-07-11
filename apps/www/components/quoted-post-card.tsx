@@ -7,7 +7,7 @@ import {
 } from "@umamin/ui/components/avatar";
 import { cn } from "@umamin/ui/lib/utils";
 import { BarChart3Icon, ScanFaceIcon } from "lucide-react";
-import Link from "next/link";
+import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
 import { PostImages } from "@/components/post-images";
 import { shortTimeAgo } from "@/lib/utils";
 import type { QuotedPostData } from "@/types/post";
@@ -92,12 +92,12 @@ export function QuotedPostCard({ post, linked = true, className }: Props) {
   }
 
   return (
-    <Link
+    <HoverPrefetchLink
       href={`/post/${post.id}`}
       aria-label={`View quoted post by @${post.author.username}`}
       className={cardClassName}
     >
       {body}
-    </Link>
+    </HoverPrefetchLink>
   );
 }

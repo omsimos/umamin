@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,9 +30,9 @@ import {
 } from "@/app/actions/post";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
-import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, removePostFromFeed } from "@/lib/query-cache";
-import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { CurrentUserResponse, FeedResponse } from "@/lib/query-types";
 import { saveImage, sharePost } from "@/lib/utils";
 import type { FeedItem } from "@/types/post";
@@ -65,12 +65,7 @@ export function PostMenu({
   // Shared app-wide cache (deduped across every card, almost always a warm
   // hit); carries pinnedPostId for the pin/unpin menu state and the maintainer
   // flag for the moderator "Remove" action.
-  const { data: currentUser } = useQuery({
-    queryKey: queryKeys.currentUser(),
-    queryFn: fetchCurrentUserOptional,
-    staleTime: PRIVATE_STALE_TIME,
-    enabled: isAuthenticated,
-  });
+  const { data: currentUser } = useCurrentUser(isAuthenticated);
   const isPinned = currentUser?.user?.pinnedPostId === postId;
   // A maintainer viewing someone else's post (own posts use canDelete).
   const canModerate = currentUser?.user?.isModerator === true && canBlock;

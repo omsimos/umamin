@@ -23,7 +23,6 @@ import {
   Repeat2Icon,
   ScanFaceIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -36,6 +35,7 @@ import {
 } from "@/app/actions/post";
 import { ComposeDialog } from "@/components/compose-dialog";
 import { GroupBadge } from "@/components/group-badge";
+import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
 import { PollCard } from "@/components/poll-card";
 import { PostBody } from "@/components/post-body";
 import { PostImages } from "@/components/post-images";
@@ -304,7 +304,7 @@ export function PostCard({
           interactive children below are raised (z-10) so they keep their own
           behavior. Inline @mentions/links in the body open the thread too. */}
       {!isComment && (
-        <Link
+        <HoverPrefetchLink
           href={`/post/${data.id}`}
           aria-label="Open post"
           className="absolute inset-0"
@@ -325,12 +325,12 @@ export function PostCard({
       <div className="w-full min-w-0">
         <div className="flex justify-between">
           <div className="flex items-center space-x-1">
-            <Link
+            <HoverPrefetchLink
               href={`/user/${author?.username}`}
               className="relative z-10 font-semibold hover:underline"
             >
               {author?.displayName || author?.username}
-            </Link>
+            </HoverPrefetchLink>
 
             {author?.username &&
               process.env.NEXT_PUBLIC_VERIFIED_USERS?.split(",").includes(
@@ -465,12 +465,12 @@ export function PostCard({
 
           {!isComment && (
             <div className="flex space-x-1 items-center">
-              <Link
+              <HoverPrefetchLink
                 href={`/post/${data?.id}`}
                 aria-label={`View ${commentCount ?? 0} comments`}
               >
                 <MessageCircleIcon className="h-5 w-5" />
-              </Link>
+              </HoverPrefetchLink>
               <span>{commentCount ?? 0}</span>
             </div>
           )}
