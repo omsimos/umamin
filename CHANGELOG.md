@@ -18,6 +18,16 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [6.1.0] - 2026-07-11
+
+### Performance & Cost
+
+- The feed and notes pages load faster and use less data. Signed-in visitors no longer fetch the first page twice, public pages are briefly cached by your browser so reloads and revisits are instant, and scrolling long lists is lighter — links now prepare in the background only when you're about to open one.
+
+### Removed
+
+- The "new posts" pill on the Latest feed. Reopen or refresh the tab to load the newest posts.
+
 ## [6.0.1] - 2026-07-10
 
 ### Changed
@@ -824,6 +834,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[6.1.0]: https://github.com/omsimos/umamin/compare/v6.0.1...v6.1.0
 [6.0.1]: https://github.com/omsimos/umamin/compare/v6.0.0...v6.0.1
 [6.0.0]: https://github.com/omsimos/umamin/compare/v5.26.0...v6.0.0
 [5.26.0]: https://github.com/omsimos/umamin/compare/v5.25.0...v5.26.0
