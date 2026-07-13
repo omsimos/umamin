@@ -11,6 +11,7 @@ const PRODUCTS = [
 ];
 
 const RESOURCES = [
+  { label: "About", href: "/about" },
   {
     label: "GitHub",
     href: "https://github.com/omsimos/umamin",
