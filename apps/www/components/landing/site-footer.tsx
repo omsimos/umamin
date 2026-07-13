@@ -11,6 +11,7 @@ const PRODUCTS = [
 ];
 
 const RESOURCES = [
+  { label: "About", href: "/about" },
   {
     label: "GitHub",
     href: "https://github.com/omsimos/umamin",
@@ -21,6 +22,9 @@ const RESOURCES = [
     href: "https://github.com/omsimos/umamin/releases",
     external: true,
   },
+];
+
+const LEGAL = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
   { label: "Child Safety", href: "/child-safety" },
@@ -103,9 +107,13 @@ export function SiteFooter() {
             </Link>
           </div>
 
-          <nav aria-label="Footer" className="flex gap-16 md:gap-24">
+          <nav
+            aria-label="Footer"
+            className="flex flex-wrap gap-x-16 gap-y-10 md:gap-x-20"
+          >
             <FooterLinks title="Products" links={PRODUCTS} />
             <FooterLinks title="Resources" links={RESOURCES} />
+            <FooterLinks title="Legal" links={LEGAL} />
           </nav>
         </div>
 
