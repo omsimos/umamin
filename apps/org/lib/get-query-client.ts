@@ -8,7 +8,9 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 0,
+        // Revisiting a page (Prev/Next) within the window serves cache with no
+        // refetch invocation; deletes invalidate explicitly, so no stale risk.
+        staleTime: 30 * 1000,
       },
       dehydrate: {
         shouldDehydrateQuery: (query) =>
