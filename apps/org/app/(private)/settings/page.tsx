@@ -4,10 +4,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@umamin/ui/components/card";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { PasswordForm } from "./components/password-form";
 import { ProfileForm } from "./components/profile-form";
+
+export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const { user } = await getSession();
