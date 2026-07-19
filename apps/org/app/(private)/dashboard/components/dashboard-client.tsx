@@ -11,6 +11,7 @@ import {
   ChevronRightIcon,
   DownloadIcon,
   InboxIcon,
+  ListChecksIcon,
   Loader2Icon,
   XIcon,
 } from "lucide-react";
@@ -32,6 +33,11 @@ async function fetchMessages(cursor: string | null): Promise<MessagesResponse> {
     ? `/api/messages?cursor=${encodeURIComponent(cursor)}`
     : "/api/messages";
   const res = await fetch(url);
+  if (res.status === 401) {
+    // Session expired mid-dashboard — a Retry loop can't fix that.
+    window.location.assign("/login");
+    throw new Error("Session expired");
+  }
   if (!res.ok) throw new Error("Failed to load messages");
   return res.json();
 }
@@ -70,6 +76,20 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
       const next = new Map(prev);
       if (next.has(message.id)) next.delete(message.id);
       else next.set(message.id, message);
+      return next;
+    });
+  }
+
+  const allOnPageSelected =
+    messages.length > 0 && messages.every((m) => selected.has(m.id));
+
+  function togglePage() {
+    setSelected((prev) => {
+      const next = new Map(prev);
+      for (const m of messages) {
+        if (allOnPageSelected) next.delete(m.id);
+        else next.set(m.id, m);
+      }
       return next;
     });
   }
@@ -160,6 +180,20 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {messages.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={togglePage}
+              disabled={exporting}
+              aria-pressed={allOnPageSelected}
+              aria-label={allOnPageSelected ? "Deselect page" : "Select page"}
+            >
+              <ListChecksIcon />
+              <span className="hidden sm:inline">
+                {allOnPageSelected ? "Deselect page" : "Select page"}
+              </span>
+            </Button>
+          )}
           <ExportThemeDialog
             prefs={themePrefs}
             onSave={setThemePrefs}
