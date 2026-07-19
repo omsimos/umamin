@@ -18,7 +18,9 @@ export const updatePasswordAction = withAction(
   {
     schema: passwordFormSchema,
     auth: "user",
-    rateLimit: { name: "write", key: ({ user }) => `pwd:${user.id}` },
+    // The "auth" limiter (not "write"): this verifies the current password, so
+    // a hijacked session must not get a faster brute-force lane than login.
+    rateLimit: { name: "auth", key: ({ user }) => `pwd:${user.id}` },
   },
   async ({ currentPassword, newPassword }, { user }) => {
     // Read the hash fresh (the session user no longer carries passwordHash).
