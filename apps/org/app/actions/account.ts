@@ -4,15 +4,23 @@ import { db } from "@umamin/org-db";
 import { hashPassword, verifyPassword } from "@umamin/org-db/auth";
 import { orgTable } from "@umamin/org-db/schema/org";
 import { eq } from "drizzle-orm";
+import { revalidatePath, updateTag } from "next/cache";
 import { passwordFormSchema, updateProfileSchema } from "@/lib/schema";
+import { orgProfileTag } from "@/lib/server/data";
 import { withAction } from "@/lib/server/with-action";
-import { invalidateOrgSessions, mintSessionCookie } from "@/lib/session";
+import {
+  invalidateOrgSessions,
+  invalidateSessionCache,
+  mintSessionCookie,
+} from "@/lib/session";
 
 export const updatePasswordAction = withAction(
   {
     schema: passwordFormSchema,
     auth: "user",
-    rateLimit: { name: "write", key: ({ user }) => `pwd:${user.id}` },
+    // The "auth" limiter (not "write"): this verifies the current password, so
+    // a hijacked session must not get a faster brute-force lane than login.
+    rateLimit: { name: "auth", key: ({ user }) => `pwd:${user.id}` },
   },
   async ({ currentPassword, newPassword }, { user }) => {
     // Read the hash fresh (the session user no longer carries passwordHash).
@@ -51,11 +59,17 @@ export const updateProfileAction = withAction(
     auth: "user",
     rateLimit: { name: "write", key: ({ user }) => `profile:${user.id}` },
   },
-  async ({ displayName, question, acceptingMessages }, { user }) => {
+  async ({ displayName, question, acceptingMessages }, { session, user }) => {
     await db
       .update(orgTable)
       .set({ displayName: displayName || null, question, acceptingMessages })
       .where(eq(orgTable.id, user.id));
+
+    // Read-your-writes: expire the cached org lookup + ISR'd submit page, and
+    // the Redis session copy (it bakes in displayName etc. for the app header).
+    updateTag(orgProfileTag(user.username));
+    revalidatePath(`/to/${user.username}`);
+    await invalidateSessionCache(session.id);
 
     return { success: true };
   },

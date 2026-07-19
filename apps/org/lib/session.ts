@@ -158,11 +158,18 @@ export async function deleteSessionTokenCookie(): Promise<void> {
   });
 }
 
-export async function invalidateSession(sessionId: string) {
-  await db.delete(orgSessionTable).where(eq(orgSessionTable.id, sessionId));
+// Drop only the cached copy (the session row stays valid) — call after
+// mutating org fields baked into the session user, or the header/settings
+// serve up-to-60s-stale data until the TTL lapses.
+export async function invalidateSessionCache(sessionId: string) {
   if (redis) {
     await redis.del(`${SESSION_CACHE_PREFIX}${sessionId}`);
   }
+}
+
+export async function invalidateSession(sessionId: string) {
+  await db.delete(orgSessionTable).where(eq(orgSessionTable.id, sessionId));
+  await invalidateSessionCache(sessionId);
 }
 
 // Revoke ALL of an org's sessions (e.g. on password change) and drop their

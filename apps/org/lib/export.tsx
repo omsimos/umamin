@@ -1,4 +1,3 @@
-import JSZip from "jszip";
 import { createElement } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
@@ -168,6 +167,9 @@ export async function exportMessagesAsZip(
   theme: ExportTheme,
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ ok: number; failed: number }> {
+  // Loaded on demand (like modern-screenshot) — keeps jszip out of the
+  // dashboard's initial chunk.
+  const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
   let ok = 0;
   let failed = 0;

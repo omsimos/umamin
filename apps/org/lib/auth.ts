@@ -33,12 +33,13 @@ export const getSession = cache(async (): Promise<SessionValidationResult> => {
   return validateSessionToken(token);
 });
 
+// Never throws on a missing/expired session — "Sign out" with a dead cookie
+// should land on the login page, not the error boundary.
 export async function logout() {
   const { session } = await getSession();
-  if (!session) {
-    throw new Error("Unauthorized");
+  if (session) {
+    await invalidateSession(session.id);
   }
-  await invalidateSession(session.id);
   await deleteSessionTokenCookie();
   redirect("/login");
 }

@@ -21,7 +21,12 @@ export function CopyLinkButton({ username }: { username: string }) {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={copy}>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={copy}
+      aria-label="Copy submit link"
+    >
       {copied ? <CheckIcon /> : <LinkIcon />}
       <span className="hidden sm:inline">Copy link</span>
     </Button>

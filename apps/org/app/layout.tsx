@@ -22,7 +22,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Umamin for Organizations",
+  title: {
+    default: "Umamin for Organizations",
+    template: "%s · Umamin for Organizations",
+  },
   description:
     "Collect anonymous messages for your organization and export them as social-ready images.",
   robots: { index: false, follow: false },

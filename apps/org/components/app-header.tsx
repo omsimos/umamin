@@ -1,5 +1,5 @@
 import { Button } from "@umamin/ui/components/button";
-import { LogOutIcon, SettingsIcon } from "lucide-react";
+import { InboxIcon, LogOutIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { logout } from "@/lib/auth";
 import { CopyLinkButton } from "./copy-link-button";
@@ -20,6 +20,12 @@ export function AppHeader({
 
         <nav className="flex items-center gap-1">
           <CopyLinkButton username={username} />
+          {/* Explicit inbox entry — the org-name link isn't discoverable. */}
+          <Button asChild variant="ghost" size="icon" aria-label="Inbox">
+            <Link href="/dashboard">
+              <InboxIcon />
+            </Link>
+          </Button>
           <Button asChild variant="ghost" size="icon" aria-label="Settings">
             <Link href="/settings">
               <SettingsIcon />
