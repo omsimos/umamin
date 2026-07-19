@@ -6,6 +6,7 @@ import { orgMessageTable } from "@umamin/org-db/schema/message";
 import { orgTable } from "@umamin/org-db/schema/org";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import type {
   CurrentOrg,
   MessagesResponse,
@@ -14,36 +15,48 @@ import type {
 
 // Divides evenly into the dashboard's 2/3/4-column grid.
 export const MESSAGES_PAGE_SIZE = 24;
+// Keep in sync with /to/[username]'s `revalidate` (segment config must be a
+// literal, so it can't import this).
 const PUBLIC_ORG_REVALIDATE_SECONDS = 60;
 
-// Public submit page is a widely-shared link; cache the org profile lookup so
-// repeat hits don't each round-trip Turso inside a function invocation. Short
-// time-based TTL — staleness is purely cosmetic (whether the form shows), since
-// sendMessageAction always re-reads acceptingMessages fresh from the DB.
-export async function getOrgByUsername(
-  username: string,
-): Promise<PublicOrg | null> {
-  return unstable_cache(
-    async (): Promise<PublicOrg | null> => {
-      const [org] = await db
-        .select({
-          id: orgTable.id,
-          username: orgTable.username,
-          displayName: orgTable.displayName,
-          question: orgTable.question,
-          imageUrl: orgTable.imageUrl,
-          acceptingMessages: orgTable.acceptingMessages,
-        })
-        .from(orgTable)
-        .where(eq(orgTable.username, username))
-        .limit(1);
-
-      return org ?? null;
-    },
-    ["org-by-username", username],
-    { revalidate: PUBLIC_ORG_REVALIDATE_SECONDS },
-  )();
+// Tag shared by the cached org lookup AND the ISR'd /to/[username] page (tags
+// propagate to the page's cache entry), so updateProfileAction can expire both.
+export function orgProfileTag(username: string): string {
+  return `org:${username}`;
 }
+
+// Public submit page is a widely-shared link; cache the org profile lookup so
+// repeat hits don't each round-trip Turso inside a function invocation. TTL
+// staleness is cosmetic (whether the form shows) — sendMessageAction always
+// re-reads acceptingMessages fresh — and the org's own edits expire the tag.
+// React cache() dedupes the generateMetadata + page call within one request.
+export const getOrgByUsername = cache(
+  async (username: string): Promise<PublicOrg | null> => {
+    return unstable_cache(
+      async (): Promise<PublicOrg | null> => {
+        const [org] = await db
+          .select({
+            id: orgTable.id,
+            username: orgTable.username,
+            displayName: orgTable.displayName,
+            question: orgTable.question,
+            imageUrl: orgTable.imageUrl,
+            acceptingMessages: orgTable.acceptingMessages,
+          })
+          .from(orgTable)
+          .where(eq(orgTable.username, username))
+          .limit(1);
+
+        return org ?? null;
+      },
+      ["org-by-username", username],
+      {
+        revalidate: PUBLIC_ORG_REVALIDATE_SECONDS,
+        tags: [orgProfileTag(username)],
+      },
+    )();
+  },
+);
 
 export async function getCurrentOrg(orgId: string): Promise<CurrentOrg | null> {
   const [org] = await db

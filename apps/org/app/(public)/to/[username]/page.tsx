@@ -6,12 +6,28 @@ import { ChatForm } from "./components/chat-form";
 
 type Props = { params: Promise<{ username: string }> };
 
+// The one public, anonymously-hammered surface — serve it from the CDN (ISR)
+// instead of a function invocation per hit. Freshness: updateProfileAction
+// expires the org tag + path immediately; otherwise the TTL staleness is
+// cosmetic since sendMessageAction re-reads acceptingMessages fresh.
+export const revalidate = 60;
+
+// Empty: no usernames prerendered at build (no DB there) — this opts the
+// route into static generation so each visited path is rendered once on
+// demand, cached, and revalidated per the interval above.
+export function generateStaticParams(): Array<{ username: string }> {
+  return [];
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
   const org = await getOrgByUsername(username.toLowerCase());
   const name = org?.displayName || `@${org?.username ?? username}`;
   return {
-    title: org ? `Send ${name} an anonymous message` : "Not found",
+    // absolute: keep the sender-facing tab title free of the app suffix.
+    title: org
+      ? { absolute: `Send ${name} an anonymous message` }
+      : "Not found",
     robots: { index: false, follow: false },
   };
 }
