@@ -77,7 +77,11 @@ export function PasswordForm() {
         />
       </div>
 
-      {error && <p className="text-destructive text-sm font-medium">{error}</p>}
+      {error && (
+        <p role="alert" className="text-destructive text-sm font-medium">
+          {error}
+        </p>
+      )}
 
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>

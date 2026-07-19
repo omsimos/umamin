@@ -36,7 +36,9 @@ export function LoginForm() {
           autoComplete="current-password"
         />
         {state?.error && (
-          <p className="text-destructive text-sm font-medium">{state.error}</p>
+          <p role="alert" className="text-destructive text-sm font-medium">
+            {state.error}
+          </p>
         )}
       </div>
 
