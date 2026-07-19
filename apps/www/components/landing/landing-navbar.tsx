@@ -46,7 +46,7 @@ export function LandingNavbar() {
           </h2>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           <Button variant="ghost" asChild className="hidden sm:inline-flex">
             <Link href="/about">About</Link>
           </Button>
@@ -57,13 +57,15 @@ export function LandingNavbar() {
             </Link>
           </Button>
 
-          <PwaInstallButton />
+          <div className="ml-3 flex items-center gap-x-2">
+            <PwaInstallButton />
 
-          <Button asChild className="rounded-full">
-            <Link href={isAuthenticated ? "/feed" : "/login"}>
-              {isAuthenticated ? "Open" : "Log in"}
-            </Link>
-          </Button>
+            <Button asChild className="rounded-full">
+              <Link href={isAuthenticated ? "/feed" : "/login"}>
+                {isAuthenticated ? "Open" : "Log in"}
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     </header>
