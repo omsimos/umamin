@@ -1,5 +1,9 @@
 import * as z from "zod";
-import { MAX_MESSAGE_LENGTH } from "./constants";
+import {
+  MAX_MESSAGE_CHAR_LIMIT,
+  MIN_MESSAGE_CHAR_LIMIT,
+  messageCharLimitError,
+} from "./constants";
 
 // Shared micro-schema for single-id action args.
 export const idSchema = z.string().min(1);
@@ -10,8 +14,8 @@ export const sendMessageSchema = z.object({
     .string()
     .trim()
     .min(1, { error: "Message cannot be empty" })
-    .max(MAX_MESSAGE_LENGTH, {
-      error: `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`,
+    .max(MAX_MESSAGE_CHAR_LIMIT, {
+      error: messageCharLimitError(MAX_MESSAGE_CHAR_LIMIT),
     }),
 });
 
@@ -43,6 +47,16 @@ export const updateProfileSchema = z.object({
     .min(1, { error: "Prompt cannot be empty" })
     .max(150, { error: "Prompt must not exceed 150 characters" }),
   acceptingMessages: z.boolean(),
+  messageCharLimit: z
+    .number()
+    .int({ error: "Message character limit must be a whole number" })
+    .min(MIN_MESSAGE_CHAR_LIMIT, {
+      error: `Message character limit must be at least ${MIN_MESSAGE_CHAR_LIMIT}`,
+    })
+    .max(MAX_MESSAGE_CHAR_LIMIT, {
+      error: `Message character limit cannot exceed ${MAX_MESSAGE_CHAR_LIMIT}`,
+    })
+    .nullable(),
 });
 
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;

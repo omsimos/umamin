@@ -6,9 +6,14 @@ import { CheckCircle2Icon, Loader2Icon, SendIcon } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { sendMessageAction } from "@/app/actions/message";
-import { MAX_MESSAGE_LENGTH } from "@/lib/constants";
 
-export function ChatForm({ orgId }: { orgId: string }) {
+export function ChatForm({
+  orgId,
+  messageCharLimit,
+}: {
+  orgId: string;
+  messageCharLimit: number;
+}) {
   const [content, setContent] = useState("");
   const [sent, setSent] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -57,7 +62,7 @@ export function ChatForm({ orgId }: { orgId: string }) {
       <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        maxLength={MAX_MESSAGE_LENGTH}
+        maxLength={messageCharLimit}
         rows={5}
         placeholder="Type your anonymous message…"
         disabled={pending}
@@ -65,7 +70,7 @@ export function ChatForm({ orgId }: { orgId: string }) {
       />
       <div className="flex items-center gap-3">
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-          {content.length}/{MAX_MESSAGE_LENGTH}
+          {content.length}/{messageCharLimit}
         </span>
         {/* Thumb-sized on phones, compact on desktop. */}
         <Button

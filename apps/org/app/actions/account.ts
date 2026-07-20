@@ -59,10 +59,18 @@ export const updateProfileAction = withAction(
     auth: "user",
     rateLimit: { name: "write", key: ({ user }) => `profile:${user.id}` },
   },
-  async ({ displayName, question, acceptingMessages }, { session, user }) => {
+  async (
+    { displayName, question, acceptingMessages, messageCharLimit },
+    { session, user },
+  ) => {
     await db
       .update(orgTable)
-      .set({ displayName: displayName || null, question, acceptingMessages })
+      .set({
+        displayName: displayName || null,
+        question,
+        acceptingMessages,
+        messageCharLimit,
+      })
       .where(eq(orgTable.id, user.id));
 
     // Read-your-writes: expire the cached org lookup + ISR'd submit page, and

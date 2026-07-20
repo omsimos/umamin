@@ -22,6 +22,8 @@ export const orgTable = sqliteTable("org", {
   acceptingMessages: integer("accepting_messages", { mode: "boolean" })
     .notNull()
     .default(true),
+  // Null inherits the app's default anonymous-message character limit.
+  messageCharLimit: integer("message_char_limit"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

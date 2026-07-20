@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MAX_MESSAGE_LENGTH } from "@/lib/constants";
+import {
+  DEFAULT_MESSAGE_CHAR_LIMIT,
+  MAX_MESSAGE_CHAR_LIMIT,
+  MIN_MESSAGE_CHAR_LIMIT,
+  resolveMessageCharLimit,
+} from "@/lib/constants";
 import {
   passwordFormSchema,
   sendMessageSchema,
@@ -17,9 +22,18 @@ describe("sendMessageSchema", () => {
     expect(
       sendMessageSchema.safeParse({
         orgId: "x",
-        content: "a".repeat(MAX_MESSAGE_LENGTH + 1),
+        content: "a".repeat(MAX_MESSAGE_CHAR_LIMIT + 1),
       }).success,
     ).toBe(false);
+  });
+
+  it("accepts content at the hard platform ceiling", () => {
+    expect(
+      sendMessageSchema.safeParse({
+        orgId: "x",
+        content: "a".repeat(MAX_MESSAGE_CHAR_LIMIT),
+      }).success,
+    ).toBe(true);
   });
 
   it("requires an orgId", () => {
@@ -70,8 +84,11 @@ describe("passwordFormSchema", () => {
 describe("updateProfileSchema", () => {
   it("rejects an empty prompt", () => {
     expect(
-      updateProfileSchema.safeParse({ question: "", acceptingMessages: true })
-        .success,
+      updateProfileSchema.safeParse({
+        question: "",
+        acceptingMessages: true,
+        messageCharLimit: null,
+      }).success,
     ).toBe(false);
   });
 
@@ -81,7 +98,45 @@ describe("updateProfileSchema", () => {
         displayName: "Acme",
         question: "Ask us anything!",
         acceptingMessages: false,
+        messageCharLimit: null,
       }).success,
     ).toBe(true);
+  });
+
+  it.each([
+    null,
+    MIN_MESSAGE_CHAR_LIMIT,
+    DEFAULT_MESSAGE_CHAR_LIMIT,
+    MAX_MESSAGE_CHAR_LIMIT,
+  ])("accepts message character limit %s", (messageCharLimit) => {
+    expect(
+      updateProfileSchema.safeParse({
+        question: "Ask us anything!",
+        acceptingMessages: true,
+        messageCharLimit,
+      }).success,
+    ).toBe(true);
+  });
+
+  it.each([
+    MIN_MESSAGE_CHAR_LIMIT - 1,
+    MAX_MESSAGE_CHAR_LIMIT + 1,
+    100.5,
+  ])("rejects invalid message character limit %s", (messageCharLimit) => {
+    expect(
+      updateProfileSchema.safeParse({
+        question: "Ask us anything!",
+        acceptingMessages: true,
+        messageCharLimit,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("resolveMessageCharLimit", () => {
+  it("uses the default only when the override is unset", () => {
+    expect(resolveMessageCharLimit(null)).toBe(DEFAULT_MESSAGE_CHAR_LIMIT);
+    expect(resolveMessageCharLimit(undefined)).toBe(DEFAULT_MESSAGE_CHAR_LIMIT);
+    expect(resolveMessageCharLimit(250)).toBe(250);
   });
 });

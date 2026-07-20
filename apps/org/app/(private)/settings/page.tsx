@@ -50,6 +50,7 @@ export default async function SettingsPage() {
             displayName={user.displayName}
             question={user.question}
             acceptingMessages={user.acceptingMessages}
+            messageCharLimit={user.messageCharLimit}
           />
         </CardContent>
       </Card>
