@@ -6,6 +6,7 @@ export type PublicOrg = {
   question: string;
   imageUrl: string | null;
   acceptingMessages: boolean;
+  messageCharLimit: number | null;
 };
 
 // The signed-in org's own view (adds the first-run flag).

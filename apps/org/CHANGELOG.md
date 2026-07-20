@@ -7,6 +7,13 @@ and this app adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 This changelog is separate from the root `CHANGELOG.md`, which tracks the main
 Umamin app's releases.
 
+## [0.3.0] - 2026-07-20
+
+### Added
+
+- Organizations can choose the maximum length of anonymous messages, while
+  organizations without a custom setting keep the 1,000-character default.
+
 ## [0.2.0] - 2026-07-19
 
 ### Added

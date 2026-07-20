@@ -42,6 +42,7 @@ export const getOrgByUsername = cache(
             question: orgTable.question,
             imageUrl: orgTable.imageUrl,
             acceptingMessages: orgTable.acceptingMessages,
+            messageCharLimit: orgTable.messageCharLimit,
           })
           .from(orgTable)
           .where(eq(orgTable.username, username))
@@ -67,6 +68,7 @@ export async function getCurrentOrg(orgId: string): Promise<CurrentOrg | null> {
       question: orgTable.question,
       imageUrl: orgTable.imageUrl,
       acceptingMessages: orgTable.acceptingMessages,
+      messageCharLimit: orgTable.messageCharLimit,
       mustChangePassword: orgTable.mustChangePassword,
     })
     .from(orgTable)

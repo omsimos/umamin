@@ -5,13 +5,19 @@ import { db } from "@umamin/org-db";
 import { orgMessageTable } from "@umamin/org-db/schema/message";
 import { orgTable } from "@umamin/org-db/schema/org";
 import { and, eq } from "drizzle-orm";
+import {
+  messageCharLimitError,
+  resolveMessageCharLimit,
+} from "@/lib/constants";
 import { getClientIp } from "@/lib/ratelimit";
 import { idSchema, sendMessageSchema } from "@/lib/schema";
+import { INVALID_INPUT_ERROR } from "@/lib/server/errors";
 import { withAction } from "@/lib/server/with-action";
 
 export const sendMessageAction = withAction(
   {
     schema: sendMessageSchema,
+    invalidInput: (error) => error.issues[0]?.message ?? INVALID_INPUT_ERROR,
     auth: "none",
     rateLimit: {
       name: "message",
@@ -25,6 +31,7 @@ export const sendMessageAction = withAction(
         id: orgTable.id,
         question: orgTable.question,
         acceptingMessages: orgTable.acceptingMessages,
+        messageCharLimit: orgTable.messageCharLimit,
       })
       .from(orgTable)
       .where(eq(orgTable.id, orgId))
@@ -32,6 +39,11 @@ export const sendMessageAction = withAction(
 
     if (!org?.acceptingMessages) {
       return { success: true };
+    }
+
+    const messageCharLimit = resolveMessageCharLimit(org.messageCharLimit);
+    if (content.length > messageCharLimit) {
+      return { error: messageCharLimitError(messageCharLimit) };
     }
 
     const encrypted = await aesEncrypt(content);

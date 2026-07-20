@@ -38,6 +38,7 @@ function toSessionOrg(org: SelectOrg): SessionOrg {
     imageUrl: org.imageUrl,
     mustChangePassword: org.mustChangePassword,
     acceptingMessages: org.acceptingMessages,
+    messageCharLimit: org.messageCharLimit,
     createdAt: org.createdAt,
     updatedAt: org.updatedAt,
   };

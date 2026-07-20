@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { OrgAvatar } from "@/components/org-avatar";
+import { resolveMessageCharLimit } from "@/lib/constants";
 import { getOrgByUsername } from "@/lib/server/data";
 import { ChatForm } from "./components/chat-form";
 
@@ -61,7 +62,10 @@ export default async function SubmitPage({ params }: Props) {
           {org.question}
         </p>
         {org.acceptingMessages ? (
-          <ChatForm orgId={org.id} />
+          <ChatForm
+            orgId={org.id}
+            messageCharLimit={resolveMessageCharLimit(org.messageCharLimit)}
+          />
         ) : (
           <p className="text-muted-foreground py-6 text-center text-sm">
             This organization is not accepting messages right now.

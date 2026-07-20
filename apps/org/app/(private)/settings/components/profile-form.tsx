@@ -10,21 +10,31 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateProfileAction } from "@/app/actions/account";
+import {
+  DEFAULT_MESSAGE_CHAR_LIMIT,
+  MAX_MESSAGE_CHAR_LIMIT,
+  MIN_MESSAGE_CHAR_LIMIT,
+} from "@/lib/constants";
 
 export function ProfileForm({
   displayName,
   question,
   acceptingMessages,
+  messageCharLimit,
 }: {
   displayName: string | null;
   question: string;
   acceptingMessages: boolean;
+  messageCharLimit: number | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState(displayName ?? "");
   const [prompt, setPrompt] = useState(question);
   const [accepting, setAccepting] = useState(acceptingMessages);
+  const [limit, setLimit] = useState(
+    messageCharLimit === null ? "" : String(messageCharLimit),
+  );
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,6 +43,7 @@ export function ProfileForm({
         displayName: name.trim() || undefined,
         question: prompt.trim(),
         acceptingMessages: accepting,
+        messageCharLimit: limit.trim() === "" ? null : Number(limit),
       });
       if (res && "error" in res) {
         toast.error(res.error);
@@ -67,6 +78,28 @@ export function ProfileForm({
           rows={2}
           disabled={pending}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="messageCharLimit">Message character limit</Label>
+        <Input
+          id="messageCharLimit"
+          type="number"
+          inputMode="numeric"
+          min={MIN_MESSAGE_CHAR_LIMIT}
+          max={MAX_MESSAGE_CHAR_LIMIT}
+          step={1}
+          value={limit}
+          onChange={(e) => setLimit(e.target.value)}
+          disabled={pending}
+          aria-describedby="messageCharLimitHelp"
+        />
+        <p id="messageCharLimitHelp" className="text-muted-foreground text-xs">
+          Leave blank to use the default of{" "}
+          {DEFAULT_MESSAGE_CHAR_LIMIT.toLocaleString("en-US")}. Choose{" "}
+          {MIN_MESSAGE_CHAR_LIMIT}–
+          {MAX_MESSAGE_CHAR_LIMIT.toLocaleString("en-US")}.
+        </p>
       </div>
 
       <div className="flex items-center justify-between rounded-lg border px-4 py-3">
