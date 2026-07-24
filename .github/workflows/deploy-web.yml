@@ -12,6 +12,8 @@ on:
       - "packages/**"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - "package.json"
       - ".github/workflows/deploy-web.yml"
   workflow_dispatch:
 
@@ -39,6 +41,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Cache turbo build setup
+        uses: actions/cache@v5
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -62,6 +74,16 @@ jobs:
         if: github.ref_name != 'main'
         run: pnpm --filter=web deploy
 
+      - name: Smoke-check staging
+        if: github.ref_name != 'main'
+        run: |
+          sleep 5
+          curl --silent --fail --max-time 15 https://next.umamin.link/api/health
+
       - name: Deploy production
         if: github.ref_name == 'main'
         run: pnpm --filter=web deploy:production
+
+      # Production is dark until cutover (no route). When the umamin.link
+      # routes in wrangler.jsonc are uncommented, add the matching smoke check:
+      #   curl --silent --fail --max-time 15 https://umamin.link/api/health
