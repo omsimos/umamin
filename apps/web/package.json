@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "CLOUDFLARE_ENV=staging vite dev",
-    "build": "CLOUDFLARE_ENV=staging vite build && tsc --noEmit",
+    "build": "CLOUDFLARE_ENV=staging vite build --mode staging && tsc --noEmit",
     "build:production": "CLOUDFLARE_ENV=production vite build && tsc --noEmit",
     "preview": "CLOUDFLARE_ENV=staging vite preview",
     "deploy": "pnpm run build && wrangler deploy --env staging",
