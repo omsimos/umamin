@@ -44,13 +44,17 @@
       "name": "Open social feed",
       "short_name": "Feed",
       "url": "/feed",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        { "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png" }
+      ]
     },
     {
       "name": "Read notes",
       "short_name": "Notes",
       "url": "/notes",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        { "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png" }
+      ]
     }
   ],
   "screenshots": [

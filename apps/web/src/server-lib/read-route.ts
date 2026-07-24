@@ -36,7 +36,8 @@ function publicJson(
 type AppContext = Context<{ Bindings: AppEnv }>;
 
 // Private handlers get the FULL context (may resolve the viewer session).
-type PrivateReadHandler = (c: AppContext) => Promise<Response | object>;
+// `null` is a valid body (missing entity) — it still gets the private envelope.
+type PrivateReadHandler = (c: AppContext) => Promise<Response | object | null>;
 
 // Public handlers get ONLY the request + env — no Context, so they have no
 // resolveSession(c) path (type-enforced: a public/cached response must never

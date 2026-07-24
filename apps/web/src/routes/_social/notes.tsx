@@ -37,8 +37,13 @@ export const Route = createFileRoute("/_social/notes")({
       {
         name: "description",
         content:
-          "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages.",
+          "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages. Send your messages anonymously and discover what others have to share.",
       },
+      {
+        name: "keywords",
+        content: "Umamin notes, anonymous notes, send messages, view messages",
+      },
+      { name: "robots", content: "index, follow" },
     ],
   }),
   pendingComponent: NotesPending,

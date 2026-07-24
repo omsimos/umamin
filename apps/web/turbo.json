@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*", "$TURBO_ROOT$/CHANGELOG.md"],
       "outputs": ["dist/**"],
       "env": ["TURSO_*", "GOOGLE_*", "AES_256_GCM_KEY", "VAPID_*", "R2_*"]
     }

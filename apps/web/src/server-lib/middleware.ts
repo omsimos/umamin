@@ -46,26 +46,19 @@ export function ipDenylist(): Middleware {
 }
 
 /**
- * Same-origin CSRF guard for cookie-authed page mutations (server actions /
- * form posts). Non-GET + a session cookie present + not bearer → Origin must
- * match Host. API `/api/*` actions self-enforce via the action() factory, and
- * bearer (mobile) traffic is exempt.
+ * Same-origin CSRF guard for page mutations (form posts / future server fns).
+ * Mirrors apps/www proxy.ts: EVERY non-GET must pass Origin-vs-Host — not just
+ * cookie-authed ones — so an anonymous page POST added later can't slip in
+ * unguarded. API `/api/*` actions also self-enforce via the action() factory,
+ * and bearer (mobile) traffic is exempt.
  */
 export function csrfOriginCheck(): Middleware {
   return async (c, next) => {
     const method = c.req.method;
     const isMutation =
       method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
-    const hasSessionCookie =
-      !!getCookie(c, SESSION_COOKIE_NAME) ||
-      !!getCookie(c, LEGACY_SESSION_COOKIE_NAME);
 
-    if (
-      isMutation &&
-      hasSessionCookie &&
-      !isBearerAuthed(c) &&
-      !originMatchesHost(c)
-    ) {
+    if (isMutation && !isBearerAuthed(c) && !originMatchesHost(c)) {
       return c.body(null, 403);
     }
     await next();

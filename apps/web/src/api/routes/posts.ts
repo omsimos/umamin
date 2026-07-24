@@ -38,7 +38,7 @@ export const postsRoutes = new Hono<AppBindings>()
         postId: c.req.param("id") ?? "",
         viewerId: session?.userId,
       });
-      return result ?? Response.json(null);
+      return result ?? null;
     }),
   )
   .get(

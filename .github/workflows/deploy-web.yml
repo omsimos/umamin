@@ -70,6 +70,11 @@ jobs:
       - name: Run workerd tests
         run: pnpm --filter=web test:workers
 
+      # dev pushes never run ci.yml's quality job — lint here (repo-pinned
+      # biome via pnpm) so a Biome violation can't reach staging unchecked.
+      - name: Lint
+        run: pnpm exec biome ci .
+
       - name: Deploy staging
         if: github.ref_name != 'main'
         run: pnpm --filter=web deploy

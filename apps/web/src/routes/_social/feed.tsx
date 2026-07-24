@@ -19,6 +19,12 @@ export const Route = createFileRoute("/_social/feed")({
   }),
   loaderDeps: ({ search }) => ({ sort: search.sort }),
   loader: async ({ context, deps }) => {
+    // Operator kill-switch (parity with apps/www feed/page.tsx): flipping the
+    // flag takes the feed offline behind the /social maintenance notice.
+    if (import.meta.env.VITE_SOCIAL_UNDER_MAINTENANCE === "true") {
+      throw redirect({ to: "/social" });
+    }
+
     const { sort } = deps;
     // Resolve the viewer server-side (401 → null) so page 1 is served under the
     // correct viewer-keyed query — no wasted public page + second /api/posts.

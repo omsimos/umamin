@@ -101,13 +101,26 @@ describe("middleware", () => {
       expect(await res.text()).toBe(OK);
     });
 
-    it("ignores GET and anonymous (no session cookie) requests", async () => {
+    it("ignores GET requests", async () => {
       expect((await fetch(app, "/x")).status).toBe(200);
+    });
+
+    // Mirrors apps/www proxy.ts: EVERY non-GET must pass Origin-vs-Host, even
+    // anonymous ones — so a future anonymous page POST can't slip in unguarded.
+    it("rejects an anonymous cross-origin mutation", async () => {
       const anon = await fetch(app, "/x", {
         method: "POST",
         headers: { origin: "https://evil.test", host: "x.test" },
       });
-      expect(anon.status).toBe(200);
+      expect(anon.status).toBe(403);
+    });
+
+    it("allows an anonymous same-origin mutation", async () => {
+      const anon = await fetch(app, "/x", {
+        method: "POST",
+        headers: { origin: "https://x.test", host: "x.test" },
+      });
+      expect(await anon.text()).toBe(OK);
     });
   });
 

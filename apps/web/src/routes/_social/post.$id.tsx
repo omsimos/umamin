@@ -97,6 +97,12 @@ export const Route = createFileRoute("/_social/post/$id")({
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },
       ],
+      links: [
+        {
+          rel: "canonical",
+          href: `${import.meta.env.VITE_SITE_URL ?? ""}/post/${loaderData.id}`,
+        },
+      ],
     };
   },
   pendingComponent: PostPending,

@@ -1,11 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Skeleton } from "@umamin/ui/components/skeleton";
+import { loaderFetchJson } from "@/lib/loader-fetch";
+import { queryKeys } from "@/lib/query";
+import type { NotificationsResponse } from "@/lib/types";
 import { NotificationListSkeleton } from "./-notifications/notification-skeleton";
 import { NotificationsList } from "./-notifications/notifications-list";
 import { PushPrompt } from "./-notifications/push-prompt";
 import { BackHeaderPage } from "./-shared/chrome";
 
 export const Route = createFileRoute("/_private/notifications")({
+  // SSR-prime page 1 (parity with www's HydrationBoundary prefetch).
+  loader: async ({ context }) => {
+    await context.queryClient.ensureInfiniteQueryData({
+      queryKey: queryKeys.notifications(),
+      queryFn: () =>
+        loaderFetchJson<NotificationsResponse>("/api/notifications"),
+      initialPageParam: null as string | null,
+    });
+  },
   head: () => ({ meta: [{ title: "Umamin — Notifications" }] }),
   pendingComponent: NotificationsPending,
   component: NotificationsPage,

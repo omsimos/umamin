@@ -4,8 +4,10 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
 import { YouTabs } from "@/components/you-tabs";
+import { loaderFetchJson } from "@/lib/loader-fetch";
 import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
+import type { MessagesResponse } from "@/lib/types";
 import { CurrentUserCard } from "./-inbox/current-user-card";
 import { ReceivedMessageCardSkeleton } from "./-inbox/received-message-card-skeleton";
 import { ReceivedMessages } from "./-inbox/received-messages";
@@ -18,6 +20,21 @@ export const Route = createFileRoute("/_private/inbox")({
   validateSearch: (search: Record<string, unknown>): InboxSearch => ({
     tab: search.tab === "sent" ? "sent" : undefined,
   }),
+  loaderDeps: ({ search }) => ({ tab: search.tab }),
+  // SSR-prime the active tab's first page (parity with www's HydrationBoundary
+  // prefetch) so the list hydrates without a skeleton flash + client refetch.
+  loader: async ({ context, deps }) => {
+    const type = deps.tab === "sent" ? "sent" : "received";
+    await context.queryClient.ensureInfiniteQueryData({
+      queryKey:
+        type === "sent"
+          ? queryKeys.sentMessages()
+          : queryKeys.receivedMessages(),
+      queryFn: () =>
+        loaderFetchJson<MessagesResponse>(`/api/messages?type=${type}`),
+      initialPageParam: null as string | null,
+    });
+  },
   head: () => ({ meta: [{ title: "Umamin — Inbox" }] }),
   pendingComponent: InboxPending,
   component: InboxPage,
