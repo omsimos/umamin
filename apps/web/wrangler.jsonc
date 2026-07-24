@@ -14,7 +14,13 @@
   "kv_namespaces": [
     {
       "binding": "KV",
-      "id": "TODO"
+      "id": "6dcbf8d991fe4123b2b6eb2a0dfd0fb3"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "next.umamin.link",
+      "custom_domain": true
     }
   ],
   // Workers Rate Limiting bindings (unsafe). period is 10 or 60 only.
@@ -70,6 +76,9 @@
     "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
   },
   "vars": {
-    "APP_URL": "https://next.umamin.link"
+    "APP_URL": "https://next.umamin.link",
+    // Not set automatically on Workers; session cookie names (__Host-*) and
+    // secure attrs key off it. Local dev overrides via .dev.vars.
+    "NODE_ENV": "production"
   }
 }

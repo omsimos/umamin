@@ -34,8 +34,11 @@ export function setSessionCookie(
 }
 
 export function deleteSessionCookie(c: Context): void {
-  deleteCookie(c, SESSION_COOKIE_NAME, { path: "/" });
+  // hono/cookie rejects a __Host- name without Secure, so the deletion must
+  // carry the same secure flag the cookie was set with.
+  const secure = process.env.NODE_ENV === "production";
+  deleteCookie(c, SESSION_COOKIE_NAME, { path: "/", secure });
   if (LEGACY_SESSION_COOKIE_NAME !== SESSION_COOKIE_NAME) {
-    deleteCookie(c, LEGACY_SESSION_COOKIE_NAME, { path: "/" });
+    deleteCookie(c, LEGACY_SESSION_COOKIE_NAME, { path: "/", secure });
   }
 }
