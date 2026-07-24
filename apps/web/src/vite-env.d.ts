@@ -4,7 +4,8 @@
 // mirror the apps/www `NEXT_PUBLIC_*` values the ported frontend reads.
 interface ImportMetaEnv {
   // App version string shown in the account sheet + used to version the SW URL
-  // (was NEXT_PUBLIC_VERSION; derived from CHANGELOG at build in a later phase).
+  // (was NEXT_PUBLIC_VERSION; derived from the top CHANGELOG entry via `define`
+  // in vite.config.ts — not an env var).
   readonly VITE_APP_VERSION?: string;
   // Comma-separated public verified-user list (was NEXT_PUBLIC_VERIFIED_USERS).
   readonly VITE_VERIFIED_USERS?: string;
