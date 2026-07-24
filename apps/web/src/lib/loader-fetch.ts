@@ -1,36 +1,31 @@
-import { type ServerFetchContext, serverFetchJson } from "@/lib/query-fetchers";
-
 // ── Loader-side fetch seam (Phase 3b) ────────────────────────────────────────
-// Built on the `serverFetchJson({ origin, cookie }, path)` SSR seam from
-// query-fetchers.ts. Route loaders run in BOTH environments:
-//   • SSR (the Worker): no ambient page origin and no browser cookie jar — a
-//     relative `/api/...` request has nothing to resolve against and carries no
-//     session. We derive both from Start's per-request server context
-//     (`getRequest()` → the Web `Request`): its URL gives the absolute origin,
-//     its `cookie` header carries the caller's httpOnly session.
-//   • Client navigation: the loader re-runs in the browser, where relative URLs
-//     + `credentials:"include"` behave exactly like the query-fetchers.ts
+// Route loaders run in BOTH environments:
+//   • SSR (the Worker): a network fetch to our own origin is NOT an option —
+//     Cloudflare blocks a Worker from fetch()ing its own zone (recursion
+//     protection), and in vite dev the self-request deadlocks the dev Worker.
+//     Instead the loader dispatches IN-PROCESS to the same Hono `apiApp` the
+//     network route uses: identical handlers, middleware, and session
+//     resolution (the caller's cookie is forwarded on a synthetic Request),
+//     with zero extra invocation.
+//   • Client navigation: the loader re-runs in the browser, where relative
+//     URLs + `credentials:"include"` behave exactly like the query-fetchers.ts
 //     browser fetchers. We branch on `import.meta.env.SSR`.
 //
-// `@tanstack/react-start/server` is a SERVER-ONLY module (Start's import
-// protection denies a static import of it from any client-reachable file, and
-// every loader is client-reachable). So `getRequest` is pulled in via a dynamic
-// `import()` INSIDE the `import.meta.env.SSR` branch — statically false in the
-// client build, so the branch (and the import) is tree-shaken out of the client
-// bundle entirely.
+// `@tanstack/react-start/server`, `@/server-lib/ssr-env`, and `@/api` are
+// server-only imports — every loader is client-reachable, so they are pulled
+// in via dynamic `import()` INSIDE the `import.meta.env.SSR` branch, which is
+// statically false in the client build and tree-shaken out entirely. All three
+// are REAL modules (no `cloudflare:*` virtual specifiers): dev-time import
+// analysis transforms this file for the browser too, where a workerd-only
+// specifier fails to resolve — bindings arrive via ssr-env instead, stamped by
+// the server entry.
 //
 // The queryKey a loader primes is IDENTICAL to the one the client component's
 // `useInfiniteQuery`/`useQuery` reads, so the router-query integration
 // (routerWithQueryClient) dehydrates the primed cache on the server and the
 // client hydrates it without a second fetch.
 //
-// ── API for the other Phase 3b route groups (copy this file's usage) ─────────
-//   getLoaderFetchContext(): Promise<ServerFetchContext>
-//     — the { origin, cookie } pair for the current SSR request. SSR-only
-//       (async because it dynamically imports the server module); throws
-//       off-request. Prefer the helpers below unless you need the raw context
-//       (e.g. to hand to a per-resource `serverFetch*` wrapper).
-//
+// ── API ───────────────────────────────────────────────────────────────────────
 //   loaderFetchJson<T>(path): Promise<T>
 //     — environment-aware GET returning parsed JSON; throws on non-2xx (so a
 //       loader failure surfaces to the route's errorComponent). Use for reads
@@ -38,51 +33,56 @@ import { type ServerFetchContext, serverFetchJson } from "@/lib/query-fetchers";
 //
 //   loaderFetchJsonOrNull<T>(path, ...nullStatuses): Promise<T | null>
 //     — like loaderFetchJson but resolves to null for the given status codes
-//       (default 401 + 404) instead of throwing. Use for the optional viewer
-//       (/api/me → 401 when logged out) and for entities that 404 into a
-//       `notFound()` decision the loader makes explicitly.
+//       (default 401 + 404) instead of throwing.
+//
+//   loaderFetchOptional<T>(path, clientFetcher, emptyValue, nullStatuses?)
+//     — delegates to an existing browser fetcher on the client and soft-fails
+//       the listed statuses to `emptyValue` on the server, so the SSR pass can
+//       redirect/notFound instead of crashing the loader.
 
-export async function getLoaderFetchContext(): Promise<ServerFetchContext> {
-  const { getRequest } = await import("@tanstack/react-start/server");
-  const request = getRequest();
+// waitUntil outlives the synthetic request; swallow rejections so a background
+// cache.put failure can't crash the SSR pass.
+function stubExecutionContext(): ExecutionContext {
   return {
-    origin: new URL(request.url).origin,
-    cookie: request.headers.get("cookie") ?? undefined,
-  };
+    waitUntil(promise: Promise<unknown>) {
+      void promise.catch(() => {});
+    },
+    passThroughOnException() {},
+    props: {},
+  } as ExecutionContext;
+}
+
+async function ssrDispatch(path: string): Promise<Response> {
+  const [{ getRequest }, { apiApp }, { getSsrEnv }] = await Promise.all([
+    import("@tanstack/react-start/server"),
+    import("@/api"),
+    import("@/server-lib/ssr-env"),
+  ]);
+  const request = getRequest();
+  const cookie = request.headers.get("cookie");
+  // apiApp is mounted at /api by the outer server — strip the prefix for the
+  // in-process dispatch so the same handler matches.
+  const url = new URL(
+    path.replace(/^\/api(?=\/)/, ""),
+    new URL(request.url).origin,
+  );
+  return apiApp.fetch(
+    new Request(url, { headers: cookie ? { cookie } : undefined }),
+    getSsrEnv(),
+    stubExecutionContext(),
+  );
+}
+
+async function fetchResponse(path: string): Promise<Response> {
+  if (import.meta.env.SSR) return ssrDispatch(path);
+  return fetch(path, { credentials: "include" });
 }
 
 export async function loaderFetchJson<T>(path: string): Promise<T> {
-  if (import.meta.env.SSR) {
-    return serverFetchJson<T>(await getLoaderFetchContext(), path);
-  }
-
-  const response = await fetch(path, { credentials: "include" });
+  const response = await fetchResponse(path);
   if (!response.ok) {
     throw new Error(`Request failed for ${path}`);
   }
-  return (await response.json()) as T;
-}
-
-// Variant that delegates to an existing browser fetcher on the client (so a
-// loader can share the exact fetch/parse path its component's query uses) and
-// soft-fails the listed statuses to `emptyValue` on the server — e.g. 401 for
-// the optional viewer, 403/404 for a group that went away — so the SSR pass can
-// redirect/notFound instead of crashing the loader.
-export async function loaderFetchOptional<T>(
-  path: string,
-  clientFetcher: () => Promise<T>,
-  emptyValue: T,
-  nullStatuses: number[] = [401],
-): Promise<T> {
-  if (!import.meta.env.SSR) return clientFetcher();
-
-  const { origin, cookie } = await getLoaderFetchContext();
-  const response = await fetch(`${origin}${path}`, {
-    headers: cookie ? { cookie } : undefined,
-  });
-
-  if (nullStatuses.includes(response.status)) return emptyValue;
-  if (!response.ok) throw new Error(`Request failed for ${path}`);
   return (await response.json()) as T;
 }
 
@@ -91,22 +91,26 @@ export async function loaderFetchJsonOrNull<T>(
   ...nullStatuses: number[]
 ): Promise<T | null> {
   const statuses = nullStatuses.length > 0 ? nullStatuses : [401, 404];
-
-  let response: Response;
-  if (import.meta.env.SSR) {
-    const { origin, cookie } = await getLoaderFetchContext();
-    response = await fetch(`${origin}${path}`, {
-      headers: cookie ? { cookie } : undefined,
-    });
-  } else {
-    response = await fetch(path, { credentials: "include" });
-  }
-
+  const response = await fetchResponse(path);
   if (statuses.includes(response.status)) {
     return null;
   }
   if (!response.ok) {
     throw new Error(`Request failed for ${path}`);
   }
+  return (await response.json()) as T;
+}
+
+export async function loaderFetchOptional<T>(
+  path: string,
+  clientFetcher: () => Promise<T>,
+  emptyValue: T,
+  nullStatuses: number[] = [401],
+): Promise<T> {
+  if (!import.meta.env.SSR) return clientFetcher();
+
+  const response = await ssrDispatch(path);
+  if (nullStatuses.includes(response.status)) return emptyValue;
+  if (!response.ok) throw new Error(`Request failed for ${path}`);
   return (await response.json()) as T;
 }

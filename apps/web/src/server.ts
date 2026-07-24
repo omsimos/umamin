@@ -17,6 +17,7 @@ import {
   ipDenylist,
   securityHeadersMiddleware,
 } from "./server-lib/middleware";
+import { setSsrEnv } from "./server-lib/ssr-env";
 
 // TanStack Start SSR handler. `createStartHandler` returns a universal
 // (request) => Response fetch function; the outer Hono app owns middleware/cron
@@ -37,8 +38,12 @@ app.route("/api", apiApp);
 app.route("/auth/google", googleAuthApp);
 
 // TanStack Start owns everything else (SSR pages). Passing the raw Request keeps
-// the streamed Response body intact through the Hono wrapper.
-app.all("*", (c) => startHandler(c.req.raw));
+// the streamed Response body intact through the Hono wrapper. Bindings are
+// stamped for the SSR loaders' in-process API dispatch (server-lib/ssr-env.ts).
+app.all("*", (c) => {
+  setSsrEnv(c.env);
+  return startHandler(c.req.raw);
+});
 
 const scheduled: ExportedHandlerScheduledHandler<AppEnv> = async (
   event,
