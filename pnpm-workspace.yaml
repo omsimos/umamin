@@ -10,3 +10,10 @@ allowBuilds:
   esbuild: false
   lefthook: true
   sharp: false
+  workerd: true
+
+minimumReleaseAgeExclude:
+  - '@cloudflare/vite-plugin@1.47.0'
+  - '@cloudflare/vitest-pool-workers@0.18.8'
+  - miniflare@4.20260722.0
+  - wrangler@4.114.0

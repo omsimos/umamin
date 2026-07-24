@@ -1,0 +1,12 @@
+{
+  "$schema": "https://v2-9-16.turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**"],
+      "env": ["TURSO_*", "GOOGLE_*", "AES_256_GCM_KEY", "VAPID_*", "R2_*"]
+    }
+  }
+}

@@ -14,7 +14,8 @@
       "!dist",
       "!build",
       "!**/routeTree.gen.ts",
-      "!**/convex/_generated"
+      "!**/convex/_generated",
+      "!**/worker-configuration.d.ts"
     ]
   },
   "formatter": {
@@ -48,6 +49,19 @@
       "includes": ["apps/chat/**"],
       "linter": {
         "rules": {
+          "performance": {
+            "noImgElement": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/web/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noHeadElement": "off"
+          },
           "performance": {
             "noImgElement": "off"
           }

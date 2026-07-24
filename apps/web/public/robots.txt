@@ -1,0 +1,10 @@
+# Ported from apps/www app/robots.ts
+User-Agent: *
+Allow: /
+Disallow: /api/*
+Disallow: /auth/*
+Disallow: /inbox/*
+Disallow: /settings/*
+
+Host: https://www.umamin.link
+Sitemap: https://www.umamin.link/sitemap.xml
