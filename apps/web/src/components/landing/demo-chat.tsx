@@ -1,5 +1,3 @@
-"use client";
-
 import { FlameIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 

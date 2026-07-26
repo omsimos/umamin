@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import {

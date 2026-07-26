@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@umamin/ui/lib/utils";
 import { PlayIcon } from "lucide-react";
 import { useState } from "react";

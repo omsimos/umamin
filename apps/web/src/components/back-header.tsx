@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@umamin/ui/components/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { Link } from "@/lib/navigation";

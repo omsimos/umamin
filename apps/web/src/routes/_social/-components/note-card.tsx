@@ -37,7 +37,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { GroupBadge } from "@/components/group-badge";
-import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
@@ -46,6 +45,7 @@ import {
   useBurstAction,
 } from "@/hooks/use-burst-action";
 import { vibrate } from "@/lib/haptics";
+import { Link } from "@/lib/navigation";
 import { queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/types";
@@ -270,7 +270,7 @@ export function NoteCard({
                     </AvatarFallback>
                   </Avatar>
                 ) : (
-                  <HoverPrefetchLink
+                  <Link
                     href={`/user/${username}`}
                     className="font-semibold relative"
                   >
@@ -288,7 +288,7 @@ export function NoteCard({
                         <ScanFaceIcon />
                       </AvatarFallback>
                     </Avatar>
-                  </HoverPrefetchLink>
+                  </Link>
                 )}
 
                 <div className="flex flex-col mt-1">
@@ -300,7 +300,7 @@ export function NoteCard({
                     // The badge is its own link — a sibling, never nested
                     // inside the profile anchor.
                     <div className="flex items-center space-x-1">
-                      <HoverPrefetchLink
+                      <Link
                         href={`/user/${username}`}
                         className="flex items-center space-x-1"
                       >
@@ -315,7 +315,7 @@ export function NoteCard({
                           ).includes(username) && (
                             <BadgeCheckIcon className="w-4 h-4 text-pink-500" />
                           )}
-                      </HoverPrefetchLink>
+                      </Link>
                       <GroupBadge badge={user?.groupBadge} />
                     </div>
                   )}

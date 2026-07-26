@@ -1,5 +1,3 @@
-"use client";
-
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { ComposeDialog } from "@/components/compose-dialog";

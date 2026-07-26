@@ -1,5 +1,3 @@
-"use client";
-
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
 
 export const BURST_ACTION_REJECT_MESSAGE =

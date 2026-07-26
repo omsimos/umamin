@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@umamin/ui/components/button";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";

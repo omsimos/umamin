@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@umamin/ui/lib/utils";
 import {

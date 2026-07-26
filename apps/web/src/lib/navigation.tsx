@@ -20,8 +20,11 @@ type LooseLinkProps = {
   params?: Record<string, unknown>;
   search?: Record<string, unknown> | boolean;
   replace?: boolean;
-  // HoverPrefetchLink toggles this; TanStack accepts false | "intent" | "render".
+  // Per-link override of the router's defaultPreload ("intent" — hover/touch,
+  // never viewport, so long feeds don't fire a request per row).
   preload?: false | "intent" | "render" | null;
+  // Swallowed: `prefetch` was next/link's prop name. Kept in the type so a
+  // ported call site that still passes it doesn't leak it onto the <a>.
   prefetch?: unknown;
   className?: string;
   title?: string;

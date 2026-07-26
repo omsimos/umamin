@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@umamin/ui/lib/utils";
 import type { ReactNode } from "react";
 import { Link, usePathname } from "@/lib/navigation";

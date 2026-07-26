@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge } from "@umamin/ui/components/badge";
 import { cn } from "@umamin/ui/lib/utils";
 import type { GroupAccent, GroupIcon } from "@/lib/group";

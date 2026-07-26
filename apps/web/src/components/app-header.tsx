@@ -1,5 +1,3 @@
-"use client";
-
 import { Link } from "@/lib/navigation";
 import { AccountSheet } from "./account-sheet";
 import { UmaminLogo } from "./umamin-logo";

@@ -85,21 +85,6 @@ export function shortTimeUntil(date: Date | string) {
   return distance;
 }
 
-export const getBaseUrl = () => {
-  // Prefer an explicit site URL (build-time), then the current browser origin.
-  // The Vercel-specific per-deployment fallbacks are gone under the Cloudflare
-  // Worker; canonical/OG/sitemap origins are set server-side in the API layer.
-  if (import.meta.env.VITE_SITE_URL) {
-    return import.meta.env.VITE_SITE_URL;
-  }
-
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
-
-  return "http://localhost:3000";
-};
-
 export function formatUsername(username: string) {
   const formattedUsername = username.startsWith("%40")
     ? username.split("%40").at(1)

@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@umamin/ui/lib/utils";
 import { Link, usePathname } from "@/lib/navigation";
 import { isStandaloneMode } from "@/lib/pwa";

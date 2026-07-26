@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 
 // Disables page pinch-zoom ONLY in the installed app (standalone / TWA), where an

@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { QuotedPostData } from "@/lib/types";
 import { QuotedPostCard } from "./quoted-post-card";
 
-// The card links via HoverPrefetchLink → the @/lib/navigation shim's <Link>,
-// which is TanStack Router's Link and needs a RouterProvider. Mock the shim to
-// a plain <a> so the card renders standalone (href === the `to` target).
+// The card links via the @/lib/navigation shim's <Link>, which is TanStack
+// Router's Link and needs a RouterProvider. Mock the shim to a plain <a> so the
+// card renders standalone (href === the `to` target).
 vi.mock("@/lib/navigation", () => ({
   // biome-ignore lint/suspicious/noExplicitAny: test stub
   Link: ({ to, href, children, prefetch: _p, preload: _pl, ...rest }: any) => (

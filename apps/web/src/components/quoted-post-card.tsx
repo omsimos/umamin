@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Avatar,
   AvatarFallback,
@@ -7,8 +5,8 @@ import {
 } from "@umamin/ui/components/avatar";
 import { cn } from "@umamin/ui/lib/utils";
 import { BarChart3Icon, ScanFaceIcon } from "lucide-react";
-import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
 import { PostImages } from "@/components/post-images";
+import { Link } from "@/lib/navigation";
 import type { QuotedPostData } from "@/lib/types";
 import { shortTimeAgo } from "@/lib/utils";
 
@@ -92,12 +90,12 @@ export function QuotedPostCard({ post, linked = true, className }: Props) {
   }
 
   return (
-    <HoverPrefetchLink
+    <Link
       href={`/post/${post.id}`}
       aria-label={`View quoted post by @${post.author.username}`}
       className={cardClassName}
     >
       {body}
-    </HoverPrefetchLink>
+    </Link>
   );
 }

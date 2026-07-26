@@ -1,5 +1,5 @@
 import { BadgeCheckIcon, Repeat2Icon } from "lucide-react";
-import { HoverPrefetchLink } from "@/components/hover-prefetch-link";
+import { Link } from "@/lib/navigation";
 import type { FeedAuthor } from "@/lib/types";
 import { shortTimeAgo } from "@/lib/utils";
 
@@ -19,12 +19,12 @@ export function RepostHeader({
   return (
     <div className="flex px-2 sm:px-0 items-center text-muted-foreground text-sm">
       <Repeat2Icon className="inline size-4 mr-1" />
-      <HoverPrefetchLink
+      <Link
         href={`/user/${user.username}`}
         className="hover:underline mr-1 font-semibold"
       >
         @{user.username}
-      </HoverPrefetchLink>
+      </Link>
       {verified && <BadgeCheckIcon className="w-4 h-4 text-pink-500 mr-1" />}
       <span>reposted {shortTimeAgo(createdAt)}</span>
     </div>

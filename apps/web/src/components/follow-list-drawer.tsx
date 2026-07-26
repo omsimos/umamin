@@ -1,5 +1,3 @@
-"use client";
-
 import type { InfiniteData } from "@tanstack/react-query";
 import {
   useInfiniteQuery,

@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,

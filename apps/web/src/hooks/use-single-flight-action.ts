@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useRef } from "react";
 
 type AsyncFn<TArgs extends unknown[], TResult> = (

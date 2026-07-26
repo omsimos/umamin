@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { Loader2Icon, RotateCcwIcon, XIcon } from "lucide-react";

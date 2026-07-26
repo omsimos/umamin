@@ -1,5 +1,3 @@
-"use client";
-
 import { HeartIcon, MessageCircleIcon, Repeat2Icon } from "lucide-react";
 import { useState } from "react";
 

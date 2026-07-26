@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@umamin/ui/components/button";
 import { Input } from "@umamin/ui/components/input";
 import { BadgeCheckIcon, LockIcon, SendIcon } from "lucide-react";

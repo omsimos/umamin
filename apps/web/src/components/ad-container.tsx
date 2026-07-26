@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@umamin/ui/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { type AdPlacement, adPlacements } from "@/lib/ad-placements";
