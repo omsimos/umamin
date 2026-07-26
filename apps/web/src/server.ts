@@ -37,6 +37,10 @@ app.use("*", cookieRenewal());
 app.route("/api", apiApp);
 app.route("/auth/google", googleAuthApp);
 
+// An unmatched /api path would otherwise fall through to the SSR catch-all below
+// and answer an API call with a rendered HTML 404 page.
+app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
+
 // TanStack Start owns everything else (SSR pages). Passing the raw Request keeps
 // the streamed Response body intact through the Hono wrapper. Bindings are
 // stamped for the SSR loaders' in-process API dispatch (server-lib/ssr-env.ts).
