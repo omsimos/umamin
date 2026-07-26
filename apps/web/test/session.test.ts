@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "../src/server-lib/db";
 import {
   __clearSessionCache,
+  __MICRO_CACHE_MAX_ENTRIES,
+  __sessionCacheSize,
   createSession,
   generateSessionToken,
   invalidateSession,
@@ -122,6 +124,21 @@ describe("session core (real libSQL)", () => {
     await invalidateUserSessions(db, "user6");
     expect((await validateSessionToken(db, t1)).session).toBeNull();
     expect((await validateSessionToken(db, t2)).session).toBeNull();
+  });
+
+  // The micro-cache is module state in an isolate that can live for hours, so it
+  // must not grow with every session it has ever seen.
+  it("bounds the in-isolate session cache", async () => {
+    await seedUser(db, "user_cache");
+    const overflow = __MICRO_CACHE_MAX_ENTRIES + 20;
+
+    for (let i = 0; i < overflow; i += 1) {
+      const token = generateSessionToken();
+      await createSession(db, token, "user_cache");
+      await validateSessionToken(db, token);
+    }
+
+    expect(__sessionCacheSize()).toBeLessThanOrEqual(__MICRO_CACHE_MAX_ENTRIES);
   });
 
   describe("resolveSession (dual auth)", () => {

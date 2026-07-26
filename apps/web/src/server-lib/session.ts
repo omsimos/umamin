@@ -19,8 +19,10 @@ import type { Db } from "./db";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const SESSION_RENEW_THRESHOLD_MS = 1000 * 60 * 60 * 24 * 15;
 
+type ActiveSession = { session: SelectSession; user: SelectUser };
+
 export type SessionValidationResult =
-  | { session: SelectSession; user: SelectUser }
+  | ActiveSession
   | { session: null; user: null };
 
 // In-isolate micro-cache (replaces the Redis 60s session cache — plan: KV's
@@ -30,12 +32,35 @@ export type SessionValidationResult =
 // logout / password-change / ban can't be bypassed by a lingering entry. Worst-
 // case staleness is MICRO_CACHE_TTL_MS (~12s) vs today's ≤60s — strictly better.
 const MICRO_CACHE_TTL_MS = 12_000;
+// Hard cap: an isolate can live for hours and each entry holds a full user +
+// session row, so an unbounded Map would grow with every distinct session the
+// isolate ever sees. At the TTL above, this is far more than one isolate's
+// concurrent working set.
+const MICRO_CACHE_MAX_ENTRIES = 500;
 
-type CacheEntry = { result: SessionValidationResult; cachedAt: number };
+// Positive results only — a negative one must never be served from memory (a
+// fresh login would keep failing for the TTL).
+type CacheEntry = { result: ActiveSession; cachedAt: number };
 const microCache = new Map<string, CacheEntry>();
 
 function clearMicroCache(): void {
   microCache.clear();
+}
+
+// Drop expired entries, then — if still over the cap — the oldest insertions
+// (Map iterates in insertion order, and every write re-inserts at the end).
+function pruneMicroCache(now: number): void {
+  for (const [id, entry] of microCache) {
+    if (now - entry.cachedAt >= MICRO_CACHE_TTL_MS) microCache.delete(id);
+  }
+  if (microCache.size < MICRO_CACHE_MAX_ENTRIES) return;
+  const excess = microCache.size - MICRO_CACHE_MAX_ENTRIES + 1;
+  let dropped = 0;
+  for (const id of microCache.keys()) {
+    if (dropped >= excess) break;
+    microCache.delete(id);
+    dropped += 1;
+  }
 }
 
 export function sessionIdFromToken(token: string): string {
@@ -77,12 +102,12 @@ export async function validateSessionToken(
   const now = Date.now();
   const cached = microCache.get(sessionId);
   if (cached && now - cached.cachedAt < MICRO_CACHE_TTL_MS) {
+    // Only positive results are ever cached (see below), so `session` is set.
     const { result } = cached;
-    if (result.session === null) return result;
     if (now < result.session.expiresAt && !result.user.bannedAt) {
       return result;
     }
-    // Stale/expired/banned — fall through to a fresh DB check.
+    // Expired/banned — fall through to a fresh DB check.
     microCache.delete(sessionId);
   }
 
@@ -117,8 +142,12 @@ export async function validateSessionToken(
       .where(eq(sessionTable.id, sessionId));
   }
 
-  const result: SessionValidationResult = { session, user };
-  microCache.set(sessionId, { result, cachedAt: Date.now() });
+  // Cache positive results ONLY: a negative result must never be served from
+  // memory (a fresh login would keep failing for the TTL).
+  const result = { session, user };
+  const cachedAt = Date.now();
+  pruneMicroCache(cachedAt);
+  microCache.set(sessionId, { result, cachedAt });
   return result;
 }
 
@@ -184,7 +213,13 @@ export async function resolveSession(
   return { ...result, source: "cookie" };
 }
 
-// Test-only: reset the in-isolate cache between cases.
+// Test-only: reset / inspect the in-isolate cache.
 export function __clearSessionCache(): void {
   clearMicroCache();
 }
+
+export function __sessionCacheSize(): number {
+  return microCache.size;
+}
+
+export const __MICRO_CACHE_MAX_ENTRIES = MICRO_CACHE_MAX_ENTRIES;
