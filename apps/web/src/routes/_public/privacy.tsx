@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { pageSeo } from "@/lib/seo";
 import Privacy from "@/markdown/privacy.mdx";
 
 const title = "Umamin — Privacy Policy";
@@ -6,9 +7,7 @@ const description =
   "Learn how Umamin, an open-source platform for sending and receiving encrypted anonymous messages, collects, uses, and protects your personal information.";
 
 export const Route = createFileRoute("/_public/privacy")({
-  head: () => ({
-    meta: [{ title }, { name: "description", content: description }],
-  }),
+  head: () => pageSeo({ title, description, path: "/privacy" }),
   component: PrivacyPage,
 });
 

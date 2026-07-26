@@ -7,6 +7,7 @@ import { YouTabs } from "@/components/you-tabs";
 import { loaderFetchJson } from "@/lib/loader-fetch";
 import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
+import { pageSeo } from "@/lib/seo";
 import type { MessagesResponse } from "@/lib/types";
 import { CurrentUserCard } from "./-inbox/current-user-card";
 import { ReceivedMessageCardSkeleton } from "./-inbox/received-message-card-skeleton";
@@ -35,7 +36,13 @@ export const Route = createFileRoute("/_private/inbox")({
       initialPageParam: null as string | null,
     });
   },
-  head: () => ({ meta: [{ title: "Umamin — Inbox" }] }),
+  head: () =>
+    pageSeo({
+      title: "Umamin — Inbox",
+      description:
+        "Read the encrypted anonymous messages sent to you on Umamin.",
+      robots: "noindex, nofollow",
+    }),
   pendingComponent: InboxPending,
   component: InboxPage,
 });

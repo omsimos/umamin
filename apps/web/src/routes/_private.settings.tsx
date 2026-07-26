@@ -10,6 +10,7 @@ import {
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { Link2OffIcon } from "lucide-react";
 import { RouteSegmentError } from "@/components/route-segment-error";
+import { pageSeo } from "@/lib/seo";
 import { SettingsSkeleton } from "./-settings/settings-skeleton";
 import { SettingsTabs } from "./-settings/settings-tabs";
 import { SignOutButton } from "./-settings/sign-out-button";
@@ -21,7 +22,13 @@ export const Route = createFileRoute("/_private/settings")({
   validateSearch: (search: Record<string, unknown>): SettingsSearch => ({
     error: typeof search.error === "string" ? search.error : undefined,
   }),
-  head: () => ({ meta: [{ title: "Umamin — Settings" }] }),
+  head: () =>
+    pageSeo({
+      title: "Umamin — Settings",
+      description:
+        "Manage your preferences and account settings on Umamin. Customize your profile, adjust privacy settings, and control how you interact anonymously.",
+      robots: "noindex, nofollow",
+    }),
   pendingComponent: SettingsPending,
   errorComponent: SettingsError,
   component: SettingsPage,

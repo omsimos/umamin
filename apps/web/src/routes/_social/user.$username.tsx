@@ -4,6 +4,7 @@ import { BackHeader } from "@/components/back-header";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
 import { queryKeys } from "@/lib/query";
+import { pageSeo } from "@/lib/seo";
 import type { PublicUserWithBadge } from "@/lib/types";
 import { formatUsername } from "@/lib/utils";
 import { UserProfile } from "./-components/user-profile";
@@ -25,43 +26,23 @@ export const Route = createFileRoute("/_social/user/$username")({
   head: ({ loaderData }) => {
     const username = loaderData?.username;
     if (!username) {
-      return {
-        meta: [
-          { title: "Umamin — User not found" },
-          {
-            name: "description",
-            content: "This user does not exist on Umamin.",
-          },
-          { name: "robots", content: "noindex" },
-        ],
-      };
+      return pageSeo({
+        title: "Umamin — User not found",
+        description: "This user does not exist on Umamin.",
+        robots: "noindex",
+      });
     }
 
     const title = `(@${username}) on Umamin`;
     const description = `Profile of @${username} on Umamin. Join Umamin to connect with @${username} and engage in anonymous messaging.`;
 
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:type", content: "profile" },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:url", content: `/user/${username}` },
-        // Re-declare the OG image explicitly so the page-level OG object doesn't
-        // drop the file-convention image (MEMORY: og-image-shallow-merge).
-        { property: "og:image", content: "/opengraph-image.png" },
-        { name: "twitter:card", content: "summary" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-      ],
-      links: [
-        {
-          rel: "canonical",
-          href: `${import.meta.env.VITE_SITE_URL ?? ""}/user/${username}`,
-        },
-      ],
-    };
+    return pageSeo({
+      title,
+      description,
+      path: `/user/${username}`,
+      ogType: "profile",
+      twitterCard: "summary",
+    });
   },
   pendingComponent: UserPending,
   errorComponent: (props) => (

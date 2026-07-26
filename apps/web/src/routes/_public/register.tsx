@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import BrowserWarning from "@/components/browser-warning";
 import { Link } from "@/lib/navigation";
+import { pageSeo } from "@/lib/seo";
 import { RegisterForm } from "./-auth/register-form";
 import { useRedirectIfAuthed } from "./-auth/use-redirect-if-authed";
 
@@ -9,24 +10,14 @@ const description =
   "Create an account on Umamin to start sending and receiving encrypted anonymous messages. Join our secure platform and ensure your privacy today.";
 
 export const Route = createFileRoute("/_public/register")({
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      // Thin utility page — noindex, still followable. [audit #39]
-      { name: "robots", content: "noindex, follow" },
-      { property: "og:type", content: "website" },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:url", content: "https://www.umamin.link/register" },
-      // Re-declare OG image explicitly (page-level OG shallow-replace gotcha).
-      { property: "og:image", content: "/opengraph-image.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: title },
-      { name: "twitter:description", content: description },
-      { name: "twitter:image", content: "/twitter-image.png" },
-    ],
-  }),
+  // Thin utility page — noindex, still followable. [audit #39]
+  head: () =>
+    pageSeo({
+      title,
+      description,
+      path: "/register",
+      robots: "noindex, follow",
+    }),
   component: RegisterPage,
 });
 

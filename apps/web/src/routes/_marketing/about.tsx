@@ -10,31 +10,14 @@ import {
 import { ProductCard } from "@/components/landing/product-card";
 import { umaminChatUrl } from "@/lib/chat-link";
 import { Link } from "@/lib/navigation";
+import { pageSeo } from "@/lib/seo";
 
 const title = "Umamin — About";
 const description =
   "The story of Umamin — an open-source anonymous platform founded in July 2022 that reached over 700,000 users in its first week, now a broader social space for self-expression, community, and meaningful conversations.";
 
 export const Route = createFileRoute("/_marketing/about")({
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "Umamin" },
-      { property: "og:url", content: "https://www.umamin.link/about" },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      // Re-declare the site OG image: a page-level OG shallow-replaces the
-      // root's, which would otherwise drop the opengraph-image file.
-      { property: "og:image", content: "/opengraph-image.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: title },
-      { name: "twitter:description", content: description },
-      { name: "twitter:image", content: "/twitter-image.png" },
-    ],
-    links: [{ rel: "canonical", href: "https://www.umamin.link/about" }],
-  }),
+  head: () => pageSeo({ title, description, path: "/about" }),
   component: AboutPage,
 });
 

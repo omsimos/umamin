@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { loaderFetchJson } from "@/lib/loader-fetch";
 import { queryKeys } from "@/lib/query";
+import { pageSeo } from "@/lib/seo";
 import type { NotificationsResponse } from "@/lib/types";
 import { NotificationListSkeleton } from "./-notifications/notification-skeleton";
 import { NotificationsList } from "./-notifications/notifications-list";
@@ -18,7 +19,12 @@ export const Route = createFileRoute("/_private/notifications")({
       initialPageParam: null as string | null,
     });
   },
-  head: () => ({ meta: [{ title: "Umamin — Notifications" }] }),
+  head: () =>
+    pageSeo({
+      title: "Umamin — Notifications",
+      description: "Your Umamin notifications.",
+      robots: "noindex, nofollow",
+    }),
   pendingComponent: NotificationsPending,
   component: NotificationsPage,
 });

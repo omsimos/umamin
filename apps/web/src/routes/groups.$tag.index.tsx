@@ -2,6 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { loaderFetchOptional } from "@/lib/loader-fetch";
 import { queryKeys } from "@/lib/query";
 import { fetchGroup } from "@/lib/query-fetchers";
+import { pageSeo } from "@/lib/seo";
 import type { GroupPageData } from "@/lib/types";
 import { GroupPageClient } from "./-groups/group-page-client";
 
@@ -29,17 +30,17 @@ export const Route = createFileRoute("/groups/$tag/")({
   head: ({ loaderData }) => {
     const group = loaderData?.group;
     if (!group) {
-      return { meta: [{ title: "Umamin — Group" }] };
+      return pageSeo({
+        title: "Umamin — Group",
+        description: "Groups on Umamin.",
+        robots: "noindex, nofollow",
+      });
     }
-    return {
-      meta: [
-        { title: `${group.name} (${group.tag}) — Umamin` },
-        {
-          name: "description",
-          content: `${group.name} is a group on Umamin with ${group.memberCount} members.`,
-        },
-      ],
-    };
+    return pageSeo({
+      title: `${group.name} (${group.tag}) — Umamin`,
+      description: `${group.name} is a group on Umamin with ${group.memberCount} members.`,
+      robots: "noindex, nofollow",
+    });
   },
   component: GroupPage,
 });

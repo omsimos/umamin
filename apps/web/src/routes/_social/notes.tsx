@@ -5,6 +5,7 @@ import { ChatAnnouncement } from "@/components/chat-announcement";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { loaderFetchJsonOrNull } from "@/lib/loader-fetch";
 import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
+import { pageSeo } from "@/lib/seo";
 import type { CurrentUserResponse, NotesResponse } from "@/lib/types";
 import { NoteCardSkeleton } from "./-components/note-card-skeleton";
 import { NotesClient } from "./-components/notes-client";
@@ -31,21 +32,25 @@ export const Route = createFileRoute("/_social/notes")({
 
     return { viewerId, isAuthenticated: !!viewerId };
   },
-  head: () => ({
-    meta: [
-      { title: "Umamin — Notes" },
-      {
-        name: "description",
-        content:
-          "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages. Send your messages anonymously and discover what others have to share.",
-      },
-      {
-        name: "keywords",
-        content: "Umamin notes, anonymous notes, send messages, view messages",
-      },
-      { name: "robots", content: "index, follow" },
-    ],
-  }),
+  head: () => {
+    const seo = pageSeo({
+      title: "Umamin — Notes",
+      description:
+        "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages. Send your messages anonymously and discover what others have to share.",
+      path: "/notes",
+    });
+    return {
+      ...seo,
+      meta: [
+        ...seo.meta,
+        {
+          name: "keywords",
+          content:
+            "Umamin notes, anonymous notes, send messages, view messages",
+        },
+      ],
+    };
+  },
   pendingComponent: NotesPending,
   errorComponent: (props) => (
     <RouteSegmentError {...props} heading="We couldn’t load notes." />

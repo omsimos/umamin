@@ -4,6 +4,7 @@ import { BadgeCheckIcon, LockIcon } from "lucide-react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { ShareButton } from "@/components/share-button";
+import { pageSeo } from "@/lib/seo";
 import type { PublicUser } from "@/lib/types";
 import { formatUsername } from "@/lib/utils";
 import { ChatForm } from "./-components/chat-form";
@@ -26,20 +27,7 @@ export const Route = createFileRoute("/_social/to/$username")({
     const title = `Send Encrypted Anonymous Message to @${username} | Umamin`;
     const description = `Send an encrypted anonymous message to @${username} on Umamin. Protect your identity while communicating securely and privately.`;
 
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:type", content: "website" },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:url", content: `/to/${username}` },
-        { property: "og:image", content: "/opengraph-image.png" },
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-      ],
-    };
+    return pageSeo({ title, description, path: `/to/${username}` });
   },
   pendingComponent: SendMessagePending,
   errorComponent: (props) => (

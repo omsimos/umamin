@@ -2,15 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@umamin/ui/components/button";
 import { ShieldAlertIcon } from "lucide-react";
 import { Link } from "@/lib/navigation";
+import { pageSeo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_public/banned")({
-  head: () => ({
-    meta: [
-      { title: "Account suspended — Umamin" },
-      { name: "description", content: "This account has been suspended." },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
+  head: () =>
+    pageSeo({
+      title: "Account suspended — Umamin",
+      description: "This account has been suspended.",
+      robots: "noindex, nofollow",
+    }),
   component: BannedPage,
 });
 

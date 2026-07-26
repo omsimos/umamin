@@ -4,6 +4,7 @@ import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { loaderFetchJsonOrNull } from "@/lib/loader-fetch";
 import { PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
+import { pageSeo } from "@/lib/seo";
 import type {
   CommentsResponse,
   CurrentUserResponse,
@@ -65,16 +66,11 @@ export const Route = createFileRoute("/_social/post/$id")({
   head: ({ loaderData }) => {
     const post = loaderData?.post;
     if (!post) {
-      return {
-        meta: [
-          { title: "Post not found" },
-          {
-            name: "description",
-            content: "This post does not exist on Umamin.",
-          },
-          { name: "robots", content: "noindex" },
-        ],
-      };
+      return pageSeo({
+        title: "Post not found",
+        description: "This post does not exist on Umamin.",
+        robots: "noindex",
+      });
     }
 
     const authorName =
@@ -82,28 +78,13 @@ export const Route = createFileRoute("/_social/post/$id")({
     const description = truncate(post.content, 160);
     const title = truncate(`${authorName}: ${post.content}`, 70);
 
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:type", content: "article" },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:url", content: `/post/${loaderData.id}` },
-        // Re-declare the OG image explicitly (a page-level OG object otherwise
-        // drops the file-convention image — MEMORY: og-image-shallow-merge).
-        { property: "og:image", content: "/opengraph-image.png" },
-        { name: "twitter:card", content: "summary" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-      ],
-      links: [
-        {
-          rel: "canonical",
-          href: `${import.meta.env.VITE_SITE_URL ?? ""}/post/${loaderData.id}`,
-        },
-      ],
-    };
+    return pageSeo({
+      title,
+      description,
+      path: `/post/${loaderData.id}`,
+      ogType: "article",
+      twitterCard: "summary",
+    });
   },
   pendingComponent: PostPending,
   errorComponent: (props) => (

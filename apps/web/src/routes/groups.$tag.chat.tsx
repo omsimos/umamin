@@ -10,6 +10,7 @@ import {
   fetchGroup,
   fetchGroupViewer,
 } from "@/lib/query-fetchers";
+import { pageSeo } from "@/lib/seo";
 import type { CurrentUserResponse, GroupPageData } from "@/lib/types";
 import { GroupChat } from "./-chat/group-chat";
 
@@ -69,7 +70,12 @@ export const Route = createFileRoute("/groups/$tag/chat")({
       isOwner: relationship === "owner",
     };
   },
-  head: () => ({ meta: [{ title: "Umamin — Group chat" }] }),
+  head: () =>
+    pageSeo({
+      title: "Umamin — Group chat",
+      description: "Members-only group chat on Umamin.",
+      robots: "noindex, nofollow",
+    }),
   component: GroupChatPage,
 });
 

@@ -17,17 +17,18 @@ import { ProductCard } from "@/components/landing/product-card";
 import { PwaRedirect } from "@/components/pwa-redirect";
 import { umaminChatUrl } from "@/lib/chat-link";
 import { Link } from "@/lib/navigation";
+import { pageSeo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_marketing/")({
-  head: () => ({
-    meta: [
-      // og:image re-declared explicitly (file-convention images don't exist
-      // under Vite; the OG-shallow-merge gotcha means each page must name it).
-      { property: "og:image", content: "/opengraph-image.png" },
-      { name: "twitter:image", content: "/twitter-image.png" },
-    ],
-    links: [{ rel: "canonical", href: "https://www.umamin.link/" }],
-  }),
+  // Landing page keeps the root's site-wide title/description; pageSeo re-emits
+  // them here so the canonical + OG card are self-referential and absolute.
+  head: () =>
+    pageSeo({
+      title: "Umamin — The Platform for Anonymity",
+      description:
+        "Umamin is an open-source social platform for sending and receiving encrypted anonymous messages. Ensure your privacy and share your thoughts freely without revealing your identity.",
+      path: "/",
+    }),
   component: Home,
 });
 

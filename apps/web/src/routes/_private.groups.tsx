@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { loaderFetchJson } from "@/lib/loader-fetch";
 import { queryKeys } from "@/lib/query";
+import { pageSeo } from "@/lib/seo";
 import type { UserGroupsResponse } from "@/lib/types";
 import { GroupsHub } from "./-groups/groups-hub";
 import { BackHeaderPage } from "./-shared/chrome";
@@ -15,7 +16,12 @@ export const Route = createFileRoute("/_private/groups")({
       queryFn: () => loaderFetchJson<UserGroupsResponse>("/api/groups"),
     });
   },
-  head: () => ({ meta: [{ title: "Umamin — Groups" }] }),
+  head: () =>
+    pageSeo({
+      title: "Umamin — Groups",
+      description: "Your groups on Umamin.",
+      robots: "noindex, nofollow",
+    }),
   component: GroupsPage,
 });
 

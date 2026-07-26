@@ -6,6 +6,7 @@ import { RouteSegmentError } from "@/components/route-segment-error";
 import { type FeedSort, normalizeFeedSort } from "@/lib/feed-sort";
 import { loaderFetchJsonOrNull } from "@/lib/loader-fetch";
 import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
+import { pageSeo } from "@/lib/seo";
 import type { CurrentUserResponse, FeedResponse } from "@/lib/types";
 import { FeedClient } from "./-components/feed-client";
 import { PostCardSkeleton } from "./-components/post-card-skeleton";
@@ -56,16 +57,13 @@ export const Route = createFileRoute("/_social/feed")({
 
     return { sort, viewerId, isAuthenticated: !!viewerId };
   },
-  head: () => ({
-    meta: [
-      { title: "Umamin — Feed" },
-      {
-        name: "description",
-        content:
-          "The Umamin feed — anonymous posts, notes, and conversations from the community.",
-      },
-    ],
-  }),
+  head: () =>
+    pageSeo({
+      title: "Umamin — Feed",
+      description:
+        "The Umamin feed — anonymous posts, notes, and conversations from the community.",
+      path: "/feed",
+    }),
   pendingComponent: FeedPending,
   errorComponent: (props) => (
     <RouteSegmentError {...props} heading="We couldn’t load your feed." />

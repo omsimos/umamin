@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BackHeader } from "@/components/back-header";
+import { pageSeo } from "@/lib/seo";
 import { TiersView } from "./-tiers/tiers-view";
 
 const title = "Umamin — Plus";
@@ -7,13 +8,7 @@ const description =
   "What you unlock on Free, Plus, and Premium. Plus is always free — early access to new features.";
 
 export const Route = createFileRoute("/_public/tiers")({
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
+  head: () => pageSeo({ title, description, robots: "noindex, nofollow" }),
   component: TiersPage,
 });
 

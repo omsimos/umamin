@@ -10,9 +10,6 @@ import { PublicMenubar } from "@/components/public-menu-bar";
 // Shared structure per the migration plan (routes/_public/) — the feed/notes
 // route group nests under the same pathless layout.
 export const Route = createFileRoute("/_public")({
-  head: () => ({
-    links: [],
-  }),
   component: PublicLayout,
 });
 

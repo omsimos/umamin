@@ -1,4 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { pageSeo } from "@/lib/seo";
 import { IpDenylistManager } from "./-moderation/ip-denylist-manager";
 
 // Moderator-gated. The parent _private beforeLoad already ensured the
@@ -10,7 +11,12 @@ export const Route = createFileRoute("/_private/moderation")({
       throw notFound();
     }
   },
-  head: () => ({ meta: [{ title: "Moderation — Umamin" }] }),
+  head: () =>
+    pageSeo({
+      title: "Moderation — Umamin",
+      description: "Moderation tools.",
+      robots: "noindex, nofollow",
+    }),
   component: ModerationPage,
 });
 

@@ -7,9 +7,6 @@ import { SiteFooter } from "@/components/landing/site-footer";
 // navbar + footer, no in-app chrome. Backgrounds run underneath the fixed
 // navbar (no pt-24 wrapper).
 export const Route = createFileRoute("/_marketing")({
-  head: () => ({
-    links: [],
-  }),
   component: MarketingLayout,
 });
 
