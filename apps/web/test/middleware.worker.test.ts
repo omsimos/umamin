@@ -167,5 +167,27 @@ describe("middleware", () => {
       const res = await fetch(app, "/feed");
       expect(res.headers.get("set-cookie")).toBeNull();
     });
+
+    // The Google OAuth callback is a GET that mints a session. Appending a
+    // renewal for the request's OLD token would win (last Set-Cookie for a name
+    // wins) and silently undo the fresh login.
+    it("skips renewal when the route already minted a session cookie", async () => {
+      const minting = new Hono<{ Bindings: AppEnv }>()
+        .use("*", cookieRenewal())
+        .get("/auth/google/callback", (c) => {
+          c.header("set-cookie", "session=fresh; Path=/; HttpOnly", {
+            append: true,
+          });
+          return c.redirect("/inbox", 302);
+        });
+
+      const res = await fetch(minting, "/auth/google/callback", {
+        headers: { cookie: "session=stale" },
+      });
+
+      const cookies = res.headers.getSetCookie();
+      expect(cookies).toHaveLength(1);
+      expect(cookies[0]).toContain("session=fresh");
+    });
   });
 });

@@ -78,12 +78,29 @@ export function securityHeadersMiddleware(): Middleware {
   };
 }
 
+// True when the handled response already writes a session cookie. Hono APPENDS
+// Set-Cookie, and for a repeated name the browser keeps the LAST one — so
+// renewing on top of a route that just minted a session would overwrite the
+// fresh token with the request's stale one. The Google OAuth callback is exactly
+// that case: a GET that mints a session.
+function setsSessionCookie(res: Response): boolean {
+  const values =
+    typeof res.headers.getSetCookie === "function"
+      ? res.headers.getSetCookie()
+      : (res.headers.get("set-cookie")?.split("\n") ?? []);
+
+  return values.some(
+    (value) =>
+      value.startsWith(`${SESSION_COOKIE_NAME}=`) ||
+      value.startsWith(`${LEGACY_SESSION_COOKIE_NAME}=`),
+  );
+}
+
 /**
  * Sliding session-cookie renewal — port of proxy.ts. GET page routes only
  * (skips /api/* and static), and only once per SESSION_RENEW_INTERVAL_MS via the
  * non-secret SESSION_RENEWED marker so ~all authed navigations drop the
- * Set-Cookie. Runs after next() so a route that just minted a session isn't
- * clobbered — GET requests never mint one.
+ * Set-Cookie.
  */
 export function cookieRenewal(): Middleware {
   return async (c, next) => {
@@ -92,6 +109,7 @@ export function cookieRenewal(): Middleware {
     if (c.req.method !== "GET") return;
     const path = new URL(c.req.url).pathname;
     if (path.startsWith("/api/") || isStaticPath(path)) return;
+    if (setsSessionCookie(c.res)) return;
 
     const token =
       getCookie(c, SESSION_COOKIE_NAME) ??
