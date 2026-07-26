@@ -77,9 +77,11 @@ export function ReceivedMessages() {
         </Alert>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-4 [--list-row-height:240px]">
         {messages.map((msg) => (
-          <ReceivedMessageCard key={msg.id} data={msg} />
+          <div key={msg.id} className="list-row">
+            <ReceivedMessageCard data={msg} />
+          </div>
         ))}
       </div>
 

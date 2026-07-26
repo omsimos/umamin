@@ -75,9 +75,11 @@ export function SentMessages() {
         </Alert>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-4 [--list-row-height:320px]">
         {messages.map((msg) => (
-          <SentMessageCard key={msg.id} data={msg} />
+          <div key={msg.id} className="list-row">
+            <SentMessageCard data={msg} />
+          </div>
         ))}
       </div>
 

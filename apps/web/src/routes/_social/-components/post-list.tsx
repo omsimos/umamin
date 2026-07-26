@@ -8,6 +8,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { Fragment } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { shouldShowInFeedAd } from "@/lib/ad-placements";
 import type { FeedSort } from "@/lib/feed-sort";
 import { Link } from "@/lib/navigation";
 import {
@@ -22,8 +23,6 @@ import { useIntersectionLoadMore } from "../-lib/hooks";
 import { PostCard } from "./post-card";
 import { PostCardSkeleton } from "./post-card-skeleton";
 import { RepostHeader } from "./repost-header";
-
-const AD_FREQUENCY = 8;
 
 export function PostList({
   sort,
@@ -157,17 +156,17 @@ export function PostList({
       {/* social-top (top ad) */}
       <ClientOnlyAdContainer className="mb-5" placement="feed_top" />
 
-      <div className="w-full">
+      <div className="w-full [--list-row-height:380px]">
         {allItems.map((item, index) => {
           const key =
             item.type === "post"
               ? `post:${item.post.id}`
               : `repost:${item.repost.id}`;
-          const showAd = (index + 1) % AD_FREQUENCY === 0;
+          const showAd = shouldShowInFeedAd(index);
 
           return (
             <Fragment key={key}>
-              <div className="pb-4">
+              <div className="list-row pb-4">
                 {item.type === "post" ? (
                   <PostCard
                     isAuthenticated={isAuthenticated}

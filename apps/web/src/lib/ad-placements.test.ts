@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { adPlacements } from "./ad-placements";
+import {
+  AD_FREQUENCY,
+  adPlacements,
+  MAX_IN_FEED_ADS,
+  shouldShowInFeedAd,
+} from "./ad-placements";
 
 const EXPECTED_KEYS = [
   "feed_top",
@@ -35,5 +40,29 @@ describe("adPlacements", () => {
     for (const key of EXPECTED_KEYS) {
       expect(adPlacements[key].lazy).toBe(LAZY_KEYS.has(key));
     }
+  });
+});
+
+// An initialized in-feed unit is a live iframe that nothing unmounts, so the
+// one-per-8 rule has to stop somewhere or a deep scroll accumulates dozens.
+describe("shouldShowInFeedAd", () => {
+  it("places a unit every AD_FREQUENCY rows", () => {
+    const shown = [...Array(AD_FREQUENCY * 2).keys()].filter(
+      shouldShowInFeedAd,
+    );
+    expect(shown).toEqual([AD_FREQUENCY - 1, AD_FREQUENCY * 2 - 1]);
+  });
+
+  it("stops after MAX_IN_FEED_ADS units", () => {
+    const lastAllowed = AD_FREQUENCY * MAX_IN_FEED_ADS - 1;
+    expect(shouldShowInFeedAd(lastAllowed)).toBe(true);
+    expect(shouldShowInFeedAd(lastAllowed + AD_FREQUENCY)).toBe(false);
+  });
+
+  it("caps the total over a deep scroll", () => {
+    const overTwoHundredRows = [...Array(240).keys()].filter(
+      shouldShowInFeedAd,
+    ).length;
+    expect(overTwoHundredRows).toBe(MAX_IN_FEED_ADS);
   });
 });

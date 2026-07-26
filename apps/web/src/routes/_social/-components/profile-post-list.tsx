@@ -123,11 +123,16 @@ export function ProfilePostList({
   }
 
   return (
-    <div className={cn("w-full", showDivider ? "mt-6 border-t pt-6" : "mt-4")}>
+    <div
+      className={cn(
+        "w-full [--list-row-height:380px]",
+        showDivider ? "mt-6 border-t pt-6" : "mt-4",
+      )}
+    >
       {allItems.map((item) => {
         if (item.type !== "post") return null;
         return (
-          <div key={item.post.id} className="pb-4">
+          <div key={item.post.id} className="list-row pb-4">
             {item.post.isPinned && (
               <div className="mb-2 flex items-center px-2 text-sm text-muted-foreground sm:px-0">
                 <PinIcon className="mr-1 size-4" />

@@ -107,9 +107,9 @@ export function CommentsList({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full [--list-row-height:180px]">
       {comments.map((comment) => (
-        <div key={comment.id} className="pb-4">
+        <div key={comment.id} className="list-row pb-4">
           <PostCard
             isComment
             isAuthenticated={isAuthenticated}

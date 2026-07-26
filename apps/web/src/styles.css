@@ -88,6 +88,31 @@
   }
 }
 
+/* One row of a long, non-virtualized list (feed / notes / profile / comments /
+   inbox). `content-visibility: auto` lets the browser skip style, layout and
+   paint for rows that are offscreen, which is most of the win of virtualizing
+   these lists without recycling the DOM: find-in-page, anchor links, the a11y
+   tree and exact scroll restoration all keep working, and it degrades to a
+   no-op where unsupported.
+
+   `contain-intrinsic-size: auto <estimate>` is what keeps the scrollbar honest:
+   `auto` remembers each row's real rendered size, and the estimate is only used
+   before a row has ever been laid out. Each list sets `--list-row-height` (it
+   inherits) to its own median row height; a wildly wrong estimate only shows up
+   as scrollbar drift on the very first scroll.
+
+   Note: this also applies `contain: layout style paint` — PERMANENTLY, not just
+   while a row is offscreen — so anything a row paints outside its own box gets
+   clipped. Checked: card overlays are all `inset-*`, and every menu / dialog /
+   lightbox is portaled to the body. The one thing clipped is the ~2px sideways
+   bleed of the card's `shadow-sm` (5% opacity, invisible in practice); a row that
+   paints something real outside its box must opt OUT of this class instead — see
+   the highlighted note in note-list.tsx, whose ring sits 4px outside the card. */
+@utility list-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--list-row-height, 400px);
+}
+
 /* Native-app feel for the installed PWA / TWA (standalone only — the browser
    keeps its normal behavior). Removes the two biggest "this is a website" tells:
    the rubber-band / pull-to-refresh overscroll and the grey tap-highlight flash.

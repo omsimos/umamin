@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { shouldShowInFeedAd } from "@/lib/ad-placements";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -23,8 +24,6 @@ import type { NoteItem, NotesResponse } from "@/lib/types";
 import { useIntersectionLoadMore } from "../-lib/hooks";
 import { NoteCard } from "./note-card";
 import { NoteCardSkeleton } from "./note-card-skeleton";
-
-const AD_FREQUENCY = 8;
 
 export function NoteList({
   isAuthenticated,
@@ -157,18 +156,26 @@ export function NoteList({
       {/* v2-notes (top ad) */}
       <ClientOnlyAdContainer className="mb-5" placement="notes_top" />
 
-      <div className="w-full space-y-4">
+      <div className="w-full space-y-4 [--list-row-height:300px]">
         {allPosts.map((post, index) => {
-          const showAd = (index + 1) % AD_FREQUENCY === 0;
+          const showAd = shouldShowInFeedAd(index);
+          const isHighlighted = post.id === highlightedId;
           return (
             <Fragment key={post.id}>
-              <NoteCard
-                isAuthenticated={isAuthenticated}
-                currentUserId={currentUserId}
-                data={post}
-                index={index}
-                isHighlighted={post.id === highlightedId}
-              />
+              {/* The highlighted note keeps its ring, which draws 4px OUTSIDE
+                  the card — `list-row` turns on paint containment permanently
+                  (not just while offscreen), so it would clip that ring. Exactly
+                  one row is ever highlighted, and it's the one the deep link
+                  scrolled to. */}
+              <div className={isHighlighted ? undefined : "list-row"}>
+                <NoteCard
+                  isAuthenticated={isAuthenticated}
+                  currentUserId={currentUserId}
+                  data={post}
+                  index={index}
+                  isHighlighted={isHighlighted}
+                />
+              </div>
               {showAd && (
                 <ClientOnlyAdContainer
                   className="mb-4"

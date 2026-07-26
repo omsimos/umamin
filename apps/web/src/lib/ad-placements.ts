@@ -54,3 +54,22 @@ export const adPlacements = {
 export type AdPlacement = keyof typeof adPlacements;
 
 export const AD_CLIENT = "ca-pub-4274133898976040";
+
+/** Rows between in-feed ad units (feed + notes). */
+export const AD_FREQUENCY = 8;
+
+/**
+ * Ceiling on in-feed units per mounted list. An initialized AdSense slot is a
+ * live iframe with its own document and scripts, and nothing unmounts it while
+ * the list stays mounted — so an uncapped one-per-8 rule accumulates ~25 of them
+ * over a 200-row scroll, which dominates memory on the deep-scroll path. The
+ * units dropped past this point are also the least likely to ever be viewed.
+ */
+export const MAX_IN_FEED_ADS = 6;
+
+/** Whether the row at `index` (0-based) is followed by an in-feed ad unit. */
+export function shouldShowInFeedAd(index: number): boolean {
+  const position = index + 1;
+  if (position % AD_FREQUENCY !== 0) return false;
+  return position / AD_FREQUENCY <= MAX_IN_FEED_ADS;
+}
