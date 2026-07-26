@@ -810,10 +810,10 @@ export const updateGroupHandler = action(
   {
     schema: updateGroupSchema,
     auth: "user",
-    // The old `group-edit` 2/day limiter isn't expressible via the Workers RL
-    // binding — it moves to a Turso edit-window check (currently a stubbed
-    // allow; see server-lib/group-edit.ts TODO). A cheap per-user write limiter
-    // still guards burst spam.
+    // The old `group-edit` 2/day cap isn't expressible via the Workers RL
+    // binding (10s|60s periods only) — it runs as a KV edit window inside the
+    // handler (server-lib/group-edit.ts). This per-user write limiter still
+    // guards bursts.
     rateLimit: {
       name: "write",
       key: ({ session }) => `group-edit:${session.userId}`,
@@ -831,7 +831,8 @@ export const updateGroupHandler = action(
       return { error: UNAUTHORIZED_ERROR };
     }
 
-    const window = await checkGroupEditWindow(db, groupId);
+    // Ownership is checked first, so a rejected caller never burns a slot.
+    const window = await checkGroupEditWindow(c.env.KV, groupId);
     if (!window.allowed) {
       return { error: GROUP_EDIT_RATE_LIMITED_ERROR };
     }
