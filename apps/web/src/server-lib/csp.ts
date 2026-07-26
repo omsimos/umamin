@@ -86,5 +86,14 @@ export function securityHeaders(
     headers["Strict-Transport-Security"] =
       "max-age=31536000; includeSubDomains; preload";
   }
+  // Opt every non-production environment out of search indexes. Static assets
+  // (incl. robots.txt) are served straight from the assets binding and are
+  // identical across environments, and Workers get no automatic preview-noindex
+  // — so staging must say so in a header or it competes with prod in search.
+  // Cast: `wrangler types` pins vars to the literal from ONE environment
+  // (staging's "false"), while the deployed value differs per environment.
+  if ((env.SEO_INDEXABLE as string | undefined) !== "true") {
+    headers["X-Robots-Tag"] = "noindex, nofollow";
+  }
   return headers;
 }

@@ -135,6 +135,22 @@ describe("middleware", () => {
         "strict-origin-when-cross-origin",
       );
     });
+
+    // Only the production environment sets SEO_INDEXABLE=true; every other
+    // deployment (staging on next.umamin.link, local) must opt out of indexing.
+    it("noindexes any environment that isn't flagged indexable", async () => {
+      const res = await fetch(appWith(securityHeadersMiddleware()), "/feed");
+      expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    });
+
+    it("omits X-Robots-Tag when SEO_INDEXABLE is true", async () => {
+      const app = appWith(securityHeadersMiddleware());
+      const res = await app.fetch(new Request("https://x.test/feed"), {
+        ...(env as object),
+        SEO_INDEXABLE: "true",
+      } as unknown as AppEnv);
+      expect(res.headers.get("x-robots-tag")).toBeNull();
+    });
   });
 
   describe("cookieRenewal", () => {

@@ -92,7 +92,12 @@
         "APP_URL": "https://next.umamin.link",
         // Not set automatically on Workers; session cookie names (__Host-*)
         // and secure attrs key off it. Local dev overrides via .dev.vars.
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        // Staging serves the SAME public/robots.txt as production (static assets
+        // are shared), and Cloudflare has no Vercel-style automatic
+        // preview-noindex — so opt out via a header instead, or next.umamin.link
+        // gets crawled and competes with prod. See server-lib/csp.ts.
+        "SEO_INDEXABLE": "false"
       }
     },
     "production": {
@@ -162,7 +167,9 @@
       },
       "vars": {
         "APP_URL": "https://umamin.link",
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        // The ONLY environment that may be indexed.
+        "SEO_INDEXABLE": "true"
       }
     }
   }
