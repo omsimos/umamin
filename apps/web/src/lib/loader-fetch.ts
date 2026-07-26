@@ -52,6 +52,30 @@ function stubExecutionContext(): ExecutionContext {
   } as ExecutionContext;
 }
 
+// Headers the synthetic request must inherit from the page request. The
+// credential headers pick the viewer; the IP headers are what the read limiter
+// and denylist key on — WITHOUT them extractClientIp falls back to its local-dev
+// constant, so every SSR loader read in the fleet shares ONE limiter bucket
+// (100/60s per colo) and page loads start 429ing under normal traffic.
+const FORWARDED_SSR_HEADERS = [
+  "cookie",
+  "authorization",
+  "cf-connecting-ip",
+  "x-real-ip",
+  "x-forwarded-for",
+] as const;
+
+// Exported for the unit test: an allowlist copy, never a wholesale clone (the
+// page request's accept/content-* headers would misdescribe the JSON dispatch).
+export function buildSsrHeaders(source: Headers): Headers {
+  const headers = new Headers();
+  for (const name of FORWARDED_SSR_HEADERS) {
+    const value = source.get(name);
+    if (value) headers.set(name, value);
+  }
+  return headers;
+}
+
 async function ssrDispatch(path: string): Promise<Response> {
   const [{ getRequest }, { apiApp }, { getSsrEnv }] = await Promise.all([
     import("@tanstack/react-start/server"),
@@ -59,7 +83,7 @@ async function ssrDispatch(path: string): Promise<Response> {
     import("@/server-lib/ssr-env"),
   ]);
   const request = getRequest();
-  const cookie = request.headers.get("cookie");
+  const headers = buildSsrHeaders(request.headers);
   // apiApp is mounted at /api by the outer server — strip the prefix for the
   // in-process dispatch so the same handler matches.
   const url = new URL(
@@ -67,7 +91,7 @@ async function ssrDispatch(path: string): Promise<Response> {
     new URL(request.url).origin,
   );
   return apiApp.fetch(
-    new Request(url, { headers: cookie ? { cookie } : undefined }),
+    new Request(url, { headers }),
     getSsrEnv(),
     stubExecutionContext(),
   );
