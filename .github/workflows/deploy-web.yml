@@ -75,9 +75,11 @@ jobs:
       - name: Lint
         run: pnpm exec biome ci .
 
+      # `run` is required: bare `pnpm deploy` is pnpm's own built-in command
+      # (ERR_PNPM_INVALID_DEPLOY_TARGET), which shadows the package script.
       - name: Deploy staging
         if: github.ref_name != 'main'
-        run: pnpm --filter=web deploy
+        run: pnpm --filter=web run deploy
 
       - name: Smoke-check staging
         if: github.ref_name != 'main'
@@ -87,7 +89,7 @@ jobs:
 
       - name: Deploy production
         if: github.ref_name == 'main'
-        run: pnpm --filter=web deploy:production
+        run: pnpm --filter=web run deploy:production
 
       # Production is dark until cutover (no route). When the umamin.link
       # routes in wrangler.jsonc are uncommented, add the matching smoke check:
