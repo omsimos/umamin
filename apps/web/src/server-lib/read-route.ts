@@ -6,17 +6,28 @@ import { checkReadRateLimit, RATE_LIMIT_ERROR } from "./ratelimit";
 
 // ── JSON envelope helpers (ported from apps/www lib/private-json + public-json) ─
 
-function privateJson(body: unknown, status = 200): Response {
-  return Response.json(body, {
-    status,
-    headers: {
-      "Cache-Control": "private, no-store, max-age=0",
-      Vary: "Cookie",
-    },
-  });
+const PRIVATE_CACHE_HEADERS = {
+  "Cache-Control": "private, no-store, max-age=0",
+  Vary: "Cookie",
+} as const;
+
+export function privateJson(body: unknown, status = 200): Response {
+  return Response.json(body, { status, headers: PRIVATE_CACHE_HEADERS });
 }
 
-function publicJson(
+// `max-age` is the browser TTL; `s-maxage`/SWR feed the in-Worker Cache API TTL
+// below. Same directive shape apps/www emitted (the CDN read it; here the Cache
+// API does).
+function cacheControl(
+  maxAgeSeconds: number,
+  browserMaxAgeSeconds = 0,
+): Record<string, string> {
+  return {
+    "Cache-Control": `public, max-age=${browserMaxAgeSeconds}, s-maxage=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds}`,
+  };
+}
+
+export function publicJson(
   body: unknown,
   maxAgeSeconds: number,
   browserMaxAgeSeconds = 0,
@@ -24,13 +35,25 @@ function publicJson(
 ): Response {
   return Response.json(body, {
     status,
-    headers: {
-      // `max-age` is the browser TTL; `s-maxage`/SWR feed the in-Worker Cache
-      // API TTL below. Same directive shape apps/www emitted (the CDN read it;
-      // here the Cache API does).
-      "Cache-Control": `public, max-age=${browserMaxAgeSeconds}, s-maxage=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds}`,
-    },
+    headers: cacheControl(maxAgeSeconds, browserMaxAgeSeconds),
   });
+}
+
+/**
+ * Re-stamp cache headers on a Response a handler built itself (the 401/403/404
+ * early exits). Those were returned as-is, and a private body with NO
+ * Cache-Control is heuristically cacheable by browsers and shared caches —
+ * apps/www routed every early exit through privateJson/publicJson, so the
+ * envelope is enforced here rather than at ~25 call sites.
+ */
+function stamp(res: Response, headers: Record<string, string>): Response {
+  // Headers on a Response handed back by fetch()/cache.match() are immutable,
+  // so rebuild rather than mutate in place.
+  const out = new Response(res.body, res);
+  for (const [key, value] of Object.entries(headers)) {
+    out.headers.set(key, value);
+  }
+  return out;
 }
 
 type AppContext = Context<{ Bindings: AppEnv }>;
@@ -60,7 +83,9 @@ export function withPrivateRead(label: string, handler: PrivateReadHandler) {
         return privateJson({ error: RATE_LIMIT_ERROR }, 429);
       }
       const result = await handler(c);
-      return result instanceof Response ? result : privateJson(result);
+      return result instanceof Response
+        ? stamp(result, PRIVATE_CACHE_HEADERS)
+        : privateJson(result);
     } catch (error) {
       console.error(`Error ${label}:`, error);
       return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
@@ -101,9 +126,15 @@ export function withPublicRead(
       }
 
       const result = await handler(c.req, c.env);
+      // A handler-built Response is an early exit (404) — pin it uncacheable,
+      // same as apps/www's `publicJson(body, 0, { status })`. A 200 keeps the
+      // route's normal TTL.
       const res =
         result instanceof Response
-          ? result
+          ? stamp(
+              result,
+              cacheControl(result.status === 200 ? maxAgeSeconds : 0),
+            )
           : publicJson(result, maxAgeSeconds, browserMaxAgeSeconds);
 
       // Cache only cacheable successes, and NEVER a response with Set-Cookie.

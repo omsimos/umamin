@@ -10,10 +10,12 @@ import {
   getPublicUserProfileWithBadge,
   getUserPostsPage,
 } from "../../server-lib/data";
+import { NOT_FOUND_ERROR } from "../../server-lib/errors";
 import { withPublicRead } from "../../server-lib/read-route";
 import { formatUsername, resolveDb } from "./_shared";
 
-const notFound = () => Response.json({ error: "Not found" }, { status: 404 });
+const notFound = () =>
+  Response.json({ error: NOT_FOUND_ERROR }, { status: 404 });
 
 // Anonymous, CDN-cached (Cache API) reads. TTLs preserved from apps/www EXCEPT
 // the public profile: 7d → 300s (plan) — tag purge is gone, so a short TTL plus

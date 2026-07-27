@@ -68,12 +68,23 @@ export function csrfOriginCheck(): Middleware {
 /**
  * Attach the ported security headers to the outgoing response WITHOUT buffering
  * the SSR stream — set headers only, never read the body (plan R6).
+ *
+ * Also pins SSR HTML to `no-store`. Next served every dynamic page as
+ * `private, no-store, max-age=0`; a Worker sends no Cache-Control at all, which
+ * leaves authenticated HTML (and the Set-Cookie the renewal middleware may
+ * append) heuristically cacheable by browsers and storable by any intermediary.
+ * `/api/*` responses set their own envelope and are left alone.
  */
 export function securityHeadersMiddleware(): Middleware {
   return async (c, next) => {
     await next();
     for (const [key, value] of Object.entries(securityHeaders(c.env))) {
       c.header(key, value);
+    }
+
+    const isHtml = c.res.headers.get("content-type")?.includes("text/html");
+    if (isHtml && !c.res.headers.has("cache-control")) {
+      c.header("Cache-Control", "private, no-store, max-age=0");
     }
   };
 }

@@ -143,6 +143,32 @@ describe("middleware", () => {
       expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");
     });
 
+    // Next served every dynamic page as `private, no-store, max-age=0`; a
+    // Worker sends no Cache-Control at all, which leaves authenticated HTML
+    // (and any appended Set-Cookie) heuristically cacheable.
+    it("pins SSR HTML to no-store", async () => {
+      const html = new Hono<{ Bindings: AppEnv }>()
+        .use("*", securityHeadersMiddleware())
+        .get("*", (c) => c.html("<p>hi</p>"));
+      const res = await fetch(html, "/feed");
+      expect(res.headers.get("cache-control")).toBe(
+        "private, no-store, max-age=0",
+      );
+    });
+
+    it("leaves an API route's own cache envelope alone", async () => {
+      const api = new Hono<{ Bindings: AppEnv }>()
+        .use("*", securityHeadersMiddleware())
+        .get("*", (c) => {
+          c.header("Cache-Control", "public, max-age=0, s-maxage=180");
+          return c.json({ ok: true });
+        });
+      const res = await fetch(api, "/api/public/notes");
+      expect(res.headers.get("cache-control")).toBe(
+        "public, max-age=0, s-maxage=180",
+      );
+    });
+
     it("omits X-Robots-Tag when SEO_INDEXABLE is true", async () => {
       const app = appWith(securityHeadersMiddleware());
       const res = await app.fetch(new Request("https://x.test/feed"), {
