@@ -109,6 +109,12 @@ export const publicRoutes = new Hono<AppBindings>()
         );
         return result ?? notFound();
       },
-      300,
+      // Browser TTL 0, unlike the other public reads. apps/www could pair its
+      // long TTL with an `updateTag("user:<username>")` purge on every profile,
+      // badge and aura write; the Cache API has none, so a non-zero browser TTL
+      // pins an edited avatar/badge in the viewer's own cache for minutes with
+      // no way to bust it — not even a reload. The 300s edge entry still
+      // absorbs the load.
+      0,
     ),
   );

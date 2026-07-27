@@ -42,11 +42,13 @@ export function getSessionFrom(c: Context): Promise<ResolvedSession> {
 }
 
 // ── URL helpers ────────────────────────────────────────────────────────────
-// Ported verbatim from apps/www/lib/utils.formatUsername: the profile routes
-// accept a `%40`-prefixed (URL-encoded `@`) username segment.
+// The profile routes accept a `@`-prefixed username segment. apps/www only had
+// to strip the literal `%40` because Next hands route params RAW; Hono's
+// `c.req.param()` percent-DECODES, so `/user/%40josh` arrives here as `@josh`.
+// Both forms are stripped — a `@`-style shared or bookmarked profile URL would
+// otherwise miss the lookup and 404.
 export function formatUsername(username: string): string {
-  const formatted = username.startsWith("%40")
-    ? username.split("%40").at(1)
-    : username;
-  return formatted ?? "";
+  if (username.startsWith("%40")) return username.slice(3);
+  if (username.startsWith("@")) return username.slice(1);
+  return username;
 }

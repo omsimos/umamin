@@ -669,11 +669,11 @@ async function getRedisHotPostsPage(
   }
 
   // The rank read above is served from the KV ranked-id list (recomputed by the
-  // */5 cron), so ordering lags ≤5min. The hydration below is a direct Turso
+  // */5 cron), so ordering lags ≤5min and a post created since the last
+  // recompute is absent until it runs. The hydration below is a direct Turso
   // read — the per-id-set "use cache" boundary is gone; public caching now
-  // happens at the route level. The per-viewer overlay (blocks/likes/reposts) is
-  // re-running ~5 Turso queries each. The per-viewer overlay (blocks/likes/
-  // reposts) is layered on by the caller.
+  // happens at the route level. The per-viewer overlay (blocks/likes/reposts)
+  // is layered on by the caller.
   return {
     data: await hydrateHotPostIds(db, page.ids),
     nextCursor: page.nextCursor,
@@ -1399,9 +1399,6 @@ async function getPostViewerOverlay(
   // needs (or should pay for) a poll-vote read.
   hasPoll = false,
 ) {
-  if (hasPoll) {
-  }
-
   const [blockRows, likedRows, repostRows, voteRows] = await Promise.all([
     db
       .select({

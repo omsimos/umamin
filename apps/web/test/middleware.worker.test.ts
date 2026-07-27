@@ -3,6 +3,7 @@ import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { AppEnv } from "../src/server-lib/env";
+import { ACCESS_BLOCKED_ERROR } from "../src/server-lib/errors";
 import { __clearDenylistCache, denyIp } from "../src/server-lib/ip-denylist";
 import {
   cookieRenewal,
@@ -33,7 +34,10 @@ describe("middleware", () => {
   describe("ipDenylist", () => {
     beforeEach(async () => {
       __clearDenylistCache();
+      // Entries live one-per-key now; the legacy array key is still read.
       await kv.delete("ip:denylist");
+      const { keys } = await kv.list({ prefix: "ip:denylist:" });
+      await Promise.all(keys.map((key) => kv.delete(key.name)));
     });
 
     it("403s a denied IP (via CF-Connecting-IP)", async () => {
@@ -43,6 +47,32 @@ describe("middleware", () => {
         headers: { "cf-connecting-ip": "198.51.100.7" },
       });
       expect(res.status).toBe(403);
+    });
+
+    // Two blocks in a row used to be a get→mutate→put on one JSON array, so the
+    // second write could clobber the first and silently unblock it.
+    it("keeps every entry when IPs are denied back to back", async () => {
+      await denyIp(kv, "198.51.100.1");
+      await denyIp(kv, "198.51.100.2");
+      await denyIp(kv, "198.51.100.3");
+      __clearDenylistCache();
+
+      for (const ip of ["198.51.100.1", "198.51.100.2", "198.51.100.3"]) {
+        const res = await fetch(appWith(ipDenylist()), "/feed", {
+          headers: { "cf-connecting-ip": ip },
+        });
+        expect(res.status, `${ip} should still be denied`).toBe(403);
+      }
+    });
+
+    it("answers /api in the JSON envelope so the block message survives", async () => {
+      await denyIp(kv, "198.51.100.9");
+      __clearDenylistCache();
+      const res = await fetch(appWith(ipDenylist()), "/api/me", {
+        headers: { "cf-connecting-ip": "198.51.100.9" },
+      });
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({ error: ACCESS_BLOCKED_ERROR });
     });
 
     it("passes a non-denied IP", async () => {
