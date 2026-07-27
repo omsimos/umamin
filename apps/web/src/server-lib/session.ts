@@ -27,10 +27,16 @@ export type SessionValidationResult =
 
 // In-isolate micro-cache (replaces the Redis 60s session cache — plan: KV's
 // eventual deletes would SLOW force-logout, so sessions deliberately stay off
-// KV). Collapses a burst of authed requests within one isolate; expiry + ban are
-// always re-checked before serving, and every invalidate* clears the cache so a
-// logout / password-change / ban can't be bypassed by a lingering entry. Worst-
-// case staleness is MICRO_CACHE_TTL_MS (~12s) vs today's ≤60s — strictly better.
+// KV). Collapses a burst of authed requests within one isolate; expiry is
+// re-checked before serving, and every invalidate* clears the cache.
+//
+// KNOWN WINDOW — the cache is per-isolate, so `clearMicroCache()` only reaches
+// the isolate that handled the mutation. A ban / logout / password change is
+// immediate there and on any cold isolate, but another WARM isolate keeps
+// serving its cached (pre-ban) entry until the TTL. apps/www's Redis DEL was
+// global and therefore instant everywhere; this is a real, bounded regression.
+// Kept because the alternative — a KV read per authed request — is both slower
+// and, at KV's ~60s propagation, worse than the window it would close.
 const MICRO_CACHE_TTL_MS = 12_000;
 // Hard cap: an isolate can live for hours and each entry holds a full user +
 // session row, so an unbounded Map would grow with every distinct session the

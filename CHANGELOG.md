@@ -24,11 +24,20 @@ any that are empty.
 
 - Umamin has been rebuilt from the ground up and now runs on a global edge network — pages are served from a location near you instead of a single region, so the feed, profiles, and notes start loading sooner wherever you are. Your account, messages, posts, groups, and links all carry over unchanged, and you stay signed in.
 - The rebuilt app now serves www.umamin.link directly. No action needed — bookmarks, share links, and the installed app all keep working.
-- Public profiles now refresh within minutes for signed-out visitors, instead of up to a week.
+- Public profiles now refresh within minutes for signed-out visitors, instead of up to a week. Your own edits — avatar, banner, group badge — show up right away on a reload.
+
+### Fixed
+
+- Profile links written with an @ in front of the username (`/user/@you`) open the profile again instead of showing "user not found".
 
 ### Performance & Cost
 
 - Serving moved to edge infrastructure with usage-based pricing suited to Umamin's traffic, cutting hosting costs substantially without changing what you see.
+
+### Security & Privacy
+
+- Signed-in pages and personal data responses are explicitly marked never-store, so no browser or network cache can hold on to them or show them to someone else on a shared device.
+- Blocking an address now reliably sticks when several are blocked in quick succession.
 
 ## [6.1.0] - 2026-07-11
 
