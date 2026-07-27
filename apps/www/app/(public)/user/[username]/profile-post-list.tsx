@@ -184,7 +184,7 @@ export function ProfilePostList({
               ) : (
                 (() => {
                   const item = allItems[row.index];
-                  if (!item || item.type !== "post") return null;
+                  if (item?.type !== "post") return null;
                   return (
                     <div key={item.post.id}>
                       {item.post.isPinned && (

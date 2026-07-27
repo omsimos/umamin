@@ -7,6 +7,10 @@
       "types": "./src/index.ts",
       "import": "./dist/index.mjs"
     },
+    "./web": {
+      "types": "./dist/web.d.mts",
+      "import": "./dist/web.mjs"
+    },
     "./schema/*": {
       "types": "./src/schema/*.ts",
       "import": "./src/schema/*.ts"

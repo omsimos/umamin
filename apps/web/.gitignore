@@ -1,0 +1,19 @@
+# Logs
+*.log
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Cloudflare / wrangler build + dev artifacts
+.wrangler
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# local dev secrets (wrangler/vite)
+.dev.vars

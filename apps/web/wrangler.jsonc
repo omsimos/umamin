@@ -1,0 +1,176 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Two-environment layout (Vercel-style preview/prod). ALWAYS deploy with
+  // --env; bindings/vars/routes are per-env and deliberately NOT shared.
+  //   staging    → worker "umamin-web" (kept: it already holds next.umamin.link
+  //                and the dev secrets) — Turso umamin-dev, staging KV.
+  //   production → worker "umamin-web-production" — Turso umamin-db, own KV;
+  //                umamin.link is attached at cutover.
+  // Local dev/preview pick an env via CLOUDFLARE_ENV (package.json scripts).
+  "name": "umamin-web-dev",
+  "main": "./src/server.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS"
+  },
+  "env": {
+    "staging": {
+      "name": "umamin-web",
+      "routes": [
+        {
+          "pattern": "next.umamin.link",
+          "custom_domain": true
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "KV",
+          "id": "6dcbf8d991fe4123b2b6eb2a0dfd0fb3"
+        }
+      ],
+      // Workers Rate Limiting bindings (unsafe). period is 10 or 60 only;
+      // group-edit (2/day) moves to Turso. namespace_ids are account-global —
+      // staging uses 1001-1007, production 2001-2007, so the two environments
+      // never share limiter counters (same IP hitting both must not drain one
+      // budget).
+      "unsafe": {
+        "bindings": [
+          {
+            "name": "RL_AUTH",
+            "type": "ratelimit",
+            "namespace_id": "1001",
+            "simple": { "limit": 5, "period": 60 }
+          },
+          {
+            "name": "RL_MESSAGE",
+            "type": "ratelimit",
+            "namespace_id": "1002",
+            "simple": { "limit": 10, "period": 60 }
+          },
+          {
+            "name": "RL_WRITE",
+            "type": "ratelimit",
+            "namespace_id": "1003",
+            "simple": { "limit": 30, "period": 60 }
+          },
+          {
+            "name": "RL_GROUP_JOIN",
+            "type": "ratelimit",
+            "namespace_id": "1004",
+            "simple": { "limit": 8, "period": 60 }
+          },
+          {
+            "name": "RL_READ",
+            "type": "ratelimit",
+            "namespace_id": "1005",
+            "simple": { "limit": 100, "period": 60 }
+          },
+          {
+            "name": "RL_GROUP_MESSAGE",
+            "type": "ratelimit",
+            "namespace_id": "1006",
+            "simple": { "limit": 30, "period": 60 }
+          },
+          {
+            "name": "RL_GROUP_READ",
+            "type": "ratelimit",
+            "namespace_id": "1007",
+            "simple": { "limit": 60, "period": 60 }
+          }
+        ]
+      },
+      "triggers": {
+        // sessions cleanup, notifications cleanup, hot-feed recompute
+        "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
+      },
+      "vars": {
+        "APP_URL": "https://next.umamin.link",
+        // Not set automatically on Workers; session cookie names (__Host-*)
+        // and secure attrs key off it. Local dev overrides via .dev.vars.
+        "NODE_ENV": "production",
+        // Staging serves the SAME public/robots.txt as production (static assets
+        // are shared), and Cloudflare has no Vercel-style automatic
+        // preview-noindex — so opt out via a header instead, or next.umamin.link
+        // gets crawled and competes with prod. See server-lib/csp.ts.
+        "SEO_INDEXABLE": "false"
+      }
+    },
+    "production": {
+      "name": "umamin-web-production",
+      // Dark until cutover: no public workers.dev URL in front of the prod DB.
+      // Flip to true briefly if a pre-cutover prod smoke test is needed.
+      "workers_dev": false,
+      // umamin.link is attached at cutover (Phase 6):
+      // "routes": [
+      //   { "pattern": "umamin.link", "custom_domain": true },
+      //   { "pattern": "www.umamin.link", "custom_domain": true }
+      // ],
+      "kv_namespaces": [
+        {
+          "binding": "KV",
+          "id": "568d96f109aa46a28e0cb7ed31294147"
+        }
+      ],
+      "unsafe": {
+        "bindings": [
+          {
+            "name": "RL_AUTH",
+            "type": "ratelimit",
+            "namespace_id": "2001",
+            "simple": { "limit": 5, "period": 60 }
+          },
+          {
+            "name": "RL_MESSAGE",
+            "type": "ratelimit",
+            "namespace_id": "2002",
+            "simple": { "limit": 10, "period": 60 }
+          },
+          {
+            "name": "RL_WRITE",
+            "type": "ratelimit",
+            "namespace_id": "2003",
+            "simple": { "limit": 30, "period": 60 }
+          },
+          {
+            "name": "RL_GROUP_JOIN",
+            "type": "ratelimit",
+            "namespace_id": "2004",
+            "simple": { "limit": 8, "period": 60 }
+          },
+          {
+            "name": "RL_READ",
+            "type": "ratelimit",
+            "namespace_id": "2005",
+            "simple": { "limit": 100, "period": 60 }
+          },
+          {
+            "name": "RL_GROUP_MESSAGE",
+            "type": "ratelimit",
+            "namespace_id": "2006",
+            "simple": { "limit": 30, "period": 60 }
+          },
+          {
+            "name": "RL_GROUP_READ",
+            "type": "ratelimit",
+            "namespace_id": "2007",
+            "simple": { "limit": 60, "period": 60 }
+          }
+        ]
+      },
+      "triggers": {
+        "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
+      },
+      "vars": {
+        "APP_URL": "https://start.umamin.link",
+        "NODE_ENV": "production",
+        // The ONLY environment that may be indexed.
+        "SEO_INDEXABLE": "true"
+      }
+    }
+  }
+}

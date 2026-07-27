@@ -1,0 +1,134 @@
+@import "@umamin/ui/globals.css";
+/* Powers the `prose` classes on the MDX docs (/privacy, /terms, /child-safety);
+   mirrors apps/www app/globals.css. */
+@plugin "@tailwindcss/typography";
+
+/* next/font set --font-geist-sans / --font-geist-mono / --font-bricolage on
+   <body>; under Vite the fonts self-host via @fontsource-variable (imported in
+   __root.tsx) and their family names map straight to the theme vars here. */
+@theme {
+  --font-sans:
+    "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", monospace;
+  --font-display:
+    "Bricolage Grotesque Variable", "Geist Variable", ui-sans-serif, system-ui,
+    sans-serif;
+
+  --animate-marquee: marquee 32s linear infinite;
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  --animate-heart-pop: heart-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @keyframes heart-pop {
+    0% {
+      transform: scale(0.4);
+    }
+    60% {
+      transform: scale(1.3);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  --animate-typing-dot: typing-dot 1.2s ease-in-out infinite;
+  @keyframes typing-dot {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+    30% {
+      transform: translateY(-3px);
+      opacity: 1;
+    }
+  }
+
+  --animate-rise: rise 0.6s ease-out both;
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Opacity/transform only — the revealed card is taller than the sealed one
+     and the virtualizer must remeasure the snapped height, not an animated one. */
+  --animate-reveal-pop: reveal-pop 0.3s ease-out both;
+  @keyframes reveal-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+@utility text-outline {
+  -webkit-text-stroke: 1px
+    color-mix(in oklch, var(--color-foreground) 40%, transparent);
+  color: transparent;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
+}
+
+/* One row of a long, non-virtualized list (feed / notes / profile / comments /
+   inbox). `content-visibility: auto` lets the browser skip style, layout and
+   paint for rows that are offscreen, which is most of the win of virtualizing
+   these lists without recycling the DOM: find-in-page, anchor links, the a11y
+   tree and exact scroll restoration all keep working, and it degrades to a
+   no-op where unsupported.
+
+   `contain-intrinsic-size: auto <estimate>` is what keeps the scrollbar honest:
+   `auto` remembers each row's real rendered size, and the estimate is only used
+   before a row has ever been laid out. Each list sets `--list-row-height` (it
+   inherits) to its own median row height; a wildly wrong estimate only shows up
+   as scrollbar drift on the very first scroll.
+
+   Note: this also applies `contain: layout style paint` — PERMANENTLY, not just
+   while a row is offscreen — so anything a row paints outside its own box gets
+   clipped. Checked: card overlays are all `inset-*`, and every menu / dialog /
+   lightbox is portaled to the body. The one thing clipped is the ~2px sideways
+   bleed of the card's `shadow-sm` (5% opacity, invisible in practice); a row that
+   paints something real outside its box must opt OUT of this class instead — see
+   the highlighted note in note-list.tsx, whose ring sits 4px outside the card. */
+@utility list-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--list-row-height, 400px);
+}
+
+/* Native-app feel for the installed PWA / TWA (standalone only — the browser
+   keeps its normal behavior). Removes the two biggest "this is a website" tells:
+   the rubber-band / pull-to-refresh overscroll and the grey tap-highlight flash.
+   Text selection stays intact; page pinch-zoom is disabled here too, but via JS
+   (components/pwa-pinch-zoom.tsx) so it stays on in the browser for a11y. */
+@media (display-mode: standalone) {
+  html {
+    overscroll-behavior-y: none;
+  }
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Snappier taps on controls (kills the double-tap-zoom delay). */
+  a,
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+}

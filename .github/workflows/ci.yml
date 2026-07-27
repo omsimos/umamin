@@ -1,8 +1,10 @@
 name: CI
 
+# Cloudflare Workers Builds owns apps/web deployments. This workflow validates
+# both deployment branches and publishes GitHub releases from main.
 on:
   push:
-    branches: ["main"]
+    branches: ["dev", "main"]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
@@ -108,6 +110,11 @@ jobs:
 
       - name: Run tests
         run: pnpm test
+
+      # apps/web's workerd suite (argon2 wasm, KV, Cache API) is a separate
+      # runner from the turbo test task — see apps/web/vitest.workers.config.ts.
+      - name: Run workerd tests (apps/web)
+        run: pnpm --filter=web test:workers
 
   quality:
     timeout-minutes: 10

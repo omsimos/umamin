@@ -18,6 +18,18 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.0.0] - 2026-07-28
+
+### Changed
+
+- Umamin has been rebuilt from the ground up and now runs on a global edge network — pages are served from a location near you instead of a single region, so the feed, profiles, and notes start loading sooner wherever you are. Your account, messages, posts, groups, and links all carry over unchanged, and you stay signed in.
+- The rebuilt app is rolling out first at start.umamin.link while www.umamin.link continues to run the current version — same account and data on both.
+- Public profiles now refresh within minutes for signed-out visitors, instead of up to a week.
+
+### Performance & Cost
+
+- Serving moved to edge infrastructure with usage-based pricing suited to Umamin's traffic, cutting hosting costs substantially without changing what you see.
+
 ## [6.1.0] - 2026-07-11
 
 ### Performance & Cost
@@ -834,6 +846,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.0.0]: https://github.com/omsimos/umamin/compare/v6.1.0...v7.0.0
 [6.1.0]: https://github.com/omsimos/umamin/compare/v6.0.1...v6.1.0
 [6.0.1]: https://github.com/omsimos/umamin/compare/v6.0.0...v6.0.1
 [6.0.0]: https://github.com/omsimos/umamin/compare/v5.26.0...v6.0.0
