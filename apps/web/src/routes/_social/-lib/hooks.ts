@@ -63,13 +63,6 @@ export function useIntersectionLoadMore<TElement extends HTMLElement>({
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, loadMoreKey, onLoadMore, rootMargin]);
 
-  // Reset the de-dupe latch once a fresh page has landed (the key advanced).
-  useEffect(() => {
-    if (!isFetchingNextPage) {
-      lastTriggeredKeyRef.current = loadMoreKey;
-    }
-  }, [loadMoreKey, isFetchingNextPage]);
-
   const setSentinel = useCallback((node: TElement | null) => {
     sentinelRef.current = node;
   }, []);

@@ -166,7 +166,7 @@
         "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
       },
       "vars": {
-        "APP_URL": "https://umamin.link",
+        "APP_URL": "https://start.umamin.link",
         "NODE_ENV": "production",
         // The ONLY environment that may be indexed.
         "SEO_INDEXABLE": "true"
