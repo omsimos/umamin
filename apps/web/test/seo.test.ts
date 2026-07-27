@@ -80,11 +80,10 @@ describe("canonical host consistency", () => {
   const root = join(import.meta.dirname, "..");
   const read = (p: string) => readFileSync(join(root, p), "utf8");
 
-  it("VITE_SITE_URL matches the host in robots.txt and sitemap.xml", () => {
-    const configured =
-      read(".env.production").match(/^VITE_SITE_URL=(.+)$/m)?.[1];
-    expect(configured).toBeTruthy();
-    const origin = new URL(configured as string).origin;
+  it("robots.txt and sitemap.xml use the production canonical host", () => {
+    // Cloudflare injects VITE_SITE_URL at build time, so the repository-owned
+    // SEO assets are validated against the public production origin directly.
+    const origin = "https://www.umamin.link";
 
     const robots = read("public/robots.txt");
     expect(robots).toContain(`Sitemap: ${origin}/sitemap.xml`);
