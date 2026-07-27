@@ -23,7 +23,7 @@ any that are empty.
 ### Changed
 
 - Umamin has been rebuilt from the ground up and now runs on a global edge network — pages are served from a location near you instead of a single region, so the feed, profiles, and notes start loading sooner wherever you are. Your account, messages, posts, groups, and links all carry over unchanged, and you stay signed in.
-- The rebuilt app is rolling out first at start.umamin.link while www.umamin.link continues to run the current version — same account and data on both.
+- The rebuilt app now serves www.umamin.link directly. No action needed — bookmarks, share links, and the installed app all keep working.
 - Public profiles now refresh within minutes for signed-out visitors, instead of up to a week.
 
 ### Performance & Cost
