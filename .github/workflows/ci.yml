@@ -1,8 +1,10 @@
 name: CI
 
+# Cloudflare Workers Builds owns apps/web deployments. This workflow validates
+# both deployment branches and publishes GitHub releases from main.
 on:
   push:
-    branches: ["main"]
+    branches: ["dev", "main"]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 

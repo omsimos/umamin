@@ -1,10 +1,10 @@
 name: Migrate
 
 # Applies pending Drizzle migrations to the branch's database the moment a
-# push lands. Vercel (apps/www) AND deploy-web.yml (apps/web → Cloudflare)
-# deploy on the same push with NO ordering against this job — new code can hit
-# an old schema (or vice versa) for a short window, so migrations must stay
-# additive (expand/contract for anything destructive). drizzle-kit migrate is
+# push lands. Vercel (apps/www) and Cloudflare Workers Builds (apps/web) deploy
+# on the same push with NO ordering against this job — new code can hit an old
+# schema (or vice versa) for a short window, so migrations must stay additive
+# (expand/contract for anything destructive). drizzle-kit migrate is
 # journal-based (idempotent), so re-runs are safe.
 on:
   push:

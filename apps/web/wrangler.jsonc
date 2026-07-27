@@ -7,7 +7,7 @@
   //   production → worker "umamin-web-production" — Turso umamin-db, own KV;
   //                umamin.link is attached at cutover.
   // Local dev/preview pick an env via CLOUDFLARE_ENV (package.json scripts).
-  "name": "umamin-web",
+  "name": "umamin-web-dev",
   "main": "./src/server.ts",
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
