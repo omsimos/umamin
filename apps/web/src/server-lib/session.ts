@@ -49,8 +49,19 @@ const MICRO_CACHE_MAX_ENTRIES = 500;
 type CacheEntry = { result: ActiveSession; cachedAt: number };
 const microCache = new Map<string, CacheEntry>();
 
+// The micro-cache only holds SETTLED results, so concurrent lookups of the same
+// token all miss it and each issues its own Turso read. That happens on every
+// page whose loaders run in parallel (the feed's /api/me alongside /api/posts,
+// the group chat's three reads). Collapsing them to one in-flight promise is
+// what makes parallelising those loaders cheaper than serialising them.
+const inflight = new Map<string, Promise<SessionValidationResult>>();
+
 function clearMicroCache(): void {
   microCache.clear();
+  // A validation started before an invalidation may have already read the row,
+  // so its resolved value can still be stale — but dropping it here stops the
+  // NEXT caller from joining a lookup that predates the revocation.
+  inflight.clear();
 }
 
 // Drop expired entries, then — if still over the cap — the oldest insertions
@@ -117,6 +128,24 @@ export async function validateSessionToken(
     microCache.delete(sessionId);
   }
 
+  const pending = inflight.get(sessionId);
+  if (pending) return pending;
+
+  const lookup = loadSession(db, sessionId);
+  inflight.set(sessionId, lookup);
+  try {
+    return await lookup;
+  } finally {
+    // Only clear our own entry: clearMicroCache() may have wiped the map and a
+    // later request may already have registered a fresh lookup under this key.
+    if (inflight.get(sessionId) === lookup) inflight.delete(sessionId);
+  }
+}
+
+async function loadSession(
+  db: Db,
+  sessionId: string,
+): Promise<SessionValidationResult> {
   const [row] = await db
     .select({ session: sessionTable, user: userTable })
     .from(sessionTable)

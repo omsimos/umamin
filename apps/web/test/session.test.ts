@@ -48,6 +48,45 @@ describe("session core (real libSQL)", () => {
     expect(result.user?.username).toBe("u_user1");
   });
 
+  // The micro-cache only holds settled results, so concurrent validations of
+  // the same token used to each issue their own Turso read. Route loaders that
+  // run in parallel (the feed, the group chat) hit exactly that case.
+  it("collapses concurrent validations of one token into a single query", async () => {
+    await seedUser(db, "user1");
+    const token = generateSessionToken();
+    await createSession(db, token, "user1");
+    __clearSessionCache();
+
+    let selects = 0;
+    const instrumented = new Proxy(db, {
+      get(target, prop, receiver) {
+        if (prop === "select") selects += 1;
+        return Reflect.get(target, prop, receiver);
+      },
+    }) as Db;
+
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        validateSessionToken(instrumented, token),
+      ),
+    );
+
+    expect(selects).toBe(1);
+    for (const result of results) {
+      expect(result.session?.userId).toBe("user1");
+    }
+  });
+
+  it("does not let a collapsed lookup outlive an invalidation", async () => {
+    await seedUser(db, "user1");
+    const token = generateSessionToken();
+    await createSession(db, token, "user1");
+
+    expect((await validateSessionToken(db, token)).session).not.toBeNull();
+    await invalidateUserSessions(db, "user1");
+    expect((await validateSessionToken(db, token)).session).toBeNull();
+  });
+
   it("returns null for an unknown token", async () => {
     const result = await validateSessionToken(db, generateSessionToken());
     expect(result).toEqual({ session: null, user: null });

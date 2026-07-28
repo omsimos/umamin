@@ -3,22 +3,32 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 import { AppHeader } from "@/components/app-header";
 import { ChatAnnouncement } from "@/components/chat-announcement";
 import { RouteSegmentError } from "@/components/route-segment-error";
-import { type FeedSort, normalizeFeedSort } from "@/lib/feed-sort";
-import { loaderFetchJsonOrNull } from "@/lib/loader-fetch";
+import { normalizeFeedSort } from "@/lib/feed-sort";
+import { loadViewerId } from "@/lib/loader-viewer";
 import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
 import { pageSeo } from "@/lib/seo";
-import type { CurrentUserResponse, FeedResponse } from "@/lib/types";
+import type { FeedResponse } from "@/lib/types";
 import { FeedClient } from "./-components/feed-client";
 import { PostCardSkeleton } from "./-components/post-card-skeleton";
 import { loaderFetchPostsPage } from "./-lib/loader-queries";
 
-type FeedSearch = { sort: FeedSort };
+// `sort` is OPTIONAL and the default is deliberately NOT materialized here.
+// The router canonicalizes the URL to whatever validateSearch returns, so
+// emitting `sort: "hot"` for a bare request made every `/feed` hit 307 to
+// `/feed?sort=hot` — an extra round trip on the most-visited route, on every
+// landing-page CTA, and on every PWA/TWA launch (manifest start_url is /feed).
+// Omitting it makes the bare URL canonical, which is what the sort tabs already
+// assume (`search={tab.sort === "hot" ? {} : …}` in post-list.tsx).
+type FeedSearch = { sort?: "following" | "latest" };
 
 export const Route = createFileRoute("/_social/feed")({
   validateSearch: (search: Record<string, unknown>): FeedSearch => ({
-    sort: normalizeFeedSort(search.sort as string | undefined),
+    sort:
+      search.sort === "following" || search.sort === "latest"
+        ? search.sort
+        : undefined,
   }),
-  loaderDeps: ({ search }) => ({ sort: search.sort }),
+  loaderDeps: ({ search }) => ({ sort: normalizeFeedSort(search.sort) }),
   loader: async ({ context, deps }) => {
     // Operator kill-switch (parity with apps/www feed/page.tsx): flipping the
     // flag takes the feed offline behind the /social maintenance notice.
@@ -27,19 +37,13 @@ export const Route = createFileRoute("/_social/feed")({
     }
 
     const { sort } = deps;
-    // Resolve the viewer server-side (401 → null) so page 1 is served under the
-    // correct viewer-keyed query — no wasted public page + second /api/posts.
-    const me = await loaderFetchJsonOrNull<CurrentUserResponse>("/api/me", 401);
-    const viewerId = me?.user?.id ?? null;
+    // Resolve the viewer first so page 1 is served under the correct
+    // viewer-keyed query — no wasted public page plus a second /api/posts.
+    const viewerId = await loadViewerId(context.queryClient);
 
     // Following has nothing to show a signed-out viewer.
     if (sort === "following" && !viewerId) {
       throw redirect({ to: "/login" });
-    }
-
-    // Prime the shared current-user cache so menus/composer read it warm.
-    if (me?.user) {
-      context.queryClient.setQueryData(queryKeys.currentUser(), me);
     }
 
     await context.queryClient.ensureInfiniteQueryData({

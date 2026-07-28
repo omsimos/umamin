@@ -11,6 +11,10 @@ import {
 import "@fontsource-variable/geist/index.css";
 import "@fontsource-variable/geist-mono/index.css";
 import "@fontsource-variable/bricolage-grotesque/index.css";
+// Resolved to the same hashed URLs the stylesheets above reference, for the
+// preload links in `head` below.
+import bricolageLatin from "@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2?url";
+import geistLatin from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url";
 import type { ReactNode } from "react";
 import { NotFoundPage } from "@/components/not-found-page";
 import { Providers } from "@/components/providers";
@@ -64,6 +68,22 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      // @font-face lives inside the stylesheet, so a font is only discovered
+      // AFTER styles.css downloads and parses — html → css → woff2, three
+      // serial hops before text paints in the right face. Preloading the two
+      // latin faces used above the fold (body copy + headings) starts them
+      // alongside the CSS instead. Only `latin`: the other subsets are
+      // unicode-range gated and must stay lazy, or every visitor pays for
+      // bytes almost none of them render.
+      ...[geistLatin, bricolageLatin].map((href) => ({
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href,
+        // Fonts are always fetched in CORS mode; without this the preload is
+        // treated as a separate request and the file downloads twice.
+        crossOrigin: "anonymous" as const,
+      })),
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/apple-icon.png" },
       { rel: "icon", href: "/icon.png", type: "image/png" },

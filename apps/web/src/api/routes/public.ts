@@ -36,6 +36,7 @@ export const publicRoutes = new Hono<AppBindings>()
         });
       },
       60,
+      ["sort", "cursor"],
     ),
   )
   .get(
@@ -49,6 +50,7 @@ export const publicRoutes = new Hono<AppBindings>()
           cursor: req.query("cursor") ?? null,
         }),
       60,
+      ["cursor"],
     ),
   )
   .get(
@@ -63,6 +65,7 @@ export const publicRoutes = new Hono<AppBindings>()
         return result ?? notFound();
       },
       60,
+      [],
     ),
   )
   .get(
@@ -73,6 +76,7 @@ export const publicRoutes = new Hono<AppBindings>()
       async (req, env) =>
         getNotesPage(resolveDb(env), { cursor: req.query("cursor") ?? null }),
       60,
+      ["cursor"],
     ),
   )
   .get(
@@ -92,6 +96,7 @@ export const publicRoutes = new Hono<AppBindings>()
         });
       },
       60,
+      ["cursor"],
     ),
   )
   .get(
@@ -116,5 +121,6 @@ export const publicRoutes = new Hono<AppBindings>()
       // no way to bust it — not even a reload. The 300s edge entry still
       // absorbs the load.
       0,
+      [],
     ),
   );

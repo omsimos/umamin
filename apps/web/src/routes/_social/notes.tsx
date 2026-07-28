@@ -3,22 +3,17 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 import { AppHeader } from "@/components/app-header";
 import { ChatAnnouncement } from "@/components/chat-announcement";
 import { RouteSegmentError } from "@/components/route-segment-error";
-import { loaderFetchJsonOrNull } from "@/lib/loader-fetch";
+import { loadViewerId } from "@/lib/loader-viewer";
 import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
 import { pageSeo } from "@/lib/seo";
-import type { CurrentUserResponse, NotesResponse } from "@/lib/types";
+import type { NotesResponse } from "@/lib/types";
 import { NoteCardSkeleton } from "./-components/note-card-skeleton";
 import { NotesClient } from "./-components/notes-client";
 import { loaderFetchNotesPage } from "./-lib/loader-queries";
 
 export const Route = createFileRoute("/_social/notes")({
   loader: async ({ context }) => {
-    const me = await loaderFetchJsonOrNull<CurrentUserResponse>("/api/me", 401);
-    const viewerId = me?.user?.id ?? null;
-
-    if (me?.user) {
-      context.queryClient.setQueryData(queryKeys.currentUser(), me);
-    }
+    const viewerId = await loadViewerId(context.queryClient);
 
     await context.queryClient.ensureInfiniteQueryData({
       queryKey: queryKeys.notes(viewerId ?? "public"),

@@ -2,14 +2,10 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { RouteSegmentError } from "@/components/route-segment-error";
-import { loaderFetchJsonOrNull } from "@/lib/loader-fetch";
+import { loadViewer } from "@/lib/loader-viewer";
 import { PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
 import { pageSeo } from "@/lib/seo";
-import type {
-  CommentsResponse,
-  CurrentUserResponse,
-  PostData,
-} from "@/lib/types";
+import type { CommentsResponse, PostData } from "@/lib/types";
 import { CommentsList } from "./-components/comments-list";
 import { PostCardMain } from "./-components/post-card-main";
 import { PostCardSkeleton } from "./-components/post-card-skeleton";
@@ -26,16 +22,12 @@ const truncate = (text: string, max = 160) =>
 export const Route = createFileRoute("/_social/post/$id")({
   loader: async ({ context, params }) => {
     const { id } = params;
-    const me = await loaderFetchJsonOrNull<CurrentUserResponse>("/api/me", 401);
+    const me = await loadViewer(context.queryClient);
     const viewerId = me?.user?.id ?? null;
 
     const post = await loaderFetchPost(id, !!viewerId);
     if (!post) {
       throw notFound();
-    }
-
-    if (me?.user) {
-      context.queryClient.setQueryData(queryKeys.currentUser(), me);
     }
 
     // Prime the per-post cache the cards patch (like/repost/comment writes).

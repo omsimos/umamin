@@ -94,8 +94,40 @@ export function withPrivateRead(label: string, handler: PrivateReadHandler) {
 }
 
 /**
+ * Build the Cache API key.
+ *
+ * With `cacheKeyParams` the key is the pathname plus ONLY those query params,
+ * sorted and with empty values dropped. Without it the whole URL is the key.
+ *
+ * The default is deliberately the conservative one: a route that reads a param
+ * nobody declared would otherwise collide different responses onto one entry
+ * and serve the wrong page. Declaring is an optimisation, forgetting is not a
+ * correctness bug.
+ *
+ * What declaring buys: `?sort=hot`, `?sort=hot&cursor=`, and `?sort=hot&utm=x`
+ * all collapse to one entry instead of three, so equivalent requests hit the
+ * cache and an arbitrary query param can no longer mint unbounded cache misses
+ * (each of which is a Turso read) behind the per-IP read limit.
+ */
+function buildCacheKey(
+  url: URL,
+  cacheKeyParams: readonly string[] | undefined,
+): Request {
+  if (!cacheKeyParams) {
+    return new Request(url.toString(), { method: "GET" });
+  }
+
+  const canonical = new URL(url.origin + url.pathname);
+  for (const name of [...cacheKeyParams].sort()) {
+    const value = url.searchParams.get(name);
+    if (value) canonical.searchParams.set(name, value);
+  }
+  return new Request(canonical.toString(), { method: "GET" });
+}
+
+/**
  * CDN-cached public GET scaffold. `caches.default` (per-colo) replaces Vercel's
- * s-maxage CDN cache (fact #1). Full-URL key → handler → waitUntil(cache.put)
+ * s-maxage CDN cache (fact #1). Canonical key → handler → waitUntil(cache.put)
  * with s-maxage. Errors (429/500) use maxAge 0 so they're never cached.
  *
  * INVARIANTS (grep-gated to this file): `caches.default` appears ONLY here; a
@@ -107,14 +139,13 @@ export function withPublicRead(
   maxAgeSeconds: number,
   handler: PublicReadHandler,
   browserMaxAgeSeconds = 0,
+  cacheKeyParams?: readonly string[],
 ) {
   return async (c: AppContext): Promise<Response> => {
     // `caches.default` is a Workers global; the DOM lib types `caches` as a bare
     // CacheStorage, so narrow it here (the sole `caches.default` use, R5 invariant).
     const cache = (caches as unknown as { default: Cache }).default;
-    const cacheKey = new Request(new URL(c.req.url).toString(), {
-      method: "GET",
-    });
+    const cacheKey = buildCacheKey(new URL(c.req.url), cacheKeyParams);
 
     const hit = await cache.match(cacheKey);
     if (hit) return hit;
