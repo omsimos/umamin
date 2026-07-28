@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { AppBindings } from "../../server-lib/context";
+import { NOT_FOUND_ERROR } from "../../server-lib/errors";
 import { listDeniedIps } from "../../server-lib/ip-denylist";
 import { isModerator } from "../../server-lib/moderation";
 import { withPrivateRead } from "../../server-lib/read-route";
@@ -12,7 +13,7 @@ export const moderationRoutes = new Hono<AppBindings>().get(
     // 404 (not 403) for non-moderators so the route's existence/role gate isn't
     // disclosed — mirrors the mod-delete actions' generic "not found".
     if (!isModerator(user, c.env.MODERATOR_USERS)) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: NOT_FOUND_ERROR }, { status: 404 });
     }
 
     return { ips: await listDeniedIps(c.env.KV) };

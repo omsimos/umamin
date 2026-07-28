@@ -122,3 +122,15 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
     });
   });
 });
+
+// Hono percent-decodes route params where Next handed them raw, so the `%40`
+// strip apps/www shipped no longer sees a literal "%40" — a shared @-prefixed
+// profile URL would 404 without the `@` case.
+describe("formatUsername", () => {
+  it("strips both the encoded and decoded @ prefix", async () => {
+    const { formatUsername } = await import("../src/api/routes/_shared");
+    expect(formatUsername("%40josh")).toBe("josh");
+    expect(formatUsername("@josh")).toBe("josh");
+    expect(formatUsername("josh")).toBe("josh");
+  });
+});

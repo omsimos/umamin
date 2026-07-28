@@ -10,10 +10,12 @@ import {
   getPublicUserProfileWithBadge,
   getUserPostsPage,
 } from "../../server-lib/data";
+import { NOT_FOUND_ERROR } from "../../server-lib/errors";
 import { withPublicRead } from "../../server-lib/read-route";
 import { formatUsername, resolveDb } from "./_shared";
 
-const notFound = () => Response.json({ error: "Not found" }, { status: 404 });
+const notFound = () =>
+  Response.json({ error: NOT_FOUND_ERROR }, { status: 404 });
 
 // Anonymous, CDN-cached (Cache API) reads. TTLs preserved from apps/www EXCEPT
 // the public profile: 7d → 300s (plan) — tag purge is gone, so a short TTL plus
@@ -107,6 +109,12 @@ export const publicRoutes = new Hono<AppBindings>()
         );
         return result ?? notFound();
       },
-      300,
+      // Browser TTL 0, unlike the other public reads. apps/www could pair its
+      // long TTL with an `updateTag("user:<username>")` purge on every profile,
+      // badge and aura write; the Cache API has none, so a non-zero browser TTL
+      // pins an edited avatar/badge in the viewer's own cache for minutes with
+      // no way to bust it — not even a reload. The 300s edge entry still
+      // absorbs the load.
+      0,
     ),
   );

@@ -8,6 +8,7 @@ import {
 import { securityHeaders } from "./csp";
 import { isBearerAuthed, originMatchesHost } from "./csrf";
 import type { AppEnv } from "./env";
+import { ACCESS_BLOCKED_ERROR } from "./errors";
 import { extractClientIp } from "./ip";
 import { isIpDenied } from "./ip-denylist";
 
@@ -35,10 +36,16 @@ const SESSION_RENEW_INTERVAL_MS = 1000 * 60 * 60 * 24 * 7;
  */
 export function ipDenylist(): Middleware {
   return async (c, next) => {
-    if (!isStaticPath(new URL(c.req.url).pathname)) {
+    const path = new URL(c.req.url).pathname;
+    if (!isStaticPath(path)) {
       const ip = extractClientIp((name) => c.req.header(name));
       if (await isIpDenied(c.env.KV, ip)) {
-        return c.text("Access blocked", 403);
+        // Unlike apps/www's proxy this front-doors /api too, so answer API
+        // callers in the JSON envelope they parse — a plain-text body throws in
+        // callAction/fetchJson and surfaces as the generic error instead.
+        return path.startsWith("/api/")
+          ? c.json({ error: ACCESS_BLOCKED_ERROR }, 403)
+          : c.text(ACCESS_BLOCKED_ERROR, 403);
       }
     }
     await next();
@@ -68,12 +75,23 @@ export function csrfOriginCheck(): Middleware {
 /**
  * Attach the ported security headers to the outgoing response WITHOUT buffering
  * the SSR stream — set headers only, never read the body (plan R6).
+ *
+ * Also pins SSR HTML to `no-store`. Next served every dynamic page as
+ * `private, no-store, max-age=0`; a Worker sends no Cache-Control at all, which
+ * leaves authenticated HTML (and the Set-Cookie the renewal middleware may
+ * append) heuristically cacheable by browsers and storable by any intermediary.
+ * `/api/*` responses set their own envelope and are left alone.
  */
 export function securityHeadersMiddleware(): Middleware {
   return async (c, next) => {
     await next();
     for (const [key, value] of Object.entries(securityHeaders(c.env))) {
       c.header(key, value);
+    }
+
+    const isHtml = c.res.headers.get("content-type")?.includes("text/html");
+    if (isHtml && !c.res.headers.has("cache-control")) {
+      c.header("Cache-Control", "private, no-store, max-age=0");
     }
   };
 }

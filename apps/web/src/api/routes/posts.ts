@@ -6,6 +6,7 @@ import {
   getPostCommentsPage,
   getPostsPage,
 } from "../../server-lib/data";
+import { UNAUTHORIZED_ERROR } from "../../server-lib/errors";
 import { withPrivateRead } from "../../server-lib/read-route";
 import { getSessionFrom, resolveDb } from "./_shared";
 
@@ -20,7 +21,7 @@ export const postsRoutes = new Hono<AppBindings>()
       const { session } = await getSessionFrom(c);
 
       if (sort === "following" && !session) {
-        return Response.json({ error: "Unauthorized" }, { status: 401 });
+        return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 401 });
       }
 
       return getPostsPage(resolveDb(c.env), c.env.KV, {

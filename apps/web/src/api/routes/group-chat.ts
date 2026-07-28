@@ -15,13 +15,18 @@ import {
   getGroupViewerRelationship,
 } from "../../server-lib/data";
 import type { AppEnv } from "../../server-lib/env";
-import { INTERNAL_SERVER_ERROR } from "../../server-lib/errors";
+import {
+  INTERNAL_SERVER_ERROR,
+  MEMBERS_ONLY_ERROR,
+  NOT_FOUND_ERROR,
+  UNAUTHORIZED_ERROR,
+} from "../../server-lib/errors";
 import {
   GROUP_CHAT_DISABLED_ERROR,
   GROUP_CHAT_ENABLED,
 } from "../../server-lib/group";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "../../server-lib/ratelimit";
-import { withPublicRead } from "../../server-lib/read-route";
+import { privateJson, withPublicRead } from "../../server-lib/read-route";
 import { getSessionFrom, resolveDb } from "./_shared";
 
 type Ctx = Context<AppBindings>;
@@ -38,7 +43,7 @@ async function guardMember(
   if (!GROUP_CHAT_ENABLED) {
     return {
       ok: false,
-      res: Response.json({ error: GROUP_CHAT_DISABLED_ERROR }, { status: 403 }),
+      res: privateJson({ error: GROUP_CHAT_DISABLED_ERROR }, 403),
     };
   }
 
@@ -47,14 +52,14 @@ async function guardMember(
   if (!session) {
     return {
       ok: false,
-      res: Response.json({ error: "Unauthorized" }, { status: 401 }),
+      res: privateJson({ error: UNAUTHORIZED_ERROR }, 401),
     };
   }
 
   if (!(await checkRateLimit(c.env, "group-read", rateKey(session.userId)))) {
     return {
       ok: false,
-      res: Response.json({ error: RATE_LIMIT_ERROR }, { status: 429 }),
+      res: privateJson({ error: RATE_LIMIT_ERROR }, 429),
     };
   }
 
@@ -62,7 +67,7 @@ async function guardMember(
   if (!group) {
     return {
       ok: false,
-      res: Response.json({ error: "Not found" }, { status: 404 }),
+      res: privateJson({ error: NOT_FOUND_ERROR }, 404),
     };
   }
 
@@ -74,7 +79,7 @@ async function guardMember(
   if (relationship !== "owner" && relationship !== "member") {
     return {
       ok: false,
-      res: Response.json({ error: "Members only" }, { status: 403 }),
+      res: privateJson({ error: MEMBERS_ONLY_ERROR }, 403),
     };
   }
 
@@ -148,7 +153,7 @@ export const groupChatRoutes = new Hono<AppBindings>()
 
       const idsParam = c.req.query("ids");
       const ids = idsParam ? idsParam.split(",").filter(Boolean) : [];
-      return c.json(
+      return privateJson(
         await getGroupMessageReactions(
           resolveDb(c.env),
           ids,
@@ -158,7 +163,7 @@ export const groupChatRoutes = new Hono<AppBindings>()
       );
     } catch (error) {
       console.error("Error fetching group chat reactions:", error);
-      return c.json({ error: INTERNAL_SERVER_ERROR }, 500);
+      return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
   })
   // The "who reacted" list for one message (drawer open).
@@ -167,7 +172,7 @@ export const groupChatRoutes = new Hono<AppBindings>()
       const guard = await guardMember(c, (uid) => `gchatrxn:${uid}`);
       if (!guard.ok) return guard.res;
 
-      return c.json(
+      return privateJson(
         await getGroupMessageReactors(
           resolveDb(c.env),
           c.req.param("messageId") ?? "",
@@ -176,7 +181,7 @@ export const groupChatRoutes = new Hono<AppBindings>()
       );
     } catch (error) {
       console.error("Error fetching group chat reactors:", error);
-      return c.json({ error: INTERNAL_SERVER_ERROR }, 500);
+      return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
   })
   // Message reads: ?since=<cursor> live delta, else ?cursor=<cursor> history.
@@ -188,9 +193,11 @@ export const groupChatRoutes = new Hono<AppBindings>()
       const db = resolveDb(c.env);
       const since = c.req.query("since");
       if (since) {
-        return c.json(await getGroupMessagesSince(db, guard.groupId, since));
+        return privateJson(
+          await getGroupMessagesSince(db, guard.groupId, since),
+        );
       }
-      return c.json(
+      return privateJson(
         await getGroupMessagesPage(
           db,
           guard.groupId,
@@ -199,6 +206,6 @@ export const groupChatRoutes = new Hono<AppBindings>()
       );
     } catch (error) {
       console.error("Error fetching group chat:", error);
-      return c.json({ error: INTERNAL_SERVER_ERROR }, 500);
+      return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
   });

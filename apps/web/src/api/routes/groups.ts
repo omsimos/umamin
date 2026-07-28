@@ -8,6 +8,11 @@ import {
   getGroupViewerRelationship,
   getUserGroups,
 } from "../../server-lib/data";
+import {
+  MEMBERS_ONLY_ERROR,
+  NOT_FOUND_ERROR,
+  UNAUTHORIZED_ERROR,
+} from "../../server-lib/errors";
 import { GROUP_CHAT_ENABLED } from "../../server-lib/group";
 import { withPrivateRead, withPublicRead } from "../../server-lib/read-route";
 import { getSessionFrom, resolveDb } from "./_shared";
@@ -18,7 +23,7 @@ export const groupsRoutes = new Hono<AppBindings>()
     withPrivateRead("fetching user groups", async (c) => {
       const { session } = await getSessionFrom(c);
       if (!session) {
-        return Response.json({ error: "Unauthorized" }, { status: 401 });
+        return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 401 });
       }
       return getUserGroups(resolveDb(c.env), session.userId);
     }),
@@ -63,12 +68,12 @@ export const groupsRoutes = new Hono<AppBindings>()
       const db = resolveDb(c.env);
       const { session } = await getSessionFrom(c);
       if (!session) {
-        return Response.json({ error: "Unauthorized" }, { status: 401 });
+        return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 401 });
       }
 
       const group = await getGroupPageData(db, c.req.param("tag") ?? "");
       if (!group) {
-        return Response.json({ error: "Not found" }, { status: 404 });
+        return Response.json({ error: NOT_FOUND_ERROR }, { status: 404 });
       }
 
       const relationship = await getGroupViewerRelationship(
@@ -77,7 +82,7 @@ export const groupsRoutes = new Hono<AppBindings>()
         group.id,
       );
       if (relationship !== "owner" && relationship !== "member") {
-        return Response.json({ error: "Members only" }, { status: 403 });
+        return Response.json({ error: MEMBERS_ONLY_ERROR }, { status: 403 });
       }
 
       return getGroupMembersPage(db, group.id, c.req.query("cursor") ?? null);
@@ -90,12 +95,12 @@ export const groupsRoutes = new Hono<AppBindings>()
       const db = resolveDb(c.env);
       const { session } = await getSessionFrom(c);
       if (!session) {
-        return Response.json({ error: "Unauthorized" }, { status: 401 });
+        return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 401 });
       }
 
       const group = await getGroupPageData(db, c.req.param("tag") ?? "");
       if (!group) {
-        return Response.json({ error: "Not found" }, { status: 404 });
+        return Response.json({ error: NOT_FOUND_ERROR }, { status: 404 });
       }
 
       const relationship = await getGroupViewerRelationship(
@@ -104,7 +109,7 @@ export const groupsRoutes = new Hono<AppBindings>()
         group.id,
       );
       if (relationship !== "owner") {
-        return Response.json({ error: "Unauthorized" }, { status: 403 });
+        return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 403 });
       }
 
       return getGroupPendingRequestsPage(
@@ -126,7 +131,7 @@ export const groupsRoutes = new Hono<AppBindings>()
           req.param("tag") ?? "",
         );
         if (!result) {
-          return Response.json({ error: "Not found" }, { status: 404 });
+          return Response.json({ error: NOT_FOUND_ERROR }, { status: 404 });
         }
         return result;
       },

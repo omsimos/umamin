@@ -38,6 +38,18 @@ const app = new Hono<{ Bindings: AppEnv }>()
       privateHits += 1;
       return { n: privateHits };
     }),
+  )
+  .get(
+    "/priv-401",
+    withPrivateRead("priv-401", async () =>
+      Response.json({ error: "Unauthorized" }, { status: 401 }),
+    ),
+  )
+  .get(
+    "/pub-404",
+    withPublicRead("pub-404", 180, async () =>
+      Response.json({ error: "Not found" }, { status: 404 }),
+    ),
   );
 
 async function fetch(path: string) {
@@ -84,6 +96,30 @@ describe("read-route (workers Cache API)", () => {
     const a = (await res.json<{ n: number }>()).n;
     const b = (await (await fetch(url)).json<{ n: number }>()).n;
     expect(b).toBeGreaterThan(a); // recomputed — private reads never hit cache
+  });
+
+  // apps/www returned every early exit through privateJson/publicJson. A bare
+  // `Response.json(...)` from a handler used to escape with NO Cache-Control,
+  // leaving a 401 heuristically cacheable by browsers and shared caches.
+  it("private: stamps the no-store envelope on a handler-built 401", async () => {
+    const res = await fetch(`/priv-401?case=${crypto.randomUUID()}`);
+    expect(res.status).toBe(401);
+    expect(res.headers.get("cache-control")).toBe(
+      "private, no-store, max-age=0",
+    );
+    expect(res.headers.get("vary")).toBe("Cookie");
+    expect(await res.json()).toEqual({ error: "Unauthorized" });
+  });
+
+  it("public: pins a handler-built 404 uncacheable and never stores it", async () => {
+    const url = `/pub-404?case=${crypto.randomUUID()}`;
+    const res = await fetch(url);
+    expect(res.status).toBe(404);
+    expect(res.headers.get("cache-control")).toBe(
+      "public, max-age=0, s-maxage=0, stale-while-revalidate=0",
+    );
+    // Still a 404 on the second call — a non-200 must not enter the cache.
+    expect((await fetch(url)).status).toBe(404);
   });
 
   it("private: rate-limit and error envelopes are shaped correctly", async () => {

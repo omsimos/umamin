@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppBindings } from "../../server-lib/context";
 import { getCurrentNoteData, getNotesPage } from "../../server-lib/data";
+import { UNAUTHORIZED_ERROR } from "../../server-lib/errors";
 import { withPrivateRead } from "../../server-lib/read-route";
 import { getSessionFrom, resolveDb } from "./_shared";
 
@@ -20,7 +21,7 @@ export const notesRoutes = new Hono<AppBindings>()
     withPrivateRead("fetching current note", async (c) => {
       const { session } = await getSessionFrom(c);
       if (!session?.userId) {
-        return Response.json({ error: "Unauthorized" }, { status: 401 });
+        return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 401 });
       }
 
       const note = await getCurrentNoteData(resolveDb(c.env), session.userId);

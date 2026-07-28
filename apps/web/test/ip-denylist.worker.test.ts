@@ -12,9 +12,15 @@ import {
 const kv = (env as { KV: KVNamespace }).KV;
 
 describe("ip-denylist (miniflare KV)", () => {
+  async function clearKv() {
+    await kv.delete("ip:denylist");
+    const { keys } = await kv.list({ prefix: "ip:denylist:" });
+    await Promise.all(keys.map((key) => kv.delete(key.name)));
+  }
+
   beforeEach(async () => {
     __clearDenylistCache();
-    await kv.delete("ip:denylist");
+    await clearKv();
   });
 
   it("denies a listed IP and allows others", async () => {
@@ -24,13 +30,33 @@ describe("ip-denylist (miniflare KV)", () => {
     expect(await isIpDenied(kv, "203.0.113.6")).toBe(false);
   });
 
-  it("persists as a single JSON-array KV key", async () => {
+  // One key per entry, NOT a JSON array: an array means get→mutate→put, and on
+  // eventually-consistent KV a second write can clobber the first.
+  it("persists one KV key per entry", async () => {
     await denyIp(kv, "203.0.113.5");
     await denyIp(kv, "203.0.113.6");
-    expect(await kv.get<string[]>("ip:denylist", "json")).toEqual([
+    const { keys } = await kv.list({ prefix: "ip:denylist:" });
+    expect(keys.map((key) => key.name).sort()).toEqual([
+      "ip:denylist:203.0.113.5",
+      "ip:denylist:203.0.113.6",
+    ]);
+    __clearDenylistCache();
+    expect((await listDeniedIps(kv)).sort()).toEqual([
       "203.0.113.5",
       "203.0.113.6",
     ]);
+  });
+
+  // Entries written before the per-key layout must keep blocking, and unblock.
+  it("still honours and prunes the legacy JSON-array key", async () => {
+    await kv.put("ip:denylist", JSON.stringify(["203.0.113.77"]));
+    __clearDenylistCache();
+    expect(await isIpDenied(kv, "203.0.113.77")).toBe(true);
+
+    await allowIp(kv, "203.0.113.77");
+    __clearDenylistCache();
+    expect(await isIpDenied(kv, "203.0.113.77")).toBe(false);
+    expect(await kv.get<string[]>("ip:denylist", "json")).toEqual([]);
   });
 
   it("canonicalizes on store AND compare (equivalent IPv6 forms match)", async () => {
@@ -62,7 +88,7 @@ describe("ip-denylist (miniflare KV)", () => {
     __clearDenylistCache();
     // Warm the cache, then mutate KV out-of-band; the cached read still wins.
     expect(await isIpDenied(kv, "203.0.113.9")).toBe(true);
-    await kv.put("ip:denylist", JSON.stringify([]));
+    await clearKv();
     expect(await isIpDenied(kv, "203.0.113.9")).toBe(true);
   });
 });
