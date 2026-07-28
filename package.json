@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=web",
     "dev:www": "turbo run dev --filter=www",
     "dev:chat": "turbo run dev --filter=chat",
     "dev:org": "turbo run dev --filter=org",
