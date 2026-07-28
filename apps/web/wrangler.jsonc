@@ -27,6 +27,28 @@
           "custom_domain": true
         }
       ],
+      // EXPERIMENT (staging only — do NOT copy to production before measuring).
+      //
+      // Turso lives in aws ap-northeast-1. Measured from a Singapore colo, one
+      // round trip to it costs ~75-90ms, and the read paths chain several: the
+      // public profile is two (profile, then the badge it points at), the feed
+      // four to five. That chain, not query cost, is what dominates TTFB —
+      // /api/health returns in ~230ms where a cache-busted feed read takes
+      // ~600-700ms.
+      //
+      // A placement hint runs the Worker in the Cloudflare data center nearest
+      // that region, so each hop drops to single-digit ms. The trade is one
+      // extra eyeball->Tokyo leg per request, paid ONCE instead of per hop.
+      //
+      // CAVEAT: the Cache API is local to the data center the Worker runs in,
+      // so with placement on, `caches.default` entries live in Tokyo too — a
+      // cache HIT gets slower by that same leg while every MISS gets much
+      // faster. Workers Caching (`cache.enabled`) sits in front of the Worker
+      // and is consulted before placement, which would remove the caveat; it
+      // is the follow-up, not a prerequisite for measuring this.
+      "placement": {
+        "region": "aws:ap-northeast-1"
+      },
       "kv_namespaces": [
         {
           "binding": "KV",

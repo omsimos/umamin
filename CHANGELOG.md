@@ -18,6 +18,20 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.2.0] - 2026-07-28
+
+### Fixed
+
+- Opening a group chat directly — from a bookmark, a refresh, or the installed app — no longer shows an error page. It only worked when you navigated there from inside the app.
+
+### Performance & Cost
+
+- Repeat visits are much faster. The app's scripts, styles, and fonts are now stored by your browser and reused instead of being checked with the server on every single page load.
+- Going to the feed no longer bounces through a redirect first. This is the page the installed app opens to, so it starts noticeably sooner.
+- Text now appears in the right typeface sooner on a first visit, instead of briefly rendering in a fallback font.
+- Signed-out visits to the feed, notes, and post pages skip a sign-in check that could never have succeeded, so those pages return sooner.
+- Opening a group chat now loads its details, your account, and your membership together rather than one after another.
+
 ## [7.1.0] - 2026-07-28
 
 ### Added
@@ -861,6 +875,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.2.0]: https://github.com/omsimos/umamin/compare/v7.1.0...v7.2.0
 [7.1.0]: https://github.com/omsimos/umamin/compare/v7.0.0...v7.1.0
 [7.0.0]: https://github.com/omsimos/umamin/compare/v6.1.0...v7.0.0
 [6.1.0]: https://github.com/omsimos/umamin/compare/v6.0.1...v6.1.0

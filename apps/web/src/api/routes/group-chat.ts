@@ -143,6 +143,8 @@ export const groupChatRoutes = new Hono<AppBindings>()
         }
         return readHead(env, groupId);
       },
+      0,
+      ["id"],
     ),
   )
   // Per-viewer reaction overlay for a set of loaded message ids (?ids=a,b,c).

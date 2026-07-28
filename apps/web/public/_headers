@@ -1,0 +1,52 @@
+# Cache policy for files served by the Workers assets binding.
+#
+# Workers serves every static asset as `public, max-age=0, must-revalidate` by
+# default, so a repeat visitor re-validates ~20 files (all JS chunks, the CSS,
+# every woff2) before a page can paint. These rules opt the immutable ones out
+# of that round trip. Assets bypass the Worker entirely, so this file — NOT
+# server-lib/csp.ts — is the only place their headers can be set.
+#
+# Anything not listed keeps the revalidating default on purpose: sw.js (a stale
+# service worker outlives the deploy that replaced it), manifest.webmanifest,
+# robots.txt, sitemap.xml, and .well-known/assetlinks.json (TWA verification
+# must never serve a stale fingerprint).
+
+/*
+  X-Content-Type-Options: nosniff
+
+# Vite content-hashes everything here — JS, CSS and the fontsource woff2 files.
+# A changed byte means a changed filename, so these can never go stale.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Unhashed, but only read at install time or by crawlers. A day is short enough
+# that a replaced icon propagates on its own, long enough to stop the per-visit
+# revalidation.
+/splash/*
+  Cache-Control: public, max-age=604800
+/screenshots/*
+  Cache-Control: public, max-age=604800
+/icon.png
+  Cache-Control: public, max-age=86400
+/icon-192x192.png
+  Cache-Control: public, max-age=86400
+/icon-192x192-maskable.png
+  Cache-Control: public, max-age=86400
+/icon-512x512.png
+  Cache-Control: public, max-age=86400
+/icon-512x512-maskable.png
+  Cache-Control: public, max-age=86400
+/apple-icon.png
+  Cache-Control: public, max-age=86400
+/umamin-logo.svg
+  Cache-Control: public, max-age=86400
+/umamin-chat-logo.png
+  Cache-Control: public, max-age=86400
+/opengraph-image.png
+  Cache-Control: public, max-age=86400
+/twitter-image.png
+  Cache-Control: public, max-age=86400
+
+# Precached by sw.js on install; served from the SW cache thereafter.
+/offline.html
+  Cache-Control: public, max-age=3600

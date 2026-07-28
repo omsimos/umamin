@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSsrHeaders } from "../src/lib/loader-fetch";
+import { buildSsrHeaders, cookieHeaderHasAny } from "../src/lib/loader-fetch";
 import { extractClientIp } from "../src/server-lib/ip";
 
 describe("buildSsrHeaders", () => {
@@ -36,5 +36,37 @@ describe("buildSsrHeaders", () => {
   it("omits absent headers instead of sending empty values", () => {
     const headers = buildSsrHeaders(new Headers());
     expect([...headers.keys()]).toEqual([]);
+  });
+});
+
+// Gates whether a loader skips its /api/me dispatch. A false negative costs a
+// round trip; a FALSE POSITIVE would only mean the request is made and the
+// token validated as usual — so the risk is one-sided, but the prefix cases
+// below are the ones that would silently misread the header.
+describe("cookieHeaderHasAny", () => {
+  const NAMES = ["__Host-session", "session"];
+
+  it("detects the cookie among others", () => {
+    expect(
+      cookieHeaderHasAny("theme=dark; __Host-session=abc; _ga=1", NAMES),
+    ).toBe(true);
+  });
+
+  it("is false for no header and for an unrelated one", () => {
+    expect(cookieHeaderHasAny(null, NAMES)).toBe(false);
+    expect(cookieHeaderHasAny("", NAMES)).toBe(false);
+    expect(cookieHeaderHasAny("theme=dark", NAMES)).toBe(false);
+  });
+
+  it("does not match a longer name that starts with one", () => {
+    // The renewal marker rides alongside the real cookie and carries no auth.
+    expect(cookieHeaderHasAny("__Host-session_r=1730000000", NAMES)).toBe(
+      false,
+    );
+    expect(cookieHeaderHasAny("session_r=1730000000", NAMES)).toBe(false);
+  });
+
+  it("does not match the name appearing inside another cookie's value", () => {
+    expect(cookieHeaderHasAny("next=/login?from=session", NAMES)).toBe(false);
   });
 });

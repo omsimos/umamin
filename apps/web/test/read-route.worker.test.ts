@@ -50,6 +50,19 @@ const app = new Hono<{ Bindings: AppEnv }>()
     withPublicRead("pub-404", 180, async () =>
       Response.json({ error: "Not found" }, { status: 404 }),
     ),
+  )
+  .get(
+    "/pub-keyed",
+    withPublicRead(
+      "pub-keyed",
+      180,
+      async () => {
+        publicHits += 1;
+        return { n: publicHits };
+      },
+      0,
+      ["cursor"],
+    ),
   );
 
 async function fetch(path: string) {
@@ -120,6 +133,30 @@ describe("read-route (workers Cache API)", () => {
     );
     // Still a 404 on the second call — a non-200 must not enter the cache.
     expect((await fetch(url)).status).toBe(404);
+  });
+
+  // Without a declared key an undeclared param mints a fresh entry — and a
+  // fresh Turso read — per distinct value, so any junk query string walks
+  // straight past the cache.
+  it("public: a declared key ignores undeclared params", async () => {
+    const cursor = crypto.randomUUID();
+    const first = await fetch(`/pub-keyed?cursor=${cursor}`);
+    const firstN = (await first.json<{ n: number }>()).n;
+
+    const second = await fetch(`/pub-keyed?cursor=${cursor}&utm_source=x`);
+    expect((await second.json<{ n: number }>()).n).toBe(firstN);
+
+    // Param order and empty values must not fragment it either.
+    const third = await fetch(`/pub-keyed?utm_source=y&cursor=${cursor}&q=`);
+    expect((await third.json<{ n: number }>()).n).toBe(firstN);
+  });
+
+  it("public: a declared key still separates distinct declared values", async () => {
+    const a = await fetch(`/pub-keyed?cursor=${crypto.randomUUID()}`);
+    const b = await fetch(`/pub-keyed?cursor=${crypto.randomUUID()}`);
+    expect((await b.json<{ n: number }>()).n).toBeGreaterThan(
+      (await a.json<{ n: number }>()).n,
+    );
   });
 
   it("private: rate-limit and error envelopes are shaped correctly", async () => {

@@ -136,5 +136,6 @@ export const groupsRoutes = new Hono<AppBindings>()
         return result;
       },
       60,
+      [],
     ),
   );

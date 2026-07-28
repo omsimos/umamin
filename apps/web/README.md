@@ -38,7 +38,22 @@ pnpm --filter=web run build     # staging build; build:production for prod
   reads are cached in-Worker through the Cache API (`server-lib/read-route.ts`,
   the only place `caches.default` is allowed). It has no purge, so invalidation
   is TTL-only. Private reads are never cached; they go straight to Turso and are
-  sent `no-store` + `Vary: Cookie`.
+  sent `no-store` + `Vary: Cookie`. Each public route passes the query params
+  that belong in its cache key; anything else is ignored, so a stray param can't
+  mint a fresh entry (and a fresh Turso read) per value. Omitting the list falls
+  back to the whole URL — correct, just less effective.
+- **Static assets never reach the Worker**, so their headers come from
+  `public/_headers`, not `server-lib/csp.ts`. Hashed files under `/assets/*` are
+  immutable for a year; `sw.js`, the manifest, and `.well-known/*` deliberately
+  keep the revalidating default.
+- **Route loaders resolve the viewer through `lib/loader-viewer.ts`.** It skips
+  the `/api/me` dispatch when SSR can see there is no session cookie, and shares
+  one query-cache entry with the components below. Don't call `/api/me` directly
+  from a loader.
+- **Loaders run in the Worker too**, so a loader may only fetch through
+  `lib/loader-fetch.ts`. The browser fetchers in `lib/query-fetchers.ts` use
+  relative URLs, which throw in workerd — passing one as a bare loader `queryFn`
+  breaks the route on a hard load while working fine on client navigation.
 - **Turso bills per row scanned** — bound every list query, and never add an
   unindexed `ORDER BY` to a polled endpoint.
 - **KV has no set type and is eventually consistent.** Model collections as one

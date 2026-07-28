@@ -102,6 +102,52 @@ async function fetchResponse(path: string): Promise<Response> {
   return fetch(path, { credentials: "include" });
 }
 
+/**
+ * Does the SSR page request carry a session cookie at all?
+ *
+ * A request without one CANNOT resolve a viewer, so a loader can skip its
+ * `/api/me` dispatch — and the session lookup plus user read behind it —
+ * instead of paying for a guaranteed 401. That is the common case on the public
+ * pages (logged-out visitors and crawlers).
+ *
+ * Returns `null` on the client, where the cookie is httpOnly and therefore
+ * invisible: callers must fall back to asking the API. In practice the client
+ * has `/api/me` in the query cache already, so nothing is lost.
+ *
+ * Presence is NOT authentication — the token still gets validated by whatever
+ * the loader calls next. This only rules out the negative case.
+ */
+export async function ssrSessionCookiePresent(): Promise<boolean | null> {
+  if (!import.meta.env.SSR) return null;
+
+  const [{ getRequest }, { LEGACY_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME }] =
+    await Promise.all([
+      import("@tanstack/react-start/server"),
+      import("@/server-lib/cookies"),
+    ]);
+
+  return cookieHeaderHasAny(getRequest().headers.get("cookie"), [
+    SESSION_COOKIE_NAME,
+    LEGACY_SESSION_COOKIE_NAME,
+  ]);
+}
+
+// Exported for the unit test. Matches on the NAME only — a cookie whose value
+// happens to contain the name, or a name that is a prefix of another
+// (`session` vs `session_r`), must not count as a match.
+export function cookieHeaderHasAny(
+  header: string | null | undefined,
+  names: readonly string[],
+): boolean {
+  if (!header) return false;
+
+  return header.split(";").some((pair) => {
+    const separator = pair.indexOf("=");
+    const name = (separator === -1 ? pair : pair.slice(0, separator)).trim();
+    return names.includes(name);
+  });
+}
+
 export async function loaderFetchJson<T>(path: string): Promise<T> {
   const response = await fetchResponse(path);
   if (!response.ok) {

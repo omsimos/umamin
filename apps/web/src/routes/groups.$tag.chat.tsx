@@ -3,15 +3,12 @@ import { Button } from "@umamin/ui/components/button";
 import { MessageCircleOffIcon } from "lucide-react";
 import { GROUP_CHAT_ENABLED } from "@/lib/group";
 import { loaderFetchOptional } from "@/lib/loader-fetch";
+import { loadViewer } from "@/lib/loader-viewer";
 import { Link } from "@/lib/navigation";
 import { queryKeys } from "@/lib/query";
-import {
-  fetchCurrentUserOptional,
-  fetchGroup,
-  fetchGroupViewer,
-} from "@/lib/query-fetchers";
+import { fetchGroup, fetchGroupViewer } from "@/lib/query-fetchers";
 import { pageSeo } from "@/lib/seo";
-import type { CurrentUserResponse, GroupPageData } from "@/lib/types";
+import type { GroupPageData, GroupViewerResponse } from "@/lib/types";
 import { GroupChat } from "./-chat/group-chat";
 
 export const Route = createFileRoute("/groups/$tag/chat")({
@@ -22,41 +19,45 @@ export const Route = createFileRoute("/groups/$tag/chat")({
     }
 
     const tag = params.tag;
-    const group = await context.queryClient.ensureQueryData({
-      queryKey: queryKeys.group(tag),
-      queryFn: () =>
-        loaderFetchOptional<GroupPageData | null>(
-          `/api/groups/${tag}`,
-          () => fetchGroup(tag),
-          null,
-          [403, 404],
-        ),
-    });
+
+    // The three reads are independent — only the GUARDS below are ordered — so
+    // they run together rather than as three serial round trips. Membership is
+    // still re-checked on every load (no token to go stale); nothing here is
+    // trusted from the client.
+    const [group, currentUser, viewer] = await Promise.all([
+      context.queryClient.ensureQueryData({
+        queryKey: queryKeys.group(tag),
+        queryFn: () =>
+          loaderFetchOptional<GroupPageData | null>(
+            `/api/groups/${tag}`,
+            () => fetchGroup(tag),
+            null,
+            [403, 404],
+          ),
+      }),
+      loadViewer(context.queryClient),
+      context.queryClient.ensureQueryData({
+        queryKey: queryKeys.groupViewer(tag),
+        // Must go through loaderFetchOptional, not fetchGroupViewer directly:
+        // the browser fetcher uses a relative URL, which throws in the Worker,
+        // so a hard load of this route used to fail its loader on the server.
+        queryFn: () =>
+          loaderFetchOptional<GroupViewerResponse | null>(
+            `/api/groups/${tag}/viewer`,
+            () => fetchGroupViewer(tag),
+            null,
+          ),
+      }),
+    ]);
 
     if (!group) {
       throw notFound();
     }
 
-    // Members-only — re-checked on every load (no membership token to go
-    // stale). Bounce signed-out + non-members back to the group page.
-    const currentUser = await context.queryClient.ensureQueryData({
-      queryKey: queryKeys.currentUser(),
-      queryFn: () =>
-        loaderFetchOptional<CurrentUserResponse>(
-          "/api/me",
-          fetchCurrentUserOptional,
-          {} as CurrentUserResponse,
-        ),
-    });
-
+    // Members-only: bounce signed-out visitors and non-members to the group page.
     if (!currentUser?.user) {
       throw redirect({ to: "/groups/$tag", params: { tag } });
     }
-
-    const viewer = await context.queryClient.ensureQueryData({
-      queryKey: queryKeys.groupViewer(tag),
-      queryFn: () => fetchGroupViewer(tag),
-    });
 
     const relationship = viewer?.relationship ?? null;
     if (relationship !== "owner" && relationship !== "member") {
