@@ -23,20 +23,25 @@ concurrency:
 permissions:
   contents: read
 
+# Only NODE_VERSION is global. TURBO_TOKEN stays job-scoped (below) — a
+# workflow-level secret is injected into every job and every third-party action
+# they run, including `quality`, which has no turbo task, and `release`, which
+# holds `contents: write`.
 env:
   NODE_VERSION: "24"
-  # Turborepo Remote Caching. Every task reuses artifacts across jobs AND runs,
-  # so no job caches `.turbo` itself — a local cache would only duplicate this
-  # with per-job keys that fight over the same entry. `cache: pnpm` below is a
-  # different thing: it caches the dependency store, which turbo does not cover.
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
 jobs:
   build:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    # Turborepo Remote Caching. Every task reuses artifacts across jobs AND runs,
+    # so no job caches `.turbo` itself — a local cache would only duplicate this
+    # with per-job keys that fight over the same entry. `cache: pnpm` below is a
+    # different thing: it caches the dependency store, which turbo does not cover.
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
     steps:
       - uses: actions/checkout@v6
@@ -65,6 +70,9 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
     steps:
       - uses: actions/checkout@v6
