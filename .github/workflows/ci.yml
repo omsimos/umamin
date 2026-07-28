@@ -1,16 +1,24 @@
 name: CI
 
 # Cloudflare Workers Builds owns apps/web deployments. This workflow validates
-# both deployment branches and publishes GitHub releases from main.
+# changes and publishes GitHub releases from main.
+#
+# Pull requests are the gate; `main` only re-validates the merge commit and cuts
+# the release. `dev` is deliberately NOT a push trigger: work reaches main by PR
+# from dev, so a push to dev matched BOTH triggers and ran the whole suite twice
+# for the same commit.
 on:
   push:
-    branches: ["dev", "main"]
+    branches: ["main"]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Superseded PR pushes are cancelled, but never a main run — the release job
+  # publishes from it, and two merges landing close together would otherwise
+  # cancel the first one's release.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -58,6 +66,7 @@ jobs:
   typecheck:
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     strategy:
       matrix:
         node-version: [24]
@@ -67,6 +76,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Cache turbo build setup
+        uses: actions/cache@v5
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-typecheck-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-typecheck-
+            ${{ runner.os }}-turbo-
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -86,6 +104,7 @@ jobs:
   test:
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     strategy:
       matrix:
         node-version: [24]
@@ -95,6 +114,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Cache turbo build setup
+        uses: actions/cache@v5
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-test-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-test-
+            ${{ runner.os }}-turbo-
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -119,6 +147,7 @@ jobs:
   quality:
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
 
     steps:
       - name: Checkout
