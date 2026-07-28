@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   AD_FREQUENCY,
+  ADS_ENABLED,
   adPlacements,
   MAX_IN_FEED_ADS,
   shouldShowInFeedAd,
@@ -64,5 +65,36 @@ describe("shouldShowInFeedAd", () => {
       shouldShowInFeedAd,
     ).length;
     expect(overTwoHundredRows).toBe(MAX_IN_FEED_ADS);
+  });
+});
+
+// ADS_ENABLED is read at module load, so flipping it needs a module reset +
+// dynamic re-import (same pattern as the session-cookie suite).
+describe("ADS_ENABLED", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function loadWith(value?: string) {
+    vi.stubEnv("VITE_ADS_ENABLED", value as string);
+    vi.resetModules();
+    return import("./ad-placements");
+  }
+
+  it('is on unless the value is exactly "false"', async () => {
+    expect(ADS_ENABLED).toBe(true); // unset in the test env
+    expect((await loadWith("true")).ADS_ENABLED).toBe(true);
+    // Only the exact string disables — a near-miss must not silently kill ad
+    // revenue, it should leave ads running until someone writes "false".
+    expect((await loadWith("0")).ADS_ENABLED).toBe(true);
+    expect((await loadWith("False")).ADS_ENABLED).toBe(true);
+    expect((await loadWith("")).ADS_ENABLED).toBe(true);
+  });
+
+  it('turns every in-feed unit off when set to "false"', async () => {
+    const mod = await loadWith("false");
+    expect(mod.ADS_ENABLED).toBe(false);
+    expect([...Array(240).keys()].filter(mod.shouldShowInFeedAd)).toEqual([]);
   });
 });

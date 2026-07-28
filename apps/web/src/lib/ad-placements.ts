@@ -53,6 +53,19 @@ export const adPlacements = {
 
 export type AdPlacement = keyof typeof adPlacements;
 
+/**
+ * Master switch for every ad surface — set `VITE_ADS_ENABLED=false` in the
+ * build's env file to remove them all.
+ *
+ * Ads stay on unless the value is exactly "false", so an unset variable keeps
+ * the current behavior rather than silently dropping revenue. Vite inlines
+ * `import.meta.env.VITE_*` at build time, so this is a literal boolean in the
+ * bundle: when off, no placement renders, no vertical space is reserved, the
+ * in-feed rule yields nothing, and the adsbygoogle loader is never added to the
+ * document (see routes/__root.tsx) — nothing is merely hidden with CSS.
+ */
+export const ADS_ENABLED = import.meta.env.VITE_ADS_ENABLED !== "false";
+
 export const AD_CLIENT = "ca-pub-4274133898976040";
 
 /** Rows between in-feed ad units (feed + notes). */
@@ -69,6 +82,8 @@ export const MAX_IN_FEED_ADS = 6;
 
 /** Whether the row at `index` (0-based) is followed by an in-feed ad unit. */
 export function shouldShowInFeedAd(index: number): boolean {
+  if (!ADS_ENABLED) return false;
+
   const position = index + 1;
   if (position % AD_FREQUENCY !== 0) return false;
   return position / AD_FREQUENCY <= MAX_IN_FEED_ADS;

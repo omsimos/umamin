@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import AdContainer from "@/components/ad-container";
-import type { AdPlacement } from "@/lib/ad-placements";
+import { ADS_ENABLED, type AdPlacement } from "@/lib/ad-placements";
 
 type Props = {
   placement: AdPlacement;
@@ -18,7 +18,9 @@ export function ClientOnlyAdContainer({ placement, className }: Props) {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  // ADS_ENABLED is a build-time literal, so with ads off this is the whole
+  // component: no wrapper, no reserved min-height, nothing to hide.
+  if (!ADS_ENABLED || !mounted) return null;
 
   return <AdContainer className={className} placement={placement} />;
 }

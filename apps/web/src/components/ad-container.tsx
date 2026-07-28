@@ -1,6 +1,10 @@
 import { cn } from "@umamin/ui/lib/utils";
 import { useEffect, useRef, useState } from "react";
-import { type AdPlacement, adPlacements } from "@/lib/ad-placements";
+import {
+  ADS_ENABLED,
+  type AdPlacement,
+  adPlacements,
+} from "@/lib/ad-placements";
 
 declare global {
   interface Window {
@@ -109,6 +113,11 @@ const AdContainer = ({ placement, className }: Props) => {
       }
     };
   }, [config, shouldInitialize]);
+
+  // Second guard behind ClientOnlyAdContainer's, after the hooks so their order
+  // stays stable: a direct render of this component can't reintroduce a slot
+  // (or the dev placeholder box) while the switch is off.
+  if (!ADS_ENABLED) return null;
 
   return (
     <div

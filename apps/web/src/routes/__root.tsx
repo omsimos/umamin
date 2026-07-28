@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
 import { NotFoundPage } from "@/components/not-found-page";
 import { Providers } from "@/components/providers";
 import { RouteSegmentError } from "@/components/route-segment-error";
-import { AD_CLIENT } from "@/lib/ad-placements";
+import { AD_CLIENT, ADS_ENABLED } from "@/lib/ad-placements";
 import { getGtmInlineScript } from "@/lib/gtm";
 import { appleSplashLinks, pageSeo } from "@/lib/seo";
 import appCss from "../styles.css?url";
@@ -76,7 +76,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       ...(import.meta.env.PROD && GTM_ID
         ? [{ id: "gtm-loader", children: getGtmInlineScript(GTM_ID) }]
         : []),
-      ...(import.meta.env.PROD
+      // Skipped entirely when VITE_ADS_ENABLED=false — the point of the switch
+      // is that the third-party loader is never requested, not just that the
+      // slots render empty.
+      ...(import.meta.env.PROD && ADS_ENABLED
         ? [
             {
               async: true,
