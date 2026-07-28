@@ -18,6 +18,13 @@ interface ImportMetaEnv {
   readonly VITE_GTM_ID?: string;
   // R2 public bucket base URL for image src (was NEXT_PUBLIC_R2_PUBLIC_URL).
   readonly VITE_R2_PUBLIC_URL?: string;
+  // "false" removes every ad surface (placements, reserved space, in-feed
+  // units, and the adsbygoogle loader). Anything else — including unset —
+  // leaves ads on. See lib/ad-placements.ts.
+  readonly VITE_ADS_ENABLED?: string;
+  // VAPID public key the push subscription is minted against; must match the
+  // Worker's VAPID_PUBLIC_KEY secret.
+  readonly VITE_VAPID_PUBLIC_KEY?: string;
 }
 
 interface ImportMeta {

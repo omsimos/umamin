@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.1.0] - 2026-07-28
+
+### Added
+
+- Ads can now be switched off for an entire deployment with one build setting. With it off nothing is merely hidden: no ad slots render, no space is reserved where they used to sit, and the ad script is never loaded at all.
+
 ## [7.0.0] - 2026-07-28
 
 ### Changed
@@ -855,6 +861,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.1.0]: https://github.com/omsimos/umamin/compare/v7.0.0...v7.1.0
 [7.0.0]: https://github.com/omsimos/umamin/compare/v6.1.0...v7.0.0
 [6.1.0]: https://github.com/omsimos/umamin/compare/v6.0.1...v6.1.0
 [6.0.1]: https://github.com/omsimos/umamin/compare/v6.0.0...v6.0.1
