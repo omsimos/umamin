@@ -20,9 +20,9 @@
   },
   "devDependencies": {
     "@types/node": "^24.12.2",
-    "tsdown": "^0.21.9",
+    "tsdown": "^0.22.14",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.8"
   }
 }

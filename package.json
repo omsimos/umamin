@@ -30,7 +30,7 @@
     "@types/node": "^24.12.4",
     "lefthook": "^2.1.9",
     "turbo": "^2.9.16",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "packageManager": "pnpm@11.5.2",
   "engines": {

@@ -38,8 +38,8 @@
     "@types/node": "^24.12.4",
     "drizzle-kit": "^0.31.10",
     "drizzle-seed": "^0.3.1",
-    "tsdown": "^0.21.10",
+    "tsdown": "^0.22.14",
     "tsx": "^4.22.3",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   }
 }

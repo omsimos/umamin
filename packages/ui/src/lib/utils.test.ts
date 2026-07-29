@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { cn } from "./utils";
+// Extension required: the package is "type": "module" on moduleResolution
+// NodeNext, so a bare relative specifier is a TS2835 error.
+import { cn } from "./utils.js";
 
 describe("cn", () => {
   it("joins plain class names", () => {
