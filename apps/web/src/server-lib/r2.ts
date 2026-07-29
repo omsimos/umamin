@@ -22,6 +22,14 @@ import type { AppEnv } from "./env";
 const PRESIGN_EXPIRES_SECONDS = 600;
 const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
+// R2 credentials have fixed widths (32-char access key id, 64-char secret).
+// Presigning with the two swapped still returns a URL, and R2 rejects the PUT
+// with a CORS-header-less 400 ("Credential access key has length 64, should be
+// 32") — which reaches the browser as an unexplained CORS failure. Check the
+// shape here so a mis-entered secret shows up as a log line instead.
+const ACCESS_KEY_ID_LENGTH = 32;
+const SECRET_ACCESS_KEY_LENGTH = 64;
+
 // ── pure sniff/parse helpers (no config) ─────────────────────────────────────
 
 export function sniffImageType(bytes: Uint8Array): UploadContentType | null {
@@ -76,6 +84,16 @@ export function createR2(env: AppEnv) {
     !env.R2_BUCKET ||
     !env.R2_PUBLIC_URL
   ) {
+    return null;
+  }
+
+  if (
+    env.R2_ACCESS_KEY_ID.length !== ACCESS_KEY_ID_LENGTH ||
+    env.R2_SECRET_ACCESS_KEY.length !== SECRET_ACCESS_KEY_LENGTH
+  ) {
+    console.error(
+      `[r2] refusing to presign with malformed credentials: R2_ACCESS_KEY_ID must be ${ACCESS_KEY_ID_LENGTH} chars (got ${env.R2_ACCESS_KEY_ID.length}) and R2_SECRET_ACCESS_KEY ${SECRET_ACCESS_KEY_LENGTH} (got ${env.R2_SECRET_ACCESS_KEY.length}) — check for a swapped pair`,
+    );
     return null;
   }
 
