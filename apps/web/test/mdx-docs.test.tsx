@@ -4,28 +4,19 @@ import ChildSafety from "@/markdown/child-safety.mdx";
 import Privacy from "@/markdown/privacy.mdx";
 import TermsOfService from "@/markdown/terms.mdx";
 
-// Smoke test for the MDX pipeline (@mdx-js/rollup + remark-gfm): each doc route
-// (/privacy, /terms, /child-safety) imports its markdown as a React component
-// and renders its top-level heading. Proves MDX compiles + renders under jsdom.
-describe("MDX doc pages", () => {
-  it("renders the Privacy Policy heading", () => {
-    render(<Privacy />);
+// Build-pipeline guard, not a content test: /privacy, /terms and /child-safety
+// import markdown as React components, which only works while @mdx-js/rollup
+// stays ahead of viteReact in vite.config.ts. Reorder them and all three routes
+// break with nothing else to catch it.
+describe("MDX doc pipeline", () => {
+  it.each([
+    ["Privacy Policy", Privacy],
+    ["Terms of Service", TermsOfService],
+    ["Child Safety Standards", ChildSafety],
+  ])("compiles and renders %s", (heading, Doc) => {
+    render(<Doc />);
     expect(
-      screen.getByRole("heading", { level: 1, name: "Privacy Policy" }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders the Terms of Service heading", () => {
-    render(<TermsOfService />);
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Terms of Service" }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders the Child Safety Standards heading", () => {
-    render(<ChildSafety />);
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Child Safety Standards" }),
+      screen.getByRole("heading", { level: 1, name: heading }),
     ).toBeInTheDocument();
   });
 });
