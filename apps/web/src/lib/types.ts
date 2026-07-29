@@ -280,6 +280,28 @@ export type MessagesResponse = {
   nextCursor: string | null;
 };
 
+// One thread entry past the legacy first reply (message.reply). `fromSender`
+// is the only authorship signal — reply rows never carry a user id.
+export type ThreadEntry = {
+  id: string;
+  content: string;
+  fromSender: boolean;
+  createdAt: Date;
+};
+
+export type MessageThreadResponse = {
+  // Role-stripped like the list payloads: the receiver's copy has senderId
+  // nulled, the sender's copy has openedAt nulled; each side only sees its own
+  // read watermark.
+  message: MessageWithReceiver;
+  replies: ThreadEntry[];
+  viewerRole: "receiver" | "sender";
+  // Whether the conversation can continue: the sender was signed in, so they
+  // can come back to it. Exposed as a boolean because the receiver's payload
+  // strips senderId (anonymity), yet the composer needs to know.
+  threadable: boolean;
+};
+
 export type NotificationItem = {
   id: string;
   type: NotificationType;

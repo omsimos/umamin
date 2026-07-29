@@ -17,8 +17,21 @@ export function createReplyAction(input: {
   messageId: string;
   content: string;
 }) {
-  return callAction<{ success: true; reply: string; updatedAt: string | Date }>(
-    "createReplyAction",
-    input,
-  );
+  // `reply`/`updatedAt` come back for the receiver's first (legacy-column)
+  // reply; `entry` for every thread row after it.
+  return callAction<{
+    success: true;
+    reply?: string;
+    updatedAt?: string | Date;
+    entry?: {
+      id: string;
+      content: string;
+      fromSender: boolean;
+      createdAt: string | Date;
+    };
+  }>("createReplyAction", input);
+}
+
+export function markThreadReadAction(input: { messageId: string }) {
+  return callAction<{ success: boolean }>("markThreadReadAction", input);
 }

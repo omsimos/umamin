@@ -18,6 +18,14 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.3.0] - 2026-07-29
+
+### Added
+
+- Replies are now conversations. After you reply to an anonymous message, the sender can write back, and the exchange keeps going — no more single-reply dead end. Each conversation lives on its own page, opened from the message card or a notification.
+- Message cards show a dot when a conversation has replies you haven't read yet.
+- A new notification tells you when the anonymous sender continues a conversation, and reply notifications now take you straight to the conversation.
+
 ## [7.2.0] - 2026-07-29
 
 ### Fixed
@@ -875,6 +883,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.3.0]: https://github.com/omsimos/umamin/compare/v7.2.0...v7.3.0
 [7.2.0]: https://github.com/omsimos/umamin/compare/v7.1.0...v7.2.0
 [7.1.0]: https://github.com/omsimos/umamin/compare/v7.0.0...v7.1.0
 [7.0.0]: https://github.com/omsimos/umamin/compare/v6.1.0...v7.0.0

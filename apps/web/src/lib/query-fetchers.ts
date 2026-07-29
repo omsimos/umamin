@@ -15,6 +15,7 @@ import type {
   GroupUnreadResponse,
   GroupViewerResponse,
   MessagesResponse,
+  MessageThreadResponse,
   NoteItem,
   NotesResponse,
   NotificationBadgeResponse,
@@ -205,6 +206,10 @@ export async function fetchMessagesPage(
     : `/api/messages?type=${type}`;
 
   return fetchJson<MessagesResponse>(url);
+}
+
+export async function fetchMessageThread(messageId: string) {
+  return fetchJson<MessageThreadResponse>(`/api/messages/${messageId}/thread`);
 }
 
 export async function fetchUserGroups() {

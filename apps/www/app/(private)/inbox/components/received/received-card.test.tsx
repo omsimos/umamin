@@ -31,6 +31,9 @@ function makeMessage(overrides: Partial<SelectMessage> = {}): SelectMessage {
     createdAt: new Date(),
     updatedAt: null,
     openedAt: null,
+    lastReplyAt: null,
+    senderReadAt: null,
+    receiverReadAt: null,
     ...overrides,
   };
 }

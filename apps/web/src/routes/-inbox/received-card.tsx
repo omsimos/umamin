@@ -3,14 +3,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { MailIcon } from "lucide-react";
+import { MailIcon, MessagesSquareIcon } from "lucide-react";
 import { useState } from "react";
 import { vibrate } from "@/lib/haptics";
+import { Link } from "@/lib/navigation";
 import { queryKeys } from "@/lib/query";
 import { patchMessage } from "@/lib/query-cache";
 import type { MessagesResponse, MessageWithReceiver } from "@/lib/types";
 import { openMessageAction } from "./actions";
 import { ReceivedMessageMenu } from "./received-card-menu";
+import { hasUnreadThread } from "./thread-unread";
 
 const SEALED_TITLES = [
   "You received an anonymous message",
@@ -108,6 +110,27 @@ export function ReceivedMessageCard({ data }: { data: MessageWithReceiver }) {
             addSuffix: true,
           })}
         </p>
+
+        {(data.reply || data.lastReplyAt) && (
+          <div className="mt-3 flex justify-center">
+            <Link
+              href={`/inbox/${data.id}`}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:underline"
+            >
+              <MessagesSquareIcon className="h-4 w-4" aria-hidden />
+              View conversation
+              {hasUnreadThread(data.lastReplyAt, data.receiverReadAt) && (
+                <>
+                  <span
+                    aria-hidden
+                    className="size-2 rounded-full bg-primary"
+                  />
+                  <span className="sr-only">New reply</span>
+                </>
+              )}
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

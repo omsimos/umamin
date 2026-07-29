@@ -62,6 +62,14 @@ export const PUSH_COPY: Record<NotificationType, CopyEntry> = {
     url: () => "/inbox?tab=sent",
     anonymous: true,
   },
+  // Threads shipped after this app was frozen; the entry only keeps the
+  // Record total. The rollback build has no thread page, so link the inbox.
+  thread: {
+    category: PUSH_CATEGORY.message,
+    title: () => "New reply in an anonymous conversation",
+    url: () => "/inbox",
+    anonymous: true,
+  },
   vote: {
     category: PUSH_CATEGORY.social,
     title: () => "New activity on your poll",

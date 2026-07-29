@@ -35,6 +35,12 @@ export function formatNotificationText(
       : "You received an anonymous message";
   }
 
+  if (type === "thread") {
+    return count > 1
+      ? `${count} new replies in an anonymous conversation`
+      : "New reply in an anonymous conversation";
+  }
+
   const name = actorName ?? "Someone";
 
   if (type === "reply") {

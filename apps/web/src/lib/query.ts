@@ -30,6 +30,7 @@ export const queryKeys = {
   blockedUsers: () => ["blocked_users"] as const,
   receivedMessages: () => ["received_messages"] as const,
   sentMessages: () => ["sent_messages"] as const,
+  messageThread: (messageId: string) => ["message-thread", messageId] as const,
   notifications: () => ["notifications"] as const,
   notificationBadge: () => ["notification_badge"] as const,
   userGroups: () => ["user_groups"] as const,

@@ -108,6 +108,81 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
     });
   });
 
+  describe("message thread read", () => {
+    beforeEach(async () => {
+      process.env.AES_256_GCM_KEY = Buffer.from(new Uint8Array(32)).toString(
+        "base64",
+      );
+      await db.insert(userTable).values([
+        { id: "recv", username: "recv_user" },
+        { id: "sender", username: "sender_user" },
+        { id: "stranger", username: "stranger_user" },
+      ]);
+      const { aesEncrypt } = await import("@umamin/encryption");
+      const { messageTable, messageReplyTable } = await import(
+        "@umamin/db/schema/message"
+      );
+      await db.insert(messageTable).values({
+        id: "m1",
+        question: "ask me",
+        content: await aesEncrypt("hello"),
+        reply: await aesEncrypt("first reply"),
+        receiverId: "recv",
+        senderId: "sender",
+      });
+      await db.insert(messageReplyTable).values({
+        id: "r1",
+        messageId: "m1",
+        fromSender: true,
+        content: await aesEncrypt("follow-up"),
+      });
+    });
+
+    async function asUser(userId: string) {
+      const token = generateSessionToken();
+      await createSession(db, token, userId);
+      return fetchApp("/messages/m1/thread", {
+        headers: { cookie: `session=${token}` },
+      });
+    }
+
+    it("receiver gets the decrypted thread with the sender de-anonymized fields stripped", async () => {
+      const res = await asUser("recv");
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        message: { senderId: string | null; senderReadAt: unknown };
+        replies: { content: string; fromSender: boolean }[];
+        viewerRole: string;
+        threadable: boolean;
+      };
+      expect(body.viewerRole).toBe("receiver");
+      expect(body.threadable).toBe(true);
+      expect(body.message.senderId).toBeNull();
+      expect(body.message.senderReadAt).toBeNull();
+      expect(body.replies).toEqual([
+        expect.objectContaining({ content: "follow-up", fromSender: true }),
+      ]);
+    });
+
+    it("sender gets the thread with the receiver-private fields stripped", async () => {
+      const res = await asUser("sender");
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        message: { openedAt: unknown; receiverReadAt: unknown; reply: string };
+        viewerRole: string;
+      };
+      expect(body.viewerRole).toBe("sender");
+      expect(body.message.openedAt).toBeNull();
+      expect(body.message.receiverReadAt).toBeNull();
+      expect(body.message.reply).toBe("first reply");
+    });
+
+    it("a non-participant gets 404, not a stripped payload", async () => {
+      const res = await asUser("stranger");
+      expect(res.status).toBe(404);
+    });
+  });
+
   describe("404 / param validation on a dynamic route", () => {
     it("unknown public post id → 404 Not found", async () => {
       const res = await fetchApp("/public/posts/does-not-exist");

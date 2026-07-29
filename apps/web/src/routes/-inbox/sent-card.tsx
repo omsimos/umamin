@@ -5,12 +5,15 @@ import {
   CardHeader,
 } from "@umamin/ui/components/card";
 import { formatDistanceToNow } from "date-fns";
-import { CircleUserIcon } from "lucide-react";
+import { CircleUserIcon, MessagesSquareIcon } from "lucide-react";
 import { ChatList } from "@/components/chat-list";
 import { Link } from "@/lib/navigation";
 import type { MessageWithReceiver } from "@/lib/types";
+import { hasUnreadThread } from "./thread-unread";
 
 export function SentMessageCard({ data }: { data: MessageWithReceiver }) {
+  const unread = hasUnreadThread(data.lastReplyAt, data.senderReadAt);
+
   return (
     <Card>
       <CardHeader>
@@ -36,7 +39,7 @@ export function SentMessageCard({ data }: { data: MessageWithReceiver }) {
           response={data.reply ?? ""}
         />
       </CardContent>
-      <CardFooter className="flex justify-center">
+      <CardFooter className="flex flex-col items-center gap-2">
         <div className="text-muted-foreground text-sm mt-1 flex gap-1">
           <p className="italic">
             {formatDistanceToNow(data.createdAt, {
@@ -44,6 +47,19 @@ export function SentMessageCard({ data }: { data: MessageWithReceiver }) {
             })}
           </p>
         </div>
+        <Link
+          href={`/inbox/${data.id}`}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:underline"
+        >
+          <MessagesSquareIcon className="h-4 w-4" aria-hidden />
+          View conversation
+          {unread && (
+            <>
+              <span aria-hidden className="size-2 rounded-full bg-primary" />
+              <span className="sr-only">New reply</span>
+            </>
+          )}
+        </Link>
       </CardFooter>
     </Card>
   );
