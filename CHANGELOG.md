@@ -18,7 +18,7 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
-## [7.2.0] - 2026-07-28
+## [7.2.0] - 2026-07-29
 
 ### Fixed
 
