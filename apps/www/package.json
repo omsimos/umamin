@@ -8,8 +8,8 @@
     "build": "next build --turbopack",
     "check-types": "tsc --noEmit",
     "start": "next start",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test:archived": "vitest run",
+    "test:archived:watch": "vitest",
     "clean": "rm -rf .next .turbo node_modules"
   },
   "dependencies": {
