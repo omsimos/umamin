@@ -1,9 +1,9 @@
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
-import { ScanFaceIcon } from "lucide-react";
+  ChatAvatar,
+  ChatBubble,
+  ChatRow,
+  ChatThread,
+} from "@umamin/ui/components/chat";
 
 type Props = {
   imageUrl?: string | null;
@@ -12,40 +12,26 @@ type Props = {
   response?: string;
 };
 
+// Static 1–3 turn preview (profile chat form, note reply, sent card). The live
+// conversation surface is routes/-inbox/thread-view.tsx.
 export const ChatList = ({ imageUrl, question, reply, response }: Props) => {
   return (
-    <div className="flex flex-col min-w-0">
-      <div className="flex gap-2 items-end">
-        <Avatar>
-          <AvatarImage className="rounded-full" src={imageUrl ?? ""} />
-          <AvatarFallback>
-            <ScanFaceIcon />
-          </AvatarFallback>
-        </Avatar>
-        <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted min-w-0 break-words">
-          {question}
-        </div>
-      </div>
+    <ChatThread className="min-w-0">
+      <ChatRow side="incoming" avatar={<ChatAvatar src={imageUrl} />}>
+        <ChatBubble side="incoming">{question}</ChatBubble>
+      </ChatRow>
 
       {reply && (
-        <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-primary text-primary-foreground mt-6 self-end break-words">
-          {reply}
-        </div>
+        <ChatRow side="outgoing">
+          <ChatBubble side="outgoing">{reply}</ChatBubble>
+        </ChatRow>
       )}
 
       {response && (
-        <div className="flex gap-2 items-end mt-6">
-          <Avatar>
-            <AvatarImage className="rounded-full" src={imageUrl ?? ""} />
-            <AvatarFallback>
-              <ScanFaceIcon />
-            </AvatarFallback>
-          </Avatar>
-          <div className="max-w-[75%] sm:max-w-[55%] rounded-lg px-3 py-2 whitespace-pre-wrap bg-muted min-w-0 break-words">
-            {response}
-          </div>
-        </div>
+        <ChatRow side="incoming" avatar={<ChatAvatar src={imageUrl} />}>
+          <ChatBubble side="incoming">{response}</ChatBubble>
+        </ChatRow>
       )}
-    </div>
+    </ChatThread>
   );
 };
