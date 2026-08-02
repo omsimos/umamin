@@ -2621,18 +2621,26 @@ export async function getMessageThread(
       // aren't monotonic, so a same-second exchange would render scrambled.
       .orderBy(asc(messageReplyTable.createdAt), sql`rowid`)
       .limit(THREAD_REPLIES_LIMIT),
+    // Pair-precise via the message row (PK seek + unique-index probes), not a
+    // scan of every block involving the viewer — Turso bills rows scanned. A
+    // NULL senderId matches nothing, so anonymous messages skip it naturally.
     db
-      .select({
-        blockerId: userBlockTable.blockerId,
-        blockedId: userBlockTable.blockedId,
-      })
+      .select({ id: userBlockTable.id })
       .from(userBlockTable)
+      .innerJoin(messageTable, eq(messageTable.id, params.messageId))
       .where(
         or(
-          eq(userBlockTable.blockerId, params.viewerId),
-          eq(userBlockTable.blockedId, params.viewerId),
+          and(
+            eq(userBlockTable.blockerId, messageTable.receiverId),
+            eq(userBlockTable.blockedId, messageTable.senderId),
+          ),
+          and(
+            eq(userBlockTable.blockerId, messageTable.senderId),
+            eq(userBlockTable.blockedId, messageTable.receiverId),
+          ),
         ),
-      ),
+      )
+      .limit(1),
   ]);
 
   const row = msgRows[0];
@@ -2646,16 +2654,7 @@ export async function getMessageThread(
   if (!isReceiver && !isSender) return null;
 
   // Blocked either way hides the thread, matching both list queries.
-  if (
-    message.senderId &&
-    blockRows.some(
-      (b) =>
-        (b.blockerId === message.receiverId &&
-          b.blockedId === message.senderId) ||
-        (b.blockerId === message.senderId &&
-          b.blockedId === message.receiverId),
-    )
-  ) {
+  if (blockRows.length > 0) {
     return null;
   }
 

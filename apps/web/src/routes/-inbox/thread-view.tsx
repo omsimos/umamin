@@ -23,12 +23,9 @@ import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { patchMessage } from "@/lib/query-cache";
 import { fetchMessageThread } from "@/lib/query-fetchers";
 import type { MessagesResponse, MessageThreadResponse } from "@/lib/types";
-import {
-  createReplyAction,
-  markThreadReadAction,
-  openMessageAction,
-} from "./actions";
+import { createReplyAction, markThreadReadAction } from "./actions";
 import { buildThreadTimeline } from "./thread-timeline";
+import { hasUnreadThread } from "./thread-unread";
 
 const MAX_LENGTH = 500;
 const COUNTER_VISIBLE_AT = 400;
@@ -127,12 +124,23 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
   useEffect(() => {
     if (!data || markedRef.current) return;
     markedRef.current = true;
-    void markThreadReadAction({ messageId });
-    if (data.viewerRole === "receiver" && !data.message.openedAt) {
-      void openMessageAction({ messageId });
+
+    // Only write when there is something to record — an unread reply or a
+    // still-sealed message. Re-opening an already-read thread costs nothing
+    // (writes are the tighter Turso axis). The server folds the unseal into
+    // the same watermark statement.
+    const isReceiver = data.viewerRole === "receiver";
+    const ownReadAt = isReceiver
+      ? data.message.receiverReadAt
+      : data.message.senderReadAt;
+    const needsUnseal = isReceiver && !data.message.openedAt;
+    if (!needsUnseal && !hasUnreadThread(data.message.lastReplyAt, ownReadAt)) {
+      return;
     }
-    // The inbox lists don't refetch on remount, so clear the unread dot in
-    // their caches directly (each list only carries its own side's watermark).
+
+    void markThreadReadAction({ messageId });
+    // The inbox lists don't refetch on remount, so clear the unread dot (and
+    // the seal) in their caches directly.
     const now = new Date();
     for (const key of [
       queryKeys.receivedMessages(),
@@ -143,6 +151,7 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
           ...message,
           receiverReadAt: now,
           senderReadAt: now,
+          openedAt: message.openedAt ?? now,
         })),
       );
     }

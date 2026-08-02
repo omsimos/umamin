@@ -1,7 +1,7 @@
 import { messageReplyTable, messageTable } from "@umamin/db/schema/message";
 import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { aesEncrypt } from "@umamin/encryption";
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 import * as z from "zod";
 import { action } from "../../server-lib/action";
 import { matchesBlockedWords } from "../../server-lib/blocked-words";
@@ -104,43 +104,50 @@ export const createReplyHandler = action(
       return { error: "You can reply once they respond" };
     }
 
-    // Blocks hide the message from both lists, so a blocked thread reads as
-    // gone here too — same signal, no new block-detection surface.
-    if (msg.senderId) {
-      const blocked = await db
-        .select({ id: userBlockTable.id })
-        .from(userBlockTable)
-        .where(
-          or(
-            and(
-              eq(userBlockTable.blockerId, msg.receiverId),
-              eq(userBlockTable.blockedId, msg.senderId),
-            ),
-            and(
-              eq(userBlockTable.blockerId, msg.senderId),
-              eq(userBlockTable.blockedId, msg.receiverId),
-            ),
-          ),
-        )
-        .limit(1);
-      if (blocked.length > 0) {
-        return { error: "Message not found" };
-      }
-    }
-
     const formatted = formatContent(content);
     if (!formatted) {
       return { error: "Content cannot be empty" };
     }
 
+    // Independent guards share one round trip (Tokyo RTs dominate latency).
+    const [blockedRows, receiverRows] = await Promise.all([
+      msg.senderId
+        ? db
+            .select({ id: userBlockTable.id })
+            .from(userBlockTable)
+            .where(
+              or(
+                and(
+                  eq(userBlockTable.blockerId, msg.receiverId),
+                  eq(userBlockTable.blockedId, msg.senderId),
+                ),
+                and(
+                  eq(userBlockTable.blockerId, msg.senderId),
+                  eq(userBlockTable.blockedId, msg.receiverId),
+                ),
+              ),
+            )
+            .limit(1)
+        : Promise.resolve([]),
+      isSender
+        ? db
+            .select({ blockedWords: userTable.blockedWords })
+            .from(userTable)
+            .where(eq(userTable.id, msg.receiverId))
+            .limit(1)
+        : Promise.resolve([]),
+    ]);
+
+    // Blocks hide the message from both lists, so a blocked thread reads as
+    // gone here too — same signal, no new block-detection surface.
+    if (blockedRows.length > 0) {
+      return { error: "Message not found" };
+    }
+
     if (isSender) {
       // Same silent drop as sendMessage: the receiver's filters must not be
       // probeable through the thread.
-      const [receiver] = await db
-        .select({ blockedWords: userTable.blockedWords })
-        .from(userTable)
-        .where(eq(userTable.id, msg.receiverId))
-        .limit(1);
+      const receiver = receiverRows[0];
       if (!receiver || matchesBlockedWords(formatted, receiver.blockedWords)) {
         return { success: true };
       }
@@ -179,31 +186,36 @@ export const createReplyHandler = action(
       return { success: true, reply: formatted, updatedAt: now };
     }
 
-    const [row] = await db
-      .insert(messageReplyTable)
-      .values({
-        messageId,
-        fromSender: isSender,
-        content: encrypted,
-      })
-      .returning({
-        id: messageReplyTable.id,
-        createdAt: messageReplyTable.createdAt,
-      });
-
-    // Best-effort past the insert — must NOT throw once the row is saved, or a
-    // client retry would duplicate it. Writing the author's own watermark here
-    // keeps their reply from reading as unread to themselves.
-    try {
-      await db
+    // One atomic round trip: the reply row plus the parent bump land together
+    // (no window where the row exists but lastReplyAt lags). Writing the
+    // author's own watermark keeps their reply from reading as unread to
+    // themselves; updatedAt is pinned because $onUpdate would otherwise stamp
+    // this metadata write as if the legacy reply content changed.
+    const [inserted] = await db.batch([
+      db
+        .insert(messageReplyTable)
+        .values({
+          messageId,
+          fromSender: isSender,
+          content: encrypted,
+        })
+        .returning({
+          id: messageReplyTable.id,
+          createdAt: messageReplyTable.createdAt,
+        }),
+      db
         .update(messageTable)
-        .set(
-          isSender
-            ? { lastReplyAt: row.createdAt, senderReadAt: row.createdAt }
-            : { lastReplyAt: row.createdAt, receiverReadAt: row.createdAt },
-        )
-        .where(eq(messageTable.id, messageId));
+        .set({
+          lastReplyAt: now,
+          ...(isSender ? { senderReadAt: now } : { receiverReadAt: now }),
+          updatedAt: sql`${messageTable.updatedAt}`,
+        })
+        .where(eq(messageTable.id, messageId)),
+    ]);
+    const row = inserted[0];
 
+    // Best-effort past the write — a notification must never fail the send.
+    try {
       if (isSender) {
         await notify(
           { db, env: c.env, defer: defer(c) },
@@ -239,7 +251,11 @@ export const createReplyHandler = action(
 );
 
 // Watermark write on thread open (group_message_read pattern) — called once
-// when the thread page mounts, never per fetch.
+// when the thread page mounts, never per fetch, and skipped client-side when
+// there is nothing unread. One statement: each side's CASE moves only its own
+// watermark (a non-participant matches neither), the receiver's first open
+// also unseals (openedAt, replacing a second openMessage call), and updatedAt
+// is pinned so a read never restamps the legacy reply's displayed time.
 export const markThreadReadHandler = action(
   {
     schema: z.object({ messageId: idSchema }),
@@ -250,30 +266,24 @@ export const markThreadReadHandler = action(
   },
   async ({ messageId }, { session, c }) => {
     const db = ctxDb(c);
-    const now = new Date();
 
-    // Two guarded updates instead of a select+branch: only the matching role's
-    // watermark moves, and a non-participant matches neither.
-    await Promise.all([
-      db
-        .update(messageTable)
-        .set({ receiverReadAt: now })
-        .where(
-          and(
-            eq(messageTable.id, messageId),
+    await db
+      .update(messageTable)
+      .set({
+        receiverReadAt: sql`CASE WHEN ${messageTable.receiverId} = ${session.userId} THEN unixepoch() ELSE ${messageTable.receiverReadAt} END`,
+        senderReadAt: sql`CASE WHEN ${messageTable.senderId} = ${session.userId} THEN unixepoch() ELSE ${messageTable.senderReadAt} END`,
+        openedAt: sql`CASE WHEN ${messageTable.receiverId} = ${session.userId} THEN COALESCE(${messageTable.openedAt}, unixepoch()) ELSE ${messageTable.openedAt} END`,
+        updatedAt: sql`${messageTable.updatedAt}`,
+      })
+      .where(
+        and(
+          eq(messageTable.id, messageId),
+          or(
             eq(messageTable.receiverId, session.userId),
-          ),
-        ),
-      db
-        .update(messageTable)
-        .set({ senderReadAt: now })
-        .where(
-          and(
-            eq(messageTable.id, messageId),
             eq(messageTable.senderId, session.userId),
           ),
         ),
-    ]);
+      );
 
     return { success: true };
   },

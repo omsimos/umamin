@@ -292,5 +292,41 @@ describe("thread replies (real libSQL)", () => {
     const msg = await messageRow("m1");
     expect(msg.senderReadAt).not.toBeNull();
     expect(msg.receiverReadAt).toBeNull();
+    // The sender's read must not unseal the receiver's inbox card.
+    expect(msg.openedAt).toBeNull();
+  });
+
+  it("markThreadReadAction unseals for the receiver without restamping updatedAt", async () => {
+    const before = await messageRow("m1");
+
+    await callJson(buildApp(db, authed("recv")), "markThreadReadAction", {
+      messageId: "m1",
+    });
+
+    const msg = await messageRow("m1");
+    expect(msg.receiverReadAt).not.toBeNull();
+    expect(msg.openedAt).not.toBeNull();
+    expect(msg.senderReadAt).toBeNull();
+    // Reading is not a content change — the legacy reply's displayed time
+    // (updatedAt) must survive it.
+    expect(msg.updatedAt).toEqual(before.updatedAt);
+  });
+
+  it("a thread reply bumps lastReplyAt but never updatedAt", async () => {
+    await callJson(buildApp(db, authed("recv")), "createReplyAction", {
+      messageId: "m1",
+      content: "opening reply",
+    });
+    const afterLegacy = await messageRow("m1");
+
+    await callJson(buildApp(db, authed("sender")), "createReplyAction", {
+      messageId: "m1",
+      content: "follow-up",
+    });
+
+    const msg = await messageRow("m1");
+    expect(msg.lastReplyAt).not.toBeNull();
+    // updatedAt still describes the legacy reply write, not the row bump.
+    expect(msg.updatedAt).toEqual(afterLegacy.updatedAt);
   });
 });
