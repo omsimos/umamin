@@ -41,7 +41,9 @@ function ThreadPage() {
 
   return (
     <BackHeaderPage>
-      <main className="max-w-xl mx-auto min-h-screen container">
+      {/* pt: BackHeaderPage lands content exactly on the fixed header's edge.
+          pb: clears the mobile Menubar, which is fixed over the page bottom. */}
+      <main className="container mx-auto min-h-screen max-w-xl pt-6 pb-28 lg:pb-12">
         <MessageThreadView messageId={messageId} />
       </main>
     </BackHeaderPage>
@@ -51,7 +53,7 @@ function ThreadPage() {
 function ThreadPending() {
   return (
     <BackHeaderPage>
-      <main className="max-w-xl mx-auto min-h-screen container">
+      <main className="container mx-auto min-h-screen max-w-xl pt-6 pb-28 lg:pb-12">
         <ThreadViewSkeleton />
       </main>
     </BackHeaderPage>

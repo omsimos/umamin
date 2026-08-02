@@ -185,7 +185,7 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
 
       <div className="mt-5 rounded-xl border bg-muted/30 px-4 py-3 text-center">
         <p className="text-muted-foreground text-xs">
-          {isReceiver ? "Your prompt" : "Their prompt"}
+          {isReceiver ? "You asked" : "They asked"}
         </p>
         <p className="mt-1 break-words font-semibold text-sm leading-snug">
           {message.question}
@@ -222,10 +222,9 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
         )}
       </ChatThread>
 
-      <div
-        className="sticky bottom-0 mt-6 border-t bg-background pt-3"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-      >
+      {/* Deliberately in flow, not sticky: the mobile Menubar is fixed over
+          the viewport bottom, so a sticky composer would sit under it. */}
+      <div className="mt-6 border-t pt-4">
         {canReply ? (
           <>
             <ChatComposer
