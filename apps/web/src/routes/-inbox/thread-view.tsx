@@ -13,6 +13,7 @@ import {
 } from "@umamin/ui/components/chat";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { LockIcon } from "lucide-react";
+import type { KeyboardEventHandler } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
@@ -32,10 +33,18 @@ import { buildThreadTimeline } from "./thread-timeline";
 const MAX_LENGTH = 500;
 const COUNTER_VISIBLE_AT = 400;
 
+// Placeholder id for the optimistically appended bubble; swapped for the
+// server row on success. Single-flight sends mean at most one exists.
+const OPTIMISTIC_ID = "optimistic-send";
+
 const timeFormat = new Intl.DateTimeFormat(undefined, {
   hour: "numeric",
   minute: "2-digit",
 });
+
+// Envelope errors carry user-facing copy ("You can reply once they respond",
+// the rate-limit message); network failures don't — the toast branches on it.
+class ActionError extends Error {}
 
 function ThreadHeader({ data }: { data: MessageThreadResponse }) {
   const isReceiver = data.viewerRole === "receiver";
@@ -76,19 +85,44 @@ function ThreadHeader({ data }: { data: MessageThreadResponse }) {
 
 export function MessageThreadView({ messageId }: { messageId: string }) {
   const queryClient = useQueryClient();
+  const threadKey = queryKeys.messageThread(messageId);
   const [content, setContent] = useState("");
+  // Timeline key of the in-flight optimistic bubble (pending style).
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
   const inputRef = useDynamicTextarea(content);
   const submitReply = useSingleFlightAction(createReplyAction);
   const markedRef = useRef(false);
+  const endRef = useRef<HTMLDivElement | null>(null);
+  const seenCountRef = useRef<number | null>(null);
 
   const { data, isError } = useQuery({
-    queryKey: queryKeys.messageThread(messageId),
+    queryKey: threadKey,
     queryFn: () => fetchMessageThread(messageId),
     staleTime: PRIVATE_STALE_TIME,
     // Deliberately fresher than privateQueryDefaults: this is a conversation,
     // so coming back to the tab should pick up the other side's reply.
     refetchOnWindowFocus: true,
   });
+
+  // Keep the newest message in view: jump there on open (long threads land at
+  // the top otherwise) and follow as new messages append. When the page
+  // already fits the viewport this is a no-op.
+  useEffect(() => {
+    if (!data) return;
+    const count = data.replies.length + (data.message.reply ? 1 : 0);
+    const previous = seenCountRef.current;
+    seenCountRef.current = count;
+    // Growth only — an error rollback shrinks the list and must not scroll.
+    if (count === 0 || (previous !== null && count <= previous)) return;
+    const initial = previous === null;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    endRef.current?.scrollIntoView({
+      behavior: initial || reduceMotion ? "instant" : "smooth",
+      block: "end",
+    });
+  }, [data]);
 
   useEffect(() => {
     if (!data || markedRef.current) return;
@@ -118,32 +152,71 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
     mutationFn: async (text: string) => {
       const res = await submitReply({ messageId, content: text });
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ActionError(res.error);
       }
       return res;
     },
-    onSuccess: (res) => {
-      queryClient.setQueryData<MessageThreadResponse>(
-        queryKeys.messageThread(messageId),
-        (current) => {
-          if (!current) return current;
-          if ("entry" in res && res.entry) {
-            const entry = {
-              ...res.entry,
-              createdAt: new Date(res.entry.createdAt),
-            };
-            return { ...current, replies: [...current.replies, entry] };
-          }
-          if ("reply" in res && res.reply) {
-            return {
-              ...current,
-              message: { ...current.message, reply: res.reply },
-            };
-          }
-          return current;
-        },
-      );
+    // Append the bubble before the round trip (Tokyo RTs make a post-response
+    // append feel laggy); the input clears immediately and stays enabled.
+    onMutate: (text) => {
+      const current =
+        queryClient.getQueryData<MessageThreadResponse>(threadKey);
+      // The receiver's first reply lands on the legacy column, not a row.
+      const legacy =
+        current?.viewerRole === "receiver" && !current.message.reply;
+
+      if (current) {
+        queryClient.setQueryData<MessageThreadResponse>(
+          threadKey,
+          legacy
+            ? { ...current, message: { ...current.message, reply: text } }
+            : {
+                ...current,
+                replies: [
+                  ...current.replies,
+                  {
+                    id: OPTIMISTIC_ID,
+                    content: text,
+                    fromSender: current.viewerRole === "sender",
+                    createdAt: new Date(),
+                  },
+                ],
+              },
+        );
+      }
+
+      setPendingKey(legacy ? "legacy-reply" : OPTIMISTIC_ID);
       setContent("");
+      return { legacy };
+    },
+    onSuccess: (res) => {
+      queryClient.setQueryData<MessageThreadResponse>(threadKey, (current) => {
+        if (!current) return current;
+        if ("entry" in res && res.entry) {
+          const entry = {
+            ...res.entry,
+            createdAt: new Date(res.entry.createdAt),
+          };
+          // Filter both ids: a focus refetch mid-flight may already carry the
+          // real row, and the optimistic one must not survive either way.
+          const replies = current.replies.filter(
+            (r) => r.id !== OPTIMISTIC_ID && r.id !== entry.id,
+          );
+          return { ...current, replies: [...replies, entry] };
+        }
+        if ("reply" in res && res.reply) {
+          return {
+            ...current,
+            message: { ...current.message, reply: res.reply },
+          };
+        }
+        // Bare success = the server silently dropped it (blocked words);
+        // remove the ghost so the cache matches what the server stored.
+        return {
+          ...current,
+          replies: current.replies.filter((r) => r.id !== OPTIMISTIC_ID),
+        };
+      });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.receivedMessages(),
       });
@@ -151,11 +224,40 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
         queryKey: queryKeys.sentMessages(),
       });
     },
-    onError: (err) => {
+    onError: (err, text, ctx) => {
       console.error(err);
-      toast.error("Couldn't send reply.");
+      // Take the optimistic bubble back out and hand the draft back.
+      queryClient.setQueryData<MessageThreadResponse>(threadKey, (current) => {
+        if (!current) return current;
+        return ctx?.legacy
+          ? { ...current, message: { ...current.message, reply: null } }
+          : {
+              ...current,
+              replies: current.replies.filter((r) => r.id !== OPTIMISTIC_ID),
+            };
+      });
+      setContent(text);
+      toast.error(
+        err instanceof ActionError ? err.message : "Couldn't send reply.",
+      );
+    },
+    onSettled: () => {
+      setPendingKey(null);
     },
   });
+
+  const submit = () => {
+    if (mutation.isPending) return;
+    const trimmed = content.trim();
+    if (trimmed) mutation.mutate(trimmed);
+  };
+
+  const onComposerKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      submit();
+    }
+  };
 
   if (isError) {
     return (
@@ -209,10 +311,18 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
                 ) : undefined
               }
             >
-              <ChatBubble side={item.side}>{item.content}</ChatBubble>
+              <ChatBubble
+                side={item.side}
+                state={item.key === pendingKey ? "pending" : "idle"}
+              >
+                {item.content}
+              </ChatBubble>
               {item.endsRun && item.createdAt && (
                 <ChatMeta>
-                  <span className="text-[10px]">
+                  <span
+                    className="text-[10px]"
+                    title={item.createdAt.toLocaleString()}
+                  >
                     {timeFormat.format(item.createdAt)}
                   </span>
                 </ChatMeta>
@@ -230,16 +340,17 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
             <ChatComposer
               onSubmit={(e) => {
                 e.preventDefault();
-                const trimmed = content.trim();
-                if (trimmed) mutation.mutate(trimmed);
+                submit();
               }}
             >
+              {/* Never disabled while sending: the append is optimistic, and
+                  disabling would drop focus (closing the mobile keyboard). */}
               <ChatComposerInput
                 ref={inputRef}
                 required
-                disabled={mutation.isPending}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                onKeyDown={onComposerKeyDown}
                 maxLength={MAX_LENGTH}
                 placeholder={
                   isReceiver ? "Type your reply…" : "Send another message…"
@@ -267,6 +378,10 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
           </p>
         )}
       </div>
+
+      {/* Scroll target: sits below the composer so following the newest
+          message keeps the input on screen too. */}
+      <div ref={endRef} aria-hidden />
     </div>
   );
 }

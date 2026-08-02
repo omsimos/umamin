@@ -11,10 +11,16 @@ import {
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
 import { Button } from "@umamin/ui/components/button";
-import { DownloadIcon, MessageSquareTextIcon, Trash2Icon } from "lucide-react";
+import {
+  DownloadIcon,
+  MessageSquareTextIcon,
+  MessagesSquareIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Menu } from "@/components/menu";
+import { useAppNavigate } from "@/lib/navigation";
 import { queryKeys } from "@/lib/query";
 import { removeMessage } from "@/lib/query-cache";
 import type { MessagesResponse } from "@/lib/types";
@@ -33,6 +39,7 @@ export type ReceivedMenuProps = {
 export function ReceivedMessageMenu(props: ReceivedMenuProps) {
   const id = props.id;
   const queryClient = useQueryClient();
+  const navigate = useAppNavigate();
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -58,11 +65,19 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
   });
 
   const menuItems = [
-    {
-      title: "Reply",
-      onClick: () => setReplyDialogOpen(true),
-      icon: <MessageSquareTextIcon className="h-4 w-4" />,
-    },
+    // Once a reply exists the dialog has no form left — the conversation
+    // continues on the thread page instead.
+    props.reply
+      ? {
+          title: "View conversation",
+          onClick: () => navigate(`/inbox/${id}`),
+          icon: <MessagesSquareIcon className="h-4 w-4" />,
+        }
+      : {
+          title: "Reply",
+          onClick: () => setReplyDialogOpen(true),
+          icon: <MessageSquareTextIcon className="h-4 w-4" />,
+        },
     {
       title: "Save Image",
       onClick: () => saveImage(`umamin-${id}`),

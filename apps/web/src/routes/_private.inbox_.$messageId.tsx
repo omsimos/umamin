@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { loaderFetchOptional } from "@/lib/loader-fetch";
 import { queryKeys } from "@/lib/query";
@@ -38,9 +39,15 @@ export const Route = createFileRoute("/_private/inbox_/$messageId")({
 
 function ThreadPage() {
   const { messageId } = Route.useParams();
+  // Loader-primed; a plain cache read avoids re-declaring the query config.
+  const thread = useQueryClient().getQueryData<MessageThreadResponse>(
+    queryKeys.messageThread(messageId),
+  );
+  const backHref =
+    thread?.viewerRole === "sender" ? "/inbox?tab=sent" : "/inbox";
 
   return (
-    <BackHeaderPage>
+    <BackHeaderPage backHref={backHref} backLabel="Back to inbox">
       {/* pt: BackHeaderPage lands content exactly on the fixed header's edge.
           pb: clears the mobile Menubar, which is fixed over the page bottom. */}
       <main className="container mx-auto min-h-screen max-w-xl pt-6 pb-28 lg:pb-12">
@@ -52,7 +59,7 @@ function ThreadPage() {
 
 function ThreadPending() {
   return (
-    <BackHeaderPage>
+    <BackHeaderPage backHref="/inbox" backLabel="Back to inbox">
       <main className="container mx-auto min-h-screen max-w-xl pt-6 pb-28 lg:pb-12">
         <ThreadViewSkeleton />
       </main>

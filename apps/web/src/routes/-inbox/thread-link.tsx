@@ -17,7 +17,7 @@ export function ThreadLink({ messageId, lastReplyAt, readAt }: Props) {
   return (
     <Link
       href={`/inbox/${messageId}`}
-      className="-mb-1 mt-3 flex items-center justify-center gap-1.5 py-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
+      className="-mb-1 mt-3 flex items-center justify-center gap-1.5 rounded-md py-2 text-muted-foreground text-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
     >
       <MessagesSquareIcon className="size-4 shrink-0" aria-hidden />
       View conversation
