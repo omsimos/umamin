@@ -16,6 +16,9 @@ export type NotificationType =
   | "follow"
   | "message"
   | "reply"
+  // A thread follow-up: the anonymous sender continued the conversation, so
+  // the recipient is the message's receiver and the actor stays null.
+  | "thread"
   | "vote"
   | "group_join"
   | "group_invite"

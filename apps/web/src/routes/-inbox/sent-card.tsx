@@ -9,6 +9,7 @@ import { CircleUserIcon } from "lucide-react";
 import { ChatList } from "@/components/chat-list";
 import { Link } from "@/lib/navigation";
 import type { MessageWithReceiver } from "@/lib/types";
+import { ThreadLink } from "./thread-link";
 
 export function SentMessageCard({ data }: { data: MessageWithReceiver }) {
   return (
@@ -36,14 +37,19 @@ export function SentMessageCard({ data }: { data: MessageWithReceiver }) {
           response={data.reply ?? ""}
         />
       </CardContent>
-      <CardFooter className="flex justify-center">
-        <div className="text-muted-foreground text-sm mt-1 flex gap-1">
-          <p className="italic">
-            {formatDistanceToNow(data.createdAt, {
-              addSuffix: true,
-            })}
-          </p>
-        </div>
+      <CardFooter className="flex flex-col items-stretch">
+        <p className="text-center text-muted-foreground text-sm italic">
+          {formatDistanceToNow(data.createdAt, {
+            addSuffix: true,
+          })}
+        </p>
+        {(data.reply || data.lastReplyAt) && (
+          <ThreadLink
+            messageId={data.id}
+            lastReplyAt={data.lastReplyAt}
+            readAt={data.senderReadAt}
+          />
+        )}
       </CardFooter>
     </Card>
   );

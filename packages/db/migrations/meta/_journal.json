@@ -162,6 +162,13 @@
       "when": 1781707287956,
       "tag": "0022_grey_guardsmen",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1785336483102,
+      "tag": "0023_hard_sheva_callister",
+      "breakpoints": true
     }
   ]
 }

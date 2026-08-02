@@ -11,6 +11,7 @@ const ALL_TYPES = [
   "follow",
   "message",
   "reply",
+  "thread",
   "vote",
   "group_join",
   "group_invite",
@@ -24,9 +25,14 @@ describe("PUSH_COPY", () => {
     expect(Object.keys(PUSH_COPY).sort()).toEqual([...ALL_TYPES].sort());
   });
 
-  it("never reveals a sender for anonymous types (message, reply)", () => {
+  it("never reveals a sender for anonymous types (message, reply, thread)", () => {
     expect(PUSH_COPY.message.anonymous).toBe(true);
     expect(PUSH_COPY.reply.anonymous).toBe(true);
+    expect(PUSH_COPY.thread.anonymous).toBe(true);
+    expect(PUSH_COPY.thread.title("attacker")).toBe(
+      PUSH_COPY.thread.title(null),
+    );
+    expect(PUSH_COPY.thread.title("attacker")).not.toContain("attacker");
     expect(PUSH_COPY.message.title("attacker")).toBe(
       PUSH_COPY.message.title(null),
     );
@@ -58,8 +64,10 @@ describe("PUSH_COPY", () => {
     }
   });
 
-  it("deep-links a reply to the Sent tab (matches the in-app notification card)", () => {
-    expect(PUSH_COPY.reply.url("msg1", null)).toBe("/inbox?tab=sent");
+  it("deep-links reply/thread to the thread page (matches the in-app notification card)", () => {
+    expect(PUSH_COPY.reply.url("msg1", null)).toBe("/inbox/msg1");
+    expect(PUSH_COPY.reply.url("", null)).toBe("/inbox?tab=sent");
+    expect(PUSH_COPY.thread.url("msg1", null)).toBe("/inbox/msg1");
     expect(PUSH_COPY.message.url("", null)).toBe("/inbox");
   });
 });

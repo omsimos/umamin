@@ -6,9 +6,11 @@ vi.mock("../src/server-lib/argon2", () => ({
   verify: async () => false,
 }));
 
-import { messageTable } from "@umamin/db/schema/message";
-import { userTable } from "@umamin/db/schema/user";
-import { eq } from "drizzle-orm";
+import { messageReplyTable, messageTable } from "@umamin/db/schema/message";
+import { notificationTable } from "@umamin/db/schema/notification";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
+import { aesDecrypt } from "@umamin/encryption";
+import { asc, eq, sql } from "drizzle-orm";
 import type { Db } from "../src/server-lib/db";
 import { __clearSessionCache } from "../src/server-lib/session";
 import { ANON, authed, buildApp, callJson } from "./helpers/actions";
@@ -125,5 +127,206 @@ describe("message actions (real libSQL)", () => {
       receiverId: "recv",
     });
     expect(json).toEqual({ error: "You can't send a message to yourself" });
+  });
+});
+
+describe("thread replies (real libSQL)", () => {
+  let db: Db;
+
+  beforeEach(async () => {
+    __clearSessionCache();
+    db = await makeTestDb();
+    await seedUser(db, "recv");
+    await seedUser(db, "sender");
+    await db.insert(messageTable).values({
+      id: "m1",
+      question: "q",
+      content: "c",
+      receiverId: "recv",
+      senderId: "sender",
+    });
+  });
+
+  // Same ordering as the read path: createdAt is second-granularity, so the
+  // insertion-ordered rowid breaks same-second ties.
+  async function threadRows(messageId: string) {
+    return db
+      .select()
+      .from(messageReplyTable)
+      .where(eq(messageReplyTable.messageId, messageId))
+      .orderBy(asc(messageReplyTable.createdAt), sql`rowid`);
+  }
+
+  async function messageRow(id: string) {
+    const rows = await db
+      .select()
+      .from(messageTable)
+      .where(eq(messageTable.id, id));
+    return rows[0];
+  }
+
+  it("receiver's first reply lands on the legacy column, not the thread table", async () => {
+    const app = buildApp(db, authed("recv"));
+    const { json } = await callJson<{ reply?: string }>(
+      app,
+      "createReplyAction",
+      { messageId: "m1", content: "first reply" },
+    );
+    expect(json.reply).toBe("first reply");
+
+    const msg = await messageRow("m1");
+    expect(await aesDecrypt(msg.reply ?? "")).toBe("first reply");
+    expect(msg.lastReplyAt).not.toBeNull();
+    expect(msg.receiverReadAt).not.toBeNull();
+    expect(await threadRows("m1")).toHaveLength(0);
+  });
+
+  it("sender cannot continue before the receiver replies", async () => {
+    const app = buildApp(db, authed("sender"));
+    const { json } = await callJson(app, "createReplyAction", {
+      messageId: "m1",
+      content: "hello again",
+    });
+    expect(json).toEqual({ error: "You can reply once they respond" });
+    expect(await threadRows("m1")).toHaveLength(0);
+  });
+
+  it("after the first reply the exchange lands in message_reply, encrypted, with correct roles", async () => {
+    await callJson(buildApp(db, authed("recv")), "createReplyAction", {
+      messageId: "m1",
+      content: "opening reply",
+    });
+
+    const senderApp = buildApp(db, authed("sender"));
+    const { json } = await callJson<{
+      entry?: { id: string; content: string; fromSender: boolean };
+    }>(senderApp, "createReplyAction", {
+      messageId: "m1",
+      content: "sender follow-up",
+    });
+    expect(json.entry?.fromSender).toBe(true);
+
+    await callJson(buildApp(db, authed("recv")), "createReplyAction", {
+      messageId: "m1",
+      content: "receiver follow-up",
+    });
+
+    const rows = await threadRows("m1");
+    expect(rows.map((r) => r.fromSender)).toEqual([true, false]);
+    // Encrypted at rest — the plaintext must not appear in the row.
+    expect(rows[0].content).not.toContain("sender follow-up");
+    expect(await aesDecrypt(rows[0].content)).toBe("sender follow-up");
+  });
+
+  it("a sender follow-up notifies the receiver as 'thread' with no actor", async () => {
+    await callJson(buildApp(db, authed("recv")), "createReplyAction", {
+      messageId: "m1",
+      content: "opening reply",
+    });
+    await callJson(buildApp(db, authed("sender")), "createReplyAction", {
+      messageId: "m1",
+      content: "follow-up",
+    });
+
+    const rows = await db
+      .select()
+      .from(notificationTable)
+      .where(eq(notificationTable.recipientId, "recv"));
+    const thread = rows.find((r) => r.type === "thread");
+    expect(thread?.targetId).toBe("m1");
+    expect(thread?.actorId).toBeNull();
+  });
+
+  it("a non-participant reads the thread as not found", async () => {
+    await seedUser(db, "stranger");
+    const app = buildApp(db, authed("stranger"));
+    const { json } = await callJson(app, "createReplyAction", {
+      messageId: "m1",
+      content: "let me in",
+    });
+    expect(json).toEqual({ error: "Message not found" });
+  });
+
+  it("a block in either direction reads as not found", async () => {
+    await callJson(buildApp(db, authed("recv")), "createReplyAction", {
+      messageId: "m1",
+      content: "opening reply",
+    });
+    await db
+      .insert(userBlockTable)
+      .values({ blockerId: "recv", blockedId: "sender" });
+
+    const { json } = await callJson(
+      buildApp(db, authed("sender")),
+      "createReplyAction",
+      { messageId: "m1", content: "follow-up" },
+    );
+    expect(json).toEqual({ error: "Message not found" });
+    expect(await threadRows("m1")).toHaveLength(0);
+  });
+
+  it("silently drops a sender follow-up matching the receiver's blocked words", async () => {
+    await callJson(buildApp(db, authed("recv")), "createReplyAction", {
+      messageId: "m1",
+      content: "opening reply",
+    });
+    await db
+      .update(userTable)
+      .set({ blockedWords: ["spam"] })
+      .where(eq(userTable.id, "recv"));
+
+    const { json } = await callJson(
+      buildApp(db, authed("sender")),
+      "createReplyAction",
+      { messageId: "m1", content: "pure SPAM" },
+    );
+    expect(json).toEqual({ success: true });
+    expect(await threadRows("m1")).toHaveLength(0);
+  });
+
+  it("markThreadReadAction moves only the caller's watermark", async () => {
+    await callJson(buildApp(db, authed("sender")), "markThreadReadAction", {
+      messageId: "m1",
+    });
+
+    const msg = await messageRow("m1");
+    expect(msg.senderReadAt).not.toBeNull();
+    expect(msg.receiverReadAt).toBeNull();
+    // The sender's read must not unseal the receiver's inbox card.
+    expect(msg.openedAt).toBeNull();
+  });
+
+  it("markThreadReadAction unseals for the receiver without restamping updatedAt", async () => {
+    const before = await messageRow("m1");
+
+    await callJson(buildApp(db, authed("recv")), "markThreadReadAction", {
+      messageId: "m1",
+    });
+
+    const msg = await messageRow("m1");
+    expect(msg.receiverReadAt).not.toBeNull();
+    expect(msg.openedAt).not.toBeNull();
+    expect(msg.senderReadAt).toBeNull();
+    // Reading is not a content change — the legacy reply's displayed time
+    // (updatedAt) must survive it.
+    expect(msg.updatedAt).toEqual(before.updatedAt);
+  });
+
+  it("a thread reply bumps lastReplyAt but never updatedAt", async () => {
+    await callJson(buildApp(db, authed("recv")), "createReplyAction", {
+      messageId: "m1",
+      content: "opening reply",
+    });
+    const afterLegacy = await messageRow("m1");
+
+    await callJson(buildApp(db, authed("sender")), "createReplyAction", {
+      messageId: "m1",
+      content: "follow-up",
+    });
+
+    const msg = await messageRow("m1");
+    expect(msg.lastReplyAt).not.toBeNull();
+    // updatedAt still describes the legacy reply write, not the row bump.
+    expect(msg.updatedAt).toEqual(afterLegacy.updatedAt);
   });
 });

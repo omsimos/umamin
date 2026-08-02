@@ -11,6 +11,7 @@ import { patchMessage } from "@/lib/query-cache";
 import type { MessagesResponse, MessageWithReceiver } from "@/lib/types";
 import { openMessageAction } from "./actions";
 import { ReceivedMessageMenu } from "./received-card-menu";
+import { ThreadLink } from "./thread-link";
 
 const SEALED_TITLES = [
   "You received an anonymous message",
@@ -108,6 +109,14 @@ export function ReceivedMessageCard({ data }: { data: MessageWithReceiver }) {
             addSuffix: true,
           })}
         </p>
+
+        {(data.reply || data.lastReplyAt) && (
+          <ThreadLink
+            messageId={data.id}
+            lastReplyAt={data.lastReplyAt}
+            readAt={data.receiverReadAt}
+          />
+        )}
       </div>
     </div>
   );

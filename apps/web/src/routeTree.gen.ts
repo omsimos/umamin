@@ -31,6 +31,7 @@ import { Route as PublicTiersRouteImport } from './routes/_public/tiers'
 import { Route as SocialFeedRouteImport } from './routes/_social/feed'
 import { Route as SocialNotesRouteImport } from './routes/_social/notes'
 import { Route as GroupsTagRouteImport } from './routes/groups.$tag'
+import { Route as PrivateInboxMessageIdRouteImport } from './routes/_private.inbox_.$messageId'
 import { Route as SocialPostIdRouteImport } from './routes/_social/post.$id'
 import { Route as SocialToUsernameRouteImport } from './routes/_social/to.$username'
 import { Route as SocialUserUsernameRouteImport } from './routes/_social/user.$username'
@@ -143,6 +144,11 @@ const GroupsTagRoute = GroupsTagRouteImport.update({
   path: '/groups/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivateInboxMessageIdRoute = PrivateInboxMessageIdRouteImport.update({
+  id: '/inbox_/$messageId',
+  path: '/inbox/$messageId',
+  getParentRoute: () => PrivateRoute,
+} as any)
 const SocialPostIdRoute = SocialPostIdRouteImport.update({
   id: '/post/$id',
   path: '/post/$id',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/feed': typeof SocialFeedRoute
   '/notes': typeof SocialNotesRoute
   '/groups/$tag': typeof GroupsTagRouteWithChildren
+  '/inbox/$messageId': typeof PrivateInboxMessageIdRoute
   '/post/$id': typeof SocialPostIdRoute
   '/to/$username': typeof SocialToUsernameRoute
   '/user/$username': typeof SocialUserUsernameRoute
@@ -212,6 +219,7 @@ export interface FileRoutesByTo {
   '/tiers': typeof PublicTiersRoute
   '/feed': typeof SocialFeedRoute
   '/notes': typeof SocialNotesRoute
+  '/inbox/$messageId': typeof PrivateInboxMessageIdRoute
   '/post/$id': typeof SocialPostIdRoute
   '/to/$username': typeof SocialToUsernameRoute
   '/user/$username': typeof SocialUserUsernameRoute
@@ -242,6 +250,7 @@ export interface FileRoutesById {
   '/_social/notes': typeof SocialNotesRoute
   '/groups/$tag': typeof GroupsTagRouteWithChildren
   '/_marketing/': typeof MarketingIndexRoute
+  '/_private/inbox_/$messageId': typeof PrivateInboxMessageIdRoute
   '/_social/post/$id': typeof SocialPostIdRoute
   '/_social/to/$username': typeof SocialToUsernameRoute
   '/_social/user/$username': typeof SocialUserUsernameRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/feed'
     | '/notes'
     | '/groups/$tag'
+    | '/inbox/$messageId'
     | '/post/$id'
     | '/to/$username'
     | '/user/$username'
@@ -293,6 +303,7 @@ export interface FileRouteTypes {
     | '/tiers'
     | '/feed'
     | '/notes'
+    | '/inbox/$messageId'
     | '/post/$id'
     | '/to/$username'
     | '/user/$username'
@@ -322,6 +333,7 @@ export interface FileRouteTypes {
     | '/_social/notes'
     | '/groups/$tag'
     | '/_marketing/'
+    | '/_private/inbox_/$messageId'
     | '/_social/post/$id'
     | '/_social/to/$username'
     | '/_social/user/$username'
@@ -493,6 +505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsTagRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_private/inbox_/$messageId': {
+      id: '/_private/inbox_/$messageId'
+      path: '/inbox/$messageId'
+      fullPath: '/inbox/$messageId'
+      preLoaderRoute: typeof PrivateInboxMessageIdRouteImport
+      parentRoute: typeof PrivateRoute
+    }
     '/_social/post/$id': {
       id: '/_social/post/$id'
       path: '/post/$id'
@@ -551,6 +570,7 @@ interface PrivateRouteChildren {
   PrivateModerationRoute: typeof PrivateModerationRoute
   PrivateNotificationsRoute: typeof PrivateNotificationsRoute
   PrivateSettingsRoute: typeof PrivateSettingsRoute
+  PrivateInboxMessageIdRoute: typeof PrivateInboxMessageIdRoute
 }
 
 const PrivateRouteChildren: PrivateRouteChildren = {
@@ -559,6 +579,7 @@ const PrivateRouteChildren: PrivateRouteChildren = {
   PrivateModerationRoute: PrivateModerationRoute,
   PrivateNotificationsRoute: PrivateNotificationsRoute,
   PrivateSettingsRoute: PrivateSettingsRoute,
+  PrivateInboxMessageIdRoute: PrivateInboxMessageIdRoute,
 }
 
 const PrivateRouteWithChildren =

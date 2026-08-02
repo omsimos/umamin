@@ -28,6 +28,7 @@ import {
 import {
   createReplyHandler,
   deleteMessageHandler,
+  markThreadReadHandler,
   openMessageHandler,
   sendMessageHandler,
 } from "./message";
@@ -133,6 +134,7 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/deleteMessageAction", deleteMessageHandler)
   .post("/actions/openMessageAction", openMessageHandler)
   .post("/actions/createReplyAction", createReplyHandler)
+  .post("/actions/markThreadReadAction", markThreadReadHandler)
   .post("/actions/sendMessageAction", sendMessageHandler)
   // note
   .post("/actions/createNoteAction", createNoteHandler)

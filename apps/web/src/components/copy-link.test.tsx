@@ -33,22 +33,18 @@ describe("CopyLink", () => {
     expect(screen.getByText(`${origin}/to/alice`)).toBeInTheDocument();
   });
 
-  // fireEvent (not userEvent) so the component's navigator.clipboard stub
-  // isn't clobbered by userEvent.setup()'s own clipboard override.
-  it("copies the full origin-qualified URL to the clipboard on click", () => {
+  // The display strips the scheme but the clipboard must get the full URL — the
+  // two diverge on purpose, so copying the displayed text would be a real bug.
+  //
+  // fireEvent (not userEvent) so the component's navigator.clipboard stub isn't
+  // clobbered by userEvent.setup()'s own clipboard override.
+  it("copies the full origin-qualified URL and confirms", () => {
     render(<CopyLink username="bob" />);
 
     fireEvent.click(screen.getByRole("button"));
 
     expect(writeText).toHaveBeenCalledTimes(1);
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/to/bob`);
-  });
-
-  it("confirms the copy with a success toast", () => {
-    render(<CopyLink username="carol" />);
-
-    fireEvent.click(screen.getByRole("button"));
-
     expect(toastSuccess).toHaveBeenCalledWith("Copied.");
   });
 });

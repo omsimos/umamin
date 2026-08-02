@@ -56,11 +56,15 @@ export function ReplyDialog(props: Props) {
             ...message,
             reply: ("reply" in result ? result.reply : undefined) ?? content,
             updatedAt:
-              ("updatedAt" in result
+              ("updatedAt" in result && result.updatedAt
                 ? new Date(result.updatedAt)
                 : undefined) ?? new Date(),
           })),
       );
+      // The thread page shares this reply; drop its cached copy.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.messageThread(props.data.id),
+      });
       toast.success("Reply sent.");
       setReply(content);
       setContent("");

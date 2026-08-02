@@ -18,6 +18,7 @@ const ALL_TYPES = [
   "follow",
   "message",
   "reply",
+  "thread",
   "vote",
   "group_join",
   "group_invite",

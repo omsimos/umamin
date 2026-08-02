@@ -20,7 +20,13 @@ function notificationHref(notification: NotificationItem): string | null {
     case "message":
       return "/inbox";
     case "reply":
-      return "/inbox?tab=sent";
+      return notification.targetId
+        ? `/inbox/${notification.targetId}`
+        : "/inbox?tab=sent";
+    case "thread":
+      return notification.targetId
+        ? `/inbox/${notification.targetId}`
+        : "/inbox";
     case "group_join":
     case "group_invite":
     case "group_request":

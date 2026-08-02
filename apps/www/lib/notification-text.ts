@@ -35,6 +35,14 @@ export function formatNotificationText(
       : "You received an anonymous message";
   }
 
+  // Threads shipped after this app was frozen; the copy exists only to keep
+  // the shared NotificationType union total.
+  if (type === "thread") {
+    return count > 1
+      ? `${count} new replies in an anonymous conversation`
+      : "New reply in an anonymous conversation";
+  }
+
   const name = actorName ?? "Someone";
 
   if (type === "reply") {

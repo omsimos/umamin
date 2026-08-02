@@ -43,9 +43,15 @@ export const PUSH_COPY: Record<NotificationType, CopyEntry> = {
   reply: {
     category: PUSH_CATEGORY.social,
     title: () => "You got a reply to your message",
-    // A reply notifies the original (sent-message) author; the reply renders on
-    // the Sent tab. Matches notification-card.tsx's in-app deep-link.
-    url: () => "/inbox?tab=sent",
+    // A reply notifies the original (sent-message) author; deep-link to the
+    // thread page. Matches notification-card.tsx's in-app deep-link.
+    url: (id) => (id ? `/inbox/${id}` : "/inbox?tab=sent"),
+    anonymous: true,
+  },
+  thread: {
+    category: PUSH_CATEGORY.message,
+    title: () => "New reply in an anonymous conversation",
+    url: (id) => (id ? `/inbox/${id}` : "/inbox"),
     anonymous: true,
   },
   vote: {

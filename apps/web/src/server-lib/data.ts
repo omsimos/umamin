@@ -8,7 +8,7 @@ import {
   groupMessageReadTable,
   groupMessageTable,
 } from "@umamin/db/schema/group-message";
-import { messageTable } from "@umamin/db/schema/message";
+import { messageReplyTable, messageTable } from "@umamin/db/schema/message";
 import {
   noteReactionTable,
   noteTable,
@@ -75,6 +75,7 @@ import type {
   GroupRequestsResponse,
   GroupUnreadState,
   MessagesResponse,
+  MessageThreadResponse,
   NoteItem,
   NotesResponse,
   NotificationBadgeResponse,
@@ -2564,6 +2565,8 @@ export async function getMessagesPage(
         return {
           ...message,
           senderId: null,
+          // Each side's read watermark is private to that side.
+          senderReadAt: null,
           content,
           reply,
         };
@@ -2574,6 +2577,7 @@ export async function getMessagesPage(
         // Opened state is the receiver's alone — stripping it here (not in the
         // UI) is what keeps senders from reading it off the wire.
         openedAt: null,
+        receiverReadAt: null,
         content,
         reply,
       };
@@ -2583,6 +2587,113 @@ export async function getMessagesPage(
   return {
     ...cachedData,
     messages,
+  };
+}
+
+// Bounded, not paginated: a 1:1 correspondence stays short, and one LIMIT
+// keeps the read a single round trip instead of a cursor waterfall.
+const THREAD_REPLIES_LIMIT = 200;
+
+export async function getMessageThread(
+  db: Db,
+  params: { messageId: string; viewerId: string },
+): Promise<MessageThreadResponse | null> {
+  // All three reads run together — the auth verdict only decides whether the
+  // rows are returned, so nothing needs to waterfall (Tokyo round trips
+  // dominate TTFB, not query cost).
+  const [msgRows, replyRows, blockRows] = await Promise.all([
+    db
+      .select({ message: messageTable, receiver: feedAuthorColumns })
+      .from(messageTable)
+      .innerJoin(userTable, eq(messageTable.receiverId, userTable.id))
+      .where(eq(messageTable.id, params.messageId))
+      .limit(1),
+    db
+      .select({
+        id: messageReplyTable.id,
+        content: messageReplyTable.content,
+        fromSender: messageReplyTable.fromSender,
+        createdAt: messageReplyTable.createdAt,
+      })
+      .from(messageReplyTable)
+      .where(eq(messageReplyTable.messageId, params.messageId))
+      // rowid tiebreak, not id: createdAt is second-granularity and nanoids
+      // aren't monotonic, so a same-second exchange would render scrambled.
+      .orderBy(asc(messageReplyTable.createdAt), sql`rowid`)
+      .limit(THREAD_REPLIES_LIMIT),
+    // Pair-precise via the message row (PK seek + unique-index probes), not a
+    // scan of every block involving the viewer — Turso bills rows scanned. A
+    // NULL senderId matches nothing, so anonymous messages skip it naturally.
+    db
+      .select({ id: userBlockTable.id })
+      .from(userBlockTable)
+      .innerJoin(messageTable, eq(messageTable.id, params.messageId))
+      .where(
+        or(
+          and(
+            eq(userBlockTable.blockerId, messageTable.receiverId),
+            eq(userBlockTable.blockedId, messageTable.senderId),
+          ),
+          and(
+            eq(userBlockTable.blockerId, messageTable.senderId),
+            eq(userBlockTable.blockedId, messageTable.receiverId),
+          ),
+        ),
+      )
+      .limit(1),
+  ]);
+
+  const row = msgRows[0];
+  if (!row) return null;
+
+  const { message, receiver } = row;
+  const isReceiver = message.receiverId === params.viewerId;
+  const isSender =
+    message.senderId != null && message.senderId === params.viewerId;
+
+  if (!isReceiver && !isSender) return null;
+
+  // Blocked either way hides the thread, matching both list queries.
+  if (blockRows.length > 0) {
+    return null;
+  }
+
+  let content = message.content;
+  try {
+    content = await aesDecrypt(message.content);
+  } catch {}
+
+  let reply = message.reply ?? null;
+  if (message.reply) {
+    try {
+      reply = await aesDecrypt(message.reply);
+    } catch {
+      reply = message.reply;
+    }
+  }
+
+  const replies = await Promise.all(
+    replyRows.map(async (entry) => {
+      let entryContent = entry.content;
+      try {
+        entryContent = await aesDecrypt(entry.content);
+      } catch {}
+      return { ...entry, content: entryContent };
+    }),
+  );
+
+  const shared = { ...message, content, reply, receiver };
+
+  return {
+    message: isReceiver
+      ? // Never expose the (logged-in) sender's account id to the recipient —
+        // returning it de-anonymizes every "anonymous" sender. [audit #22]
+        { ...shared, senderId: null, senderReadAt: null }
+      : // Opened state and the receiver's watermark are the receiver's alone.
+        { ...shared, openedAt: null, receiverReadAt: null },
+    replies,
+    viewerRole: isReceiver ? "receiver" : "sender",
+    threadable: message.senderId != null,
   };
 }
 
