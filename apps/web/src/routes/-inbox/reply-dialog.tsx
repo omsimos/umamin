@@ -8,11 +8,11 @@ import {
   DialogTitle,
 } from "@umamin/ui/components/dialog";
 import { Textarea } from "@umamin/ui/components/textarea";
-import { formatDistanceToNow } from "date-fns";
 import { Loader2Icon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ChatList } from "@/components/chat-list";
+import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { queryKeys } from "@/lib/query";
@@ -97,10 +97,7 @@ export function ReplyDialog(props: Props) {
 
             {reply && updatedAt && (
               <div className="text-muted-foreground text-sm italic w-full text-center mt-10">
-                replied{" "}
-                {formatDistanceToNow(updatedAt, {
-                  addSuffix: true,
-                })}
+                replied <TimeAgoVerbose date={updatedAt} />
               </div>
             )}
           </div>
@@ -125,7 +122,7 @@ export function ReplyDialog(props: Props) {
                 className="focus-visible:ring-transparent flex-1 text-base resize-none min-h-10 max-h-20"
                 autoComplete="off"
               />
-              <Button type="submit" size="icon">
+              <Button type="submit" size="icon" disabled={mutation.isPending}>
                 {mutation.isPending ? (
                   <Loader2Icon className="w-4 h-4 animate-spin" />
                 ) : (

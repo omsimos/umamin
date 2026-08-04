@@ -229,16 +229,22 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
       className="px-7 container border-x-0 sm:border-x border border-muted py-6 bg-muted/50 sm:rounded-md sm:px-6"
     >
       <div className="flex justify-center gap-3">
-        <Avatar
-          className={cn({
-            "avatar-shine": hasUmaminPlus(author.createdAt),
-          })}
+        <Link
+          href={`/user/${author.username}`}
+          aria-label={`@${author.username}'s profile`}
+          className="shrink-0 self-start"
         >
-          <AvatarImage src={author.imageUrl ?? ""} alt="User avatar" />
-          <AvatarFallback>
-            <ScanFaceIcon />
-          </AvatarFallback>
-        </Avatar>
+          <Avatar
+            className={cn({
+              "avatar-shine": hasUmaminPlus(author.createdAt),
+            })}
+          >
+            <AvatarImage src={author.imageUrl ?? ""} alt="User avatar" />
+            <AvatarFallback>
+              <ScanFaceIcon />
+            </AvatarFallback>
+          </Avatar>
+        </Link>
 
         <div className="flex justify-between w-full items-center text-[15px]">
           <div className="flex items-center space-x-1">
@@ -254,7 +260,12 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
                 author.username,
               ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
             <GroupBadge badge={author.groupBadge} />
-            <span className="text-muted-foreground">@{author.username}</span>
+            <Link
+              href={`/user/${author.username}`}
+              className="truncate text-muted-foreground hover:underline"
+            >
+              @{author.username}
+            </Link>
           </div>
 
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -283,7 +294,9 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
 
         {data.quotedPostId && <QuotedPostCard post={data.quotedPost ?? null} />}
 
-        <div className="flex items-center space-x-4 text-muted-foreground mt-4">
+        {/* gap-4 (not space-x) so the controls' negative margins can enlarge
+            their tap targets without shifting the visual layout. */}
+        <div className="flex items-center gap-4 text-muted-foreground mt-4">
           <Button
             disabled={!isAuthenticated}
             type="button"
@@ -292,7 +305,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
             aria-label={liked ? "Unlike post" : "Like post"}
             aria-pressed={liked}
             className={cn(
-              "h-auto gap-0 p-0 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
+              "h-auto gap-0 -m-2 p-2 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
               liked
                 ? "text-pink-500 hover:text-pink-500"
                 : "hover:text-muted-foreground",
@@ -314,7 +327,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
                 variant="ghost"
                 aria-label="Repost options"
                 className={cn(
-                  "h-auto gap-0 p-0 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
+                  "h-auto gap-0 -m-2 p-2 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
                   reposted
                     ? "text-emerald-600 hover:text-emerald-600"
                     : "hover:text-muted-foreground",

@@ -1,10 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@umamin/ui/components/alert-dialog";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
+import { buttonVariants } from "@umamin/ui/components/button";
 import {
   Card,
   CardContent,
@@ -23,21 +34,19 @@ import {
   ScanFaceIcon,
   ScrollIcon,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
+import { TimeAgo } from "@/components/time-ago";
+import { Link } from "@/lib/navigation";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse, PublicUserWithBadge } from "@/lib/types";
-import {
-  getActionError,
-  hasUmaminPlus,
-  saveImage,
-  shortTimeAgo,
-} from "@/lib/utils";
+import { getActionError, hasUmaminPlus, saveImage } from "@/lib/utils";
 import { clearNoteAction } from "../-lib/actions";
 
 export function CurrentUserNote({
@@ -46,6 +55,7 @@ export function CurrentUserNote({
   currentUser: PublicUserWithBadge;
 }) {
   const queryClient = useQueryClient();
+  const [clearOpen, setClearOpen] = useState(false);
   const { data, isLoading } = useQuery<NoteItem | null>({
     ...pageQueryOptions(queryKeys.currentNote(), fetchCurrentNote),
   });
@@ -92,7 +102,7 @@ export function CurrentUserNote({
     },
     {
       title: "Clear Note",
-      onClick: () => clearNoteMutation.mutate(),
+      onClick: () => setClearOpen(true),
       className: "text-red-500",
       icon: <ScrollIcon className="h-4 w-4" />,
     },
@@ -128,6 +138,27 @@ export function CurrentUserNote({
 
   return (
     <div id={`umamin-${data.id}`}>
+      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear your note?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It disappears from the notes feed for everyone. This can't be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => clearNoteMutation.mutate()}
+            >
+              Clear note
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card
         className={cn(
           "flex flex-col items-start gap-3 py-4",
@@ -144,11 +175,12 @@ export function CurrentUserNote({
             Your {data.isAnonymous ? "anonymous" : "shared"} note
           </Badge>
 
-          <div className="flex gap-x-1 items-center">
+          <div className="flex gap-x-2 items-center">
             {data.updatedAt && (
-              <span className="text-xs text-muted-foreground mr-1">
-                {shortTimeAgo(data.updatedAt)}
-              </span>
+              <TimeAgo
+                date={data.updatedAt}
+                className="text-xs text-muted-foreground mr-1"
+              />
             )}
             {currentUser.quietMode && <MessageSquareXIcon className="size-5" />}
             <Menu menuItems={menuItems} />
@@ -176,37 +208,49 @@ export function CurrentUserNote({
               </>
             ) : (
               <>
-                <Avatar
-                  className={cn("relative top-1", {
-                    "avatar-shine": hasUmaminPlus(currentUser?.createdAt),
-                  })}
+                <Link
+                  href={`/user/${currentUser.username}`}
+                  aria-label={`@${currentUser.username}'s profile`}
+                  className="shrink-0"
                 >
-                  <AvatarImage
-                    className="rounded-full"
-                    src={currentUser?.imageUrl ?? ""}
-                    alt="User avatar"
-                  />
-                  <AvatarFallback className="text-xs">
-                    <ScanFaceIcon />
-                  </AvatarFallback>
-                </Avatar>
+                  <Avatar
+                    className={cn("relative top-1", {
+                      "avatar-shine": hasUmaminPlus(currentUser?.createdAt),
+                    })}
+                  >
+                    <AvatarImage
+                      className="rounded-full"
+                      src={currentUser?.imageUrl ?? ""}
+                      alt="User avatar"
+                    />
+                    <AvatarFallback className="text-xs">
+                      <ScanFaceIcon />
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
 
                 <div className="flex flex-col mt-1">
                   <div className="flex items-center space-x-1">
-                    <span className="font-semibold flex-none text-base leading-none">
+                    <Link
+                      href={`/user/${currentUser.username}`}
+                      className="font-semibold flex-none text-base leading-none hover:underline"
+                    >
                       {currentUser.displayName
                         ? currentUser.displayName
                         : currentUser.username}
-                    </span>
+                    </Link>
                     {import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(
                       currentUser.username,
                     ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
                     <GroupBadge badge={currentUser.groupBadge} />
                   </div>
 
-                  <span className="text-muted-foreground truncate">
+                  <Link
+                    href={`/user/${currentUser.username}`}
+                    className="text-muted-foreground truncate hover:underline"
+                  >
                     @{currentUser.username}
-                  </span>
+                  </Link>
                 </div>
               </>
             )}

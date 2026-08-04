@@ -20,6 +20,7 @@ import {
 } from "@umamin/ui/components/drawer";
 import { Loader2Icon, ScanFaceIcon } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { Link } from "@/lib/navigation";
 import { fetchGroupMessageReactors } from "@/lib/query-fetchers";
 import type { GroupMessageReactor } from "@/lib/types";
 
@@ -55,18 +56,27 @@ function ReactorList({
           key={`${r.user.id}-${r.emoji}`}
           className="flex items-center gap-3 py-1.5"
         >
-          <Avatar className="size-9">
-            <AvatarImage src={r.user.imageUrl ?? ""} alt="" />
-            <AvatarFallback>
-              <ScanFaceIcon className="size-4" />
-            </AvatarFallback>
-          </Avatar>
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+          <Link
+            href={`/user/${r.user.username}`}
+            aria-label={`@${r.user.username}'s profile`}
+            className="shrink-0"
+          >
+            <Avatar className="size-9">
+              <AvatarImage src={r.user.imageUrl ?? ""} alt="" />
+              <AvatarFallback>
+                <ScanFaceIcon className="size-4" />
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+          <Link
+            href={`/user/${r.user.username}`}
+            className="min-w-0 flex-1 truncate text-sm font-medium hover:underline"
+          >
             {r.user.displayName ?? r.user.username}
             {r.user.id === currentUserId && (
               <span className="font-normal text-muted-foreground"> (you)</span>
             )}
-          </span>
+          </Link>
           <span aria-hidden className="text-xl leading-none">
             {r.emoji}
           </span>

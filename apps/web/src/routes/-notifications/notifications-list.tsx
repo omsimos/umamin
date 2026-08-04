@@ -1,3 +1,4 @@
+import type { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
@@ -6,7 +7,7 @@ import {
 } from "@umamin/ui/components/alert";
 import { Button } from "@umamin/ui/components/button";
 import { AlertCircleIcon, BellOffIcon } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { callAction } from "@/lib/api";
 import {
   infiniteQueryDefaults,
@@ -48,6 +49,15 @@ export function NotificationsList() {
   const newest = data?.pages[0]?.notifications[0];
   const seenThroughMs = newest ? new Date(newest.updatedAt).getTime() : null;
 
+  // Latch the first watermark this visit renders with, so the mark-seen cache
+  // patch below doesn't clear the dots out from under the open page.
+  const pageLastSeen = data?.pages[0]?.lastSeen;
+  const visitLastSeenRef = useRef<number | undefined>(undefined);
+  if (visitLastSeenRef.current === undefined && pageLastSeen !== undefined) {
+    visitLastSeenRef.current = pageLastSeen;
+  }
+  const lastSeen = visitLastSeenRef.current;
+
   useEffect(() => {
     if (seenThroughMs === null) {
       return;
@@ -58,6 +68,19 @@ export function NotificationsList() {
         queryClient.invalidateQueries({
           queryKey: queryKeys.notificationBadge(),
         });
+        // Advance the cached watermark too — the list itself isn't refetched
+        // on remount, so without this a revisit within gcTime re-lights rows
+        // this visit already showed as new.
+        queryClient.setQueryData<InfiniteData<NotificationsResponse>>(
+          queryKeys.notifications(),
+          (current) =>
+            current && {
+              ...current,
+              pages: current.pages.map((page, i) =>
+                i === 0 ? { ...page, lastSeen: seenThroughMs } : page,
+              ),
+            },
+        );
       })
       .catch(() => {});
   }, [seenThroughMs, queryClient]);
@@ -96,7 +119,13 @@ export function NotificationsList() {
       <ul className="divide-y">
         {notifications.map((notification) => (
           <li key={notification.id}>
-            <NotificationCard notification={notification} />
+            <NotificationCard
+              notification={notification}
+              isNew={
+                lastSeen !== undefined &&
+                new Date(notification.updatedAt).getTime() > lastSeen
+              }
+            />
           </li>
         ))}
       </ul>

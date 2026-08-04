@@ -4,6 +4,7 @@ import { BadgeCheckIcon, LockIcon } from "lucide-react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { ShareButton } from "@/components/share-button";
+import { Link } from "@/lib/navigation";
 import { pageSeo } from "@/lib/seo";
 import type { PublicUser } from "@/lib/types";
 import { formatUsername } from "@/lib/utils";
@@ -55,9 +56,12 @@ function SendMessage() {
         <div className="bg-background border-b w-full item-center px-6 py-4 rounded-t-2xl flex justify-between flex-row">
           <div className="flex items-center space-x-1">
             <span className="text-muted-foreground">To:</span>
-            <p className="font-semibold text-sm">
+            <Link
+              href={`/user/${user.username}`}
+              className="font-semibold text-sm hover:underline"
+            >
               {user?.displayName ? user?.displayName : user?.username}
-            </p>
+            </Link>
             {import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(
               user.username,
             ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}

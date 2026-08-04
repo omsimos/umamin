@@ -4,9 +4,9 @@ import {
   CardFooter,
   CardHeader,
 } from "@umamin/ui/components/card";
-import { formatDistanceToNow } from "date-fns";
 import { CircleUserIcon } from "lucide-react";
 import { ChatList } from "@/components/chat-list";
+import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
 import type { MessageWithReceiver } from "@/lib/types";
 import { ThreadLink } from "./thread-link";
@@ -39,9 +39,7 @@ export function SentMessageCard({ data }: { data: MessageWithReceiver }) {
       </CardContent>
       <CardFooter className="flex flex-col items-stretch">
         <p className="text-center text-muted-foreground text-sm italic">
-          {formatDistanceToNow(data.createdAt, {
-            addSuffix: true,
-          })}
+          <TimeAgoVerbose date={data.createdAt} />
         </p>
         {(data.reply || data.lastReplyAt) && (
           <ThreadLink

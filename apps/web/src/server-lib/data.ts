@@ -2759,27 +2759,41 @@ export async function getNotificationsPage(
 
   const baseCondition = eq(notificationTable.recipientId, params.viewerId);
 
-  const rows = await db
-    .select({
-      id: notificationTable.id,
-      type: notificationTable.type,
-      targetId: notificationTable.targetId,
-      count: notificationTable.count,
-      preview: notificationTable.preview,
-      updatedAt: notificationTable.updatedAt,
-      actor: {
-        username: userTable.username,
-        displayName: userTable.displayName,
-        imageUrl: userTable.imageUrl,
-      },
-    })
-    .from(notificationTable)
-    .leftJoin(userTable, eq(notificationTable.actorId, userTable.id))
-    .where(
-      cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
-    )
-    .orderBy(desc(notificationTable.updatedAt), desc(notificationTable.id))
-    .limit(NOTIFICATIONS_PAGE_SIZE + 1);
+  // The seen watermark rides the first page (async-parallel, no waterfall) so
+  // the client can mark which rows are new. Read from the user row directly —
+  // getSession's copy can lag mark-seen (session cache).
+  const [rows, viewerRows] = await Promise.all([
+    db
+      .select({
+        id: notificationTable.id,
+        type: notificationTable.type,
+        targetId: notificationTable.targetId,
+        count: notificationTable.count,
+        preview: notificationTable.preview,
+        updatedAt: notificationTable.updatedAt,
+        actor: {
+          username: userTable.username,
+          displayName: userTable.displayName,
+          imageUrl: userTable.imageUrl,
+        },
+      })
+      .from(notificationTable)
+      .leftJoin(userTable, eq(notificationTable.actorId, userTable.id))
+      .where(
+        cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
+      )
+      .orderBy(desc(notificationTable.updatedAt), desc(notificationTable.id))
+      .limit(NOTIFICATIONS_PAGE_SIZE + 1),
+    parsedCursor
+      ? Promise.resolve([])
+      : db
+          .select({
+            lastSeenNotificationsAt: userTable.lastSeenNotificationsAt,
+          })
+          .from(userTable)
+          .where(eq(userTable.id, params.viewerId))
+          .limit(1),
+  ]);
 
   const { hasMore, pageRows } = getPageRows(rows, NOTIFICATIONS_PAGE_SIZE);
   const lastRow = pageRows[pageRows.length - 1];
@@ -2790,6 +2804,11 @@ export async function getNotificationsPage(
       hasMore && lastRow
         ? `${lastRow.updatedAt.getTime()}.${lastRow.id}`
         : null,
+    ...(parsedCursor
+      ? {}
+      : {
+          lastSeen: viewerRows[0]?.lastSeenNotificationsAt?.getTime() ?? 0,
+        }),
   };
 }
 

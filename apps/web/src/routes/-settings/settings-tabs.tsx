@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import {
   Tabs,
   TabsContent,
@@ -13,7 +14,13 @@ import { GeneralSettings } from "./general-settings";
 import { PrivacySettings } from "./privacy-settings";
 import { SettingsSkeleton } from "./settings-skeleton";
 
+const routeApi = getRouteApi("/_private/settings");
+
 export function SettingsTabs() {
+  // Tab lives in the URL so Account/Privacy are linkable and back undoes a
+  // tab switch. Absent = general.
+  const { tab } = routeApi.useSearch();
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     ...pageQueryOptions(queryKeys.currentUser(), fetchCurrentUser),
   });
@@ -30,7 +37,19 @@ export function SettingsTabs() {
   }, [data?.user]);
 
   return (
-    <Tabs defaultValue="general" className="w-full">
+    <Tabs
+      value={tab ?? "general"}
+      onValueChange={(value) =>
+        navigate({
+          to: ".",
+          search: (prev) => ({
+            ...prev,
+            tab: value === "account" || value === "privacy" ? value : undefined,
+          }),
+        })
+      }
+      className="w-full"
+    >
       <TabsList className="w-full bg-transparent px-0 flex mb-8">
         <TabsTrigger
           value="general"

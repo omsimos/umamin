@@ -12,9 +12,9 @@ import {
 import { Button } from "@umamin/ui/components/button";
 import { Label } from "@umamin/ui/components/label";
 import { Skeleton } from "@umamin/ui/components/skeleton";
-import { formatDistanceToNow } from "date-fns";
 import { ScanFaceIcon } from "lucide-react";
 import { toast } from "sonner";
+import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
 import {
   infiniteQueryDefaults,
@@ -126,9 +126,7 @@ export function BlockedUsersSection() {
                   </Link>
                   <p className="text-xs text-muted-foreground truncate">
                     @{user.username} · blocked{" "}
-                    {formatDistanceToNow(new Date(user.blockedAt), {
-                      addSuffix: true,
-                    })}
+                    <TimeAgoVerbose date={user.blockedAt} />
                   </p>
                 </div>
 

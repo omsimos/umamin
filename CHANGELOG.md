@@ -18,6 +18,34 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.4.0] - 2026-08-05
+
+### Added
+
+- Group chat shows a "new messages" button when messages arrive while you're scrolled up — tap it to jump to the latest.
+- New notifications are marked with a dot, so you can tell what arrived since your last visit.
+- Character counters appear as you approach the length limit in the notes composer, group chat, and the bio and custom message fields in settings.
+- The Account and Privacy settings tabs have their own links, so they can be shared and the back button undoes a tab switch.
+
+### Changed
+
+- Tapping a profile picture or @username now opens that profile everywhere — the feed, comments, notes, group member lists, group chat, reaction lists, and follower lists. Previously only the display name was clickable, and in the feed a tap on the avatar opened the post instead.
+- Closing the post composer with unsent writing, images, or a poll now asks before discarding the draft.
+- Removing a group member, deleting a group chat message, and clearing your note now ask for confirmation first.
+- Like, repost, comment, and card-menu controls are easier to tap on phones without the cards getting any taller.
+- Tapping the Feed or Notes tab you're already on scrolls the list back to the top.
+- The group chat message box grows as you write multiple lines instead of scrolling inside a single-line box.
+- Hovering any timestamp now shows the exact date and time, on every card and page.
+- The recipient's name on the anonymous send page links to their profile, so you can check who you're writing to.
+- Pressing Enter in the song-link dialog attaches the song.
+
+### Fixed
+
+- The comment count beside the comment icon now opens the post, matching the icon next to it.
+- Sharing a post now confirms "link copied" on browsers without a share menu; before, it copied silently and looked like nothing happened.
+- Replying from the inbox can no longer double-send while the first attempt is still in flight.
+- Approving, rejecting, or removing one group member no longer disables the buttons on every other member's row.
+
 ## [7.3.0] - 2026-07-29
 
 ### Added
@@ -883,6 +911,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.4.0]: https://github.com/omsimos/umamin/compare/v7.3.0...v7.4.0
 [7.3.0]: https://github.com/omsimos/umamin/compare/v7.2.0...v7.3.0
 [7.2.0]: https://github.com/omsimos/umamin/compare/v7.1.0...v7.2.0
 [7.1.0]: https://github.com/omsimos/umamin/compare/v7.0.0...v7.1.0

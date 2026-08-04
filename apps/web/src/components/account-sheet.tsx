@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Avatar,
   AvatarFallback,
@@ -16,14 +16,16 @@ import { cn } from "@umamin/ui/lib/utils";
 import {
   CircleFadingPlusIcon,
   CircleUserRoundIcon,
+  Loader2Icon,
   LogOutIcon,
   MessageSquareQuoteIcon,
   SettingsIcon,
   UsersRoundIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import { GroupBadge } from "@/components/group-badge";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
-import { callAction } from "@/lib/api";
+import { actionError, callAction } from "@/lib/api";
 import { umaminChatUrl } from "@/lib/chat-link";
 import { Link, useAppNavigate } from "@/lib/navigation";
 import {
@@ -50,6 +52,25 @@ export function AccountSheet({
   const queryClient = useQueryClient();
   const navigate = useAppNavigate();
   const version = import.meta.env.VITE_APP_VERSION ?? "v0.0.0";
+
+  // logout redirects server-side; the client clears its cache and navigates to
+  // /login (session cookie already invalidated).
+  const logoutMutation = useMutation({
+    // callAction never rejects — it returns { error } — so throw here or
+    // onError is unreachable and a failed logout would still "succeed".
+    mutationFn: async () => {
+      const res = await callAction("logout");
+      const err = actionError(res);
+      if (err) throw new Error(err);
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      navigate("/login");
+    },
+    onError: () => toast.error("Couldn't log out. Please try again."),
+  });
+
   const { data } = useQuery({
     queryKey: queryKeys.currentUser(),
     queryFn: fetchCurrentUserOptional,
@@ -182,16 +203,15 @@ export function AccountSheet({
           <div className="border-t pt-4">
             <button
               type="button"
-              onClick={async () => {
-                // logout redirects server-side; the client clears its cache and
-                // navigates to /login (session cookie already invalidated).
-                await callAction("logout");
-                queryClient.clear();
-                navigate("/login");
-              }}
-              className="flex w-full items-center gap-4 py-2 text-muted-foreground transition-colors hover:text-foreground"
+              disabled={logoutMutation.isPending}
+              onClick={() => logoutMutation.mutate()}
+              className="flex w-full items-center gap-4 py-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
             >
-              <LogOutIcon className="size-5" />
+              {logoutMutation.isPending ? (
+                <Loader2Icon className="size-5 animate-spin" />
+              ) : (
+                <LogOutIcon className="size-5" />
+              )}
               Log out
             </button>
           </div>

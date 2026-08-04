@@ -15,7 +15,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import { Button } from "@umamin/ui/components/button";
+import { Button, buttonVariants } from "@umamin/ui/components/button";
 import {
   Card,
   CardContent,
@@ -40,6 +40,7 @@ import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
+import { TimeAgo } from "@/components/time-ago";
 import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
@@ -55,7 +56,6 @@ import {
   isAlreadyReacted,
   isAlreadyRemoved,
   saveImage,
-  shortTimeAgo,
 } from "@/lib/utils";
 import {
   addNoteReactionAction,
@@ -237,14 +237,11 @@ export function NoteCard({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction asChild>
-                  <Button
-                    disabled={removeMutation.isPending}
-                    variant="destructive"
-                    onClick={() => removeMutation.mutate()}
-                  >
-                    Continue
-                  </Button>
+                <AlertDialogAction
+                  className={buttonVariants({ variant: "destructive" })}
+                  onClick={() => removeMutation.mutate()}
+                >
+                  Continue
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -321,18 +318,24 @@ export function NoteCard({
                   )}
 
                   {!data.isAnonymous && (
-                    <span className="text-muted-foreground truncate">
+                    <Link
+                      href={`/user/${username}`}
+                      className="text-muted-foreground truncate hover:underline"
+                    >
                       @{username}
-                    </span>
+                    </Link>
                   )}
                 </div>
               </div>
 
-              <div className="flex gap-x-1 text-muted-foreground items-center">
+              {/* gap-x-2: the reply and menu buttons each overhang 4px (-m-1),
+                  so a 4px gap would overlap their tap areas. */}
+              <div className="flex gap-x-2 text-muted-foreground items-center">
                 {data.updatedAt && (
-                  <span className="text-xs text-muted-foreground mr-1">
-                    {shortTimeAgo(data.updatedAt)}
-                  </span>
+                  <TimeAgo
+                    date={data.updatedAt}
+                    className="text-xs text-muted-foreground mr-1"
+                  />
                 )}
 
                 {user?.quietMode && <MessageSquareXIcon className="size-5" />}
@@ -345,7 +348,7 @@ export function NoteCard({
                     aria-label="Reply"
                     aria-expanded={replyOpen}
                     onClick={() => setReplyOpen((prev) => !prev)}
-                    className="size-auto p-0 hover:bg-transparent text-muted-foreground"
+                    className="size-8 -m-1 hover:bg-transparent text-muted-foreground"
                   >
                     <MessageSquareTextIcon className="size-5" />
                   </Button>

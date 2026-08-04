@@ -306,16 +306,22 @@ export function PostCard({
         />
       )}
 
-      <Avatar
-        className={cn({
-          "avatar-shine": hasUmaminPlus(author?.createdAt),
-        })}
+      <Link
+        href={`/user/${author?.username}`}
+        aria-label={`@${author?.username}'s profile`}
+        className="relative z-10 shrink-0 self-start"
       >
-        <AvatarImage src={author?.imageUrl ?? ""} alt="User avatar" />
-        <AvatarFallback>
-          <ScanFaceIcon />
-        </AvatarFallback>
-      </Avatar>
+        <Avatar
+          className={cn({
+            "avatar-shine": hasUmaminPlus(author?.createdAt),
+          })}
+        >
+          <AvatarImage src={author?.imageUrl ?? ""} alt="User avatar" />
+          <AvatarFallback>
+            <ScanFaceIcon />
+          </AvatarFallback>
+        </Avatar>
+      </Link>
 
       <div className="w-full min-w-0">
         <div className="flex justify-between">
@@ -332,7 +338,12 @@ export function PostCard({
                 author.username,
               ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
             <GroupBadge badge={author?.groupBadge} />
-            <span className="text-muted-foreground">@{author?.username}</span>
+            <Link
+              href={`/user/${author?.username}`}
+              className="relative z-10 truncate text-muted-foreground hover:underline"
+            >
+              @{author?.username}
+            </Link>
           </div>
 
           <div className="relative z-10 flex items-center gap-2 text-muted-foreground">
@@ -385,7 +396,9 @@ export function PostCard({
           <QuotedPostCard post={quotablePost.quotedPost ?? null} />
         )}
 
-        <div className="relative z-10 flex items-center space-x-4 text-muted-foreground mt-4">
+        {/* gap-4 (not space-x) so the controls' negative margins can enlarge
+            their tap targets without shifting the visual layout. */}
+        <div className="relative z-10 flex items-center gap-4 text-muted-foreground mt-4">
           <Button
             type="button"
             variant="ghost"
@@ -394,7 +407,7 @@ export function PostCard({
             aria-label={`${liked ? "Unlike" : "Like"} ${isComment ? "comment" : "post"}`}
             aria-pressed={liked}
             className={cn(
-              "h-auto gap-0 p-0 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
+              "h-auto gap-0 -m-2 p-2 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
               liked
                 ? "text-pink-500 hover:text-pink-500"
                 : "hover:text-muted-foreground",
@@ -417,7 +430,7 @@ export function PostCard({
                   disabled={!isAuthenticated}
                   aria-label="Repost options"
                   className={cn(
-                    "h-auto gap-0 p-0 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
+                    "h-auto gap-0 -m-2 p-2 flex space-x-1 items-center hover:bg-transparent disabled:opacity-100",
                     reposted
                       ? "text-emerald-600 hover:text-emerald-600"
                       : "hover:text-muted-foreground",
@@ -457,15 +470,14 @@ export function PostCard({
           )}
 
           {!isComment && (
-            <div className="flex space-x-1 items-center">
-              <Link
-                href={`/post/${data?.id}`}
-                aria-label={`View ${commentCount ?? 0} comments`}
-              >
-                <MessageCircleIcon className="h-5 w-5" />
-              </Link>
+            <Link
+              href={`/post/${data?.id}`}
+              aria-label={`View ${commentCount ?? 0} comments`}
+              className="flex space-x-1 items-center -m-2 p-2"
+            >
+              <MessageCircleIcon className="h-5 w-5" />
               <span>{commentCount ?? 0}</span>
-            </div>
+            </Link>
           )}
         </div>
       </div>

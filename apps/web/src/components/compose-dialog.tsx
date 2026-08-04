@@ -1,11 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@umamin/ui/components/alert-dialog";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
-import { Button } from "@umamin/ui/components/button";
+import { Button, buttonVariants } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +76,7 @@ export function ComposeDialog({
 
   const [dragging, setDragging] = useState(false);
   const [content, setContent] = useState("");
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [poll, setPoll] = useState<{
     options: string[];
     duration: PollDuration;
@@ -158,8 +169,29 @@ export function ComposeDialog({
     attachments.addFiles(files);
   };
 
+  // Escape, the overlay, and the X all route through here — a dirty draft
+  // (words, images, or a poll) asks before it's thrown away.
+  const isDirty =
+    content.trim().length > 0 || attachments.items.length > 0 || poll !== null;
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next && isDirty) {
+      setConfirmDiscard(true);
+      return;
+    }
+    onOpenChange(next);
+  };
+
+  const discardDraft = () => {
+    setConfirmDiscard(false);
+    setContent("");
+    setPoll(null);
+    attachments.discardAll();
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
         className="flex h-dvh max-w-xl flex-col gap-0 p-0 sm:h-auto sm:max-h-[80dvh] sm:rounded-xl"
@@ -202,7 +234,7 @@ export function ComposeDialog({
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
               aria-label="Cancel"
             >
               <XIcon />
@@ -351,6 +383,28 @@ export function ComposeDialog({
           </footer>
         </form>
       </DialogContent>
+
+      <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your draft will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            {/* buttonVariants className, not asChild — Slot's class merge lets
+                the Action's default variant win over a nested Button's. */}
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={discardDraft}
+            >
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

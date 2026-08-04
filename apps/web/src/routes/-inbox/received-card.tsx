@@ -5,6 +5,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { MailIcon } from "lucide-react";
 import { useState } from "react";
+import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { vibrate } from "@/lib/haptics";
 import { queryKeys } from "@/lib/query";
 import { patchMessage } from "@/lib/query-cache";
@@ -74,7 +75,7 @@ export function ReceivedMessageCard({ data }: { data: MessageWithReceiver }) {
         <span className="font-semibold">{sealedTitleFor(data.id)}</span>
         <span className="text-muted-foreground text-sm">Tap to open</span>
         <span className="mt-2 text-muted-foreground text-xs italic">
-          {receivedAgo}
+          <TimeAgoVerbose date={data.createdAt} />
         </span>
       </Button>
     );
@@ -105,9 +106,7 @@ export function ReceivedMessageCard({ data }: { data: MessageWithReceiver }) {
           {data.content}
         </div>
         <p className="text-muted-foreground text-sm mt-4 italic text-center">
-          {formatDistanceToNow(data.createdAt, {
-            addSuffix: true,
-          })}
+          <TimeAgoVerbose date={data.createdAt} />
         </p>
 
         {(data.reply || data.lastReplyAt) && (

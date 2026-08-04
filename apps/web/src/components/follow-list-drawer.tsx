@@ -409,9 +409,12 @@ function FollowUserRow({
           )}
           <GroupBadge badge={user.groupBadge} />
         </div>
-        <p className="truncate text-muted-foreground text-sm">
+        <Link
+          href={`/user/${user.username}`}
+          className="block truncate text-muted-foreground text-sm hover:underline"
+        >
           @{user.username}
-        </p>
+        </Link>
       </div>
 
       {!isSelf ? (
