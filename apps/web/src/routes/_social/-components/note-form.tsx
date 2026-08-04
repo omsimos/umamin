@@ -27,6 +27,11 @@ const PROMPTS = [
   "what's living in your head rent-free?",
 ];
 
+// Mirrors the server's 500-char cap (api/actions/note.ts); counter appears
+// near the limit like thread-view's composer.
+const MAX_LENGTH = 500;
+const COUNTER_VISIBLE_AT = 400;
+
 export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
@@ -155,8 +160,14 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         onChange={(e) => setContent(e.target.value)}
         id="message"
         placeholder={placeholder}
+        maxLength={MAX_LENGTH}
         className="font-display md:text-base"
       />
+      {content.length >= COUNTER_VISIBLE_AT && (
+        <p className="mt-1.5 text-right text-muted-foreground text-xs tabular-nums">
+          {MAX_LENGTH - content.length} left
+        </p>
+      )}
 
       {parsedMusic && (
         <div className="mt-2 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">

@@ -321,9 +321,12 @@ export function NoteCard({
                   )}
 
                   {!data.isAnonymous && (
-                    <span className="text-muted-foreground truncate">
+                    <Link
+                      href={`/user/${username}`}
+                      className="text-muted-foreground truncate hover:underline"
+                    >
                       @{username}
-                    </span>
+                    </Link>
                   )}
                 </div>
               </div>

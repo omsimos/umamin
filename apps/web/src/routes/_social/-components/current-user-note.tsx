@@ -28,6 +28,7 @@ import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
+import { Link } from "@/lib/navigation";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
@@ -176,37 +177,49 @@ export function CurrentUserNote({
               </>
             ) : (
               <>
-                <Avatar
-                  className={cn("relative top-1", {
-                    "avatar-shine": hasUmaminPlus(currentUser?.createdAt),
-                  })}
+                <Link
+                  href={`/user/${currentUser.username}`}
+                  aria-label={`@${currentUser.username}'s profile`}
+                  className="shrink-0"
                 >
-                  <AvatarImage
-                    className="rounded-full"
-                    src={currentUser?.imageUrl ?? ""}
-                    alt="User avatar"
-                  />
-                  <AvatarFallback className="text-xs">
-                    <ScanFaceIcon />
-                  </AvatarFallback>
-                </Avatar>
+                  <Avatar
+                    className={cn("relative top-1", {
+                      "avatar-shine": hasUmaminPlus(currentUser?.createdAt),
+                    })}
+                  >
+                    <AvatarImage
+                      className="rounded-full"
+                      src={currentUser?.imageUrl ?? ""}
+                      alt="User avatar"
+                    />
+                    <AvatarFallback className="text-xs">
+                      <ScanFaceIcon />
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
 
                 <div className="flex flex-col mt-1">
                   <div className="flex items-center space-x-1">
-                    <span className="font-semibold flex-none text-base leading-none">
+                    <Link
+                      href={`/user/${currentUser.username}`}
+                      className="font-semibold flex-none text-base leading-none hover:underline"
+                    >
                       {currentUser.displayName
                         ? currentUser.displayName
                         : currentUser.username}
-                    </span>
+                    </Link>
                     {import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(
                       currentUser.username,
                     ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
                     <GroupBadge badge={currentUser.groupBadge} />
                   </div>
 
-                  <span className="text-muted-foreground truncate">
+                  <Link
+                    href={`/user/${currentUser.username}`}
+                    className="text-muted-foreground truncate hover:underline"
+                  >
                     @{currentUser.username}
-                  </span>
+                  </Link>
                 </div>
               </>
             )}

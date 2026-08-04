@@ -25,6 +25,14 @@ export function MenubarLink({
       aria-label={ariaLabel}
       aria-current={active ? "page" : undefined}
       className={cn(active && "text-foreground!")}
+      onClick={(e) => {
+        // Re-tapping the current tab scrolls back to the top of the list
+        // instead of a no-op navigation.
+        if (active) {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }}
     >
       {children}
     </Link>

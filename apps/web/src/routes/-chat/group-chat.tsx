@@ -572,9 +572,12 @@ export function GroupChat({
                 >
                   {!isOwn && firstOfGroup && (
                     <div className="flex min-w-0 items-center gap-1.5 pb-0.5">
-                      <span className="truncate text-xs font-medium">
+                      <Link
+                        href={`/user/${message.sender.username}`}
+                        className="truncate text-xs font-medium hover:underline"
+                      >
                         {message.sender.displayName ?? message.sender.username}
-                      </span>
+                      </Link>
                       <GroupBadge badge={message.sender.groupBadge} />
                       <span className="shrink-0 text-[10px] whitespace-nowrap text-muted-foreground">
                         {timeFormat.format(new Date(message.createdAt))}

@@ -125,7 +125,7 @@ export function ReplyDialog(props: Props) {
                 className="focus-visible:ring-transparent flex-1 text-base resize-none min-h-10 max-h-20"
                 autoComplete="off"
               />
-              <Button type="submit" size="icon">
+              <Button type="submit" size="icon" disabled={mutation.isPending}>
                 {mutation.isPending ? (
                   <Loader2Icon className="w-4 h-4 animate-spin" />
                 ) : (

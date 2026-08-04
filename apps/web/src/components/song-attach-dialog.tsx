@@ -101,7 +101,13 @@ function SongForm({
   };
 
   return (
-    <div className="space-y-4">
+    <form
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (music) onAttach(trimmed);
+      }}
+    >
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Music2Icon
@@ -117,6 +123,7 @@ function SongForm({
           <Input
             type="url"
             inputMode="url"
+            enterKeyHint="done"
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -161,14 +168,10 @@ function SongForm({
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
-        <Button
-          type="button"
-          disabled={!music}
-          onClick={() => music && onAttach(trimmed)}
-        >
+        <Button type="submit" disabled={!music}>
           Attach song
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

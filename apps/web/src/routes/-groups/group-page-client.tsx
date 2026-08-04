@@ -564,12 +564,18 @@ export function GroupPageClient({
           <ul className="divide-y">
             {requestRows.map((request) => (
               <li key={request.id} className="flex items-center gap-3 py-3">
-                <Avatar className="size-9">
-                  <AvatarImage src={request.user.imageUrl ?? ""} alt="" />
-                  <AvatarFallback>
-                    <ScanFaceIcon className="size-4" />
-                  </AvatarFallback>
-                </Avatar>
+                <Link
+                  href={`/user/${request.user.username}`}
+                  aria-label={`@${request.user.username}'s profile`}
+                  className="shrink-0"
+                >
+                  <Avatar className="size-9">
+                    <AvatarImage src={request.user.imageUrl ?? ""} alt="" />
+                    <AvatarFallback>
+                      <ScanFaceIcon className="size-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
                 <Link
                   href={`/user/${request.user.username}`}
                   className="min-w-0 flex-1"
@@ -586,7 +592,10 @@ export function GroupPageClient({
                   size="icon"
                   variant="ghost"
                   aria-label={`Approve ${request.user.username}`}
-                  disabled={respondRequestMutation.isPending}
+                  disabled={
+                    respondRequestMutation.isPending &&
+                    respondRequestMutation.variables?.userId === request.user.id
+                  }
                   onClick={() =>
                     respondRequestMutation.mutate({
                       userId: request.user.id,
@@ -602,7 +611,10 @@ export function GroupPageClient({
                   size="icon"
                   variant="ghost"
                   aria-label={`Reject ${request.user.username}`}
-                  disabled={respondRequestMutation.isPending}
+                  disabled={
+                    respondRequestMutation.isPending &&
+                    respondRequestMutation.variables?.userId === request.user.id
+                  }
                   onClick={() =>
                     respondRequestMutation.mutate({
                       userId: request.user.id,
@@ -651,12 +663,18 @@ export function GroupPageClient({
           <ul className="divide-y">
             {memberRows.map((member) => (
               <li key={member.id} className="flex items-center gap-3 py-3">
-                <Avatar className="size-9">
-                  <AvatarImage src={member.user.imageUrl ?? ""} alt="" />
-                  <AvatarFallback>
-                    <ScanFaceIcon className="size-4" />
-                  </AvatarFallback>
-                </Avatar>
+                <Link
+                  href={`/user/${member.user.username}`}
+                  aria-label={`@${member.user.username}'s profile`}
+                  className="shrink-0"
+                >
+                  <Avatar className="size-9">
+                    <AvatarImage src={member.user.imageUrl ?? ""} alt="" />
+                    <AvatarFallback>
+                      <ScanFaceIcon className="size-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
                 <Link
                   href={`/user/${member.user.username}`}
                   className="min-w-0 flex-1"
@@ -678,7 +696,10 @@ export function GroupPageClient({
                     size="icon"
                     variant="ghost"
                     aria-label={`Remove ${member.user.username}`}
-                    disabled={kickMutation.isPending}
+                    disabled={
+                      kickMutation.isPending &&
+                      kickMutation.variables === member.user.id
+                    }
                     onClick={() => kickMutation.mutate(member.user.id)}
                     className="text-muted-foreground hover:text-destructive"
                   >

@@ -141,6 +141,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
             placeholder="Umamin"
             value={fields.displayName}
             disabled={mutation.isPending}
+            maxLength={20}
             onChange={(e) => set("displayName", e.target.value)}
           />
           {errors.displayName && (
@@ -158,6 +159,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
               placeholder="umamin"
               value={fields.username}
               disabled={!user.account || mutation.isPending}
+              maxLength={20}
               onChange={(e) => set("username", e.target.value.toLowerCase())}
             />
             {errors.username && (
@@ -186,8 +188,14 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
             className="min-h-[100px] resize-none"
             value={fields.question}
             disabled={mutation.isPending}
+            maxLength={150}
             onChange={(e) => set("question", e.target.value)}
           />
+          {fields.question.length >= 120 && (
+            <p className="text-right text-muted-foreground text-xs tabular-nums">
+              {150 - fields.question.length} left
+            </p>
+          )}
           {errors.question && (
             <p className="text-sm text-destructive">{errors.question}</p>
           )}
@@ -201,8 +209,14 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
             className="min-h-[100px] resize-none"
             value={fields.bio}
             disabled={mutation.isPending}
+            maxLength={150}
             onChange={(e) => set("bio", e.target.value)}
           />
+          {fields.bio.length >= 120 && (
+            <p className="text-right text-muted-foreground text-xs tabular-nums">
+              {150 - fields.bio.length} left
+            </p>
+          )}
           {errors.bio && (
             <p className="text-sm text-destructive">{errors.bio}</p>
           )}

@@ -229,16 +229,22 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
       className="px-7 container border-x-0 sm:border-x border border-muted py-6 bg-muted/50 sm:rounded-md sm:px-6"
     >
       <div className="flex justify-center gap-3">
-        <Avatar
-          className={cn({
-            "avatar-shine": hasUmaminPlus(author.createdAt),
-          })}
+        <Link
+          href={`/user/${author.username}`}
+          aria-label={`@${author.username}'s profile`}
+          className="shrink-0 self-start"
         >
-          <AvatarImage src={author.imageUrl ?? ""} alt="User avatar" />
-          <AvatarFallback>
-            <ScanFaceIcon />
-          </AvatarFallback>
-        </Avatar>
+          <Avatar
+            className={cn({
+              "avatar-shine": hasUmaminPlus(author.createdAt),
+            })}
+          >
+            <AvatarImage src={author.imageUrl ?? ""} alt="User avatar" />
+            <AvatarFallback>
+              <ScanFaceIcon />
+            </AvatarFallback>
+          </Avatar>
+        </Link>
 
         <div className="flex justify-between w-full items-center text-[15px]">
           <div className="flex items-center space-x-1">
@@ -254,7 +260,12 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
                 author.username,
               ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
             <GroupBadge badge={author.groupBadge} />
-            <span className="text-muted-foreground">@{author.username}</span>
+            <Link
+              href={`/user/${author.username}`}
+              className="truncate text-muted-foreground hover:underline"
+            >
+              @{author.username}
+            </Link>
           </div>
 
           <div className="flex items-center gap-2 text-muted-foreground">

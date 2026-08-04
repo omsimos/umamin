@@ -267,6 +267,7 @@ export const sharePost = (postId: string) => {
         navigator.share({ url });
       } else {
         navigator.clipboard.writeText(url);
+        toast.success("Post link copied.");
       }
     }
   } catch (err) {

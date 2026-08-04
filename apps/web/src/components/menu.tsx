@@ -1,3 +1,4 @@
+import { Button } from "@umamin/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -5,8 +6,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@umamin/ui/components/dropdown-menu";
+import { EllipsisVerticalIcon } from "lucide-react";
 import React from "react";
-import { Icons } from "@/lib/icons";
 
 export type MenuItems = {
   title: string;
@@ -19,8 +20,17 @@ export type MenuItems = {
 export const Menu = ({ menuItems }: { menuItems: MenuItems }) => {
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger aria-label="More options">
-        <Icons.elipsisVertical />
+      <DropdownMenuTrigger asChild>
+        {/* 32px tap target inside a 24px layout box so card rows keep their
+            height. */}
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="More options"
+          className="size-8 -m-1"
+        >
+          <EllipsisVerticalIcon className="size-5" />
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         {menuItems.map((item, i) => (
