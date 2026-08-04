@@ -19,6 +19,7 @@ import {
 } from "@umamin/ui/components/dropdown-menu";
 import { cn } from "@umamin/ui/lib/utils";
 import {
+  ArrowDownIcon,
   ArrowLeftIcon,
   Loader2Icon,
   ReplyIcon,
@@ -37,6 +38,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { GroupBadge } from "@/components/group-badge";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import {
   GROUP_CHAT_REACTION_EMOJIS,
   type GroupAccent,
@@ -72,6 +74,7 @@ import { ReactionsDrawer } from "./reactions-drawer";
 // billed edge request. Keep aligned with the head route's cache TTL.
 const HEAD_POLL_MS = 8000;
 const GROUP_MESSAGE_MAX = 1000;
+const COUNTER_VISIBLE_AT = 900;
 const EMPTY_CURSOR = "0.";
 const MENTION_SPLIT = /(@[a-z0-9_-]+)/gi;
 const MENTION_TEST = /^@[a-z0-9_-]+$/i;
@@ -128,6 +131,9 @@ export function GroupChat({
   const [reactorsMessageId, setReactorsMessageId] = useState<string | null>(
     null,
   );
+  // Others' messages that arrived while scrolled up — drives the jump pill.
+  const [unseen, setUnseen] = useState(0);
+  const composerRef = useDynamicTextarea(draft);
   const scrollRef = useRef<HTMLDivElement>(null);
   const nearBottomRef = useRef(true);
   const lastRxnRef = useRef<number | null>(null);
@@ -218,6 +224,12 @@ export function GroupChat({
         if (delta.data.length > 0) {
           setLive((prev) => mergeById(prev, delta.data));
           void loadReactions(delta.data.map((m) => m.id));
+          if (!nearBottomRef.current) {
+            const arrived = delta.data.filter(
+              (m) => m.sender.id !== currentUserId,
+            ).length;
+            if (arrived > 0) setUnseen((c) => c + arrived);
+          }
         }
       }
 
@@ -449,6 +461,16 @@ export function GroupChat({
     if (!el) return;
     nearBottomRef.current =
       el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottomRef.current) {
+      setUnseen((c) => (c === 0 ? c : 0));
+    }
+  };
+
+  const jumpToLatest = () => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    nearBottomRef.current = true;
+    setUnseen(0);
   };
 
   const GroupIconGlyph =
@@ -710,6 +732,22 @@ export function GroupChat({
           })}
         </div>
 
+        {unseen > 0 && (
+          // Zero-height anchor so the pill floats over the list bottom without
+          // shifting the composer.
+          <div className="relative shrink-0">
+            <Button
+              type="button"
+              size="sm"
+              onClick={jumpToLatest}
+              className="-top-12 -translate-x-1/2 absolute left-1/2 z-10 rounded-full shadow-lg"
+            >
+              <ArrowDownIcon className="size-4" />
+              {unseen === 1 ? "1 new message" : `${unseen} new messages`}
+            </Button>
+          </div>
+        )}
+
         {replyingTo && (
           <div className="flex shrink-0 items-center gap-2 border-t px-2 pt-2 text-xs text-muted-foreground">
             <ReplyIcon className="size-3.5 shrink-0" />
@@ -733,6 +771,12 @@ export function GroupChat({
           </div>
         )}
 
+        {draft.length >= COUNTER_VISIBLE_AT && (
+          <p className="shrink-0 px-4 pt-1 text-right text-muted-foreground text-xs tabular-nums">
+            {GROUP_MESSAGE_MAX - draft.length} left
+          </p>
+        )}
+
         <form
           className="flex shrink-0 items-end gap-2 border-t px-2 pt-3"
           style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
@@ -742,12 +786,15 @@ export function GroupChat({
           }}
         >
           <textarea
+            ref={composerRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
             rows={1}
             maxLength={GROUP_MESSAGE_MAX}
             placeholder="Message…"
+            aria-label="Message"
+            autoComplete="off"
             className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border bg-muted/40 px-4 py-2.5 text-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
           />
           <Button

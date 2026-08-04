@@ -41,8 +41,10 @@ function notificationHref(notification: NotificationItem): string | null {
 
 export function NotificationCard({
   notification,
+  isNew,
 }: {
   notification: NotificationItem;
+  isNew?: boolean;
 }) {
   const { actor, type, count, preview, updatedAt } = notification;
   const actorName = actor ? (actor.displayName ?? actor.username) : null;
@@ -70,6 +72,13 @@ export function NotificationCard({
         ) : null}
         <TimeAgo date={updatedAt} className="text-xs text-muted-foreground" />
       </div>
+
+      {isNew && (
+        <span className="shrink-0">
+          <span aria-hidden className="block size-2 rounded-full bg-pink-500" />
+          <span className="sr-only">New</span>
+        </span>
+      )}
     </div>
   );
 

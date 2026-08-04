@@ -40,6 +40,7 @@ import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
+import { TimeAgo } from "@/components/time-ago";
 import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
@@ -55,7 +56,6 @@ import {
   isAlreadyReacted,
   isAlreadyRemoved,
   saveImage,
-  shortTimeAgo,
 } from "@/lib/utils";
 import {
   addNoteReactionAction,
@@ -333,9 +333,10 @@ export function NoteCard({
 
               <div className="flex gap-x-1 text-muted-foreground items-center">
                 {data.updatedAt && (
-                  <span className="text-xs text-muted-foreground mr-1">
-                    {shortTimeAgo(data.updatedAt)}
-                  </span>
+                  <TimeAgo
+                    date={data.updatedAt}
+                    className="text-xs text-muted-foreground mr-1"
+                  />
                 )}
 
                 {user?.quietMode && <MessageSquareXIcon className="size-5" />}
@@ -348,7 +349,7 @@ export function NoteCard({
                     aria-label="Reply"
                     aria-expanded={replyOpen}
                     onClick={() => setReplyOpen((prev) => !prev)}
-                    className="size-auto p-0 hover:bg-transparent text-muted-foreground"
+                    className="size-8 -m-1 hover:bg-transparent text-muted-foreground"
                   >
                     <MessageSquareTextIcon className="size-5" />
                   </Button>

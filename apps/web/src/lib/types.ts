@@ -321,6 +321,9 @@ export type NotificationItem = {
 export type NotificationsResponse = {
   notifications: NotificationItem[];
   nextCursor: string | null;
+  // Viewer's seen watermark (ms since epoch, 0 = never seen any), present on
+  // the first page only. Items with updatedAt beyond it render as new.
+  lastSeen?: number;
 };
 
 export type NotificationBadgeResponse = {

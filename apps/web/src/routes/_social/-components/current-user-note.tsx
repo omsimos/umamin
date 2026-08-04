@@ -1,10 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@umamin/ui/components/alert-dialog";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
+import { Button } from "@umamin/ui/components/button";
 import {
   Card,
   CardContent,
@@ -23,22 +34,19 @@ import {
   ScanFaceIcon,
   ScrollIcon,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
+import { TimeAgo } from "@/components/time-ago";
 import { Link } from "@/lib/navigation";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse, PublicUserWithBadge } from "@/lib/types";
-import {
-  getActionError,
-  hasUmaminPlus,
-  saveImage,
-  shortTimeAgo,
-} from "@/lib/utils";
+import { getActionError, hasUmaminPlus, saveImage } from "@/lib/utils";
 import { clearNoteAction } from "../-lib/actions";
 
 export function CurrentUserNote({
@@ -47,6 +55,7 @@ export function CurrentUserNote({
   currentUser: PublicUserWithBadge;
 }) {
   const queryClient = useQueryClient();
+  const [clearOpen, setClearOpen] = useState(false);
   const { data, isLoading } = useQuery<NoteItem | null>({
     ...pageQueryOptions(queryKeys.currentNote(), fetchCurrentNote),
   });
@@ -93,7 +102,7 @@ export function CurrentUserNote({
     },
     {
       title: "Clear Note",
-      onClick: () => clearNoteMutation.mutate(),
+      onClick: () => setClearOpen(true),
       className: "text-red-500",
       icon: <ScrollIcon className="h-4 w-4" />,
     },
@@ -129,6 +138,30 @@ export function CurrentUserNote({
 
   return (
     <div id={`umamin-${data.id}`}>
+      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear your note?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It disappears from the notes feed for everyone. This can't be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                disabled={clearNoteMutation.isPending}
+                variant="destructive"
+                onClick={() => clearNoteMutation.mutate()}
+              >
+                Clear note
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card
         className={cn(
           "flex flex-col items-start gap-3 py-4",
@@ -147,9 +180,10 @@ export function CurrentUserNote({
 
           <div className="flex gap-x-1 items-center">
             {data.updatedAt && (
-              <span className="text-xs text-muted-foreground mr-1">
-                {shortTimeAgo(data.updatedAt)}
-              </span>
+              <TimeAgo
+                date={data.updatedAt}
+                className="text-xs text-muted-foreground mr-1"
+              />
             )}
             {currentUser.quietMode && <MessageSquareXIcon className="size-5" />}
             <Menu menuItems={menuItems} />

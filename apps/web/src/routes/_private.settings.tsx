@@ -16,11 +16,17 @@ import { SettingsTabs } from "./-settings/settings-tabs";
 import { SignOutButton } from "./-settings/sign-out-button";
 import { BackHeaderPage } from "./-shared/chrome";
 
-type SettingsSearch = { error?: string };
+type SettingsSearch = { error?: string; tab?: "account" | "privacy" };
 
 export const Route = createFileRoute("/_private/settings")({
+  // `tab` stays optional with no materialized default (general) — see the
+  // /feed sort gotcha: emitting the default canonicalizes every bare URL.
   validateSearch: (search: Record<string, unknown>): SettingsSearch => ({
     error: typeof search.error === "string" ? search.error : undefined,
+    tab:
+      search.tab === "account" || search.tab === "privacy"
+        ? search.tab
+        : undefined,
   }),
   head: () =>
     pageSeo({

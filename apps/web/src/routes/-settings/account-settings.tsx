@@ -16,13 +16,13 @@ import {
   CollapsibleTrigger,
 } from "@umamin/ui/components/collapsible";
 import { Label } from "@umamin/ui/components/label";
-import { formatDistanceToNow } from "date-fns";
 import {
   ChevronsUpDownIcon,
   KeyIcon,
   ScanFaceIcon,
   ShieldAlertIcon,
 } from "lucide-react";
+import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import type { UserWithAccount } from "@/lib/types";
 import { DangerSettings } from "./danger-settings";
 import { PasswordForm } from "./password-form";
@@ -50,10 +50,7 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
                 <p>{user.account.email}</p>
 
                 <p className="text-muted-foreground">
-                  Linked{" "}
-                  {formatDistanceToNow(user.account.createdAt, {
-                    addSuffix: true,
-                  })}
+                  Linked <TimeAgoVerbose date={user.account.createdAt} />
                 </p>
               </div>
             </CardHeader>

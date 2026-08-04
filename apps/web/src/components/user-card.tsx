@@ -6,7 +6,6 @@ import {
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 import {
   BadgeCheckIcon,
   CalendarDaysIcon,
@@ -16,6 +15,7 @@ import {
   ShieldUserIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
 import type { PublicUserWithBadge } from "@/lib/types";
 import { hasUmaminPlus } from "@/lib/utils";
@@ -158,10 +158,9 @@ export function UserCard({
 
             <div className="text-muted-foreground text-sm flex items-center gap-2">
               <CalendarDaysIcon className="size-4" />
-              Joined{" "}
-              {formatDistanceToNow(user.createdAt, {
-                addSuffix: true,
-              })}
+              <span>
+                Joined <TimeAgoVerbose date={user.createdAt} />
+              </span>
             </div>
           </div>
 

@@ -6,9 +6,9 @@ import {
 import { cn } from "@umamin/ui/lib/utils";
 import { BarChart3Icon, ScanFaceIcon } from "lucide-react";
 import { PostImages } from "@/components/post-images";
+import { TimeAgo } from "@/components/time-ago";
 import { Link } from "@/lib/navigation";
 import type { QuotedPostData } from "@/lib/types";
-import { shortTimeAgo } from "@/lib/utils";
 
 type Props = {
   /** null = quoted post deleted or hidden from this viewer (husk). */
@@ -52,9 +52,10 @@ export function QuotedPostCard({ post, linked = true, className }: Props) {
         <span className="truncate text-muted-foreground">
           @{post.author.username}
         </span>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {shortTimeAgo(post.createdAt)}
-        </span>
+        <TimeAgo
+          date={post.createdAt}
+          className="shrink-0 text-xs text-muted-foreground"
+        />
       </div>
 
       {post.content && (

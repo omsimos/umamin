@@ -40,7 +40,6 @@ import {
 } from "@umamin/ui/components/dropdown-menu";
 import { Input } from "@umamin/ui/components/input";
 import { cn } from "@umamin/ui/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 import {
   CheckIcon,
   EllipsisIcon,
@@ -59,6 +58,7 @@ import {
 import { type FormEventHandler, useState } from "react";
 import { toast } from "sonner";
 import { GroupEditDialog } from "@/components/group-edit-dialog";
+import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import {
   GROUP_CHAT_ENABLED,
@@ -383,8 +383,7 @@ export function GroupPageClient({
           </p>
           {group.creator && (
             <p className="text-xs text-muted-foreground">
-              Created{" "}
-              {formatDistanceToNow(group.createdAt, { addSuffix: true })} by{" "}
+              Created <TimeAgoVerbose date={group.createdAt} /> by{" "}
               <Link
                 href={`/user/${group.creator.username}`}
                 className="hover:underline"
@@ -691,20 +690,41 @@ export function GroupPageClient({
                     Owner
                   </Badge>
                 ) : isOwner && member.user.id !== currentUserId ? (
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`Remove ${member.user.username}`}
-                    disabled={
-                      kickMutation.isPending &&
-                      kickMutation.variables === member.user.id
-                    }
-                    onClick={() => kickMutation.mutate(member.user.id)}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <UserMinusIcon className="size-4" />
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`Remove ${member.user.username}`}
+                        disabled={
+                          kickMutation.isPending &&
+                          kickMutation.variables === member.user.id
+                        }
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <UserMinusIcon className="size-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Remove @{member.user.username}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          They'll lose access to the group and its chat.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => kickMutation.mutate(member.user.id)}
+                        >
+                          Remove
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 ) : null}
               </li>
             ))}

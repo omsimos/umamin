@@ -226,6 +226,21 @@ export function useImageAttachments() {
     setItems([]);
   };
 
+  // Draft discarded without posting: unlike resetAfterPost, nothing downstream
+  // renders the previews, so abort in-flight uploads and revoke them.
+  const discardAll = () => {
+    for (const meta of metaRef.current.values()) {
+      meta.xhr?.abort();
+    }
+    metaRef.current.clear();
+    setItems((prev) => {
+      for (const item of prev) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+      return [];
+    });
+  };
+
   const isBusy = items.some(
     (item) => item.status === "processing" || item.status === "uploading",
   );
@@ -247,6 +262,7 @@ export function useImageAttachments() {
     remove,
     retry,
     resetAfterPost,
+    discardAll,
     isBusy,
     hasReadyImages,
     hasErrors,

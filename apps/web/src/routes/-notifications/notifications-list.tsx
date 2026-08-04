@@ -91,12 +91,22 @@ export function NotificationsList() {
     );
   }
 
+  // Fetch-time watermark: the cached first page keeps the value from before
+  // the mark-seen effect advanced it, so new rows stay marked for the visit.
+  const lastSeen = data?.pages[0]?.lastSeen;
+
   return (
     <div>
       <ul className="divide-y">
         {notifications.map((notification) => (
           <li key={notification.id}>
-            <NotificationCard notification={notification} />
+            <NotificationCard
+              notification={notification}
+              isNew={
+                lastSeen !== undefined &&
+                new Date(notification.updatedAt).getTime() > lastSeen
+              }
+            />
           </li>
         ))}
       </ul>

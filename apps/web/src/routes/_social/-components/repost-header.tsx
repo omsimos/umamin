@@ -1,7 +1,7 @@
 import { BadgeCheckIcon, Repeat2Icon } from "lucide-react";
+import { TimeAgo } from "@/components/time-ago";
 import { Link } from "@/lib/navigation";
 import type { FeedAuthor } from "@/lib/types";
-import { shortTimeAgo } from "@/lib/utils";
 
 // Plain-repost attribution line — quotes are real posts with their own card.
 export function RepostHeader({
@@ -26,7 +26,9 @@ export function RepostHeader({
         @{user.username}
       </Link>
       {verified && <BadgeCheckIcon className="w-4 h-4 text-pink-500 mr-1" />}
-      <span>reposted {shortTimeAgo(createdAt)}</span>
+      <span>
+        reposted <TimeAgo date={createdAt} />
+      </span>
     </div>
   );
 }
