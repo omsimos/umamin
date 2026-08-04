@@ -25,7 +25,7 @@ import {
 import { toast } from "sonner";
 import { GroupBadge } from "@/components/group-badge";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
-import { callAction } from "@/lib/api";
+import { actionError, callAction } from "@/lib/api";
 import { umaminChatUrl } from "@/lib/chat-link";
 import { Link, useAppNavigate } from "@/lib/navigation";
 import {
@@ -56,7 +56,14 @@ export function AccountSheet({
   // logout redirects server-side; the client clears its cache and navigates to
   // /login (session cookie already invalidated).
   const logoutMutation = useMutation({
-    mutationFn: () => callAction("logout"),
+    // callAction never rejects — it returns { error } — so throw here or
+    // onError is unreachable and a failed logout would still "succeed".
+    mutationFn: async () => {
+      const res = await callAction("logout");
+      const err = actionError(res);
+      if (err) throw new Error(err);
+      return res;
+    },
     onSuccess: () => {
       queryClient.clear();
       navigate("/login");

@@ -15,7 +15,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import { Button } from "@umamin/ui/components/button";
+import { Button, buttonVariants } from "@umamin/ui/components/button";
 import {
   Card,
   CardContent,
@@ -237,14 +237,11 @@ export function NoteCard({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction asChild>
-                  <Button
-                    disabled={removeMutation.isPending}
-                    variant="destructive"
-                    onClick={() => removeMutation.mutate()}
-                  >
-                    Continue
-                  </Button>
+                <AlertDialogAction
+                  className={buttonVariants({ variant: "destructive" })}
+                  onClick={() => removeMutation.mutate()}
+                >
+                  Continue
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -331,7 +328,9 @@ export function NoteCard({
                 </div>
               </div>
 
-              <div className="flex gap-x-1 text-muted-foreground items-center">
+              {/* gap-x-2: the reply and menu buttons each overhang 4px (-m-1),
+                  so a 4px gap would overlap their tap areas. */}
+              <div className="flex gap-x-2 text-muted-foreground items-center">
                 {data.updatedAt && (
                   <TimeAgo
                     date={data.updatedAt}

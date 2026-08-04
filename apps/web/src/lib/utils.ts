@@ -266,8 +266,10 @@ export const sharePost = (postId: string) => {
       ) {
         navigator.share({ url });
       } else {
-        navigator.clipboard.writeText(url);
-        toast.success("Post link copied.");
+        navigator.clipboard
+          .writeText(url)
+          .then(() => toast.success("Post link copied."))
+          .catch(() => toast.error("Couldn't copy the link."));
       }
     }
   } catch (err) {

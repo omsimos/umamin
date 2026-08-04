@@ -31,7 +31,7 @@ any that are empty.
 
 - Tapping a profile picture or @username now opens that profile everywhere — the feed, comments, notes, group member lists, group chat, reaction lists, and follower lists. Previously only the display name was clickable, and in the feed a tap on the avatar opened the post instead.
 - Closing the post composer with unsent writing, images, or a poll now asks before discarding the draft.
-- Removing a group member and clearing your note now ask for confirmation first.
+- Removing a group member, deleting a group chat message, and clearing your note now ask for confirmation first.
 - Like, repost, comment, and card-menu controls are easier to tap on phones without the cards getting any taller.
 - Tapping the Feed or Notes tab you're already on scrolls the list back to the top.
 - The group chat message box grows as you write multiple lines instead of scrolling inside a single-line box.

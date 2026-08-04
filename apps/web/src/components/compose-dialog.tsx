@@ -15,7 +15,7 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
-import { Button } from "@umamin/ui/components/button";
+import { Button, buttonVariants } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -394,10 +394,13 @@ export function ComposeDialog({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button variant="destructive" onClick={discardDraft}>
-                Discard
-              </Button>
+            {/* buttonVariants className, not asChild — Slot's class merge lets
+                the Action's default variant win over a nested Button's. */}
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={discardDraft}
+            >
+              Discard
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

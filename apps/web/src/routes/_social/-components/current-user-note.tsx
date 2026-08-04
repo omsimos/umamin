@@ -15,7 +15,7 @@ import {
   AvatarImage,
 } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
-import { Button } from "@umamin/ui/components/button";
+import { buttonVariants } from "@umamin/ui/components/button";
 import {
   Card,
   CardContent,
@@ -149,14 +149,11 @@ export function CurrentUserNote({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                disabled={clearNoteMutation.isPending}
-                variant="destructive"
-                onClick={() => clearNoteMutation.mutate()}
-              >
-                Clear note
-              </Button>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => clearNoteMutation.mutate()}
+            >
+              Clear note
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -178,7 +175,7 @@ export function CurrentUserNote({
             Your {data.isAnonymous ? "anonymous" : "shared"} note
           </Badge>
 
-          <div className="flex gap-x-1 items-center">
+          <div className="flex gap-x-2 items-center">
             {data.updatedAt && (
               <TimeAgo
                 date={data.updatedAt}

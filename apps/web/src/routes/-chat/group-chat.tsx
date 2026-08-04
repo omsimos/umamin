@@ -5,6 +5,16 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@umamin/ui/components/alert-dialog";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -133,6 +143,8 @@ export function GroupChat({
   );
   // Others' messages that arrived while scrolled up — drives the jump pill.
   const [unseen, setUnseen] = useState(0);
+  // Message pending delete confirmation (one shared dialog, not one per row).
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const composerRef = useDynamicTextarea(draft);
   const scrollRef = useRef<HTMLDivElement>(null);
   const nearBottomRef = useRef(true);
@@ -436,6 +448,9 @@ export function GroupChat({
     setDraft("");
     setReplyingTo(null);
     nearBottomRef.current = true;
+    // Sending jumps to the bottom — don't leave the pill over the fresh bubble
+    // while the programmatic scroll event catches up.
+    setUnseen(0);
 
     submitMessage(tempId, content, parent?.id ?? null);
   };
@@ -674,7 +689,7 @@ export function GroupChat({
                           {canDelete && (
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => deleteMutation.mutate(message.id)}
+                              onSelect={() => setDeleteTarget(message.id)}
                             >
                               <Trash2Icon /> Delete
                             </DropdownMenuItem>
@@ -815,6 +830,33 @@ export function GroupChat({
         currentUserId={currentUserId}
         onClose={() => setReactorsMessageId(null)}
       />
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It's removed for everyone in the group.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget);
+                setDeleteTarget(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
