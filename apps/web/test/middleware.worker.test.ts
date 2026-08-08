@@ -152,6 +152,17 @@ describe("middleware", () => {
       });
       expect(await anon.text()).toBe(OK);
     });
+
+    // Payment webhooks (api/webhooks.ts) are server-to-server POSTs that never
+    // carry an Origin; they authenticate by HMAC signature instead. Without
+    // this exemption every Lemon Squeezy delivery would 403 at the front door.
+    it("exempts /api/webhooks/* so signature-authed POSTs get through", async () => {
+      const res = await fetch(app, "/api/webhooks/lemonsqueezy", {
+        method: "POST",
+        headers: { host: "x.test" },
+      });
+      expect(await res.text()).toBe(OK);
+    });
   });
 
   describe("securityHeadersMiddleware", () => {

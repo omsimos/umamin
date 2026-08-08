@@ -17,12 +17,14 @@ import {
 import type { ReactNode } from "react";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
+import { activeProTheme } from "@/lib/pro";
 import type { PublicUserWithBadge } from "@/lib/types";
 import { hasUmaminPlus } from "@/lib/utils";
 import CopyLink from "./copy-link";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { GroupBadge } from "./group-badge";
 import { MusicEmbed } from "./music-embed";
+import { ProBadge } from "./pro-flair";
 import { ProfileShareMenu } from "./share-button";
 
 export function UserCard({
@@ -43,7 +45,15 @@ export function UserCard({
   return (
     <div>
       <div className="relative">
-        <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-muted">
+        {/* Themed profiles tint the banner placeholder via the scoped primary
+            token (the page wrapper carries the .profile-theme-* class);
+            unthemed profiles keep the plain muted block. */}
+        <div
+          className={cn(
+            "relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-muted",
+            !user.bannerImageUrl && activeProTheme(user) && "bg-primary/15",
+          )}
+        >
           {user.bannerImageUrl && (
             <img
               src={user.bannerImageUrl}
@@ -113,6 +123,7 @@ export function UserCard({
           {import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(
             user.username,
           ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+          <ProBadge proUntil={user.proUntil} />
           <GroupBadge badge={user.groupBadge} />
         </div>
         <p className="text-muted-foreground text-sm">@{user.username}</p>

@@ -20,6 +20,13 @@ export type Secrets = {
   R2_PUBLIC_URL: string;
   // Comma-separated moderator usernames (server-only; see moderation.ts).
   MODERATOR_USERS: string;
+  // Umamin Pro checkout + order webhook (see server-lib/lemonsqueezy.ts).
+  // Per-environment: staging points at a test-mode store, production at the
+  // live one, so a replayed test order can never grant production Pro.
+  LEMONSQUEEZY_API_KEY: string;
+  LEMONSQUEEZY_STORE_ID: string;
+  LEMONSQUEEZY_VARIANT_ID: string;
+  LEMONSQUEEZY_WEBHOOK_SECRET: string;
 };
 
 export type AppEnv = Env & Partial<Secrets>;

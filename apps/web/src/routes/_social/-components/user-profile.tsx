@@ -21,6 +21,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { BanUserDialog } from "@/components/ban-user-dialog";
+import { proThemeClass } from "@/components/pro-flair";
 import { shareProfile } from "@/components/share-button";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
@@ -504,8 +505,13 @@ export function UserProfile({ username, initialUser }: Props) {
     </>
   );
 
+  // The wearer's Pro profile theme, applied to this whole page subtree via
+  // scoped CSS variables (see globals.css .profile-theme-*).
+  const themeClass = proThemeClass(profile);
+
   // Follow sits right-aligned just below the banner — a white pill when you can
-  // follow, an outline pill once following.
+  // follow, an outline pill once following. On a THEMED profile the pill keeps
+  // the default variant instead, so it renders in the wearer's theme color.
   const primaryAction = (
     <Button
       size="sm"
@@ -514,7 +520,9 @@ export function UserProfile({ username, initialUser }: Props) {
       onClick={handleFollow}
       className={cn(
         "rounded-full px-6",
-        !isFollowing && "bg-foreground text-background hover:bg-foreground/90",
+        !isFollowing &&
+          !themeClass &&
+          "bg-foreground text-background hover:bg-foreground/90",
       )}
     >
       {isFollowing ? "Following" : "Follow"}
@@ -522,7 +530,7 @@ export function UserProfile({ username, initialUser }: Props) {
   );
 
   return (
-    <>
+    <div className={themeClass}>
       {isModeratorViewer && !isSelf && (
         <BanUserDialog
           username={profile.username}
@@ -544,6 +552,6 @@ export function UserProfile({ username, initialUser }: Props) {
       <ClientOnlyAdContainer className="mt-6" placement="profile_top" />
 
       <ProfilePostList username={username} showDivider={!isSelf} />
-    </>
+    </div>
   );
 }

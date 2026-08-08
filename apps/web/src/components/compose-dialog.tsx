@@ -49,7 +49,7 @@ import {
 import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { QuotedPostData } from "@/lib/types";
-import { hasUmaminPlus } from "@/lib/utils";
+import { hasPlusFeatures, hasUmaminPlus } from "@/lib/utils";
 
 type ComposeDialogProps = {
   open: boolean;
@@ -86,7 +86,8 @@ export function ComposeDialog({
   const { submitPost, isPending } = useCreatePost(user);
   const attachments = useImageAttachments();
 
-  const isPlus = hasUmaminPlus(user?.createdAt);
+  // Polls are a Plus perk; an active Pro includes it (server re-checks).
+  const isPlus = hasPlusFeatures(user);
   const canPostImages = hasImagePostingAura(user?.points);
   const imagesAvailable = postImagesEnabled(import.meta.env.VITE_R2_PUBLIC_URL);
 
@@ -266,7 +267,7 @@ export function ComposeDialog({
           <div className="flex min-h-0 flex-1 gap-3 overflow-y-auto px-4 py-4">
             <Avatar
               className={cn("mt-1", {
-                "avatar-shine": isPlus,
+                "avatar-shine": hasUmaminPlus(user?.createdAt),
               })}
             >
               <AvatarImage src={user?.imageUrl ?? ""} alt="User avatar" />

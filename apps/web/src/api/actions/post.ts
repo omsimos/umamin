@@ -17,7 +17,7 @@ import {
   postImageInputSchema,
 } from "../../lib/post-images";
 import { action } from "../../server-lib/action";
-import { hasUmaminPlus } from "../../server-lib/content";
+import { hasPlusPerks } from "../../server-lib/content";
 import { getPostById } from "../../server-lib/data";
 import { isModerator } from "../../server-lib/moderation";
 import { notify } from "../../server-lib/notifications";
@@ -95,7 +95,7 @@ export const createPostHandler = action(
 
     let pollLabels: string[] | null = null;
     if (poll) {
-      if (!hasUmaminPlus(user.createdAt)) {
+      if (!hasPlusPerks(user)) {
         return { error: POLL_PLUS_REQUIRED_ERROR };
       }
       pollLabels = sanitizePollOptions(poll.options);

@@ -7,7 +7,7 @@ import { userTable } from "@umamin/db/schema/user";
 import { and, eq, lt, sql } from "drizzle-orm";
 import * as z from "zod";
 import { action } from "../../server-lib/action";
-import { formatUsername, hasUmaminPlus } from "../../server-lib/content";
+import { formatUsername, hasPlusPerks } from "../../server-lib/content";
 import type { Db } from "../../server-lib/db";
 import {
   isUniqueConstraintViolation,
@@ -146,7 +146,7 @@ export const createGroupHandler = action(
   },
   async ({ name, description, tag, icon, accent }, { session, user, c }) => {
     const db = ctxDb(c);
-    if (!hasUmaminPlus(user.createdAt)) {
+    if (!hasPlusPerks(user)) {
       return { error: GROUP_PLUS_REQUIRED_ERROR };
     }
     if (isReservedGroupTag(tag)) {

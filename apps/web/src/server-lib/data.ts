@@ -160,6 +160,7 @@ const publicUserColumns = {
   followerCount: userTable.followerCount,
   followingCount: userTable.followingCount,
   points: userTable.points,
+  proUntil: userTable.proUntil,
   createdAt: userTable.createdAt,
   updatedAt: userTable.updatedAt,
 };
@@ -167,9 +168,10 @@ const publicUserColumns = {
 // Lean list-author projection — drops bio/question/follower+followingCount/
 // updatedAt/pinnedPostId (none rendered on any list surface) to cut Fast Origin
 // Transfer. createdAt drives the Umamin+ shine ring; equippedGroupId feeds
-// withGroupBadge; points kept for forward-compat. The FULL publicUserColumns
-// stays on the current-user + profile reads (which render bio/counts). Must
-// match the FeedAuthor type in types/user.ts (8 keys).
+// withGroupBadge; points kept for forward-compat. Pro state (proUntil) is
+// deliberately NOT here — Pro flair is profile-surface-only, lists stay lean.
+// The FULL publicUserColumns stays on the current-user + profile reads (which
+// render bio/counts). Must match the FeedAuthor type in lib/types.ts (8 keys).
 const feedAuthorColumns = {
   id: userTable.id,
   username: userTable.username,
@@ -1905,6 +1907,8 @@ export async function getCurrentUserData(
         // Profile-header-only (kept out of publicUserColumns so author payloads
         // stay compact); included here so settings can preview the current one.
         bannerImageUrl: userTable.bannerImageUrl,
+        // Pro theme preference, for the settings picker + own-profile render.
+        profileTheme: userTable.profileTheme,
         // Owner-private (like hasPassword): this record is only ever served to
         // its own session — keep blockedWords out of publicUserColumns.
         blockedWords: userTable.blockedWords,
@@ -2001,6 +2005,8 @@ export async function getPublicUserProfileData(
       followerCount: userTable.followerCount,
       followingCount: userTable.followingCount,
       points: userTable.points,
+      proUntil: userTable.proUntil,
+      profileTheme: userTable.profileTheme,
       createdAt: userTable.createdAt,
       updatedAt: userTable.updatedAt,
       musicProvider: userTable.musicProvider,

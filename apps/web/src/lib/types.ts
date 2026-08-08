@@ -54,6 +54,9 @@ export type PublicUser = Omit<
   | "bannedAt"
   | "banReason"
   | "bannedBy"
+  // Pro profile theme is profile-surface-only, like bannerImageUrl — re-added
+  // on PublicUserWithBadge, never on the per-author list payloads.
+  | "profileTheme"
 >;
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
@@ -65,6 +68,9 @@ export type PublicUserWithBadge = PublicUser & {
   groupBadge?: GroupBadgeData | null;
   bannerImageUrl?: string | null;
   music?: MusicAttachment | null;
+  // Pro cosmetic; render via activeProTheme (re-checks the Pro horizon, so a
+  // lapsed Pro's stored preference shows nothing until renewal).
+  profileTheme?: string | null;
 };
 
 // Lean author shape for LIST surfaces (feed/notes/comments/messages/follow/
@@ -81,6 +87,7 @@ export type FeedAuthor = Omit<
   | "followingCount"
   | "updatedAt"
   | "pinnedPostId"
+  | "proUntil"
 >;
 
 export type FeedAuthorWithBadge = FeedAuthor & {
@@ -113,6 +120,7 @@ export function toPublicUser(user: SelectUser): PublicUser {
     bannedAt: _bannedAt,
     banReason: _banReason,
     bannedBy: _bannedBy,
+    profileTheme: _profileTheme,
     ...rest
   } = user;
   return rest;

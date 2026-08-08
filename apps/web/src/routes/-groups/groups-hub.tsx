@@ -33,7 +33,7 @@ import {
   fetchGroupUnread,
   fetchUserGroups,
 } from "@/lib/query-fetchers";
-import { hasUmaminPlus } from "@/lib/utils";
+import { hasPlusFeatures } from "@/lib/utils";
 import { respondToInviteAction } from "./actions";
 
 function GroupGlyph({ icon, accent }: { icon: string; accent: string | null }) {
@@ -60,7 +60,8 @@ export function GroupsHub() {
     ...infiniteQueryDefaults,
   });
   const user = currentUser?.user ?? null;
-  const isPlus = hasUmaminPlus(user?.createdAt);
+  // Creation is a Plus perk; an active Pro includes it (server re-checks).
+  const isPlus = hasPlusFeatures(user);
 
   const { data: groups } = useQuery({
     queryKey: queryKeys.userGroups(),
@@ -122,9 +123,9 @@ export function GroupsHub() {
         <div className="rounded-lg border bg-muted/40 p-4">
           <p className="font-medium">Create your own group with Umamin+</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Group creation is an Umamin+ perk — unlocked once your account is a
-            year old. You can still join groups you're invited to and wear their
-            tag.
+            Group creation is an Umamin+ perk — free once your account is a year
+            old, or included with Umamin Pro. You can still join groups you're
+            invited to and wear their tag.
           </p>
         </div>
       )}

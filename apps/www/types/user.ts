@@ -27,6 +27,9 @@ export type PublicUser = Omit<
   | "bannedAt"
   | "banReason"
   | "bannedBy"
+  // Umamin Pro postdates this frozen app — its payloads never carry it.
+  | "proUntil"
+  | "profileTheme"
 >;
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
@@ -86,6 +89,8 @@ export function toPublicUser(user: SelectUser): PublicUser {
     bannedAt: _bannedAt,
     banReason: _banReason,
     bannedBy: _bannedBy,
+    proUntil: _proUntil,
+    profileTheme: _profileTheme,
     ...rest
   } = user;
   return rest;

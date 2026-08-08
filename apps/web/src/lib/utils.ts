@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { customAlphabet, nanoid } from "nanoid";
 import { toast } from "sonner";
+import { hasUmaminPro } from "@/lib/pro";
 
 export function generateUsernameId(length = 12) {
   const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -292,6 +293,20 @@ export function hasUmaminPlus(createdAt?: Date | string | null) {
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
   return createdDate <= oneYearAgo;
+}
+
+/**
+ * Functional Plus perks (polls, group creation): unlocked by account age OR an
+ * active Pro — Pro includes everything in Plus. Client-side gate only;
+ * mutations re-check via server-lib/content.ts hasPlusPerks.
+ */
+export function hasPlusFeatures(
+  user?: {
+    createdAt?: Date | string | null;
+    proUntil?: Date | string | null;
+  } | null,
+) {
+  return hasUmaminPlus(user?.createdAt) || hasUmaminPro(user?.proUntil);
 }
 
 /**

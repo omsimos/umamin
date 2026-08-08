@@ -2,6 +2,7 @@ import type * as z from "zod";
 import { type ActionResult, callAction } from "@/lib/api";
 import type { MusicAttachment } from "@/lib/music";
 import type { UploadContentType } from "@/lib/post-images";
+import type { ProTheme } from "@/lib/pro";
 import type { generalSettingsSchema, passwordFormSchema } from "@/lib/types";
 
 // Settings mutations aren't in lib/actions.ts — thin typed `callAction`
@@ -95,6 +96,13 @@ export function presignBannerUploadAction(
 ): Promise<PresignResult> {
   return callAction<{ success: true; key: string; url: string }>(
     "presignBannerUploadAction",
+    input,
+  );
+}
+
+export function updateProfileThemeAction(input: { theme: ProTheme | null }) {
+  return callAction<{ success: true; theme: ProTheme | null }>(
+    "updateProfileThemeAction",
     input,
   );
 }

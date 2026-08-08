@@ -169,6 +169,13 @@
       "when": 1785336483102,
       "tag": "0023_hard_sheva_callister",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1786081997525,
+      "tag": "0024_majestic_proteus",
+      "breakpoints": true
     }
   ]
 }

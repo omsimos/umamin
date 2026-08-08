@@ -40,6 +40,15 @@ export const userTable = sqliteTable(
     equippedGroupId: text("equipped_group_id"),
     followerCount: integer("follower_count").notNull().default(0),
     followingCount: integer("following_count").notNull().default(0),
+    // Umamin Pro entitlement horizon — a one-time 6-month purchase (not a
+    // subscription). Written ONLY by the payment webhook, which re-derives it
+    // from the pro_purchase rows; null or past = not Pro. Read via hasUmaminPro.
+    proUntil: integer("pro_until", { mode: "timestamp" }),
+    // Pro cosmetic: profile theme token (validated against PRO_THEMES, never
+    // arbitrary CSS). The PREFERENCE survives a Pro lapse but the render path
+    // re-checks entitlement (equippedGroupId dangling-ref pattern), so it
+    // reappears on renewal without re-equipping.
+    profileTheme: text("profile_theme"),
     // "Aura": denormalized engagement score, incremented in-transaction with the
     // event that earns it (others liking/commenting/reposting/following you).
     // Cosmetic in v1 (no tiers/unlocks). Maintained like the counters above — a

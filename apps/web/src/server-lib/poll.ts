@@ -10,7 +10,7 @@ export const POLL_DURATIONS = ["1h", "6h", "1d", "3d", "7d"] as const;
 export type PollDuration = (typeof POLL_DURATIONS)[number];
 
 export const POLL_PLUS_REQUIRED_ERROR =
-  "Polls are an Umamin+ perk — unlocked once your account is a year old.";
+  "Polls are an Umamin+ perk — free once your account is a year old, or included with Umamin Pro.";
 
 export const POLL_ENDED_ERROR = "This poll has ended";
 
