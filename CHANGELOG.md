@@ -18,6 +18,17 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.5.0] - 2026-08-07
+
+### Added
+
+- Umamin Pro is here: a one-time ₱129 purchase that unlocks Pro for 6 months — around ₱21 a month. It's not a subscription, so there's nothing to cancel; buying again stacks another 6 months on top of your remaining time.
+- Pro members browse ad-free everywhere.
+- Pro members can pick a profile theme: a curated color that restyles their profile page and their anonymous-message page. Picked in Settings; the choice is saved even if Pro lapses and reappears on renewal.
+- Pro members get a Pro badge on their profile, colored to match their theme.
+- Pro includes everything in Umamin+: polls and group creation unlock immediately, whatever the account's age.
+- The tiers page now has a Pro tab with checkout, your Pro status, and the date your Pro runs until. Payments are handled by Lemon Squeezy; full refunds automatically remove the purchased time.
+
 ## [7.4.0] - 2026-08-05
 
 ### Added
@@ -911,6 +922,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.5.0]: https://github.com/omsimos/umamin/compare/v7.4.0...v7.5.0
 [7.4.0]: https://github.com/omsimos/umamin/compare/v7.3.0...v7.4.0
 [7.3.0]: https://github.com/omsimos/umamin/compare/v7.2.0...v7.3.0
 [7.2.0]: https://github.com/omsimos/umamin/compare/v7.1.0...v7.2.0
