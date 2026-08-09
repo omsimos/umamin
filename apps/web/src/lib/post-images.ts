@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { hasUmaminPro } from "./pro";
 
 // Pure image-upload constants + helpers, ported from apps/www/lib/post-images.ts.
 // The URL helpers that read the R2 public base now take it as an explicit
@@ -49,10 +50,25 @@ export type UploadContentType = (typeof UPLOAD_CONTENT_TYPES)[number];
 // account-age guard, so it can't be self-farmed.
 export const MIN_AURA_FOR_IMAGES = 50;
 
-export const IMAGE_AURA_REQUIRED_ERROR = `Posting images unlocks at ${MIN_AURA_FOR_IMAGES} aura — keep engaging to get there.`;
+export const IMAGE_AURA_REQUIRED_ERROR = `Posting images unlocks at ${MIN_AURA_FOR_IMAGES} aura — keep engaging to get there, or get it now with Umamin Pro.`;
 
 export function hasImagePostingAura(points: number | null | undefined) {
   return (points ?? 0) >= MIN_AURA_FOR_IMAGES;
+}
+
+/**
+ * Whether a user may attach images: the aura bar, OR an active Umamin Pro —
+ * a paid account is not the zero-history throwaway the bar exists to stop.
+ * Deriving from proUntil at render time means the client gate re-locks on
+ * expiry; the upload + create mutations re-check this same helper server-side.
+ */
+export function canPostImages(
+  user?: {
+    points?: number | null;
+    proUntil?: Date | string | null;
+  } | null,
+) {
+  return hasImagePostingAura(user?.points) || hasUmaminPro(user?.proUntil);
 }
 
 export function imageExtension(contentType: UploadContentType) {

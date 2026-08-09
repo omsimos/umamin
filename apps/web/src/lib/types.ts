@@ -87,7 +87,6 @@ export type FeedAuthor = Omit<
   | "followingCount"
   | "updatedAt"
   | "pinnedPostId"
-  | "proUntil"
 >;
 
 export type FeedAuthorWithBadge = FeedAuthor & {

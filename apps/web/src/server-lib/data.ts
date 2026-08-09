@@ -167,11 +167,12 @@ const publicUserColumns = {
 
 // Lean list-author projection — drops bio/question/follower+followingCount/
 // updatedAt/pinnedPostId (none rendered on any list surface) to cut Fast Origin
-// Transfer. createdAt drives the Umamin+ shine ring; equippedGroupId feeds
-// withGroupBadge; points kept for forward-compat. Pro state (proUntil) is
-// deliberately NOT here — Pro flair is profile-surface-only, lists stay lean.
-// The FULL publicUserColumns stays on the current-user + profile reads (which
-// render bio/counts). Must match the FeedAuthor type in lib/types.ts (8 keys).
+// Transfer. createdAt + proUntil drive the avatar shine (hasPlusFeatures: Plus
+// by age OR an active Pro) — the horizon rides the payload instead of a baked
+// isPro flag so TTL-cached entries self-correct at render when Pro expires;
+// equippedGroupId feeds withGroupBadge; points kept for forward-compat. The
+// FULL publicUserColumns stays on the current-user + profile reads (which
+// render bio/counts). Must match the FeedAuthor type in lib/types.ts (9 keys).
 const feedAuthorColumns = {
   id: userTable.id,
   username: userTable.username,
@@ -180,6 +181,7 @@ const feedAuthorColumns = {
   quietMode: userTable.quietMode,
   equippedGroupId: userTable.equippedGroupId,
   points: userTable.points,
+  proUntil: userTable.proUntil,
   createdAt: userTable.createdAt,
 };
 

@@ -296,9 +296,11 @@ export function hasUmaminPlus(createdAt?: Date | string | null) {
 }
 
 /**
- * Functional Plus perks (polls, group creation): unlocked by account age OR an
- * active Pro — Pro includes everything in Plus. Client-side gate only;
- * mutations re-check via server-lib/content.ts hasPlusPerks.
+ * Plus standing — account age OR an active Pro, since Pro includes everything
+ * in Plus. Drives both the functional perks (polls, group creation) and the
+ * avatar shine, so the two can never disagree about who counts as Plus.
+ * Client-side gate only; mutations re-check via server-lib/content.ts
+ * hasPlusPerks.
  */
 export function hasPlusFeatures(
   user?: {

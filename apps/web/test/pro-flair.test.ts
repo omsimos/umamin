@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { proThemeClass } from "../src/components/pro-flair";
+import { canPostImages, MIN_AURA_FOR_IMAGES } from "../src/lib/post-images";
 import { activeProTheme } from "../src/lib/pro";
 import { hasPlusFeatures } from "../src/lib/utils";
 
@@ -11,6 +12,8 @@ const PAST = new Date(NOW - DAY);
 const PLUS_AGED = new Date(NOW - 400 * DAY);
 const YOUNG = new Date(NOW - DAY);
 
+// hasPlusFeatures drives BOTH the functional Plus perks (polls, group
+// creation) and the avatar shine — one predicate so they can't disagree.
 describe("hasPlusFeatures", () => {
   it("unlocks by account age alone", () => {
     expect(hasPlusFeatures({ createdAt: PLUS_AGED })).toBe(true);
@@ -23,6 +26,36 @@ describe("hasPlusFeatures", () => {
   it("locks a young account whose Pro expired", () => {
     expect(hasPlusFeatures({ createdAt: YOUNG, proUntil: PAST })).toBe(false);
     expect(hasPlusFeatures(null)).toBe(false);
+  });
+
+  it("accepts the string dates cached JSON payloads deserialize to", () => {
+    expect(hasPlusFeatures({ proUntil: FUTURE.toISOString() })).toBe(true);
+  });
+});
+
+describe("canPostImages", () => {
+  it("unlocks at the aura bar without Pro", () => {
+    expect(canPostImages({ points: MIN_AURA_FOR_IMAGES })).toBe(true);
+    expect(canPostImages({ points: MIN_AURA_FOR_IMAGES - 1 })).toBe(false);
+  });
+
+  it("lets an active Pro skip the aura bar entirely", () => {
+    expect(canPostImages({ points: 0, proUntil: FUTURE })).toBe(true);
+  });
+
+  it("re-locks a zero-aura account once Pro expires", () => {
+    expect(canPostImages({ points: 0, proUntil: PAST })).toBe(false);
+  });
+
+  it("keeps earned aura after Pro expires", () => {
+    expect(canPostImages({ points: MIN_AURA_FOR_IMAGES, proUntil: PAST })).toBe(
+      true,
+    );
+  });
+
+  it("is false for an unknown viewer", () => {
+    expect(canPostImages(null)).toBe(false);
+    expect(canPostImages(undefined)).toBe(false);
   });
 });
 

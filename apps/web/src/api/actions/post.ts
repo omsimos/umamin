@@ -11,7 +11,7 @@ import { userTable } from "@umamin/db/schema/user";
 import { and, eq, ne, sql } from "drizzle-orm";
 import * as z from "zod";
 import {
-  hasImagePostingAura,
+  canPostImages,
   IMAGE_AURA_REQUIRED_ERROR,
   MAX_POST_IMAGES,
   postImageInputSchema,
@@ -124,7 +124,7 @@ export const createPostHandler = action(
       if (!r2) {
         return { error: "Image uploads aren't available right now." };
       }
-      if (!hasImagePostingAura(user.points)) {
+      if (!canPostImages(user)) {
         return { error: IMAGE_AURA_REQUIRED_ERROR };
       }
       claimedImages = await r2.claimStagedImages(session.userId, images);

@@ -46,7 +46,7 @@ import {
 } from "@/lib/types";
 import {
   getActionError,
-  hasUmaminPlus,
+  hasPlusFeatures,
   isAlreadyLiked,
   isAlreadyRemoved,
   isAlreadyReposted,
@@ -236,7 +236,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
         >
           <Avatar
             className={cn({
-              "avatar-shine": hasUmaminPlus(author.createdAt),
+              "avatar-shine": hasPlusFeatures(author),
             })}
           >
             <AvatarImage src={author.imageUrl ?? ""} alt="User avatar" />

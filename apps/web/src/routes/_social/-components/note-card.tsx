@@ -52,7 +52,7 @@ import { patchNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/types";
 import {
   getActionError,
-  hasUmaminPlus,
+  hasPlusFeatures,
   isAlreadyReacted,
   isAlreadyRemoved,
   saveImage,
@@ -273,7 +273,7 @@ export function NoteCard({
                   >
                     <Avatar
                       className={cn({
-                        "avatar-shine": hasUmaminPlus(user?.createdAt),
+                        "avatar-shine": hasPlusFeatures(user),
                       })}
                     >
                       <AvatarImage

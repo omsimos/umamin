@@ -26,7 +26,8 @@ any that are empty.
 - Pro members browse ad-free everywhere.
 - Pro members can pick a profile theme: a curated color that restyles their profile page and their anonymous-message page. Picked in Settings; the choice is saved even if Pro lapses and reappears on renewal.
 - Pro members get a Pro badge on their profile, colored to match their theme.
-- Pro includes everything in Umamin+: polls and group creation unlock immediately, whatever the account's age.
+- Pro members can post images right away, without reaching the 50 aura requirement.
+- Pro includes everything in Umamin+: polls, group creation, and the avatar shine unlock immediately, whatever the account's age.
 - The tiers page now has a Pro tab with checkout, your Pro status, and the date your Pro runs until. Payments are handled by Lemon Squeezy; full refunds automatically remove the purchased time.
 
 ## [7.4.0] - 2026-08-05

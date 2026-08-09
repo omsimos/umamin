@@ -19,7 +19,7 @@ import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
 import { activeProTheme } from "@/lib/pro";
 import type { PublicUserWithBadge } from "@/lib/types";
-import { hasUmaminPlus } from "@/lib/utils";
+import { hasPlusFeatures } from "@/lib/utils";
 import CopyLink from "./copy-link";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { GroupBadge } from "./group-badge";
@@ -95,7 +95,7 @@ export function UserCard({
         <div className="absolute -bottom-8 left-4">
           <Avatar
             className={cn("size-16 ring-4 ring-background md:size-20", {
-              "avatar-shine": hasUmaminPlus(user?.createdAt),
+              "avatar-shine": hasPlusFeatures(user),
             })}
           >
             <AvatarImage

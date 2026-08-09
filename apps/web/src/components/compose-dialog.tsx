@@ -41,7 +41,7 @@ import {
   sanitizePollOptions,
 } from "@/lib/poll";
 import {
-  hasImagePostingAura,
+  canPostImages,
   IMAGE_AURA_REQUIRED_ERROR,
   MAX_POST_IMAGES,
   postImagesEnabled,
@@ -49,7 +49,7 @@ import {
 import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { QuotedPostData } from "@/lib/types";
-import { hasPlusFeatures, hasUmaminPlus } from "@/lib/utils";
+import { hasPlusFeatures } from "@/lib/utils";
 
 type ComposeDialogProps = {
   open: boolean;
@@ -88,7 +88,8 @@ export function ComposeDialog({
 
   // Polls are a Plus perk; an active Pro includes it (server re-checks).
   const isPlus = hasPlusFeatures(user);
-  const canPostImages = hasImagePostingAura(user?.points);
+  // Images need the aura bar or an active Pro (server re-checks).
+  const imagesUnlocked = canPostImages(user);
   const imagesAvailable = postImagesEnabled(import.meta.env.VITE_R2_PUBLIC_URL);
 
   const count = content.length;
@@ -145,7 +146,7 @@ export function ComposeDialog({
   };
 
   const handlePickImages = () => {
-    if (!canPostImages) {
+    if (!imagesUnlocked) {
       toast.info(IMAGE_AURA_REQUIRED_ERROR);
       return;
     }
@@ -166,7 +167,7 @@ export function ComposeDialog({
 
   const acceptFiles = (files: Iterable<File>) => {
     // Poll XOR images, and images need the Aura gate — drag/paste respect both.
-    if (!canPostImages || poll) return;
+    if (!imagesUnlocked || poll) return;
     attachments.addFiles(files);
   };
 
@@ -199,7 +200,7 @@ export function ComposeDialog({
         onDragOver={(e) => {
           if (!imagesAvailable) return;
           e.preventDefault();
-          if (canPostImages && !poll) setDragging(true);
+          if (imagesUnlocked && !poll) setDragging(true);
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => {
@@ -267,7 +268,7 @@ export function ComposeDialog({
           <div className="flex min-h-0 flex-1 gap-3 overflow-y-auto px-4 py-4">
             <Avatar
               className={cn("mt-1", {
-                "avatar-shine": hasUmaminPlus(user?.createdAt),
+                "avatar-shine": isPlus,
               })}
             >
               <AvatarImage src={user?.imageUrl ?? ""} alt="User avatar" />
@@ -287,7 +288,7 @@ export function ComposeDialog({
                 onChange={(e) => setContent(e.target.value)}
                 onPaste={(e) => {
                   const files = e.clipboardData?.files;
-                  if (imagesAvailable && canPostImages && files?.length) {
+                  if (imagesAvailable && imagesUnlocked && files?.length) {
                     e.preventDefault();
                     acceptFiles(files);
                   }

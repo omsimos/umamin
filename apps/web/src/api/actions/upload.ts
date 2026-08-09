@@ -2,7 +2,7 @@ import * as z from "zod";
 import {
   AVATAR_MAX_BYTES,
   BANNER_MAX_BYTES,
-  hasImagePostingAura,
+  canPostImages,
   IMAGE_AURA_REQUIRED_ERROR,
   MAX_IMAGE_BYTES,
   MAX_POST_IMAGES,
@@ -38,7 +38,7 @@ export const presignPostImagesHandler = action(
       return { error: "Image uploads aren't available right now." };
     }
 
-    if (!hasImagePostingAura(user.points)) {
+    if (!canPostImages(user)) {
       return { error: IMAGE_AURA_REQUIRED_ERROR };
     }
 

@@ -28,6 +28,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { callAction } from "@/lib/api";
 import { MIN_AURA_FOR_IMAGES } from "@/lib/post-images";
+
 import {
   hasUmaminPro,
   PRO_PER_MONTH_PHP,
@@ -107,9 +108,14 @@ const PRO_PERKS: Perk[] = [
     detail: "Color your profile and anonymous-message pages.",
   },
   {
+    icon: ImagePlusIcon,
+    title: "Post images right away",
+    detail: `No waiting for ${MIN_AURA_FOR_IMAGES} aura — attach photos from day one.`,
+  },
+  {
     icon: RocketIcon,
     title: "Everything in Plus",
-    detail: "Polls and group creation, whatever your account age.",
+    detail: "Polls, group creation, and the avatar shine, at any account age.",
   },
   {
     icon: HeartIcon,
