@@ -1,0 +1,61 @@
+# Worker secrets for LOCAL dev (`pnpm dev:web` reads this file). Copy to
+# `.dev.vars` and fill in — that copy is gitignored.
+#
+# These are NOT the same as .env.example: anything VITE_* is public and embedded
+# in the browser bundle, while everything here stays server-side in the Worker.
+# Deployed values never come from this file — set them per environment with
+# `wrangler secret put <NAME> --env <staging|production>`.
+#
+# Every consumer no-ops or fails closed when a value is missing, so a partial
+# file still boots; the matching feature is just unavailable locally.
+
+# --- Database (Turso) -------------------------------------------------------
+TURSO_CONNECTION_URL=
+# Not needed against a local `turso dev` file database.
+TURSO_AUTH_TOKEN=
+
+# --- Encryption -------------------------------------------------------------
+# AES-256-GCM key for message content at rest (@umamin/encryption).
+AES_256_GCM_KEY=
+
+# --- Google OAuth -----------------------------------------------------------
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=
+
+# --- Web Push (VAPID) -------------------------------------------------------
+# VAPID_PUBLIC_KEY must match the public VITE_VAPID_PUBLIC_KEY exactly, and be
+# 87 base64url chars (a 65-byte P-256 point) or pushManager.subscribe() throws.
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+# mailto: or https: contact URI sent with each push.
+VAPID_SUBJECT=
+
+# --- R2 image uploads -------------------------------------------------------
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET=
+R2_PUBLIC_URL=
+
+# --- Moderation -------------------------------------------------------------
+# Comma-separated usernames. Server-only — deliberately NOT the public verified
+# list, and never sent to the client.
+MODERATOR_USERS=
+
+# --- Umamin Pro (Lemon Squeezy) ---------------------------------------------
+# Unset locally is fine: the checkout action returns a friendly error and the
+# webhook refuses to process anything it cannot verify.
+#
+# STORE_ID and VARIANT_ID are the NUMERIC ids, not slugs — the webhook drops any
+# order whose store or variant doesn't match, so a slug here silently grants
+# nothing. Use a test-mode key/secret for anything but production.
+LEMONSQUEEZY_API_KEY=
+LEMONSQUEEZY_STORE_ID=
+LEMONSQUEEZY_VARIANT_ID=
+LEMONSQUEEZY_WEBHOOK_SECRET=
+
+# --- Runtime ----------------------------------------------------------------
+# Not set automatically on Workers; session cookie names (__Host-*) and secure
+# attributes key off it. Leave as development locally.
+NODE_ENV=development
