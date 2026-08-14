@@ -1,4 +1,4 @@
-import { generateVapidKeys } from "@mmmike/web-push";
+import { generateVapidKeys } from "@mmmike/web-push/vapid";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isAllowedPushEndpoint, sendPush } from "../src/server-lib/push";
 
@@ -59,10 +59,8 @@ describe("web push send in workerd (@mmmike/web-push, RFC 8291)", () => {
     const res = await sendPush(
       sub,
       { title: "@alice liked your post", url: "/post/123", tag: "like:123" },
-      {
-        vapid: { publicKey, privateKey, subject: "mailto:x@umamin.link" },
-        ttl: 3600,
-      },
+      { publicKey, privateKey, subject: "mailto:x@umamin.link" },
+      { ttl: 3600 },
     );
 
     expect(res).toEqual({ ok: true });
@@ -97,7 +95,7 @@ describe("web push send in workerd (@mmmike/web-push, RFC 8291)", () => {
     const res = await sendPush(
       sub,
       { title: "t", url: "/x", tag: "t:1" },
-      { vapid: { publicKey, privateKey, subject: "mailto:x@umamin.link" } },
+      { publicKey, privateKey, subject: "mailto:x@umamin.link" },
     );
     expect(res).toEqual({ ok: false, expired: true });
   });
@@ -117,7 +115,7 @@ describe("web push send in workerd (@mmmike/web-push, RFC 8291)", () => {
       sendPush(
         { endpoint: "https://evil.example.com/x", p256dh: "x", auth: "y" },
         { title: "t", url: "/x", tag: "t:1" },
-        { vapid: { publicKey, privateKey, subject: "mailto:x@umamin.link" } },
+        { publicKey, privateKey, subject: "mailto:x@umamin.link" },
       ),
     ).rejects.toThrow("not allowed");
     expect(fetchSpy).not.toHaveBeenCalled();

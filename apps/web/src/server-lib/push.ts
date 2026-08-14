@@ -1,8 +1,9 @@
 import {
   type PushSubscriptionData,
+  type SendPushOptions,
   sendPushNotification,
   type VapidConfig,
-} from "@mmmike/web-push";
+} from "@mmmike/web-push/send";
 
 // Web Push send primitive for the Worker runtime (plan R3). @node-rs/argon2's
 // sibling `web-push` uses Node crypto and won't run on Workers; @mmmike/web-push
@@ -51,17 +52,13 @@ export type PushSubscriptionRow = {
 };
 
 // Exact prod payload shape (service worker reads title/url/tag). Kept distinct
-// from the lib's PushPayload (which types a `body`) so the serialized JSON stays
-// byte-for-byte what apps/www sends today.
+// from the lib's PushPayload (which allows a `body` we never send, and makes
+// url/tag optional) so the serialized JSON stays byte-for-byte what apps/www
+// sends today. Assignable to PushPayload since 1.1.0 made `body` optional.
 export type PushNotificationPayload = {
   title: string;
   url: string;
   tag: string;
-};
-
-export type SendPushOpts = {
-  vapid: VapidConfig;
-  ttl?: number;
 };
 
 // `expired` mirrors web-push's 404/410 semantics → caller prunes the dead sub.
@@ -76,7 +73,10 @@ export type SendPushResult = { ok: true } | { ok: false; expired: boolean };
 export async function sendPush(
   subscription: PushSubscriptionRow,
   payload: PushNotificationPayload,
-  opts: SendPushOpts,
+  vapid: VapidConfig,
+  // No TTL default here: callers own retention, and omitting opts.ttl falls
+  // back to the lib's 24h (the notification fan-out passes 1h explicitly).
+  opts: SendPushOptions = {},
 ): Promise<SendPushResult> {
   if (!isAllowedPushEndpoint(subscription.endpoint)) {
     throw new Error("Push endpoint not allowed");
@@ -87,14 +87,7 @@ export async function sendPush(
     keys: { p256dh: subscription.p256dh, auth: subscription.auth },
   };
 
-  const delivered = await sendPushNotification(
-    sub,
-    // Cast: the lib JSON.stringifies the payload as-is, so passing prod's
-    // {title,url,tag} keeps the wire payload identical (lib types add `body`).
-    payload as unknown as Parameters<typeof sendPushNotification>[1],
-    opts.vapid,
-    { ttl: opts.ttl ?? 3600 },
-  );
+  const delivered = await sendPushNotification(sub, payload, vapid, opts);
 
   // sendPushNotification returns false only on 404/410 (dead subscription).
   return delivered ? { ok: true } : { ok: false, expired: true };

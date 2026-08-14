@@ -1,3 +1,8 @@
+import {
+  type SendPushOptions,
+  topicFromString,
+  WebPushError,
+} from "@mmmike/web-push/send";
 import type { NotificationType } from "@umamin/db/schema/notification";
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
@@ -22,6 +27,11 @@ type CopyEntry = {
   url: (targetId: string, actor: string | null) => string;
   // When true, never resolve or render an actor (sender anonymity).
   anonymous?: true;
+  // Delivery priority (RFC 8030 §5.3), forwarded to sendPush for battery-aware
+  // scheduling on mobile. None set yet — the stub on `like` shows the shape;
+  // Omitted = the push service decides.
+  // Indexes the lib's options so the union tracks upstream.
+  urgency?: SendPushOptions["urgency"];
 };
 
 // TOTAL map over every NotificationType — `Record<NotificationType, …>` makes
@@ -33,6 +43,7 @@ export const PUSH_COPY: Record<NotificationType, CopyEntry> = {
     category: PUSH_CATEGORY.social,
     title: (a) => (a ? `@${a} liked your post` : "Someone liked your post"),
     url: (id) => (id ? `/post/${id}` : "/notifications"),
+    // urgency: "low",
   },
   comment: {
     category: PUSH_CATEGORY.social,
@@ -180,14 +191,21 @@ export async function sendPushForNotification(
     title: copy.title(actor),
     url: copy.url(targetId, actor),
     // Client-side collapse key (unrestricted charset, unlike the push `topic`
-    // header) so repeats of the same event replace rather than stack on-device.
+    // header) so repeats of the same event replace rather than stack on-device;
+    // the `topic` option collapses undelivered repeats server-side.
     tag: `${type}:${targetId}`,
   };
+  // Computed once per fan-out (same for every device), forwarded via opts.
+  const topic = await topicFromString(payload.tag);
 
   await Promise.all(
     subs.map(async (sub) => {
       try {
-        const result = await sendPush(sub, payload, { vapid, ttl: 3600 });
+        const result = await sendPush(sub, payload, vapid, {
+          ttl: 3600,
+          urgency: copy.urgency,
+          topic,
+        });
         // 404/410 = the subscription is dead/expired — prune it (scoped to this
         // recipient).
         if (!result.ok && result.expired) {
@@ -203,7 +221,15 @@ export async function sendPushForNotification(
       } catch (err) {
         // Other failures (disallowed endpoint / push-service error) are
         // best-effort: log and move on.
-        console.error("web-push send failed", err);
+        // toJSON() is the lib's log-safe shape:
+        // statusCode/retryAfterMs separate rate-limiting (429) from
+        // misconfiguration (401/403 = VAPID rejected), with the endpoint — a
+        // capability URL — truncated rather than logged whole.
+        if (err instanceof WebPushError) {
+          console.error("web-push send rejected", err.toJSON());
+        } else {
+          console.error("web-push send failed", err);
+        }
       }
     }),
   );
