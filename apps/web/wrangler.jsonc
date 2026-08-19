@@ -119,7 +119,15 @@
         // are shared), and Cloudflare has no Vercel-style automatic
         // preview-noindex — so opt out via a header instead, or next.umamin.link
         // gets crawled and competes with prod. See server-lib/csp.ts.
-        "SEO_INDEXABLE": "false"
+        "SEO_INDEXABLE": "false",
+        // Worker-side error tracking (server-lib/posthog.ts). The project token
+        // only writes events and is already in the browser bundle, so it is a
+        // var, not a secret. Both environments report into the one "Umamin"
+        // project; POSTHOG_ENV is what tells them apart there. Capture is gated
+        // on NODE_ENV=production, so local dev inherits these harmlessly.
+        "POSTHOG_PROJECT_TOKEN": "phc_dgBp0oWW82kMRiBevIGjWn46BiEvpnmjCoVuJ3L2MyE",
+        "POSTHOG_HOST": "https://us.i.posthog.com",
+        "POSTHOG_ENV": "staging"
       }
     },
     "production": {
@@ -191,7 +199,10 @@
         "APP_URL": "https://www.umamin.link",
         "NODE_ENV": "production",
         // The ONLY environment that may be indexed.
-        "SEO_INDEXABLE": "true"
+        "SEO_INDEXABLE": "true",
+        "POSTHOG_PROJECT_TOKEN": "phc_dgBp0oWW82kMRiBevIGjWn46BiEvpnmjCoVuJ3L2MyE",
+        "POSTHOG_HOST": "https://us.i.posthog.com",
+        "POSTHOG_ENV": "production"
       }
     }
   }

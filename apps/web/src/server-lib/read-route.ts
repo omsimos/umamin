@@ -2,6 +2,7 @@ import type { Context, HonoRequest } from "hono";
 import type { AppEnv } from "./env";
 import { INTERNAL_SERVER_ERROR } from "./errors";
 import { extractClientIp } from "./ip";
+import { captureRequestException } from "./posthog";
 import { checkReadRateLimit, RATE_LIMIT_ERROR } from "./ratelimit";
 
 // ── JSON envelope helpers (ported from apps/www lib/private-json + public-json) ─
@@ -88,6 +89,7 @@ export function withPrivateRead(label: string, handler: PrivateReadHandler) {
         : privateJson(result);
     } catch (error) {
       console.error(`Error ${label}:`, error);
+      captureRequestException(c, error, { properties: { read: label } });
       return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
   };
@@ -179,6 +181,7 @@ export function withPublicRead(
       return res;
     } catch (error) {
       console.error(`Error ${label}:`, error);
+      captureRequestException(c, error, { properties: { read: label } });
       return publicJson({ error: INTERNAL_SERVER_ERROR }, 0, 0, 500);
     }
   };

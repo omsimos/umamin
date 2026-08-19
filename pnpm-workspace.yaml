@@ -5,8 +5,12 @@ packages:
 # pnpm 11: replaces onlyBuiltDependencies — only these packages may run
 # install scripts. esbuild/sharp scripts were already skipped under v10
 # (both ship prebuilt binaries via optionalDependencies); v11 just demands
-# the decision be explicit.
+# the decision be explicit. @posthog/cli is the exception that NEEDS its script:
+# the Rust binary is downloaded by postinstall, and the source-map upload has
+# nothing to spawn without it. core-js only prints a funding banner.
 allowBuilds:
+  '@posthog/cli': true
+  core-js: false
   esbuild: false
   lefthook: true
   sharp: false

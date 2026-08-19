@@ -25,6 +25,12 @@ interface ImportMetaEnv {
   // VAPID public key the push subscription is minted against; must match the
   // Worker's VAPID_PUBLIC_KEY secret.
   readonly VITE_VAPID_PUBLIC_KEY?: string;
+  // PostHog project token for browser error tracking. Public by design (it can
+  // only write events); unset removes the SDK entirely. See lib/posthog.ts.
+  readonly VITE_POSTHOG_PROJECT_TOKEN?: string;
+  // PostHog ingest origin; defaults to https://us.i.posthog.com. Must stay in
+  // step with the connect-src entries in server-lib/csp.ts.
+  readonly VITE_POSTHOG_HOST?: string;
 }
 
 interface ImportMeta {

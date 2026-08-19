@@ -3,6 +3,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { useEffect } from "react";
 import { AnimatedShinyText } from "@/components/animated-shiny-text";
 import { Link } from "@/lib/navigation";
+import { captureException } from "@/lib/posthog";
 
 type Props = {
   error: Error & { digest?: string };
@@ -17,6 +18,9 @@ export function RouteSegmentError({
 }: Props) {
   useEffect(() => {
     console.error(error);
+    // React error boundaries swallow render errors before window.onerror sees
+    // them, so exception autocapture cannot pick this up on its own.
+    captureException(error, { boundary: "route-segment" });
   }, [error]);
 
   return (

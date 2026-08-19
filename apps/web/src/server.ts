@@ -17,6 +17,10 @@ import {
   ipDenylist,
   securityHeadersMiddleware,
 } from "./server-lib/middleware";
+import {
+  captureRequestException,
+  captureServerException,
+} from "./server-lib/posthog";
 import { setSsrEnv } from "./server-lib/ssr-env";
 
 // TanStack Start SSR handler. `createStartHandler` returns a universal
@@ -34,6 +38,22 @@ app.use("*", csrfOriginCheck());
 app.use("*", securityHeadersMiddleware());
 app.use("*", cookieRenewal());
 
+// Anything that escapes a handler uncaught: SSR render failures, the OAuth
+// callback, webhooks. The action()/withPrivateRead/withPublicRead wrappers catch
+// their own errors and report there, so this is the surface they do not cover.
+// The response mirrors Hono's own errorHandler, including the HTTPException
+// passthrough — an HTTPException is a deliberate status, not a bug, so it is
+// answered without being reported.
+app.onError((err, c) => {
+  if ("getResponse" in err) {
+    const res = err.getResponse();
+    return c.newResponse(res.body, res);
+  }
+  console.error(err);
+  captureRequestException(c, err);
+  return c.text("Internal Server Error", 500);
+});
+
 app.route("/api", apiApp);
 app.route("/auth/google", googleAuthApp);
 
@@ -49,20 +69,31 @@ app.all("*", (c) => {
   return startHandler(c.req.raw);
 });
 
+// A cron has no client to surface a failure to, so a rejected job is otherwise
+// only visible in Workers logs. `report` wraps each job rather than the switch:
+// the work runs inside waitUntil, so a throw lands on the returned promise.
 const scheduled: ExportedHandlerScheduledHandler<AppEnv> = async (
   event,
   env,
   ctx,
 ) => {
+  const report = (job: Promise<unknown>) =>
+    job.catch((error: unknown) => {
+      console.error(`[cron] ${event.cron} failed:`, error);
+      captureServerException(env, (p) => ctx.waitUntil(p), error, {
+        properties: { cron: event.cron },
+      });
+    });
+
   switch (event.cron) {
     case "0 3 * * *":
-      ctx.waitUntil(cleanupSessions(env));
+      ctx.waitUntil(report(cleanupSessions(env)));
       break;
     case "0 4 * * *":
-      ctx.waitUntil(cleanupNotifications(env));
+      ctx.waitUntil(report(cleanupNotifications(env)));
       break;
     case "*/5 * * * *":
-      ctx.waitUntil(recomputeHotFeed(env));
+      ctx.waitUntil(report(recomputeHotFeed(env)));
       break;
     default:
       console.log(`[cron] unhandled: ${event.cron}`);
