@@ -55,6 +55,14 @@ LEMONSQUEEZY_STORE_ID=
 LEMONSQUEEZY_VARIANT_ID=
 LEMONSQUEEZY_WEBHOOK_SECRET=
 
+# --- Feature flags ----------------------------------------------------------
+# Feature flags gate PRODUCTION ONLY (server-lib/flags.ts). Local dev runs with
+# CLOUDFLARE_ENV=staging and so already inherits staging's FLAGS_FORCE_ON from
+# wrangler.jsonc — you do NOT need to set this to work on a flagged feature.
+# Set it here only to override that list locally; it REPLACES the value rather
+# than adding to it. Comma-separated flag keys.
+#   FLAGS_FORCE_ON=umamin-pro,some-other-flag
+
 # --- Runtime ----------------------------------------------------------------
 # Not set automatically on Workers; session cookie names (__Host-*) and secure
 # attributes key off it. Leave as development locally.

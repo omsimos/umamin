@@ -4,6 +4,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { BanIcon, CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 import { PRO_THEME_STYLES } from "@/components/pro-flair";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { Link } from "@/lib/navigation";
 import { hasUmaminPro, PRO_THEMES, type ProTheme } from "@/lib/pro";
 import { queryKeys } from "@/lib/query";
@@ -21,6 +22,7 @@ import { updateProfileThemeAction } from "./actions";
 export function ProThemeSection({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
   const isPro = hasUmaminPro(user.proUntil);
+  const { pro: proLaunched } = useFeatureFlags();
   const current = (user.profileTheme ?? null) as ProTheme | null;
 
   const mutation = useMutation({
@@ -54,6 +56,12 @@ export function ProThemeSection({ user }: { user: UserWithAccount }) {
       toast.error(error.message ?? "Couldn't update the theme.");
     },
   });
+
+  // The non-Pro state below is an upsell, so it goes away with the offer. A user
+  // who already has Pro keeps the picker either way.
+  if (!isPro && !proLaunched) {
+    return null;
+  }
 
   if (!isPro) {
     return (

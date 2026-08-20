@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { AppBindings } from "../../server-lib/context";
 import { readsSessionContext } from "./_shared";
 import { blockedUsersRoutes } from "./blocked-users";
+import { flagsRoutes } from "./flags";
 import { groupChatRoutes } from "./group-chat";
 import { groupsRoutes } from "./groups";
 import { meRoutes } from "./me";
@@ -32,6 +33,7 @@ export const readsApp = new Hono<AppBindings>()
   .route("/", groupsRoutes)
   .route("/", groupChatRoutes)
   .route("/", publicRoutes)
-  .route("/", moderationRoutes);
+  .route("/", moderationRoutes)
+  .route("/", flagsRoutes);
 
 export type ReadsApp = typeof readsApp;

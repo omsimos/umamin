@@ -10,6 +10,7 @@ import {
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { Link2OffIcon } from "lucide-react";
 import { RouteSegmentError } from "@/components/route-segment-error";
+import { loadFeatureFlags } from "@/lib/loader-flags";
 import { pageSeo } from "@/lib/seo";
 import { SettingsSkeleton } from "./-settings/settings-skeleton";
 import { SettingsTabs } from "./-settings/settings-tabs";
@@ -28,6 +29,12 @@ export const Route = createFileRoute("/_private/settings")({
         ? search.tab
         : undefined,
   }),
+  // The profile-theme section's non-Pro state is a "Get Pro" upsell, so it needs
+  // the flag. The hook it uses defaults to hidden, so this only removes the
+  // pop-in once Pro launches — the request happens either way, just later.
+  loader: async ({ context }) => {
+    await loadFeatureFlags(context.queryClient);
+  },
   head: () =>
     pageSeo({
       title: "Umamin — Settings",

@@ -5,6 +5,7 @@ import { readsApp } from "../src/api/routes";
 import { __setReadDb } from "../src/api/routes/_shared";
 import type { Db } from "../src/server-lib/db";
 import type { AppEnv } from "../src/server-lib/env";
+import { __clearFlagCache } from "../src/server-lib/flags";
 import {
   __clearSessionCache,
   createSession,
@@ -59,6 +60,7 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
     (globalThis as { caches?: unknown }).caches = { default: memCache };
     db = await makeTestDb();
     __setReadDb(() => db);
+    __clearFlagCache();
   });
 
   afterEach(() => {
@@ -83,6 +85,40 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       expect(res.status).toBe(200);
       const body = (await res.json()) as { user?: { username?: string } };
       expect(body.user?.username).toBe("alice_xyz");
+    });
+  });
+
+  // /api/flags is PRIVATE for a reason: flags are evaluated against the viewer's
+  // distinct id, so a shared-cache response would hand one viewer's rollout
+  // bucket to every other viewer.
+  describe("feature flags read", () => {
+    it("is never cached and does not vary the answer by cache", async () => {
+      const res = await fetchApp("/flags");
+      expect(res.headers.get("cache-control")).toBe(
+        "private, no-store, max-age=0",
+      );
+      expect(res.headers.get("vary")).toBe("Cookie");
+    });
+
+    // Fails closed: with no PostHog token configured the Pro offer stays hidden
+    // rather than defaulting to visible.
+    it("resolves the Pro offer to hidden when PostHog is unconfigured", async () => {
+      const res = await fetchApp("/flags");
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ pro: false });
+    });
+
+    it("reflects a forced-on flag for a signed-in viewer", async () => {
+      await db.insert(userTable).values({ id: "f1", username: "flag_user" });
+      const token = generateSessionToken();
+      await createSession(db, token, "f1");
+
+      const res = await fetchApp(
+        "/flags",
+        { headers: { cookie: `session=${token}` } },
+        { FLAGS_FORCE_ON: "umamin-pro" },
+      );
+      expect(await res.json()).toEqual({ pro: true });
     });
   });
 

@@ -1,6 +1,7 @@
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import * as z from "zod";
+import { FLAG_UMAMIN_PRO } from "../../lib/flags";
 import {
   hasUmaminPro,
   PRO_CHECKOUT_UNAVAILABLE_ERROR,
@@ -8,6 +9,7 @@ import {
   PRO_THEMES,
 } from "../../lib/pro";
 import { action } from "../../server-lib/action";
+import { isFlagEnabled } from "../../server-lib/flags";
 import { createProCheckout } from "../../server-lib/lemonsqueezy";
 import { ctxDb } from "./_shared";
 
@@ -24,6 +26,13 @@ export const createProCheckoutHandler = action(
     },
   },
   async (_input, { user, c }) => {
+    // Re-checked server-side, not just hidden in the UI: a stale tab or a direct
+    // call must not be able to mint a checkout for an unlaunched product and
+    // take someone's money.
+    if (!(await isFlagEnabled(c.env, user.id, FLAG_UMAMIN_PRO))) {
+      return { error: PRO_CHECKOUT_UNAVAILABLE_ERROR };
+    }
+
     const url = await createProCheckout(c.env, user.id);
     if (!url) {
       return { error: PRO_CHECKOUT_UNAVAILABLE_ERROR };

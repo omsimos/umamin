@@ -519,3 +519,9 @@ export type UserProfileViewerResponse = {
   // menu entry. See getUserProfileViewerData.
   isBanned: boolean;
 };
+
+// Resolved server-side per viewer; `pro` false hides every Pro purchase entry
+// point. Fails closed, so an unreachable PostHog reads as "keep it hidden".
+export type FeatureFlagsResponse = {
+  pro: boolean;
+};

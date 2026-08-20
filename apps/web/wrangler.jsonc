@@ -134,7 +134,13 @@
         // on NODE_ENV=production, so local dev inherits these harmlessly.
         "POSTHOG_PROJECT_TOKEN": "phc_dgBp0oWW82kMRiBevIGjWn46BiEvpnmjCoVuJ3L2MyE",
         "POSTHOG_HOST": "https://us.i.posthog.com",
-        "POSTHOG_ENV": "staging"
+        "POSTHOG_ENV": "staging",
+        // Feature flags gate PRODUCTION ONLY. dev.umamin.link is where Pro is
+        // demoed and worked on, so the offer stays visible here no matter what
+        // the PostHog rollout says. Comma-separated flag keys; local dev reads
+        // this same block (CLOUDFLARE_ENV=staging), so Pro works locally too.
+        // A flag that SHOULD be previewable in its hidden state is left out.
+        "FLAGS_FORCE_ON": "umamin-pro"
       }
     },
     "production": {
@@ -228,6 +234,9 @@
         "POSTHOG_PROJECT_TOKEN": "phc_dgBp0oWW82kMRiBevIGjWn46BiEvpnmjCoVuJ3L2MyE",
         "POSTHOG_HOST": "https://us.i.posthog.com",
         "POSTHOG_ENV": "production"
+        // NO "FLAGS_FORCE_ON" here, deliberately — this is the one environment
+        // the flags actually gate. Copying staging's vars block over would
+        // launch every listed flag to everyone at once.
       }
     }
   }

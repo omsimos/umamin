@@ -8,6 +8,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
+import { cn } from "@umamin/ui/lib/utils";
 import {
   BanIcon,
   BarChart3Icon,
@@ -26,9 +27,9 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { callAction } from "@/lib/api";
 import { MIN_AURA_FOR_IMAGES } from "@/lib/post-images";
-
 import {
   hasUmaminPro,
   PRO_PER_MONTH_PHP,
@@ -157,6 +158,9 @@ export function TiersView() {
   const user = data?.user;
   const isPlus = hasUmaminPlus(user?.createdAt);
   const isPro = hasUmaminPro(user?.proUntil);
+  // Pro is built but not launched. The flag hides the OFFER only — a user who
+  // already bought keeps the badge, theme and ad-free perks either way.
+  const { pro: proLaunched } = useFeatureFlags();
 
   // The webhook grants Pro moments after Lemon Squeezy redirects back here —
   // refetch so the Active badge appears without a manual reload.
@@ -192,14 +196,23 @@ export function TiersView() {
 
       <Tabs
         defaultValue={
-          pro === "success" || isPro ? "pro" : isPlus ? "plus" : "free"
+          proLaunched && (pro === "success" || isPro)
+            ? "pro"
+            : isPlus
+              ? "plus"
+              : "free"
         }
         className="space-y-4"
       >
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList
+          className={cn(
+            "grid w-full",
+            proLaunched ? "grid-cols-3" : "grid-cols-2",
+          )}
+        >
           <TabsTrigger value="free">Free</TabsTrigger>
           <TabsTrigger value="plus">Plus</TabsTrigger>
-          <TabsTrigger value="pro">Pro</TabsTrigger>
+          {proLaunched && <TabsTrigger value="pro">Pro</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="free" className="mt-0 space-y-3">
@@ -225,68 +238,70 @@ export function TiersView() {
           </p>
         </TabsContent>
 
-        <TabsContent value="pro" className="mt-0 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm text-muted-foreground">
-              Everything in Plus, plus:
-            </p>
-            <Badge variant={isPro ? "default" : "secondary"}>
-              {isPro ? "Active" : "One-time purchase"}
-            </Badge>
-          </div>
-          <PerkList perks={PRO_PERKS} />
-
-          {pro === "success" && !isPro && (
-            <div className="rounded-xl border bg-muted/30 p-3 text-sm">
-              Payment received — Pro unlocks as soon as the order is confirmed,
-              usually within a minute. Check back shortly.
-            </div>
-          )}
-
-          <div className="space-y-3 rounded-xl border p-4">
-            <div>
-              <p className="text-xl font-semibold">
-                ₱{PRO_PRICE_PHP}{" "}
-                <span className="text-sm font-normal text-muted-foreground">
-                  for {PRO_TERM_MONTHS} months
-                </span>
-              </p>
+        {proLaunched && (
+          <TabsContent value="pro" className="mt-0 space-y-3">
+            <div className="flex items-center justify-between gap-2">
               <p className="text-sm text-muted-foreground">
-                That's around ₱{PRO_PER_MONTH_PHP} a month. One-time payment —
-                not a subscription, nothing to cancel.
+                Everything in Plus, plus:
               </p>
+              <Badge variant={isPro ? "default" : "secondary"}>
+                {isPro ? "Active" : "One-time purchase"}
+              </Badge>
             </div>
+            <PerkList perks={PRO_PERKS} />
 
-            {user || isPending ? (
-              <Button
-                className="w-full"
-                disabled={checkingOut || isPending}
-                onClick={() => checkout.mutate()}
-              >
-                {checkingOut && <Loader2Icon className="animate-spin" />}
-                {isPro
-                  ? `Add ${PRO_TERM_MONTHS} more months — ₱${PRO_PRICE_PHP}`
-                  : `Get Pro — ₱${PRO_PRICE_PHP}`}
-              </Button>
-            ) : (
-              <Button className="w-full" asChild>
-                <Link to="/login">Sign in to get Pro</Link>
-              </Button>
+            {pro === "success" && !isPro && (
+              <div className="rounded-xl border bg-muted/30 p-3 text-sm">
+                Payment received — Pro unlocks as soon as the order is
+                confirmed, usually within a minute. Check back shortly.
+              </div>
             )}
 
-            {isPro && user?.proUntil && (
-              <p className="text-xs text-muted-foreground">
-                Pro is active until{" "}
-                {new Date(user.proUntil).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-                . Buying again adds {PRO_TERM_MONTHS} months on top.
-              </p>
-            )}
-          </div>
-        </TabsContent>
+            <div className="space-y-3 rounded-xl border p-4">
+              <div>
+                <p className="text-xl font-semibold">
+                  ₱{PRO_PRICE_PHP}{" "}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    for {PRO_TERM_MONTHS} months
+                  </span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  That's around ₱{PRO_PER_MONTH_PHP} a month. One-time payment —
+                  not a subscription, nothing to cancel.
+                </p>
+              </div>
+
+              {user || isPending ? (
+                <Button
+                  className="w-full"
+                  disabled={checkingOut || isPending}
+                  onClick={() => checkout.mutate()}
+                >
+                  {checkingOut && <Loader2Icon className="animate-spin" />}
+                  {isPro
+                    ? `Add ${PRO_TERM_MONTHS} more months — ₱${PRO_PRICE_PHP}`
+                    : `Get Pro — ₱${PRO_PRICE_PHP}`}
+                </Button>
+              ) : (
+                <Button className="w-full" asChild>
+                  <Link to="/login">Sign in to get Pro</Link>
+                </Button>
+              )}
+
+              {isPro && user?.proUntil && (
+                <p className="text-xs text-muted-foreground">
+                  Pro is active until{" "}
+                  {new Date(user.proUntil).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                  . Buying again adds {PRO_TERM_MONTHS} months on top.
+                </p>
+              )}
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

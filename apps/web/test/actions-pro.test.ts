@@ -6,14 +6,27 @@ vi.mock("../src/server-lib/argon2", () => ({
   verify: async () => false,
 }));
 
+// Real implementation, but call-counted: without Lemon Squeezy credentials it
+// already returns undefined, and the flag tests below need to tell "refused at
+// the gate" apart from "reached the provider and it was unconfigured" — both
+// answer the user with the same message.
+vi.mock("../src/server-lib/lemonsqueezy", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../src/server-lib/lemonsqueezy")>();
+  return { ...actual, createProCheckout: vi.fn(actual.createProCheckout) };
+});
+
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
+import { FLAG_UMAMIN_PRO } from "../src/lib/flags";
 import { IMAGE_AURA_REQUIRED_ERROR } from "../src/lib/post-images";
 import {
   PRO_CHECKOUT_UNAVAILABLE_ERROR,
   PRO_REQUIRED_ERROR,
 } from "../src/lib/pro";
 import type { Db } from "../src/server-lib/db";
+import { __clearFlagCache } from "../src/server-lib/flags";
+import { createProCheckout } from "../src/server-lib/lemonsqueezy";
 import { __clearSessionCache } from "../src/server-lib/session";
 import { authed, buildApp, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
@@ -33,8 +46,15 @@ async function storedTheme(db: Db): Promise<string | null> {
 describe("pro actions (real libSQL)", () => {
   let db: Db;
 
+  // Local force-on: the Pro offer sits behind the `umamin-pro` PostHog flag, and
+  // it fails closed, so a test env with no PostHog token refuses checkout before
+  // the provider is ever consulted.
+  const OFFER_LIVE = { FLAGS_FORCE_ON: FLAG_UMAMIN_PRO } as const;
+
   beforeEach(async () => {
     __clearSessionCache();
+    __clearFlagCache();
+    vi.mocked(createProCheckout).mockClear();
     db = await makeTestDb();
     await db.insert(userTable).values({ id: "buyer", username: "u_buyer" });
   });
@@ -130,7 +150,7 @@ describe("pro actions (real libSQL)", () => {
     expect(json).toEqual({ error: IMAGE_AURA_REQUIRED_ERROR });
   });
 
-  it("returns the friendly error when checkout is unconfigured", async () => {
+  it("refuses without consulting the provider while the offer is flagged off", async () => {
     const app = buildApp(db, authed("buyer", {}));
     const { json } = await callJson<{ error: string }>(
       app,
@@ -138,5 +158,19 @@ describe("pro actions (real libSQL)", () => {
     );
 
     expect(json).toEqual({ error: PRO_CHECKOUT_UNAVAILABLE_ERROR });
+    expect(createProCheckout).not.toHaveBeenCalled();
+  });
+
+  it("returns the friendly error when checkout is unconfigured", async () => {
+    const app = buildApp(db, authed("buyer", {}));
+    const { json } = await callJson<{ error: string }>(
+      app,
+      "createProCheckoutAction",
+      undefined,
+      OFFER_LIVE,
+    );
+
+    expect(json).toEqual({ error: PRO_CHECKOUT_UNAVAILABLE_ERROR });
+    expect(createProCheckout).toHaveBeenCalled();
   });
 });
