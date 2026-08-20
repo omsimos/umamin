@@ -21,6 +21,13 @@
   "env": {
     "staging": {
       "name": "umamin-web",
+      // Full trace sampling: this is the low-traffic host, and it is the one
+      // running the placement experiment below — the comparison against
+      // production is the whole point, so it must not be sparsely sampled.
+      "observability": {
+        "enabled": true,
+        "traces": { "enabled": true }
+      },
       "routes": [
         {
           "pattern": "dev.umamin.link",
@@ -132,6 +139,24 @@
     },
     "production": {
       "name": "umamin-web-production",
+      // Automatic tracing: spans for the handler, every outbound fetch (each
+      // Turso round trip) and every binding call, with no code change. That is
+      // exactly the instrument the "Cost & latency" numbers were measured by
+      // hand for, and what the staging placement experiment needs to be
+      // compared against.
+      //
+      // SAMPLED, and the rate is not cosmetic: each span is one observability
+      // event drawing on the SAME 20M/month included quota as Workers Logs.
+      // Production runs ~2.0M invocations/month and a feed request emits
+      // roughly 6-10 spans (session read + 4-5 chained feed reads + KV +
+      // rate-limit bindings), so 100% sampling is ~12-20M spans/month — the
+      // entire allowance, before logs. 10% keeps it near 2M while still
+      // tracing ~6.5k requests/day, far more than percentiles need.
+      // Tracing is free until 2026-10-01, then billed at $0.60/M over quota.
+      "observability": {
+        "enabled": true,
+        "traces": { "enabled": true, "head_sampling_rate": 0.1 }
+      },
       // Dark until cutover: no public workers.dev URL in front of the prod DB.
       // Flip to true briefly if a pre-cutover prod smoke test is needed.
       "workers_dev": false,
