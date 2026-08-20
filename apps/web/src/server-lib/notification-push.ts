@@ -1,3 +1,4 @@
+import { WebPushError } from "@mmmike/web-push/send";
 import type { NotificationType } from "@umamin/db/schema/notification";
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
@@ -179,15 +180,19 @@ export async function sendPushForNotification(
   const payload = {
     title: copy.title(actor),
     url: copy.url(targetId, actor),
-    // Client-side collapse key (unrestricted charset, unlike the push `topic`
-    // header) so repeats of the same event replace rather than stack on-device.
+    // On-device collapse key ONLY — sw.js pairs it with renotify:true so a
+    // repeat replaces what is displayed but still alerts. Deliberately not sent
+    // as the RFC 8030 `topic` header: that collapses UNDELIVERED pushes at the
+    // push service, and this key is not unique per push (follow/message carry an
+    // empty targetId; like/comment titles name an actor), so a topic built from
+    // it would silently drop notifications.
     tag: `${type}:${targetId}`,
   };
 
   await Promise.all(
     subs.map(async (sub) => {
       try {
-        const result = await sendPush(sub, payload, { vapid, ttl: 3600 });
+        const result = await sendPush(sub, payload, vapid, { ttl: 3600 });
         // 404/410 = the subscription is dead/expired — prune it (scoped to this
         // recipient).
         if (!result.ok && result.expired) {
@@ -203,7 +208,15 @@ export async function sendPushForNotification(
       } catch (err) {
         // Other failures (disallowed endpoint / push-service error) are
         // best-effort: log and move on.
-        console.error("web-push send failed", err);
+        // toJSON() is the lib's log-safe shape:
+        // statusCode/retryAfterMs separate rate-limiting (429) from
+        // misconfiguration (401/403 = VAPID rejected), with the endpoint — a
+        // capability URL — truncated rather than logged whole.
+        if (err instanceof WebPushError) {
+          console.error("web-push send rejected", err.toJSON());
+        } else {
+          console.error("web-push send failed", err);
+        }
       }
     }),
   );
