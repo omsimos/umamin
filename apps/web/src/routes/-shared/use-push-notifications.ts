@@ -79,12 +79,10 @@ export function usePushNotifications() {
         return;
       }
       if (Notification.permission === "denied") {
-        const sub = await getExistingSubscription();
-        if (sub) {
-          const { endpoint } = sub;
-          await sub.unsubscribe().catch(() => {});
-          void unregister({ endpoint });
-        }
+        // Permission was revoked outside the app — prune the now-dead
+        // subscription. Best-effort here: reaching "denied" is what matters.
+        const endpoint = await unsubscribeFromPush().catch(() => null);
+        if (endpoint) void unregister({ endpoint });
         if (active) setState("denied");
         return;
       }

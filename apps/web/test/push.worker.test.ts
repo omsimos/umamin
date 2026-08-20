@@ -85,6 +85,36 @@ describe("web push send in workerd (@mmmike/web-push, RFC 8291)", () => {
     expect(body[20]).toBe(65); // keyid length octet
   });
 
+  it("defaults to 1h retention and sends no RFC 8030 collapse key", async () => {
+    // Both halves are load-bearing. The wrapper's 1h default is what keeps a
+    // caller that omits `ttl` off the lib's 24h fallback, by which point every
+    // notification we send is stale. And a `Topic` header would make the push
+    // service DISCARD an undelivered push in favour of a later one sharing the
+    // key — payload.tag is not unique per push (follow/message carry an empty
+    // targetId), so deriving one from it drops notifications outright.
+    const { publicKey, privateKey } = await generateVapidKeys();
+    const sub = await makeFakeSubscription();
+
+    let captured: Request | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        captured = new Request(input as string, init);
+        return new Response(null, { status: 201 });
+      }),
+    );
+
+    await sendPush(
+      sub,
+      { title: "@alice liked your post", url: "/post/123", tag: "like:123" },
+      { publicKey, privateKey, subject: "mailto:x@umamin.link" },
+    );
+
+    const req = captured as Request;
+    expect(req.headers.get("ttl")).toBe("3600");
+    expect(req.headers.get("topic")).toBeNull();
+  });
+
   it("reports a 410 Gone as an expired subscription (prune signal)", async () => {
     const { publicKey, privateKey } = await generateVapidKeys();
     const sub = await makeFakeSubscription();

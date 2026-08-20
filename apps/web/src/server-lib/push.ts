@@ -74,8 +74,6 @@ export async function sendPush(
   subscription: PushSubscriptionRow,
   payload: PushNotificationPayload,
   vapid: VapidConfig,
-  // No TTL default here: callers own retention, and omitting opts.ttl falls
-  // back to the lib's 24h (the notification fan-out passes 1h explicitly).
   opts: SendPushOptions = {},
 ): Promise<SendPushResult> {
   if (!isAllowedPushEndpoint(subscription.endpoint)) {
@@ -87,7 +85,12 @@ export async function sendPush(
     keys: { p256dh: subscription.p256dh, auth: subscription.auth },
   };
 
-  const delivered = await sendPushNotification(sub, payload, vapid, opts);
+  // 1h retention unless a caller overrides it: every notification routed
+  // through here is stale long before the lib's 24h fallback stops retrying.
+  const delivered = await sendPushNotification(sub, payload, vapid, {
+    ...opts,
+    ttl: opts.ttl ?? 3600,
+  });
 
   // sendPushNotification returns false only on 404/410 (dead subscription).
   return delivered ? { ok: true } : { ok: false, expired: true };

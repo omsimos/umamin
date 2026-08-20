@@ -3,7 +3,6 @@ import {
   isPushSupported as libIsPushSupported,
   serializeSubscription,
   subscribe,
-  unsubscribe,
 } from "@mmmike/web-push/client";
 import { isStandaloneMode } from "@/lib/pwa";
 
@@ -50,18 +49,33 @@ export async function subscribeToPush(
   if (result.status !== "subscribed") {
     throw new Error(
       result.status === "denied"
-        ? "Notification permission was not granted."
+        ? "Notifications are blocked. Re-enable them in your browser or device settings."
         : "Push notifications are not supported in this browser.",
     );
   }
-  const { endpoint, keys } = serializeSubscription(result.subscription);
-  return { endpoint, ...keys };
+  // serializeSubscription throws on a missing p256dh/auth key; its message is
+  // internal and the caller toasts whatever surfaces here.
+  try {
+    const { endpoint, keys } = serializeSubscription(result.subscription);
+    return { endpoint, ...keys };
+  } catch {
+    throw new Error("This browser returned an unusable push subscription.");
+  }
 }
 
 // Unsubscribes this device's PushManager and returns the endpoint so the caller
 // can prune the matching server row. Null when there was nothing to
 // unsubscribe (including during SSR).
+//
+// Deliberately NOT the lib's unsubscribe(), which swallows a rejection and
+// returns the endpoint anyway: that prunes the server row while the browser
+// subscription survives, so the toggle reads "on" for a device the server can
+// never reach again. A failure here has to surface to the caller.
 export async function unsubscribeFromPush(): Promise<string | null> {
   if (typeof window === "undefined") return null;
-  return unsubscribe();
+  const sub = await getCurrentSubscription();
+  if (!sub) return null;
+  const { endpoint } = sub;
+  await sub.unsubscribe();
+  return endpoint;
 }
