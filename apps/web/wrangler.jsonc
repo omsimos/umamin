@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   // Two-environment layout (Vercel-style preview/prod). ALWAYS deploy with
   // --env; bindings/vars/routes are per-env and deliberately NOT shared.
-  //   staging    → worker "umamin-web" (kept: it already holds next.umamin.link
+  //   staging    → worker "umamin-web" (kept: it already holds dev.umamin.link
   //                and the dev secrets) — Turso umamin-dev, staging KV.
   //   production → worker "umamin-web-production" — Turso umamin-db, own KV;
   //                umamin.link is attached at cutover.
@@ -23,7 +23,7 @@
       "name": "umamin-web",
       "routes": [
         {
-          "pattern": "next.umamin.link",
+          "pattern": "dev.umamin.link",
           "custom_domain": true
         }
       ],
@@ -111,13 +111,13 @@
         "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
       },
       "vars": {
-        "APP_URL": "https://next.umamin.link",
+        "APP_URL": "https://dev.umamin.link",
         // Not set automatically on Workers; session cookie names (__Host-*)
         // and secure attrs key off it. Local dev overrides via .dev.vars.
         "NODE_ENV": "production",
         // Staging serves the SAME public/robots.txt as production (static assets
         // are shared), and Cloudflare has no Vercel-style automatic
-        // preview-noindex — so opt out via a header instead, or next.umamin.link
+        // preview-noindex — so opt out via a header instead, or dev.umamin.link
         // gets crawled and competes with prod. See server-lib/csp.ts.
         "SEO_INDEXABLE": "false",
         // Worker-side error tracking (server-lib/posthog.ts). The project token

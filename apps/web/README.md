@@ -33,7 +33,7 @@ pnpm --filter=web run build     # staging build; build:production for prod
 ## Notes
 
 - **Two environments**, defined in `wrangler.jsonc` and never shared: `staging`
-  (`next.umamin.link`, dev database) and `production`. Always deploy with `--env`.
+  (`dev.umamin.link`, dev database) and `production`. Always deploy with `--env`.
 - **Caching.** A Worker is the origin, so CDN `s-maxage` does not apply — public
   reads are cached in-Worker through the Cache API (`server-lib/read-route.ts`,
   the only place `caches.default` is allowed). It has no purge, so invalidation

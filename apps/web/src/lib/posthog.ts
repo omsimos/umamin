@@ -10,7 +10,7 @@ import type { PostHog, PostHogConfig } from "posthog-js";
 //
 // Everything is gated on `import.meta.env.PROD`, so `pnpm dev:web` never ships
 // events. MODE separates the two deployed builds (`--mode staging` →
-// next.umamin.link, default → www.umamin.link) inside the one PostHog project.
+// dev.umamin.link, default → www.umamin.link) inside the one PostHog project.
 
 const TOKEN = import.meta.env.VITE_POSTHOG_PROJECT_TOKEN;
 const HOST = import.meta.env.VITE_POSTHOG_HOST ?? "https://us.i.posthog.com";
