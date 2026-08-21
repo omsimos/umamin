@@ -18,12 +18,10 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
-## [7.6.0] - 2026-08-21
+## [7.6.1] - 2026-08-21
 
 ### Changed
 
-- Everyone has a default profile picture now: a small coloured character that belongs to your account and appears anywhere you haven't uploaded a photo — your profile, the feed, notes, comments, notifications, follower lists, group members and group chat. It replaces the generic outline and the two-letter initials, it's the same one every time, and it stays yours even if you change your username. Saved post and note images pick it up too.
-- Anonymous notes still show the plain outline, so a default picture can never tie one back to an account.
 - Signing up with Google no longer takes your Google profile photo. New accounts start on their default picture, and linking Google to an existing account never changes the photo you already have.
 - Removing your profile photo now lives next to the upload button, under Profile Photo in General settings, and puts your default picture back.
 
@@ -31,6 +29,13 @@ any that are empty.
 
 - "Use Google Photo" is gone from Settings. Upload a photo, or keep the default picture — accounts that already show a Google photo can clear it with Remove photo.
 - The "Display Picture" switch is gone from Privacy settings; it only ever deleted an uploaded photo, which Remove photo now does where the photo actually is.
+
+## [7.6.0] - 2026-08-21
+
+### Changed
+
+- Everyone has a default profile picture now: a small coloured character that belongs to your account and appears anywhere you haven't uploaded a photo — your profile, the feed, notes, comments, notifications, follower lists, group members and group chat. It replaces the generic outline and the two-letter initials, it's the same one every time, and it stays yours even if you change your username. Saved post and note images pick it up too.
+- Anonymous notes still show the plain outline, so a default picture can never tie one back to an account.
 
 ## [7.5.0] - 2026-08-07
 
@@ -937,6 +942,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.6.1]: https://github.com/omsimos/umamin/compare/v7.6.0...v7.6.1
 [7.6.0]: https://github.com/omsimos/umamin/compare/v7.5.0...v7.6.0
 [7.5.0]: https://github.com/omsimos/umamin/compare/v7.4.0...v7.5.0
 [7.4.0]: https://github.com/omsimos/umamin/compare/v7.3.0...v7.4.0
