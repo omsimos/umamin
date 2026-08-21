@@ -28,19 +28,6 @@ import {
 import { setSessionCookie } from "../../server-lib/session-cookie";
 import { ctxDb, defer } from "./_shared";
 
-// Only Google profile pictures may be applied by URL — everything else is a raw
-// <img src> tracking/deanonymization vector. Uploaded photos take the R2 path.
-const ALLOWED_AVATAR_HOSTS = new Set(["lh3.googleusercontent.com"]);
-
-function isAllowedAvatarUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && ALLOWED_AVATAR_HOSTS.has(url.hostname);
-  } catch {
-    return false;
-  }
-}
-
 // Set the photo and return the value it replaced, read in the same transaction
 // so R2 cleanup targets the object that actually became unreachable.
 async function swapUserImageUrl(
@@ -527,36 +514,6 @@ export const unblockUserHandler = action(
   },
 );
 
-export const toggleDisplayPictureHandler = action(
-  {
-    schema: z.string().optional(),
-    auth: "user",
-    rateLimit: {
-      name: "write",
-      key: ({ user }) => `displaypic:${user.id}`,
-    },
-  },
-  async (accountImgUrl, { user, c }) => {
-    const db = ctxDb(c);
-    if (
-      !user.imageUrl &&
-      (!accountImgUrl || !isAllowedAvatarUrl(accountImgUrl))
-    ) {
-      return { error: "Invalid input" };
-    }
-
-    const imageUrl = user.imageUrl ? null : (accountImgUrl ?? null);
-    const previousImageUrl = await swapUserImageUrl(db, user.id, imageUrl);
-
-    if (!imageUrl) {
-      const r2 = createR2(c.env);
-      if (r2) await r2.deleteR2Avatar(previousImageUrl);
-    }
-
-    return { imageUrl };
-  },
-);
-
 export const toggleQuietModeHandler = action(
   {
     auth: "user",
@@ -599,26 +556,21 @@ export const updateBlockedWordsHandler = action(
   },
 );
 
-export const updateAvatarHandler = action(
+export const removeProfilePhotoHandler = action(
   {
-    schema: z.string(),
     auth: "user",
-    rateLimit: { name: "write", key: ({ user }) => `avatar:${user.id}` },
+    rateLimit: { name: "write", key: ({ user }) => `avatarrm:${user.id}` },
   },
-  async (imageUrl, { user, c }) => {
+  async (_input, { user, c }) => {
     const db = ctxDb(c);
-    if (!isAllowedAvatarUrl(imageUrl)) {
-      return { error: "Invalid input" };
-    }
+    const previousImageUrl = await swapUserImageUrl(db, user.id, null);
 
-    const previousImageUrl = await swapUserImageUrl(db, user.id, imageUrl);
+    // No-ops on a Google URL left over from an older signup — only our own
+    // avatars/ objects are deletable.
+    const r2 = createR2(c.env);
+    if (r2) await r2.deleteR2Avatar(previousImageUrl);
 
-    if (previousImageUrl && previousImageUrl !== imageUrl) {
-      const r2 = createR2(c.env);
-      if (r2) await r2.deleteR2Avatar(previousImageUrl);
-    }
-
-    return { success: true, imageUrl };
+    return { success: true };
   },
 );
 

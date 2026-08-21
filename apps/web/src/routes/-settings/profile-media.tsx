@@ -37,7 +37,7 @@ import {
   presignAvatarUploadAction,
   presignBannerUploadAction,
   removeProfileBannerAction,
-  updateAvatarAction,
+  removeProfilePhotoAction,
   updateProfileBannerAction,
   updateProfilePhotoAction,
 } from "./actions";
@@ -61,7 +61,6 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
   const pickKind = useRef<CropTarget["kind"]>("avatar");
   const [cropTarget, setCropTarget] = useState<CropTarget | null>(null);
 
-  const googlePicture = user.account?.picture;
   const uploadsAvailable = postImagesEnabled(
     import.meta.env.VITE_R2_PUBLIC_URL,
   );
@@ -69,7 +68,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
   const applyBanner = useSingleFlightAction(updateProfileBannerAction);
   const applyAvatar = useSingleFlightAction(updateProfilePhotoAction);
   const removeBanner = useSingleFlightAction(removeProfileBannerAction);
-  const applyGooglePhoto = useSingleFlightAction(updateAvatarAction);
+  const removePhoto = useSingleFlightAction(removeProfilePhotoAction);
 
   const patchImage = (updates: {
     imageUrl?: string | null;
@@ -192,22 +191,20 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
     },
   });
 
-  const googlePhotoMutation = useMutation({
+  const removePhotoMutation = useMutation({
     mutationFn: async () => {
-      if (!googlePicture) return undefined;
-      const res = await applyGooglePhoto(googlePicture);
+      const res = await removePhoto();
       if ("error" in res && res.error) {
         throw new Error(res.error);
       }
-      return "imageUrl" in res ? res.imageUrl : undefined;
     },
-    onSuccess: (imageUrl) => {
-      patchImage({ imageUrl: imageUrl ?? googlePicture });
-      toast.success("Profile photo updated.");
+    onSuccess: () => {
+      patchImage({ imageUrl: null });
+      toast.success("Profile photo removed.");
     },
     onError: (err) => {
       toast.error(
-        err instanceof Error ? err.message : "Couldn't update photo.",
+        err instanceof Error ? err.message : "Couldn't remove photo.",
       );
     },
   });
@@ -234,29 +231,33 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
               <p className="text-xs text-muted-foreground">
                 JPG, PNG, or WebP, up to{" "}
                 {MAX_AVATAR_SOURCE_BYTES / (1024 * 1024)}MB.
+                {user.imageUrl
+                  ? " Remove it to go back to your default picture."
+                  : " Until then you're on your default picture."}
               </p>
             </div>
           </div>
 
           <div className="flex justify-end gap-2">
-            {uploadsAvailable && (
-              <Button type="button" onClick={() => pickFile("avatar")}>
-                <ImagePlusIcon className="size-4" />
-                Upload photo
-              </Button>
-            )}
-
-            {googlePicture && (
+            {user.imageUrl && (
               <Button
                 type="button"
                 variant="outline"
-                disabled={googlePhotoMutation.isPending}
-                onClick={() => googlePhotoMutation.mutate()}
+                disabled={removePhotoMutation.isPending}
+                onClick={() => removePhotoMutation.mutate()}
               >
-                {googlePhotoMutation.isPending && (
+                {removePhotoMutation.isPending ? (
                   <Loader2Icon className="size-4 animate-spin" />
+                ) : (
+                  <Trash2Icon className="size-4" />
                 )}
-                Use Google Photo
+                Remove
+              </Button>
+            )}
+            {uploadsAvailable && (
+              <Button type="button" onClick={() => pickFile("avatar")}>
+                <ImagePlusIcon className="size-4" />
+                {user.imageUrl ? "Change photo" : "Upload photo"}
               </Button>
             )}
           </div>
