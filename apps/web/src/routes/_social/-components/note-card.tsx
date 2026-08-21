@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
@@ -281,9 +282,7 @@ export function NoteCard({
                         src={user?.imageUrl ?? ""}
                         alt="User avatar"
                       />
-                      <AvatarFallback className="text-xs">
-                        <ScanFaceIcon />
-                      </AvatarFallback>
+                      <BlobatarFallback seed={user?.id} />
                     </Avatar>
                   </Link>
                 )}

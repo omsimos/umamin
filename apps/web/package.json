@@ -35,6 +35,7 @@
     "@umamin/ui": "workspace:*",
     "arctic": "^3.7.0",
     "aws4fetch": "^1.0.20",
+    "blobatar": "^2.2.0",
     "date-fns": "^4.4.0",
     "drizzle-orm": "^0.45.2",
     "hash-wasm": "^4.12.0",

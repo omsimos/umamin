@@ -2780,6 +2780,10 @@ export async function getNotificationsPage(
         preview: notificationTable.preview,
         updatedAt: notificationTable.updatedAt,
         actor: {
+          // id feeds the default avatar (BlobatarFallback) — free here, it is
+          // already the leftJoin key. Drizzle still nulls the whole nested
+          // object when the actor is anonymous or the account is deleted.
+          id: userTable.id,
           username: userTable.username,
           displayName: userTable.displayName,
           imageUrl: userTable.imageUrl,

@@ -1,10 +1,6 @@
 import type { InfiniteData } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
 import {
   DropdownMenu,
@@ -19,10 +15,10 @@ import {
   MessageCircleIcon,
   MessageSquareTextIcon,
   Repeat2Icon,
-  ScanFaceIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ComposeDialog } from "@/components/compose-dialog";
 import { GroupBadge } from "@/components/group-badge";
 import { PollCard } from "@/components/poll-card";
@@ -240,9 +236,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
             })}
           >
             <AvatarImage src={author.imageUrl ?? ""} alt="User avatar" />
-            <AvatarFallback>
-              <ScanFaceIcon />
-            </AvatarFallback>
+            <BlobatarFallback seed={author.id} />
           </Avatar>
         </Link>
 

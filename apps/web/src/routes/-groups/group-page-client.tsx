@@ -17,11 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@umamin/ui/components/alert-dialog";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import {
@@ -46,7 +42,6 @@ import {
   Loader2Icon,
   MessageCircleIcon,
   MessageCircleOffIcon,
-  ScanFaceIcon,
   SquarePenIcon,
   TagIcon,
   Trash2Icon,
@@ -57,6 +52,7 @@ import {
 } from "lucide-react";
 import { type FormEventHandler, useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupEditDialog } from "@/components/group-edit-dialog";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
@@ -570,9 +566,7 @@ export function GroupPageClient({
                 >
                   <Avatar className="size-9">
                     <AvatarImage src={request.user.imageUrl ?? ""} alt="" />
-                    <AvatarFallback>
-                      <ScanFaceIcon className="size-4" />
-                    </AvatarFallback>
+                    <BlobatarFallback seed={request.user.id} />
                   </Avatar>
                 </Link>
                 <Link
@@ -669,9 +663,7 @@ export function GroupPageClient({
                 >
                   <Avatar className="size-9">
                     <AvatarImage src={member.user.imageUrl ?? ""} alt="" />
-                    <AvatarFallback>
-                      <ScanFaceIcon className="size-4" />
-                    </AvatarFallback>
+                    <BlobatarFallback seed={member.user.id} />
                   </Avatar>
                 </Link>
                 <Link

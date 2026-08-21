@@ -1,9 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +14,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@umamin/ui/components/drawer";
-import { Loader2Icon, ScanFaceIcon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Link } from "@/lib/navigation";
 import { fetchGroupMessageReactors } from "@/lib/query-fetchers";
@@ -63,9 +60,7 @@ function ReactorList({
           >
             <Avatar className="size-9">
               <AvatarImage src={r.user.imageUrl ?? ""} alt="" />
-              <AvatarFallback>
-                <ScanFaceIcon className="size-4" />
-              </AvatarFallback>
+              <BlobatarFallback seed={r.user.id} />
             </Avatar>
           </Link>
           <Link

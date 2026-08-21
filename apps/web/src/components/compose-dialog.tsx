@@ -9,11 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 import {
@@ -27,6 +23,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { BarChart3Icon, ImagePlusIcon, Loader2Icon, XIcon } from "lucide-react";
 import { type FormEventHandler, useRef, useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ComposerImages } from "@/components/composer-images";
 import { PollComposer } from "@/components/poll-composer";
 import { QuotedPostCard } from "@/components/quoted-post-card";
@@ -272,11 +269,7 @@ export function ComposeDialog({
               })}
             >
               <AvatarImage src={user?.imageUrl ?? ""} alt="User avatar" />
-              <AvatarFallback>
-                {user?.username
-                  ? user.username.slice(0, 2).toUpperCase()
-                  : "UM"}
-              </AvatarFallback>
+              <BlobatarFallback seed={user?.id} />
             </Avatar>
 
             <div className="flex min-w-0 flex-1 flex-col gap-3">

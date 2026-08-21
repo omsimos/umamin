@@ -319,6 +319,7 @@ export type NotificationItem = {
   // Latest actor only (aggregated rows overwrite it); null = anonymous or
   // deleted account.
   actor: {
+    id: string;
     username: string;
     displayName: string | null;
     imageUrl: string | null;

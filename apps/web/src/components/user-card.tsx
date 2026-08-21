@@ -1,8 +1,4 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
@@ -15,6 +11,7 @@ import {
   ShieldUserIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
 import { activeProTheme } from "@/lib/pro";
@@ -103,9 +100,7 @@ export function UserCard({
               src={user?.imageUrl ?? ""}
               alt={`${user?.username}'s avatar`}
             />
-            <AvatarFallback className="md:text-4xl text-xl">
-              {user?.username?.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
+            <BlobatarFallback seed={user?.id} />
           </Avatar>
         </div>
       </div>

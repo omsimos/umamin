@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
@@ -223,9 +224,7 @@ export function CurrentUserNote({
                       src={currentUser?.imageUrl ?? ""}
                       alt="User avatar"
                     />
-                    <AvatarFallback className="text-xs">
-                      <ScanFaceIcon />
-                    </AvatarFallback>
+                    <BlobatarFallback seed={currentUser.id} />
                   </Avatar>
                 </Link>
 

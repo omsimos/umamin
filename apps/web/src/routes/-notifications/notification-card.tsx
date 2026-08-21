@@ -1,9 +1,5 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
-import { UserIcon } from "lucide-react";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { TimeAgo } from "@/components/time-ago";
 import { Link } from "@/lib/navigation";
 import { formatNotificationText } from "@/lib/notification-text";
@@ -54,13 +50,7 @@ export function NotificationCard({
     <div className="flex items-center gap-3 py-4">
       <Avatar className="size-9">
         <AvatarImage src={actor?.imageUrl ?? ""} alt="" />
-        <AvatarFallback>
-          {actor ? (
-            actor.username.slice(0, 2).toUpperCase()
-          ) : (
-            <UserIcon className="size-4 text-muted-foreground" />
-          )}
-        </AvatarFallback>
+        <BlobatarFallback seed={actor?.id} />
       </Avatar>
 
       <div className="min-w-0 flex-1">

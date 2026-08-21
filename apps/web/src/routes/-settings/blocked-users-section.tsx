@@ -4,16 +4,12 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
 import { Label } from "@umamin/ui/components/label";
 import { Skeleton } from "@umamin/ui/components/skeleton";
-import { ScanFaceIcon } from "lucide-react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
 import {
@@ -111,9 +107,7 @@ export function BlockedUsersSection() {
                       src={user.imageUrl ?? ""}
                       alt={`@${user.username}'s avatar`}
                     />
-                    <AvatarFallback>
-                      <ScanFaceIcon />
-                    </AvatarFallback>
+                    <BlobatarFallback seed={user.id} />
                   </Avatar>
                 </Link>
 
