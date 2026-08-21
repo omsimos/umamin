@@ -33,9 +33,8 @@ If you like this project, please consider giving it a star! ✨ If you wish to s
 | ----------- | ------------------------------------------------------------------------------------ |
 | `apps/web`  | **Umamin** — anonymous messaging platform & landing page (TanStack Start + Hono, Cloudflare Workers) |
 | `apps/chat` | **Umamin Chat** — ephemeral, anonymous stranger chat (Vite + React + Convex)         |
-| `apps/www`  | The previous Next.js build of Umamin, superseded by `apps/web` in v7.0.0             |
 
-> `apps/web` is the app that serves [www.umamin.link](https://www.umamin.link). `apps/www` is kept only as a rollback target for the migration and is no longer deployed — new work belongs in `apps/web`.
+> `apps/web` is the app that serves [www.umamin.link](https://www.umamin.link). It replaced the original Next.js build in v7.0.0, which has since been removed — see the `legacy/www-final` tag for its final state.
 
 **Packages**
 

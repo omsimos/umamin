@@ -28,7 +28,7 @@ export const userTable = sqliteTable(
       .notNull()
       .default("Send me an anonymous message!"),
     // Owner-private message filter; must never ride a public payload — kept out
-    // of publicUserColumns and stripped from PublicUser (see apps/www toPublicUser).
+    // of publicUserColumns and stripped from PublicUser (see apps/web lib/types.ts toPublicUser).
     blockedWords: text("blocked_words", { mode: "json" }).$type<string[]>(),
     // Pinned profile post: soft reference, no FK — an FK to postTable would
     // create a circular schema import (post.ts already references userTable).
@@ -58,7 +58,7 @@ export const userTable = sqliteTable(
     // opt-in). v1 ships a single master toggle that sets/clears all current
     // category bits at once; per-category toggles are a later code-only change
     // (no migration). Owner-private — omitted from PublicUser/publicUserColumns,
-    // surfaced only on the current-user read. See apps/www lib/push-prefs.ts.
+    // surfaced only on the current-user read. See apps/web lib/push-prefs.ts.
     pushPrefs: integer("push_prefs").notNull().default(0),
     // Watermark for the notification badge: unread = notification rows with
     // updatedAt past this. Mark-all-seen is one user-row write instead of
@@ -81,7 +81,7 @@ export const userTable = sqliteTable(
     // YouTube). musicId is a canonical, validated token (never a raw URL); title/
     // thumbnail are a best-effort oEmbed cache, re-validated on every read. These
     // raw columns are dropped from PublicUser and resolved into a single lean
-    // `music` object on the profile read. See apps/www lib/music.ts.
+    // `music` object on the profile read. See apps/web lib/music.ts.
     musicProvider: text("music_provider"),
     musicId: text("music_id"),
     musicTitle: text("music_title"),
