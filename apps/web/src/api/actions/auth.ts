@@ -22,6 +22,7 @@ import {
   ACCESS_BLOCKED_ERROR,
   accountSuspendedMessage,
   GENERIC_ERROR,
+  VERIFICATION_FAILED_ERROR,
 } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
@@ -40,6 +41,7 @@ import {
   deleteSessionCookie,
   setSessionCookie,
 } from "../../server-lib/session-cookie";
+import { verifyTurnstile } from "../../server-lib/turnstile";
 import type { AppContext } from "./_shared";
 import { ctxDb } from "./_shared";
 
@@ -62,7 +64,11 @@ function csrfBlocked(c: AppContext): boolean {
 export async function loginHandler(c: AppContext): Promise<Response> {
   if (csrfBlocked(c)) return c.json({ error: GENERIC_ERROR }, 403);
 
-  let body: { username?: unknown; password?: unknown };
+  let body: {
+    username?: unknown;
+    password?: unknown;
+    turnstileToken?: unknown;
+  };
   try {
     body = await c.req.json();
   } catch {
@@ -96,6 +102,17 @@ export async function loginHandler(c: AppContext): Promise<Response> {
   }
   if (!(await checkRateLimit(c.env, "auth", `login:${ip}`))) {
     return c.json({ error: RATE_LIMIT_ERROR });
+  }
+  // Before the Argon2 work below, which the enumeration defense makes the
+  // expensive part of a WRONG password too — a garbage-username flood would
+  // otherwise buy a full hash per request.
+  if (
+    !(await verifyTurnstile(c.env, body.turnstileToken, "login", {
+      host: c.req.header("host"),
+      ip,
+    }))
+  ) {
+    return c.json({ error: VERIFICATION_FAILED_ERROR });
   }
 
   const db = ctxDb(c);
@@ -161,6 +178,18 @@ export async function signupHandler(c: AppContext): Promise<Response> {
   }
   if (!(await checkRateLimit(c.env, "auth", `signup:${ip}`))) {
     return c.json({ error: RATE_LIMIT_ERROR });
+  }
+  // Before the hash AND the insert: bulk signup is what feeds aura farming,
+  // ban evasion and spam accounts, and writes are the tighter Turso axis.
+  if (
+    !(await verifyTurnstile(
+      c.env,
+      (raw as { turnstileToken?: unknown } | undefined)?.turnstileToken,
+      "signup",
+      { host: c.req.header("host"), ip },
+    ))
+  ) {
+    return c.json({ error: VERIFICATION_FAILED_ERROR });
   }
 
   const passwordHash = await hash(validatedFields.data.password);

@@ -27,6 +27,10 @@ export type Secrets = {
   LEMONSQUEEZY_STORE_ID: string;
   LEMONSQUEEZY_VARIANT_ID: string;
   LEMONSQUEEZY_WEBHOOK_SECRET: string;
+  // Turnstile siteverify secret (see server-lib/turnstile.ts). Absent =>
+  // captcha verification is skipped, which is how local dev and the test
+  // suites sign in; the public site key is VITE_TURNSTILE_SITE_KEY.
+  TURNSTILE_SECRET: string;
 };
 
 export type AppEnv = Env & Partial<Secrets>;

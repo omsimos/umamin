@@ -3,7 +3,12 @@ import { Button } from "@umamin/ui/components/button";
 import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import {
+  TURNSTILE_ENABLED,
+  Turnstile,
+  type TurnstileHandle,
+} from "@/components/turnstile";
 import { callAction } from "@/lib/api";
 
 type LoginResult = { redirect?: string; error?: string };
@@ -14,18 +19,29 @@ type LoginResult = { redirect?: string; error?: string };
 // Field error is announced to assistive tech via role="alert" (a11y parity).
 export function LoginForm() {
   const [error, setError] = useState("");
+  const [token, setToken] = useState("");
+  const turnstile = useRef<TurnstileHandle>(null);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: (form: { username: string; password: string }) =>
-      callAction<LoginResult>("login", form) as Promise<LoginResult>,
+    mutationFn: (form: {
+      username: string;
+      password: string;
+      turnstileToken: string;
+    }) => callAction<LoginResult>("login", form) as Promise<LoginResult>,
     onSuccess: (res) => {
       if (res.redirect) {
         window.location.href = res.redirect;
         return;
       }
       setError(res.error ?? "Incorrect username or password");
+      // The form stays on screen after a failure, and a Turnstile token is
+      // single-use — without this the retry fails as already-spent.
+      turnstile.current?.reset();
     },
-    onError: () => setError("An unexpected error occurred"),
+    onError: () => {
+      setError("An unexpected error occurred");
+      turnstile.current?.reset();
+    },
   });
 
   return (
@@ -38,6 +54,7 @@ export function LoginForm() {
         mutate({
           username: String(data.get("username") ?? ""),
           password: String(data.get("password") ?? ""),
+          turnstileToken: token,
         });
       }}
     >
@@ -73,8 +90,14 @@ export function LoginForm() {
         )}
       </div>
 
+      <Turnstile ref={turnstile} action="login" onToken={setToken} />
+
       <div>
-        <Button disabled={isPending} type="submit" className="w-full">
+        <Button
+          disabled={isPending || (TURNSTILE_ENABLED && !token)}
+          type="submit"
+          className="w-full"
+        >
           {isPending && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
           Login
         </Button>

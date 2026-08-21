@@ -3,8 +3,13 @@ import { Button } from "@umamin/ui/components/button";
 import { Input } from "@umamin/ui/components/input";
 import { Label } from "@umamin/ui/components/label";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  TURNSTILE_ENABLED,
+  Turnstile,
+  type TurnstileHandle,
+} from "@/components/turnstile";
 import { callAction } from "@/lib/api";
 import { registerSchema } from "@/lib/schema";
 
@@ -20,9 +25,11 @@ type FieldErrors = Partial<Record<keyof Values, string>>;
 // { error }.
 export function RegisterForm() {
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [token, setToken] = useState("");
+  const turnstile = useRef<TurnstileHandle>(null);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: (form: Values) =>
+    mutationFn: (form: Values & { turnstileToken: string }) =>
       callAction<SignupResult>("signup", form) as Promise<SignupResult>,
     onSuccess: (res) => {
       if (res.redirect) {
@@ -31,8 +38,13 @@ export function RegisterForm() {
         return;
       }
       toast.error(res.error ?? "Couldn't create account.");
+      // Single-use token: a taken username is a retry, so reissue one.
+      turnstile.current?.reset();
     },
-    onError: () => toast.error("Couldn't create account."),
+    onError: () => {
+      toast.error("Couldn't create account.");
+      turnstile.current?.reset();
+    },
   });
 
   return (
@@ -61,7 +73,7 @@ export function RegisterForm() {
         }
 
         setErrors({});
-        mutate(values);
+        mutate({ ...values, turnstileToken: token });
       }}
     >
       <div>
@@ -127,8 +139,14 @@ export function RegisterForm() {
         )}
       </div>
 
+      <Turnstile ref={turnstile} action="signup" onToken={setToken} />
+
       <div className="space-y-4">
-        <Button disabled={isPending} type="submit" className="w-full">
+        <Button
+          disabled={isPending || (TURNSTILE_ENABLED && !token)}
+          type="submit"
+          className="w-full"
+        >
           {isPending && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
           Create an account
         </Button>

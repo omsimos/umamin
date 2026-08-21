@@ -43,6 +43,10 @@ describe("LoginForm", () => {
     expect(callAction).toHaveBeenCalledWith("login", {
       username: "umamin",
       password: "secretpass",
+      // No VITE_TURNSTILE_SITE_KEY in the suite, so the widget never renders
+      // and never mints a token — the field rides along empty and the server
+      // skips verification for the same reason (no TURNSTILE_SECRET).
+      turnstileToken: "",
     });
   });
 });
@@ -88,6 +92,7 @@ describe("RegisterForm", () => {
         username: "umamin",
         password: "longenoughpw",
         confirmPassword: "longenoughpw",
+        turnstileToken: "",
       }),
     );
   });

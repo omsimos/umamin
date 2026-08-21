@@ -67,3 +67,10 @@ LEMONSQUEEZY_WEBHOOK_SECRET=
 # Not set automatically on Workers; session cookie names (__Host-*) and secure
 # attributes key off it. Leave as development locally.
 NODE_ENV=development
+
+# Turnstile siteverify secret (server-lib/turnstile.ts). Leave BLANK locally to
+# skip the captcha entirely — the client also renders no widget without
+# VITE_TURNSTILE_SITE_KEY, so both halves stay off together.
+# Cloudflare's test secrets: 1x0000000000000000000000000000000AA always passes,
+# 2x0000000000000000000000000000000AA always fails.
+TURNSTILE_SECRET=

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The real argon2id driver (server-lib/argon2) imports a precompiled .wasm
 // module that only resolves in the vitest workers pool — but these flow tests
@@ -15,9 +15,13 @@ vi.mock("../src/server-lib/argon2", () => ({
 }));
 
 import { userTable } from "@umamin/db/schema/user";
+import * as argon2 from "../src/server-lib/argon2";
 import { hash } from "../src/server-lib/argon2";
 import type { Db } from "../src/server-lib/db";
-import { accountSuspendedMessage } from "../src/server-lib/errors";
+import {
+  accountSuspendedMessage,
+  VERIFICATION_FAILED_ERROR,
+} from "../src/server-lib/errors";
 import { __clearSessionCache } from "../src/server-lib/session";
 import { ANON, buildApp, call, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
@@ -70,6 +74,92 @@ describe("auth flows (real libSQL)", () => {
       { cookie: `session=${token}` },
     );
     expect(await logoutRes.json()).toEqual({ redirect: "/login" });
+  });
+
+  // Turnstile is configured-means-on: these suites normally run with no secret
+  // (hence no token anywhere above), so the gate is exercised by setting one.
+  describe("turnstile gate", () => {
+    const TURNSTILE = { TURNSTILE_SECRET: "test-secret" };
+
+    function siteverify(body: unknown) {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => ({ ok: true, json: async () => body })),
+      );
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it.each([
+      "login",
+      "signup",
+    ] as const)("%s rejects a missing token before spending any Argon2", async (name) => {
+      const app = buildApp(db, ANON);
+      const hashSpy = vi.spyOn(argon2, "hash");
+
+      const { json } = await callJson(
+        app,
+        name,
+        {
+          username: "carol1",
+          password: "password123",
+          confirmPassword: "password123",
+        },
+        TURNSTILE,
+      );
+
+      expect(json).toEqual({ error: VERIFICATION_FAILED_ERROR });
+      // The whole point of the placement: no hash, and for signup no row.
+      expect(hashSpy).not.toHaveBeenCalled();
+      expect(await db.select().from(userTable)).toHaveLength(0);
+    });
+
+    it("signup accepts a token siteverify approves", async () => {
+      siteverify({
+        success: true,
+        action: "signup",
+        hostname: "x.test",
+      });
+
+      const { json } = await callJson(
+        buildApp(db, ANON),
+        "signup",
+        {
+          username: "dave12",
+          password: "password123",
+          confirmPassword: "password123",
+          turnstileToken: "tok",
+        },
+        TURNSTILE,
+      );
+
+      expect(json).toEqual({ redirect: "/inbox" });
+    });
+
+    it("login rejects a token minted for signup", async () => {
+      await db.insert(userTable).values({
+        id: "erin1",
+        username: "erin1",
+        passwordHash: await hash("password123"),
+      });
+      siteverify({ success: true, action: "signup", hostname: "x.test" });
+
+      const { json } = await callJson(
+        buildApp(db, ANON),
+        "login",
+        {
+          username: "erin1",
+          password: "password123",
+          turnstileToken: "tok",
+        },
+        TURNSTILE,
+      );
+
+      // Correct credentials, wrong action — must not mint a session.
+      expect(json).toEqual({ error: VERIFICATION_FAILED_ERROR });
+    });
   });
 
   it("rejects a wrong password with the generic message", async () => {
