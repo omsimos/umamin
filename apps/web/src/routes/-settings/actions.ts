@@ -29,16 +29,6 @@ export function updatePasswordAction(input: PasswordInput) {
   return callAction<{ success: true }>("updatePasswordAction", input);
 }
 
-export function toggleDisplayPictureAction(accountImgUrl?: string) {
-  // Optional-string schema: an empty body parses to undefined server-side, but
-  // callAction always sends a JSON body — so pass "" (a valid string) when the
-  // user has no Google picture (the toggle-off path ignores it).
-  return callAction<{ imageUrl: string | null }>(
-    "toggleDisplayPictureAction",
-    accountImgUrl ?? "",
-  );
-}
-
 export function toggleQuietModeAction() {
   return callAction<{ quietMode: boolean }>("toggleQuietModeAction");
 }
@@ -54,13 +44,6 @@ export function unblockUserAction(input: { userId: string }) {
   return callAction<{ success?: boolean }>("unblockUserAction", input);
 }
 
-export function updateAvatarAction(imageUrl: string) {
-  return callAction<{ success: true; imageUrl: string }>(
-    "updateAvatarAction",
-    imageUrl,
-  );
-}
-
 export function updateProfilePhotoAction(input: { key: string }) {
   return callAction<{ success: true; imageUrl: string }>(
     "updateProfilePhotoAction",
@@ -73,6 +56,10 @@ export function updateProfileBannerAction(input: { key: string }) {
     "updateProfileBannerAction",
     input,
   );
+}
+
+export function removeProfilePhotoAction() {
+  return callAction<{ success: true }>("removeProfilePhotoAction");
 }
 
 export function removeProfileBannerAction() {

@@ -181,12 +181,10 @@ export const googleAuthApp = new Hono<AppBindings>()
         return c.redirect("/settings?error=already_linked", 302);
       } else if (user) {
         await db.transaction(async (tx) => {
-          if (!user.imageUrl && googleUser.picture) {
-            await tx
-              .update(userTable)
-              .set({ imageUrl: googleUser.picture })
-              .where(eq(userTable.id, user.id));
-          }
+          // Linking never touches imageUrl: the default profile picture is the
+          // account's own blobatar, and adopting a Google photo would silently
+          // change how someone looks to everyone else. `picture` is stored for
+          // the linked-account card only.
           await tx.insert(accountTable).values({
             providerId: "google",
             providerUserId: googleUser.sub,
@@ -233,7 +231,6 @@ export const googleAuthApp = new Hono<AppBindings>()
       await db.transaction(async (tx) => {
         await tx.insert(userTable).values({
           id: userId,
-          imageUrl: googleUser.picture,
           username: `user_${usernameId}`,
         });
         await tx.insert(accountTable).values({

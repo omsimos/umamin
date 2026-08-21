@@ -81,11 +81,10 @@ import {
   getCurrentUserHandler,
   getUserProfileHandler,
   removeProfileBannerHandler,
-  toggleDisplayPictureHandler,
+  removeProfilePhotoHandler,
   toggleQuietModeHandler,
   unblockUserHandler,
   unfollowUserHandler,
-  updateAvatarHandler,
   updateBlockedWordsHandler,
   updatePasswordHandler,
   updateProfileBannerHandler,
@@ -156,13 +155,12 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/unfollowUserAction", unfollowUserHandler)
   .post("/actions/blockUserAction", blockUserHandler)
   .post("/actions/unblockUserAction", unblockUserHandler)
-  .post("/actions/toggleDisplayPictureAction", toggleDisplayPictureHandler)
   .post("/actions/toggleQuietModeAction", toggleQuietModeHandler)
   .post("/actions/updateBlockedWordsAction", updateBlockedWordsHandler)
-  .post("/actions/updateAvatarAction", updateAvatarHandler)
   .post("/actions/updateProfilePhotoAction", updateProfilePhotoHandler)
   .post("/actions/updateProfileBannerAction", updateProfileBannerHandler)
   .post("/actions/removeProfileBannerAction", removeProfileBannerHandler)
+  .post("/actions/removeProfilePhotoAction", removeProfilePhotoHandler)
   // group
   .post("/actions/createGroupAction", createGroupHandler)
   .post("/actions/inviteToGroupAction", inviteToGroupHandler)
