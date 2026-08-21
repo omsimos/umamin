@@ -18,6 +18,25 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.6.0] - 2026-08-21
+
+### Changed
+
+- Everyone has a default profile picture now: a small coloured character that belongs to your account and appears anywhere you haven't uploaded a photo — your profile, the feed, notes, comments, notifications, follower lists, group members and group chat. It replaces the generic outline and the two-letter initials, it's the same one every time, and it stays yours even if you change your username. Saved post and note images pick it up too.
+- Anonymous notes still show the plain outline, so a default picture can never tie one back to an account.
+
+## [7.5.0] - 2026-08-07
+
+### Added
+
+- Umamin Pro is here: a one-time ₱129 purchase that unlocks Pro for 6 months — around ₱21 a month. It's not a subscription, so there's nothing to cancel; buying again stacks another 6 months on top of your remaining time.
+- Pro members browse ad-free everywhere.
+- Pro members can pick a profile theme: a curated color that restyles their profile page and their anonymous-message page. Picked in Settings; the choice is saved even if Pro lapses and reappears on renewal.
+- Pro members get a Pro badge on their profile, colored to match their theme.
+- Pro members can post images right away, without reaching the 50 aura requirement.
+- Pro includes everything in Umamin+: polls, group creation, and the avatar shine unlock immediately, whatever the account's age.
+- The tiers page now has a Pro tab with checkout, your Pro status, and the date your Pro runs until. Payments are handled by Lemon Squeezy; full refunds automatically remove the purchased time.
+
 ## [7.4.0] - 2026-08-05
 
 ### Added
@@ -911,6 +930,8 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.6.0]: https://github.com/omsimos/umamin/compare/v7.5.0...v7.6.0
+[7.5.0]: https://github.com/omsimos/umamin/compare/v7.4.0...v7.5.0
 [7.4.0]: https://github.com/omsimos/umamin/compare/v7.3.0...v7.4.0
 [7.3.0]: https://github.com/omsimos/umamin/compare/v7.2.0...v7.3.0
 [7.2.0]: https://github.com/omsimos/umamin/compare/v7.1.0...v7.2.0

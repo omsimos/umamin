@@ -16,6 +16,7 @@ import {
   type UserWithAccount,
 } from "@/lib/types";
 import { generalSettingsAction } from "./actions";
+import { ProThemeSection } from "./pro-theme-section";
 import { ProfileMedia } from "./profile-media";
 import { ProfileSong } from "./profile-song";
 
@@ -131,6 +132,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
   return (
     <div className="space-y-8 w-full">
       <ProfileMedia user={user} />
+      <ProThemeSection user={user} />
       <ProfileSong user={user} />
 
       <form className="space-y-6 w-full" onSubmit={onSubmit}>

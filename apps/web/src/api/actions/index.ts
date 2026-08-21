@@ -64,6 +64,7 @@ import {
   unpinPostHandler,
   votePollHandler,
 } from "./post";
+import { createProCheckoutHandler, updateProfileThemeHandler } from "./pro";
 import {
   registerPushSubscriptionHandler,
   unregisterPushSubscriptionHandler,
@@ -179,6 +180,9 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/markGroupChatReadAction", markGroupChatReadHandler)
   .post("/actions/deleteGroupMessageAction", deleteGroupMessageHandler)
   .post("/actions/reactToGroupMessageAction", reactToGroupMessageHandler)
+  // pro
+  .post("/actions/createProCheckoutAction", createProCheckoutHandler)
+  .post("/actions/updateProfileThemeAction", updateProfileThemeHandler)
   // push
   .post(
     "/actions/registerPushSubscriptionAction",

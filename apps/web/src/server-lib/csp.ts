@@ -17,6 +17,9 @@ function buildCsp(env: AppEnv, isProd: boolean): string {
     "https://pagead2.googlesyndication.com",
     "https://partner.googleadservices.com",
     "https://fundingchoicesmessages.google.com",
+    // posthog-js pulls its remote config and lazily-loaded extension bundles
+    // from the assets host (derived from api_host), not from api_host itself.
+    "https://us-assets.i.posthog.com",
   ];
 
   const connectSrc = [
@@ -26,6 +29,9 @@ function buildCsp(env: AppEnv, isProd: boolean): string {
     "https://pagead2.googlesyndication.com",
     "https://googleads.g.doubleclick.net",
     "https://ep1.adtrafficquality.google",
+    // Error-tracking ingest + the assets host's config fetch (lib/posthog.ts).
+    "https://us.i.posthog.com",
+    "https://us-assets.i.posthog.com",
   ];
   if (env.R2_ACCOUNT_ID) {
     connectSrc.push(`https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`);

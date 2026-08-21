@@ -1,20 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
 import { Label } from "@umamin/ui/components/label";
 import {
   ImageIcon,
   ImagePlusIcon,
   Loader2Icon,
-  ScanFaceIcon,
   Trash2Icon,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ImageCropDialog } from "@/components/image-crop-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import {
@@ -230,9 +226,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
                 src={user.imageUrl ?? ""}
                 alt="Current profile photo"
               />
-              <AvatarFallback className="md:text-4xl text-xl">
-                <ScanFaceIcon />
-              </AvatarFallback>
+              <BlobatarFallback seed={user.id} />
             </Avatar>
 
             <div className="flex-1 space-y-1">

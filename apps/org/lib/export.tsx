@@ -11,7 +11,7 @@ export type ExportOrg = { username: string };
 const CARD_WIDTH = 540;
 
 // Umamin mark stamped on the bottom-right of every export (copied from
-// apps/www/public). Loaded once per session; best-effort — a load failure
+// apps/web/public). Loaded once per session; best-effort — a load failure
 // must never break a save, so it resolves to null instead of throwing.
 let logoPromise: Promise<HTMLImageElement | null> | null = null;
 function loadWatermark(): Promise<HTMLImageElement | null> {

@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   // Two-environment layout (Vercel-style preview/prod). ALWAYS deploy with
   // --env; bindings/vars/routes are per-env and deliberately NOT shared.
-  //   staging    → worker "umamin-web" (kept: it already holds next.umamin.link
+  //   staging    → worker "umamin-web" (kept: it already holds dev.umamin.link
   //                and the dev secrets) — Turso umamin-dev, staging KV.
   //   production → worker "umamin-web-production" — Turso umamin-db, own KV;
   //                umamin.link is attached at cutover.
@@ -21,9 +21,16 @@
   "env": {
     "staging": {
       "name": "umamin-web",
+      // Full trace sampling: this is the low-traffic host, and it is the one
+      // running the placement experiment below — the comparison against
+      // production is the whole point, so it must not be sparsely sampled.
+      "observability": {
+        "enabled": true,
+        "traces": { "enabled": true }
+      },
       "routes": [
         {
-          "pattern": "next.umamin.link",
+          "pattern": "dev.umamin.link",
           "custom_domain": true
         }
       ],
@@ -111,19 +118,51 @@
         "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
       },
       "vars": {
-        "APP_URL": "https://next.umamin.link",
+        "APP_URL": "https://dev.umamin.link",
         // Not set automatically on Workers; session cookie names (__Host-*)
         // and secure attrs key off it. Local dev overrides via .dev.vars.
         "NODE_ENV": "production",
         // Staging serves the SAME public/robots.txt as production (static assets
         // are shared), and Cloudflare has no Vercel-style automatic
-        // preview-noindex — so opt out via a header instead, or next.umamin.link
+        // preview-noindex — so opt out via a header instead, or dev.umamin.link
         // gets crawled and competes with prod. See server-lib/csp.ts.
-        "SEO_INDEXABLE": "false"
+        "SEO_INDEXABLE": "false",
+        // Worker-side error tracking (server-lib/posthog.ts). The project token
+        // only writes events and is already in the browser bundle, so it is a
+        // var, not a secret. Both environments report into the one "Umamin"
+        // project; POSTHOG_ENV is what tells them apart there. Capture is gated
+        // on NODE_ENV=production, so local dev inherits these harmlessly.
+        "POSTHOG_PROJECT_TOKEN": "phc_dgBp0oWW82kMRiBevIGjWn46BiEvpnmjCoVuJ3L2MyE",
+        "POSTHOG_HOST": "https://us.i.posthog.com",
+        "POSTHOG_ENV": "staging",
+        // Feature flags gate PRODUCTION ONLY. dev.umamin.link is where Pro is
+        // demoed and worked on, so the offer stays visible here no matter what
+        // the PostHog rollout says. Comma-separated flag keys; local dev reads
+        // this same block (CLOUDFLARE_ENV=staging), so Pro works locally too.
+        // A flag that SHOULD be previewable in its hidden state is left out.
+        "FLAGS_FORCE_ON": "umamin-pro"
       }
     },
     "production": {
       "name": "umamin-web-production",
+      // Automatic tracing: spans for the handler, every outbound fetch (each
+      // Turso round trip) and every binding call, with no code change. That is
+      // exactly the instrument the "Cost & latency" numbers were measured by
+      // hand for, and what the staging placement experiment needs to be
+      // compared against.
+      //
+      // SAMPLED, and the rate is not cosmetic: each span is one observability
+      // event drawing on the SAME 20M/month included quota as Workers Logs.
+      // Production runs ~2.0M invocations/month and a feed request emits
+      // roughly 6-10 spans (session read + 4-5 chained feed reads + KV +
+      // rate-limit bindings), so 100% sampling is ~12-20M spans/month — the
+      // entire allowance, before logs. 10% keeps it near 2M while still
+      // tracing ~6.5k requests/day, far more than percentiles need.
+      // Tracing is free until 2026-10-01, then billed at $0.60/M over quota.
+      "observability": {
+        "enabled": true,
+        "traces": { "enabled": true, "head_sampling_rate": 0.1 }
+      },
       // Dark until cutover: no public workers.dev URL in front of the prod DB.
       // Flip to true briefly if a pre-cutover prod smoke test is needed.
       "workers_dev": false,
@@ -191,7 +230,13 @@
         "APP_URL": "https://www.umamin.link",
         "NODE_ENV": "production",
         // The ONLY environment that may be indexed.
-        "SEO_INDEXABLE": "true"
+        "SEO_INDEXABLE": "true",
+        "POSTHOG_PROJECT_TOKEN": "phc_dgBp0oWW82kMRiBevIGjWn46BiEvpnmjCoVuJ3L2MyE",
+        "POSTHOG_HOST": "https://us.i.posthog.com",
+        "POSTHOG_ENV": "production"
+        // NO "FLAGS_FORCE_ON" here, deliberately — this is the one environment
+        // the flags actually gate. Copying staging's vars block over would
+        // launch every listed flag to everyone at once.
       }
     }
   }

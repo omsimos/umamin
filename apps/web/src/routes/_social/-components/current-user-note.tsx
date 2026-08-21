@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
@@ -46,7 +47,7 @@ import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse, PublicUserWithBadge } from "@/lib/types";
-import { getActionError, hasUmaminPlus, saveImage } from "@/lib/utils";
+import { getActionError, hasPlusFeatures, saveImage } from "@/lib/utils";
 import { clearNoteAction } from "../-lib/actions";
 
 export function CurrentUserNote({
@@ -215,7 +216,7 @@ export function CurrentUserNote({
                 >
                   <Avatar
                     className={cn("relative top-1", {
-                      "avatar-shine": hasUmaminPlus(currentUser?.createdAt),
+                      "avatar-shine": hasPlusFeatures(currentUser),
                     })}
                   >
                     <AvatarImage
@@ -223,9 +224,7 @@ export function CurrentUserNote({
                       src={currentUser?.imageUrl ?? ""}
                       alt="User avatar"
                     />
-                    <AvatarFallback className="text-xs">
-                      <ScanFaceIcon />
-                    </AvatarFallback>
+                    <BlobatarFallback seed={currentUser.id} />
                   </Avatar>
                 </Link>
 

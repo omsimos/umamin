@@ -1,10 +1,7 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { cn } from "@umamin/ui/lib/utils";
-import { BarChart3Icon, ScanFaceIcon } from "lucide-react";
+import { BarChart3Icon } from "lucide-react";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { PostImages } from "@/components/post-images";
 import { TimeAgo } from "@/components/time-ago";
 import { Link } from "@/lib/navigation";
@@ -42,9 +39,7 @@ export function QuotedPostCard({ post, linked = true, className }: Props) {
       <div className="flex items-center gap-2 text-sm">
         <Avatar className="size-5">
           <AvatarImage src={post.author.imageUrl ?? ""} alt="User avatar" />
-          <AvatarFallback>
-            <ScanFaceIcon className="size-3" />
-          </AvatarFallback>
+          <BlobatarFallback seed={post.author.id} />
         </Avatar>
         <span className="truncate font-semibold">
           {post.author.displayName || post.author.username}

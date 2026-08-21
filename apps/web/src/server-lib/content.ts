@@ -1,4 +1,5 @@
 import { customAlphabet } from "nanoid";
+import { hasUmaminPro } from "../lib/pro";
 
 // Server-safe subset of apps/www/lib/utils.ts (the DOM/toast/date-fns bits stay
 // in the frontend port). Pure string helpers the action layer needs.
@@ -13,6 +14,18 @@ export function formatUsername(username: string) {
     : username;
 
   return formattedUsername ?? "";
+}
+
+/**
+ * Functional Plus perks (polls, group creation): account age OR an active Pro
+ * — Pro includes everything in Plus. This is the server-side gate every
+ * mutation checks; the client mirror is lib/utils.ts hasPlusFeatures.
+ */
+export function hasPlusPerks(user: {
+  createdAt?: Date | string | null;
+  proUntil?: Date | string | null;
+}): boolean {
+  return hasUmaminPlus(user.createdAt) || hasUmaminPro(user.proUntil);
 }
 
 /**

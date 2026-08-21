@@ -152,6 +152,17 @@ describe("middleware", () => {
       });
       expect(await anon.text()).toBe(OK);
     });
+
+    // Payment webhooks (api/webhooks.ts) are server-to-server POSTs that never
+    // carry an Origin; they authenticate by HMAC signature instead. Without
+    // this exemption every Lemon Squeezy delivery would 403 at the front door.
+    it("exempts /api/webhooks/* so signature-authed POSTs get through", async () => {
+      const res = await fetch(app, "/api/webhooks/lemonsqueezy", {
+        method: "POST",
+        headers: { host: "x.test" },
+      });
+      expect(await res.text()).toBe(OK);
+    });
   });
 
   describe("securityHeadersMiddleware", () => {
@@ -166,8 +177,24 @@ describe("middleware", () => {
       );
     });
 
+    // posthog-js posts exceptions to api_host and pulls its remote config +
+    // extension bundles from the assets host. Missing either directive drops
+    // browser-side error tracking silently once the CSP stops being
+    // Report-Only. See lib/posthog.ts.
+    it("allows the PostHog ingest and assets hosts", async () => {
+      const res = await fetch(appWith(securityHeadersMiddleware()), "/feed");
+      const csp = res.headers.get("content-security-policy-report-only") ?? "";
+      const connectSrc = csp
+        .split("; ")
+        .find((d) => d.startsWith("connect-src"));
+      const scriptSrc = csp.split("; ").find((d) => d.startsWith("script-src"));
+      expect(connectSrc).toContain("https://us.i.posthog.com");
+      expect(connectSrc).toContain("https://us-assets.i.posthog.com");
+      expect(scriptSrc).toContain("https://us-assets.i.posthog.com");
+    });
+
     // Only the production environment sets SEO_INDEXABLE=true; every other
-    // deployment (staging on next.umamin.link, local) must opt out of indexing.
+    // deployment (staging on dev.umamin.link, local) must opt out of indexing.
     it("noindexes any environment that isn't flagged indexable", async () => {
       const res = await fetch(appWith(securityHeadersMiddleware()), "/feed");
       expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");

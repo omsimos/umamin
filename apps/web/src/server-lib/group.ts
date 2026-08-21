@@ -32,7 +32,7 @@ export const GROUP_CHAT_REACTION_EMOJIS = [
 ] as const;
 
 export const GROUP_PLUS_REQUIRED_ERROR =
-  "Creating a group is an Umamin+ perk — unlocked once your account is a year old.";
+  "Creating a group is an Umamin+ perk — free once your account is a year old, or included with Umamin Pro.";
 // Reserved tags surface as "taken" too — exposing a tag as specifically
 // reserved just invites people to probe the blocklist.
 export const GROUP_TAG_TAKEN_ERROR = "That tag is taken.";

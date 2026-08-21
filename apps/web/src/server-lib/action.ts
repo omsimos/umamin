@@ -4,6 +4,7 @@ import type * as z from "zod";
 import type { AppBindings } from "./context";
 import { passesCsrf } from "./csrf";
 import { GENERIC_ERROR, INVALID_INPUT_ERROR } from "./errors";
+import { captureRequestException } from "./posthog";
 import {
   checkRateLimit,
   type LimiterName,
@@ -71,6 +72,10 @@ export function action<
       return c.json({ error: GENERIC_ERROR }, 403);
     }
 
+    // Hoisted so the catch below can attribute the failure to a user; `ctx` is
+    // scoped to the try and the session resolver is not re-run on the error path.
+    let actorId: string | undefined;
+
     try {
       let input = undefined as z.output<S>;
 
@@ -109,12 +114,14 @@ export function action<
           }
         }
         const { session, user } = await c.var.getSession();
+        actorId = session?.userId;
         ctx = { session, user, c } as unknown as Ctx<A>;
       } else {
         const { session, user } = await c.var.getSession();
         if (!session || (auth === "user" && !user)) {
           return c.json({ error: config.authError ?? GENERIC_ERROR }, 401);
         }
+        actorId = session.userId;
         ctx = { session, user, c } as unknown as Ctx<A>;
         if (config.rateLimit) {
           const key = await config.rateLimit.key(ctx);
@@ -132,6 +139,9 @@ export function action<
         return c.json(mapped, 400);
       }
       console.log(err);
+      // Only the unmapped path reports: an `onError` match is an expected
+      // outcome (a unique-constraint hit), not a bug to triage.
+      captureRequestException(c, err, { distinctId: actorId });
       return c.json({ error: config.errorMessage ?? GENERIC_ERROR }, 500);
     }
   };

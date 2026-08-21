@@ -3,6 +3,7 @@ import type {
   BlockedUsersResponse,
   CommentsResponse,
   CurrentUserResponse,
+  FeatureFlagsResponse,
   FeedResponse,
   FollowListResponse,
   GroupChatHeadResponse,
@@ -58,7 +59,7 @@ function appendCursor(baseUrl: string, cursor: string | null) {
 // can also short-circuit to a direct in-process call later; the HTTP seam is the
 // framework-agnostic interim that works today under Start RC.
 export type ServerFetchContext = {
-  // Absolute origin, e.g. "https://next.umamin.link" (no trailing slash).
+  // Absolute origin, e.g. "https://dev.umamin.link" (no trailing slash).
   origin: string;
   // Forwarded request cookie so the API sees the caller's session.
   cookie?: string;
@@ -135,6 +136,10 @@ export async function fetchUserPostsPage(
 
 export async function fetchCurrentNote() {
   return fetchJson<NoteItem | null>(`/api/notes/current`);
+}
+
+export async function fetchFeatureFlags() {
+  return fetchJson<FeatureFlagsResponse>("/api/flags");
 }
 
 export async function fetchCurrentUser() {

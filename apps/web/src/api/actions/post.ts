@@ -11,13 +11,13 @@ import { userTable } from "@umamin/db/schema/user";
 import { and, eq, ne, sql } from "drizzle-orm";
 import * as z from "zod";
 import {
-  hasImagePostingAura,
+  canPostImages,
   IMAGE_AURA_REQUIRED_ERROR,
   MAX_POST_IMAGES,
   postImageInputSchema,
 } from "../../lib/post-images";
 import { action } from "../../server-lib/action";
-import { hasUmaminPlus } from "../../server-lib/content";
+import { hasPlusPerks } from "../../server-lib/content";
 import { getPostById } from "../../server-lib/data";
 import { isModerator } from "../../server-lib/moderation";
 import { notify } from "../../server-lib/notifications";
@@ -95,7 +95,7 @@ export const createPostHandler = action(
 
     let pollLabels: string[] | null = null;
     if (poll) {
-      if (!hasUmaminPlus(user.createdAt)) {
+      if (!hasPlusPerks(user)) {
         return { error: POLL_PLUS_REQUIRED_ERROR };
       }
       pollLabels = sanitizePollOptions(poll.options);
@@ -124,7 +124,7 @@ export const createPostHandler = action(
       if (!r2) {
         return { error: "Image uploads aren't available right now." };
       }
-      if (!hasImagePostingAura(user.points)) {
+      if (!canPostImages(user)) {
         return { error: IMAGE_AURA_REQUIRED_ERROR };
       }
       claimedImages = await r2.claimStagedImages(session.userId, images);

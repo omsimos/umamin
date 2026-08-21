@@ -6,7 +6,27 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*", "$TURBO_ROOT$/CHANGELOG.md"],
       "outputs": ["dist/**"],
-      "env": ["TURSO_*", "GOOGLE_*", "AES_256_GCM_KEY", "VAPID_*", "R2_*"]
+      "env": [
+        "TURSO_*",
+        "GOOGLE_*",
+        "AES_256_GCM_KEY",
+        "VAPID_*",
+        "R2_*",
+        "VITE_POSTHOG_*"
+      ],
+      // Deploys run `pnpm run build:production` directly, so these only matter
+      // for a turbo-driven build (root `pnpm build`), where strict env mode
+      // would otherwise hide them and the upload would silently skip.
+      // passThroughEnv, not env: a rotated key must not bust the build cache,
+      // and the commit sha would make every commit a cache miss. A cache HIT is
+      // still correct — the restored dist/client carries the same chunk ids as
+      // the maps already uploaded from the original build.
+      "passThroughEnv": [
+        "POSTHOG_CLI_API_KEY",
+        "POSTHOG_CLI_PROJECT_ID",
+        "POSTHOG_CLI_HOST",
+        "WORKERS_CI_COMMIT_SHA"
+      ]
     }
   }
 }

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
@@ -52,7 +53,7 @@ import { patchNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/types";
 import {
   getActionError,
-  hasUmaminPlus,
+  hasPlusFeatures,
   isAlreadyReacted,
   isAlreadyRemoved,
   saveImage,
@@ -273,7 +274,7 @@ export function NoteCard({
                   >
                     <Avatar
                       className={cn({
-                        "avatar-shine": hasUmaminPlus(user?.createdAt),
+                        "avatar-shine": hasPlusFeatures(user),
                       })}
                     >
                       <AvatarImage
@@ -281,9 +282,7 @@ export function NoteCard({
                         src={user?.imageUrl ?? ""}
                         alt="User avatar"
                       />
-                      <AvatarFallback className="text-xs">
-                        <ScanFaceIcon />
-                      </AvatarFallback>
+                      <BlobatarFallback seed={user?.id} />
                     </Avatar>
                   </Link>
                 )}

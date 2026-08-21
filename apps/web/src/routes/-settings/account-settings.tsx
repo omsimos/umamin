@@ -3,11 +3,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
 import { Card, CardHeader } from "@umamin/ui/components/card";
 import {
@@ -16,12 +12,8 @@ import {
   CollapsibleTrigger,
 } from "@umamin/ui/components/collapsible";
 import { Label } from "@umamin/ui/components/label";
-import {
-  ChevronsUpDownIcon,
-  KeyIcon,
-  ScanFaceIcon,
-  ShieldAlertIcon,
-} from "lucide-react";
+import { ChevronsUpDownIcon, KeyIcon, ShieldAlertIcon } from "lucide-react";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import type { UserWithAccount } from "@/lib/types";
 import { DangerSettings } from "./danger-settings";
@@ -41,9 +33,7 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
                   src={user.account.picture ?? ""}
                   alt="Profile Picture"
                 />
-                <AvatarFallback className="md:text-4xl text-xl">
-                  <ScanFaceIcon />
-                </AvatarFallback>
+                <BlobatarFallback seed={user.id} />
               </Avatar>
 
               <div className="text-sm">

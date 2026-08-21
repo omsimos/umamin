@@ -1,6 +1,7 @@
 import { Toaster } from "@umamin/ui/components/sonner";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
+import { ErrorTracking } from "@/components/error-tracking";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { PwaPinchZoom } from "@/components/pwa-pinch-zoom";
 import { ServiceWorker } from "@/components/service-worker";
@@ -21,6 +22,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <NavigationProgress />
       {children}
       <ServiceWorker />
+      <ErrorTracking />
       <PwaPinchZoom />
       <Toaster position="top-right" />
     </ThemeProvider>

@@ -1,9 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import {
   Drawer,
   DrawerClose,
@@ -23,6 +19,7 @@ import {
   UsersRoundIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { actionError, callAction } from "@/lib/api";
@@ -99,9 +96,7 @@ export function AccountSheet({
       >
         <Avatar className={cn("size-9", avatarClassName)}>
           <AvatarImage src={user.imageUrl ?? ""} alt="" />
-          <AvatarFallback>
-            {user.username.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
+          <BlobatarFallback seed={user.id} />
         </Avatar>
       </DrawerTrigger>
 
@@ -117,9 +112,7 @@ export function AccountSheet({
               <Link href={`/user/${user.username}`} className="block w-fit">
                 <Avatar className="size-12">
                   <AvatarImage src={user.imageUrl ?? ""} alt="" />
-                  <AvatarFallback>
-                    {user.username.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
+                  <BlobatarFallback seed={user.id} />
                 </Avatar>
                 <span className="mt-2 flex items-center gap-1.5">
                   <span className="font-bold leading-tight">

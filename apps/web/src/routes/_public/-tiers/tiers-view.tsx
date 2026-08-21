@@ -1,32 +1,48 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getRouteApi, Link } from "@tanstack/react-router";
 import { Badge } from "@umamin/ui/components/badge";
+import { Button } from "@umamin/ui/components/button";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
+import { cn } from "@umamin/ui/lib/utils";
 import {
   BanIcon,
   BarChart3Icon,
+  GemIcon,
   HeartIcon,
   ImagePlusIcon,
+  Loader2Icon,
   type LucideIcon,
   MailIcon,
   MessagesSquareIcon,
+  PaletteIcon,
   RocketIcon,
   ScrollTextIcon,
   SparklesIcon,
   UsersRoundIcon,
 } from "lucide-react";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { callAction } from "@/lib/api";
 import { MIN_AURA_FOR_IMAGES } from "@/lib/post-images";
+import {
+  hasUmaminPro,
+  PRO_PER_MONTH_PHP,
+  PRO_PRICE_PHP,
+  PRO_TERM_MONTHS,
+} from "@/lib/pro";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
-import { hasUmaminPlus } from "@/lib/utils";
+import { getActionError, hasUmaminPlus } from "@/lib/utils";
 
 type Perk = { icon: LucideIcon; title: string; detail: string };
 
@@ -76,16 +92,31 @@ const PLUS_PERKS: Perk[] = [
   },
 ];
 
-const PREMIUM_PERKS: Perk[] = [
+const PRO_PERKS: Perk[] = [
   {
     icon: BanIcon,
     title: "Ad-free",
     detail: "Browse Umamin without any ads.",
   },
   {
+    icon: GemIcon,
+    title: "Pro badge",
+    detail: "A Pro badge on your profile, in your theme's color.",
+  },
+  {
+    icon: PaletteIcon,
+    title: "Profile themes",
+    detail: "Color your profile and anonymous-message pages.",
+  },
+  {
+    icon: ImagePlusIcon,
+    title: "Post images right away",
+    detail: `No waiting for ${MIN_AURA_FOR_IMAGES} aura — attach photos from day one.`,
+  },
+  {
     icon: RocketIcon,
     title: "Everything in Plus",
-    detail: "All early-access features, included.",
+    detail: "Polls, group creation, and the avatar shine, at any account age.",
   },
   {
     icon: HeartIcon,
@@ -112,30 +143,76 @@ function PerkList({ perks }: { perks: Perk[] }) {
   );
 }
 
+const routeApi = getRouteApi("/_public/tiers");
+
 export function TiersView() {
-  const { data } = useQuery({
+  const { pro } = routeApi.useSearch();
+  const queryClient = useQueryClient();
+  const { data, isPending } = useQuery({
     queryKey: queryKeys.currentUser(),
     queryFn: fetchCurrentUserOptional,
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
   });
 
-  const isPlus = hasUmaminPlus(data?.user?.createdAt);
+  const user = data?.user;
+  const isPlus = hasUmaminPlus(user?.createdAt);
+  const isPro = hasUmaminPro(user?.proUntil);
+  // Pro is built but not launched. The flag hides the OFFER only — a user who
+  // already bought keeps the badge, theme and ad-free perks either way.
+  const { pro: proLaunched } = useFeatureFlags();
+
+  // The webhook grants Pro moments after Lemon Squeezy redirects back here —
+  // refetch so the Active badge appears without a manual reload.
+  useEffect(() => {
+    if (pro === "success") {
+      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
+    }
+  }, [pro, queryClient]);
+
+  const checkout = useMutation({
+    mutationFn: async () => {
+      const res = await callAction<{ url: string }>("createProCheckoutAction");
+      if (res && "url" in res) return res.url;
+      throw new Error(getActionError(res) ?? "An error occurred");
+    },
+    onSuccess: (url) => {
+      window.location.assign(url);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  // Stay disabled through the redirect — the mutation "succeeds" before the
+  // browser actually leaves, and a re-click would mint a second checkout.
+  const checkingOut = checkout.isPending || checkout.isSuccess;
 
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Umamin Plus</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Umamin Tiers</h1>
         <p className="text-sm text-muted-foreground">
           More ways to express yourself, anonymously.
         </p>
       </header>
 
-      <Tabs defaultValue={isPlus ? "plus" : "free"} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs
+        defaultValue={
+          proLaunched && (pro === "success" || isPro)
+            ? "pro"
+            : isPlus
+              ? "plus"
+              : "free"
+        }
+        className="space-y-4"
+      >
+        <TabsList
+          className={cn(
+            "grid w-full",
+            proLaunched ? "grid-cols-3" : "grid-cols-2",
+          )}
+        >
           <TabsTrigger value="free">Free</TabsTrigger>
           <TabsTrigger value="plus">Plus</TabsTrigger>
-          <TabsTrigger value="premium">Premium</TabsTrigger>
+          {proLaunched && <TabsTrigger value="pro">Pro</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="free" className="mt-0 space-y-3">
@@ -161,17 +238,70 @@ export function TiersView() {
           </p>
         </TabsContent>
 
-        <TabsContent value="premium" className="mt-0 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm text-muted-foreground">
-              Everything in Plus, plus:
-            </p>
-            <Badge variant="outline">Coming soon</Badge>
-          </div>
-          <div className="opacity-70">
-            <PerkList perks={PREMIUM_PERKS} />
-          </div>
-        </TabsContent>
+        {proLaunched && (
+          <TabsContent value="pro" className="mt-0 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">
+                Everything in Plus, plus:
+              </p>
+              <Badge variant={isPro ? "default" : "secondary"}>
+                {isPro ? "Active" : "One-time purchase"}
+              </Badge>
+            </div>
+            <PerkList perks={PRO_PERKS} />
+
+            {pro === "success" && !isPro && (
+              <div className="rounded-xl border bg-muted/30 p-3 text-sm">
+                Payment received — Pro unlocks as soon as the order is
+                confirmed, usually within a minute. Check back shortly.
+              </div>
+            )}
+
+            <div className="space-y-3 rounded-xl border p-4">
+              <div>
+                <p className="text-xl font-semibold">
+                  ₱{PRO_PRICE_PHP}{" "}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    for {PRO_TERM_MONTHS} months
+                  </span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  That's around ₱{PRO_PER_MONTH_PHP} a month. One-time payment —
+                  not a subscription, nothing to cancel.
+                </p>
+              </div>
+
+              {user || isPending ? (
+                <Button
+                  className="w-full"
+                  disabled={checkingOut || isPending}
+                  onClick={() => checkout.mutate()}
+                >
+                  {checkingOut && <Loader2Icon className="animate-spin" />}
+                  {isPro
+                    ? `Add ${PRO_TERM_MONTHS} more months — ₱${PRO_PRICE_PHP}`
+                    : `Get Pro — ₱${PRO_PRICE_PHP}`}
+                </Button>
+              ) : (
+                <Button className="w-full" asChild>
+                  <Link to="/login">Sign in to get Pro</Link>
+                </Button>
+              )}
+
+              {isPro && user?.proUntil && (
+                <p className="text-xs text-muted-foreground">
+                  Pro is active until{" "}
+                  {new Date(user.proUntil).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                  . Buying again adds {PRO_TERM_MONTHS} months on top.
+                </p>
+              )}
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

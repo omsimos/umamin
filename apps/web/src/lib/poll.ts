@@ -15,7 +15,7 @@ export const POLL_DURATION_LABELS: Record<PollDuration, string> = {
 };
 
 export const POLL_PLUS_REQUIRED_ERROR =
-  "Polls are an Umamin+ perk — unlocked once your account is a year old.";
+  "Polls are an Umamin+ perk — free once your account is a year old, or included with Umamin Pro.";
 
 export const POLL_ENDED_ERROR = "This poll has ended";
 

@@ -14,11 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
 import {
   DropdownMenu,
@@ -33,7 +29,6 @@ import {
   ArrowLeftIcon,
   Loader2Icon,
   ReplyIcon,
-  ScanFaceIcon,
   SendIcon,
   Trash2Icon,
   UsersRoundIcon,
@@ -47,6 +42,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import {
@@ -592,9 +588,7 @@ export function GroupChat({
                           src={message.sender.imageUrl ?? ""}
                           alt=""
                         />
-                        <AvatarFallback>
-                          <ScanFaceIcon className="size-4" />
-                        </AvatarFallback>
+                        <BlobatarFallback seed={message.sender.id} />
                       </Avatar>
                     </Link>
                   ) : (

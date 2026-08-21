@@ -9,11 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
 import {
@@ -27,6 +23,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { BarChart3Icon, ImagePlusIcon, Loader2Icon, XIcon } from "lucide-react";
 import { type FormEventHandler, useRef, useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ComposerImages } from "@/components/composer-images";
 import { PollComposer } from "@/components/poll-composer";
 import { QuotedPostCard } from "@/components/quoted-post-card";
@@ -41,7 +38,7 @@ import {
   sanitizePollOptions,
 } from "@/lib/poll";
 import {
-  hasImagePostingAura,
+  canPostImages,
   IMAGE_AURA_REQUIRED_ERROR,
   MAX_POST_IMAGES,
   postImagesEnabled,
@@ -49,7 +46,7 @@ import {
 import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { QuotedPostData } from "@/lib/types";
-import { hasUmaminPlus } from "@/lib/utils";
+import { hasPlusFeatures } from "@/lib/utils";
 
 type ComposeDialogProps = {
   open: boolean;
@@ -86,8 +83,10 @@ export function ComposeDialog({
   const { submitPost, isPending } = useCreatePost(user);
   const attachments = useImageAttachments();
 
-  const isPlus = hasUmaminPlus(user?.createdAt);
-  const canPostImages = hasImagePostingAura(user?.points);
+  // Polls are a Plus perk; an active Pro includes it (server re-checks).
+  const isPlus = hasPlusFeatures(user);
+  // Images need the aura bar or an active Pro (server re-checks).
+  const imagesUnlocked = canPostImages(user);
   const imagesAvailable = postImagesEnabled(import.meta.env.VITE_R2_PUBLIC_URL);
 
   const count = content.length;
@@ -144,7 +143,7 @@ export function ComposeDialog({
   };
 
   const handlePickImages = () => {
-    if (!canPostImages) {
+    if (!imagesUnlocked) {
       toast.info(IMAGE_AURA_REQUIRED_ERROR);
       return;
     }
@@ -165,7 +164,7 @@ export function ComposeDialog({
 
   const acceptFiles = (files: Iterable<File>) => {
     // Poll XOR images, and images need the Aura gate — drag/paste respect both.
-    if (!canPostImages || poll) return;
+    if (!imagesUnlocked || poll) return;
     attachments.addFiles(files);
   };
 
@@ -198,7 +197,7 @@ export function ComposeDialog({
         onDragOver={(e) => {
           if (!imagesAvailable) return;
           e.preventDefault();
-          if (canPostImages && !poll) setDragging(true);
+          if (imagesUnlocked && !poll) setDragging(true);
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => {
@@ -270,11 +269,7 @@ export function ComposeDialog({
               })}
             >
               <AvatarImage src={user?.imageUrl ?? ""} alt="User avatar" />
-              <AvatarFallback>
-                {user?.username
-                  ? user.username.slice(0, 2).toUpperCase()
-                  : "UM"}
-              </AvatarFallback>
+              <BlobatarFallback seed={user?.id} />
             </Avatar>
 
             <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -286,7 +281,7 @@ export function ComposeDialog({
                 onChange={(e) => setContent(e.target.value)}
                 onPaste={(e) => {
                   const files = e.clipboardData?.files;
-                  if (imagesAvailable && canPostImages && files?.length) {
+                  if (imagesAvailable && imagesUnlocked && files?.length) {
                     e.preventDefault();
                     acceptFiles(files);
                   }

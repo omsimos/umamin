@@ -1,12 +1,14 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Skeleton } from "@umamin/ui/components/skeleton";
+import { cn } from "@umamin/ui/lib/utils";
 import { BadgeCheckIcon, LockIcon } from "lucide-react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { proThemeClass } from "@/components/pro-flair";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { ShareButton } from "@/components/share-button";
 import { Link } from "@/lib/navigation";
 import { pageSeo } from "@/lib/seo";
-import type { PublicUser } from "@/lib/types";
+import type { PublicUserWithBadge } from "@/lib/types";
 import { formatUsername } from "@/lib/utils";
 import { ChatForm } from "./-components/chat-form";
 import { ChatFormSkeleton } from "./-components/chat-form-skeleton";
@@ -21,7 +23,7 @@ export const Route = createFileRoute("/_social/to/$username")({
       throw notFound();
     }
 
-    return { username, user: user as PublicUser };
+    return { username, user: user as PublicUserWithBadge };
   },
   head: ({ loaderData }) => {
     const username = loaderData?.username ?? "user";
@@ -51,7 +53,14 @@ function SendMessage() {
   const { user } = Route.useLoaderData();
 
   return (
-    <div className="w-full max-w-xl container min-h-screen">
+    // The recipient's Pro profile theme colors this page too (the send button
+    // and focus rings pick up the scoped primary/ring tokens).
+    <div
+      className={cn(
+        "w-full max-w-xl container min-h-screen",
+        proThemeClass(user),
+      )}
+    >
       <section className="border flex flex-col w-full pt-0 rounded-xl bg-card">
         <div className="bg-background border-b w-full item-center px-6 py-4 rounded-t-2xl flex justify-between flex-row">
           <div className="flex items-center space-x-1">

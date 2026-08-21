@@ -160,16 +160,19 @@ const publicUserColumns = {
   followerCount: userTable.followerCount,
   followingCount: userTable.followingCount,
   points: userTable.points,
+  proUntil: userTable.proUntil,
   createdAt: userTable.createdAt,
   updatedAt: userTable.updatedAt,
 };
 
 // Lean list-author projection — drops bio/question/follower+followingCount/
 // updatedAt/pinnedPostId (none rendered on any list surface) to cut Fast Origin
-// Transfer. createdAt drives the Umamin+ shine ring; equippedGroupId feeds
-// withGroupBadge; points kept for forward-compat. The FULL publicUserColumns
-// stays on the current-user + profile reads (which render bio/counts). Must
-// match the FeedAuthor type in types/user.ts (8 keys).
+// Transfer. createdAt + proUntil drive the avatar shine (hasPlusFeatures: Plus
+// by age OR an active Pro) — the horizon rides the payload instead of a baked
+// isPro flag so TTL-cached entries self-correct at render when Pro expires;
+// equippedGroupId feeds withGroupBadge; points kept for forward-compat. The
+// FULL publicUserColumns stays on the current-user + profile reads (which
+// render bio/counts). Must match the FeedAuthor type in lib/types.ts (9 keys).
 const feedAuthorColumns = {
   id: userTable.id,
   username: userTable.username,
@@ -178,6 +181,7 @@ const feedAuthorColumns = {
   quietMode: userTable.quietMode,
   equippedGroupId: userTable.equippedGroupId,
   points: userTable.points,
+  proUntil: userTable.proUntil,
   createdAt: userTable.createdAt,
 };
 
@@ -1905,6 +1909,8 @@ export async function getCurrentUserData(
         // Profile-header-only (kept out of publicUserColumns so author payloads
         // stay compact); included here so settings can preview the current one.
         bannerImageUrl: userTable.bannerImageUrl,
+        // Pro theme preference, for the settings picker + own-profile render.
+        profileTheme: userTable.profileTheme,
         // Owner-private (like hasPassword): this record is only ever served to
         // its own session — keep blockedWords out of publicUserColumns.
         blockedWords: userTable.blockedWords,
@@ -2001,6 +2007,8 @@ export async function getPublicUserProfileData(
       followerCount: userTable.followerCount,
       followingCount: userTable.followingCount,
       points: userTable.points,
+      proUntil: userTable.proUntil,
+      profileTheme: userTable.profileTheme,
       createdAt: userTable.createdAt,
       updatedAt: userTable.updatedAt,
       musicProvider: userTable.musicProvider,
@@ -2772,6 +2780,10 @@ export async function getNotificationsPage(
         preview: notificationTable.preview,
         updatedAt: notificationTable.updatedAt,
         actor: {
+          // id feeds the default avatar (BlobatarFallback) — free here, it is
+          // already the leftJoin key. Drizzle still nulls the whole nested
+          // object when the actor is anonymous or the account is deleted.
+          id: userTable.id,
           username: userTable.username,
           displayName: userTable.displayName,
           imageUrl: userTable.imageUrl,

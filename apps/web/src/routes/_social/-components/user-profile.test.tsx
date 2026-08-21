@@ -72,6 +72,7 @@ const profile: PublicUserWithBadge = {
   followerCount: 2,
   followingCount: 3,
   points: 0,
+  proUntil: null,
   createdAt: new Date("2026-06-01T00:00:00.000Z"),
   updatedAt: new Date("2026-06-01T00:00:00.000Z"),
 };

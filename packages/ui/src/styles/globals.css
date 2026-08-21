@@ -179,8 +179,83 @@
   pointer-events: none;
 }
 
+/* Umamin Pro profile themes — scoped overrides of the primary/ring tokens,
+   applied as a wrapper class on a Pro member's profile and /to pages only
+   (see proThemeClass in apps/web components/pro-flair.tsx). Everything that
+   renders bg-primary/text-primary/focus rings inside the wrapper (follow and
+   send buttons, the PRO chip, the banner tint) adopts the theme; nothing
+   outside the wrapper changes. Each theme needs both blocks: the .dark
+   variant must re-override or the light value leaks into dark mode. */
+.profile-theme-ocean {
+  --primary: oklch(0.55 0.18 250);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.55 0.18 250);
+}
+.dark .profile-theme-ocean {
+  --primary: oklch(0.64 0.16 250);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.64 0.16 250);
+}
+
+.profile-theme-forest {
+  --primary: oklch(0.55 0.15 155);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.55 0.15 155);
+}
+.dark .profile-theme-forest {
+  --primary: oklch(0.62 0.16 155);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.62 0.16 155);
+}
+
+.profile-theme-ember {
+  --primary: oklch(0.6 0.19 40);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.6 0.19 40);
+}
+.dark .profile-theme-ember {
+  --primary: oklch(0.66 0.18 45);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.66 0.18 45);
+}
+
+.profile-theme-orchid {
+  --primary: oklch(0.55 0.22 305);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.55 0.22 305);
+}
+.dark .profile-theme-orchid {
+  --primary: oklch(0.65 0.19 305);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.65 0.19 305);
+}
+
+/* Gold is light in both modes, so its button text flips dark. */
+.profile-theme-gold {
+  --primary: oklch(0.72 0.14 85);
+  --primary-foreground: oklch(0.26 0.06 85);
+  --ring: oklch(0.72 0.14 85);
+}
+.dark .profile-theme-gold {
+  --primary: oklch(0.78 0.14 85);
+  --primary-foreground: oklch(0.26 0.06 85);
+  --ring: oklch(0.78 0.14 85);
+}
+
+/* Mono tracks the foreground: near-black on light, near-white on dark. */
+.profile-theme-mono {
+  --primary: oklch(0.25 0 0);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.25 0 0);
+}
+.dark .profile-theme-mono {
+  --primary: oklch(0.9 0 0);
+  --primary-foreground: oklch(0.2 0 0);
+  --ring: oklch(0.9 0 0);
+}
+
 /* Collapse AdSense slots that couldn't be filled so they leave no empty box.
-   Shared by apps/www and apps/chat (both render <ins class="adsbygoogle">). */
+   Shared by apps/web and apps/chat (both render <ins class="adsbygoogle">). */
 ins.adsbygoogle[data-ad-status="unfilled"] {
   /* biome-ignore lint/complexity/noImportantStyles: must override AdSense's inline display:block on the <ins> */
   display: none !important;

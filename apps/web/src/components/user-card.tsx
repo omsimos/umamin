@@ -1,8 +1,4 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
@@ -15,14 +11,17 @@ import {
   ShieldUserIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
+import { activeProTheme } from "@/lib/pro";
 import type { PublicUserWithBadge } from "@/lib/types";
-import { hasUmaminPlus } from "@/lib/utils";
+import { hasPlusFeatures } from "@/lib/utils";
 import CopyLink from "./copy-link";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { GroupBadge } from "./group-badge";
 import { MusicEmbed } from "./music-embed";
+import { ProBadge } from "./pro-flair";
 import { ProfileShareMenu } from "./share-button";
 
 export function UserCard({
@@ -43,7 +42,15 @@ export function UserCard({
   return (
     <div>
       <div className="relative">
-        <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-muted">
+        {/* Themed profiles tint the banner placeholder via the scoped primary
+            token (the page wrapper carries the .profile-theme-* class);
+            unthemed profiles keep the plain muted block. */}
+        <div
+          className={cn(
+            "relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-muted",
+            !user.bannerImageUrl && activeProTheme(user) && "bg-primary/15",
+          )}
+        >
           {user.bannerImageUrl && (
             <img
               src={user.bannerImageUrl}
@@ -85,7 +92,7 @@ export function UserCard({
         <div className="absolute -bottom-8 left-4">
           <Avatar
             className={cn("size-16 ring-4 ring-background md:size-20", {
-              "avatar-shine": hasUmaminPlus(user?.createdAt),
+              "avatar-shine": hasPlusFeatures(user),
             })}
           >
             <AvatarImage
@@ -93,9 +100,7 @@ export function UserCard({
               src={user?.imageUrl ?? ""}
               alt={`${user?.username}'s avatar`}
             />
-            <AvatarFallback className="md:text-4xl text-xl">
-              {user?.username?.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
+            <BlobatarFallback seed={user?.id} />
           </Avatar>
         </div>
       </div>
@@ -113,6 +118,7 @@ export function UserCard({
           {import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(
             user.username,
           ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
+          <ProBadge proUntil={user.proUntil} />
           <GroupBadge badge={user.groupBadge} />
         </div>
         <p className="text-muted-foreground text-sm">@{user.username}</p>

@@ -18,7 +18,7 @@ import { userTable } from "./schema/user";
  * relationships, and skips the new-account age gate. Idempotent: it SETS (not
  * increments) each total, so re-running is safe.
  *
- * Weights MUST stay in sync with apps/www/lib/points.ts (AURA_POINTS) — they
+ * Weights MUST stay in sync with apps/web/src/server-lib/points.ts (AURA_POINTS) — they
  * can't be imported across the package boundary.
  *
  * Loads all users + two GROUP-BY aggregate result sets into memory in one pass

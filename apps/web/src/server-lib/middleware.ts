@@ -66,7 +66,14 @@ export function csrfOriginCheck(): Middleware {
       method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
 
     if (isMutation && !isBearerAuthed(c) && !originMatchesHost(c)) {
-      return c.body(null, 403);
+      // Payment webhooks (api/webhooks.ts) are server-to-server POSTs that
+      // carry no Origin and authenticate by HMAC signature instead. CSRF only
+      // protects cookie-ambient auth, so the exemption is safe ONLY while
+      // nothing under /api/webhooks/ ever reads the session or cookies.
+      const path = new URL(c.req.url).pathname;
+      if (!path.startsWith("/api/webhooks/")) {
+        return c.body(null, 403);
+      }
     }
     await next();
   };

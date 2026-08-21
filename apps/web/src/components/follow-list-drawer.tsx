@@ -9,11 +9,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@umamin/ui/components/avatar";
+import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
@@ -45,6 +41,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { followUserAction, unfollowUserAction } from "@/lib/actions";
@@ -391,9 +388,7 @@ function FollowUserRow({
             src={user.imageUrl ?? ""}
             alt={`${user.username}'s avatar`}
           />
-          <AvatarFallback>
-            {user.username.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
+          <BlobatarFallback seed={user.id} />
         </Avatar>
       </Link>
       <div className="min-w-0 flex-1">
