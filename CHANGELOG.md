@@ -24,6 +24,11 @@ any that are empty.
 
 - Logging in and creating an account now run a quick human check. Almost nobody will see anything — it resolves on its own — and a challenge only appears if one is actually needed.
 
+### Fixed
+
+- Sharing your first note no longer leaves a duplicate copy of it sitting in the notes feed.
+- Reacting to a note you just shared no longer fails with an error.
+
 ### Security & Privacy
 
 - The human check makes bulk account creation and password-guessing runs expensive, closing a gap the per-datacenter rate limits couldn't: it counts per visitor, so spreading an attack across networks no longer multiplies the allowance.
