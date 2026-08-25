@@ -11,6 +11,7 @@ import {
   recomputeHotFeed,
 } from "./server-lib/cron";
 import type { AppEnv } from "./server-lib/env";
+import { formatErrorChain } from "./server-lib/errors";
 import {
   cookieRenewal,
   csrfOriginCheck,
@@ -49,7 +50,7 @@ app.onError((err, c) => {
     const res = err.getResponse();
     return c.newResponse(res.body, res);
   }
-  console.error(err);
+  console.error("Unhandled error:", formatErrorChain(err));
   captureRequestException(c, err);
   return c.text("Internal Server Error", 500);
 });
@@ -79,7 +80,7 @@ const scheduled: ExportedHandlerScheduledHandler<AppEnv> = async (
 ) => {
   const report = (job: Promise<unknown>) =>
     job.catch((error: unknown) => {
-      console.error(`[cron] ${event.cron} failed:`, error);
+      console.error(`[cron] ${event.cron} failed:`, formatErrorChain(error));
       captureServerException(env, (p) => ctx.waitUntil(p), error, {
         properties: { cron: event.cron },
       });

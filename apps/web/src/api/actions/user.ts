@@ -14,7 +14,10 @@ import { sanitizeBlockedWords } from "../../server-lib/blocked-words";
 import { formatContent } from "../../server-lib/content";
 import { getCurrentUserData, getUserProfileData } from "../../server-lib/data";
 import type { Db } from "../../server-lib/db";
-import { isUniqueConstraintViolation } from "../../server-lib/errors";
+import {
+  formatErrorChain,
+  isUniqueConstraintViolation,
+} from "../../server-lib/errors";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { notify } from "../../server-lib/notifications";
 import { AURA_POINTS, awardAura, reverseAura } from "../../server-lib/points";
@@ -83,7 +86,7 @@ export const getUserProfileHandler = action(
     try {
       return await getUserProfileData(ctxDb(c), username, session?.userId);
     } catch (err) {
-      console.log(err);
+      console.error("Error fetching user profile:", formatErrorChain(err));
       return null;
     }
   },

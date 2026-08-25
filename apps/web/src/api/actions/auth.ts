@@ -21,6 +21,7 @@ import { passesCsrf } from "../../server-lib/csrf";
 import {
   ACCESS_BLOCKED_ERROR,
   accountSuspendedMessage,
+  formatErrorChain,
   GENERIC_ERROR,
   VERIFICATION_FAILED_ERROR,
 } from "../../server-lib/errors";
@@ -145,7 +146,7 @@ export async function loginHandler(c: AppContext): Promise<Response> {
     const session = await createSession(db, token, existingUser.id);
     setSessionCookie(c, token, new Date(session.expiresAt));
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("Login error:", formatErrorChain(err));
     return c.json({ error: "An unexpected error occurred" });
   }
 
@@ -424,7 +425,7 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
       await r2.deleteR2Banner(user.bannerImageUrl);
     }
   } catch (err) {
-    console.log(err);
+    console.error("Account deletion cleanup failed:", formatErrorChain(err));
   }
 
   return c.json({ redirect: "/login" });
