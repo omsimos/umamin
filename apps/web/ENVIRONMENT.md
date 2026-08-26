@@ -113,6 +113,28 @@ wrangler secret list --name umamin-web-dev
 wrangler secret list --name umamin-web-production
 ```
 
+### Production rejects a secret write unless its latest version is deployed
+
+`wrangler secret put|bulk|delete` on `umamin-web-production` fails with **10215**
+whenever the newest *version* of the worker is not the one serving traffic — the
+guard exists so a secret edit can't drag an undeployed version live. The failure
+is not a permissions problem, and retrying never clears it.
+
+That is what actually produced the "present but empty" secret this doc used to
+list: a push created version `efe892a9` (2026-08-24), nobody deployed it, and
+`wrangler secret list` — which reads the **deployed** version — kept reporting a
+set that didn't match. The two commands answer different questions:
+
+```bash
+wrangler secret list --name umamin-web-production            # deployed version
+wrangler versions secret list --name umamin-web-production   # latest version
+```
+
+To write without deploying, use `wrangler versions secret <put|delete>`: it mints
+a new version and leaves traffic alone, and the next real deploy inherits it.
+Check both lists after any production secret change — agreement is the only proof
+the write landed where the running worker will see it.
+
 ### Current state
 
 | Variable | staging | production |
