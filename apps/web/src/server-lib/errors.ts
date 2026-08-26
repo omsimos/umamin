@@ -18,13 +18,6 @@ export const USER_NOT_FOUND_ERROR = "User not found";
 // Shown when a request's IP is on the moderator-managed denylist.
 export const ACCESS_BLOCKED_ERROR = "Your access has been blocked.";
 
-// Turnstile rejected or could not verify the token. Deliberately distinct from
-// INCORRECT on login: it says nothing about whether the account exists, so it
-// adds no enumeration signal, and a generic failure would read as a wrong
-// password and send people resetting a password that works.
-export const VERIFICATION_FAILED_ERROR =
-  "Couldn't verify you're human. Please try again.";
-
 // Shown to a banned account that still tries to act (the OAuth path redirects
 // to /banned instead). The reason is moderator-entered and bounded to 500 chars.
 export const ACCOUNT_SUSPENDED_ERROR = "Your account has been suspended.";

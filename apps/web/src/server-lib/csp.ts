@@ -20,9 +20,6 @@ function buildCsp(env: AppEnv, isProd: boolean): string {
     // posthog-js pulls its remote config and lazily-loaded extension bundles
     // from the assets host (derived from api_host), not from api_host itself.
     "https://us-assets.i.posthog.com",
-    // Turnstile on login/signup. Also needs frame-src below — the challenge
-    // itself renders in an iframe from the same origin.
-    "https://challenges.cloudflare.com",
   ];
 
   const connectSrc = [
@@ -58,7 +55,6 @@ function buildCsp(env: AppEnv, isProd: boolean): string {
         "https://googleads.g.doubleclick.net",
         "https://tpc.googlesyndication.com",
         "https://*.googlesyndication.com",
-        "https://challenges.cloudflare.com",
         // Embedded song players on /notes (see lib/music.ts).
         "https://open.spotify.com",
         "https://embed.music.apple.com",

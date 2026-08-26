@@ -18,20 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
-## [7.7.0] - 2026-08-21
-
-### Added
-
-- Logging in and creating an account now run a quick human check. Almost nobody will see anything — it resolves on its own — and a challenge only appears if one is actually needed.
+## [7.6.2] - 2026-08-26
 
 ### Fixed
 
 - Sharing your first note no longer leaves a duplicate copy of it sitting in the notes feed.
 - Reacting to a note you just shared no longer fails with an error.
-
-### Security & Privacy
-
-- The human check makes bulk account creation and password-guessing runs expensive, closing a gap the per-datacenter rate limits couldn't: it counts per visitor, so spreading an attack across networks no longer multiplies the allowance.
 
 ## [7.6.1] - 2026-08-21
 
@@ -957,7 +949,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
-[7.7.0]: https://github.com/omsimos/umamin/compare/v7.6.1...v7.7.0
+[7.6.2]: https://github.com/omsimos/umamin/compare/v7.6.1...v7.6.2
 [7.6.1]: https://github.com/omsimos/umamin/compare/v7.6.0...v7.6.1
 [7.6.0]: https://github.com/omsimos/umamin/compare/v7.5.0...v7.6.0
 [7.5.0]: https://github.com/omsimos/umamin/compare/v7.4.0...v7.5.0
