@@ -25,7 +25,9 @@ export function LoginForm() {
       }
       setError(res.error ?? "Incorrect username or password");
     },
-    onError: () => setError("An unexpected error occurred"),
+    onError: () => {
+      setError("An unexpected error occurred");
+    },
   });
 
   return (

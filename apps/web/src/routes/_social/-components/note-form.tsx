@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { SongAttachDialog } from "@/components/song-attach-dialog";
 import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 import { queryKeys } from "@/lib/query";
-import { upsertNote } from "@/lib/query-cache";
+import { patchNote, upsertNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse, PublicUser } from "@/lib/types";
 import { createNoteAction } from "../-lib/actions";
 
@@ -73,8 +73,13 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         ? parseMusicUrl(nextValues.musicUrl)
         : null;
 
+      // A first note has no server id yet, so it renders under a placeholder
+      // until onSuccess swaps it (see the drop in onSuccess below).
+      const optimisticId =
+        previousNote?.id ?? `optimistic-${crypto.randomUUID()}`;
+
       const optimisticNote: NoteItem = {
-        id: previousNote?.id ?? `optimistic-${crypto.randomUUID()}`,
+        id: optimisticId,
         userId: currentUser.id,
         content: nextValues.content ?? "",
         isAnonymous: nextValues.isAnonymous ?? false,
@@ -100,6 +105,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       return {
         previousNote,
         previousNotes,
+        optimisticId,
       };
     },
     onSuccess: (data, _values, ctx) => {
@@ -126,10 +132,18 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         queryClient.setQueriesData<InfiniteData<NotesResponse>>(
           { queryKey: queryKeys.notesRoot() },
           (current) =>
-            upsertNote(current, {
-              ...note,
-              user: note.isAnonymous ? undefined : currentUser,
-            }),
+            upsertNote(
+              // upsertNote dedupes by id only, so a placeholder id would be
+              // left stranded beside the real note — a phantom duplicate whose
+              // reaction/delete taps hit the DB with an id that has no row.
+              ctx?.optimisticId && ctx.optimisticId !== note.id
+                ? patchNote(current, ctx.optimisticId, () => null)
+                : current,
+              {
+                ...note,
+                user: note.isAnonymous ? undefined : currentUser,
+              },
+            ),
         );
       }
 

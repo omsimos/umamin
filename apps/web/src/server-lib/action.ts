@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import type * as z from "zod";
 import type { AppBindings } from "./context";
 import { passesCsrf } from "./csrf";
-import { GENERIC_ERROR, INVALID_INPUT_ERROR } from "./errors";
+import { formatErrorChain, GENERIC_ERROR, INVALID_INPUT_ERROR } from "./errors";
 import { captureRequestException } from "./posthog";
 import {
   checkRateLimit,
@@ -138,7 +138,7 @@ export function action<
       if (mapped) {
         return c.json(mapped, 400);
       }
-      console.log(err);
+      console.error("Action failed:", formatErrorChain(err));
       // Only the unmapped path reports: an `onError` match is an expected
       // outcome (a unique-constraint hit), not a bug to triage.
       captureRequestException(c, err, { distinctId: actorId });

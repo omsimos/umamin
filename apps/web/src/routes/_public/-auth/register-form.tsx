@@ -32,7 +32,9 @@ export function RegisterForm() {
       }
       toast.error(res.error ?? "Couldn't create account.");
     },
-    onError: () => toast.error("Couldn't create account."),
+    onError: () => {
+      toast.error("Couldn't create account.");
+    },
   });
 
   return (

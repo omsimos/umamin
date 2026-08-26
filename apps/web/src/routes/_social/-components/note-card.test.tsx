@@ -146,6 +146,20 @@ describe("NoteCard reactions", () => {
     expect(button).toHaveTextContent("2");
   });
 
+  it("does not hit the server while the note is still optimistic", async () => {
+    renderCard(makeNote({ id: "optimistic-abc", reactionCount: 0 }));
+
+    const button = screen.getByRole("button", { name: /react to this note/i });
+    fireEvent.click(button);
+
+    // The placeholder id has no row yet, so the insert would fail its FK.
+    await waitFor(() => {
+      expect(addAction).not.toHaveBeenCalled();
+    });
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    expect(button).toHaveTextContent("0");
+  });
+
   it("renders a disabled button for unauthenticated viewers", () => {
     renderCard(makeNote({ reactionCount: 7 }), false);
 

@@ -16,6 +16,7 @@ import {
 } from "../../server-lib/data";
 import type { AppEnv } from "../../server-lib/env";
 import {
+  formatErrorChain,
   INTERNAL_SERVER_ERROR,
   MEMBERS_ONLY_ERROR,
   NOT_FOUND_ERROR,
@@ -164,7 +165,10 @@ export const groupChatRoutes = new Hono<AppBindings>()
         ),
       );
     } catch (error) {
-      console.error("Error fetching group chat reactions:", error);
+      console.error(
+        "Error fetching group chat reactions:",
+        formatErrorChain(error),
+      );
       return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
   })
@@ -182,7 +186,10 @@ export const groupChatRoutes = new Hono<AppBindings>()
         ),
       );
     } catch (error) {
-      console.error("Error fetching group chat reactors:", error);
+      console.error(
+        "Error fetching group chat reactors:",
+        formatErrorChain(error),
+      );
       return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
   })
@@ -207,7 +214,7 @@ export const groupChatRoutes = new Hono<AppBindings>()
         ),
       );
     } catch (error) {
-      console.error("Error fetching group chat:", error);
+      console.error("Error fetching group chat:", formatErrorChain(error));
       return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
   });

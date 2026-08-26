@@ -27,25 +27,114 @@ export function accountSuspendedMessage(reason?: string | null): string {
     : ACCOUNT_SUSPENDED_ERROR;
 }
 
-/**
- * True when `err` is a SQLite unique-constraint violation on the given
- * column (e.g. "user.username"). Drizzle surfaces the driver error as
- * `Error.cause`.
- */
-export function isUniqueConstraintViolation(
+// Drizzle surfaces the driver error as `Error.cause`; the constraint class and
+// the offending column both live on that link, not on the wrapper.
+function constraintCause(
   err: unknown,
-  column: string,
-): boolean {
+): { code?: string; message?: string } | null {
   if (
     !(err instanceof Error) ||
     typeof err.cause !== "object" ||
     err.cause === null
   ) {
-    return false;
+    return null;
   }
 
   const cause = err.cause as { code?: string; message?: string };
-  return (
-    cause.code === "SQLITE_CONSTRAINT" && !!cause.message?.includes(column)
+  return cause.code === "SQLITE_CONSTRAINT" ? cause : null;
+}
+
+/**
+ * True when `err` is a SQLite unique-constraint violation on the given
+ * column (e.g. "user.username").
+ */
+export function isUniqueConstraintViolation(
+  err: unknown,
+  column: string,
+): boolean {
+  return !!constraintCause(err)?.message?.includes(column);
+}
+
+/**
+ * True when `err` is a SQLite FOREIGN KEY violation — the shape a write takes
+ * when the row it points at is already gone (reacting to a note deleted between
+ * render and tap). There is no column to match on: SQLite reports only the
+ * constraint class, so this is deliberately not parameterized like the unique
+ * check above.
+ *
+ * Callers map it to a not-found message so a lost race is an expected outcome
+ * rather than a reported exception.
+ */
+export function isForeignKeyConstraintViolation(err: unknown): boolean {
+  return !!constraintCause(err)?.message?.includes(
+    "FOREIGN KEY constraint failed",
   );
+}
+
+// Cap per link: drizzle's DrizzleQueryError message embeds the full SQL AND its
+// bound params, which on this app can be user content (a message body, a
+// username). The cause link — the part worth reading — is never truncated by
+// this, it is described separately below.
+const MAX_MESSAGE_LENGTH = 300;
+const MAX_CAUSE_DEPTH = 5;
+
+function describe(error: unknown): string {
+  if (error instanceof Error) {
+    const { code } = error as { code?: unknown };
+    const message =
+      error.message.length > MAX_MESSAGE_LENGTH
+        ? `${error.message.slice(0, MAX_MESSAGE_LENGTH)}…`
+        : error.message;
+    const head = message ? `${error.name}: ${message}` : error.name;
+    return code === undefined ? head : `${head} [${String(code)}]`;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    try {
+      return JSON.stringify(error).slice(0, MAX_MESSAGE_LENGTH);
+    } catch {
+      return String(error);
+    }
+  }
+
+  return String(error);
+}
+
+// V8 prefixes `stack` with "Name: message"; the chain already carries that, so
+// drop the duplicate. An error built with Error.captureStackTrace (see below)
+// has no such prefix and is returned whole.
+function stackFrames(error: unknown): string | undefined {
+  if (!(error instanceof Error) || !error.stack) return undefined;
+  const head = `${error.name}: ${error.message}`;
+  return error.stack.startsWith(head)
+    ? error.stack.slice(head.length).replace(/^\r?\n/, "")
+    : error.stack;
+}
+
+/**
+ * Flatten an error and its `cause` chain into one loggable string.
+ *
+ * workerd's console logs an Error as its `stack` alone, and drizzle wraps EVERY
+ * driver failure in a `DrizzleQueryError` built with `Error.captureStackTrace`,
+ * whose stack therefore carries no leading message line. The real failure — the
+ * `LibsqlError` with Turso's status and message — sits in `.cause` and was never
+ * serialized, so a total Turso outage reached Workers Logs as a bare stack with
+ * no reason attached (dev, 2026-08-23). Log this instead of the raw error.
+ */
+export function formatErrorChain(error: unknown): string {
+  const parts: string[] = [];
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+
+  for (let depth = 0; depth <= MAX_CAUSE_DEPTH; depth += 1) {
+    if (current === undefined || current === null || seen.has(current)) break;
+    seen.add(current);
+    parts.push(
+      depth === 0 ? describe(current) : `caused by: ${describe(current)}`,
+    );
+    current = current instanceof Error ? current.cause : undefined;
+  }
+
+  const frames = stackFrames(error);
+  return frames ? `${parts.join("\n")}\n${frames}` : parts.join("\n");
 }

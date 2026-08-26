@@ -10,8 +10,11 @@ Replaced `apps/www` (Next.js on Vercel) in v7.0.0.
 pnpm dev:web   # from the repo root — http://localhost:5173
 ```
 
-Needs a local libSQL server (`pnpm --filter=@umamin/db dev`) plus `.dev.vars` and
-`.env.development`. See the root README for both files.
+Needs a local libSQL server (`pnpm --filter=@umamin/db dev`) plus `.dev.vars`,
+copied from `.dev.vars.example`. Public config is committed
+(`.env.development`), so there is nothing else to set up.
+[ENVIRONMENT.md](./ENVIRONMENT.md) is the map: public config is in git, one file
+per environment; secrets are never in a `.env.*` file.
 
 ```bash
 pnpm --filter=web check-types

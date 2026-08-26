@@ -1,10 +1,17 @@
-# Worker secrets for LOCAL dev (`pnpm dev:web` reads this file). Copy to
-# `.dev.vars` and fill in — that copy is gitignored.
+# THE template for every Worker secret, in all three places they live. Copy it to:
 #
-# These are NOT the same as .env.example: anything VITE_* is public and embedded
-# in the browser bundle, while everything here stays server-side in the Worker.
-# Deployed values never come from this file — set them per environment with
-# `wrangler secret put <NAME> --env <staging|production>`.
+#   .dev.vars            local dev — `pnpm dev:web` reads this file directly
+#   .secrets.staging     dev.umamin.link  } push with
+#   .secrets.production  www.umamin.link  } `pnpm --filter=web secrets:<env>`
+#
+# All three copies are gitignored. Nothing reads a .secrets.* file automatically —
+# it is a local mirror of what Cloudflare should hold, and the push script skips
+# blank values so a half-filled file cannot wipe a live secret.
+#
+# Public VITE_* config is the other axis and is COMMITTED, one file per
+# environment (.env.development / .env.staging / .env.production). Anything
+# VITE_* is embedded in the browser bundle; everything here stays server-side.
+# See ENVIRONMENT.md for the whole map.
 #
 # Every consumer no-ops or fails closed when a value is missing, so a partial
 # file still boots; the matching feature is just unavailable locally.

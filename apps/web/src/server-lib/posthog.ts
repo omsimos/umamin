@@ -1,5 +1,6 @@
 import { PostHog } from "posthog-node";
 import type { AppEnv } from "./env";
+import { formatErrorChain } from "./errors";
 
 // Worker-side error tracking. posthog-node ships a dedicated `workerd` export
 // (no Node built-ins), which is what vite resolves here.
@@ -49,6 +50,10 @@ export function captureServerException(
     sending = client
       .captureExceptionImmediate(error, context.distinctId, {
         environment: env.POSTHOG_ENV,
+        // The SDK serializes the thrown error alone; a drizzle-wrapped driver
+        // failure keeps its reason in `.cause`, so send the flattened chain too
+        // or the issue arrives with no message (see formatErrorChain).
+        error_chain: formatErrorChain(error),
         ...context.properties,
       })
       .catch(() => {});

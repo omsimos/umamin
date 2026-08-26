@@ -11,6 +11,8 @@
     "deploy": "pnpm run build && wrangler deploy --env staging",
     "deploy:production": "pnpm run build:production && wrangler deploy --env production",
     "cf-typegen": "wrangler types --env staging",
+    "secrets:staging": "node scripts/push-secrets.mjs staging",
+    "secrets:production": "node scripts/push-secrets.mjs production",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:workers": "vitest run --config vitest.workers.config.ts",

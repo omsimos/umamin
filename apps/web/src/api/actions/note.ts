@@ -5,11 +5,16 @@ import { parseMusicUrl } from "../../lib/music";
 import { action } from "../../server-lib/action";
 import { formatContent } from "../../server-lib/content";
 import { getCurrentNoteData } from "../../server-lib/data";
-import { UNAUTHENTICATED_ERROR } from "../../server-lib/errors";
+import {
+  isForeignKeyConstraintViolation,
+  UNAUTHENTICATED_ERROR,
+} from "../../server-lib/errors";
 import { isModerator } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { idSchema } from "../../server-lib/schema";
 import { ctxDb } from "./_shared";
+
+const NOTE_NOT_FOUND = "Note not found";
 
 const createNoteSchema = z
   .object({
@@ -159,7 +164,7 @@ export const removeNoteHandler = action(
   async ({ noteId }, { user, c }) => {
     const db = ctxDb(c);
     if (!isModerator(user, c.env.MODERATOR_USERS)) {
-      return { error: "Note not found" };
+      return { error: NOTE_NOT_FOUND };
     }
 
     const [note] = await db
@@ -169,7 +174,7 @@ export const removeNoteHandler = action(
       .limit(1);
 
     if (!note) {
-      return { error: "Note not found" };
+      return { error: NOTE_NOT_FOUND };
     }
 
     await db.transaction(async (tx) => {
@@ -190,6 +195,14 @@ export const addNoteReactionHandler = action(
       name: "write",
       key: ({ session }) => `notereact:${session.userId}`,
     },
+    // The insert is the existence check: no note row means the FK fails, which
+    // is a lost race (or a stale client id), not a server fault. Mapping it here
+    // keeps the removal path's tolerance symmetric without paying a lookup hop
+    // on every reaction.
+    onError: (err) =>
+      isForeignKeyConstraintViolation(err)
+        ? { error: NOTE_NOT_FOUND }
+        : undefined,
   },
   async ({ noteId }, { session, c }) => {
     const db = ctxDb(c);

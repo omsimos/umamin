@@ -85,8 +85,32 @@ describe("captureServerException", () => {
     expect(captureExceptionImmediate).toHaveBeenCalledWith(error, "user_1", {
       environment: "production",
       cron: "0 3 * * *",
+      error_chain: expect.stringContaining("Error: boom"),
     });
     expect(waitUntil).toHaveBeenCalledTimes(1);
+  });
+
+  // The SDK serializes the thrown error alone, so a drizzle-wrapped driver
+  // failure would arrive with no reason attached.
+  it("sends the cause chain of a wrapped error", () => {
+    const cause = new Error("Server returned HTTP status 401");
+    captureServerException(
+      PROD_ENV,
+      vi.fn(),
+      new Error("query failed", {
+        cause,
+      }),
+    );
+
+    expect(captureExceptionImmediate).toHaveBeenCalledWith(
+      expect.any(Error),
+      undefined,
+      expect.objectContaining({
+        error_chain: expect.stringContaining(
+          "caused by: Error: Server returned HTTP status 401",
+        ),
+      }),
+    );
   });
 
   // Every call site is inside a `catch`. A rejecting report would turn a handled

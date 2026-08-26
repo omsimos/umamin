@@ -15,5 +15,16 @@ dist-ssr
 .idea
 .DS_Store
 
-# local dev secrets (wrangler/vite)
+# ── Environment files ───────────────────────────────────────────────────────
+# Public VITE_* config is COMMITTED, one file per environment: vite embeds these
+# values in the browser bundle, so none of them is a secret, and Workers Builds
+# builds from a clean clone — a gitignored file would never reach a deploy. The
+# root .gitignore excludes .env*, so re-include them here (scoped to this app).
+!.env.development
+!.env.staging
+!.env.production
+
+# Secrets, never committed. .dev.vars is what local dev reads; .secrets.<env>
+# is the local mirror pushed to Cloudflare with `pnpm --filter=web secrets:<env>`.
 .dev.vars
+.secrets.*

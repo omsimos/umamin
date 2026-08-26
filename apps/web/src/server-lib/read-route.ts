@@ -1,6 +1,6 @@
 import type { Context, HonoRequest } from "hono";
 import type { AppEnv } from "./env";
-import { INTERNAL_SERVER_ERROR } from "./errors";
+import { formatErrorChain, INTERNAL_SERVER_ERROR } from "./errors";
 import { extractClientIp } from "./ip";
 import { captureRequestException } from "./posthog";
 import { checkReadRateLimit, RATE_LIMIT_ERROR } from "./ratelimit";
@@ -88,7 +88,7 @@ export function withPrivateRead(label: string, handler: PrivateReadHandler) {
         ? stamp(result, PRIVATE_CACHE_HEADERS)
         : privateJson(result);
     } catch (error) {
-      console.error(`Error ${label}:`, error);
+      console.error(`Error ${label}:`, formatErrorChain(error));
       captureRequestException(c, error, { properties: { read: label } });
       return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
@@ -180,7 +180,7 @@ export function withPublicRead(
       }
       return res;
     } catch (error) {
-      console.error(`Error ${label}:`, error);
+      console.error(`Error ${label}:`, formatErrorChain(error));
       captureRequestException(c, error, { properties: { read: label } });
       return publicJson({ error: INTERNAL_SERVER_ERROR }, 0, 0, 500);
     }

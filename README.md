@@ -65,10 +65,17 @@ $ pnpm install
 
 ### Environment Variables
 
-`apps/web` splits its configuration in two, because it runs on Workers:
+`apps/web` splits configuration on one axis: **public config is committed, one
+file per environment; secrets are never in a `.env.*` file.**
 
-- **`apps/web/.dev.vars`** — server-side values for the Worker (secrets). Never shipped to the browser.
-- **`apps/web/.env.development`** — public, build-time values. Vite embeds every `VITE_*` variable in the browser bundle, so **nothing secret belongs here**. See `apps/web/.env.example`.
+- **`apps/web/.env.development` / `.env.staging` / `.env.production`** — public
+  `VITE_*` values, **in git**. Vite embeds them in the browser bundle, so none is
+  a secret, and Workers Builds builds from a clean clone — the committed file is
+  what the deploy ships.
+- **`apps/web/.dev.vars`** — Worker secrets for local dev, gitignored. Copy
+  `.dev.vars.example`.
+- **`apps/web/.secrets.staging` / `.secrets.production`** — gitignored mirrors of
+  what Cloudflare should hold. Push with `pnpm --filter=web secrets:<env>`.
 
 ```env
 # apps/web/.dev.vars — Worker-side (secret)
@@ -83,101 +90,15 @@ GOOGLE_REDIRECT_URI=http://localhost:5173/auth/google/callback
 ```
 
 ```env
-# apps/web/.env.development — public, embedded in the bundle
-VITE_SITE_URL=http://localhost:5173
-VITE_ADS_ENABLED=true # "false" removes every ad surface
-```
-
-```env
 # packages/db/.env (for the drizzle-kit CLI)
 TURSO_CONNECTION_URL=http://127.0.0.1:8080
 TURSO_AUTH_TOKEN= # can be empty for local
 ```
 
-In deployed environments these do **not** come from the files above: Worker secrets are set with `wrangler secret put` (or in the Cloudflare dashboard), and the `VITE_*` values are build variables configured in Cloudflare Workers Builds. Non-secret Worker vars and the KV / rate-limit / cron bindings live in `apps/web/wrangler.jsonc`, split per environment.
-
-Generate an AES-256-GCM key using the helper script:
-
-```sh
-$ pnpm aes:generate
-# copy the printed key into AES_256_GCM_KEY
-```
-
-If you need to use Google OAuth, you must set up your own OAuth client. [Setting up OAuth 2.0 →](https://support.google.com/cloud/answer/6158849)
-
-### Development Server
-
-Run the development servers with Turborepo:
-
-```sh
-$ pnpm dev # runs all apps (and local db dev if configured)
-```
-
-Run a specific app only:
-
-```sh
-$ pnpm dev:web            # Umamin — http://localhost:5173
-$ pnpm dev:chat           # Umamin Chat (Vite + local Convex)
-```
-
-### Setup Database
-
-> Applies to **web** only — Umamin Chat uses Convex, not Turso/Drizzle.
-
-Start a local libSQL server and run migrations.
-
-```sh
-# optional: start local libSQL (turso dev) alongside type-checker
-$ pnpm --filter=@umamin/db dev
-
-# generate migrations from schema changes
-$ pnpm db:generate
-
-# apply migrations
-$ pnpm db:migrate
-
-# open drizzle studio
-$ pnpm db:studio
-
-# optional: reset & seed the database with demo data
-$ pnpm db:seed
-
-# seeded test account
-# username: testuser
-# password: 12345
-```
-
-### Running Build
-
-After making changes, build the project (runs lint and type checks via tasks).
-
-```sh
-$ pnpm build # build all
-# or
-$ pnpm build --filter=web
-$ pnpm build --filter=chat
-```
-
-### Tests and Checks
-
-```sh
-$ pnpm test                    # every suite, via turbo
-$ pnpm --filter=web test:workers  # web's workerd suite (KV, Cache API, argon2 wasm)
-$ pnpm check-types             # tsc across the workspace
-$ pnpm format-and-lint         # Biome
-```
-
-`apps/web` has a second test runner because some of its code can only run inside
-workerd — those suites use `@cloudflare/vitest-pool-workers` and are not part of
-`pnpm test`. CI runs both.
-
-Once ready, you can submit a pull request for review.
-
-### Contributor List
-
-<a href="https://github.com/omsimos/umamin/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=omsimos/umamin" />
-</a>
+Non-secret Worker vars and the KV / rate-limit / cron bindings live in
+`apps/web/wrangler.jsonc`, split per environment. Full map, including the
+build-only source-map credentials and how to audit what a deploy holds:
+[`apps/web/ENVIRONMENT.md`](apps/web/ENVIRONMENT.md).
 
 ## Code of Conduct
 

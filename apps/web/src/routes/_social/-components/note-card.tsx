@@ -135,6 +135,10 @@ export function NoteCard({
   };
 
   const handleReact = async () => {
+    // A just-composed note renders under a placeholder id until the server
+    // swap lands — its row does not exist yet (mirrors poll-card).
+    if (data.id.startsWith("optimistic-")) return;
+
     const prevReacted = reacted;
     const prevCount = reactions;
     const nextReacted = !prevReacted;
