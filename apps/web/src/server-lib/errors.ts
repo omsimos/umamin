@@ -27,26 +27,47 @@ export function accountSuspendedMessage(reason?: string | null): string {
     : ACCOUNT_SUSPENDED_ERROR;
 }
 
-/**
- * True when `err` is a SQLite unique-constraint violation on the given
- * column (e.g. "user.username"). Drizzle surfaces the driver error as
- * `Error.cause`.
- */
-export function isUniqueConstraintViolation(
+// Drizzle surfaces the driver error as `Error.cause`; the constraint class and
+// the offending column both live on that link, not on the wrapper.
+function constraintCause(
   err: unknown,
-  column: string,
-): boolean {
+): { code?: string; message?: string } | null {
   if (
     !(err instanceof Error) ||
     typeof err.cause !== "object" ||
     err.cause === null
   ) {
-    return false;
+    return null;
   }
 
   const cause = err.cause as { code?: string; message?: string };
-  return (
-    cause.code === "SQLITE_CONSTRAINT" && !!cause.message?.includes(column)
+  return cause.code === "SQLITE_CONSTRAINT" ? cause : null;
+}
+
+/**
+ * True when `err` is a SQLite unique-constraint violation on the given
+ * column (e.g. "user.username").
+ */
+export function isUniqueConstraintViolation(
+  err: unknown,
+  column: string,
+): boolean {
+  return !!constraintCause(err)?.message?.includes(column);
+}
+
+/**
+ * True when `err` is a SQLite FOREIGN KEY violation — the shape a write takes
+ * when the row it points at is already gone (reacting to a note deleted between
+ * render and tap). There is no column to match on: SQLite reports only the
+ * constraint class, so this is deliberately not parameterized like the unique
+ * check above.
+ *
+ * Callers map it to a not-found message so a lost race is an expected outcome
+ * rather than a reported exception.
+ */
+export function isForeignKeyConstraintViolation(err: unknown): boolean {
+  return !!constraintCause(err)?.message?.includes(
+    "FOREIGN KEY constraint failed",
   );
 }
 

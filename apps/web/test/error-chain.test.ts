@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatErrorChain } from "../src/server-lib/errors";
+import {
+  formatErrorChain,
+  isForeignKeyConstraintViolation,
+  isUniqueConstraintViolation,
+} from "../src/server-lib/errors";
 
 // Rebuild the shape that made a total Turso outage unreadable in Workers Logs:
 // drizzle wraps the driver error and calls Error.captureStackTrace, so `stack`
@@ -61,5 +65,46 @@ describe("formatErrorChain", () => {
   it("describes a thrown non-Error", () => {
     expect(formatErrorChain({ code: "boom" })).toBe('{"code":"boom"}');
     expect(formatErrorChain(undefined)).toBe("");
+  });
+});
+
+// The shape a reaction on an already-deleted note arrives as: drizzle's wrapper
+// around the libsql transaction error. Production saw 5 of these before the
+// client stopped sending optimistic ids (2026-08-23).
+const constraintError = (message: string) =>
+  new DrizzleQueryErrorLike(
+    'insert into "note_reaction" ("id", "note_id") values (?, ?)',
+    new LibsqlErrorLike(message, "SQLITE_CONSTRAINT"),
+  );
+
+describe("constraint violation matchers", () => {
+  it("recognizes a FOREIGN KEY failure through the drizzle wrapper", () => {
+    expect(
+      isForeignKeyConstraintViolation(
+        constraintError(
+          "SQLITE_CONSTRAINT: SQLite error: FOREIGN KEY constraint failed",
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not confuse a unique violation for a foreign-key one", () => {
+    const unique = constraintError(
+      "SQLITE_CONSTRAINT: SQLite error: UNIQUE constraint failed: user.username",
+    );
+
+    expect(isForeignKeyConstraintViolation(unique)).toBe(false);
+    expect(isUniqueConstraintViolation(unique, "user.username")).toBe(true);
+  });
+
+  it("ignores a non-constraint driver failure with a matching message", () => {
+    // A Turso 401 carries no constraint code, so neither matcher may claim it —
+    // otherwise an outage would be reported to users as a missing row.
+    const unauthorized = new DrizzleQueryErrorLike(
+      'insert into "note_reaction" ("id") values (?)',
+      new LibsqlErrorLike("FOREIGN KEY constraint failed", "SERVER_ERROR"),
+    );
+
+    expect(isForeignKeyConstraintViolation(unauthorized)).toBe(false);
   });
 });
