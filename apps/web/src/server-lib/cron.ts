@@ -9,8 +9,10 @@ import { recomputeHotFeed as recomputeHotFeedRanking } from "./feed-rank";
 // dispatch is declarative and each job is unit-testable in isolation.
 
 // 0 3 * * * — expired sessions are otherwise pruned only lazily when their
-// owner next makes a request, so abandoned sessions accumulate forever; every
-// auth check scans this table and Turso bills per row scanned.
+// owner next makes a request, so abandoned sessions accumulate forever. A
+// session lookup is a PK seek and stays cheap; the sweep exists to bound the
+// table's size, because Turso bills per row scanned. session_expires_idx keeps
+// the sweep itself a seek rather than a full scan of what it is pruning.
 export async function cleanupSessions(env: AppEnv): Promise<void> {
   const result = await getDb(env)
     .delete(sessionTable)

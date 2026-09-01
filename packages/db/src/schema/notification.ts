@@ -75,6 +75,9 @@ export const notificationTable = sqliteTable(
       t.updatedAt,
       t.id,
     ),
+    // Backs the nightly retention sweep (DELETE WHERE updated_at < cutoff); the
+    // recipient-leading composite above can't serve a global range.
+    index("notification_updated_idx").on(t.updatedAt),
   ],
 );
 
