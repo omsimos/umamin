@@ -21,7 +21,13 @@ import { hasPlusPerks } from "../../server-lib/content";
 import { getPostById } from "../../server-lib/data";
 import { isModerator } from "../../server-lib/moderation";
 import { notify } from "../../server-lib/notifications";
-import { AURA_POINTS, awardAura, reverseAura } from "../../server-lib/points";
+import {
+  AURA_POINTS,
+  auraAwardStatement,
+  auraReverseStatement,
+  awardAura,
+  reverseAura,
+} from "../../server-lib/points";
 import {
   POLL_DURATIONS,
   POLL_ENDED_ERROR,
@@ -40,6 +46,12 @@ import { ctxDb, defer } from "./_shared";
 // reads hit Turso directly (read-your-writes), public reads cache at route level.
 // Per-write hot-feed rank refresh is likewise a no-op now — the */5 cron
 // recomputes the ranking (≤5min lag accepted, plan feed-rank note).
+
+// Runs the statement only if the PREVIOUS statement of the same db.batch
+// changed a row: changes() reads the preceding statement's count on the shared
+// connection, which is how a batch replaces an interactive transaction's
+// JS-side branching. test/batch-changes.test.ts pins those semantics.
+const PREV_CHANGED = sql`(SELECT changes()) > 0`;
 
 const createPostSchema = z
   .object({
@@ -441,41 +453,46 @@ export const addLikeHandler = action(
   },
   async ({ postId }, { session, user, c }) => {
     const db = ctxDb(c);
-    let likedPost: { authorId: string; content: string } | undefined;
 
-    const result = await db.transaction(async (tx) => {
-      const inserted = await tx
+    // One round trip instead of four (BEGIN+insert, update, award, COMMIT):
+    // each statement gates on PREV_CHANGED, so the count bump lands only when
+    // the like row was really inserted and the award only when the bump landed
+    // — a bump that matched no row reports changes() = 0 in turn.
+    const award = auraAwardStatement(
+      db,
+      {
+        beneficiary: { postId },
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.like,
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
         .insert(postLikeTable)
         .values({ postId, userId: session.userId })
         .onConflictDoNothing()
-        .returning({ id: postLikeTable.id });
-
-      if (inserted.length === 0) {
-        return { success: true, alreadyLiked: true } as const;
-      }
-
-      const [updated] = await tx
+        .returning({ id: postLikeTable.id }),
+      db
         .update(postTable)
         .set({ likeCount: sql`${postTable.likeCount} + 1` })
-        .where(eq(postTable.id, postId))
+        .where(and(eq(postTable.id, postId), PREV_CHANGED))
         .returning({
           authorId: postTable.authorId,
           content: postTable.content,
-        });
+        }),
+    ] as const;
 
-      likedPost = updated;
+    const [inserted, bumped] = award
+      ? await db.batch([...statements, award])
+      : await db.batch(statements);
 
-      if (updated) {
-        await awardAura(tx, {
-          beneficiaryId: updated.authorId,
-          actorId: session.userId,
-          actorCreatedAt: user?.createdAt,
-          delta: AURA_POINTS.like,
-        });
-      }
+    if (inserted.length === 0) {
+      return { success: true, alreadyLiked: true } as const;
+    }
 
-      return { success: true } as const;
-    });
+    const likedPost = bumped[0];
 
     if (likedPost) {
       await notify(
@@ -489,7 +506,7 @@ export const addLikeHandler = action(
         },
       );
     }
-    return result;
+    return { success: true } as const;
   },
 );
 
@@ -597,8 +614,19 @@ export const removeLikeHandler = action(
   },
   async ({ postId }, { session, user, c }) => {
     const db = ctxDb(c);
-    return db.transaction(async (tx) => {
-      const removed = await tx
+
+    const reverse = auraReverseStatement(
+      db,
+      {
+        beneficiary: { postId },
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.like,
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
         .delete(postLikeTable)
         .where(
           and(
@@ -606,31 +634,25 @@ export const removeLikeHandler = action(
             eq(postLikeTable.userId, session.userId),
           ),
         )
-        .returning({ id: postLikeTable.id });
-
-      if (removed.length === 0) {
-        return { success: true, alreadyRemoved: true };
-      }
-
-      const [updated] = await tx
+        .returning({ id: postLikeTable.id }),
+      db
         .update(postTable)
         .set({
           likeCount: sql`CASE WHEN ${postTable.likeCount} > 0 THEN ${postTable.likeCount} - 1 ELSE 0 END`,
         })
-        .where(eq(postTable.id, postId))
-        .returning({ authorId: postTable.authorId });
+        .where(and(eq(postTable.id, postId), PREV_CHANGED))
+        .returning({ authorId: postTable.authorId }),
+    ] as const;
 
-      if (updated) {
-        await reverseAura(tx, {
-          beneficiaryId: updated.authorId,
-          actorId: session.userId,
-          actorCreatedAt: user?.createdAt,
-          delta: AURA_POINTS.like,
-        });
-      }
+    const [removed] = reverse
+      ? await db.batch([...statements, reverse])
+      : await db.batch(statements);
 
-      return { success: true };
-    });
+    if (removed.length === 0) {
+      return { success: true, alreadyRemoved: true };
+    }
+
+    return { success: true };
   },
 );
 

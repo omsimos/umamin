@@ -8,7 +8,7 @@ vi.mock("../src/server-lib/argon2", () => ({
 }));
 
 import { postLikeTable, postTable } from "@umamin/db/schema/post";
-import { userTable } from "@umamin/db/schema/user";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import type { Db } from "../src/server-lib/db";
 import { __clearSessionCache } from "../src/server-lib/session";
@@ -71,6 +71,50 @@ describe("post actions (real libSQL)", () => {
     expect(await points(db, "author")).toBe(2);
   });
 
+  it("a self-like counts but awards the author no aura", async () => {
+    const app = buildApp(db, authed("author", { createdAt: OLD }));
+    const { json } = await callJson(app, "addLikeAction", { postId: "p1" });
+
+    expect(json).toEqual({ success: true });
+    const [post] = await db
+      .select({ likeCount: postTable.likeCount })
+      .from(postTable)
+      .where(eq(postTable.id, "p1"));
+    expect(post.likeCount).toBe(1);
+    expect(await points(db, "author")).toBe(0);
+  });
+
+  // The batched award resolves the author by subquery, so the block probe
+  // correlates on the row being updated rather than a JS-side literal.
+  it("a like from a blocked user counts but awards no aura", async () => {
+    await db
+      .insert(userBlockTable)
+      .values({ blockerId: "author", blockedId: "viewer" });
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+    const { json } = await callJson(app, "addLikeAction", { postId: "p1" });
+
+    expect(json).toEqual({ success: true });
+    const [post] = await db
+      .select({ likeCount: postTable.likeCount })
+      .from(postTable)
+      .where(eq(postTable.id, "p1"));
+    expect(post.likeCount).toBe(1);
+    expect(await points(db, "author")).toBe(0);
+  });
+
+  it("a like from an under-age actor counts but awards no aura", async () => {
+    const app = buildApp(db, authed("viewer", { createdAt: new Date() }));
+    const { json } = await callJson(app, "addLikeAction", { postId: "p1" });
+
+    expect(json).toEqual({ success: true });
+    const [post] = await db
+      .select({ likeCount: postTable.likeCount })
+      .from(postTable)
+      .where(eq(postTable.id, "p1"));
+    expect(post.likeCount).toBe(1);
+    expect(await points(db, "author")).toBe(0);
+  });
+
   it("removeLikeAction reverses the like and the aura", async () => {
     const app = buildApp(db, authed("viewer", { createdAt: OLD }));
     await callJson(app, "addLikeAction", { postId: "p1" });
@@ -83,6 +127,22 @@ describe("post actions (real libSQL)", () => {
       .where(eq(postLikeTable.postId, "p1"));
     expect(rows).toHaveLength(0);
     expect(await points(db, "author")).toBe(0);
+  });
+
+  it("unliking a post the viewer never liked leaves the count alone", async () => {
+    await db
+      .update(postTable)
+      .set({ likeCount: 3 })
+      .where(eq(postTable.id, "p1"));
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+    const { json } = await callJson(app, "removeLikeAction", { postId: "p1" });
+
+    expect(json).toEqual({ success: true, alreadyRemoved: true });
+    const [post] = await db
+      .select({ likeCount: postTable.likeCount })
+      .from(postTable)
+      .where(eq(postTable.id, "p1"));
+    expect(post.likeCount).toBe(3);
   });
 
   it("createCommentAction bumps commentCount and awards first-comment aura", async () => {
