@@ -1174,10 +1174,15 @@ export async function getPostsPage(
     cursor?: string | null;
     sort?: FeedSort;
     viewerId?: string | null;
+    // Pre-fetched viewer-independent page (the caller already read it from the
+    // shared public cache entry). Never supplied for `following`, which has no
+    // viewer-independent form.
+    publicData?: FeedResponse;
   },
 ): Promise<FeedResponse> {
   const publicData =
-    params.sort === "following" && params.viewerId
+    params.publicData ??
+    (params.sort === "following" && params.viewerId
       ? await getFollowingPostsPage(db, params.viewerId, params.cursor ?? null)
       : params.sort === "latest"
         ? await getPublicLatestPostsPage(db, params.cursor ?? null)
@@ -1186,7 +1191,7 @@ export async function getPostsPage(
             kv,
             params.cursor ?? null,
             getHotFeedRankedAtMs(params.cursor ?? null),
-          );
+          ));
 
   if (!params.viewerId) {
     return publicData;
@@ -1469,9 +1474,15 @@ export async function getPostById(
   params: {
     postId: string;
     viewerId?: string | null;
+    // Pre-fetched viewer-independent post. `undefined` means "not supplied"
+    // (fetch it); a caller that already resolved a missing post shouldn't call.
+    publicPost?: PostResponse;
   },
 ): Promise<PostResponse> {
-  const publicPost = await getPublicPost(db, params.postId);
+  const publicPost =
+    params.publicPost !== undefined
+      ? params.publicPost
+      : await getPublicPost(db, params.postId);
 
   if (!publicPost || !params.viewerId) {
     return publicPost;
@@ -1646,13 +1657,13 @@ export async function getPostCommentsPage(
     postId: string;
     cursor?: string | null;
     viewerId?: string | null;
+    // Pre-fetched viewer-independent page (shared public cache entry).
+    publicData?: CommentsResponse;
   },
 ): Promise<CommentsResponse> {
-  const publicData = await getPublicCommentsPage(
-    db,
-    params.postId,
-    params.cursor ?? null,
-  );
+  const publicData =
+    params.publicData ??
+    (await getPublicCommentsPage(db, params.postId, params.cursor ?? null));
 
   if (!params.viewerId) {
     return publicData;
@@ -1841,9 +1852,12 @@ export async function getNotesPage(
   params: {
     cursor?: string | null;
     viewerId?: string | null;
+    // Pre-fetched viewer-independent page (shared public cache entry).
+    publicData?: NotesResponse;
   },
 ): Promise<NotesResponse> {
-  const publicData = await getPublicNotesPage(db, params.cursor ?? null);
+  const publicData =
+    params.publicData ?? (await getPublicNotesPage(db, params.cursor ?? null));
 
   if (!params.viewerId) {
     return publicData;
