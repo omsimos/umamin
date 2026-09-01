@@ -66,7 +66,7 @@ export function GroupBadge({
       <Link
         href={`/groups/${badge.tag}`}
         aria-label={`${badge.tag} group`}
-        prefetch={false}
+        preload={false}
       >
         {content}
       </Link>
