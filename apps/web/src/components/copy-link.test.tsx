@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastSuccess = vi.fn();
@@ -38,13 +38,15 @@ describe("CopyLink", () => {
   //
   // fireEvent (not userEvent) so the component's navigator.clipboard stub isn't
   // clobbered by userEvent.setup()'s own clipboard override.
-  it("copies the full origin-qualified URL and confirms", () => {
+  it("copies the full origin-qualified URL and confirms", async () => {
     render(<CopyLink username="bob" />);
 
     fireEvent.click(screen.getByRole("button"));
 
     expect(writeText).toHaveBeenCalledTimes(1);
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/to/bob`);
-    expect(toastSuccess).toHaveBeenCalledWith("Copied.");
+    // The confirmation waits on the clipboard write, so it lands a microtask
+    // later — that ordering is the point (a denied write must not "succeed").
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Copied."));
   });
 });

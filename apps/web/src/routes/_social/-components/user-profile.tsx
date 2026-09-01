@@ -26,6 +26,7 @@ import { shareProfile } from "@/components/share-button";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
 import { useAppNavigate } from "@/lib/navigation";
+import { captureException } from "@/lib/posthog";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -117,7 +118,7 @@ export function UserProfile({ username, initialUser }: Props) {
     try {
       return await queryClient.fetchQuery(viewerQueryOptions);
     } catch (error) {
-      console.log(error);
+      captureException(error, { source: "profile viewer" });
       toast.error("Couldn't load profile actions.");
       return null;
     }
@@ -239,7 +240,7 @@ export function UserProfile({ username, initialUser }: Props) {
       toast.error(
         err instanceof Error ? err.message : "Couldn't update follow.",
       );
-      console.log(err);
+      captureException(err, { source: "follow" });
     },
     onSuccess: (res, prevFollowing, ctx) => {
       if (prevFollowing) {
@@ -348,7 +349,7 @@ export function UserProfile({ username, initialUser }: Props) {
       toast.error(
         err instanceof Error ? err.message : "Couldn't update block.",
       );
-      console.log(err);
+      captureException(err, { source: "block" });
     },
     onSuccess: (res, prevBlocked, ctx) => {
       if (prevBlocked) {
@@ -465,7 +466,7 @@ export function UserProfile({ username, initialUser }: Props) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => shareProfile(profile.username)}>
+          <DropdownMenuItem onClick={() => void shareProfile(profile.username)}>
             <span className="flex items-center gap-2">
               <Share2Icon className="size-4" />
               Share

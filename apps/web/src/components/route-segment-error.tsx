@@ -20,7 +20,10 @@ export function RouteSegmentError({
     console.error(error);
     // React error boundaries swallow render errors before window.onerror sees
     // them, so exception autocapture cannot pick this up on its own.
-    captureException(error, { boundary: "route-segment" });
+    captureException(error, {
+      boundary: "route-segment",
+      route: window.location.pathname,
+    });
   }, [error]);
 
   return (

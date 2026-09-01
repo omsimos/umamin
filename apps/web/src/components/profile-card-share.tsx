@@ -17,6 +17,7 @@ import { DownloadIcon, Link2Icon, Loader2Icon, Share2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { captureException } from "@/lib/posthog";
 import {
   type ProfileCardUser,
   renderProfileCard,
@@ -92,10 +93,20 @@ function PreviewBody({
           variant="outline"
           className="rounded-full"
           onClick={() => {
-            navigator.clipboard.writeText(
-              `${window.location.origin}/to/${username}`,
-            );
-            toast.success("Link copied — add it with a link sticker.");
+            // Awaited: an un-awaited write shows the success toast even when
+            // the clipboard write is denied.
+            void navigator.clipboard
+              .writeText(`${window.location.origin}/to/${username}`)
+              .then(() =>
+                toast.success("Link copied — add it with a link sticker."),
+              )
+              .catch((err: unknown) => {
+                if (err instanceof DOMException && err.name === "AbortError") {
+                  return;
+                }
+                captureException(err, { source: "share" });
+                toast.error("Couldn't copy the link.");
+              });
           }}
         >
           <Link2Icon />

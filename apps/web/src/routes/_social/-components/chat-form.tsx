@@ -10,6 +10,7 @@ import { ChatList } from "@/components/chat-list";
 import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { captureException } from "@/lib/posthog";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { PublicUser } from "@/lib/types";
 import { formatContent } from "@/lib/utils";
@@ -42,7 +43,7 @@ export function ChatForm({ user }: { user: PublicUser }) {
       setContent("");
     },
     onError: (err) => {
-      console.log(err);
+      captureException(err, { source: "send message" });
       toast.error(err.message ?? "Couldn't send message.");
     },
   });
@@ -58,7 +59,7 @@ export function ChatForm({ user }: { user: PublicUser }) {
 
       mutation.mutate();
     } catch (error) {
-      console.log(error);
+      captureException(error, { source: "send message session" });
       toast.error("Couldn't verify your session.");
     }
   };
