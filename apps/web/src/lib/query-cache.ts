@@ -85,10 +85,9 @@ export function patchPostAcrossFeed(
     ...previous,
     pages: previous.pages.map((page) => ({
       ...page,
-      data: page.data.map((item) => ({
-        ...item,
-        post: item.post.id === postId ? updater(item.post) : item.post,
-      })),
+      data: page.data.map((item) =>
+        item.post.id === postId ? { ...item, post: updater(item.post) } : item,
+      ),
     })),
   };
 }
