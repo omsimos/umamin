@@ -66,7 +66,12 @@ app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 // the streamed Response body intact through the Hono wrapper. Bindings are
 // stamped for the SSR loaders' in-process API dispatch (server-lib/ssr-env.ts).
 app.all("*", (c) => {
-  setSsrEnv(c.env);
+  try {
+    setSsrEnv(c.env, c.executionCtx);
+  } catch {
+    // Hono throws on the getter when the adapter has no execution context.
+    setSsrEnv(c.env);
+  }
   return startHandler(c.req.raw);
 });
 

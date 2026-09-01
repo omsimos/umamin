@@ -8,8 +8,15 @@ import type { AppEnv } from "./env";
 // request in a Worker isolate shares the same env object.
 let currentEnv: AppEnv | undefined;
 
-export function setSsrEnv(env: AppEnv): void {
+// Structural for the same reason server-lib/posthog.ts is: Hono's
+// ExecutionContext is narrower than workerd's, and only waitUntil is needed.
+type SsrExecutionContext = { waitUntil: (promise: Promise<unknown>) => void };
+
+let currentCtx: SsrExecutionContext | undefined;
+
+export function setSsrEnv(env: AppEnv, ctx?: SsrExecutionContext): void {
   currentEnv = env;
+  currentCtx = ctx;
 }
 
 export function getSsrEnv(): AppEnv {
@@ -17,4 +24,10 @@ export function getSsrEnv(): AppEnv {
     throw new Error("SSR env not set — server entry must call setSsrEnv");
   }
   return currentEnv;
+}
+
+// The dispatched read's background work (error reports, cache puts) is
+// cancelled with the isolate unless it is handed to a REAL waitUntil.
+export function getSsrExecutionContext(): SsrExecutionContext | undefined {
+  return currentCtx;
 }

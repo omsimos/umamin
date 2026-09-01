@@ -149,7 +149,12 @@ export function withPublicRead(
     const cache = (caches as unknown as { default: Cache }).default;
     const cacheKey = buildCacheKey(new URL(c.req.url), cacheKeyParams);
 
-    const hit = await cache.match(cacheKey);
+    let hit: Response | undefined;
+    try {
+      hit = await cache.match(cacheKey);
+    } catch {
+      // A Cache API failure must degrade to an uncached read, not a 500.
+    }
     if (hit) return hit;
 
     try {
@@ -176,7 +181,12 @@ export function withPublicRead(
         maxAgeSeconds > 0 &&
         !res.headers.has("set-cookie")
       ) {
-        c.executionCtx.waitUntil(cache.put(cacheKey, res.clone()));
+        const put = cache.put(cacheKey, res.clone()).catch(() => {});
+        try {
+          c.executionCtx.waitUntil(put);
+        } catch {
+          // No execution context (test adapter) — the put already floats safely.
+        }
       }
       return res;
     } catch (error) {
