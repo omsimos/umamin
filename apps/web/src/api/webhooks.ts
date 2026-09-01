@@ -4,6 +4,7 @@ import {
   type LemonSqueezyOrderEvent,
   verifyWebhookSignature,
 } from "../server-lib/lemonsqueezy";
+import { captureRequestException } from "../server-lib/posthog";
 import { recordProPurchase, refundProPurchase } from "../server-lib/pro";
 import { ctxDb } from "./actions/_shared";
 
@@ -28,6 +29,11 @@ export const webhooksApp = new Hono<AppBindings>().post(
       // Never accept an unverifiable payment event — 500 so a temporarily
       // missing secret becomes a retry, not a dropped grant.
       console.error("[pro] LEMONSQUEEZY_WEBHOOK_SECRET missing");
+      captureRequestException(
+        c,
+        new Error("lemonsqueezy webhook secret missing"),
+        { properties: { webhook: "lemonsqueezy" } },
+      );
       return c.json({ error: "not configured" }, 500);
     }
 
@@ -65,6 +71,17 @@ export const webhooksApp = new Hono<AppBindings>().post(
       console.error(
         `[pro] webhook for foreign store ${order.store_id}, expected ${storeId}`,
       );
+      captureRequestException(
+        c,
+        new Error("lemonsqueezy webhook for foreign store"),
+        {
+          properties: {
+            webhook: "lemonsqueezy",
+            orderId,
+            storeId: String(order.store_id),
+          },
+        },
+      );
       return c.json({ ok: true, skipped: "foreign store" });
     }
 
@@ -88,6 +105,11 @@ export const webhooksApp = new Hono<AppBindings>().post(
         // A purchase made outside the in-app checkout (e.g. a direct store
         // link) has no attribution — surface it for manual support handling.
         console.error(`[pro] order ${orderId} has no user_id custom data`);
+        captureRequestException(
+          c,
+          new Error("lemonsqueezy paid order unattributed"),
+          { properties: { webhook: "lemonsqueezy", orderId } },
+        );
         return c.json({ ok: true, skipped: "unattributed" });
       }
 

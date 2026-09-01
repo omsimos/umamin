@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import type { Db } from "./db";
 import type { AppEnv } from "./env";
 import { sendPushForNotification } from "./notification-push";
+import { captureServerException } from "./posthog";
 
 const PREVIEW_MAX_LENGTH = 80;
 
@@ -106,5 +107,8 @@ export async function notify(
     }
   } catch (err) {
     console.error("notify failed", err);
+    captureServerException(deps.env, deps.defer, err, {
+      properties: { notify: type, recipientId },
+    });
   }
 }

@@ -14,6 +14,16 @@ vi.mock("../src/server-lib/argon2", () => ({
     phc.endsWith(Buffer.from(pw).toString("base64")),
 }));
 
+const { captureRequestException, captureServerException } = vi.hoisted(() => ({
+  captureRequestException: vi.fn(),
+  captureServerException: vi.fn(),
+}));
+
+vi.mock("../src/server-lib/posthog", () => ({
+  captureRequestException,
+  captureServerException,
+}));
+
 import { userTable } from "@umamin/db/schema/user";
 import { hash } from "../src/server-lib/argon2";
 import type { Db } from "../src/server-lib/db";
@@ -34,6 +44,7 @@ describe("auth flows (real libSQL)", () => {
 
   beforeEach(async () => {
     __clearSessionCache();
+    captureRequestException.mockClear();
     db = await makeTestDb();
   });
 
@@ -142,5 +153,32 @@ describe("auth flows (real libSQL)", () => {
       confirmPassword: "password123",
     });
     expect(json).toEqual({ error: "Username already exists" });
+    // A taken username is an expected outcome, not something to triage.
+    expect(captureRequestException).not.toHaveBeenCalled();
+  });
+
+  // Signup is mounted outside action(), so its catch is the only chokepoint an
+  // unmapped failure (a Turso outage mid-signup) can reach.
+  it("reports an unmapped signup failure while keeping the generic error", async () => {
+    const failing = new Proxy(db, {
+      get(target, prop, receiver) {
+        if (prop === "insert") {
+          return () => {
+            throw new Error("turso unreachable");
+          };
+        }
+        return Reflect.get(target, prop, receiver);
+      },
+    }) as Db;
+
+    const { json } = await callJson(buildApp(failing, ANON), "signup", {
+      username: "carol1",
+      password: "password123",
+      confirmPassword: "password123",
+    });
+
+    expect(json).toEqual({ error: "An unexpected error occurred" });
+    expect(captureRequestException).toHaveBeenCalledTimes(1);
+    expect(captureRequestException.mock.calls[0][1]).toBeInstanceOf(Error);
   });
 });
