@@ -32,6 +32,26 @@ async function importAesKey(base64Key: string): Promise<CryptoKey> {
   );
 }
 
+// The env key never changes within an isolate, and a message page decrypts
+// dozens of rows — re-importing per call was the largest avoidable CPU cost on
+// encrypted read paths. Keyed on the raw string so a swapped key still applies.
+let cachedKey: { raw: string; key: Promise<CryptoKey> } | null = null;
+
+function getCachedAesKey(): Promise<CryptoKey> {
+  const raw = getAesKeyFromEnv();
+  if (!cachedKey || cachedKey.raw !== raw) {
+    cachedKey = {
+      raw,
+      // A rejected import must not stay pinned in the cache.
+      key: importAesKey(raw).catch((err) => {
+        cachedKey = null;
+        throw err;
+      }),
+    };
+  }
+  return cachedKey.key;
+}
+
 function splitPayload(payload: string): {
   cipherText: Uint8Array;
   iv: Uint8Array;
@@ -46,8 +66,7 @@ function splitPayload(payload: string): {
 
 export async function aesEncrypt(plainText: string): Promise<string> {
   try {
-    const rawBase64 = getAesKeyFromEnv();
-    const key = await importAesKey(rawBase64);
+    const key = await getCachedAesKey();
 
     const enc = new TextEncoder();
 
@@ -73,8 +92,7 @@ export async function aesEncrypt(plainText: string): Promise<string> {
 
 export async function aesDecrypt(payload: string): Promise<string> {
   try {
-    const rawBase64 = getAesKeyFromEnv();
-    const key = await importAesKey(rawBase64);
+    const key = await getCachedAesKey();
 
     const { cipherText: ctGen, iv: ivGen } = splitPayload(payload);
 
