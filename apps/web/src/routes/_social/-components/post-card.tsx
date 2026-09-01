@@ -31,6 +31,7 @@ import {
   useBurstAction,
 } from "@/hooks/use-burst-action";
 import { Link } from "@/lib/navigation";
+import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
 import {
   patchComment,
@@ -228,7 +229,7 @@ export function PostCard({
       setLiked(prevLiked);
       setLikes(prevLikes);
       toast.error(err instanceof Error ? err.message : "Couldn't update like.");
-      console.log(err);
+      captureException(err, { source: "like" });
     }
   };
 
@@ -272,7 +273,7 @@ export function PostCard({
       toast.error(
         err instanceof Error ? err.message : "Couldn't update repost.",
       );
-      console.log(err);
+      captureException(err, { source: "repost" });
     }
   };
 

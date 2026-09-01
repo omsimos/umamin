@@ -83,3 +83,18 @@ export function captureException(
   if (!ERROR_TRACKING_ENABLED || typeof window === "undefined") return;
   void load().then((posthog) => posthog?.captureException(error, properties));
 }
+
+/**
+ * Stamps the viewer's id on every subsequent client event as a super property.
+ * Deliberately `register`, never `identify` — identify would mint a billable
+ * person profile per viewer (see person_profiles above). The server reports use
+ * the same id as distinctId, so client and server issues join on it.
+ */
+export function registerViewer(userId: string | null | undefined): void {
+  if (!ERROR_TRACKING_ENABLED || typeof window === "undefined") return;
+  void load().then((posthog) => {
+    if (!posthog) return;
+    if (userId) posthog.register({ user_id: userId });
+    else posthog.unregister("user_id");
+  });
+}

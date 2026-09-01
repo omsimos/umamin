@@ -12,6 +12,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { captureException } from "@/lib/posthog";
 import type { FeedAuthorWithBadge, NoteItem } from "@/lib/types";
 import { formatContent } from "@/lib/utils";
 import { sendMessageAction } from "../-lib/actions";
@@ -67,7 +68,7 @@ const ChatForm = ({ note }: ChatFormProps) => {
       setContent("");
     },
     onError: (err) => {
-      console.log(err);
+      captureException(err, { source: "send message" });
       toast.error(err.message ?? "Couldn't send message.");
     },
   });

@@ -1,5 +1,6 @@
 import { hc } from "hono/client";
 import type { ActionsType } from "../api/actions";
+import { captureException } from "./posthog";
 
 // Typed Hono RPC client over the actions contract. Base is the ORIGIN + `/api`
 // (the actions app defines paths at `/actions/...` and is mounted under `/api`),
@@ -42,7 +43,15 @@ export async function callAction<Out>(
     });
 
     return (await res.json()) as ActionResult<Out>;
-  } catch {
+  } catch (err) {
+    // AbortError (unmount/cancel) and being offline are expected outcomes, not
+    // bugs — everything else here is a transport failure the server never saw.
+    const expected =
+      (err instanceof DOMException && err.name === "AbortError") ||
+      (typeof navigator !== "undefined" && navigator.onLine === false);
+    if (!expected) {
+      captureException(err, { source: "callAction", action: name });
+    }
     return { error: "An error occurred" };
   }
 }

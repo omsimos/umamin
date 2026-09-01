@@ -46,6 +46,7 @@ import { GroupBadge } from "@/components/group-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { followUserAction, unfollowUserAction } from "@/lib/actions";
 import { Link, useAppNavigate } from "@/lib/navigation";
+import { captureException } from "@/lib/posthog";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -342,7 +343,7 @@ function FollowUserRow({
       toast.error(
         err instanceof Error ? err.message : "Couldn't update follow.",
       );
-      console.log(err);
+      captureException(err, { source: "follow" });
     },
     onSuccess: (res, prevFollowing) => {
       // Reconcile the no-op responses (already following / already removed) so

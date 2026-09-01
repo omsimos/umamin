@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SongAttachDialog } from "@/components/song-attach-dialog";
 import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
+import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
 import { patchNote, upsertNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse, PublicUser } from "@/lib/types";
@@ -154,7 +155,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       setSongOpen(false);
     },
     onError: (err, _values, ctx) => {
-      console.log(err);
+      captureException(err, { source: "note" });
       queryClient.setQueryData<NoteItem | null>(
         queryKeys.currentNote(),
         ctx?.previousNote,
