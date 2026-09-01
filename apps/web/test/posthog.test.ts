@@ -139,6 +139,18 @@ describe("captureServerException", () => {
     ).not.toThrow();
     expect(captureExceptionImmediate).toHaveBeenCalledTimes(1);
   });
+
+  // workerd rejects waitUntil once the owning request's I/O context is gone; a
+  // throw here would re-enter app.onError and report again.
+  it("does not throw when waitUntil itself throws", () => {
+    const waitUntil = vi.fn(() => {
+      throw new Error("no I/O context");
+    });
+    expect(() =>
+      captureServerException(PROD_ENV, waitUntil, new Error("boom")),
+    ).not.toThrow();
+    expect(captureExceptionImmediate).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("captureRequestException", () => {
@@ -169,6 +181,19 @@ describe("captureRequestException", () => {
     } as any;
     expect(() => captureRequestException(c, new Error("boom"))).not.toThrow();
     expect(captureExceptionImmediate).toHaveBeenCalledTimes(1);
+  });
+
+  // The URL comes off the request, so a malformed one must degrade the property
+  // rather than take down the reporter its caller's catch depends on.
+  it("does not throw on an unparseable request URL", () => {
+    const c = requestContext(PROD_ENV);
+    c.req.url = "not a url";
+    expect(() => captureRequestException(c, new Error("boom"))).not.toThrow();
+    expect(captureExceptionImmediate).toHaveBeenCalledWith(
+      expect.any(Error),
+      undefined,
+      expect.objectContaining({ $current_url: "not a url" }),
+    );
   });
 
   it("stays silent for an unconfigured environment", () => {

@@ -6,7 +6,7 @@ import {
 } from "@umamin/ui/components/alert";
 import { cn } from "@umamin/ui/lib/utils";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { shouldShowInFeedAd } from "@/lib/ad-placements";
 import type { FeedSort } from "@/lib/feed-sort";
@@ -59,7 +59,7 @@ export function PostList({
   const hasResolvedData = data !== undefined;
 
   // De-duplicate feed items across pages.
-  const allItems: FeedItem[] = (() => {
+  const allItems: FeedItem[] = useMemo(() => {
     const flat = data?.pages.flatMap((p) => p.data) ?? [];
     const map = new Map<string, FeedItem>();
     for (const item of flat) {
@@ -70,7 +70,7 @@ export function PostList({
       if (!map.has(key)) map.set(key, item);
     }
     return Array.from(map.values());
-  })();
+  }, [data]);
 
   const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor ?? null;
 

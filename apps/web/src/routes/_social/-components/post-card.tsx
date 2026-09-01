@@ -16,7 +16,7 @@ import {
   MessageSquareTextIcon,
   Repeat2Icon,
 } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { memo, useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ComposeDialog } from "@/components/compose-dialog";
@@ -31,6 +31,7 @@ import {
   useBurstAction,
 } from "@/hooks/use-burst-action";
 import { Link } from "@/lib/navigation";
+import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
 import {
   patchComment,
@@ -71,7 +72,7 @@ type Props = {
   data: PostData | CommentData;
 };
 
-export function PostCard({
+function PostCardImpl({
   data,
   isComment,
   isAuthenticated,
@@ -228,7 +229,7 @@ export function PostCard({
       setLiked(prevLiked);
       setLikes(prevLikes);
       toast.error(err instanceof Error ? err.message : "Couldn't update like.");
-      console.log(err);
+      captureException(err, { source: "like" });
     }
   };
 
@@ -272,7 +273,7 @@ export function PostCard({
       toast.error(
         err instanceof Error ? err.message : "Couldn't update repost.",
       );
-      console.log(err);
+      captureException(err, { source: "repost" });
     }
   };
 
@@ -486,3 +487,8 @@ export function PostCard({
     </div>
   );
 }
+
+// A like/repost tap patches one post in the query cache; without this every
+// loaded card in the feed re-renders. patchPostAcrossFeed keeps unchanged items
+// reference-stable, which is what makes the default shallow compare effective.
+export const PostCard = memo(PostCardImpl);

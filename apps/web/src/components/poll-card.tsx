@@ -17,6 +17,7 @@ import {
   pollPercentages,
   pollTotalVotes,
 } from "@/lib/poll";
+import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
 import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
 import type {
@@ -147,7 +148,7 @@ export function PollCard({ postId, poll, isAuthenticated }: PollCardProps) {
       setMyVote(null);
       setCounts(prevCounts);
       toast.error(err instanceof Error ? err.message : "Couldn't vote.");
-      console.log(err);
+      captureException(err, { source: "poll vote" });
     }
   };
 

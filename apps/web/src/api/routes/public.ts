@@ -17,6 +17,16 @@ import { formatUsername, resolveDb } from "./_shared";
 const notFound = () =>
   Response.json({ error: NOT_FOUND_ERROR }, { status: 404 });
 
+// TTLs for the four entries the PRIVATE routes also read and fill through
+// getCachedPublicPayload (api/routes/posts.ts, api/routes/notes.ts) so one
+// Turso fill serves signed-in and anonymous traffic alike. Both sides must
+// declare the same numbers, hence the shared constants.
+export const PUBLIC_POSTS_MAX_AGE = 180;
+export const PUBLIC_POST_MAX_AGE = 120;
+export const PUBLIC_COMMENTS_MAX_AGE = 120;
+export const PUBLIC_NOTES_MAX_AGE = 180;
+export const PUBLIC_BROWSER_MAX_AGE = 60;
+
 // Anonymous, CDN-cached (Cache API) reads. TTLs preserved from apps/www EXCEPT
 // the public profile: 7d → 300s (plan) — tag purge is gone, so a short TTL plus
 // own-device setQueryData covers freshness.
@@ -25,7 +35,7 @@ export const publicRoutes = new Hono<AppBindings>()
     "/public/posts",
     withPublicRead(
       "fetching public posts",
-      180,
+      PUBLIC_POSTS_MAX_AGE,
       async (req, env) => {
         const requestedSort = normalizeFeedSort(req.query("sort"));
         const sort =
@@ -35,7 +45,7 @@ export const publicRoutes = new Hono<AppBindings>()
           sort,
         });
       },
-      60,
+      PUBLIC_BROWSER_MAX_AGE,
       ["sort", "cursor"],
     ),
   )
@@ -43,13 +53,13 @@ export const publicRoutes = new Hono<AppBindings>()
     "/public/posts/:id/comments",
     withPublicRead(
       "fetching public comments",
-      120,
+      PUBLIC_COMMENTS_MAX_AGE,
       async (req, env) =>
         getPostCommentsPage(resolveDb(env), {
           postId: req.param("id") ?? "",
           cursor: req.query("cursor") ?? null,
         }),
-      60,
+      PUBLIC_BROWSER_MAX_AGE,
       ["cursor"],
     ),
   )
@@ -57,14 +67,14 @@ export const publicRoutes = new Hono<AppBindings>()
     "/public/posts/:id",
     withPublicRead(
       "fetching public post",
-      120,
+      PUBLIC_POST_MAX_AGE,
       async (req, env) => {
         const result = await getPostById(resolveDb(env), {
           postId: req.param("id") ?? "",
         });
         return result ?? notFound();
       },
-      60,
+      PUBLIC_BROWSER_MAX_AGE,
       [],
     ),
   )
@@ -72,10 +82,10 @@ export const publicRoutes = new Hono<AppBindings>()
     "/public/notes",
     withPublicRead(
       "fetching public notes",
-      180,
+      PUBLIC_NOTES_MAX_AGE,
       async (req, env) =>
         getNotesPage(resolveDb(env), { cursor: req.query("cursor") ?? null }),
-      60,
+      PUBLIC_BROWSER_MAX_AGE,
       ["cursor"],
     ),
   )

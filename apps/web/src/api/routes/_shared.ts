@@ -28,7 +28,10 @@ export function readsSessionContext(): MiddlewareHandler<AppBindings> {
   return async (c, next) => {
     let cached: Promise<ResolvedSession> | undefined;
     c.set("getSession", () => {
-      cached ??= resolveSession(c, resolveDb(c.env));
+      cached ??= resolveSession(c, resolveDb(c.env)).then((resolved) => {
+        if (resolved.session) c.set("resolvedUserId", resolved.session.userId);
+        return resolved;
+      });
       return cached;
     });
     await next();

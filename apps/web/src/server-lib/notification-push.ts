@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { PUSH_CATEGORY } from "../lib/push-prefs";
 import type { Db } from "./db";
 import type { AppEnv } from "./env";
+import { captureServerException } from "./posthog";
 import { sendPush } from "./push";
 
 // Web Push fan-out for one in-app notification (ported from apps/www/lib/server/
@@ -146,36 +147,42 @@ export async function sendPushForNotification(
 
   const copy = PUSH_COPY[type] ?? GENERIC_COPY;
 
-  // Preference gate (master + per-category bit; 0 = off). One bounded PK read.
-  const [recipient] = await db
-    .select({ pushPrefs: userTable.pushPrefs })
-    .from(userTable)
-    .where(eq(userTable.id, recipientId))
-    .limit(1);
-  if (!recipient || (recipient.pushPrefs & copy.category) === 0) return;
-
-  // Resolve the actor's username only for types that show one. message/reply
-  // stay anonymous: never read or reveal a sender.
-  let actor: string | null = null;
-  if (!copy.anonymous && actorId) {
-    const [row] = await db
-      .select({ username: userTable.username })
+  // All three reads key off values already in hand, so they run together rather
+  // than as three chained Tokyo round trips per engagement event. The gates
+  // below become post-filters: an opted-out recipient now pays two extra
+  // parallel reads (no extra wall-clock) so every opted-in one saves two hops.
+  const [recipientRows, actorRows, subs] = await Promise.all([
+    // Preference gate (master + per-category bit; 0 = off). One bounded PK read.
+    db
+      .select({ pushPrefs: userTable.pushPrefs })
       .from(userTable)
-      .where(eq(userTable.id, actorId))
-      .limit(1);
-    actor = row?.username ?? null;
-  }
+      .where(eq(userTable.id, recipientId))
+      .limit(1),
+    // Resolve the actor's username only for types that show one. message/reply
+    // stay anonymous: never read or reveal a sender.
+    !copy.anonymous && actorId
+      ? db
+          .select({ username: userTable.username })
+          .from(userTable)
+          .where(eq(userTable.id, actorId))
+          .limit(1)
+      : Promise.resolve([]),
+    // Bounded fan-out: a user's devices (index seek; 1-3 rows typically).
+    db
+      .select({
+        endpoint: pushSubscriptionTable.endpoint,
+        p256dh: pushSubscriptionTable.p256dh,
+        auth: pushSubscriptionTable.auth,
+      })
+      .from(pushSubscriptionTable)
+      .where(eq(pushSubscriptionTable.userId, recipientId)),
+  ]);
 
-  // Bounded fan-out: a user's devices (index seek; 1-3 rows typically).
-  const subs = await db
-    .select({
-      endpoint: pushSubscriptionTable.endpoint,
-      p256dh: pushSubscriptionTable.p256dh,
-      auth: pushSubscriptionTable.auth,
-    })
-    .from(pushSubscriptionTable)
-    .where(eq(pushSubscriptionTable.userId, recipientId));
+  const recipient = recipientRows[0];
+  if (!recipient || (recipient.pushPrefs & copy.category) === 0) return;
   if (subs.length === 0) return;
+
+  const actor = actorRows[0]?.username ?? null;
 
   const payload = {
     title: copy.title(actor),
@@ -212,10 +219,20 @@ export async function sendPushForNotification(
         // statusCode/retryAfterMs separate rate-limiting (429) from
         // misconfiguration (401/403 = VAPID rejected), with the endpoint — a
         // capability URL — truncated rather than logged whole.
+        // Only misconfiguration and unknown throws are reported: 429/5xx is
+        // push-service weather, not something to triage.
         if (err instanceof WebPushError) {
           console.error("web-push send rejected", err.toJSON());
+          if (err.statusCode === 401 || err.statusCode === 403) {
+            captureServerException(env, undefined, err, {
+              properties: { push: "vapid rejected", type },
+            });
+          }
         } else {
           console.error("web-push send failed", err);
+          captureServerException(env, undefined, err, {
+            properties: { push: "send failed", type },
+          });
         }
       }
     }),

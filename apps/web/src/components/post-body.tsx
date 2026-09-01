@@ -52,7 +52,7 @@ export function PostBody({
         <Link
           key={key++}
           href={`/user/${mention}`}
-          prefetch={false}
+          preload={false}
           className="relative z-10 text-pink-500 hover:underline"
         >
           @{mention}

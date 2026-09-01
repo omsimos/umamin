@@ -8,27 +8,37 @@ import {
 import { IdCardIcon, Link2Icon, Share2Icon } from "lucide-react";
 import { type ComponentProps, useState } from "react";
 import { toast } from "sonner";
+import { captureException } from "@/lib/posthog";
 import type { ProfileCardUser } from "@/lib/share-card/profile-card";
 import { ProfileCardShare } from "./profile-card-share";
 
-export function shareProfile(username: string) {
-  try {
-    if (typeof window !== "undefined") {
-      const url = `${window.location.origin}/user/${username}`;
+// A dismissed native share sheet rejects with AbortError — a user choice, not a
+// failure, so it must never mint an issue.
+function isShareAbort(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "AbortError";
+}
 
-      if (
-        navigator.share &&
-        navigator.canShare({ url }) &&
-        import.meta.env.PROD
-      ) {
-        navigator.share({ url });
-      } else {
-        navigator.clipboard.writeText(url);
-        toast.success("Profile link copied.");
-      }
+export async function shareProfile(username: string) {
+  if (typeof window === "undefined") return;
+  const url = `${window.location.origin}/user/${username}`;
+
+  try {
+    if (
+      navigator.share &&
+      navigator.canShare({ url }) &&
+      import.meta.env.PROD
+    ) {
+      await navigator.share({ url });
+    } else {
+      // Awaited: an un-awaited write shows the success toast even when the
+      // clipboard write is denied.
+      await navigator.clipboard.writeText(url);
+      toast.success("Profile link copied.");
     }
   } catch (err) {
-    console.log(err);
+    if (isShareAbort(err)) return;
+    captureException(err, { source: "share" });
+    toast.error("Couldn't share the link.");
   }
 }
 
@@ -50,7 +60,7 @@ export function ShareButton({
       // Icon inherits the button's text color (currentColor) so callers can
       // tune it via className — muted on /to, default-foreground on the banner.
       className={className}
-      onClick={() => shareProfile(username)}
+      onClick={() => void shareProfile(username)}
     >
       <Share2Icon className="size-4" />
     </Button>
@@ -68,11 +78,17 @@ export function ProfileShareMenu({
 }) {
   const [cardOpen, setCardOpen] = useState(false);
 
-  function copyProfileUrl() {
-    navigator.clipboard.writeText(
-      `${window.location.origin}/user/${user.username}`,
-    );
-    toast.success("Profile link copied.");
+  async function copyProfileUrl() {
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/user/${user.username}`,
+      );
+      toast.success("Profile link copied.");
+    } catch (err) {
+      if (isShareAbort(err)) return;
+      captureException(err, { source: "share" });
+      toast.error("Couldn't copy the link.");
+    }
   }
 
   return (
@@ -96,7 +112,7 @@ export function ProfileShareMenu({
               Share your card
             </span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={copyProfileUrl}>
+          <DropdownMenuItem onClick={() => void copyProfileUrl()}>
             <span className="flex items-center gap-2">
               <Link2Icon className="size-4" />
               Copy link

@@ -5,6 +5,7 @@ import {
   type AdPlacement,
   adPlacements,
 } from "@/lib/ad-placements";
+import { captureException } from "@/lib/posthog";
 
 declare global {
   interface Window {
@@ -99,7 +100,7 @@ const AdContainer = ({ placement, className }: Props) => {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
         pushedRef.current = true;
       } catch (err) {
-        console.log(err);
+        captureException(err, { source: "ads" });
         timeoutId = window.setTimeout(initializeAd, 250);
       }
     };

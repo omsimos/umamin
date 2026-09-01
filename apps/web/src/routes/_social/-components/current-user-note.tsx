@@ -43,6 +43,7 @@ import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
 import { TimeAgo } from "@/components/time-ago";
 import { Link } from "@/lib/navigation";
+import { captureException } from "@/lib/posthog";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchNote } from "@/lib/query-cache";
 import { fetchCurrentNote } from "@/lib/query-fetchers";
@@ -85,7 +86,7 @@ export function CurrentUserNote({
       toast.success("Gone like it never happened.");
     },
     onError: (err) => {
-      console.log(err);
+      captureException(err, { source: "note clear" });
       toast.error(err instanceof Error ? err.message : "Couldn't clear note.");
     },
   });

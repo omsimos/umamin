@@ -237,9 +237,9 @@ function withGroupBadge<U extends { equippedGroupId: string | null }>(
 
 /**
  * Resolves the quoted posts embedded in a page of posts: one bounded inArray
- * read for the quoted rows + one for their authors, and only when the page
- * actually contains quotes. A quoted id that resolves to nothing (deleted
- * post) is simply absent from the map — callers render the husk.
+ * read joined to their authors, and only when the page actually contains
+ * quotes. A quoted id that resolves to nothing (deleted post, or an author row
+ * that is gone) is simply absent from the map — callers render the husk.
  */
 async function getQuotedPostMap(
   db: Db,
@@ -256,25 +256,15 @@ async function getQuotedPostMap(
   }
 
   const quoted = await db
-    .select()
+    .select({ post: postTable, author: feedAuthorColumns })
     .from(postTable)
+    .innerJoin(userTable, eq(postTable.authorId, userTable.id))
     .where(inArray(postTable.id, ids));
-  const authorIds = Array.from(new Set(quoted.map((post) => post.authorId)));
-  const authors =
-    authorIds.length > 0
-      ? await db
-          .select(feedAuthorColumns)
-          .from(userTable)
-          .where(inArray(userTable.id, authorIds))
-      : [];
-
-  const authorMap = new Map(authors.map((author) => [author.id, author]));
 
   return new Map(
-    quoted.flatMap((post) => {
-      const author = authorMap.get(post.authorId);
-      return author ? [[post.id, { ...post, author }] as const] : [];
-    }),
+    quoted.map(
+      (row) => [row.post.id, { ...row.post, author: row.author }] as const,
+    ),
   );
 }
 
@@ -1184,10 +1174,15 @@ export async function getPostsPage(
     cursor?: string | null;
     sort?: FeedSort;
     viewerId?: string | null;
+    // Pre-fetched viewer-independent page (the caller already read it from the
+    // shared public cache entry). Never supplied for `following`, which has no
+    // viewer-independent form.
+    publicData?: FeedResponse;
   },
 ): Promise<FeedResponse> {
   const publicData =
-    params.sort === "following" && params.viewerId
+    params.publicData ??
+    (params.sort === "following" && params.viewerId
       ? await getFollowingPostsPage(db, params.viewerId, params.cursor ?? null)
       : params.sort === "latest"
         ? await getPublicLatestPostsPage(db, params.cursor ?? null)
@@ -1196,7 +1191,7 @@ export async function getPostsPage(
             kv,
             params.cursor ?? null,
             getHotFeedRankedAtMs(params.cursor ?? null),
-          );
+          ));
 
   if (!params.viewerId) {
     return publicData;
@@ -1239,24 +1234,26 @@ async function getPublicUserPostsPage(
     ? and(baseCondition, cursorCondition)
     : baseCondition;
 
-  // The author's pin surfaces above the chronological flow on the first page
-  // and is removed from its natural slot on every page (two pk lookups, only
-  // on cache miss and only when a pin exists).
-  const [pinTarget] = await db
-    .select({ pinnedPostId: userTable.pinnedPostId })
-    .from(userTable)
-    .where(eq(userTable.id, authorId))
-    .limit(1);
+  // The author's pin surfaces above the chronological flow on the first page and
+  // is removed from its natural slot on every page. The pin pointer is
+  // independent of the page window, so it rides alongside it rather than ahead
+  // of it; only the pinned ROW below has to wait on the id.
+  const [[pinTarget], rows] = await Promise.all([
+    db
+      .select({ pinnedPostId: userTable.pinnedPostId })
+      .from(userTable)
+      .where(eq(userTable.id, authorId))
+      .limit(1),
+    // Keyset pagination on post_author_created_at_idx (author_id, created_at, id).
+    db
+      .select({ post: postTable, author: feedAuthorColumns })
+      .from(postTable)
+      .innerJoin(userTable, eq(postTable.authorId, userTable.id))
+      .where(whereCondition)
+      .orderBy(desc(postTable.createdAt), desc(postTable.id))
+      .limit(FEED_PAGE_SIZE + 1),
+  ]);
   const pinnedPostId = pinTarget?.pinnedPostId ?? null;
-
-  // Keyset pagination on post_author_created_at_idx (author_id, created_at, id).
-  const rows = await db
-    .select({ post: postTable, author: feedAuthorColumns })
-    .from(postTable)
-    .innerJoin(userTable, eq(postTable.authorId, userTable.id))
-    .where(whereCondition)
-    .orderBy(desc(postTable.createdAt), desc(postTable.id))
-    .limit(FEED_PAGE_SIZE + 1);
 
   // The author guard makes a stale/corrupted pin id (e.g. of someone else's
   // post) render nothing instead of pinning foreign content.
@@ -1399,10 +1396,10 @@ async function getPostViewerOverlay(
   db: Db,
   viewerId: string,
   postId: string,
-  authorId: string,
-  // Opt-in: this overlay doubles as the quoted-post block probe, which never
-  // needs (or should pay for) a poll-vote read.
-  hasPoll = false,
+  // [0] is the post's own author; any extra ids (an embedded quote's author)
+  // are probed for blocks in the SAME round trip rather than a second overlay.
+  authorIds: string[],
+  hasPoll: boolean,
 ) {
   const [blockRows, likedRows, repostRows, voteRows] = await Promise.all([
     db
@@ -1415,10 +1412,10 @@ async function getPostViewerOverlay(
         or(
           and(
             eq(userBlockTable.blockerId, viewerId),
-            eq(userBlockTable.blockedId, authorId),
+            inArray(userBlockTable.blockedId, authorIds),
           ),
           and(
-            eq(userBlockTable.blockerId, authorId),
+            inArray(userBlockTable.blockerId, authorIds),
             eq(userBlockTable.blockedId, viewerId),
           ),
         ),
@@ -1454,8 +1451,18 @@ async function getPostViewerOverlay(
       : [],
   ]);
 
+  // Both columns matter: the viewer is the blocker on one side of the `or` and
+  // the blocked party on the other.
+  const blockedAuthorIds = new Set(
+    blockRows.map((row) =>
+      row.blockerId === viewerId ? row.blockedId : row.blockerId,
+    ),
+  );
+  const mainAuthorId = authorIds[0];
+
   return {
-    isBlocked: blockRows.length > 0,
+    isBlocked: mainAuthorId ? blockedAuthorIds.has(mainAuthorId) : false,
+    blockedAuthorIds,
     isLiked: likedRows.length > 0,
     isReposted: repostRows.length > 0,
     myVoteOptionId: voteRows[0]?.optionId ?? null,
@@ -1467,19 +1474,32 @@ export async function getPostById(
   params: {
     postId: string;
     viewerId?: string | null;
+    // Pre-fetched viewer-independent post. `undefined` means "not supplied"
+    // (fetch it); a caller that already resolved a missing post shouldn't call.
+    publicPost?: PostResponse;
   },
 ): Promise<PostResponse> {
-  const publicPost = await getPublicPost(db, params.postId);
+  const publicPost =
+    params.publicPost !== undefined
+      ? params.publicPost
+      : await getPublicPost(db, params.postId);
 
   if (!publicPost || !params.viewerId) {
     return publicPost;
   }
 
+  // Same husk rule as the feed overlay: an embedded quote from a blocked user
+  // must not leak content its own page would hide from this viewer. The quoted
+  // author rides in the overlay's own block probe — a second overlay call would
+  // chain three more reads it never looks at.
   const overlay = await getPostViewerOverlay(
     db,
     params.viewerId,
     params.postId,
-    publicPost.author.id,
+    [
+      publicPost.author.id,
+      ...(publicPost.quotedPost ? [publicPost.quotedPost.author.id] : []),
+    ],
     !!publicPost.poll,
   );
 
@@ -1487,20 +1507,9 @@ export async function getPostById(
     return null;
   }
 
-  // Same husk rule as the feed overlay: an embedded quote from a blocked user
-  // must not leak content its own page would hide from this viewer. Reuses
-  // the cached overlay probe keyed on the quoted (post, author) pair.
   let quotedPost = publicPost.quotedPost;
-  if (quotedPost) {
-    const quotedOverlay = await getPostViewerOverlay(
-      db,
-      params.viewerId,
-      quotedPost.id,
-      quotedPost.author.id,
-    );
-    if (quotedOverlay.isBlocked) {
-      quotedPost = null;
-    }
+  if (quotedPost && overlay.blockedAuthorIds.has(quotedPost.author.id)) {
+    quotedPost = null;
   }
 
   return {
@@ -1648,13 +1657,13 @@ export async function getPostCommentsPage(
     postId: string;
     cursor?: string | null;
     viewerId?: string | null;
+    // Pre-fetched viewer-independent page (shared public cache entry).
+    publicData?: CommentsResponse;
   },
 ): Promise<CommentsResponse> {
-  const publicData = await getPublicCommentsPage(
-    db,
-    params.postId,
-    params.cursor ?? null,
-  );
+  const publicData =
+    params.publicData ??
+    (await getPublicCommentsPage(db, params.postId, params.cursor ?? null));
 
   if (!params.viewerId) {
     return publicData;
@@ -1843,9 +1852,12 @@ export async function getNotesPage(
   params: {
     cursor?: string | null;
     viewerId?: string | null;
+    // Pre-fetched viewer-independent page (shared public cache entry).
+    publicData?: NotesResponse;
   },
 ): Promise<NotesResponse> {
-  const publicData = await getPublicNotesPage(db, params.cursor ?? null);
+  const publicData =
+    params.publicData ?? (await getPublicNotesPage(db, params.cursor ?? null));
 
   if (!params.viewerId) {
     return publicData;
@@ -2113,18 +2125,14 @@ async function getUserProfileViewerOverlay(
   };
 }
 
-export async function getUserProfileViewerData(
+// Split out so a caller that already holds the profile row (getUserProfileData)
+// doesn't pay a second, byte-identical read for it.
+async function getUserProfileViewerDataForUser(
   db: Db,
-  username: string,
+  user: { id: string },
   viewerId?: string | null,
   opts?: { viewerIsModerator?: boolean },
-): Promise<UserProfileViewerResponse | null> {
-  const user = await getPublicUserProfileData(db, username);
-
-  if (!user) {
-    return null;
-  }
-
+): Promise<UserProfileViewerResponse> {
   if (!viewerId) {
     return {
       currentUserId: null,
@@ -2159,6 +2167,21 @@ export async function getUserProfileViewerData(
   };
 }
 
+export async function getUserProfileViewerData(
+  db: Db,
+  username: string,
+  viewerId?: string | null,
+  opts?: { viewerIsModerator?: boolean },
+): Promise<UserProfileViewerResponse | null> {
+  const user = await getPublicUserProfileData(db, username);
+
+  if (!user) {
+    return null;
+  }
+
+  return getUserProfileViewerDataForUser(db, user, viewerId, opts);
+}
+
 export async function getUserProfileData(
   db: Db,
   username: string,
@@ -2170,11 +2193,11 @@ export async function getUserProfileData(
     return user;
   }
 
-  const overlay = await getUserProfileViewerData(db, username, viewerId);
+  const overlay = await getUserProfileViewerDataForUser(db, user, viewerId);
 
   return {
     ...user,
-    ...(overlay ?? {}),
+    ...overlay,
   };
 }
 

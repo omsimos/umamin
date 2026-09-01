@@ -1,7 +1,14 @@
 import { formatDistanceToNow } from "date-fns";
 import { customAlphabet, nanoid } from "nanoid";
 import { toast } from "sonner";
+import { captureException } from "@/lib/posthog";
 import { hasUmaminPro } from "@/lib/pro";
+
+// A dismissed native share sheet rejects with AbortError — a user choice, not a
+// failure, so it must never mint an issue.
+function isShareAbort(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "AbortError";
+}
 
 export function generateUsernameId(length = 12) {
   const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -115,7 +122,7 @@ async function dataUrlToPngFile(
     const blob = await (await fetch(dataUrl)).blob();
     return new File([blob], filename, { type: "image/png" });
   } catch (err) {
-    console.log(err);
+    captureException(err, { source: "save image encode" });
     return null;
   }
 }
@@ -154,7 +161,7 @@ async function padForSharing(dataUrl: string): Promise<string> {
 
     return canvas.toDataURL("image/png");
   } catch (err) {
-    console.log(err);
+    captureException(err, { source: "save image pad" });
     return dataUrl;
   }
 }
@@ -246,7 +253,9 @@ export const saveImage = async (id: string, isPost?: boolean) => {
     link.click();
     toast.success("Download ready", { id: toastId });
   } catch (err) {
-    console.log(err);
+    if (!isShareAbort(err)) {
+      captureException(err, { source: "save image" });
+    }
     toast.error("An error occured!", { id: toastId });
   } finally {
     excluded.forEach((el, i) => {
@@ -265,7 +274,11 @@ export const sharePost = (postId: string) => {
         navigator.canShare?.({ url }) &&
         import.meta.env.PROD
       ) {
-        navigator.share({ url });
+        navigator.share({ url }).catch((err) => {
+          if (!isShareAbort(err)) {
+            captureException(err, { source: "share" });
+          }
+        });
       } else {
         navigator.clipboard
           .writeText(url)
@@ -274,7 +287,7 @@ export const sharePost = (postId: string) => {
       }
     }
   } catch (err) {
-    console.log(err);
+    captureException(err, { source: "share" });
   }
 };
 

@@ -8,11 +8,22 @@ let sdkImports = 0;
 
 vi.mock("posthog-js", () => {
   sdkImports++;
-  return { default: { init, register: vi.fn(), captureException: vi.fn() } };
+  return {
+    default: {
+      init,
+      register: vi.fn(),
+      unregister: vi.fn(),
+      captureException: vi.fn(),
+    },
+  };
 });
 
-const { ERROR_TRACKING_ENABLED, captureException, initErrorTracking } =
-  await import("@/lib/posthog");
+const {
+  ERROR_TRACKING_ENABLED,
+  captureException,
+  initErrorTracking,
+  registerViewer,
+} = await import("@/lib/posthog");
 
 // Vitest runs with `import.meta.env.PROD === false`, the same shape as
 // `pnpm dev:web`. The point of these is that a non-PROD build never loads
@@ -22,9 +33,13 @@ describe("browser error tracking, unconfigured", () => {
     expect(ERROR_TRACKING_ENABLED).toBe(false);
   });
 
+  // Every public entry point is exercised: each one is a place a missing
+  // ERROR_TRACKING_ENABLED guard would pull the SDK in.
   it("never imports or initializes the SDK", async () => {
     initErrorTracking();
     captureException(new Error("boom"));
+    registerViewer("user_123");
+    registerViewer(null);
     // A macrotask, so a dynamic import would have settled by the assertion.
     await new Promise((resolve) => setTimeout(resolve, 0));
 

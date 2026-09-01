@@ -117,9 +117,14 @@ export const sessionTable = sqliteTable(
       .references(() => userTable.id, { onDelete: "cascade" }),
     expiresAt: integer("expires_at").notNull(),
   },
-  // Backs DELETE ... WHERE user_id = ? (password-change session revocation) and
-  // the user-delete FK cascade lookup.
-  (t) => [index("session_user_idx").on(t.userId)],
+  (t) => [
+    // Backs DELETE ... WHERE user_id = ? (password-change session revocation)
+    // and the user-delete FK cascade lookup.
+    index("session_user_idx").on(t.userId),
+    // Backs the nightly expired-session sweep (DELETE WHERE expires_at < now),
+    // which would otherwise scan the whole table — Turso bills per row scanned.
+    index("session_expires_idx").on(t.expiresAt),
+  ],
 );
 
 export const sessionRelations = relations(sessionTable, ({ one }) => ({

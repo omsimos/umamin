@@ -1,5 +1,7 @@
 import { PostHog } from "posthog-node";
 import type { AppEnv } from "./env";
+import { formatErrorChain } from "./errors";
+import { captureServerException } from "./posthog";
 
 // PostHog feature flags, evaluated in the Worker.
 //
@@ -66,18 +68,32 @@ function forcedOn(env: AppEnv): Set<string> {
   );
 }
 
+// Per-isolate, like the cache above: a client per evaluation was one more
+// object to build (and never dispose) on every cache miss.
+let flagsClient: { key: string; client: PostHog } | null = null;
+
+function getFlagsClient(env: AppEnv): PostHog {
+  const host = env.POSTHOG_HOST ?? "https://us.i.posthog.com";
+  const key = `${env.POSTHOG_PROJECT_TOKEN}:${host}`;
+  if (!flagsClient || flagsClient.key !== key) {
+    flagsClient = {
+      key,
+      client: new PostHog(env.POSTHOG_PROJECT_TOKEN as string, {
+        host,
+        flushAt: 1,
+        flushInterval: 0,
+      }),
+    };
+  }
+  return flagsClient.client;
+}
+
 async function evaluate(
   env: AppEnv,
   distinctId: string,
   keys: readonly string[],
 ): Promise<Record<string, boolean>> {
-  const client = new PostHog(env.POSTHOG_PROJECT_TOKEN as string, {
-    host: env.POSTHOG_HOST ?? "https://us.i.posthog.com",
-    flushAt: 1,
-    flushInterval: 0,
-  });
-
-  const snapshot = await client.evaluateFlags(distinctId, {
+  const snapshot = await getFlagsClient(env).evaluateFlags(distinctId, {
     flagKeys: [...keys],
   });
 
@@ -132,8 +148,13 @@ export async function resolveFlags(
   try {
     const flags = await pending;
     return { ...flags, ...pickForced(forced, keys) };
-  } catch {
+  } catch (err) {
     // Not cached: a transient failure must not pin the surface off for the TTL.
+    console.error("flag evaluation failed:", formatErrorChain(err));
+    captureServerException(env, undefined, err, {
+      distinctId,
+      properties: { flags: [...keys].sort().join(",") },
+    });
     return closed;
   }
 }
@@ -160,4 +181,5 @@ export async function isFlagEnabled(
 export function __clearFlagCache(): void {
   cache.clear();
   inflight.clear();
+  flagsClient = null;
 }

@@ -32,6 +32,7 @@ import {
 } from "@/hooks/use-burst-action";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
+import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
 import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
 import {
@@ -173,7 +174,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
       setLiked(prevLiked);
       setLikes(prevLikes);
       toast.error(err instanceof Error ? err.message : "Couldn't update like.");
-      console.log(err);
+      captureException(err, { source: "like" });
     }
   };
 
@@ -215,7 +216,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
       toast.error(
         err instanceof Error ? err.message : "Couldn't update repost.",
       );
-      console.log(err);
+      captureException(err, { source: "repost" });
     }
   };
 

@@ -71,6 +71,28 @@ describe("aesEncrypt / aesDecrypt", () => {
     );
   });
 
+  // The imported CryptoKey is cached per raw key string. If the cache ignored
+  // the string it would serve the first key forever: the swapped-key round trip
+  // would still "work" and the old payload would still decrypt.
+  it("re-imports when AES_256_GCM_KEY changes", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const original = process.env.AES_256_GCM_KEY;
+    const underOriginal = await aesEncrypt("before swap");
+
+    try {
+      process.env.AES_256_GCM_KEY = await generateBase64Key();
+      const underSecond = await aesEncrypt("after swap");
+      expect(await aesDecrypt(underSecond)).toBe("after swap");
+      // The first key's payload must no longer authenticate.
+      await expect(aesDecrypt(underOriginal)).rejects.toThrow();
+    } finally {
+      process.env.AES_256_GCM_KEY = original;
+    }
+
+    // Swapping back restores the original key, not a stale cached one.
+    expect(await aesDecrypt(underOriginal)).toBe("before swap");
+  });
+
   it("throws when the AES key env var is absent", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const original = process.env.AES_256_GCM_KEY;
