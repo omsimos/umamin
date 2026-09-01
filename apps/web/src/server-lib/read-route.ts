@@ -139,11 +139,72 @@ function buildCacheKey(
 }
 
 /**
+ * Read-through cache for a viewer-INDEPENDENT payload, for PRIVATE handlers
+ * that overlay per-viewer state onto a shared page (feed, post, comments,
+ * notes). The key is the PAIRED PUBLIC route's canonical URL, so signed-in and
+ * anonymous traffic share one entry — and one Turso fill per TTL per colo.
+ *
+ * `maxAgeSeconds`, `browserMaxAgeSeconds` and the KEYS of `params` MUST mirror
+ * the paired `withPublicRead` declaration in api/routes/public.ts; a mismatch
+ * silently mints a second entry instead of sharing one.
+ *
+ * The two leak guards hold by construction: `produce` is a caller-built closure
+ * that must never receive anything session-derived (it feeds a SHARED entry),
+ * and `publicJson` never carries Set-Cookie. Only this payload is cached — the
+ * caller's own response keeps the private/no-store envelope from
+ * withPrivateRead, overlay included.
+ */
+export async function getCachedPublicPayload<T>(
+  c: AppContext,
+  publicPath: string,
+  params: Record<string, string | null | undefined>,
+  maxAgeSeconds: number,
+  browserMaxAgeSeconds: number,
+  produce: () => Promise<T>,
+): Promise<T> {
+  const cache = (caches as unknown as { default: Cache }).default;
+  const requestUrl = new URL(c.req.url);
+  // An SSR loader dispatches in-process with the /api mount prefix stripped
+  // (lib/loader-fetch.ts), and the public route keys off its own request URL —
+  // so mirror this request's prefix or the two never meet on one entry.
+  const prefix = requestUrl.pathname.startsWith("/api/") ? "/api" : "";
+  const url = new URL(requestUrl.origin + prefix + publicPath);
+  for (const [name, value] of Object.entries(params)) {
+    if (value) url.searchParams.set(name, value);
+  }
+  const cacheKey = buildCacheKey(url, Object.keys(params));
+
+  try {
+    const hit = await cache.match(cacheKey);
+    if (hit) return (await hit.json()) as T;
+  } catch {
+    // A Cache API failure must degrade to an uncached read, not a 500.
+  }
+
+  const payload = await produce();
+
+  // A missing entity is never stored: the public route answers that with an
+  // uncached 404, so a cached `null` body here would start answering it 200.
+  if (payload != null && maxAgeSeconds > 0) {
+    const put = cache
+      .put(cacheKey, publicJson(payload, maxAgeSeconds, browserMaxAgeSeconds))
+      .catch(() => {});
+    try {
+      c.executionCtx.waitUntil(put);
+    } catch {
+      // No execution context (test adapter) — the put already floats safely.
+    }
+  }
+
+  return payload;
+}
+
+/**
  * CDN-cached public GET scaffold. `caches.default` (per-colo) replaces Vercel's
  * s-maxage CDN cache (fact #1). Canonical key → handler → waitUntil(cache.put)
  * with s-maxage. Errors (429/500) use maxAge 0 so they're never cached.
  *
- * INVARIANTS (grep-gated to this file): `caches.default` appears ONLY here; a
+ * INVARIANTS (grep-gated): `caches.default` appears ONLY in this file; a
  * response carrying Set-Cookie is NEVER cached (would leak one viewer's cookie
  * to the next). Public handlers cannot receive a session (see PublicReadHandler).
  */
@@ -156,7 +217,7 @@ export function withPublicRead(
 ) {
   return async (c: AppContext): Promise<Response> => {
     // `caches.default` is a Workers global; the DOM lib types `caches` as a bare
-    // CacheStorage, so narrow it here (the sole `caches.default` use, R5 invariant).
+    // CacheStorage, so narrow it here (R5 invariant: this file only).
     const cache = (caches as unknown as { default: Cache }).default;
     const cacheKey = buildCacheKey(new URL(c.req.url), cacheKeyParams);
 
