@@ -18,6 +18,23 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.6.3] - 2026-09-01
+
+### Fixed
+
+- Copying or sharing a profile or post link now confirms only after the copy or share actually succeeds, and closing the share sheet without sharing is no longer treated as an error.
+
+### Performance & Cost
+
+- Liking and unliking posts completes noticeably faster.
+- The feed, post pages, comments, and notes load faster when signed in, and long feeds stay smooth while liking or reposting.
+- Group pages show the member list sooner after opening.
+- Opening the inbox and message threads takes less server time, and background cleanup jobs no longer scan whole tables — lower database usage overall.
+
+### Security & Privacy
+
+- Hardened cached post responses against crafted links.
+
 ## [7.6.2] - 2026-08-26
 
 ### Fixed
@@ -949,6 +966,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.6.3]: https://github.com/omsimos/umamin/compare/v7.6.2...v7.6.3
 [7.6.2]: https://github.com/omsimos/umamin/compare/v7.6.1...v7.6.2
 [7.6.1]: https://github.com/omsimos/umamin/compare/v7.6.0...v7.6.1
 [7.6.0]: https://github.com/omsimos/umamin/compare/v7.5.0...v7.6.0
