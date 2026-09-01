@@ -25,27 +25,32 @@ export const Route = createFileRoute("/_social/post/$id")({
     const me = await loadViewer(context.queryClient);
     const viewerId = me?.user?.id ?? null;
 
-    const post = await loaderFetchPost(id, !!viewerId);
+    // Post and comments both branch on `viewerId` but not on each other, so
+    // they share one round trip's latency instead of chaining. Cost of the
+    // reorder: a 404'd post pays one wasted comments read.
+    const [post] = await Promise.all([
+      loaderFetchPost(id, !!viewerId),
+      context.queryClient.ensureInfiniteQueryData({
+        queryKey: queryKeys.postComments(id),
+        queryFn: ({ pageParam }) =>
+          loaderFetchPostCommentsPage(
+            id,
+            (pageParam as string | null) ?? null,
+            !!viewerId,
+          ),
+        initialPageParam: null as string | null,
+        getNextPageParam: (lastPage: CommentsResponse) =>
+          lastPage.nextCursor ?? null,
+        staleTime: PUBLIC_STALE_TIME,
+      }),
+    ]);
+
     if (!post) {
       throw notFound();
     }
 
     // Prime the per-post cache the cards patch (like/repost/comment writes).
     context.queryClient.setQueryData(queryKeys.post(id), post);
-
-    await context.queryClient.ensureInfiniteQueryData({
-      queryKey: queryKeys.postComments(id),
-      queryFn: ({ pageParam }) =>
-        loaderFetchPostCommentsPage(
-          id,
-          (pageParam as string | null) ?? null,
-          !!viewerId,
-        ),
-      initialPageParam: null as string | null,
-      getNextPageParam: (lastPage: CommentsResponse) =>
-        lastPage.nextCursor ?? null,
-      staleTime: PUBLIC_STALE_TIME,
-    });
 
     return {
       id,

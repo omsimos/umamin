@@ -147,36 +147,42 @@ export async function sendPushForNotification(
 
   const copy = PUSH_COPY[type] ?? GENERIC_COPY;
 
-  // Preference gate (master + per-category bit; 0 = off). One bounded PK read.
-  const [recipient] = await db
-    .select({ pushPrefs: userTable.pushPrefs })
-    .from(userTable)
-    .where(eq(userTable.id, recipientId))
-    .limit(1);
-  if (!recipient || (recipient.pushPrefs & copy.category) === 0) return;
-
-  // Resolve the actor's username only for types that show one. message/reply
-  // stay anonymous: never read or reveal a sender.
-  let actor: string | null = null;
-  if (!copy.anonymous && actorId) {
-    const [row] = await db
-      .select({ username: userTable.username })
+  // All three reads key off values already in hand, so they run together rather
+  // than as three chained Tokyo round trips per engagement event. The gates
+  // below become post-filters: an opted-out recipient now pays two extra
+  // parallel reads (no extra wall-clock) so every opted-in one saves two hops.
+  const [recipientRows, actorRows, subs] = await Promise.all([
+    // Preference gate (master + per-category bit; 0 = off). One bounded PK read.
+    db
+      .select({ pushPrefs: userTable.pushPrefs })
       .from(userTable)
-      .where(eq(userTable.id, actorId))
-      .limit(1);
-    actor = row?.username ?? null;
-  }
+      .where(eq(userTable.id, recipientId))
+      .limit(1),
+    // Resolve the actor's username only for types that show one. message/reply
+    // stay anonymous: never read or reveal a sender.
+    !copy.anonymous && actorId
+      ? db
+          .select({ username: userTable.username })
+          .from(userTable)
+          .where(eq(userTable.id, actorId))
+          .limit(1)
+      : Promise.resolve([]),
+    // Bounded fan-out: a user's devices (index seek; 1-3 rows typically).
+    db
+      .select({
+        endpoint: pushSubscriptionTable.endpoint,
+        p256dh: pushSubscriptionTable.p256dh,
+        auth: pushSubscriptionTable.auth,
+      })
+      .from(pushSubscriptionTable)
+      .where(eq(pushSubscriptionTable.userId, recipientId)),
+  ]);
 
-  // Bounded fan-out: a user's devices (index seek; 1-3 rows typically).
-  const subs = await db
-    .select({
-      endpoint: pushSubscriptionTable.endpoint,
-      p256dh: pushSubscriptionTable.p256dh,
-      auth: pushSubscriptionTable.auth,
-    })
-    .from(pushSubscriptionTable)
-    .where(eq(pushSubscriptionTable.userId, recipientId));
+  const recipient = recipientRows[0];
+  if (!recipient || (recipient.pushPrefs & copy.category) === 0) return;
   if (subs.length === 0) return;
+
+  const actor = actorRows[0]?.username ?? null;
 
   const payload = {
     title: copy.title(actor),
