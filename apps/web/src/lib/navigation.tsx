@@ -23,9 +23,6 @@ type LooseLinkProps = {
   // Per-link override of the router's defaultPreload ("intent" — hover/touch,
   // never viewport, so long feeds don't fire a request per row).
   preload?: false | "intent" | "render" | null;
-  // Swallowed: `prefetch` was next/link's prop name. Kept in the type so a
-  // ported call site that still passes it doesn't leak it onto the <a>.
-  prefetch?: unknown;
   className?: string;
   title?: string;
   target?: string;
@@ -42,12 +39,7 @@ const LooseLink = RouterLink as unknown as ComponentType<
   Record<string, unknown>
 >;
 
-export function Link({
-  to,
-  href,
-  prefetch: _prefetch,
-  ...rest
-}: LooseLinkProps) {
+export function Link({ to, href, ...rest }: LooseLinkProps) {
   return <LooseLink to={to ?? href ?? "#"} {...rest} />;
 }
 

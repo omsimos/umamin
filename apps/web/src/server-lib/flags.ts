@@ -68,18 +68,32 @@ function forcedOn(env: AppEnv): Set<string> {
   );
 }
 
+// Per-isolate, like the cache above: a client per evaluation was one more
+// object to build (and never dispose) on every cache miss.
+let flagsClient: { key: string; client: PostHog } | null = null;
+
+function getFlagsClient(env: AppEnv): PostHog {
+  const host = env.POSTHOG_HOST ?? "https://us.i.posthog.com";
+  const key = `${env.POSTHOG_PROJECT_TOKEN}:${host}`;
+  if (!flagsClient || flagsClient.key !== key) {
+    flagsClient = {
+      key,
+      client: new PostHog(env.POSTHOG_PROJECT_TOKEN as string, {
+        host,
+        flushAt: 1,
+        flushInterval: 0,
+      }),
+    };
+  }
+  return flagsClient.client;
+}
+
 async function evaluate(
   env: AppEnv,
   distinctId: string,
   keys: readonly string[],
 ): Promise<Record<string, boolean>> {
-  const client = new PostHog(env.POSTHOG_PROJECT_TOKEN as string, {
-    host: env.POSTHOG_HOST ?? "https://us.i.posthog.com",
-    flushAt: 1,
-    flushInterval: 0,
-  });
-
-  const snapshot = await client.evaluateFlags(distinctId, {
+  const snapshot = await getFlagsClient(env).evaluateFlags(distinctId, {
     flagKeys: [...keys],
   });
 
@@ -167,4 +181,5 @@ export async function isFlagEnabled(
 export function __clearFlagCache(): void {
   cache.clear();
   inflight.clear();
+  flagsClient = null;
 }
