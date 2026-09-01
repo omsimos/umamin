@@ -12,6 +12,12 @@ vi.mock("posthog-node", () => ({
   },
 }));
 
+const captureServerException = vi.fn();
+vi.mock("@/server-lib/posthog", () => ({
+  captureServerException,
+  captureRequestException: vi.fn(),
+}));
+
 const { FLAG_UMAMIN_PRO } = await import("@/lib/flags");
 const { __clearFlagCache, isFlagEnabled, resolveFlags } = await import(
   "@/server-lib/flags"
@@ -33,6 +39,7 @@ beforeEach(() => {
   __clearFlagCache();
   evaluateFlags.mockReset();
   construct.mockReset();
+  captureServerException.mockReset();
   evaluateFlags.mockResolvedValue(snapshot({ [FLAG_UMAMIN_PRO]: true }));
 });
 
@@ -64,6 +71,18 @@ describe("resolveFlags", () => {
     evaluateFlags.mockRejectedValue(new Error("flags down"));
     const flags = await resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO]);
     expect(flags[FLAG_UMAMIN_PRO]).toBe(false);
+  });
+
+  // Failing closed hides a launched surface, and Workers Logs alone would never
+  // show it — the report is the only signal that it happened.
+  it("reports the evaluation failure against the viewer", async () => {
+    evaluateFlags.mockRejectedValue(new Error("flags down"));
+    await resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO]);
+    expect(captureServerException).toHaveBeenCalledTimes(1);
+    expect(captureServerException.mock.calls[0][3]).toEqual({
+      distinctId: "user_1",
+      properties: { flags: FLAG_UMAMIN_PRO },
+    });
   });
 
   it("resolves false without a project token, and never calls out", async () => {

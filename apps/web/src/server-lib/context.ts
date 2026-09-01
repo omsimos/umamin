@@ -16,6 +16,9 @@ import { type ResolvedSession, resolveSession } from "./session";
 export type AppVariables = {
   getSession: () => Promise<ResolvedSession>;
   db?: () => Db;
+  // Set once the memoized resolver fulfills with a session, so the read
+  // wrappers' catches can attribute a report without awaiting a lookup.
+  resolvedUserId?: string;
 };
 
 export type AppBindings = { Bindings: AppEnv; Variables: AppVariables };
@@ -24,7 +27,10 @@ export function sessionContext(): MiddlewareHandler<AppBindings> {
   return async (c, next) => {
     let cached: Promise<ResolvedSession> | undefined;
     c.set("getSession", () => {
-      cached ??= resolveSession(c, getDb(c.env));
+      cached ??= resolveSession(c, getDb(c.env)).then((resolved) => {
+        if (resolved.session) c.set("resolvedUserId", resolved.session.userId);
+        return resolved;
+      });
       return cached;
     });
     await next();

@@ -1,4 +1,5 @@
 import type { Context, HonoRequest } from "hono";
+import type { AppBindings } from "./context";
 import type { AppEnv } from "./env";
 import { formatErrorChain, INTERNAL_SERVER_ERROR } from "./errors";
 import { extractClientIp } from "./ip";
@@ -59,6 +60,13 @@ function stamp(res: Response, headers: Record<string, string>): Response {
 
 type AppContext = Context<{ Bindings: AppEnv }>;
 
+// This context is typed with bindings only (a public handler must not be able to
+// reach a session), so read the middleware-stashed viewer id through the same
+// narrow cast the read routes use for getSession.
+function viewerIdFrom(c: Context): string | undefined {
+  return (c as Context<AppBindings>).var.resolvedUserId;
+}
+
 // Private handlers get the FULL context (may resolve the viewer session).
 // `null` is a valid body (missing entity) — it still gets the private envelope.
 type PrivateReadHandler = (c: AppContext) => Promise<Response | object | null>;
@@ -89,7 +97,10 @@ export function withPrivateRead(label: string, handler: PrivateReadHandler) {
         : privateJson(result);
     } catch (error) {
       console.error(`Error ${label}:`, formatErrorChain(error));
-      captureRequestException(c, error, { properties: { read: label } });
+      captureRequestException(c, error, {
+        distinctId: viewerIdFrom(c),
+        properties: { read: label },
+      });
       return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
   };
@@ -191,7 +202,10 @@ export function withPublicRead(
       return res;
     } catch (error) {
       console.error(`Error ${label}:`, formatErrorChain(error));
-      captureRequestException(c, error, { properties: { read: label } });
+      captureRequestException(c, error, {
+        distinctId: viewerIdFrom(c),
+        properties: { read: label },
+      });
       return publicJson({ error: INTERNAL_SERVER_ERROR }, 0, 0, 500);
     }
   };

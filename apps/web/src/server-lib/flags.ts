@@ -1,5 +1,7 @@
 import { PostHog } from "posthog-node";
 import type { AppEnv } from "./env";
+import { formatErrorChain } from "./errors";
+import { captureServerException } from "./posthog";
 
 // PostHog feature flags, evaluated in the Worker.
 //
@@ -132,8 +134,13 @@ export async function resolveFlags(
   try {
     const flags = await pending;
     return { ...flags, ...pickForced(forced, keys) };
-  } catch {
+  } catch (err) {
     // Not cached: a transient failure must not pin the surface off for the TTL.
+    console.error("flag evaluation failed:", formatErrorChain(err));
+    captureServerException(env, undefined, err, {
+      distinctId,
+      properties: { flags: [...keys].sort().join(",") },
+    });
     return closed;
   }
 }

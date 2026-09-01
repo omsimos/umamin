@@ -19,9 +19,11 @@ import {
   GOOGLE_OAUTH_STATE_COOKIE_NAME,
 } from "../../server-lib/cookies";
 import { getDb } from "../../server-lib/db";
+import { formatErrorChain } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
 import { buildGoogle } from "../../server-lib/oauth";
+import { captureRequestException } from "../../server-lib/posthog";
 import { checkRateLimit } from "../../server-lib/ratelimit";
 import {
   createSession,
@@ -248,10 +250,14 @@ export const googleAuthApp = new Hono<AppBindings>()
 
       return c.redirect("/inbox", 302);
     } catch (err) {
-      console.error("oauth_callback_failed");
+      console.error("oauth_callback_failed", formatErrorChain(err));
+      // A provider-side OAuth rejection is a user/provider outcome, not a bug.
       if (err instanceof OAuth2RequestError) {
         return c.body(null, 400);
       }
+      captureRequestException(c, err, {
+        properties: { oauth: "google", intent },
+      });
       return c.body(null, 500);
     }
   });

@@ -21,6 +21,7 @@ import {
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { notify } from "../../server-lib/notifications";
 import { AURA_POINTS, awardAura, reverseAura } from "../../server-lib/points";
+import { captureRequestException } from "../../server-lib/posthog";
 import { createR2 } from "../../server-lib/r2";
 import { idSchema } from "../../server-lib/schema";
 import {
@@ -87,6 +88,10 @@ export const getUserProfileHandler = action(
       return await getUserProfileData(ctxDb(c), username, session?.userId);
     } catch (err) {
       console.error("Error fetching user profile:", formatErrorChain(err));
+      captureRequestException(c, err, {
+        distinctId: session?.userId,
+        properties: { action: "getUserProfile" },
+      });
       return null;
     }
   },

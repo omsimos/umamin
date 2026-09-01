@@ -27,6 +27,7 @@ import {
 import { extractClientIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
 import { AURA_POINTS, isAuraEligibleActor } from "../../server-lib/points";
+import { captureRequestException } from "../../server-lib/posthog";
 import { createR2 } from "../../server-lib/r2";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "../../server-lib/ratelimit";
 import { registerSchema } from "../../server-lib/schema";
@@ -130,6 +131,7 @@ export async function loginHandler(c: AppContext): Promise<Response> {
     setSessionCookie(c, token, new Date(session.expiresAt));
   } catch (err) {
     console.error("Login error:", formatErrorChain(err));
+    captureRequestException(c, err, { properties: { action: "login" } });
     return c.json({ error: "An unexpected error occurred" });
   }
 
@@ -193,6 +195,8 @@ export async function signupHandler(c: AppContext): Promise<Response> {
         return c.json({ error: "Username already exists" });
       }
     }
+    console.error("Signup error:", formatErrorChain(err));
+    captureRequestException(c, err, { properties: { action: "signup" } });
     return c.json({ error: "An unexpected error occurred" });
   }
 
@@ -397,6 +401,10 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
     }
   } catch (err) {
     console.error("Account deletion cleanup failed:", formatErrorChain(err));
+    captureRequestException(c, err, {
+      distinctId: user.id,
+      properties: { action: "deleteAccount" },
+    });
   }
 
   return c.json({ redirect: "/login" });

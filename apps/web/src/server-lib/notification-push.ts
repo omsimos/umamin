@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { PUSH_CATEGORY } from "../lib/push-prefs";
 import type { Db } from "./db";
 import type { AppEnv } from "./env";
+import { captureServerException } from "./posthog";
 import { sendPush } from "./push";
 
 // Web Push fan-out for one in-app notification (ported from apps/www/lib/server/
@@ -212,10 +213,20 @@ export async function sendPushForNotification(
         // statusCode/retryAfterMs separate rate-limiting (429) from
         // misconfiguration (401/403 = VAPID rejected), with the endpoint — a
         // capability URL — truncated rather than logged whole.
+        // Only misconfiguration and unknown throws are reported: 429/5xx is
+        // push-service weather, not something to triage.
         if (err instanceof WebPushError) {
           console.error("web-push send rejected", err.toJSON());
+          if (err.statusCode === 401 || err.statusCode === 403) {
+            captureServerException(env, undefined, err, {
+              properties: { push: "vapid rejected", type },
+            });
+          }
         } else {
           console.error("web-push send failed", err);
+          captureServerException(env, undefined, err, {
+            properties: { push: "send failed", type },
+          });
         }
       }
     }),

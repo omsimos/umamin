@@ -1,4 +1,5 @@
 import type { AppEnv } from "./env";
+import { captureServerException } from "./posthog";
 
 // Server-only Lemon Squeezy transport: hosted-checkout creation + webhook
 // signature verification + the payload shapes the webhook route reads.
@@ -61,6 +62,9 @@ export async function createProCheckout(
     });
   } catch (err) {
     console.error("[pro] checkout create request failed", err);
+    captureServerException(env, undefined, err, {
+      properties: { pro: "checkout create" },
+    });
     return null;
   }
 
@@ -68,6 +72,12 @@ export async function createProCheckout(
     console.error(
       `[pro] checkout create failed: ${res.status}`,
       await res.text().catch(() => ""),
+    );
+    captureServerException(
+      env,
+      undefined,
+      new Error(`checkout create failed: ${res.status}`),
+      { properties: { pro: "checkout create" } },
     );
     return null;
   }
