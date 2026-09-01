@@ -1,5 +1,6 @@
+import { postTable } from "@umamin/db/schema/post";
 import { userBlockTable, userTable } from "@umamin/db/schema/user";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ne, type SQL, sql } from "drizzle-orm";
 import type { Db } from "./db";
 
 // "Aura" point weights per engagement event — the single place to tune values.
@@ -116,4 +117,87 @@ export async function reverseAura(
     .returning({ username: userTable.username });
 
   return rows[0]?.username ?? null;
+}
+
+type PointsDb = Pick<Db, "update">;
+
+// A post's author is only knowable SQL-side when the award rides in a db.batch:
+// a batched statement cannot read a sibling's RETURNING, so the beneficiary is
+// resolved by subquery and the self-guard moves into the WHERE.
+type AuraBeneficiary = { userId: string } | { postId: string };
+
+type StatementArgs = {
+  beneficiary: AuraBeneficiary;
+  actorId: string;
+  actorCreatedAt: Date | null | undefined;
+  delta: number;
+};
+
+function beneficiaryWhere(beneficiary: AuraBeneficiary): SQL {
+  if ("userId" in beneficiary) return eq(userTable.id, beneficiary.userId);
+  return sql`${userTable.id} = (SELECT ${postTable.authorId} FROM ${postTable} WHERE ${postTable.id} = ${beneficiary.postId})`;
+}
+
+function guardsVeto({
+  beneficiary,
+  actorId,
+  actorCreatedAt,
+  delta,
+}: StatementArgs) {
+  if (delta <= 0) return true;
+  if ("userId" in beneficiary && beneficiary.userId === actorId) return true;
+  return !isAuraEligibleActor(actorCreatedAt);
+}
+
+/**
+ * Batch-composable awardAura: same guards, but returns the UPDATE statement to
+ * hand to db.batch instead of issuing it, or null when a JS-side guard already
+ * vetoes the award. `gate` is ANDed into the WHERE so the caller can tie the
+ * award to an earlier statement in the same batch having changed a row.
+ * The self-guard and the block probe correlate on the row being updated rather
+ * than a JS literal — equivalent, since the WHERE pins exactly one user row.
+ */
+export function auraAwardStatement(
+  db: PointsDb,
+  args: StatementArgs,
+  gate?: SQL,
+) {
+  if (guardsVeto(args)) return null;
+  const { beneficiary, actorId, delta } = args;
+
+  return db
+    .update(userTable)
+    .set({ points: sql`${userTable.points} + ${delta}` })
+    .where(
+      and(
+        beneficiaryWhere(beneficiary),
+        ne(userTable.id, actorId),
+        sql`NOT EXISTS (
+          SELECT 1 FROM ${userBlockTable}
+          WHERE (${userBlockTable.blockerId} = ${actorId} AND ${userBlockTable.blockedId} = ${userTable.id})
+             OR (${userBlockTable.blockerId} = ${userTable.id} AND ${userBlockTable.blockedId} = ${actorId})
+        )`,
+        gate,
+      ),
+    )
+    .returning({ username: userTable.username });
+}
+
+/** Batch-composable reverseAura — mirrors auraAwardStatement, same clamp at 0
+ *  and the same deliberate absence of a block re-check as reverseAura. */
+export function auraReverseStatement(
+  db: PointsDb,
+  args: StatementArgs,
+  gate?: SQL,
+) {
+  if (guardsVeto(args)) return null;
+  const { beneficiary, actorId, delta } = args;
+
+  return db
+    .update(userTable)
+    .set({
+      points: sql`CASE WHEN ${userTable.points} >= ${delta} THEN ${userTable.points} - ${delta} ELSE 0 END`,
+    })
+    .where(and(beneficiaryWhere(beneficiary), ne(userTable.id, actorId), gate))
+    .returning({ username: userTable.username });
 }
