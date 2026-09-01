@@ -63,7 +63,12 @@ export function captureServerException(
 
   // Without an ExecutionContext the send races the isolate shutdown; still
   // better than dropping it, and the response is never blocked either way.
-  if (waitUntil) waitUntil(sending);
+  try {
+    if (waitUntil) waitUntil(sending);
+  } catch {
+    // waitUntil can throw outside the owning request's I/O context; the send
+    // already has its own .catch, so let it race the isolate instead.
+  }
 }
 
 // Structural rather than Hono's `Context<...>`: the action layer and the read
@@ -93,13 +98,20 @@ export function captureRequestException(
     waitUntil = undefined;
   }
 
-  const url = new URL(c.req.url);
+  // `$current_url` is what PostHog's issue view reads; the query string is
+  // dropped because it carries cursors and lookup ids.
+  let currentUrl: string;
+  try {
+    const url = new URL(c.req.url);
+    currentUrl = url.origin + url.pathname;
+  } catch {
+    currentUrl = c.req.url;
+  }
+
   captureServerException(c.env, waitUntil, error, {
     ...context,
     properties: {
-      // `$current_url` is what PostHog's issue view reads; the query string is
-      // dropped because it carries cursors and lookup ids.
-      $current_url: url.origin + url.pathname,
+      $current_url: currentUrl,
       method: c.req.method,
       ...context.properties,
     },

@@ -40,6 +40,7 @@
 //       the listed statuses to `emptyValue` on the server, so the SSR pass can
 //       redirect/notFound instead of crashing the loader.
 
+// Fallback when the server entry stamped no real context (the unit runner).
 // waitUntil outlives the synthetic request; swallow rejections so a background
 // cache.put failure can't crash the SSR pass.
 function stubExecutionContext(): ExecutionContext {
@@ -77,11 +78,12 @@ export function buildSsrHeaders(source: Headers): Headers {
 }
 
 async function ssrDispatch(path: string): Promise<Response> {
-  const [{ getRequest }, { apiApp }, { getSsrEnv }] = await Promise.all([
-    import("@tanstack/react-start/server"),
-    import("@/api"),
-    import("@/server-lib/ssr-env"),
-  ]);
+  const [{ getRequest }, { apiApp }, { getSsrEnv, getSsrExecutionContext }] =
+    await Promise.all([
+      import("@tanstack/react-start/server"),
+      import("@/api"),
+      import("@/server-lib/ssr-env"),
+    ]);
   const request = getRequest();
   const headers = buildSsrHeaders(request.headers);
   // apiApp is mounted at /api by the outer server — strip the prefix for the
@@ -90,11 +92,19 @@ async function ssrDispatch(path: string): Promise<Response> {
     path.replace(/^\/api(?=\/)/, ""),
     new URL(request.url).origin,
   );
-  return apiApp.fetch(
-    new Request(url, { headers }),
-    getSsrEnv(),
-    stubExecutionContext(),
-  );
+  const real = getSsrExecutionContext();
+  const exec: ExecutionContext = real
+    ? ({
+        waitUntil(promise: Promise<unknown>) {
+          // Forward so error reports / cache puts survive the SSR pass, but
+          // never let a rejection reach the page render.
+          real.waitUntil(promise.catch(() => {}));
+        },
+        passThroughOnException() {},
+        props: {},
+      } as ExecutionContext)
+    : stubExecutionContext();
+  return apiApp.fetch(new Request(url, { headers }), getSsrEnv(), exec);
 }
 
 async function fetchResponse(path: string): Promise<Response> {
