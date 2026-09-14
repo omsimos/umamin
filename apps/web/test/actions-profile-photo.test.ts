@@ -74,15 +74,19 @@ describe("profile photo actions (real libSQL)", () => {
   // path, and everything else is the account's own blobatar. Re-adding either
   // endpoint re-opens the raw <img src> tracking vector the host allowlist
   // used to guard.
-  it.each([
-    "updateAvatarAction",
-    "toggleDisplayPictureAction",
-  ])("no longer exposes %s", async (name) => {
-    await seedUser(db, null);
+  it.each(["updateAvatarAction", "toggleDisplayPictureAction"])(
+    "no longer exposes %s",
+    async (name) => {
+      await seedUser(db, null);
 
-    const res = await call(buildApp(db, authed("user_1")), name, GOOGLE_PHOTO);
+      const res = await call(
+        buildApp(db, authed("user_1")),
+        name,
+        GOOGLE_PHOTO,
+      );
 
-    expect(res.status).toBe(404);
-    expect(await imageUrlOf(db)).toBeNull();
-  });
+      expect(res.status).toBe(404);
+      expect(await imageUrlOf(db)).toBeNull();
+    },
+  );
 });

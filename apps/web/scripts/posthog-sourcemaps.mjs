@@ -58,6 +58,12 @@ const args = [
   // Strips the sourceMappingURL comments and deletes the .map files once they
   // are uploaded. Without it the maps ship, and dist/client is public.
   "--delete-after",
+  // Passed explicitly because the CLI's default flipped from `symbol-set` to
+  // `event` in 0.18.0. `event` is right for a web build — the release id rides
+  // in the chunk as `_posthogReleaseId` and each exception resolves its own,
+  // so symbol sets stay release-independent across continuous deploys.
+  "--release-mode",
+  "event",
 ];
 
 if (releaseVersion) args.push("--release-version", releaseVersion);
