@@ -118,19 +118,18 @@ describe("updateProfileSchema", () => {
     ).toBe(true);
   });
 
-  it.each([
-    MIN_MESSAGE_CHAR_LIMIT - 1,
-    MAX_MESSAGE_CHAR_LIMIT + 1,
-    100.5,
-  ])("rejects invalid message character limit %s", (messageCharLimit) => {
-    expect(
-      updateProfileSchema.safeParse({
-        question: "Ask us anything!",
-        acceptingMessages: true,
-        messageCharLimit,
-      }).success,
-    ).toBe(false);
-  });
+  it.each([MIN_MESSAGE_CHAR_LIMIT - 1, MAX_MESSAGE_CHAR_LIMIT + 1, 100.5])(
+    "rejects invalid message character limit %s",
+    (messageCharLimit) => {
+      expect(
+        updateProfileSchema.safeParse({
+          question: "Ask us anything!",
+          acceptingMessages: true,
+          messageCharLimit,
+        }).success,
+      ).toBe(false);
+    },
+  );
 });
 
 describe("resolveMessageCharLimit", () => {
