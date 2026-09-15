@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { presignPostImagesAction } from "@/lib/actions";
 import {
@@ -22,6 +22,9 @@ export type ImageAttachment = {
 
 type AttachmentMeta = {
   file: File;
+  // Mirrors the item's live object URL so unmount cleanup can revoke it
+  // without reading React state it can no longer see.
+  previewUrl: string;
   compressed?: CompressedImage;
   xhr?: XMLHttpRequest;
 };
@@ -108,13 +111,15 @@ export function useImageAttachments() {
         prev.map((item) => {
           if (item.id !== id) return item;
           URL.revokeObjectURL(item.previewUrl);
+          const previewUrl = URL.createObjectURL(blob);
+          meta.previewUrl = previewUrl;
           return {
             ...item,
             status: "uploading",
             progress: 0,
             width,
             height,
-            previewUrl: URL.createObjectURL(blob),
+            previewUrl,
           };
         }),
       );
@@ -181,12 +186,13 @@ export function useImageAttachments() {
 
     const accepted = images.slice(0, slots).map((file) => {
       const id = crypto.randomUUID();
-      metaRef.current.set(id, { file });
+      const previewUrl = URL.createObjectURL(file);
+      metaRef.current.set(id, { file, previewUrl });
       return {
         id,
         status: "processing" as const,
         progress: 0,
-        previewUrl: URL.createObjectURL(file),
+        previewUrl,
         width: 0,
         height: 0,
       };
@@ -240,6 +246,20 @@ export function useImageAttachments() {
       return [];
     });
   };
+
+  // Unmount (route change, feed re-page) must not leak object URLs or leave
+  // PUTs running for objects nobody will claim. resetAfterPost clears metaRef
+  // first, so a successful post's previews are never revoked here.
+  useEffect(() => {
+    const metas = metaRef.current;
+    return () => {
+      for (const meta of metas.values()) {
+        meta.xhr?.abort();
+        URL.revokeObjectURL(meta.previewUrl);
+      }
+      metas.clear();
+    };
+  }, []);
 
   const isBusy = items.some(
     (item) => item.status === "processing" || item.status === "uploading",
