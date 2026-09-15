@@ -17,7 +17,9 @@ import type { Db } from "../../server-lib/db";
 import {
   formatErrorChain,
   isUniqueConstraintViolation,
+  USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
+import { isReservedModeratorName } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { notify } from "../../server-lib/notifications";
 import { AURA_POINTS, awardAura, reverseAura } from "../../server-lib/points";
@@ -106,10 +108,10 @@ export const generalSettingsHandler = action(
     },
     onError: (err) =>
       isUniqueConstraintViolation(err, "user.username")
-        ? { error: "Username already exists" }
+        ? { error: USERNAME_TAKEN_ERROR }
         : undefined,
   },
-  async (data, { session, c }) => {
+  async (data, { session, user, c }) => {
     const normalized = {
       ...data,
       bio: formatContent(data.bio ?? ""),
@@ -117,6 +119,14 @@ export const generalSettingsHandler = action(
       displayName: data.displayName?.trim() ?? null,
       username: data.username?.trim().toLowerCase(),
     };
+
+    if (
+      normalized.username &&
+      normalized.username !== user?.username &&
+      isReservedModeratorName(normalized.username, c.env.MODERATOR_USERS)
+    ) {
+      return { error: USERNAME_TAKEN_ERROR };
+    }
 
     await ctxDb(c)
       .update(userTable)
