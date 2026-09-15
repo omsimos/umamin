@@ -99,5 +99,7 @@ export function logoutAction() {
 }
 
 export function deleteAccountAction(confirmation: string) {
-  return callAction<{ redirect: string }>("deleteAccount", { confirmation });
+  return callAction<{ redirect: string } | { error: string }>("deleteAccount", {
+    confirmation,
+  });
 }

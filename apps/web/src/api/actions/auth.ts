@@ -1,7 +1,10 @@
-import { groupTable } from "@umamin/db/schema/group";
+import { groupMemberTable, groupTable } from "@umamin/db/schema/group";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
+import type { PostImage } from "@umamin/db/schema/post";
 import {
+  pollOptionTable,
+  pollVoteTable,
   postCommentLikeTable,
   postCommentTable,
   postLikeTable,
@@ -14,13 +17,16 @@ import {
   userTable,
 } from "@umamin/db/schema/user";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 import { hash, verify } from "../../server-lib/argon2";
 import { generateUsernameId } from "../../server-lib/content";
 import { passesCsrf } from "../../server-lib/csrf";
 import {
   ACCESS_BLOCKED_ERROR,
+  ACCOUNT_DELETE_FAILED_ERROR,
   accountSuspendedMessage,
+  DELETE_CONFIRMATION_ERROR,
   formatErrorChain,
   GENERIC_ERROR,
 } from "../../server-lib/errors";
@@ -242,17 +248,18 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
     typeof confirmation !== "string" ||
     confirmation.trim().toLowerCase() !== "delete my account"
   ) {
-    return c.json({ redirect: "/settings?error=invalid_confirmation" });
+    return c.json({ error: DELETE_CONFIRMATION_ERROR }, 400);
   }
 
   if (!(await checkRateLimit(c.env, "auth", `delete-account:${user.id}`))) {
-    return c.json({ redirect: "/settings?error=rate_limited" });
+    return c.json({ error: RATE_LIMIT_ERROR }, 429);
   }
 
-  try {
-    const uid = user.id;
+  const uid = user.id;
 
-    const postImageRows = await db
+  let postImageRows: { images: PostImage[] | null }[] = [];
+  try {
+    postImageRows = await db
       .select({ images: postTable.images })
       .from(postTable)
       .where(and(eq(postTable.authorId, uid), isNotNull(postTable.images)));
@@ -378,33 +385,133 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
           ),
         );
 
+      // group_member cascades on user delete; member_count is denormalized and
+      // clamped at 0 on leave/kick, so an un-decremented count inflates forever
+      // and eventually blocks joins at the cap.
+      await tx
+        .update(groupTable)
+        .set({
+          memberCount: sql`CASE WHEN ${groupTable.memberCount} > 0 THEN ${groupTable.memberCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            groupTable.id,
+            tx
+              .select({ id: groupMemberTable.groupId })
+              .from(groupMemberTable)
+              .where(eq(groupMemberTable.userId, uid)),
+          ),
+        );
+
+      // poll_vote cascades too; both denormalized vote counters must follow.
+      await tx
+        .update(pollOptionTable)
+        .set({
+          voteCount: sql`CASE WHEN ${pollOptionTable.voteCount} > 0 THEN ${pollOptionTable.voteCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            pollOptionTable.id,
+            tx
+              .select({ id: pollVoteTable.optionId })
+              .from(pollVoteTable)
+              .where(eq(pollVoteTable.userId, uid)),
+          ),
+        );
+
+      await tx
+        .update(postTable)
+        .set({
+          pollVoteCount: sql`CASE WHEN ${postTable.pollVoteCount} > 0 THEN ${postTable.pollVoteCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: pollVoteTable.postId })
+              .from(pollVoteTable)
+              .where(eq(pollVoteTable.userId, uid)),
+          ),
+        );
+
+      // The user's quote posts cascade away; the +1 each applied to its quoted
+      // post's repost_count is reversed here, mirroring deletePostHandler for a
+      // single quote. Counted per quote (like commentCount above) so quoting the
+      // same post twice reverses twice.
+      const quotes = alias(postTable, "quote");
+      await tx
+        .update(postTable)
+        .set({
+          repostCount: sql`MAX(0, ${postTable.repostCount} - (SELECT COUNT(*) FROM ${postTable} AS ${quotes} WHERE ${quotes.quotedPostId} = ${postTable.id} AND ${quotes.authorId} = ${uid}))`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: postTable.quotedPostId })
+              .from(postTable)
+              .where(
+                and(
+                  eq(postTable.authorId, uid),
+                  isNotNull(postTable.quotedPostId),
+                ),
+              ),
+          ),
+        );
+
       await tx.delete(messageTable).where(eq(messageTable.receiverId, uid));
       await tx.delete(accountTable).where(eq(accountTable.userId, uid));
       await tx.delete(noteTable).where(eq(noteTable.userId, uid));
       await tx.delete(userTable).where(eq(userTable.id, uid));
     });
+  } catch (err) {
+    // Nothing was removed — reporting the post-delete redirect here would sign
+    // the user out believing an irreversible erasure had happened.
+    console.error("Account deletion failed:", formatErrorChain(err));
+    captureRequestException(c, err, {
+      distinctId: uid,
+      properties: { action: "deleteAccount", phase: "transaction" },
+    });
+    return c.json({ error: ACCOUNT_DELETE_FAILED_ERROR }, 500);
+  }
 
-    // Cookie first — if the cleanup below throws, this device must not keep a
-    // live-looking cookie. invalidateUserSessions clears the in-isolate session
-    // cache so other devices stop validating immediately (rows already cascade-
-    // gone with the user row).
-    deleteSessionCookie(c);
+  // The row is gone (sessions cascaded with it). Clear this device's cookie and
+  // the in-isolate session cache; nothing below may turn success back into an
+  // error.
+  deleteSessionCookie(c);
+  try {
     await invalidateUserSessions(db, uid);
+  } catch (err) {
+    console.error(
+      "Account deletion session cleanup failed:",
+      formatErrorChain(err),
+    );
+    captureRequestException(c, err, {
+      distinctId: uid,
+      properties: { action: "deleteAccount", phase: "sessions" },
+    });
+  }
 
-    const r2 = createR2(c.env);
-    if (r2) {
+  const r2 = createR2(c.env);
+  if (r2) {
+    try {
       await r2.deletePostImages(
         postImageRows.flatMap((row) => row.images ?? []),
       );
       await r2.deleteR2Avatar(user.imageUrl);
       await r2.deleteR2Banner(user.bannerImageUrl);
+    } catch (err) {
+      // Orphaned objects are reclaimed by the bucket lifecycle rule; a falsely
+      // reported deletion would not be.
+      console.error(
+        "Account deletion R2 cleanup failed:",
+        formatErrorChain(err),
+      );
+      captureRequestException(c, err, {
+        distinctId: uid,
+        properties: { action: "deleteAccount", phase: "r2" },
+      });
     }
-  } catch (err) {
-    console.error("Account deletion cleanup failed:", formatErrorChain(err));
-    captureRequestException(c, err, {
-      distinctId: user.id,
-      properties: { action: "deleteAccount" },
-    });
   }
 
   return c.json({ redirect: "/login" });

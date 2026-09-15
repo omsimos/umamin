@@ -27,6 +27,14 @@ export function accountSuspendedMessage(reason?: string | null): string {
     : ACCOUNT_SUSPENDED_ERROR;
 }
 
+// Account deletion: the confirmation phrase is checked server-side (a CSRF or
+// scripted call must not trigger the irreversible delete), and a failed delete
+// must surface as an error — never as the post-delete redirect.
+export const DELETE_CONFIRMATION_ERROR =
+  'Type "delete my account" exactly to confirm.';
+export const ACCOUNT_DELETE_FAILED_ERROR =
+  "We couldn't delete your account. Nothing was removed — please try again.";
+
 // Drizzle surfaces the driver error as `Error.cause`; the constraint class and
 // the offending column both live on that link, not on the wrapper.
 function constraintCause(
