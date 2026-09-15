@@ -1,5 +1,5 @@
 import { noteTable } from "@umamin/db/schema/note";
-import { userTable } from "@umamin/db/schema/user";
+import { accountTable, userTable } from "@umamin/db/schema/user";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readsApp } from "../src/api/routes";
@@ -86,6 +86,35 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       expect(res.status).toBe(200);
       const body = (await res.json()) as { user?: { username?: string } };
       expect(body.user?.username).toBe("alice_xyz");
+    });
+
+    // This payload is dehydrated into the HTML of every signed-in page, so the
+    // Google subject id and the owning userId must not ride along with it.
+    it("ships only the rendered fields of a linked account", async () => {
+      await db.insert(userTable).values({ id: "u2", username: "linked_xyz" });
+      await db.insert(accountTable).values({
+        providerUserId: "google-sub-123",
+        providerId: "google",
+        userId: "u2",
+        email: "me@example.com",
+        picture: "",
+      });
+      const token = generateSessionToken();
+      await createSession(db, token, "u2");
+
+      const res = await fetchApp("/me", {
+        headers: { cookie: `session=${token}` },
+      });
+      const body = (await res.json()) as {
+        user?: { accounts?: Record<string, unknown>[] };
+      };
+      const account = body.user?.accounts?.[0];
+      expect(account).toMatchObject({
+        providerId: "google",
+        email: "me@example.com",
+      });
+      expect(account).not.toHaveProperty("providerUserId");
+      expect(account).not.toHaveProperty("userId");
     });
   });
 
