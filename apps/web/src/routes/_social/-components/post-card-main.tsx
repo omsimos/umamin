@@ -1,4 +1,3 @@
-import type { InfiniteData } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
@@ -33,14 +32,8 @@ import {
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
-import { queryKeys } from "@/lib/query";
-import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
-import {
-  type FeedResponse,
-  type PostData,
-  type PostResponse,
-  toQuotedPostData,
-} from "@/lib/types";
+import { patchPostEverywhere } from "@/lib/query-cache";
+import { type PostData, toQuotedPostData } from "@/lib/types";
 import {
   getActionError,
   hasPlusFeatures,
@@ -74,41 +67,19 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
   // Field-scoped cache writes: like and repost each patch ONLY their own pair so
   // a concurrent like + repost can't clobber each other with stale closure values.
   const syncLikeCache = (nextLiked: boolean, nextLikes: number) => {
-    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
-      { queryKey: queryKeys.postsRoot() },
-      (current) =>
-        patchPostAcrossFeed(current, data.id, (post) => ({
-          ...post,
-          isLiked: nextLiked,
-          likeCount: nextLikes,
-        })),
-    );
-    queryClient.setQueryData<PostResponse>(queryKeys.post(data.id), (current) =>
-      patchPostResponse(current, (post) => ({
-        ...post,
-        isLiked: nextLiked,
-        likeCount: nextLikes,
-      })),
-    );
+    patchPostEverywhere(queryClient, data.id, (post) => ({
+      ...post,
+      isLiked: nextLiked,
+      likeCount: nextLikes,
+    }));
   };
 
   const syncRepostCache = (nextReposted: boolean, nextReposts: number) => {
-    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
-      { queryKey: queryKeys.postsRoot() },
-      (current) =>
-        patchPostAcrossFeed(current, data.id, (post) => ({
-          ...post,
-          isReposted: nextReposted,
-          repostCount: nextReposts,
-        })),
-    );
-    queryClient.setQueryData<PostResponse>(queryKeys.post(data.id), (current) =>
-      patchPostResponse(current, (post) => ({
-        ...post,
-        isReposted: nextReposted,
-        repostCount: nextReposts,
-      })),
-    );
+    patchPostEverywhere(queryClient, data.id, (post) => ({
+      ...post,
+      isReposted: nextReposted,
+      repostCount: nextReposts,
+    }));
   };
 
   useEffect(() => {
