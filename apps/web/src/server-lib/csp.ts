@@ -5,7 +5,8 @@ import type { AppEnv } from "./env";
 // dropped (no Vercel toolbar on Workers); everything else — AdSense/GTM, the R2
 // upload connect-src, and the /notes music-embed frame-src origins — is kept.
 // CSP stays Report-Only (enforcing it once broke ads); flip the header name to
-// "Content-Security-Policy" once the console is clean.
+// "Content-Security-Policy" once the console is clean. The framing/object/base
+// directives are additionally sent ENFORCED — they are ad-independent.
 
 function buildCsp(env: AppEnv, isProd: boolean): string {
   const scriptSrc = [
@@ -82,6 +83,11 @@ export function securityHeaders(
 ): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Security-Policy-Report-Only": buildCsp(env, isProd),
+    // Enforced subset: none of these directives touch ad scripts, so they can
+    // ship as a real policy while script-src stays report-only (see header).
+    "Content-Security-Policy":
+      "frame-ancestors 'self'; object-src 'none'; base-uri 'self'",
+    "X-Frame-Options": "SAMEORIGIN",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "X-Content-Type-Options": "nosniff",
     "Permissions-Policy":
