@@ -81,7 +81,6 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
 
       const optimisticNote: NoteItem = {
         id: optimisticId,
-        userId: currentUser.id,
         content: nextValues.content ?? "",
         isAnonymous: nextValues.isAnonymous ?? false,
         // Server resets reactions on every upsert — mirror that optimistically.
