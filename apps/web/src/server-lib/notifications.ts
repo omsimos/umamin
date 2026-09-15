@@ -3,6 +3,7 @@ import {
   notificationTable,
 } from "@umamin/db/schema/notification";
 import { sql } from "drizzle-orm";
+import { hasBlockBetween } from "./blocks";
 import type { Db } from "./db";
 import type { AppEnv } from "./env";
 import { sendPushForNotification } from "./notification-push";
@@ -17,6 +18,9 @@ type NotifyParams = {
   actorId?: string | null;
   // Plaintext only (post/comment content) — never encrypted message content.
   preview?: string | null;
+  // Set by callers that already probed user_block in their own write
+  // (like/comment/vote), so notify doesn't spend a second round trip on it.
+  blockChecked?: boolean;
 };
 
 export type NotifyDeps = {
@@ -48,6 +52,8 @@ export function countUnseen(
  * The Next.js `updateTag` cache busts are gone (authed reads are direct Turso
  * now → read-your-writes); the best-effort Web Push runs off the response's
  * critical path via `deps.defer` (ctx.waitUntil).
+ * Suppressed when a block exists in either direction between actor and
+ * recipient; the push fan-out sits behind the same guard.
  */
 export async function notify(
   deps: NotifyDeps,
@@ -57,10 +63,27 @@ export async function notify(
     targetId = "",
     actorId = null,
     preview = null,
+    blockChecked = false,
   }: NotifyParams,
 ): Promise<void> {
   if (actorId === recipientId) {
     return;
+  }
+
+  if (actorId && !blockChecked) {
+    try {
+      if (await hasBlockBetween(deps.db, recipientId, actorId)) {
+        return;
+      }
+    } catch (err) {
+      // Best-effort like the insert below: a failed probe drops the
+      // notification rather than risking one that a block should suppress.
+      console.error("notify block probe failed", err);
+      captureServerException(deps.env, deps.defer, err, {
+        properties: { notify: type, recipientId },
+      });
+      return;
+    }
   }
 
   const trimmedPreview = preview ? preview.slice(0, PREVIEW_MAX_LENGTH) : null;

@@ -88,6 +88,7 @@ import type {
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "../lib/types";
+import { noBlockBetween } from "./blocks";
 import { parseCursor } from "./cursor";
 import type { Db } from "./db";
 import { getRedisHotPostIdsPage, isRedisHotCursor } from "./feed-rank";
@@ -2753,7 +2754,15 @@ export async function getNotificationBadgeData(
     db
       .select({ updatedAt: notificationTable.updatedAt })
       .from(notificationTable)
-      .where(eq(notificationTable.recipientId, viewerId))
+      .where(
+        and(
+          eq(notificationTable.recipientId, viewerId),
+          or(
+            isNull(notificationTable.actorId),
+            noBlockBetween(notificationTable.actorId, viewerId),
+          ),
+        ),
+      )
       .orderBy(desc(notificationTable.updatedAt), desc(notificationTable.id))
       .limit(NOTIFICATION_BADGE_LIMIT),
   ]);
@@ -2788,7 +2797,15 @@ export async function getNotificationsPage(
       )
     : undefined;
 
-  const baseCondition = eq(notificationTable.recipientId, params.viewerId);
+  // Rows from an actor the viewer has since blocked disappear on the next read
+  // — historical notifications are hidden rather than unwound.
+  const baseCondition = and(
+    eq(notificationTable.recipientId, params.viewerId),
+    or(
+      isNull(notificationTable.actorId),
+      noBlockBetween(notificationTable.actorId, params.viewerId),
+    ),
+  );
 
   // The seen watermark rides the first page (async-parallel, no waterfall) so
   // the client can mark which rows are new. Read from the user row directly —

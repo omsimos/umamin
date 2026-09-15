@@ -7,8 +7,8 @@ import {
   postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
-import { userTable } from "@umamin/db/schema/user";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
+import { and, eq, ne, or, sql } from "drizzle-orm";
 import * as z from "zod";
 import {
   canPostImages,
@@ -17,6 +17,7 @@ import {
   postImageInputSchema,
 } from "../../lib/post-images";
 import { action } from "../../server-lib/action";
+import { noBlockBetween } from "../../server-lib/blocks";
 import { hasPlusPerks } from "../../server-lib/content";
 import { getPostById } from "../../server-lib/data";
 import { isModerator } from "../../server-lib/moderation";
@@ -316,6 +317,21 @@ export const createCommentHandler = action(
 
     const formatted = content.replace(/(\r\n|\n|\r){2,}/g, "\n\n").trim();
 
+    const [target] = await db
+      .select({
+        authorId: postTable.authorId,
+        blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+      })
+      .from(postTable)
+      .where(eq(postTable.id, postId))
+      .limit(1);
+
+    // The post is already invisible to a blocked viewer, so an attempt to
+    // comment on it reads as a missing post — same outcome as a bad id.
+    if (!target || target.blocked === 1) {
+      return { error: "Post not found" };
+    }
+
     await db.transaction(async (tx) => {
       const [comment] = await tx
         .insert(postCommentTable)
@@ -365,6 +381,7 @@ export const createCommentHandler = action(
           targetId: postId,
           actorId: session.userId,
           preview: createdComment.content,
+          blockChecked: true,
         },
       );
     }
@@ -484,9 +501,33 @@ export const addLikeHandler = action(
         }),
     ] as const;
 
-    const [inserted, bumped] = award
-      ? await db.batch([...statements, award])
-      : await db.batch(statements);
+    // Rides in the same batch, so the like costs no extra round trip. It must
+    // be the LAST statement: PREV_CHANGED reads changes() from the statement
+    // directly before it, so nothing may separate insert → bump → award.
+    const blockProbe = db
+      .select({ id: userBlockTable.id })
+      .from(userBlockTable)
+      .innerJoin(postTable, eq(postTable.id, postId))
+      .where(
+        or(
+          and(
+            eq(userBlockTable.blockerId, postTable.authorId),
+            eq(userBlockTable.blockedId, session.userId),
+          ),
+          and(
+            eq(userBlockTable.blockerId, session.userId),
+            eq(userBlockTable.blockedId, postTable.authorId),
+          ),
+        ),
+      )
+      .limit(1);
+
+    const results = award
+      ? await db.batch([...statements, award, blockProbe])
+      : await db.batch([...statements, blockProbe]);
+
+    const [inserted, bumped] = results;
+    const blockedRows = results[results.length - 1];
 
     if (inserted.length === 0) {
       return { success: true, alreadyLiked: true } as const;
@@ -494,7 +535,7 @@ export const addLikeHandler = action(
 
     const likedPost = bumped[0];
 
-    if (likedPost) {
+    if (likedPost && blockedRows.length === 0) {
       await notify(
         { db, env: c.env, defer: defer(c) },
         {
@@ -503,6 +544,7 @@ export const addLikeHandler = action(
           targetId: postId,
           actorId: session.userId,
           preview: likedPost.content,
+          blockChecked: true,
         },
       );
     }
@@ -526,6 +568,7 @@ export const votePollHandler = action(
         authorId: postTable.authorId,
         content: postTable.content,
         pollEndsAt: postTable.pollEndsAt,
+        blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
       })
       .from(pollOptionTable)
       .innerJoin(postTable, eq(pollOptionTable.postId, postTable.id))
@@ -587,7 +630,7 @@ export const votePollHandler = action(
       return { success: true, votedOptionId: optionId } as const;
     });
 
-    if (!("alreadyVoted" in result)) {
+    if (!("alreadyVoted" in result) && target.blocked === 0) {
       await notify(
         { db, env: c.env, defer: defer(c) },
         {
@@ -596,6 +639,7 @@ export const votePollHandler = action(
           targetId: postId,
           actorId: session.userId,
           preview: target.content,
+          blockChecked: true,
         },
       );
     }

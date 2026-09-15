@@ -1,5 +1,5 @@
 import { notificationTable } from "@umamin/db/schema/notification";
-import { userTable } from "@umamin/db/schema/user";
+import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "../src/server-lib/db";
@@ -90,6 +90,34 @@ describe("notify", () => {
     const byTarget = new Map(all.map((r) => [r.targetId, r]));
     expect(byTarget.get("p1")?.preview).toBe("x".repeat(80));
     expect(byTarget.get("p2")?.preview).toBeNull();
+  });
+
+  it("drops the notification when the recipient has blocked the actor", async () => {
+    await db
+      .insert(userBlockTable)
+      .values({ blockerId: "u2", blockedId: "u1" });
+    await notify(
+      { db, env },
+      { recipientId: "u2", type: "like", targetId: "p1", actorId: "u1" },
+    );
+    expect(await rows(db, "u2")).toHaveLength(0);
+  });
+
+  it("drops the notification when the actor has blocked the recipient", async () => {
+    await db
+      .insert(userBlockTable)
+      .values({ blockerId: "u1", blockedId: "u2" });
+    await notify(
+      { db, env },
+      {
+        recipientId: "u2",
+        type: "comment",
+        targetId: "p1",
+        actorId: "u1",
+        preview: "hi",
+      },
+    );
+    expect(await rows(db, "u2")).toHaveLength(0);
   });
 
   it("swallows write failures so the parent action never fails", async () => {
