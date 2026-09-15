@@ -304,6 +304,24 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       expect(await res.json()).toEqual({ error: "Not found" });
     });
   });
+
+  describe("feed cursors", () => {
+    it("treats a non-finite latest cursor as page one instead of 500ing", async () => {
+      const res = await fetchApp(
+        "/public/posts?sort=latest&cursor=Infinity.1.x",
+      );
+      expect(res.status).toBe(200);
+      expect(await res.json()).toHaveProperty("data");
+    });
+
+    it("treats a non-finite hot cursor as page one instead of 500ing", async () => {
+      const res = await fetchApp(
+        "/public/posts?sort=hot&cursor=Infinity.1.2.x",
+      );
+      expect(res.status).toBe(200);
+      expect(await res.json()).toHaveProperty("data");
+    });
+  });
 });
 
 // Hono percent-decodes route params where Next handed them raw, so the `%40`
