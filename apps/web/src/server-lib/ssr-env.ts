@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { AppEnv } from "./env";
 
 // Bindings holder for SSR loader dispatch (lib/loader-fetch.ts). The outer
@@ -10,13 +11,26 @@ let currentEnv: AppEnv | undefined;
 
 // Structural for the same reason server-lib/posthog.ts is: Hono's
 // ExecutionContext is narrower than workerd's, and only waitUntil is needed.
-type SsrExecutionContext = { waitUntil: (promise: Promise<unknown>) => void };
+export type SsrExecutionContext = {
+  waitUntil: (promise: Promise<unknown>) => void;
+};
 
-let currentCtx: SsrExecutionContext | undefined;
+// Unlike env, the execution context is PER REQUEST, and one isolate serves
+// many requests at once — a module variable would hand request A's loader
+// background work to whichever request set it last, and workerd refuses I/O on
+// behalf of a foreign request. AsyncLocalStorage follows the request's own
+// async continuation (loaders included) instead.
+const ctxStorage = new AsyncLocalStorage<SsrExecutionContext>();
 
-export function setSsrEnv(env: AppEnv, ctx?: SsrExecutionContext): void {
+export function setSsrEnv(env: AppEnv): void {
   currentEnv = env;
-  currentCtx = ctx;
+}
+
+export function runWithSsrContext<T>(
+  ctx: SsrExecutionContext | undefined,
+  fn: () => T,
+): T {
+  return ctx ? ctxStorage.run(ctx, fn) : fn();
 }
 
 export function getSsrEnv(): AppEnv {
@@ -29,5 +43,5 @@ export function getSsrEnv(): AppEnv {
 // The dispatched read's background work (error reports, cache puts) is
 // cancelled with the isolate unless it is handed to a REAL waitUntil.
 export function getSsrExecutionContext(): SsrExecutionContext | undefined {
-  return currentCtx;
+  return ctxStorage.getStore();
 }

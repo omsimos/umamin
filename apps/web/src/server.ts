@@ -22,7 +22,11 @@ import {
   captureRequestException,
   captureServerException,
 } from "./server-lib/posthog";
-import { setSsrEnv } from "./server-lib/ssr-env";
+import {
+  runWithSsrContext,
+  type SsrExecutionContext,
+  setSsrEnv,
+} from "./server-lib/ssr-env";
 
 // TanStack Start SSR handler. `createStartHandler` returns a universal
 // (request) => Response fetch function; the outer Hono app owns middleware/cron
@@ -64,15 +68,18 @@ app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
 // TanStack Start owns everything else (SSR pages). Passing the raw Request keeps
 // the streamed Response body intact through the Hono wrapper. Bindings are
-// stamped for the SSR loaders' in-process API dispatch (server-lib/ssr-env.ts).
+// stamped for the SSR loaders' in-process API dispatch; the execution context is
+// scoped to THIS request's async continuation (server-lib/ssr-env.ts) so
+// concurrent requests never share it.
 app.all("*", (c) => {
+  setSsrEnv(c.env);
+  let ctx: SsrExecutionContext | undefined;
   try {
-    setSsrEnv(c.env, c.executionCtx);
+    ctx = c.executionCtx;
   } catch {
     // Hono throws on the getter when the adapter has no execution context.
-    setSsrEnv(c.env);
   }
-  return startHandler(c.req.raw);
+  return runWithSsrContext(ctx, () => startHandler(c.req.raw));
 });
 
 // A cron has no client to surface a failure to, so a rejected job is otherwise
