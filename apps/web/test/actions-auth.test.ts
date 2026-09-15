@@ -157,6 +157,22 @@ describe("auth flows (real libSQL)", () => {
     expect(captureRequestException).not.toHaveBeenCalled();
   });
 
+  it("refuses to sign up with a username on the moderator roster", async () => {
+    const app = buildApp(db, ANON);
+    const { json } = await callJson(
+      app,
+      "signup",
+      {
+        username: "modname",
+        password: "password123",
+        confirmPassword: "password123",
+      },
+      { MODERATOR_USERS: "modname" },
+    );
+    expect(json).toEqual({ error: "Username already exists" });
+    expect(await db.select().from(userTable)).toHaveLength(0);
+  });
+
   // Signup is mounted outside action(), so its catch is the only chokepoint an
   // unmapped failure (a Turso outage mid-signup) can reach.
   it("reports an unmapped signup failure while keeping the generic error", async () => {

@@ -26,3 +26,15 @@ export function isModerator(
   if (!user?.username) return false;
   return parseModerators(moderatorUsers).has(user.username);
 }
+
+/**
+ * Moderator power is a match on the roster string, and usernames are
+ * user-editable. Reserving every roster name keeps a moderator's former name
+ * from being claimed (and its privileges inherited) after a rename or delete.
+ */
+export function isReservedModeratorName(
+  username: string,
+  moderatorUsers: string | null | undefined,
+): boolean {
+  return parseModerators(moderatorUsers).has(username.trim().toLowerCase());
+}

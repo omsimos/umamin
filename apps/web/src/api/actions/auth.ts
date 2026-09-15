@@ -29,9 +29,11 @@ import {
   DELETE_CONFIRMATION_ERROR,
   formatErrorChain,
   GENERIC_ERROR,
+  USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
+import { isReservedModeratorName } from "../../server-lib/moderation";
 import { AURA_POINTS, isAuraEligibleActor } from "../../server-lib/points";
 import { captureRequestException } from "../../server-lib/posthog";
 import { createR2 } from "../../server-lib/r2";
@@ -164,6 +166,15 @@ export async function signupHandler(c: AppContext): Promise<Response> {
     return c.json({ error: "Invalid input" });
   }
 
+  if (
+    isReservedModeratorName(
+      validatedFields.data.username,
+      c.env.MODERATOR_USERS,
+    )
+  ) {
+    return c.json({ error: USERNAME_TAKEN_ERROR });
+  }
+
   const ip = extractClientIp((n) => c.req.header(n));
   if (await isIpDenied(c.env.KV, ip)) {
     return c.json({ error: ACCESS_BLOCKED_ERROR });
@@ -198,7 +209,7 @@ export async function signupHandler(c: AppContext): Promise<Response> {
         cause.code === "SQLITE_CONSTRAINT" &&
         cause.message?.includes("user.username")
       ) {
-        return c.json({ error: "Username already exists" });
+        return c.json({ error: USERNAME_TAKEN_ERROR });
       }
     }
     console.error("Signup error:", formatErrorChain(err));

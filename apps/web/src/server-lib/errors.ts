@@ -35,6 +35,10 @@ export const DELETE_CONFIRMATION_ERROR =
 export const ACCOUNT_DELETE_FAILED_ERROR =
   "We couldn't delete your account. Nothing was removed — please try again.";
 
+// Also returned for a name reserved by the moderator roster, so a reserved name
+// is indistinguishable from a taken one (the roster must not be probeable).
+export const USERNAME_TAKEN_ERROR = "Username already exists";
+
 // Drizzle surfaces the driver error as `Error.cause`; the constraint class and
 // the offending column both live on that link, not on the wrapper.
 function constraintCause(
