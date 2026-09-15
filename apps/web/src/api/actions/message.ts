@@ -179,6 +179,7 @@ export const createReplyHandler = action(
             type: "reply",
             targetId: messageId,
             actorId: session.userId,
+            blockChecked: true,
           },
         );
       }
@@ -231,6 +232,7 @@ export const createReplyHandler = action(
             type: "reply",
             targetId: messageId,
             actorId: session.userId,
+            blockChecked: true,
           },
         );
       }
