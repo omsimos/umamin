@@ -2,7 +2,10 @@ import { postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "../src/server-lib/db";
-import { recomputeHotFeed } from "../src/server-lib/feed-rank";
+import {
+  getRedisHotPostIdsPage,
+  recomputeHotFeed,
+} from "../src/server-lib/feed-rank";
 import { getHotScore } from "../src/server-lib/hot-score";
 import { makeTestDb } from "./helpers/db";
 
@@ -15,7 +18,11 @@ function fakeKv() {
   const store = new Map<string, string>();
   return {
     kv: {
-      get: async (_key: string) => null,
+      get: async (key: string, opts?: { type?: string }) => {
+        const raw = store.get(key);
+        if (raw === undefined) return null;
+        return opts?.type === "json" ? JSON.parse(raw) : raw;
+      },
       put: async (key: string, value: string) => {
         store.set(key, value);
       },
@@ -110,5 +117,29 @@ describe("recomputeHotFeed", () => {
     const { kv, read } = fakeKv();
     await recomputeHotFeed(db, kv);
     expect(read(HOT_FEED_KEY)).toEqual([]);
+  });
+});
+
+describe("getRedisHotPostIdsPage", () => {
+  it("serves the trailing short page instead of dropping it", async () => {
+    const { kv } = fakeKv();
+    await kv.put(
+      "feed:hot:v2",
+      JSON.stringify(Array.from({ length: 17 }, (_, i) => `p${i}`)),
+    );
+
+    const first = await getRedisHotPostIdsPage(kv, null, 15, 1);
+    expect(first?.ids).toHaveLength(15);
+    expect(first?.nextCursor).toBe("rh.15");
+
+    const last = await getRedisHotPostIdsPage(kv, "rh.15", 15, 1);
+    expect(last?.ids).toEqual(["p15", "p16"]);
+    expect(last?.nextCursor).toBeNull();
+  });
+
+  it("still falls back past the end of the list", async () => {
+    const { kv } = fakeKv();
+    await kv.put("feed:hot:v2", JSON.stringify(["p0", "p1"]));
+    expect(await getRedisHotPostIdsPage(kv, "rh.15", 15, 1)).toBeNull();
   });
 });
