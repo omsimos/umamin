@@ -177,6 +177,17 @@ describe("middleware", () => {
       );
     });
 
+    it("enforces framing protection independently of the report-only policy", async () => {
+      const res = await fetch(appWith(securityHeadersMiddleware()), "/feed");
+      expect(res.headers.get("content-security-policy")).toBe(
+        "frame-ancestors 'self'; object-src 'none'; base-uri 'self'",
+      );
+      expect(res.headers.get("x-frame-options")).toBe("SAMEORIGIN");
+      expect(res.headers.get("content-security-policy-report-only")).toContain(
+        "script-src",
+      );
+    });
+
     // posthog-js posts exceptions to api_host and pulls its remote config +
     // extension bundles from the assets host. Missing either directive drops
     // browser-side error tracking silently once the CSP stops being
