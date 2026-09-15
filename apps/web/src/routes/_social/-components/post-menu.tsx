@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
 import { queryKeys } from "@/lib/query";
-import { patchCurrentUser, removePostFromFeed } from "@/lib/query-cache";
+import { patchCurrentUser, removePostEverywhere } from "@/lib/query-cache";
 import type { CurrentUserResponse, FeedItem, FeedResponse } from "@/lib/types";
 import { saveImage, sharePost } from "@/lib/utils";
 import {
@@ -148,12 +148,7 @@ export function PostMenu({
       }
     },
     onSuccess: () => {
-      queryClient.setQueriesData<
-        import("@tanstack/react-query").InfiniteData<FeedResponse>
-      >({ queryKey: queryKeys.postsRoot() }, (current) =>
-        removePostFromFeed(current, postId),
-      );
-      queryClient.setQueryData(queryKeys.post(postId), null);
+      removePostEverywhere(queryClient, postId);
       queryClient.removeQueries({ queryKey: queryKeys.postComments(postId) });
       toast.success(canModerate ? "Post removed." : "Post deleted.");
       onDeleted?.();
