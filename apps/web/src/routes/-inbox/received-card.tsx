@@ -1,11 +1,13 @@
 import type { InfiniteData } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { MailIcon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
+import { actionError } from "@/lib/api";
 import { vibrate } from "@/lib/haptics";
 import { queryKeys } from "@/lib/query";
 import { patchMessage } from "@/lib/query-cache";
@@ -39,19 +41,43 @@ export function ReceivedMessageCard({ data }: { data: MessageWithReceiver }) {
   const [revealed, setRevealed] = useState(() => revealedIds.has(data.id));
   const sealed = !data.openedAt && !revealed;
 
+  const openMutation = useMutation({
+    mutationFn: () => openMessageAction({ messageId: data.id }),
+    onMutate: () => {
+      revealedIds.add(data.id);
+      setRevealed(true);
+      vibrate(10);
+      queryClient.setQueryData<InfiniteData<MessagesResponse>>(
+        queryKeys.receivedMessages(),
+        (current) =>
+          patchMessage(current, data.id, (message) => ({
+            ...message,
+            openedAt: new Date(),
+          })),
+      );
+    },
+    onSuccess: (res) => {
+      const error = actionError(res);
+      if (!error) return;
+
+      // The server refused (throttle/auth): a reload would re-seal it, so seal
+      // it now and say why.
+      revealedIds.delete(data.id);
+      setRevealed(false);
+      queryClient.setQueryData<InfiniteData<MessagesResponse>>(
+        queryKeys.receivedMessages(),
+        (current) =>
+          patchMessage(current, data.id, (message) => ({
+            ...message,
+            openedAt: null,
+          })),
+      );
+      toast.error(error);
+    },
+  });
+
   const handleOpen = () => {
-    revealedIds.add(data.id);
-    setRevealed(true);
-    vibrate(10);
-    queryClient.setQueryData<InfiniteData<MessagesResponse>>(
-      queryKeys.receivedMessages(),
-      (current) =>
-        patchMessage(current, data.id, (message) => ({
-          ...message,
-          openedAt: new Date(),
-        })),
-    );
-    void openMessageAction({ messageId: data.id });
+    if (!openMutation.isPending) openMutation.mutate();
   };
 
   if (sealed) {
