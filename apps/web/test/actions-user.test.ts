@@ -23,12 +23,16 @@ vi.mock("../src/server-lib/posthog", () => ({
   captureServerException,
 }));
 
-import { userTable } from "@umamin/db/schema/user";
+import { sessionTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import { hash } from "../src/server-lib/argon2";
 import type { Db } from "../src/server-lib/db";
-import { __clearSessionCache } from "../src/server-lib/session";
-import { authed, buildApp, callJson } from "./helpers/actions";
+import {
+  __clearSessionCache,
+  createSession,
+  sessionIdFromToken,
+} from "../src/server-lib/session";
+import { authed, buildApp, call, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
 
 const SETTINGS = { question: "ask me", bio: "", displayName: "" };
@@ -122,5 +126,34 @@ describe("user actions (real libSQL)", () => {
       confirmPassword: "new-password-456",
     });
     expect(json).toEqual({ success: true });
+  });
+
+  it("changing the password revokes every other session and mints exactly one", async () => {
+    await createSession(db, "device-a-token", "user1");
+    await createSession(db, "device-b-token", "user1");
+    const app = buildApp(
+      db,
+      authed("user1", { passwordHash: await hash(OLD_PASSWORD) }),
+    );
+    const res = await call(app, "updatePasswordAction", {
+      currentPassword: OLD_PASSWORD,
+      newPassword: "new-password-456",
+      confirmPassword: "new-password-456",
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("set-cookie")).toMatch(/session=/);
+    const sessions = await db
+      .select()
+      .from(sessionTable)
+      .where(eq(sessionTable.userId, "user1"));
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].id).not.toBe(sessionIdFromToken("device-a-token"));
+    const [row] = await db
+      .select({ passwordHash: userTable.passwordHash })
+      .from(userTable)
+      .where(eq(userTable.id, "user1"));
+    expect(row.passwordHash).not.toContain(
+      Buffer.from(OLD_PASSWORD).toString("base64"),
+    );
   });
 });
