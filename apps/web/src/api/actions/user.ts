@@ -308,7 +308,12 @@ export const followUserHandler = action(
     if (!("alreadyFollowing" in result)) {
       await notify(
         { db, env: c.env, defer: defer(c) },
-        { recipientId: userId, type: "follow", actorId: session.userId },
+        {
+          recipientId: userId,
+          type: "follow",
+          actorId: session.userId,
+          blockChecked: true,
+        },
       );
     }
 
