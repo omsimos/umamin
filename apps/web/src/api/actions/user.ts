@@ -188,11 +188,20 @@ export const updatePasswordHandler = action(
   },
   async ({ currentPassword, newPassword }, { user, c }) => {
     const db = ctxDb(c);
-    if (user.passwordHash) {
+
+    // Read the hash fresh: the session's user row can be up to 12s stale, which
+    // would accept the OLD password right after a change.
+    const [live] = await db
+      .select({ passwordHash: userTable.passwordHash })
+      .from(userTable)
+      .where(eq(userTable.id, user.id))
+      .limit(1);
+
+    if (live?.passwordHash) {
       if (!currentPassword || currentPassword.length === 0) {
         return { error: "Current password is required" };
       }
-      const validPassword = await verify(user.passwordHash, currentPassword);
+      const validPassword = await verify(live.passwordHash, currentPassword);
       if (!validPassword) {
         return { error: "Incorrect password" };
       }
@@ -538,14 +547,16 @@ export const toggleQuietModeHandler = action(
     rateLimit: { name: "write", key: ({ user }) => `quiet:${user.id}` },
   },
   async (_input, { user, c }) => {
-    const quietMode = !user.quietMode;
-
-    await ctxDb(c)
+    // Flip in SQL, not from the session's user row: that row is served from a
+    // 12s in-isolate cache, so two taps inside the window would both compute
+    // the same "next" value and leave quiet mode stuck.
+    const [row] = await ctxDb(c)
       .update(userTable)
-      .set({ quietMode })
-      .where(eq(userTable.id, user.id));
+      .set({ quietMode: sql`NOT ${userTable.quietMode}` })
+      .where(eq(userTable.id, user.id))
+      .returning({ quietMode: userTable.quietMode });
 
-    return { quietMode };
+    return { quietMode: row?.quietMode ?? !user.quietMode };
   },
 );
 
