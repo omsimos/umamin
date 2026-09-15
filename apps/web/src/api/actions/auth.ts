@@ -1,7 +1,9 @@
-import { groupTable } from "@umamin/db/schema/group";
+import { groupMemberTable, groupTable } from "@umamin/db/schema/group";
 import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import {
+  pollOptionTable,
+  pollVoteTable,
   postCommentLikeTable,
   postCommentTable,
   postLikeTable,
@@ -14,6 +16,7 @@ import {
   userTable,
 } from "@umamin/db/schema/user";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 import { hash, verify } from "../../server-lib/argon2";
 import { generateUsernameId } from "../../server-lib/content";
@@ -375,6 +378,80 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
               .select({ id: groupTable.id })
               .from(groupTable)
               .where(eq(groupTable.creatorId, uid)),
+          ),
+        );
+
+      // group_member cascades on user delete; member_count is denormalized and
+      // clamped at 0 on leave/kick, so an un-decremented count inflates forever
+      // and eventually blocks joins at the cap.
+      await tx
+        .update(groupTable)
+        .set({
+          memberCount: sql`CASE WHEN ${groupTable.memberCount} > 0 THEN ${groupTable.memberCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            groupTable.id,
+            tx
+              .select({ id: groupMemberTable.groupId })
+              .from(groupMemberTable)
+              .where(eq(groupMemberTable.userId, uid)),
+          ),
+        );
+
+      // poll_vote cascades too; both denormalized vote counters must follow.
+      await tx
+        .update(pollOptionTable)
+        .set({
+          voteCount: sql`CASE WHEN ${pollOptionTable.voteCount} > 0 THEN ${pollOptionTable.voteCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            pollOptionTable.id,
+            tx
+              .select({ id: pollVoteTable.optionId })
+              .from(pollVoteTable)
+              .where(eq(pollVoteTable.userId, uid)),
+          ),
+        );
+
+      await tx
+        .update(postTable)
+        .set({
+          pollVoteCount: sql`CASE WHEN ${postTable.pollVoteCount} > 0 THEN ${postTable.pollVoteCount} - 1 ELSE 0 END`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: pollVoteTable.postId })
+              .from(pollVoteTable)
+              .where(eq(pollVoteTable.userId, uid)),
+          ),
+        );
+
+      // The user's quote posts cascade away; the +1 each applied to its quoted
+      // post's repost_count is reversed here, mirroring deletePostHandler for a
+      // single quote. Counted per quote (like commentCount above) so quoting the
+      // same post twice reverses twice.
+      const quotes = alias(postTable, "quote");
+      await tx
+        .update(postTable)
+        .set({
+          repostCount: sql`MAX(0, ${postTable.repostCount} - (SELECT COUNT(*) FROM ${postTable} AS ${quotes} WHERE ${quotes.quotedPostId} = ${postTable.id} AND ${quotes.authorId} = ${uid}))`,
+        })
+        .where(
+          inArray(
+            postTable.id,
+            tx
+              .select({ id: postTable.quotedPostId })
+              .from(postTable)
+              .where(
+                and(
+                  eq(postTable.authorId, uid),
+                  isNotNull(postTable.quotedPostId),
+                ),
+              ),
           ),
         );
 
