@@ -1972,12 +1972,16 @@ export async function getCurrentUserData(
     };
   };
 
-  const getAccounts = async () => {
-    return db
-      .select()
+  const getAccounts = async () =>
+    db
+      .select({
+        providerId: accountTable.providerId,
+        email: accountTable.email,
+        picture: accountTable.picture,
+        createdAt: accountTable.createdAt,
+      })
       .from(accountTable)
       .where(eq(accountTable.userId, userId));
-  };
 
   // Independent cached reads — run concurrently to halve cold-cache latency on
   // /api/me (hit on nearly every authenticated page).
