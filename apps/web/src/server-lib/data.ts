@@ -1719,12 +1719,15 @@ function resolveNoteMusic(note: SelectNote): MusicAttachment | null {
 }
 
 // Emit the lean NoteItem: a single `music` object, with the raw music_*/legacy
-// spotify_* columns dropped so they never ride the client payload.
+// spotify_* columns AND the author id dropped — an anonymous note must not
+// carry `userId` (a public, joinable primary key) even though its joined
+// `user` object is suppressed.
 function toNoteItem(
   note: SelectNote,
   extra?: Pick<NoteItem, "user" | "isReacted">,
 ): NoteItem {
   const {
+    userId: _uid,
     musicProvider: _mp,
     musicId: _mi,
     musicTitle: _mt,

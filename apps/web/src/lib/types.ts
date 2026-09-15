@@ -263,6 +263,7 @@ export type CommentsResponse = CursorPage<CommentData>;
 // stays compact and the legacy spotify_* columns never reach the client.
 export type NoteItem = Omit<
   SelectNote,
+  | "userId"
   | "musicProvider"
   | "musicId"
   | "musicTitle"

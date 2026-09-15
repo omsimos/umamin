@@ -51,7 +51,6 @@ const removeAction = vi.mocked(removeNoteReactionAction);
 function makeNote(overrides: Partial<NoteItem> = {}): NoteItem {
   return {
     id: "note-1",
-    userId: "user-1",
     content: "currently overthinking about tests",
     isAnonymous: true,
     reactionCount: 0,

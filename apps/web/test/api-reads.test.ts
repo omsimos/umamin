@@ -1,3 +1,4 @@
+import { noteTable } from "@umamin/db/schema/note";
 import { userTable } from "@umamin/db/schema/user";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -141,6 +142,48 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       const second = await fetchApp("/public/notes");
       expect(second.status).toBe(200);
       expect(await second.json()).toEqual(firstBody);
+    });
+  });
+
+  describe("notes payload minimization", () => {
+    it("never ships the author id on an anonymous note", async () => {
+      await db
+        .insert(userTable)
+        .values({ id: "anon-author", username: "anon_author" });
+      await db.insert(noteTable).values({
+        id: "n-anon",
+        userId: "anon-author",
+        content: "secret",
+        isAnonymous: true,
+      });
+
+      const res = await fetchApp("/public/notes");
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: Record<string, unknown>[] };
+      const note = body.data.find((n) => n.id === "n-anon");
+      expect(note).toBeDefined();
+      expect(note).not.toHaveProperty("userId");
+      expect(note).not.toHaveProperty("user");
+    });
+
+    it("keeps the joined author but not the raw id on a signed note", async () => {
+      await db
+        .insert(userTable)
+        .values({ id: "pub-author", username: "pub_author" });
+      await db.insert(noteTable).values({
+        id: "n-pub",
+        userId: "pub-author",
+        content: "hello",
+        isAnonymous: false,
+      });
+
+      const res = await fetchApp("/public/notes");
+      const body = (await res.json()) as {
+        data: { id: string; user?: { id: string }; userId?: unknown }[];
+      };
+      const note = body.data.find((n) => n.id === "n-pub");
+      expect(note?.user?.id).toBe("pub-author");
+      expect(note).not.toHaveProperty("userId");
     });
   });
 
