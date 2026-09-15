@@ -326,6 +326,8 @@ function FollowUserRow({
       return res;
     },
     onMutate: async (prevFollowing) => {
+      await queryClient.cancelQueries({ queryKey });
+
       const previous =
         queryClient.getQueryData<InfiniteData<FollowListResponse>>(queryKey);
       queryClient.setQueryData<InfiniteData<FollowListResponse>>(
@@ -346,14 +348,18 @@ function FollowUserRow({
       captureException(err, { source: "follow" });
     },
     onSuccess: (res, prevFollowing) => {
+      const alreadyFollowing =
+        res && "alreadyFollowing" in res && res.alreadyFollowing === true;
+      const alreadyRemoved =
+        res && "alreadyRemoved" in res && res.alreadyRemoved === true;
+
       // Reconcile the no-op responses (already following / already removed) so
       // the optimistic toggle matches the server's settled state.
-      const settled =
-        res && "alreadyFollowing" in res && res.alreadyFollowing
-          ? true
-          : res && "alreadyRemoved" in res && res.alreadyRemoved
-            ? false
-            : !prevFollowing;
+      const settled = alreadyFollowing
+        ? true
+        : alreadyRemoved
+          ? false
+          : !prevFollowing;
 
       queryClient.setQueryData<InfiniteData<FollowListResponse>>(
         queryKey,
@@ -363,6 +369,16 @@ function FollowUserRow({
             isFollowing: settled,
           })),
       );
+
+      // A no-op response moved no counters, so only a real follow/unfollow has
+      // to converge the caches this row does not own.
+      if (alreadyFollowing || alreadyRemoved) return;
+
+      // The profile header, the viewer overlay and currentUser.followingCount
+      // all carry follow state this row just changed; refetch the active ones.
+      void queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      void queryClient.invalidateQueries({ queryKey: ["user-profile-viewer"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
     },
   });
 
