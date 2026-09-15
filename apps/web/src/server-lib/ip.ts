@@ -1,16 +1,19 @@
 // Pure client-IP extraction + canonicalization, shared by the Hono middleware
 // and the read/action layers. No platform imports so any bundle can use it.
 //
-// On Cloudflare the trustworthy source is `CF-Connecting-IP` — set by the edge
-// and NOT client-spoofable — so it takes priority. The Vercel-era headers are
-// kept as fallbacks for the staging/parity window (requests proxied through the
-// old stack) and local dev; the left-most `x-forwarded-for` entry is a
-// last-resort fallback (a client can prepend it). A constant covers local dev.
+// On Cloudflare the ONLY trustworthy source is `CF-Connecting-IP` (set by the
+// edge, not client-spoofable). The forwarding fallbacks exist for local dev and
+// non-CF ingress; in production they must not be consulted, or a client can
+// pick its own denylist / rate-limit key by adding a header. A constant covers
+// local dev.
 export function extractClientIp(
   get: (name: string) => string | null | undefined,
+  trustForwardedHeaders: boolean = process.env.NODE_ENV !== "production",
 ): string {
+  const edge = get("cf-connecting-ip")?.trim();
+  if (edge) return edge;
+  if (!trustForwardedHeaders) return "127.0.0.1";
   const ip =
-    get("cf-connecting-ip")?.trim() ||
     get("x-real-ip")?.trim() ||
     get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     get("x-forwarded-for")?.split(",")[0]?.trim();
