@@ -1,4 +1,5 @@
 import {
+  sessionTable,
   userBlockTable,
   userFollowTable,
   userTable,
@@ -27,9 +28,9 @@ import { captureRequestException } from "../../server-lib/posthog";
 import { createR2 } from "../../server-lib/r2";
 import { idSchema } from "../../server-lib/schema";
 import {
+  clearSessionCache,
   createSession,
   generateSessionToken,
-  invalidateUserSessions,
 } from "../../server-lib/session";
 import { setSessionCookie } from "../../server-lib/session-cookie";
 import { ctxDb, defer } from "./_shared";
@@ -208,17 +209,20 @@ export const updatePasswordHandler = action(
     }
 
     const passwordHash = await hash(newPassword);
-
-    await db
-      .update(userTable)
-      .set({ passwordHash })
-      .where(eq(userTable.id, user.id));
-
-    // Revoke all sessions (locks out old/hijacked devices) then re-mint one for
-    // the current request so the user stays signed in here.
-    await invalidateUserSessions(db, user.id);
     const token = generateSessionToken();
-    const newSession = await createSession(db, token, user.id);
+
+    // One transaction: the new hash, the revocation of every other device, and
+    // this device's replacement session land together or not at all — a
+    // half-applied change must never leave old tokens valid.
+    const newSession = await db.transaction(async (tx) => {
+      await tx
+        .update(userTable)
+        .set({ passwordHash })
+        .where(eq(userTable.id, user.id));
+      await tx.delete(sessionTable).where(eq(sessionTable.userId, user.id));
+      return createSession(tx, token, user.id);
+    });
+    clearSessionCache();
     setSessionCookie(c, token, new Date(newSession.expiresAt));
 
     return { success: true };

@@ -21,6 +21,10 @@ const SESSION_RENEW_THRESHOLD_MS = 1000 * 60 * 60 * 24 * 15;
 
 type ActiveSession = { session: SelectSession; user: SelectUser };
 
+// Lets createSession run inside a caller's own db.transaction (e.g. password
+// rotation) without widening validateSessionToken's plain-Db contract.
+type DbOrTx = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
+
 export type SessionValidationResult =
   | ActiveSession
   | { session: null; user: null };
@@ -91,7 +95,7 @@ export function generateSessionToken(): string {
 }
 
 export async function createSession(
-  db: Db,
+  db: DbOrTx,
   token: string,
   userId: string,
 ): Promise<SelectSession> {
@@ -250,6 +254,13 @@ export async function resolveSession(
 
 // Test-only: reset / inspect the in-isolate cache.
 export function __clearSessionCache(): void {
+  clearMicroCache();
+}
+
+// Public: callers that revoke sessions inside their own transaction must clear
+// the in-isolate cache AFTER commit (clearing before it would let a concurrent
+// lookup re-cache the row the transaction is about to delete).
+export function clearSessionCache(): void {
   clearMicroCache();
 }
 
