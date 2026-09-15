@@ -54,16 +54,17 @@ function stubExecutionContext(): ExecutionContext {
 }
 
 // Headers the synthetic request must inherit from the page request. The
-// credential headers pick the viewer; the IP headers are what the read limiter
-// and denylist key on — WITHOUT them extractClientIp falls back to its local-dev
-// constant, so every SSR loader read in the fleet shares ONE limiter bucket
-// (100/60s per colo) and page loads start 429ing under normal traffic.
+// credential headers pick the viewer; the edge-set address is what the read
+// limiter and denylist key on — WITHOUT it extractClientIp falls back to its
+// local-dev constant, so every SSR loader read in the fleet shares ONE limiter
+// bucket (100/60s per colo) and page loads start 429ing under normal traffic.
+// Only `cf-connecting-ip` is forwarded: the client-settable forwarding headers
+// are not trusted in production, so carrying them over would only let a caller
+// reach a path that ignores them anyway.
 const FORWARDED_SSR_HEADERS = [
   "cookie",
   "authorization",
   "cf-connecting-ip",
-  "x-real-ip",
-  "x-forwarded-for",
 ] as const;
 
 // Exported for the unit test: an allowlist copy, never a wholesale clone (the

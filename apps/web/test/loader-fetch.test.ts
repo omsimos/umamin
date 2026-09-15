@@ -15,6 +15,8 @@ describe("buildSsrHeaders", () => {
 
     expect(headers.get("cookie")).toBe("__Host-session=abc");
     expect(headers.get("authorization")).toBe("Bearer tok");
+    // Client-settable, and not trusted in production — never carried over.
+    expect(headers.get("x-forwarded-for")).toBeNull();
     // Without this the read limiter keys every SSR page load on one shared
     // fallback IP and starts 429ing the whole site.
     expect(extractClientIp((n) => headers.get(n))).toBe("203.0.113.7");
