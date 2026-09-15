@@ -339,7 +339,7 @@ function parseFeedCursor(cursor: string | null): FeedCursor | null {
   const ms = Number(msRaw);
   const kindPriority =
     kindPriorityRaw === "1" ? 1 : kindPriorityRaw === "0" ? 0 : null;
-  const createdAt = Number.isNaN(ms) ? null : new Date(ms);
+  const createdAt = Number.isFinite(ms) ? new Date(ms) : null;
 
   if (!createdAt || !edgeId || kindPriority === null) {
     return null;
@@ -363,9 +363,9 @@ function parseHotFeedCursor(cursor: string | null): HotFeedCursor | null {
   const createdAtMs = Number(createdAtRaw);
 
   if (
-    Number.isNaN(rankedAtMs) ||
-    Number.isNaN(scoreKey) ||
-    Number.isNaN(createdAtMs) ||
+    !Number.isFinite(rankedAtMs) ||
+    !Number.isFinite(scoreKey) ||
+    !Number.isFinite(createdAtMs) ||
     !postId
   ) {
     return null;
