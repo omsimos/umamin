@@ -3,6 +3,7 @@ import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { BackHeader } from "@/components/back-header";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
+import { loadViewer } from "@/lib/loader-viewer";
 import { queryKeys } from "@/lib/query";
 import { pageSeo } from "@/lib/seo";
 import type { PublicUserWithBadge } from "@/lib/types";
@@ -13,7 +14,15 @@ import { loaderFetchUserProfile } from "./-lib/loader-queries";
 export const Route = createFileRoute("/_social/user/$username")({
   loader: async ({ context, params }) => {
     const username = formatUsername(params.username);
-    const user = username ? await loaderFetchUserProfile(username) : null;
+
+    // Resolve the viewer here too, like every other social route: without it
+    // the shell SSRs signed-out and the nav swaps once /api/me lands on the
+    // client. The profile read is viewer-independent, so these share one round
+    // trip's latency instead of chaining.
+    const [user] = await Promise.all([
+      username ? loaderFetchUserProfile(username) : null,
+      loadViewer(context.queryClient),
+    ]);
 
     if (!user) {
       throw notFound();
