@@ -33,7 +33,10 @@ export const Route = createFileRoute("/_social/user/$username")({
       });
     }
 
-    const title = `(@${username}) on Umamin`;
+    const displayName = loaderData?.user?.displayName?.trim();
+    const title = displayName
+      ? `${displayName} (@${username}) on Umamin`
+      : `@${username} on Umamin`;
     const description = `Profile of @${username} on Umamin. Join Umamin to connect with @${username} and engage in anonymous messaging.`;
 
     return pageSeo({
