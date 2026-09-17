@@ -88,6 +88,7 @@ import type {
   UserProfileResponse,
   UserProfileViewerResponse,
 } from "../lib/types";
+import { noBlockBetween } from "./blocks";
 import { parseCursor } from "./cursor";
 import type { Db } from "./db";
 import { getRedisHotPostIdsPage, isRedisHotCursor } from "./feed-rank";
@@ -339,7 +340,7 @@ function parseFeedCursor(cursor: string | null): FeedCursor | null {
   const ms = Number(msRaw);
   const kindPriority =
     kindPriorityRaw === "1" ? 1 : kindPriorityRaw === "0" ? 0 : null;
-  const createdAt = Number.isNaN(ms) ? null : new Date(ms);
+  const createdAt = Number.isFinite(ms) ? new Date(ms) : null;
 
   if (!createdAt || !edgeId || kindPriority === null) {
     return null;
@@ -363,9 +364,9 @@ function parseHotFeedCursor(cursor: string | null): HotFeedCursor | null {
   const createdAtMs = Number(createdAtRaw);
 
   if (
-    Number.isNaN(rankedAtMs) ||
-    Number.isNaN(scoreKey) ||
-    Number.isNaN(createdAtMs) ||
+    !Number.isFinite(rankedAtMs) ||
+    !Number.isFinite(scoreKey) ||
+    !Number.isFinite(createdAtMs) ||
     !postId
   ) {
     return null;
@@ -1719,12 +1720,15 @@ function resolveNoteMusic(note: SelectNote): MusicAttachment | null {
 }
 
 // Emit the lean NoteItem: a single `music` object, with the raw music_*/legacy
-// spotify_* columns dropped so they never ride the client payload.
+// spotify_* columns AND the author id dropped — an anonymous note must not
+// carry `userId` (a public, joinable primary key) even though its joined
+// `user` object is suppressed.
 function toNoteItem(
   note: SelectNote,
   extra?: Pick<NoteItem, "user" | "isReacted">,
 ): NoteItem {
   const {
+    userId: _uid,
     musicProvider: _mp,
     musicId: _mi,
     musicTitle: _mt,
@@ -1969,12 +1973,16 @@ export async function getCurrentUserData(
     };
   };
 
-  const getAccounts = async () => {
-    return db
-      .select()
+  const getAccounts = async () =>
+    db
+      .select({
+        providerId: accountTable.providerId,
+        email: accountTable.email,
+        picture: accountTable.picture,
+        createdAt: accountTable.createdAt,
+      })
       .from(accountTable)
       .where(eq(accountTable.userId, userId));
-  };
 
   // Independent cached reads — run concurrently to halve cold-cache latency on
   // /api/me (hit on nearly every authenticated page).
@@ -2753,7 +2761,15 @@ export async function getNotificationBadgeData(
     db
       .select({ updatedAt: notificationTable.updatedAt })
       .from(notificationTable)
-      .where(eq(notificationTable.recipientId, viewerId))
+      .where(
+        and(
+          eq(notificationTable.recipientId, viewerId),
+          or(
+            isNull(notificationTable.actorId),
+            noBlockBetween(notificationTable.actorId, viewerId),
+          ),
+        ),
+      )
       .orderBy(desc(notificationTable.updatedAt), desc(notificationTable.id))
       .limit(NOTIFICATION_BADGE_LIMIT),
   ]);
@@ -2788,7 +2804,15 @@ export async function getNotificationsPage(
       )
     : undefined;
 
-  const baseCondition = eq(notificationTable.recipientId, params.viewerId);
+  // Rows from an actor the viewer has since blocked disappear on the next read
+  // — historical notifications are hidden rather than unwound.
+  const baseCondition = and(
+    eq(notificationTable.recipientId, params.viewerId),
+    or(
+      isNull(notificationTable.actorId),
+      noBlockBetween(notificationTable.actorId, params.viewerId),
+    ),
+  );
 
   // The seen watermark rides the first page (async-parallel, no waterfall) so
   // the client can mark which rows are new. Read from the user row directly —

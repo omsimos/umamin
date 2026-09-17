@@ -6,7 +6,9 @@ import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
 
 type Props = {
-  error: Error & { digest?: string };
+  // TanStack Router hands the boundary an `unknown` — a thrown non-Error is
+  // reportable all the same, so widen rather than assert.
+  error: unknown;
   reset: () => void;
   heading?: string;
 };

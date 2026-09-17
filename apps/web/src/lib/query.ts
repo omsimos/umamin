@@ -20,6 +20,7 @@ export const queryKeys = {
   notes: (viewerKey: string = "public") => ["notes", viewerKey] as const,
   notesRoot: () => ["notes"] as const,
   userPosts: (username: string) => ["user-posts", username] as const,
+  userPostsRoot: () => ["user-posts"] as const,
   currentNote: () => ["current_note"] as const,
   currentUser: () => ["current_user"] as const,
   userProfile: (username: string) => ["user-profile", username] as const,

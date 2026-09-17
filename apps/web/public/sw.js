@@ -29,6 +29,13 @@ const DYNAMIC_NAVIGATION_PREFIXES = [
   "/user",
 ];
 
+// Only a real, same-origin success may be stored. A 404 for a hashed chunk
+// (a request landing mid-deploy) or a 500 page would otherwise be pinned for
+// the whole version: the static branch is cache-first and never revalidates.
+function isCacheable(response) {
+  return response.ok && response.type === "basic";
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -78,10 +85,14 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const responseClone = response.clone();
-          caches
-            .open(PAGE_CACHE)
-            .then((cache) => cache.put(request, responseClone));
+          if (isCacheable(response)) {
+            const responseClone = response.clone();
+            event.waitUntil(
+              caches
+                .open(PAGE_CACHE)
+                .then((cache) => cache.put(request, responseClone)),
+            );
+          }
           return response;
         })
         .catch(() =>
@@ -100,10 +111,14 @@ self.addEventListener("fetch", (event) => {
           return cached;
         }
         return fetch(request).then((response) => {
-          const responseClone = response.clone();
-          caches
-            .open(STATIC_CACHE)
-            .then((cache) => cache.put(request, responseClone));
+          if (isCacheable(response)) {
+            const responseClone = response.clone();
+            event.waitUntil(
+              caches
+                .open(STATIC_CACHE)
+                .then((cache) => cache.put(request, responseClone)),
+            );
+          }
           return response;
         });
       }),

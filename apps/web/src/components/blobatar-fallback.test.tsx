@@ -49,12 +49,11 @@ describe("BlobatarFallback", () => {
 
   // The anonymity guard: no identity means no creature. A blobatar here would
   // link anonymous content to the same creature shown beside a real handle.
-  it.each([
-    null,
-    undefined,
-    "",
-  ])("falls back to the generic icon with no seed (%s)", (seed) => {
-    renderFallback(seed);
-    expect(blobatar()).toBeNull();
-  });
+  it.each([null, undefined, ""])(
+    "falls back to the generic icon with no seed (%s)",
+    (seed) => {
+      renderFallback(seed);
+      expect(blobatar()).toBeNull();
+    },
+  );
 });

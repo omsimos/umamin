@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastSuccess = vi.fn();
@@ -25,6 +26,17 @@ describe("CopyLink", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  // The regression this pins: reading window.location.origin during render made
+  // the server emit the placeholder and the client's first render emit the
+  // button, so React threw a hydration mismatch and re-rendered the whole
+  // profile tree. Server output must stay on the placeholder branch.
+  it("server-renders the placeholder, not the button", () => {
+    const html = renderToString(<CopyLink username="alice" />);
+
+    expect(html).not.toContain("<button");
+    expect(html).toContain("animate-pulse");
   });
 
   it("renders the share URL with the scheme stripped", () => {

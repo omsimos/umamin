@@ -7,7 +7,7 @@ import { PwaPinchZoom } from "@/components/pwa-pinch-zoom";
 import { ServiceWorker } from "@/components/service-worker";
 
 // Client providers, ported from apps/www app/providers.tsx. The QueryClient
-// provider is NOT here — `routerWithQueryClient` (src/router.tsx) already wraps
+// provider is NOT here — `setupRouterSsrQueryIntegration` (src/router.tsx) already wraps
 // the app with it and shares the router-context client, so mounting a second
 // one would fork the cache. The @bprogress ProgressProvider is replaced by the
 // router-driven <NavigationProgress /> bar.

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isModerator, parseModerators } from "../src/server-lib/moderation";
+import {
+  isModerator,
+  isReservedModeratorName,
+  parseModerators,
+} from "../src/server-lib/moderation";
 
 // Ported from apps/www with the new pure signature: the roster is passed in
 // (from env.MODERATOR_USERS) instead of read from process.env at module init,
@@ -44,5 +48,19 @@ describe("isModerator", () => {
     expect(isModerator(null, "joshxfi")).toBe(false);
     expect(isModerator(undefined, "joshxfi")).toBe(false);
     expect(isModerator({ username: "" }, "joshxfi")).toBe(false);
+  });
+});
+
+describe("isReservedModeratorName", () => {
+  it("reserves every roster name against the normalized candidate", () => {
+    expect(isReservedModeratorName("alice", "alice,bob")).toBe(true);
+    // Signup/rename lowercase and trim before storing, so the check must too.
+    expect(isReservedModeratorName(" Alice ", "alice,bob")).toBe(true);
+    expect(isReservedModeratorName("mallory", "alice,bob")).toBe(false);
+  });
+
+  it("reserves nothing when the roster is empty/unset", () => {
+    expect(isReservedModeratorName("alice", "")).toBe(false);
+    expect(isReservedModeratorName("alice", null)).toBe(false);
   });
 });

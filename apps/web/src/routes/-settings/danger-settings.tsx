@@ -21,8 +21,9 @@ import { useAppNavigate } from "@/lib/navigation";
 import { deleteAccountAction } from "./actions";
 
 // apps/www drove this with a `<form action>` + useActionState + useFormStatus.
-// Ported to useMutation + callAction: the action returns `{ redirect }`, which
-// the client turns into a navigation (after clearing the cache).
+// Ported to useMutation + callAction: the action returns `{ redirect }` — which
+// the client turns into a navigation (after clearing the cache) — or `{ error }`
+// when nothing was deleted.
 export function DangerSettings() {
   const [confirmText, setConfirmText] = useState("");
   const queryClient = useQueryClient();
@@ -31,9 +32,12 @@ export function DangerSettings() {
   const deleteMutation = useMutation({
     mutationFn: () => deleteAccountAction(confirmText),
     onSuccess: (res) => {
+      if ("error" in res) {
+        toast.error(res.error);
+        return;
+      }
       queryClient.clear();
-      const to = "redirect" in res ? res.redirect : "/login";
-      navigate(to, { replace: true });
+      navigate(res.redirect, { replace: true });
     },
     onError: () => {
       toast.error("Couldn't delete account. Please try again.");

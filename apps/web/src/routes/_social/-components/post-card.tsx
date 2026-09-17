@@ -33,17 +33,11 @@ import {
 import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
-import {
-  patchComment,
-  patchPostAcrossFeed,
-  patchPostResponse,
-} from "@/lib/query-cache";
+import { patchComment, patchPostEverywhere } from "@/lib/query-cache";
 import {
   type CommentData,
   type CommentsResponse,
-  type FeedResponse,
   type PostData,
-  type PostResponse,
   toQuotedPostData,
 } from "@/lib/types";
 import {
@@ -100,24 +94,11 @@ function PostCardImpl({
   // the concurrent like + repost clobber race.
   const syncLikeCache = (nextLiked: boolean, nextLikes: number) => {
     if ("commentCount" in data) {
-      queryClient.setQueriesData<InfiniteData<FeedResponse>>(
-        { queryKey: queryKeys.postsRoot() },
-        (current) =>
-          patchPostAcrossFeed(current, data.id, (post) => ({
-            ...post,
-            isLiked: nextLiked,
-            likeCount: nextLikes,
-          })),
-      );
-      queryClient.setQueryData<PostResponse>(
-        queryKeys.post(data.id),
-        (current) =>
-          patchPostResponse(current, (post) => ({
-            ...post,
-            isLiked: nextLiked,
-            likeCount: nextLikes,
-          })),
-      );
+      patchPostEverywhere(queryClient, data.id, (post) => ({
+        ...post,
+        isLiked: nextLiked,
+        likeCount: nextLikes,
+      }));
     } else if (commentPostId) {
       queryClient.setQueryData<InfiniteData<CommentsResponse>>(
         queryKeys.postComments(commentPostId),
@@ -133,22 +114,11 @@ function PostCardImpl({
 
   // Reposts only exist on posts (never comments), so patch the feed + post caches.
   const syncRepostCache = (nextReposted: boolean, nextReposts: number) => {
-    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
-      { queryKey: queryKeys.postsRoot() },
-      (current) =>
-        patchPostAcrossFeed(current, data.id, (post) => ({
-          ...post,
-          isReposted: nextReposted,
-          repostCount: nextReposts,
-        })),
-    );
-    queryClient.setQueryData<PostResponse>(queryKeys.post(data.id), (current) =>
-      patchPostResponse(current, (post) => ({
-        ...post,
-        isReposted: nextReposted,
-        repostCount: nextReposts,
-      })),
-    );
+    patchPostEverywhere(queryClient, data.id, (post) => ({
+      ...post,
+      isReposted: nextReposted,
+      repostCount: nextReposts,
+    }));
   };
 
   const dataIsReposted =

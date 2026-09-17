@@ -195,6 +195,18 @@ export function UserProfile({ username, initialUser }: Props) {
       return res;
     },
     onMutate: async (prevFollowing) => {
+      // An in-flight refetch would resolve after this patch and flip the button
+      // back, and its response is older than the write we are about to make.
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfile(username),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfileViewer(username),
+        }),
+        queryClient.cancelQueries({ queryKey: queryKeys.currentUser() }),
+      ]);
+
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
       );
@@ -245,13 +257,22 @@ export function UserProfile({ username, initialUser }: Props) {
     onSuccess: (res, prevFollowing, ctx) => {
       if (prevFollowing) {
         if (res && "alreadyRemoved" in res && res.alreadyRemoved) {
-          patchProfileCaches({
-            followerCount: Math.max(
-              (ctx?.previousProfile?.followerCount ?? 0) - 1,
-              0,
-            ),
-            isFollowing: false,
-          });
+          // No follow row existed, so the server's counters never moved: undo
+          // the optimistic -1 by restoring the snapshots, then record the state
+          // the server reports.
+          queryClient.setQueryData(
+            queryKeys.userProfile(username),
+            ctx?.previousProfile,
+          );
+          queryClient.setQueryData(
+            queryKeys.userProfileViewer(username),
+            ctx?.previousViewer,
+          );
+          queryClient.setQueryData(
+            queryKeys.currentUser(),
+            ctx?.previousCurrentUser,
+          );
+          patchProfileCaches({ isFollowing: false });
         }
         toast.success("Unfollowed.");
         return;
@@ -290,6 +311,17 @@ export function UserProfile({ username, initialUser }: Props) {
       return res;
     },
     onMutate: async (prevBlocked) => {
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfile(username),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.userProfileViewer(username),
+        }),
+        queryClient.cancelQueries({ queryKey: queryKeys.currentUser() }),
+        queryClient.cancelQueries({ queryKey: queryKeys.receivedMessages() }),
+      ]);
+
       const previousProfile = queryClient.getQueryData<UserProfileResponse>(
         queryKeys.userProfile(username),
       );

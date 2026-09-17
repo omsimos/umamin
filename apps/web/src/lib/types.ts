@@ -101,8 +101,16 @@ export type CurrentUserClient = PublicUserWithBadge & {
   // served to the user's own session (mirrors blockedWords/hasPassword).
   pushPrefs: number;
 };
+// Only what the Account settings card renders. The provider subject id and the
+// owning userId never leave the server — this payload is dehydrated into every
+// signed-in page's HTML.
+export type LinkedAccount = Pick<
+  SelectAccount,
+  "providerId" | "email" | "picture" | "createdAt"
+>;
+
 export type UserWithAccount = CurrentUserClient & {
-  account: SelectAccount | null;
+  account: LinkedAccount | null;
 };
 
 export function toPublicUser(user: SelectUser): PublicUser {
@@ -263,6 +271,7 @@ export type CommentsResponse = CursorPage<CommentData>;
 // stays compact and the legacy spotify_* columns never reach the client.
 export type NoteItem = Omit<
   SelectNote,
+  | "userId"
   | "musicProvider"
   | "musicId"
   | "musicTitle"
@@ -339,7 +348,7 @@ export type NotificationBadgeResponse = {
 };
 
 export type CurrentUserData = CurrentUserClient & {
-  accounts: SelectAccount[];
+  accounts: LinkedAccount[];
   // Server-computed maintainer flag (from MODERATOR_USERS). Gates the in-app
   // "Remove" action on others' content; the roster itself never reaches the
   // client. See server-lib/moderation.ts.

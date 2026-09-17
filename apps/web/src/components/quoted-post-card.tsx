@@ -25,7 +25,10 @@ export function QuotedPostCard({ post, linked = true, className }: Props) {
     return (
       <div
         className={cn(
-          "relative z-10 mt-3 rounded-xl border border-muted px-4 py-3 text-sm text-muted-foreground",
+          // No z-10 here: unlike the interactive children of a post card, this
+          // placeholder has nothing to click, so raising it would only let it
+          // swallow the card's whole-card "Open post" overlay link.
+          "mt-3 rounded-xl border border-muted px-4 py-3 text-sm text-muted-foreground",
           className,
         )}
       >

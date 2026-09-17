@@ -49,11 +49,12 @@ function parseRedisHotCursor(cursor: string | null | undefined) {
 }
 
 /**
- * A page of ranked post ids from the KV list, preserving apps/www's contract:
- * returns null (→ caller's DB fallback) when KV is unbound, the list is shorter
- * than `minRankedItems`, the cursor offset is past the end, or fewer than
- * `pageSize` ids remain. `nextCursor` is `rh.<nextOffset>` when a full page + 1
- * was available, else null.
+ * A page of ranked post ids from the KV list. Returns null (→ caller's DB
+ * fallback) when KV is unbound, the list is shorter than `minRankedItems`, or
+ * the cursor offset is past the end. A trailing page shorter than `pageSize`
+ * is served with `nextCursor: null` (the old apps/www contract dropped it).
+ * `nextCursor` is `rh.<nextOffset>` when a full page + 1 was available, else
+ * null.
  */
 export async function getRedisHotPostIdsPage(
   kv: KVNamespace | undefined,
@@ -84,10 +85,6 @@ export async function getRedisHotPostIdsPage(
   // Peek one past the page (offset .. offset+pageSize inclusive) to decide the
   // next cursor — mirrors the old zrange(offset, offset+pageSize) window.
   const ids = ranked.slice(offset, offset + pageSize + 1);
-
-  if (ids.length < pageSize) {
-    return null;
-  }
 
   return {
     ids: ids.slice(0, pageSize),

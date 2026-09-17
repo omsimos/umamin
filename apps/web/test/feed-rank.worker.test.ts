@@ -69,9 +69,11 @@ describe("getRedisHotPostIdsPage (miniflare KV)", () => {
     expect(result?.nextCursor).toBeNull();
   });
 
-  it("returns null when fewer than pageSize ids remain", async () => {
-    await seedRanked(15);
-    expect(await getRedisHotPostIdsPage(kv, null, 20, 10)).toBeNull();
+  it("serves a short trailing page instead of dropping it", async () => {
+    const ids = await seedRanked(15);
+    const result = await getRedisHotPostIdsPage(kv, null, 20, 10);
+    expect(result?.ids).toEqual(ids);
+    expect(result?.nextCursor).toBeNull();
   });
 
   it("returns null when the offset is past the end", async () => {

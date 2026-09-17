@@ -7,7 +7,12 @@ vi.mock("../src/server-lib/argon2", () => ({
   verify: async () => false,
 }));
 
-import { postLikeTable, postTable } from "@umamin/db/schema/post";
+import { notificationTable } from "@umamin/db/schema/notification";
+import {
+  postCommentTable,
+  postLikeTable,
+  postTable,
+} from "@umamin/db/schema/post";
 import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import type { Db } from "../src/server-lib/db";
@@ -160,6 +165,48 @@ describe("post actions (real libSQL)", () => {
       .where(eq(postTable.id, "p1"));
     expect(post.commentCount).toBe(1);
     expect(await points(db, "author")).toBe(5);
+  });
+
+  it("a comment from a blocked user is rejected as not found and writes nothing", async () => {
+    await db
+      .insert(userBlockTable)
+      .values({ blockerId: "author", blockedId: "viewer" });
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+    const { json } = await callJson(app, "createCommentAction", {
+      postId: "p1",
+      content: "hi",
+    });
+
+    expect(json).toEqual({ error: "Post not found" });
+    expect(await db.select().from(postCommentTable)).toHaveLength(0);
+    const [post] = await db
+      .select({ commentCount: postTable.commentCount })
+      .from(postTable)
+      .where(eq(postTable.id, "p1"));
+    expect(post.commentCount).toBe(0);
+    expect(await db.select().from(notificationTable)).toHaveLength(0);
+  });
+
+  it("a like from a blocked user counts but creates no notification", async () => {
+    await db
+      .insert(userBlockTable)
+      .values({ blockerId: "author", blockedId: "viewer" });
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+    await callJson(app, "addLikeAction", { postId: "p1" });
+
+    const [post] = await db
+      .select({ likeCount: postTable.likeCount })
+      .from(postTable)
+      .where(eq(postTable.id, "p1"));
+    expect(post.likeCount).toBe(1);
+    expect(await db.select().from(notificationTable)).toHaveLength(0);
+  });
+
+  it("a like from a non-blocked user still notifies the author", async () => {
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+    await callJson(app, "addLikeAction", { postId: "p1" });
+
+    expect(await db.select().from(notificationTable)).toHaveLength(1);
   });
 
   it("deletePostAction refuses a non-owner non-moderator", async () => {

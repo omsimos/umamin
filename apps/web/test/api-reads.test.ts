@@ -1,4 +1,5 @@
-import { userTable } from "@umamin/db/schema/user";
+import { noteTable } from "@umamin/db/schema/note";
+import { accountTable, userTable } from "@umamin/db/schema/user";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readsApp } from "../src/api/routes";
@@ -86,6 +87,35 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       const body = (await res.json()) as { user?: { username?: string } };
       expect(body.user?.username).toBe("alice_xyz");
     });
+
+    // This payload is dehydrated into the HTML of every signed-in page, so the
+    // Google subject id and the owning userId must not ride along with it.
+    it("ships only the rendered fields of a linked account", async () => {
+      await db.insert(userTable).values({ id: "u2", username: "linked_xyz" });
+      await db.insert(accountTable).values({
+        providerUserId: "google-sub-123",
+        providerId: "google",
+        userId: "u2",
+        email: "me@example.com",
+        picture: "",
+      });
+      const token = generateSessionToken();
+      await createSession(db, token, "u2");
+
+      const res = await fetchApp("/me", {
+        headers: { cookie: `session=${token}` },
+      });
+      const body = (await res.json()) as {
+        user?: { accounts?: Record<string, unknown>[] };
+      };
+      const account = body.user?.accounts?.[0];
+      expect(account).toMatchObject({
+        providerId: "google",
+        email: "me@example.com",
+      });
+      expect(account).not.toHaveProperty("providerUserId");
+      expect(account).not.toHaveProperty("userId");
+    });
   });
 
   // /api/flags is PRIVATE for a reason: flags are evaluated against the viewer's
@@ -141,6 +171,48 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       const second = await fetchApp("/public/notes");
       expect(second.status).toBe(200);
       expect(await second.json()).toEqual(firstBody);
+    });
+  });
+
+  describe("notes payload minimization", () => {
+    it("never ships the author id on an anonymous note", async () => {
+      await db
+        .insert(userTable)
+        .values({ id: "anon-author", username: "anon_author" });
+      await db.insert(noteTable).values({
+        id: "n-anon",
+        userId: "anon-author",
+        content: "secret",
+        isAnonymous: true,
+      });
+
+      const res = await fetchApp("/public/notes");
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: Record<string, unknown>[] };
+      const note = body.data.find((n) => n.id === "n-anon");
+      expect(note).toBeDefined();
+      expect(note).not.toHaveProperty("userId");
+      expect(note).not.toHaveProperty("user");
+    });
+
+    it("keeps the joined author but not the raw id on a signed note", async () => {
+      await db
+        .insert(userTable)
+        .values({ id: "pub-author", username: "pub_author" });
+      await db.insert(noteTable).values({
+        id: "n-pub",
+        userId: "pub-author",
+        content: "hello",
+        isAnonymous: false,
+      });
+
+      const res = await fetchApp("/public/notes");
+      const body = (await res.json()) as {
+        data: { id: string; user?: { id: string }; userId?: unknown }[];
+      };
+      const note = body.data.find((n) => n.id === "n-pub");
+      expect(note?.user?.id).toBe("pub-author");
+      expect(note).not.toHaveProperty("userId");
     });
   });
 
@@ -230,6 +302,24 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       const res = await fetchApp("/public/user/nobody");
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({ error: "Not found" });
+    });
+  });
+
+  describe("feed cursors", () => {
+    it("treats a non-finite latest cursor as page one instead of 500ing", async () => {
+      const res = await fetchApp(
+        "/public/posts?sort=latest&cursor=Infinity.1.x",
+      );
+      expect(res.status).toBe(200);
+      expect(await res.json()).toHaveProperty("data");
+    });
+
+    it("treats a non-finite hot cursor as page one instead of 500ing", async () => {
+      const res = await fetchApp(
+        "/public/posts?sort=hot&cursor=Infinity.1.2.x",
+      );
+      expect(res.status).toBe(200);
+      expect(await res.json()).toHaveProperty("data");
     });
   });
 });

@@ -1,4 +1,5 @@
 import {
+  sessionTable,
   userBlockTable,
   userFollowTable,
   userTable,
@@ -17,7 +18,9 @@ import type { Db } from "../../server-lib/db";
 import {
   formatErrorChain,
   isUniqueConstraintViolation,
+  USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
+import { isReservedModeratorName } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { notify } from "../../server-lib/notifications";
 import { AURA_POINTS, awardAura, reverseAura } from "../../server-lib/points";
@@ -25,9 +28,9 @@ import { captureRequestException } from "../../server-lib/posthog";
 import { createR2 } from "../../server-lib/r2";
 import { idSchema } from "../../server-lib/schema";
 import {
+  clearSessionCache,
   createSession,
   generateSessionToken,
-  invalidateUserSessions,
 } from "../../server-lib/session";
 import { setSessionCookie } from "../../server-lib/session-cookie";
 import { ctxDb, defer } from "./_shared";
@@ -106,10 +109,10 @@ export const generalSettingsHandler = action(
     },
     onError: (err) =>
       isUniqueConstraintViolation(err, "user.username")
-        ? { error: "Username already exists" }
+        ? { error: USERNAME_TAKEN_ERROR }
         : undefined,
   },
-  async (data, { session, c }) => {
+  async (data, { session, user, c }) => {
     const normalized = {
       ...data,
       bio: formatContent(data.bio ?? ""),
@@ -117,6 +120,14 @@ export const generalSettingsHandler = action(
       displayName: data.displayName?.trim() ?? null,
       username: data.username?.trim().toLowerCase(),
     };
+
+    if (
+      normalized.username &&
+      normalized.username !== user?.username &&
+      isReservedModeratorName(normalized.username, c.env.MODERATOR_USERS)
+    ) {
+      return { error: USERNAME_TAKEN_ERROR };
+    }
 
     await ctxDb(c)
       .update(userTable)
@@ -178,28 +189,40 @@ export const updatePasswordHandler = action(
   },
   async ({ currentPassword, newPassword }, { user, c }) => {
     const db = ctxDb(c);
-    if (user.passwordHash) {
+
+    // Read the hash fresh: the session's user row can be up to 12s stale, which
+    // would accept the OLD password right after a change.
+    const [live] = await db
+      .select({ passwordHash: userTable.passwordHash })
+      .from(userTable)
+      .where(eq(userTable.id, user.id))
+      .limit(1);
+
+    if (live?.passwordHash) {
       if (!currentPassword || currentPassword.length === 0) {
         return { error: "Current password is required" };
       }
-      const validPassword = await verify(user.passwordHash, currentPassword);
+      const validPassword = await verify(live.passwordHash, currentPassword);
       if (!validPassword) {
         return { error: "Incorrect password" };
       }
     }
 
     const passwordHash = await hash(newPassword);
-
-    await db
-      .update(userTable)
-      .set({ passwordHash })
-      .where(eq(userTable.id, user.id));
-
-    // Revoke all sessions (locks out old/hijacked devices) then re-mint one for
-    // the current request so the user stays signed in here.
-    await invalidateUserSessions(db, user.id);
     const token = generateSessionToken();
-    const newSession = await createSession(db, token, user.id);
+
+    // One transaction: the new hash, the revocation of every other device, and
+    // this device's replacement session land together or not at all — a
+    // half-applied change must never leave old tokens valid.
+    const newSession = await db.transaction(async (tx) => {
+      await tx
+        .update(userTable)
+        .set({ passwordHash })
+        .where(eq(userTable.id, user.id));
+      await tx.delete(sessionTable).where(eq(sessionTable.userId, user.id));
+      return createSession(tx, token, user.id);
+    });
+    clearSessionCache();
     setSessionCookie(c, token, new Date(newSession.expiresAt));
 
     return { success: true };
@@ -285,7 +308,12 @@ export const followUserHandler = action(
     if (!("alreadyFollowing" in result)) {
       await notify(
         { db, env: c.env, defer: defer(c) },
-        { recipientId: userId, type: "follow", actorId: session.userId },
+        {
+          recipientId: userId,
+          type: "follow",
+          actorId: session.userId,
+          blockChecked: true,
+        },
       );
     }
 
@@ -528,14 +556,16 @@ export const toggleQuietModeHandler = action(
     rateLimit: { name: "write", key: ({ user }) => `quiet:${user.id}` },
   },
   async (_input, { user, c }) => {
-    const quietMode = !user.quietMode;
-
-    await ctxDb(c)
+    // Flip in SQL, not from the session's user row: that row is served from a
+    // 12s in-isolate cache, so two taps inside the window would both compute
+    // the same "next" value and leave quiet mode stuck.
+    const [row] = await ctxDb(c)
       .update(userTable)
-      .set({ quietMode })
-      .where(eq(userTable.id, user.id));
+      .set({ quietMode: sql`NOT ${userTable.quietMode}` })
+      .where(eq(userTable.id, user.id))
+      .returning({ quietMode: userTable.quietMode });
 
-    return { quietMode };
+    return { quietMode: row?.quietMode ?? !user.quietMode };
   },
 );
 

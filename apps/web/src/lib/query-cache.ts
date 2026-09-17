@@ -1,4 +1,5 @@
-import type { InfiniteData } from "@tanstack/react-query";
+import type { InfiniteData, QueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query";
 import type {
   CommentData,
   CommentsResponse,
@@ -192,6 +193,40 @@ export function patchPostResponse(
 ) {
   if (!previous) return previous;
   return updater(previous);
+}
+
+// Every surface that renders a PostCard from an infinite feed. A patch that
+// misses one leaves that surface stale for the session (refetch-on-focus/mount
+// are off), so like/repost/delete go through these instead of listing keys.
+const FEED_ROOTS = [queryKeys.postsRoot(), queryKeys.userPostsRoot()] as const;
+
+export function patchPostEverywhere(
+  queryClient: QueryClient,
+  postId: string,
+  patch: (post: PostData) => PostData,
+): void {
+  for (const queryKey of FEED_ROOTS) {
+    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+      { queryKey },
+      (current) => patchPostAcrossFeed(current, postId, patch),
+    );
+  }
+  queryClient.setQueryData<PostResponse>(queryKeys.post(postId), (current) =>
+    patchPostResponse(current, patch),
+  );
+}
+
+export function removePostEverywhere(
+  queryClient: QueryClient,
+  postId: string,
+): void {
+  for (const queryKey of FEED_ROOTS) {
+    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+      { queryKey },
+      (current) => removePostFromFeed(current, postId),
+    );
+  }
+  queryClient.setQueryData(queryKeys.post(postId), null);
 }
 
 export function upsertNote(
