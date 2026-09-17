@@ -4,7 +4,7 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
-import { routerWithQueryClient } from "@tanstack/react-router-with-query";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { captureException } from "@/lib/posthog";
 import { routeTree } from "./routeTree.gen";
 
@@ -39,17 +39,20 @@ export function getRouter() {
     },
   });
 
-  return routerWithQueryClient(
-    createTanStackRouter({
-      routeTree,
-      context: { queryClient },
-      defaultPreload: "intent",
-      // React Query owns data caching; the router shouldn't also GC loader data.
-      defaultPreloadStaleTime: 0,
-      scrollRestoration: true,
-    }),
-    queryClient,
-  );
+  const router = createTanStackRouter({
+    routeTree,
+    context: { queryClient },
+    defaultPreload: "intent",
+    // React Query owns data caching; the router shouldn't also GC loader data.
+    defaultPreloadStaleTime: 0,
+    scrollRestoration: true,
+  });
+
+  // Mutates the router in place (it does not return one) and owns the
+  // QueryClientProvider wrap — see providers.tsx.
+  setupRouterSsrQueryIntegration({ router, queryClient });
+
+  return router;
 }
 
 declare module "@tanstack/react-router" {
