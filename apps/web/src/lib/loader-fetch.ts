@@ -22,7 +22,7 @@
 //
 // The queryKey a loader primes is IDENTICAL to the one the client component's
 // `useInfiniteQuery`/`useQuery` reads, so the router-query integration
-// (routerWithQueryClient) dehydrates the primed cache on the server and the
+// (setupRouterSsrQueryIntegration) dehydrates the primed cache on the server and the
 // client hydrates it without a second fetch.
 //
 // ── API ───────────────────────────────────────────────────────────────────────
