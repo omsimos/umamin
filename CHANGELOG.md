@@ -18,6 +18,34 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.7.0] - 2026-09-17
+
+### Fixed
+
+- Deleting your account now tells you when something went wrong instead of signing you out as though it worked, and the groups you belonged to, the polls you voted in, and the posts you quoted keep accurate counts afterwards.
+- Quiet mode no longer gets stuck when toggled twice in quick succession.
+- The Hot feed now shows its last few posts instead of ending early.
+- Deleting, liking, or reposting from a profile now updates that profile's feed immediately.
+- Following someone from a followers or following list now updates the counts everywhere they appear.
+- Opening a message that could not be marked as read now says so instead of quietly resealing it later.
+- Leaving the composer while an image is still uploading now cancels the upload instead of leaving it running.
+- Tapping a post whose quoted post has been deleted now opens the post instead of doing nothing.
+- Profile pages no longer flicker or briefly show signed-out navigation while loading.
+- The installed app no longer keeps a broken page or script cached after a temporary network error.
+
+### Security & Privacy
+
+- Anonymous notes no longer include information that could identify their author.
+- Blocking someone now also stops them from commenting on your posts and from triggering notifications to you.
+- Umamin pages can no longer be embedded inside other websites.
+- Linked-account details in Settings now include only what the page actually displays.
+- Changing your password now signs out your other devices reliably, even if the change is interrupted.
+- Usernames reserved for moderators can no longer be taken at signup or by renaming.
+
+### SEO
+
+- Profile pages now show the person's display name in the browser tab and in search results.
+
 ## [7.6.3] - 2026-09-01
 
 ### Fixed
@@ -966,6 +994,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.7.0]: https://github.com/omsimos/umamin/compare/v7.6.3...v7.7.0
 [7.6.3]: https://github.com/omsimos/umamin/compare/v7.6.2...v7.6.3
 [7.6.2]: https://github.com/omsimos/umamin/compare/v7.6.1...v7.6.2
 [7.6.1]: https://github.com/omsimos/umamin/compare/v7.6.0...v7.6.1
