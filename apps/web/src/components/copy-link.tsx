@@ -2,6 +2,7 @@ import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { Link2Icon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { captureException } from "@/lib/posthog";
 
@@ -21,10 +22,18 @@ const onCopy = async (url: string) => {
 };
 
 export default function CopyLink({ username }: { username: string }) {
-  const url =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/to/${username}`
-      : "";
+  // The origin is only knowable in the browser, but reading it during render
+  // makes the server emit the placeholder and the client's FIRST render emit
+  // the button — a structural hydration mismatch that made React throw away
+  // and re-render the whole profile tree. Resolving it after mount keeps SSR
+  // and that first client render identical.
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const url = origin ? `${origin}/to/${username}` : "";
 
   if (!url) {
     return (
