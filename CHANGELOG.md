@@ -18,6 +18,30 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.8.0] - 2026-09-20
+
+### Added
+
+- The installed app tells you when a new version is ready and lets you choose when to reload, instead of switching underneath you.
+- A notice appears when you lose your connection and clears when you are back online.
+- Inbox joined Feed and Notes in the app icon's long-press shortcuts.
+- A launch screen for iPhone Air.
+- Pull down on the feed or notes in the installed app to refresh them.
+
+### Changed
+
+- The status bar and browser toolbar now follow your light or dark theme instead of staying black.
+- The top bar and bottom navigation let content blur through as you scroll.
+- Tapping a notification brings you to the app window that is already open instead of opening another one.
+- Moving between screens now cross-fades instead of cutting.
+
+### Fixed
+
+- Opening the installed app without a connection shows the offline screen instead of a browser error page.
+- The installed app no longer briefly shows the browser header on launch.
+- A page left open across a release now recovers on its own instead of failing to load the next screen.
+- The offline screen follows your theme, respects the notch, and reconnects by itself.
+
 ## [7.7.0] - 2026-09-17
 
 ### Fixed
@@ -994,6 +1018,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.8.0]: https://github.com/omsimos/umamin/compare/v7.7.0...v7.8.0
 [7.7.0]: https://github.com/omsimos/umamin/compare/v7.6.3...v7.7.0
 [7.6.3]: https://github.com/omsimos/umamin/compare/v7.6.2...v7.6.3
 [7.6.2]: https://github.com/omsimos/umamin/compare/v7.6.1...v7.6.2
