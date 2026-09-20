@@ -1,4 +1,8 @@
-import type { QueryKey } from "@tanstack/react-query";
+import type {
+  InfiniteData,
+  QueryClient,
+  QueryKey,
+} from "@tanstack/react-query";
 import { queryOptions } from "@tanstack/react-query";
 import type { FeedSort } from "@/lib/feed-sort";
 
@@ -48,6 +52,22 @@ export const queryKeys = {
 export const infiniteQueryDefaults = {
   ...stableRefetchOptions,
 };
+
+// Refresh an infinite list from the top: keep page 1 on screen, drop the rest,
+// and refetch page 1 only. A bare invalidate refetches EVERY loaded page in
+// sequence (v5 has no refetchPage), which is one Turso read per page for a
+// single gesture. Matching by prefix so every sort/viewer variant is trimmed.
+export async function refreshInfiniteQueries(
+  queryClient: QueryClient,
+  queryKey: QueryKey,
+) {
+  queryClient.setQueriesData<InfiniteData<unknown>>({ queryKey }, (old) =>
+    old && old.pages.length > 1
+      ? { pages: old.pages.slice(0, 1), pageParams: old.pageParams.slice(0, 1) }
+      : old,
+  );
+  await queryClient.invalidateQueries({ queryKey });
+}
 
 export const privateQueryDefaults = {
   ...stableRefetchOptions,

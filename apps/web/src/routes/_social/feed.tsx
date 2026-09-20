@@ -1,11 +1,18 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { AppHeader } from "@/components/app-header";
 import { ChatAnnouncement } from "@/components/chat-announcement";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { normalizeFeedSort } from "@/lib/feed-sort";
 import { loadViewerId } from "@/lib/loader-viewer";
-import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
+import {
+  PRIVATE_STALE_TIME,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+  refreshInfiniteQueries,
+} from "@/lib/query";
 import { pageSeo } from "@/lib/seo";
 import type { FeedResponse } from "@/lib/types";
 import { FeedClient } from "./-components/feed-client";
@@ -90,21 +97,28 @@ function FeedShell({ children }: { children: React.ReactNode }) {
 
 function Feed() {
   const { sort, viewerId, isAuthenticated } = Route.useLoaderData();
+  const queryClient = useQueryClient();
 
   return (
     <FeedShell>
-      <main className="pb-40">
-        <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
-          <div className="space-y-6">
-            <ChatAnnouncement className="mx-4 sm:mx-0" />
-            <FeedClient
-              sort={sort}
-              initialUserId={viewerId}
-              isAuthenticated={isAuthenticated}
-            />
-          </div>
-        </section>
-      </main>
+      <PullToRefresh
+        onRefresh={() =>
+          refreshInfiniteQueries(queryClient, queryKeys.postsRoot())
+        }
+      >
+        <main className="pb-40">
+          <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
+            <div className="space-y-6">
+              <ChatAnnouncement className="mx-4 sm:mx-0" />
+              <FeedClient
+                sort={sort}
+                initialUserId={viewerId}
+                isAuthenticated={isAuthenticated}
+              />
+            </div>
+          </section>
+        </main>
+      </PullToRefresh>
     </FeedShell>
   );
 }
