@@ -3,6 +3,7 @@ import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 import { ErrorTracking } from "@/components/error-tracking";
 import { NavigationProgress } from "@/components/navigation-progress";
+import { NetworkStatus } from "@/components/network-status";
 import { PwaPinchZoom } from "@/components/pwa-pinch-zoom";
 import { ServiceWorker } from "@/components/service-worker";
 import { ThemeColor } from "@/components/theme-color";
@@ -26,6 +27,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <ErrorTracking />
       <PwaPinchZoom />
       <ThemeColor />
+      <NetworkStatus />
       <Toaster position="top-right" />
     </ThemeProvider>
   );
