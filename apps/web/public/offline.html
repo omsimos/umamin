@@ -12,16 +12,17 @@
       // Same theme resolution as the app shell (next-themes: storageKey
       // "theme", default "system") so the offline card matches the last theme
       // the user saw instead of always going dark.
-      (function () {
+      (() => {
         try {
-          var s = localStorage.getItem("theme") || "system";
-          var m = window.matchMedia("(prefers-color-scheme: dark)").matches
+          const stored = localStorage.getItem("theme") || "system";
+          const system = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
             ? "dark"
             : "light";
-          var t = s === "system" ? m : s;
-          document.documentElement.classList.toggle("dark", t === "dark");
-          document.documentElement.style.colorScheme = t;
-        } catch (e) {}
+          const theme = stored === "system" ? system : stored;
+          document.documentElement.classList.toggle("dark", theme === "dark");
+          document.documentElement.style.colorScheme = theme;
+        } catch {}
       })();
     </script>
     <style>
@@ -129,7 +130,7 @@
     <script>
       // The precached icon above is the only image here, so the card renders
       // fully offline; once connectivity returns, resume where the user was.
-      window.addEventListener("online", function () {
+      window.addEventListener("online", () => {
         location.reload();
       });
     </script>
