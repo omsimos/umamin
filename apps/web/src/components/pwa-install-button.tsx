@@ -9,6 +9,7 @@ import {
 } from "@umamin/ui/components/dialog";
 import { DownloadIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { isStandaloneMode } from "@/lib/pwa";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -18,18 +19,6 @@ type BeforeInstallPromptEvent = Event & {
 function isIosDevice() {
   if (typeof navigator === "undefined") return false;
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-
-function isStandaloneMode() {
-  if (typeof window === "undefined") return false;
-  const matchStandalone = window.matchMedia?.(
-    "(display-mode: standalone)",
-  )?.matches;
-  const iosStandalone =
-    typeof navigator !== "undefined" &&
-    "standalone" in navigator &&
-    navigator.standalone === true;
-  return Boolean(matchStandalone || iosStandalone);
 }
 
 export function PwaInstallButton() {
