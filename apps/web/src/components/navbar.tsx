@@ -1,15 +1,13 @@
 import { cn } from "@umamin/ui/lib/utils";
 import { Link, usePathname } from "@/lib/navigation";
-import { isStandaloneMode } from "@/lib/pwa";
 import { AccountSheet } from "./account-sheet";
 import { UmaminLogo } from "./umamin-logo";
 
+// Hidden in the installed app via the `standalone:` CSS variant rather than a
+// render-time check: the server can't know the display mode, so branching in
+// render mismatched hydration for every PWA user (React #418).
 export function Navbar() {
   const pathname = usePathname();
-
-  if (isStandaloneMode()) {
-    return null;
-  }
 
   // Post detail is a focused view on every breakpoint (its own PostHeader).
   if (pathname.startsWith("/post")) {
@@ -32,7 +30,7 @@ export function Navbar() {
   return (
     <nav
       className={cn(
-        "fixed left-0 right-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter lg:z-40",
+        "fixed left-0 right-0 top-0 z-50 w-full bg-background/80 bg-clip-padding py-5 backdrop-blur-xl backdrop-filter standalone:hidden lg:z-40",
         mobileHeaderSurface && "max-lg:hidden",
       )}
     >

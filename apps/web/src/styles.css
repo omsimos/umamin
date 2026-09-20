@@ -132,3 +132,8 @@
     touch-action: manipulation;
   }
 }
+
+/* `standalone:` — the installed app (home-screen PWA / TWA). A CSS variant so
+   chrome that hides there (Navbar) does it on first paint, with no
+   server/client render split and no post-hydration flash. */
+@custom-variant standalone (@media (display-mode: standalone));
