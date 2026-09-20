@@ -19,6 +19,7 @@ import type { ReactNode } from "react";
 import { NotFoundPage } from "@/components/not-found-page";
 import { Providers } from "@/components/providers";
 import { RouteSegmentError } from "@/components/route-segment-error";
+import { THEME_COLOR } from "@/components/theme-color";
 import { AD_CLIENT, ADS_ENABLED } from "@/lib/ad-placements";
 import { getGtmInlineScript } from "@/lib/gtm";
 import { appleSplashLinks, pageSeo } from "@/lib/seo";
@@ -36,7 +37,10 @@ const GTM_ID = import.meta.env.VITE_GTM_ID;
 // Mirrors next-themes' pre-paint script (attribute="class", defaultTheme
 // "system", enableSystem, storageKey "theme") so the first paint matches the
 // stored/system theme — no flash of the wrong theme before hydration.
-const THEME_FOUC_SCRIPT = `(function(){try{var s=localStorage.getItem('theme')||'system';var m=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';var t=s==='system'?m:s;var e=document.documentElement;e.classList.toggle('dark',t==='dark');e.style.colorScheme=t;}catch(e){}})();`;
+// It also points <meta name="theme-color"> at the same theme, so the browser /
+// OS chrome tint matches the first paint (components/theme-color.tsx keeps it
+// in step afterwards).
+const THEME_FOUC_SCRIPT = `(function(){try{var s=localStorage.getItem('theme')||'system';var m=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';var t=s==='system'?m:s;var e=document.documentElement;e.classList.toggle('dark',t==='dark');e.style.colorScheme=t;var c=document.querySelector('meta[name="theme-color"]');if(c){c.setAttribute('content',t==='dark'?'${THEME_COLOR.dark}':'${THEME_COLOR.light}');}}catch(e){}})();`;
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
@@ -46,10 +50,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
-      { name: "theme-color", content: "black" },
+      // Dark is the SSR default (matches the manifest + iOS splash); the
+      // pre-paint script below and <ThemeColor /> swap it for the real theme.
+      { name: "theme-color", content: THEME_COLOR.dark },
       { name: "author", content: "Omsimos Collective" },
-      // iOS standalone: without these the installed PWA renders as a plain web
-      // view (opaque status bar, no app title) — ported from apps/www appleWebApp.
+      // Standalone hints: without these the installed PWA renders as a plain
+      // web view (opaque status bar, no app title). Chromium reads the standard
+      // name and warns when only the apple- one is present; Safari reads only
+      // the apple- one, so both stay.
+      { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "Umamin" },
       {

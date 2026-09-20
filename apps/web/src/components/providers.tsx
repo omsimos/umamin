@@ -5,6 +5,7 @@ import { ErrorTracking } from "@/components/error-tracking";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { PwaPinchZoom } from "@/components/pwa-pinch-zoom";
 import { ServiceWorker } from "@/components/service-worker";
+import { ThemeColor } from "@/components/theme-color";
 
 // Client providers, ported from apps/www app/providers.tsx. The QueryClient
 // provider is NOT here — `setupRouterSsrQueryIntegration` (src/router.tsx) already wraps
@@ -24,6 +25,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <ServiceWorker />
       <ErrorTracking />
       <PwaPinchZoom />
+      <ThemeColor />
       <Toaster position="top-right" />
     </ThemeProvider>
   );
