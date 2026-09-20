@@ -46,6 +46,11 @@ export function getRouter() {
     // React Query owns data caching; the router shouldn't also GC loader data.
     defaultPreloadStaleTime: 0,
     scrollRestoration: true,
+    // Cross-fade route changes through the View Transitions API (a no-op
+    // where unsupported). Duration and the reduced-motion opt-out live in
+    // styles.css. Applied only once loaders resolve, so data fetching is
+    // never behind a frozen frame.
+    defaultViewTransition: true,
   });
 
   // Mutates the router in place (it does not return one) and owns the

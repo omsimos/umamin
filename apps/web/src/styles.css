@@ -137,3 +137,19 @@
    chrome that hides there (Navbar) does it on first paint, with no
    server/client render split and no post-hydration flash. */
 @custom-variant standalone (@media (display-mode: standalone));
+
+/* Route changes cross-fade (router.tsx defaultViewTransition). The default
+   250ms reads as lag on a phone; 160ms is a settle, not a wait. The fixed
+   chrome needs no opt-out: identical pixels cross-fading into themselves is
+   invisible, so the bottom nav appears to stay put like a native tab bar. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
