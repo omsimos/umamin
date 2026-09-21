@@ -6,58 +6,133 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
+    <meta name="theme-color" content="#111113" />
     <title>Umamin is offline</title>
+    <script>
+      // Same theme resolution as the app shell (next-themes: storageKey
+      // "theme", default "system") so the offline card matches the last theme
+      // the user saw instead of always going dark.
+      (() => {
+        try {
+          const stored = localStorage.getItem("theme") || "system";
+          const system = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
+            ? "dark"
+            : "light";
+          const theme = stored === "system" ? system : stored;
+          document.documentElement.classList.toggle("dark", theme === "dark");
+          document.documentElement.style.colorScheme = theme;
+        } catch {}
+      })();
+    </script>
     <style>
       :root {
-                                                        color-scheme: light dark;
-                                                      }
-                                                      body {
-                                                        margin: 0;
-                                                        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
-                                                        background: #0b0b0e;
-                                                        color: #f5f5f7;
-                                                        display: grid;
-                                                        min-height: 100vh;
-                                                        place-items: center;
-                                                        padding: 32px;
-                                                      }
-                                                      .card {
-                                                        max-width: 420px;
-                                                        border: 1px solid #1f1f26;
-                                                        border-radius: 16px;
-                                                        padding: 24px;
-                                                        background: #121218;
-                                                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-                                                      }
-                                                      h1 {
-                                                        font-size: 22px;
-                                                        margin: 0 0 8px;
-                                                      }
-                                                      p {
-                                                        margin: 0 0 16px;
-                                                        line-height: 1.5;
-                                                        color: #c9cad3;
-                                                      }
-                                                      button {
-                                                        appearance: none;
-                                                        border: 0;
-                                                        border-radius: 999px;
-                                                        padding: 10px 16px;
-                                                        background: #ffffff;
-                                                        color: #111113;
-                                                        font-weight: 600;
-                                                        cursor: pointer;
-                                                      }
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #131316;
+        --muted: #6b6b76;
+        --border: #e5e5ea;
+        --card: #ffffff;
+        --button-bg: #131316;
+        --button-fg: #ffffff;
+      }
+      :root.dark {
+        --bg: #111113;
+        --fg: #f5f5f7;
+        --muted: #a1a1aa;
+        --border: #26262c;
+        --card: #18181c;
+        --button-bg: #ffffff;
+        --button-fg: #111113;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family:
+          ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        display: grid;
+        min-height: 100dvh;
+        place-items: center;
+        padding: max(24px, env(safe-area-inset-top))
+          max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom))
+          max(24px, env(safe-area-inset-left));
+        box-sizing: border-box;
+        -webkit-text-size-adjust: 100%;
+      }
+      .card {
+        width: 100%;
+        max-width: 360px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 28px 24px;
+        background: var(--card);
+        text-align: center;
+      }
+      .mark {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        margin: 0 auto 16px;
+        display: block;
+      }
+      h1 {
+        font-size: 20px;
+        letter-spacing: -0.01em;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 20px;
+        line-height: 1.5;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 20px;
+        background: var(--button-bg);
+        color: var(--button-fg);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+      button:active {
+        opacity: 0.85;
+      }
     </style>
   </head>
   <body>
-    <div class="card">
-      <h1>You are offline</h1>
+    <main class="card">
+      <img
+        class="mark"
+        src="/icon-192x192.png"
+        width="56"
+        height="56"
+        alt=""
+      />
+      <h1>You’re offline</h1>
       <p>
-        Umamin can’t reach the network right now. Check your connection and try
-        again.
+        Umamin can’t reach the network right now. It will reconnect on its
+        own as soon as you’re back online.
       </p>
-      <button type="button" onclick="location.reload()">Retry</button>
-    </div>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+    <script>
+      // The precached icon above is the only image here, so the card renders
+      // fully offline; once connectivity returns, resume where the user was.
+      window.addEventListener("online", () => {
+        location.reload();
+      });
+    </script>
   </body>
 </html>

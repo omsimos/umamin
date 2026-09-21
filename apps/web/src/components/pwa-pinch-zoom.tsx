@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { isStandaloneMode } from "@/lib/pwa";
 
 // Disables page pinch-zoom ONLY in the installed app (standalone / TWA), where an
 // accidental two-finger zoom leaves the UI stuck zoomed-in and breaks the
@@ -12,17 +13,13 @@ import { useEffect } from "react";
 //    proprietary pinch gesture events directly.
 export function PwaPinchZoom() {
   useEffect(() => {
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as { standalone?: boolean }).standalone === true;
-
-    if (!standalone) return;
+    if (!isStandaloneMode()) return;
 
     const viewport = document.querySelector('meta[name="viewport"]');
     const original = viewport?.getAttribute("content") ?? null;
-    // Append to whatever Next set rather than hardcoding the whole string, so a
-    // future viewport config change (in app/layout.tsx) isn't silently dropped
-    // for PWA users. Guard against double-applying.
+    // Append to whatever the root route set rather than hardcoding the whole
+    // string, so a future viewport change (routes/__root.tsx) isn't silently
+    // dropped for PWA users. Guard against double-applying.
     if (viewport && original !== null && !original.includes("user-scalable")) {
       viewport.setAttribute(
         "content",

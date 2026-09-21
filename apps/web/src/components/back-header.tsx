@@ -16,7 +16,7 @@ export function BackHeader({
   backLabel?: string;
 }) {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 w-full bg-background bg-opacity-40 bg-clip-padding pt-[env(safe-area-inset-top)] backdrop-blur-xl backdrop-filter lg:hidden">
+    <header className="fixed inset-x-0 top-0 z-50 w-full bg-background/80 bg-clip-padding pt-[env(safe-area-inset-top)] backdrop-blur-xl backdrop-filter lg:hidden">
       <div className="container relative flex h-16 max-w-7xl items-center justify-between">
         <Button variant="ghost" size="icon" aria-label={backLabel} asChild>
           <Link href={backHref}>

@@ -1,10 +1,17 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Skeleton } from "@umamin/ui/components/skeleton";
 import { AppHeader } from "@/components/app-header";
 import { ChatAnnouncement } from "@/components/chat-announcement";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { loadViewerId } from "@/lib/loader-viewer";
-import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
+import {
+  PRIVATE_STALE_TIME,
+  PUBLIC_STALE_TIME,
+  queryKeys,
+  refreshInfiniteQueries,
+} from "@/lib/query";
 import { pageSeo } from "@/lib/seo";
 import type { NotesResponse } from "@/lib/types";
 import { NoteCardSkeleton } from "./-components/note-card-skeleton";
@@ -66,16 +73,28 @@ function NotesShell({ children }: { children: React.ReactNode }) {
 
 function Notes() {
   const { viewerId, isAuthenticated } = Route.useLoaderData();
+  const queryClient = useQueryClient();
 
   return (
     <NotesShell>
-      <div className="container max-w-xl mt-2">
-        <ChatAnnouncement className="mb-6" />
-        <NotesClient
-          initialUserId={viewerId}
-          isAuthenticated={isAuthenticated}
-        />
-      </div>
+      <PullToRefresh
+        onRefresh={() =>
+          Promise.all([
+            refreshInfiniteQueries(queryClient, queryKeys.notesRoot()),
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.currentNote(),
+            }),
+          ])
+        }
+      >
+        <div className="container max-w-xl mt-2">
+          <ChatAnnouncement className="mb-6" />
+          <NotesClient
+            initialUserId={viewerId}
+            isAuthenticated={isAuthenticated}
+          />
+        </div>
+      </PullToRefresh>
     </NotesShell>
   );
 }

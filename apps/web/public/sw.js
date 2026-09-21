@@ -5,18 +5,17 @@
 const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
 const STATIC_CACHE = `umamin-static-${VERSION}`;
 const PAGE_CACHE = `umamin-pages-${VERSION}`;
+const OFFLINE_URL = "/offline.html";
 
 // Only real static files here. caches.addAll() rejects the whole batch if any
 // entry is non-OK, which would abort install and silently disable offline
 // support — keep this list to files guaranteed present in public/.
-const PRECACHE_URLS = [
-  "/offline.html",
-  "/icon-192x192.png",
-  "/icon-512x512.png",
-];
+const PRECACHE_URLS = [OFFLINE_URL, "/icon-192x192.png", "/icon-512x512.png"];
 
 // Auth-gated or per-user/per-post dynamic routes: never cache their HTML, so one
 // viewer's page can't be served to another and authed content never goes stale.
+// They still get the offline page when the network is gone — /feed is the
+// manifest start_url, so this is what an installed user sees on launch offline.
 const DYNAMIC_NAVIGATION_PREFIXES = [
   "/feed",
   "/groups",
@@ -36,12 +35,18 @@ function isCacheable(response) {
   return response.ok && response.type === "basic";
 }
 
+function isDynamicNavigation(pathname) {
+  return DYNAMIC_NAVIGATION_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+// No skipWaiting() here: a new worker waits until the page opts in (the
+// "update available" toast posts SKIP_WAITING below). Taking over mid-session
+// would purge the running version's caches under an open page.
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(STATIC_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting()),
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)),
   );
 });
 
@@ -60,6 +65,12 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
@@ -73,12 +84,8 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    if (
-      DYNAMIC_NAVIGATION_PREFIXES.some(
-        (prefix) =>
-          url.pathname === prefix || url.pathname.startsWith(`${prefix}/`),
-      )
-    ) {
+    if (isDynamicNavigation(url.pathname)) {
+      event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
       return;
     }
 
@@ -98,7 +105,7 @@ self.addEventListener("fetch", (event) => {
         .catch(() =>
           caches
             .match(request)
-            .then((cached) => cached || caches.match("/offline.html")),
+            .then((cached) => cached || caches.match(OFFLINE_URL)),
         ),
     );
     return;
@@ -126,8 +133,8 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-// Web Push. Payloads are generic, type-derived strings (lib/server/push.ts) —
-// never message content. Push-only: no caching here, so RSC/PPR is untouched.
+// Web Push. Payloads are generic, type-derived strings (server-lib/push.ts) —
+// never message content.
 self.addEventListener("push", (event) => {
   if (!event.data) {
     return;
@@ -155,6 +162,8 @@ self.addEventListener("push", (event) => {
   );
 });
 
+// Reuse the open app window (navigate it in place) rather than stacking a
+// second one per tapped notification; a fresh window only when none is open.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url || "/feed";
@@ -163,12 +172,19 @@ self.addEventListener("notificationclick", (event) => {
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
-        for (const client of clientList) {
-          if (client.url.includes(url) && "focus" in client) {
-            return client.focus();
-          }
+        const target = new URL(url, self.location.origin).href;
+        const exact = clientList.find((client) => client.url === target);
+        if (exact) {
+          return exact.focus();
         }
-        return self.clients.openWindow(url);
+        const [client] = clientList;
+        if (client && "navigate" in client) {
+          return client
+            .focus()
+            .then(() => client.navigate(target))
+            .catch(() => self.clients.openWindow(target));
+        }
+        return self.clients.openWindow(target);
       }),
   );
 });

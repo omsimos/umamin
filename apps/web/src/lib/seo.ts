@@ -105,6 +105,7 @@ const APPLE_SPLASH: Array<[width: number, height: number, ratio: number]> = [
   [430, 932, 3],
   [402, 874, 3],
   [440, 956, 3],
+  [420, 912, 3],
   [768, 1024, 2],
   [820, 1180, 2],
   [834, 1194, 2],
