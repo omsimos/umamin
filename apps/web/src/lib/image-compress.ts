@@ -188,10 +188,10 @@ function renderToCanvas(
 
 /**
  * Decode a picked file with EXIF orientation applied, rejecting non-images,
- * oversized files (fail fast before the full decode), and pixel bombs. Shared
- * by the crop dialog (live preview) and compressImage so both work in the same
- * oriented coordinate space — a crop rect picked against this bitmap maps 1:1
- * when compressImage re-decodes the same file.
+ * oversized files (fail fast before the full decode), and pixel bombs. Used by
+ * the crop dialog (live preview), whose bitmap is then what compressAvatar /
+ * compressBanner encode — so a crop rect picked against it maps 1:1 — and by
+ * compressImage for post attachments.
  */
 export async function decodeOriented(
   file: Blob,
@@ -238,93 +238,107 @@ export async function compressImage(
   crop?: CropArea,
 ): Promise<CompressedImage> {
   const bitmap = await decodeOriented(file, preset.maxSourceBytes);
-
   try {
-    const contentType: UploadContentType = (await supportsWebpEncode())
-      ? "image/webp"
-      : "image/jpeg";
-
-    const attempts: Array<{
-      size: number;
-      blob: Blob;
-      width: number;
-      height: number;
-    }> = [];
-    // Keyed by both dims: width alone can collide across plan steps for
-    // degenerate aspect ratios and would silently reuse the wrong geometry.
-    const canvases = new Map<string, HTMLCanvasElement>();
-
-    for (const step of preset.plan) {
-      // A manual crop rect dictates the source geometry; otherwise the square
-      // center-crop (avatars) or the full image.
-      const sourceWidth = crop
-        ? crop.width
-        : preset.square
-          ? Math.min(bitmap.width, bitmap.height)
-          : bitmap.width;
-      const sourceHeight = crop
-        ? crop.height
-        : preset.square
-          ? Math.min(bitmap.width, bitmap.height)
-          : bitmap.height;
-      const { width, height } = fitWithin(sourceWidth, sourceHeight, step.edge);
-
-      let canvas = canvases.get(`${width}x${height}`);
-      if (!canvas) {
-        canvas = renderToCanvas(
-          bitmap,
-          width,
-          height,
-          preset.square === true,
-          crop,
-        );
-        canvases.set(`${width}x${height}`, canvas);
-      }
-
-      // JPEG sits ~25-35% heavier than WebP at equal quality; nudge down to
-      // keep Safari uploads near the same byte target.
-      const quality =
-        contentType === "image/jpeg" ? step.quality - 0.04 : step.quality;
-      const blob = await canvasToBlob(canvas, contentType, quality);
-
-      if (blob && blob.type === contentType) {
-        attempts.push({ size: blob.size, blob, width, height });
-        if (blob.size <= preset.targetBytes) break;
-      }
-
-      // Yield between encodes so a burst of attempts can't lock the main
-      // thread through a whole frame budget.
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-
-    const best = pickBestAttempt(attempts, preset.targetBytes, preset.maxBytes);
-
-    if (!best) {
-      throw new ImageCompressError("Couldn't compress this image enough.");
-    }
-
-    return {
-      blob: best.blob,
-      contentType,
-      width: best.width,
-      height: best.height,
-    };
+    return await encodeBitmap(bitmap, preset, crop);
   } finally {
     bitmap.close();
   }
 }
+
+/** The plan walk over an already-decoded bitmap, which the caller keeps
+ * owning (it is not closed here). */
+async function encodeBitmap(
+  bitmap: ImageBitmap,
+  preset: CompressPreset,
+  crop?: CropArea,
+): Promise<CompressedImage> {
+  const contentType: UploadContentType = (await supportsWebpEncode())
+    ? "image/webp"
+    : "image/jpeg";
+
+  const attempts: Array<{
+    size: number;
+    blob: Blob;
+    width: number;
+    height: number;
+  }> = [];
+  // Keyed by both dims: width alone can collide across plan steps for
+  // degenerate aspect ratios and would silently reuse the wrong geometry.
+  const canvases = new Map<string, HTMLCanvasElement>();
+
+  for (const step of preset.plan) {
+    // A manual crop rect dictates the source geometry; otherwise the square
+    // center-crop (avatars) or the full image.
+    const sourceWidth = crop
+      ? crop.width
+      : preset.square
+        ? Math.min(bitmap.width, bitmap.height)
+        : bitmap.width;
+    const sourceHeight = crop
+      ? crop.height
+      : preset.square
+        ? Math.min(bitmap.width, bitmap.height)
+        : bitmap.height;
+    const { width, height } = fitWithin(sourceWidth, sourceHeight, step.edge);
+
+    let canvas = canvases.get(`${width}x${height}`);
+    if (!canvas) {
+      canvas = renderToCanvas(
+        bitmap,
+        width,
+        height,
+        preset.square === true,
+        crop,
+      );
+      canvases.set(`${width}x${height}`, canvas);
+    }
+
+    // JPEG sits ~25-35% heavier than WebP at equal quality; nudge down to
+    // keep Safari uploads near the same byte target.
+    const quality =
+      contentType === "image/jpeg" ? step.quality - 0.04 : step.quality;
+    const blob = await canvasToBlob(canvas, contentType, quality);
+
+    if (blob && blob.type === contentType) {
+      attempts.push({ size: blob.size, blob, width, height });
+      if (blob.size <= preset.targetBytes) break;
+    }
+
+    // Yield between encodes so a burst of attempts can't lock the main
+    // thread through a whole frame budget.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  const best = pickBestAttempt(attempts, preset.targetBytes, preset.maxBytes);
+
+  if (!best) {
+    throw new ImageCompressError("Couldn't compress this image enough.");
+  }
+
+  return {
+    blob: best.blob,
+    contentType,
+    width: best.width,
+    height: best.height,
+  };
+}
+
+// Avatars and banners encode the bitmap the crop dialog already decoded rather
+// than reading the picked File a second time: on Chrome for Android that
+// second read of the same File fails often enough to leave people unable to
+// set a photo at all (the decode behind the crop preview had just succeeded).
 
 /**
  * Profile photos: 256px, ~48KB target. With a manual crop rect (natural px)
  * the user's 1:1 framing is used; without one it center-crops the largest
  * square.
  */
-export function compressAvatar(file: File, crop?: CropArea) {
-  return compressImage(file, AVATAR_PRESET, crop);
+export function compressAvatar(bitmap: ImageBitmap, crop?: CropArea) {
+  return encodeBitmap(bitmap, AVATAR_PRESET, crop);
 }
 
 /** Profile banners: 3:1 cover, ~1200px long edge, ~150KB target. `crop` is the
  * region the user framed (natural px). */
-export function compressBanner(file: File, crop: CropArea) {
-  return compressImage(file, BANNER_PRESET, crop);
+export function compressBanner(bitmap: ImageBitmap, crop: CropArea) {
+  return encodeBitmap(bitmap, BANNER_PRESET, crop);
 }
