@@ -29,6 +29,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { callAction } from "@/lib/api";
+import { ExpectedError } from "@/lib/expected-error";
 import { MIN_AURA_FOR_IMAGES } from "@/lib/post-images";
 import {
   hasUmaminPro,
@@ -174,7 +175,7 @@ export function TiersView() {
     mutationFn: async () => {
       const res = await callAction<{ url: string }>("createProCheckoutAction");
       if (res && "url" in res) return res.url;
-      throw new Error(getActionError(res) ?? "An error occurred");
+      throw new ExpectedError(getActionError(res) ?? "An error occurred");
     },
     onSuccess: (url) => {
       window.location.assign(url);

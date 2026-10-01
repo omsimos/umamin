@@ -1,4 +1,5 @@
-import type { PostHog, PostHogConfig } from "posthog-js";
+import type { CaptureResult, PostHog, PostHogConfig } from "posthog-js";
+import { ExpectedError } from "@/lib/expected-error";
 
 // Browser-side error tracking (PostHog project "Umamin").
 //
@@ -22,6 +23,42 @@ export const ERROR_TRACKING_ENABLED = Boolean(import.meta.env.PROD && TOKEN);
 // alone would enable pageviews. Session replay is off both locally and, via
 // `disable_session_recording`, against whatever the project's remote config
 // says, because this app carries anonymous messages.
+// Browser-generated rejections that describe no fault in the app, matched on
+// the whole exception chain. A route change interrupted mid-cross-fade (a
+// second navigation, a viewport resize from the mobile URL bar or keyboard)
+// rejects the ViewTransition's promises, and the router discards the
+// transition object, so nothing can attach a handler; the navigation itself
+// still completes. The ResizeObserver loop notice is the spec's benign "a
+// frame skipped delivery" signal.
+const BENIGN_EXCEPTIONS: ReadonlyArray<{ type: string; value: RegExp }> = [
+  {
+    type: "DOMException",
+    value: /^(AbortError|InvalidStateError): Transition was (skipped|aborted)/,
+  },
+  { type: "Error", value: /^ResizeObserver loop/ },
+];
+
+type ExceptionEntry = { type?: unknown; value?: unknown };
+
+export function dropBenignExceptions(
+  event: CaptureResult | null,
+): CaptureResult | null {
+  if (event?.event !== "$exception") return event;
+  const list = event.properties?.$exception_list as
+    | ExceptionEntry[]
+    | undefined;
+  if (!Array.isArray(list) || list.length === 0) return event;
+  const benign = list.every(({ type, value }) =>
+    BENIGN_EXCEPTIONS.some(
+      (rule) =>
+        type === rule.type &&
+        typeof value === "string" &&
+        rule.value.test(value),
+    ),
+  );
+  return benign ? null : event;
+}
+
 const OPTIONS: Partial<PostHogConfig> = {
   api_host: HOST,
   // Newest date the installed @posthog/types allows; bumping posthog-js can
@@ -45,6 +82,7 @@ const OPTIONS: Partial<PostHogConfig> = {
   // No identify() call is made, so this keeps anonymous visitors from each
   // minting a person profile (PostHog bills per profile).
   person_profiles: "identified_only",
+  before_send: dropBenignExceptions,
 };
 
 let pending: Promise<PostHog | null> | null = null;
@@ -81,6 +119,7 @@ export function captureException(
   properties?: Record<string, unknown>,
 ): void {
   if (!ERROR_TRACKING_ENABLED || typeof window === "undefined") return;
+  if (error instanceof ExpectedError) return;
   void load().then((posthog) => posthog?.captureException(error, properties));
 }
 

@@ -46,6 +46,7 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
 import { queryKeys } from "@/lib/query";
@@ -156,7 +157,7 @@ export function NoteCard({
       const res = await handleReactAction(prevReacted);
       const actionError = getActionError(res);
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
 
       // The edge was already in the target state — keep the flag, revert the ±1.
@@ -178,7 +179,7 @@ export function NoteCard({
     mutationFn: async () => {
       const res = await removeNoteAction({ noteId: data.id });
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

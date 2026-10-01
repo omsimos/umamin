@@ -12,6 +12,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ChatList } from "@/components/chat-list";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { ExpectedError } from "@/lib/expected-error";
 import { captureException } from "@/lib/posthog";
 import type { FeedAuthorWithBadge, NoteItem } from "@/lib/types";
 import { formatContent } from "@/lib/utils";
@@ -59,7 +60,7 @@ const ChatForm = ({ note }: ChatFormProps) => {
       });
 
       if (res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

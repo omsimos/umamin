@@ -7,6 +7,7 @@ import { CheckIcon, InfoIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
 import {
@@ -52,7 +53,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
     mutationFn: async (values: Fields) => {
       const res = await submitSettings(values);
       if ("error" in res) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return res;
     },

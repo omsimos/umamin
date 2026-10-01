@@ -30,6 +30,7 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
@@ -177,7 +178,7 @@ function PostCardImpl({
       const res = await handleLikeAction(prevLiked);
       const actionError = getActionError(res);
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
 
       // Server no-op (the like row was already in the target state): the DB
@@ -214,7 +215,7 @@ function PostCardImpl({
       const res = await handleRepostAction(prevReposted);
       const actionError = getActionError(res);
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
       if (prevReposted) {
         // Remove branch. If the row was already gone, the DB count never moved,

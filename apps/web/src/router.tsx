@@ -14,9 +14,9 @@ export function getRouter() {
   // ships still-pending queries so a streamed SSR load hydrates on the client.
   // (The apps/www `shouldRedactErrors:false` note was Next-specific and drops.)
   const queryClient = new QueryClient({
-    // Net for the mutationFns that actually throw. Most action call sites
-    // resolve with `{ error }` instead (covered by callAction's own capture),
-    // so this only fires for re-throwing and non-action mutations.
+    // Net for the mutationFns that actually throw. Call sites re-throw an
+    // action's `{ error }` as an ExpectedError, which captureException skips,
+    // so this reports only failures nobody anticipated.
     mutationCache: new MutationCache({
       onError: (error, _variables, _context, mutation) => {
         if (error instanceof DOMException && error.name === "AbortError")

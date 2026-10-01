@@ -1,6 +1,7 @@
 import { Toaster } from "@umamin/ui/components/sonner";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
+import { AdsenseLoader } from "@/components/adsense-loader";
 import { ErrorTracking } from "@/components/error-tracking";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { NetworkStatus } from "@/components/network-status";
@@ -25,6 +26,7 @@ export function Providers({ children }: { children: ReactNode }) {
       {children}
       <ServiceWorker />
       <ErrorTracking />
+      <AdsenseLoader />
       <PwaPinchZoom />
       <ThemeColor />
       <NetworkStatus />

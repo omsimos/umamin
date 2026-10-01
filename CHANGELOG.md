@@ -18,6 +18,17 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.8.1] - 2026-10-02
+
+### Fixed
+
+- Setting a profile photo or banner on Android no longer fails with "Couldn't read this image" after you crop it.
+- Pages no longer redraw from scratch while loading on slower phones.
+
+### Security & Privacy
+
+- Closed a flaw that let a crafted link run someone else's script on umamin.link.
+
 ## [7.8.0] - 2026-09-20
 
 ### Added
@@ -1018,6 +1029,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.8.1]: https://github.com/omsimos/umamin/compare/v7.8.0...v7.8.1
 [7.8.0]: https://github.com/omsimos/umamin/compare/v7.7.0...v7.8.0
 [7.7.0]: https://github.com/omsimos/umamin/compare/v7.6.3...v7.7.0
 [7.6.3]: https://github.com/omsimos/umamin/compare/v7.6.2...v7.6.3

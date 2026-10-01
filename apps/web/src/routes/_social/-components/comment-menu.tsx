@@ -16,6 +16,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import {
   patchPostAcrossFeed,
@@ -59,7 +60,7 @@ export function CommentMenu({
       const res = await deleteCommentAction({ commentId });
 
       if (res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

@@ -10,6 +10,7 @@ import {
   MAX_BLOCKED_WORD_LENGTH,
   MAX_BLOCKED_WORDS,
 } from "@/lib/blocked-words";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser } from "@/lib/query-cache";
 import type { CurrentUserResponse, UserWithAccount } from "@/lib/types";
@@ -26,7 +27,7 @@ export function BlockedWordsSection({ user }: { user: UserWithAccount }) {
     mutationFn: async (nextWords: string[]) => {
       const res = await updateBlockedWords({ words: nextWords });
       if ("error" in res || !res.blockedWords) {
-        throw new Error(
+        throw new ExpectedError(
           ("error" in res ? res.error : undefined) ??
             "Couldn't update blocked words.",
         );

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { MusicEmbed } from "@/components/music-embed";
 import { SongAttachDialog } from "@/components/song-attach-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import type { MusicAttachment } from "@/lib/music";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
@@ -47,7 +48,7 @@ export function ProfileSong({ user }: { user: UserWithAccount }) {
     mutationFn: async (musicUrl: string) => {
       const res = await submit({ musicUrl });
       if ("error" in res) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return res.music;
     },
@@ -65,7 +66,7 @@ export function ProfileSong({ user }: { user: UserWithAccount }) {
     mutationFn: async () => {
       const res = await submit({});
       if ("error" in res) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return res.music;
     },

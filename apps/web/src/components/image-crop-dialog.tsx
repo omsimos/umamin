@@ -35,7 +35,10 @@ type Props = {
   maxSourceBytes: number;
   /** Parent is compressing/uploading the applied crop. */
   busy?: boolean;
-  onApply: (crop: CropArea) => void;
+  /** `bitmap` is the decoded source the crop was framed on. It stays owned by
+   * the dialog and is closed when the dialog closes, so encode it before
+   * closing rather than decoding the File again. */
+  onApply: (crop: CropArea, bitmap: ImageBitmap) => void;
   onCancel: () => void;
 };
 
@@ -69,9 +72,9 @@ export function ImageCropDialog({
   });
 
   // Decode the picked file (EXIF-oriented) into a bitmap the cropper draws
-  // from. compressBanner/compressAvatar re-decode the same file in the same
-  // orientation, so the crop rect maps 1:1 to the stored output. Deps are the
-  // identity of the pick only — not churny callback props.
+  // from and onApply hands to the encoder, so the crop rect maps 1:1 to the
+  // stored output. Deps are the identity of the pick only — not churny
+  // callback props.
   useEffect(() => {
     if (!open || !file) return;
 
@@ -193,8 +196,8 @@ export function ImageCropDialog({
   };
 
   const apply = () => {
-    if (!natural) return;
-    onApply(coverCrop(natural, aspect, zoom, center));
+    if (!natural || !bitmap) return;
+    onApply(coverCrop(natural, aspect, zoom, center), bitmap);
   };
 
   const canvasHeight = Math.round(PREVIEW_WIDTH / aspect);

@@ -14,6 +14,7 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import { useState } from "react";
 import { toast } from "sonner";
 import { banUserAction, unbanUserAction } from "@/lib/actions";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import { getActionError } from "@/lib/utils";
 
@@ -44,7 +45,7 @@ export function BanUserDialog({
           });
       const error = getActionError(res);
       if (error) {
-        throw new Error(error);
+        throw new ExpectedError(error);
       }
     },
     onSuccess: () => {

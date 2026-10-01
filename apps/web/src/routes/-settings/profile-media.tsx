@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ImageCropDialog } from "@/components/image-crop-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import {
   compressAvatar,
   compressBanner,
@@ -108,7 +109,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
   ) => {
     const res = await presign({ contentType, contentLength: blob.size });
     if (!("key" in res) || !res.key || !res.url) {
-      throw new Error(
+      throw new ExpectedError(
         ("error" in res ? res.error : undefined) ??
           "Upload failed. Please try again.",
       );
@@ -118,8 +119,14 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
   };
 
   const bannerMutation = useMutation({
-    mutationFn: async ({ file, crop }: { file: File; crop: CropArea }) => {
-      const compressed = await compressBanner(file, crop);
+    mutationFn: async ({
+      bitmap,
+      crop,
+    }: {
+      bitmap: ImageBitmap;
+      crop: CropArea;
+    }) => {
+      const compressed = await compressBanner(bitmap, crop);
       const key = await presignAndUpload(
         compressed.blob,
         compressed.contentType,
@@ -127,7 +134,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
       );
       const res = await applyBanner({ key });
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return "bannerImageUrl" in res ? res.bannerImageUrl : undefined;
     },
@@ -146,8 +153,14 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
   });
 
   const avatarMutation = useMutation({
-    mutationFn: async ({ file, crop }: { file: File; crop: CropArea }) => {
-      const compressed = await compressAvatar(file, crop);
+    mutationFn: async ({
+      bitmap,
+      crop,
+    }: {
+      bitmap: ImageBitmap;
+      crop: CropArea;
+    }) => {
+      const compressed = await compressAvatar(bitmap, crop);
       const key = await presignAndUpload(
         compressed.blob,
         compressed.contentType,
@@ -155,7 +168,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
       );
       const res = await applyAvatar({ key });
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return "imageUrl" in res ? res.imageUrl : undefined;
     },
@@ -177,7 +190,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
     mutationFn: async () => {
       const res = await removeBanner();
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {
@@ -195,7 +208,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
     mutationFn: async () => {
       const res = await removePhoto();
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {
@@ -327,9 +340,9 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
         }
         busy={isApplying}
         onCancel={closeCrop}
-        onApply={(crop) => {
+        onApply={(crop, bitmap) => {
           if (!cropTarget) return;
-          const payload = { file: cropTarget.file, crop };
+          const payload = { bitmap, crop };
           if (cropTarget.kind === "banner") {
             bannerMutation.mutate(payload);
           } else {

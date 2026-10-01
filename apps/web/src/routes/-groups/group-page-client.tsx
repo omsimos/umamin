@@ -56,6 +56,7 @@ import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupEditDialog } from "@/components/group-edit-dialog";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import {
   GROUP_CHAT_ENABLED,
   type GroupAccent,
@@ -174,7 +175,7 @@ export function GroupPageClient({
       const res = await equip({
         groupId: equipped ? null : (group?.id ?? null),
       });
-      if ("error" in res) throw new Error(res.error);
+      if ("error" in res) throw new ExpectedError(res.error);
     },
     onSuccess: () => {
       vibrate();
@@ -186,7 +187,8 @@ export function GroupPageClient({
   const leaveMutation = useMutation({
     mutationFn: async () => {
       const res = await leaveGroupAction({ groupId: group?.id ?? "" });
-      if (res && "error" in res && res.error) throw new Error(res.error);
+      if (res && "error" in res && res.error)
+        throw new ExpectedError(res.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
@@ -200,7 +202,8 @@ export function GroupPageClient({
   const deleteMutation = useMutation({
     mutationFn: async () => {
       const res = await deleteGroupAction({ groupId: group?.id ?? "" });
-      if (res && "error" in res && res.error) throw new Error(res.error);
+      if (res && "error" in res && res.error)
+        throw new ExpectedError(res.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups() });
@@ -217,7 +220,8 @@ export function GroupPageClient({
         groupId: group?.id ?? "",
         userId,
       });
-      if (res && "error" in res && res.error) throw new Error(res.error);
+      if (res && "error" in res && res.error)
+        throw new ExpectedError(res.error);
       return userId;
     },
     onSuccess: (userId) => {
@@ -244,7 +248,8 @@ export function GroupPageClient({
         groupId: group?.id ?? "",
         username,
       });
-      if (res && "error" in res && res.error) throw new Error(res.error);
+      if (res && "error" in res && res.error)
+        throw new ExpectedError(res.error);
       return res;
     },
     onSuccess: (res) => {
@@ -262,7 +267,7 @@ export function GroupPageClient({
   const requestMutation = useMutation({
     mutationFn: async () => {
       const res = await requestToJoinGroupAction({ groupId: group?.id ?? "" });
-      if ("error" in res) throw new Error(res.error);
+      if ("error" in res) throw new ExpectedError(res.error);
       return res;
     },
     onSuccess: (res) => {
@@ -279,7 +284,8 @@ export function GroupPageClient({
   const cancelRequestMutation = useMutation({
     mutationFn: async () => {
       const res = await cancelJoinRequestAction({ groupId: group?.id ?? "" });
-      if (res && "error" in res && res.error) throw new Error(res.error);
+      if (res && "error" in res && res.error)
+        throw new ExpectedError(res.error);
     },
     onSuccess: () => {
       toast.success("Request withdrawn.");
@@ -294,7 +300,8 @@ export function GroupPageClient({
         groupId: group?.id ?? "",
         accept,
       });
-      if (res && "error" in res && res.error) throw new Error(res.error);
+      if (res && "error" in res && res.error)
+        throw new ExpectedError(res.error);
       return accept;
     },
     onSuccess: (accept) => {
@@ -320,7 +327,8 @@ export function GroupPageClient({
         userId,
         accept,
       });
-      if (res && "error" in res && res.error) throw new Error(res.error);
+      if (res && "error" in res && res.error)
+        throw new ExpectedError(res.error);
       return userId;
     },
     onSuccess: (userId) => {

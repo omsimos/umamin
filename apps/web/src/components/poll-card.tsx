@@ -10,6 +10,7 @@ import {
   useBurstAction,
 } from "@/hooks/use-burst-action";
 import { votePollAction } from "@/lib/actions";
+import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import {
   isPollEnded,
@@ -131,7 +132,7 @@ export function PollCard({ postId, poll, isAuthenticated }: PollCardProps) {
         return;
       }
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
 
       // The vote row already existed (second device / stale profile card):

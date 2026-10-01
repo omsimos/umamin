@@ -20,6 +20,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { Menu } from "@/components/menu";
+import { ExpectedError } from "@/lib/expected-error";
 import { useAppNavigate } from "@/lib/navigation";
 import { queryKeys } from "@/lib/query";
 import { removeMessage } from "@/lib/query-cache";
@@ -48,7 +49,7 @@ export function ReceivedMessageMenu(props: ReceivedMenuProps) {
       const res = await deleteMessageAction(id);
 
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

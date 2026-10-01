@@ -4,6 +4,7 @@ import { Switch } from "@umamin/ui/components/switch";
 import { MessageCircleOffIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
 import type {
@@ -36,7 +37,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     mutationFn: async () => {
       const res = await toggleQuietMode();
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
 
       return "quietMode" in res ? res.quietMode : undefined;

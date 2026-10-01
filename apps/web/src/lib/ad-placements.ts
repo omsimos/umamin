@@ -62,7 +62,8 @@ export type AdPlacement = keyof typeof adPlacements;
  * `import.meta.env.VITE_*` at build time, so this is a literal boolean in the
  * bundle: when off, no placement renders, no vertical space is reserved, the
  * in-feed rule yields nothing, and the adsbygoogle loader is never added to the
- * document (see routes/__root.tsx) — nothing is merely hidden with CSS.
+ * document (see components/adsense-loader.tsx) — nothing is merely hidden
+ * with CSS.
  */
 export const ADS_ENABLED = import.meta.env.VITE_ADS_ENABLED !== "false";
 

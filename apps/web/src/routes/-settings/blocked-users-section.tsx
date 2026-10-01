@@ -11,6 +11,7 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
+import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
 import {
   infiniteQueryDefaults,
@@ -45,7 +46,7 @@ export function BlockedUsersSection() {
     mutationFn: async (user: { id: string; username: string }) => {
       const res = await unblockUserAction({ userId: user.id });
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return user;
     },

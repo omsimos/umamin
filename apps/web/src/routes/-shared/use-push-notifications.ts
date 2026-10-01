@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { type ActionResult, callAction } from "@/lib/api";
+import { ExpectedError } from "@/lib/expected-error";
 import {
   getExistingSubscription,
   isIosWebPushBlocked,
@@ -100,7 +101,7 @@ export function usePushNotifications() {
     mutationFn: async () => {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        throw new Error(
+        throw new ExpectedError(
           permission === "denied"
             ? "Notifications are blocked. Re-enable them in your browser or device settings."
             : "Notification permission was not granted.",
@@ -108,7 +109,7 @@ export function usePushNotifications() {
       }
       const sub = await subscribeToPush(VAPID_PUBLIC_KEY as string);
       const res = await register(sub);
-      if ("error" in res) throw new Error(res.error);
+      if ("error" in res) throw new ExpectedError(res.error);
       return res.pushPrefs;
     },
     onSuccess: (pushPrefs) => {
@@ -132,7 +133,7 @@ export function usePushNotifications() {
       const endpoint = await unsubscribeFromPush();
       if (!endpoint) return null;
       const res = await unregister({ endpoint });
-      if ("error" in res) throw new Error(res.error);
+      if ("error" in res) throw new ExpectedError(res.error);
       return res.pushPrefs;
     },
     onSuccess: (pushPrefs) => {
