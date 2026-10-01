@@ -25,6 +25,10 @@ any that are empty.
 - Setting a profile photo or banner on Android no longer fails with "Couldn't read this image" after you crop it.
 - Pages no longer redraw from scratch while loading on slower phones.
 
+### Security & Privacy
+
+- Closed a flaw that let a crafted link run someone else's script on umamin.link.
+
 ## [7.8.0] - 2026-09-20
 
 ### Added
