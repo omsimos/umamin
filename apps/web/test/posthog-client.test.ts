@@ -21,6 +21,7 @@ vi.mock("posthog-js", () => {
 const {
   ERROR_TRACKING_ENABLED,
   captureException,
+  dropBenignExceptions,
   initErrorTracking,
   registerViewer,
 } = await import("@/lib/posthog");
@@ -45,5 +46,68 @@ describe("browser error tracking, unconfigured", () => {
 
     expect(sdkImports).toBe(0);
     expect(init).not.toHaveBeenCalled();
+  });
+});
+
+function exceptionEvent(list: Array<{ type: string; value: string }>) {
+  return {
+    uuid: "evt",
+    event: "$exception",
+    properties: { $exception_list: list },
+  };
+}
+
+describe("dropBenignExceptions", () => {
+  // Both fired on every interrupted route cross-fade once view transitions
+  // shipped, with no stack and no user-visible effect.
+  it("drops interrupted view transitions", () => {
+    for (const value of [
+      "AbortError: Transition was skipped",
+      "AbortError: Transition was skipped. New ViewTransition started",
+      "InvalidStateError: Transition was aborted because of invalid state",
+      "InvalidStateError: Transition was aborted because of invalid state. Viewport size changed",
+    ]) {
+      expect(
+        dropBenignExceptions(exceptionEvent([{ type: "DOMException", value }])),
+      ).toBeNull();
+    }
+  });
+
+  it("drops the ResizeObserver loop notice", () => {
+    expect(
+      dropBenignExceptions(
+        exceptionEvent([
+          {
+            type: "Error",
+            value:
+              "ResizeObserver loop completed with undelivered notifications.",
+          },
+        ]),
+      ),
+    ).toBeNull();
+  });
+
+  it("keeps other DOMExceptions", () => {
+    const event = exceptionEvent([
+      {
+        type: "DOMException",
+        value:
+          "InvalidAccessError: Failed to execute 'subscribe' on 'PushManager': The provided applicationServerKey is not valid.",
+      },
+    ]);
+    expect(dropBenignExceptions(event)).toBe(event);
+  });
+
+  it("keeps a chain where only one link is benign", () => {
+    const event = exceptionEvent([
+      { type: "TypeError", value: "Cannot read properties of undefined" },
+      { type: "DOMException", value: "AbortError: Transition was skipped" },
+    ]);
+    expect(dropBenignExceptions(event)).toBe(event);
+  });
+
+  it("leaves non-exception events alone", () => {
+    const event = { uuid: "evt", event: "$pageview", properties: {} };
+    expect(dropBenignExceptions(event)).toBe(event);
   });
 });
