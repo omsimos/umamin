@@ -1,4 +1,5 @@
 import type { PostHog, PostHogConfig } from "posthog-js";
+import { ExpectedError } from "@/lib/expected-error";
 
 // Browser-side error tracking (PostHog project "Umamin").
 //
@@ -81,6 +82,7 @@ export function captureException(
   properties?: Record<string, unknown>,
 ): void {
   if (!ERROR_TRACKING_ENABLED || typeof window === "undefined") return;
+  if (error instanceof ExpectedError) return;
   void load().then((posthog) => posthog?.captureException(error, properties));
 }
 

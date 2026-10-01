@@ -10,6 +10,7 @@ import { ChatList } from "@/components/chat-list";
 import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import { captureException } from "@/lib/posthog";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { PublicUser } from "@/lib/types";
@@ -34,7 +35,7 @@ export function ChatForm({ user }: { user: PublicUser }) {
       });
 
       if (res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

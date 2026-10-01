@@ -12,6 +12,7 @@ import {
 import { Button } from "@umamin/ui/components/button";
 import { toast } from "sonner";
 import { blockUserAction } from "@/lib/actions";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 
 type BlockUserDialogProps = {
@@ -37,7 +38,7 @@ export function BlockUserDialog({
       const res = await blockUserAction({ userId });
 
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

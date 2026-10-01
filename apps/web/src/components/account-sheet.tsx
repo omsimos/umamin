@@ -24,6 +24,7 @@ import { GroupBadge } from "@/components/group-badge";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { actionError, callAction } from "@/lib/api";
 import { umaminChatUrl } from "@/lib/chat-link";
+import { ExpectedError } from "@/lib/expected-error";
 import { Link, useAppNavigate } from "@/lib/navigation";
 import {
   infiniteQueryDefaults,
@@ -58,7 +59,7 @@ export function AccountSheet({
     mutationFn: async () => {
       const res = await callAction("logout");
       const err = actionError(res);
-      if (err) throw new Error(err);
+      if (err) throw new ExpectedError(err);
       return res;
     },
     onSuccess: () => {

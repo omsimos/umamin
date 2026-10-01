@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { GroupIconPicker } from "@/components/group-icon-picker";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { updateGroupAction } from "@/lib/actions";
+import { ExpectedError } from "@/lib/expected-error";
 import {
   GROUP_DESCRIPTION_MAX_LENGTH,
   GROUP_NAME_MAX_LENGTH,
@@ -68,7 +69,9 @@ export function GroupEditDialog({
         accent,
       });
       if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message ?? "Invalid input.");
+        throw new ExpectedError(
+          parsed.error.issues[0]?.message ?? "Invalid input.",
+        );
       }
       const res = await submit({
         groupId: group.id,
@@ -78,7 +81,7 @@ export function GroupEditDialog({
         accent,
       });
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

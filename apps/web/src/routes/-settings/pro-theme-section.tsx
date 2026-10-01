@@ -5,6 +5,7 @@ import { BanIcon, CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 import { PRO_THEME_STYLES } from "@/components/pro-flair";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
 import { hasUmaminPro, PRO_THEMES, type ProTheme } from "@/lib/pro";
 import { queryKeys } from "@/lib/query";
@@ -29,7 +30,7 @@ export function ProThemeSection({ user }: { user: UserWithAccount }) {
     mutationFn: async (theme: ProTheme | null) => {
       const res = await updateProfileThemeAction({ theme });
       if ("error" in res) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return res.theme;
     },

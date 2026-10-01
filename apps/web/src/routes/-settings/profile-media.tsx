@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ImageCropDialog } from "@/components/image-crop-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import {
   compressAvatar,
   compressBanner,
@@ -108,7 +109,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
   ) => {
     const res = await presign({ contentType, contentLength: blob.size });
     if (!("key" in res) || !res.key || !res.url) {
-      throw new Error(
+      throw new ExpectedError(
         ("error" in res ? res.error : undefined) ??
           "Upload failed. Please try again.",
       );
@@ -127,7 +128,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
       );
       const res = await applyBanner({ key });
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return "bannerImageUrl" in res ? res.bannerImageUrl : undefined;
     },
@@ -155,7 +156,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
       );
       const res = await applyAvatar({ key });
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return "imageUrl" in res ? res.imageUrl : undefined;
     },
@@ -177,7 +178,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
     mutationFn: async () => {
       const res = await removeBanner();
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {
@@ -195,7 +196,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
     mutationFn: async () => {
       const res = await removePhoto();
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

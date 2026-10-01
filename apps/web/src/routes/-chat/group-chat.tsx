@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { ExpectedError } from "@/lib/expected-error";
 import {
   GROUP_CHAT_REACTION_EMOJIS,
   type GroupAccent,
@@ -302,7 +303,7 @@ export function GroupChat({
         replyToMessageId: vars.replyToMessageId,
       });
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return res as { success: true; id: string; createdAt: string | Date };
     },
@@ -315,7 +316,7 @@ export function GroupChat({
         messageId,
       });
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onMutate: (messageId) => {
@@ -339,7 +340,7 @@ export function GroupChat({
         emoji: vars.emoji,
       });
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
   });

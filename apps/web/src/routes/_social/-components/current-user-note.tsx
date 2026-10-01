@@ -42,6 +42,7 @@ import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
 import { TimeAgo } from "@/components/time-ago";
+import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
 import { pageQueryOptions, queryKeys } from "@/lib/query";
@@ -70,7 +71,7 @@ export function CurrentUserNote({
       const res = await clearNoteAction();
       const actionError = getActionError(res);
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
       return res;
     },

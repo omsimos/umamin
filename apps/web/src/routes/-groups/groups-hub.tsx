@@ -14,6 +14,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import {
   GROUP_CHAT_ENABLED,
   type GroupAccent,
@@ -90,7 +91,7 @@ export function GroupsHub() {
     mutationFn: async (vars: { groupId: string; accept: boolean }) => {
       const res = await respondInvite(vars);
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return vars.accept;
     },

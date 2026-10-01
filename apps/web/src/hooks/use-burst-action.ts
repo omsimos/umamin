@@ -1,4 +1,5 @@
 import { useAsyncRateLimitedCallback } from "@tanstack/react-pacer/async-rate-limiter";
+import { ExpectedError } from "@/lib/expected-error";
 
 export const BURST_ACTION_REJECT_MESSAGE =
   "You're acting too fast. Please wait a moment.";
@@ -22,7 +23,9 @@ export function useBurstAction<TArgs extends unknown[], TResult>(
     window: options?.windowMs ?? 10_000,
     windowType: "sliding",
     onReject: () => {
-      throw new Error(options?.rejectMessage ?? BURST_ACTION_REJECT_MESSAGE);
+      throw new ExpectedError(
+        options?.rejectMessage ?? BURST_ACTION_REJECT_MESSAGE,
+      );
     },
   });
 }

@@ -15,6 +15,7 @@ import { ChatList } from "@/components/chat-list";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import { patchMessage } from "@/lib/query-cache";
 import type { MessagesResponse } from "@/lib/types";
@@ -43,7 +44,7 @@ export function ReplyDialog(props: Props) {
       });
 
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
 
       return res;

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { presignPostImagesAction } from "@/lib/actions";
+import { ExpectedError } from "@/lib/expected-error";
 import {
   type CompressedImage,
   compressImage,
@@ -129,7 +130,7 @@ export function useImageAttachments() {
       });
 
       if (!("uploads" in res) || !res.uploads?.[0]) {
-        throw new Error(
+        throw new ExpectedError(
           ("error" in res ? res.error : undefined) ??
             "Upload failed. Please try again.",
         );

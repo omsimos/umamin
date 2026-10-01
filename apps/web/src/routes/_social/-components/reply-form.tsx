@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import {
   patchPostAcrossFeed,
@@ -39,7 +40,7 @@ export default function ReplyForm({ user, postId }: Props) {
     mutationFn: async (nextContent: string) => {
       const res = await submitComment({ content: nextContent, postId });
       if (res && "error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return res;
     },

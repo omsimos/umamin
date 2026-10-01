@@ -29,6 +29,7 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
@@ -129,7 +130,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
       const res = await handleLikeAction(prevLiked);
       const actionError = getActionError(res);
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
 
       // Server no-op (like row already in target state): drop the optimistic ±1.
@@ -160,7 +161,7 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
       const res = await handleRepostAction(prevReposted);
       const actionError = getActionError(res);
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
       if (prevReposted) {
         if (isAlreadyRemoved(res)) {

@@ -1,3 +1,4 @@
+import { ExpectedError } from "@/lib/expected-error";
 import type { CropArea } from "@/lib/image-crop";
 import {
   AVATAR_EDGE,
@@ -24,7 +25,7 @@ export type CompressedImage = {
   height: number;
 };
 
-export class ImageCompressError extends Error {}
+export class ImageCompressError extends ExpectedError {}
 
 // Decoding a 100MP+ source would blow mobile memory budgets before we ever
 // get to downscale it; anything this large isn't a photo we should accept.

@@ -4,6 +4,7 @@ import {
   serializeSubscription,
   subscribe,
 } from "@mmmike/web-push/client";
+import { ExpectedError } from "@/lib/expected-error";
 import { isStandaloneMode } from "@/lib/pwa";
 
 // Thin app wrapper over @mmmike/web-push/client. The lib owns the PushManager
@@ -47,7 +48,7 @@ export async function subscribeToPush(
 ): Promise<SerializedSubscription> {
   const result = await subscribe(vapidPublicKey);
   if (result.status !== "subscribed") {
-    throw new Error(
+    throw new ExpectedError(
       result.status === "denied"
         ? "Notifications are blocked. Re-enable them in your browser or device settings."
         : "Push notifications are not supported in this browser.",

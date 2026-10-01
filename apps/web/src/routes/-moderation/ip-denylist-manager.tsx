@@ -5,6 +5,7 @@ import { Loader2Icon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { callAction } from "@/lib/api";
+import { ExpectedError } from "@/lib/expected-error";
 import { getActionError } from "@/lib/utils";
 
 const QUERY_KEY = ["moderation", "ip-denylist"] as const;
@@ -41,7 +42,7 @@ export function IpDenylistManager() {
     mutationFn: async (value: string) => {
       const res = await denyIpAction({ ip: value });
       const error = getActionError(res);
-      if (error) throw new Error(error);
+      if (error) throw new ExpectedError(error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
@@ -57,7 +58,7 @@ export function IpDenylistManager() {
     mutationFn: async (value: string) => {
       const res = await allowIpAction({ ip: value });
       const error = getActionError(res);
-      if (error) throw new Error(error);
+      if (error) throw new ExpectedError(error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });

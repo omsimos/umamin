@@ -23,6 +23,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, removePostEverywhere } from "@/lib/query-cache";
 import type { CurrentUserResponse, FeedItem, FeedResponse } from "@/lib/types";
@@ -73,7 +74,7 @@ export function PostMenu({
         ? await unpinPostAction()
         : await pinPostAction({ postId });
       if ("error" in res && res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return !isPinned;
     },
@@ -144,7 +145,7 @@ export function PostMenu({
       const res = await deletePostAction({ postId });
 
       if (res.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

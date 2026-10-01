@@ -25,6 +25,7 @@ import { proThemeClass } from "@/components/pro-flair";
 import { shareProfile } from "@/components/share-button";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
+import { ExpectedError } from "@/lib/expected-error";
 import { useAppNavigate } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
 import {
@@ -190,7 +191,7 @@ export function UserProfile({ username, initialUser }: Props) {
         : await followUserAction({ userId: profile.id });
       const actionError = getActionError(res);
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
       return res;
     },
@@ -306,7 +307,7 @@ export function UserProfile({ username, initialUser }: Props) {
         : await blockUserAction({ userId: profile.id });
       const actionError = getActionError(res);
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
       return res;
     },

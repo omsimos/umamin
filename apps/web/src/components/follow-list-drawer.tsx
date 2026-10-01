@@ -45,6 +45,7 @@ import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { followUserAction, unfollowUserAction } from "@/lib/actions";
+import { ExpectedError } from "@/lib/expected-error";
 import { Link, useAppNavigate } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
 import {
@@ -321,7 +322,7 @@ function FollowUserRow({
         : await followUserAction({ userId: user.id });
       const actionError = getActionError(res);
       if (actionError) {
-        throw new Error(actionError);
+        throw new ExpectedError(actionError);
       }
       return res;
     },

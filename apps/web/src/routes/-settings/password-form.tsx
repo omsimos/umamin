@@ -6,6 +6,7 @@ import { KeyIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser } from "@/lib/query-cache";
 import { type CurrentUserResponse, passwordFormSchema } from "@/lib/types";
@@ -39,7 +40,7 @@ export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
     mutationFn: async (values: Fields) => {
       const res = await submitPasswordUpdate(values);
       if ("error" in res) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
     },
     onSuccess: () => {

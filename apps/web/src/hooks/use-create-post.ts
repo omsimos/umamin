@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { createPostAction } from "@/lib/actions";
+import { ExpectedError } from "@/lib/expected-error";
 import {
   type PollDuration,
   pollEndsAtFrom,
@@ -83,7 +84,7 @@ export function useCreatePost(user: PublicUser | null) {
     }: CreatePostVariables) => {
       const res = await submit({ content, images, poll, quotedPostId });
       if (res?.error) {
-        throw new Error(res.error);
+        throw new ExpectedError(res.error);
       }
       return res;
     },
