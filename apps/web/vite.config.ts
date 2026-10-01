@@ -7,7 +7,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import remarkGfm from "remark-gfm";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
+import { isValidVapidPublicKey } from "./src/lib/vapid";
 
 // Displayed app version comes from the top CHANGELOG entry — the same source
 // the release pipeline tags from (mirrors apps/www next.config.ts). It also
@@ -44,6 +45,28 @@ const UPLOAD_SOURCEMAPS = Boolean(
   process.env.POSTHOG_CLI_API_KEY && process.env.POSTHOG_CLI_PROJECT_ID,
 );
 
+// VITE_* values are baked into the client bundle at build time, so a malformed
+// push key would only surface as every subscribe() failing in the field. Fail
+// the build instead. Unset stays allowed: push then reads as unsupported.
+function vapidKeyGuard(): Plugin {
+  return {
+    name: "umamin:vapid-key-guard",
+    apply: "build",
+    configResolved(config) {
+      const key = loadEnv(
+        config.mode,
+        config.envDir,
+        "VITE_",
+      ).VITE_VAPID_PUBLIC_KEY;
+      if (key && !isValidVapidPublicKey(key)) {
+        throw new Error(
+          `VITE_VAPID_PUBLIC_KEY is not a valid VAPID public key (got ${key.length} chars, expected 87 base64url chars encoding a 65-byte P-256 point).`,
+        );
+      }
+    },
+  };
+}
+
 // MDX powers the /privacy, /terms, /child-safety docs (markdown/*.mdx). The
 // plugin must sit AHEAD of viteReact so React refresh sees the compiled JSX
 // (mdx emits an ESM React component); `enforce: "pre"` is what @mdx-js/rollup
@@ -64,6 +87,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    vapidKeyGuard(),
     cloudflare({ viteEnvironment: { name: "ssr" } }),
     { enforce: "pre", ...mdx({ remarkPlugins: [remarkGfm] }) },
     tanstackStart({ server: { entry: "./server.ts" } }),
