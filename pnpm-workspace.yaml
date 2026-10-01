@@ -15,3 +15,12 @@ allowBuilds:
   lefthook: true
   sharp: false
   workerd: true
+
+# Install both libc variants of native packages on Linux. pnpm 12 detects the
+# libc itself and installs only the glibc binaries on Vercel's build image, but
+# libsql's own runtime detection there reports musl, so Next's file tracing
+# asks for @libsql/linux-x64-musl and the org deploy fails on the missing path.
+supportedArchitectures:
+  os: [current]
+  cpu: [current]
+  libc: [current, musl]
