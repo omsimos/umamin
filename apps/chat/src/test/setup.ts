@@ -49,12 +49,11 @@ if (!window.matchMedia) {
     }) as MediaQueryList;
 }
 
-// jsdom has no URL.createObjectURL; the share-card download/preview path
-// builds object URLs for generated blobs.
-if (typeof URL.createObjectURL !== "function") {
-  URL.createObjectURL = () => "blob:mock";
-  URL.revokeObjectURL = () => {};
-}
+// The share-card download/preview path builds object URLs for generated blobs.
+// Stubbed unconditionally: jsdom 30.1+ ships its own createObjectURL, which
+// only accepts jsdom-realm Blobs and throws on the Node Blob the tests build.
+URL.createObjectURL = () => "blob:mock";
+URL.revokeObjectURL = () => {};
 
 // jsdom has no IntersectionObserver; lazy AdContainer constructs one on mount.
 if (!("IntersectionObserver" in globalThis)) {

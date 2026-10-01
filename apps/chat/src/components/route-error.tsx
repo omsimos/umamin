@@ -16,7 +16,7 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
         The chat hit an unexpected error. Try again, or head back to the lobby
         to start fresh.
       </p>
-      {import.meta.env.DEV && error?.message && (
+      {import.meta.env.DEV && error instanceof Error && error.message && (
         <pre className="text-muted-foreground mb-5 max-w-sm overflow-auto rounded-md border p-3 text-left text-xs">
           {error.message}
         </pre>

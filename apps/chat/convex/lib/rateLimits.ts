@@ -1,5 +1,4 @@
-import type { RunMutationCtx } from "@convex-dev/rate-limiter";
-import { RateLimiter } from "@convex-dev/rate-limiter";
+import { type MutationCtx, RateLimiter } from "@convex-dev/rate-limiter";
 import { components } from "../_generated/api";
 import { MINUTE, SECOND } from "../constants";
 
@@ -116,7 +115,7 @@ export type GlobalRateLimitName =
   | "globalReveal";
 
 export function limitPerSession(
-  ctx: RunMutationCtx,
+  ctx: MutationCtx,
   name: SessionRateLimitName,
   sessionId: string,
 ) {
@@ -125,6 +124,6 @@ export function limitPerSession(
 
 /** Global policies intentionally omit a key. Use these only on public,
  *  write-heavy mutations as an aggregate cost brake. */
-export function limitGlobal(ctx: RunMutationCtx, name: GlobalRateLimitName) {
+export function limitGlobal(ctx: MutationCtx, name: GlobalRateLimitName) {
   return rateLimiter.limit(ctx, name, { throws: true });
 }
