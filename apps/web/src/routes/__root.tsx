@@ -20,7 +20,6 @@ import { NotFoundPage } from "@/components/not-found-page";
 import { Providers } from "@/components/providers";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { THEME_COLOR } from "@/components/theme-color";
-import { AD_CLIENT, ADS_ENABLED } from "@/lib/ad-placements";
 import { getGtmInlineScript } from "@/lib/gtm";
 import { appleSplashLinks, pageSeo } from "@/lib/seo";
 import appCss from "../styles.css?url";
@@ -101,21 +100,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     scripts: [
       // Pre-paint theme application (before React hydrates).
       { children: THEME_FOUC_SCRIPT },
-      // GTM loader + AdSense — production only (mirrors apps/www root layout).
+      // GTM loader — production only (mirrors apps/www root layout). AdSense
+      // is NOT loaded here; <AdsenseLoader /> requests it after hydration.
       ...(import.meta.env.PROD && GTM_ID
         ? [{ id: "gtm-loader", children: getGtmInlineScript(GTM_ID) }]
-        : []),
-      // Skipped entirely when VITE_ADS_ENABLED=false — the point of the switch
-      // is that the third-party loader is never requested, not just that the
-      // slots render empty.
-      ...(import.meta.env.PROD && ADS_ENABLED
-        ? [
-            {
-              async: true,
-              crossOrigin: "anonymous" as const,
-              src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}`,
-            },
-          ]
         : []),
     ],
   }),
