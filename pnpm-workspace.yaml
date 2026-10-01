@@ -16,8 +16,11 @@ allowBuilds:
   sharp: false
   workerd: true
 
-minimumReleaseAgeExclude:
-  - '@cloudflare/vite-plugin@1.47.0'
-  - '@cloudflare/vitest-pool-workers@0.18.8'
-  - miniflare@4.20260722.0
-  - wrangler@4.114.0
+# Install both libc variants of native packages on Linux. pnpm 12 detects the
+# libc itself and installs only the glibc binaries on Vercel's build image, but
+# libsql's own runtime detection there reports musl, so Next's file tracing
+# asks for @libsql/linux-x64-musl and the org deploy fails on the missing path.
+supportedArchitectures:
+  os: [current]
+  cpu: [current]
+  libc: [current, musl]

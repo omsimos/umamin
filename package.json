@@ -24,13 +24,13 @@
     "format-and-lint:fix": "biome check . --write"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.13",
+    "@biomejs/biome": "2.5.15",
     "@types/node": "^24.13.4",
-    "lefthook": "^2.1.12",
-    "turbo": "^2.10.12",
+    "lefthook": "^2.1.15",
+    "turbo": "^2.11.5",
     "typescript": "7.0.2"
   },
-  "packageManager": "pnpm@11.5.2",
+  "packageManager": "pnpm@12.8.1",
   "engines": {
     "node": ">=24"
   }
