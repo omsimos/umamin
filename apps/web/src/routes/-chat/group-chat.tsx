@@ -611,7 +611,10 @@ export function GroupChat({
                         {message.sender.displayName ?? message.sender.username}
                       </Link>
                       <GroupBadge badge={message.sender.groupBadge} />
-                      <span className="shrink-0 text-[10px] whitespace-nowrap text-muted-foreground">
+                      <span
+                        suppressHydrationWarning
+                        className="shrink-0 text-[10px] whitespace-nowrap text-muted-foreground"
+                      >
                         {timeFormat.format(new Date(message.createdAt))}
                       </span>
                     </div>
@@ -731,7 +734,10 @@ export function GroupChat({
                   ) : (
                     isOwn &&
                     lastOfGroup && (
-                      <span className="px-1 text-[10px] text-muted-foreground">
+                      <span
+                        suppressHydrationWarning
+                        className="px-1 text-[10px] text-muted-foreground"
+                      >
                         {timeFormat.format(new Date(message.createdAt))}
                       </span>
                     )

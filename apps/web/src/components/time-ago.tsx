@@ -23,8 +23,12 @@ export function TimeAgo({
     return null;
   }
 
+  // The relative text depends on the renderer's clock and the title on its
+  // timezone, so SSR (workerd, UTC) and the client legitimately disagree;
+  // skip the hydration check on this leaf rather than fail the whole root.
   return (
     <time
+      suppressHydrationWarning
       dateTime={d.toISOString()}
       title={exactTimeFormatter.format(d)}
       className={className}

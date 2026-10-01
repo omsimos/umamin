@@ -328,7 +328,9 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
               </ChatBubble>
               {item.endsRun && item.createdAt && (
                 <ChatMeta>
+                  {/* Formatted in the viewer's timezone; SSR renders UTC. */}
                   <span
+                    suppressHydrationWarning
                     className="text-[10px]"
                     title={item.createdAt.toLocaleString()}
                   >
