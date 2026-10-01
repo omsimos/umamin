@@ -28,17 +28,17 @@
     "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {
-    "@libsql/client": "^0.17.3",
-    "@node-rs/argon2": "^2.0.2",
+    "@libsql/client": "^0.18.0",
+    "@node-rs/argon2": "^2.2.1",
     "@umamin/encryption": "workspace:*",
-    "drizzle-orm": "^0.45.2",
-    "nanoid": "^5.1.11"
+    "drizzle-orm": "^0.45.3",
+    "nanoid": "^6.0.1"
   },
   "devDependencies": {
     "@types/node": "^24.12.4",
-    "drizzle-kit": "^0.31.10",
-    "tsdown": "^0.22.14",
-    "tsx": "^4.22.3",
+    "drizzle-kit": "^0.31.11",
+    "tsdown": "^0.23.0",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
 }
