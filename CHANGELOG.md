@@ -27,6 +27,7 @@ any that are empty.
 ### Changed
 
 - A redesigned home page. Type a username to preview your profile link, try every feature in place, including groups, and see how Uma folds drama.
+- Headings across Umamin use a new typeface.
 
 ## [7.9.1] - 2026-10-13
 
