@@ -12,6 +12,7 @@ import {
   getPostsPage,
 } from "../../server-lib/data";
 import { UNAUTHORIZED_ERROR } from "../../server-lib/errors";
+import { isModerationEnforced } from "../../server-lib/flags";
 import {
   getCachedPublicPayload,
   withPrivateRead,
@@ -56,6 +57,7 @@ export const postsRoutes = new Hono<AppBindings>()
           cursor,
           sort,
           viewerId: session.userId,
+          enforce: await isModerationEnforced(c.env),
         });
       }
 
@@ -65,7 +67,12 @@ export const postsRoutes = new Hono<AppBindings>()
         { sort, cursor },
         PUBLIC_POSTS_MAX_AGE,
         PUBLIC_BROWSER_MAX_AGE,
-        () => getPostsPage(db, c.env.KV, { cursor, sort }),
+        async () =>
+          getPostsPage(db, c.env.KV, {
+            cursor,
+            sort,
+            enforce: await isModerationEnforced(c.env),
+          }),
       );
 
       return getPostsPage(db, c.env.KV, {
@@ -89,7 +96,11 @@ export const postsRoutes = new Hono<AppBindings>()
         {},
         PUBLIC_POST_MAX_AGE,
         PUBLIC_BROWSER_MAX_AGE,
-        () => getPostById(db, { postId }),
+        async () =>
+          getPostById(db, {
+            postId,
+            enforce: await isModerationEnforced(c.env),
+          }),
       );
 
       if (!publicPost) return null;
@@ -116,7 +127,12 @@ export const postsRoutes = new Hono<AppBindings>()
         { cursor },
         PUBLIC_COMMENTS_MAX_AGE,
         PUBLIC_BROWSER_MAX_AGE,
-        () => getPostCommentsPage(db, { postId, cursor }),
+        async () =>
+          getPostCommentsPage(db, {
+            postId,
+            cursor,
+            enforce: await isModerationEnforced(c.env),
+          }),
       );
 
       return getPostCommentsPage(db, {

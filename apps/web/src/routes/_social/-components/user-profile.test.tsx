@@ -104,6 +104,8 @@ describe("UserProfile", () => {
         hasPassword: true,
         blockedWords: null,
         pushPrefs: 0,
+        hideDrama: true,
+        messageFilter: false,
         accounts: [],
         isModerator: false,
       },

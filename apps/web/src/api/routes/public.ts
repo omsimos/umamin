@@ -11,6 +11,7 @@ import {
   getUserPostsPage,
 } from "../../server-lib/data";
 import { NOT_FOUND_ERROR } from "../../server-lib/errors";
+import { isModerationEnforced } from "../../server-lib/flags";
 import { withPublicRead } from "../../server-lib/read-route";
 import { formatUsername, resolveDb } from "./_shared";
 
@@ -43,6 +44,7 @@ export const publicRoutes = new Hono<AppBindings>()
         return getPostsPage(resolveDb(env), env.KV, {
           cursor: req.query("cursor") ?? null,
           sort,
+          enforce: await isModerationEnforced(env),
         });
       },
       PUBLIC_BROWSER_MAX_AGE,
@@ -58,6 +60,7 @@ export const publicRoutes = new Hono<AppBindings>()
         getPostCommentsPage(resolveDb(env), {
           postId: req.param("id") ?? "",
           cursor: req.query("cursor") ?? null,
+          enforce: await isModerationEnforced(env),
         }),
       PUBLIC_BROWSER_MAX_AGE,
       ["cursor"],
@@ -71,6 +74,7 @@ export const publicRoutes = new Hono<AppBindings>()
       async (req, env) => {
         const result = await getPostById(resolveDb(env), {
           postId: req.param("id") ?? "",
+          enforce: await isModerationEnforced(env),
         });
         return result ?? notFound();
       },
@@ -84,7 +88,10 @@ export const publicRoutes = new Hono<AppBindings>()
       "fetching public notes",
       PUBLIC_NOTES_MAX_AGE,
       async (req, env) =>
-        getNotesPage(resolveDb(env), { cursor: req.query("cursor") ?? null }),
+        getNotesPage(resolveDb(env), {
+          cursor: req.query("cursor") ?? null,
+          enforce: await isModerationEnforced(env),
+        }),
       PUBLIC_BROWSER_MAX_AGE,
       ["cursor"],
     ),
@@ -97,12 +104,16 @@ export const publicRoutes = new Hono<AppBindings>()
       async (req, env) => {
         const db = resolveDb(env);
         const username = formatUsername(req.param("username") ?? "");
-        const user = await getPublicUserProfileData(db, username);
+        const [user, enforce] = await Promise.all([
+          getPublicUserProfileData(db, username),
+          isModerationEnforced(env),
+        ]);
         if (!user) return notFound();
 
         return getUserPostsPage(db, {
           authorId: user.id,
           cursor: req.query("cursor") ?? null,
+          enforce,
         });
       },
       60,

@@ -58,6 +58,7 @@ import type {
   BlockedUsersResponse,
   CommentData,
   CommentsResponse,
+  ContentLabel,
   CurrentUserClient,
   CurrentUserResponse,
   FeedAuthorWithBadge,
@@ -77,6 +78,7 @@ import type {
   GroupUnreadState,
   MessagesResponse,
   MessageThreadResponse,
+  ModerationColumn,
   MutedUsersResponse,
   NoteItem,
   NotesResponse,
@@ -91,6 +93,7 @@ import type {
   UserProfileViewerResponse,
 } from "../lib/types";
 import { noBlockBetween } from "./blocks";
+import { contentLabel } from "./content-label";
 import { parseCursor } from "./cursor";
 import type { Db } from "./db";
 import { getRedisHotPostIdsPage, isRedisHotCursor } from "./feed-rank";
@@ -100,7 +103,11 @@ import {
   JOINED_GROUPS_CAP,
   normalizeGroupTag,
 } from "./group";
-import { diversifyHotCandidates, getHotScoreKey } from "./hot-score";
+import {
+  diversifyHotCandidates,
+  getHotScoreKey,
+  isHotEligible,
+} from "./hot-score";
 import { isModerator } from "./moderation";
 import { getMutedIds } from "./mutes";
 import { countUnseen } from "./notifications";
@@ -177,7 +184,7 @@ const publicUserColumns = {
 // equippedGroupId feeds withGroupBadge; points kept for forward-compat. The
 // FULL publicUserColumns stays on the current-user + profile reads (which
 // render bio/counts). Must match the FeedAuthor type in lib/types.ts (9 keys).
-const feedAuthorColumns = {
+export const feedAuthorColumns = {
   id: userTable.id,
   username: userTable.username,
   displayName: userTable.displayName,
@@ -248,6 +255,7 @@ function withGroupBadge<U extends { equippedGroupId: string | null }>(
 async function getQuotedPostMap(
   db: Db,
   posts: Pick<SelectPost, "quotedPostId">[],
+  enforce: boolean,
 ): Promise<Map<string, QuotedPostData>> {
   const ids = Array.from(
     new Set(
@@ -267,9 +275,42 @@ async function getQuotedPostMap(
 
   return new Map(
     quoted.map(
-      (row) => [row.post.id, { ...row.post, author: row.author }] as const,
+      (row) =>
+        [
+          row.post.id,
+          { ...withModeration(row.post, enforce), author: row.author },
+        ] as const,
     ),
   );
+}
+
+// Strips the server-only classifier columns and attaches the label the client
+// renders from. Every post/comment/note payload goes through this, so a raw
+// score never reaches the wire.
+export function withModeration<
+  T extends {
+    modSevere: number | null;
+    modDrama: number | null;
+    modReason: string | null;
+    modFlaggedAt?: Date | null;
+    modClearedAt?: Date | null;
+  },
+>(
+  row: T,
+  enforce: boolean,
+): Omit<T, ModerationColumn> & { moderation: ContentLabel | null } {
+  const {
+    modSevere,
+    modDrama,
+    modReason: _modReason,
+    modFlaggedAt: _modFlaggedAt,
+    modClearedAt,
+    ...rest
+  } = row;
+  return {
+    ...rest,
+    moderation: contentLabel({ modSevere, modDrama, modClearedAt }, enforce),
+  };
 }
 
 // `undefined` = not a quote; `null` = quote whose target is gone (husk).
@@ -485,6 +526,7 @@ function getFeedCursorCondition(
 async function getPublicLatestPostsPage(
   db: Db,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const parsedCursor = parseFeedCursor(cursor);
   const postCursorCondition = getFeedCursorCondition(
@@ -593,7 +635,7 @@ async function getPublicLatestPostsPage(
   ]);
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, posts),
+    getQuotedPostMap(db, posts, enforce),
     getPollOptionsMap(db, posts),
     getGroupBadgeMap(db, users),
   ]);
@@ -611,7 +653,7 @@ async function getPublicLatestPostsPage(
     }
 
     const feedPost = {
-      ...post,
+      ...withModeration(post, enforce),
       author,
       quotedPost: resolveQuotedPost(post, quotedMap),
       poll: resolvePoll(post, pollMap),
@@ -655,6 +697,7 @@ async function getRedisHotPostsPage(
   db: Db,
   kv: KVNamespace | undefined,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<FeedResponse | null> {
   const page = await getRedisHotPostIdsPage(
     kv,
@@ -674,12 +717,16 @@ async function getRedisHotPostsPage(
   // happens at the route level. The per-viewer overlay (blocks/likes/reposts)
   // is layered on by the caller.
   return {
-    data: await hydrateHotPostIds(db, page.ids),
+    data: await hydrateHotPostIds(db, page.ids, enforce),
     nextCursor: page.nextCursor,
   };
 }
 
-async function hydrateHotPostIds(db: Db, ids: string[]): Promise<FeedItem[]> {
+async function hydrateHotPostIds(
+  db: Db,
+  ids: string[],
+  enforce: boolean,
+): Promise<FeedItem[]> {
   const posts =
     ids.length > 0
       ? await db.select().from(postTable).where(inArray(postTable.id, ids))
@@ -694,7 +741,7 @@ async function hydrateHotPostIds(db: Db, ids: string[]): Promise<FeedItem[]> {
       : [];
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, posts),
+    getQuotedPostMap(db, posts, enforce),
     getPollOptionsMap(db, posts),
     getGroupBadgeMap(db, users),
   ]);
@@ -708,7 +755,7 @@ async function hydrateHotPostIds(db: Db, ids: string[]): Promise<FeedItem[]> {
   // worst nudges the same-author spacing below.
   const candidates = ids.flatMap((postId) => {
     const post = postMap.get(postId);
-    return post ? [{ post, scoreKey: getHotScoreKey(post) }] : [];
+    return post ? [{ post, scoreKey: getHotScoreKey(post, enforce) }] : [];
   });
   return diversifyHotCandidates(candidates).flatMap<FeedItem>(({ post }) => {
     const author = userMap.get(post.authorId);
@@ -721,7 +768,7 @@ async function hydrateHotPostIds(db: Db, ids: string[]): Promise<FeedItem[]> {
       {
         type: "post" as const,
         post: {
-          ...post,
+          ...withModeration(post, enforce),
           author,
           quotedPost: resolveQuotedPost(post, quotedMap),
           poll: resolvePoll(post, pollMap),
@@ -737,6 +784,7 @@ async function getCachedPublicHotPostsPage(
   db: Db,
   cursor: string | null,
   rankedAtMs: number,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const parsedCursor = parseHotFeedCursor(cursor);
 
@@ -747,9 +795,10 @@ async function getCachedPublicHotPostsPage(
     .limit(HOT_FEED_CANDIDATE_SIZE);
 
   const rankedCandidates = candidatePosts
+    .filter((post) => isHotEligible(post, enforce))
     .map((post) => ({
       post,
-      scoreKey: getHotScoreKey(post),
+      scoreKey: getHotScoreKey(post, enforce),
     }))
     .sort(compareHotCandidates)
     .filter((candidate) => isAfterHotCursor(candidate, parsedCursor));
@@ -775,6 +824,7 @@ async function getCachedPublicHotPostsPage(
     getQuotedPostMap(
       db,
       pageRows.map((candidate) => candidate.post),
+      enforce,
     ),
     getPollOptionsMap(
       db,
@@ -797,7 +847,7 @@ async function getCachedPublicHotPostsPage(
       {
         type: "post" as const,
         post: {
-          ...post,
+          ...withModeration(post, enforce),
           author,
           quotedPost: resolveQuotedPost(post, quotedMap),
           poll: resolvePoll(post, pollMap),
@@ -824,10 +874,11 @@ async function getPublicHotPostsPage(
   kv: KVNamespace | undefined,
   cursor: string | null,
   rankedAtMs: number,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const redisData =
     !cursor || isRedisHotCursor(cursor)
-      ? await getRedisHotPostsPage(db, kv, cursor)
+      ? await getRedisHotPostsPage(db, kv, cursor, enforce)
       : null;
 
   if (isRedisHotCursor(cursor)) {
@@ -835,7 +886,8 @@ async function getPublicHotPostsPage(
   }
 
   return (
-    redisData ?? (await getCachedPublicHotPostsPage(db, cursor, rankedAtMs))
+    redisData ??
+    (await getCachedPublicHotPostsPage(db, cursor, rankedAtMs, enforce))
   );
 }
 
@@ -843,6 +895,7 @@ async function getFollowingPostsPage(
   db: Db,
   viewerId: string,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const parsedCursor = parseFeedCursor(cursor);
   const postCursorCondition = getFeedCursorCondition(
@@ -959,7 +1012,7 @@ async function getFollowingPostsPage(
   ]);
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, posts),
+    getQuotedPostMap(db, posts, enforce),
     getPollOptionsMap(db, posts),
     getGroupBadgeMap(db, users),
   ]);
@@ -977,7 +1030,7 @@ async function getFollowingPostsPage(
     }
 
     const feedPost = {
-      ...post,
+      ...withModeration(post, enforce),
       author,
       quotedPost: resolveQuotedPost(post, quotedMap),
       poll: resolvePoll(post, pollMap),
@@ -1185,19 +1238,28 @@ export async function getPostsPage(
     // shared public cache entry). Never supplied for `following`, which has no
     // viewer-independent form.
     publicData?: FeedResponse;
+    // Whether classifier labels are live (the content-moderation flag).
+    enforce?: boolean;
   },
 ): Promise<FeedResponse> {
+  const enforce = params.enforce ?? false;
   const publicData =
     params.publicData ??
     (params.sort === "following" && params.viewerId
-      ? await getFollowingPostsPage(db, params.viewerId, params.cursor ?? null)
+      ? await getFollowingPostsPage(
+          db,
+          params.viewerId,
+          params.cursor ?? null,
+          enforce,
+        )
       : params.sort === "latest"
-        ? await getPublicLatestPostsPage(db, params.cursor ?? null)
+        ? await getPublicLatestPostsPage(db, params.cursor ?? null, enforce)
         : await getPublicHotPostsPage(
             db,
             kv,
             params.cursor ?? null,
             getHotFeedRankedAtMs(params.cursor ?? null),
+            enforce,
           ));
 
   if (!params.viewerId) {
@@ -1224,6 +1286,7 @@ async function getPublicUserPostsPage(
   db: Db,
   authorId: string,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const parsedCursor = parseCursor(cursor);
   const cursorCondition = parsedCursor
@@ -1284,7 +1347,7 @@ async function getPublicUserPostsPage(
     ...rows.map((row) => row.post),
   ];
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, pagePosts),
+    getQuotedPostMap(db, pagePosts, enforce),
     getPollOptionsMap(db, pagePosts),
     getGroupBadgeMap(db, [
       ...rows.map((row) => row.author),
@@ -1298,7 +1361,7 @@ async function getPublicUserPostsPage(
   ): FeedItem => ({
     type: "post" as const,
     post: {
-      ...row.post,
+      ...withModeration(row.post, enforce),
       author: withGroupBadge(row.author, badgeMap),
       quotedPost: resolveQuotedPost(row.post, quotedMap),
       poll: resolvePoll(row.post, pollMap),
@@ -1339,12 +1402,14 @@ export async function getUserPostsPage(
     authorId: string;
     cursor?: string | null;
     viewerId?: string | null;
+    enforce?: boolean;
   },
 ): Promise<FeedResponse> {
   const publicData = await getPublicUserPostsPage(
     db,
     params.authorId,
     params.cursor ?? null,
+    params.enforce ?? false,
   );
 
   if (!params.viewerId) {
@@ -1367,7 +1432,11 @@ export async function getUserPostsPage(
   };
 }
 
-async function getPublicPost(db: Db, postId: string): Promise<PostResponse> {
+async function getPublicPost(
+  db: Db,
+  postId: string,
+  enforce: boolean,
+): Promise<PostResponse> {
   // Explicit join over the relational `with: { author: true }`: the relation
   // selects every user column (passwordHash, blockedWords, ...) and a type
   // cast can't strip them at runtime — this payload is client-bound and
@@ -1384,13 +1453,13 @@ async function getPublicPost(db: Db, postId: string): Promise<PostResponse> {
   }
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, [row.post]),
+    getQuotedPostMap(db, [row.post], enforce),
     getPollOptionsMap(db, [row.post]),
     getGroupBadgeMap(db, [row.author]),
   ]);
 
   return {
-    ...row.post,
+    ...withModeration(row.post, enforce),
     author: withGroupBadge(row.author, badgeMap),
     quotedPost: resolveQuotedPost(row.post, quotedMap),
     poll: resolvePoll(row.post, pollMap),
@@ -1484,12 +1553,13 @@ export async function getPostById(
     // Pre-fetched viewer-independent post. `undefined` means "not supplied"
     // (fetch it); a caller that already resolved a missing post shouldn't call.
     publicPost?: PostResponse;
+    enforce?: boolean;
   },
 ): Promise<PostResponse> {
   const publicPost =
     params.publicPost !== undefined
       ? params.publicPost
-      : await getPublicPost(db, params.postId);
+      : await getPublicPost(db, params.postId, params.enforce ?? false);
 
   if (!publicPost || !params.viewerId) {
     return publicPost;
@@ -1534,6 +1604,7 @@ async function getPublicCommentsPage(
   db: Db,
   postId: string,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<CommentsResponse> {
   const parsedCursor = parseCursor(cursor);
 
@@ -1574,7 +1645,7 @@ async function getPublicCommentsPage(
 
     return [
       {
-        ...comment,
+        ...withModeration(comment, enforce),
         author: withGroupBadge(author, badgeMap),
         isLiked: false,
       },
@@ -1668,11 +1739,17 @@ export async function getPostCommentsPage(
     viewerId?: string | null;
     // Pre-fetched viewer-independent page (shared public cache entry).
     publicData?: CommentsResponse;
+    enforce?: boolean;
   },
 ): Promise<CommentsResponse> {
   const publicData =
     params.publicData ??
-    (await getPublicCommentsPage(db, params.postId, params.cursor ?? null));
+    (await getPublicCommentsPage(
+      db,
+      params.postId,
+      params.cursor ?? null,
+      params.enforce ?? false,
+    ));
 
   if (!params.viewerId) {
     return publicData;
@@ -1736,6 +1813,7 @@ function resolveNoteMusic(note: SelectNote): MusicAttachment | null {
 // `user` object is suppressed.
 function toNoteItem(
   note: SelectNote,
+  enforce: boolean,
   extra?: Pick<NoteItem, "user" | "isReacted">,
 ): NoteItem {
   const {
@@ -1749,12 +1827,17 @@ function toNoteItem(
     spotifyThumbnail: _sth,
     ...rest
   } = note;
-  return { ...rest, music: resolveNoteMusic(note), ...extra };
+  return {
+    ...withModeration(rest, enforce),
+    music: resolveNoteMusic(note),
+    ...extra,
+  };
 }
 
 async function getPublicNotesPage(
   db: Db,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<NotesResponse> {
   const parsedCursor = parseCursor(cursor);
 
@@ -1792,8 +1875,8 @@ async function getPublicNotesPage(
 
   const data = rows.map(({ note, user }) =>
     note.isAnonymous
-      ? toNoteItem(note)
-      : toNoteItem(note, {
+      ? toNoteItem(note, enforce)
+      : toNoteItem(note, enforce, {
           user: user ? withGroupBadge(user, badgeMap) : undefined,
         }),
   );
@@ -1871,10 +1954,16 @@ export async function getNotesPage(
     viewerId?: string | null;
     // Pre-fetched viewer-independent page (shared public cache entry).
     publicData?: NotesResponse;
+    enforce?: boolean;
   },
 ): Promise<NotesResponse> {
   const publicData =
-    params.publicData ?? (await getPublicNotesPage(db, params.cursor ?? null));
+    params.publicData ??
+    (await getPublicNotesPage(
+      db,
+      params.cursor ?? null,
+      params.enforce ?? false,
+    ));
 
   if (!params.viewerId) {
     return publicData;
@@ -1922,7 +2011,8 @@ export async function getCurrentNoteData(
   };
 
   const data = await getCachedData();
-  return data ? toNoteItem(data) : null;
+  // The viewer's own note: authors always see their content uncovered.
+  return data ? toNoteItem(data, false) : null;
 }
 
 export async function getCurrentUserData(
@@ -1947,6 +2037,9 @@ export async function getCurrentUserData(
         blockedWords: userTable.blockedWords,
         // Owner-private push-notification preference bitmask (see types/user.ts).
         pushPrefs: userTable.pushPrefs,
+        // Owner-private content-filter preferences.
+        hideDrama: userTable.hideDrama,
+        messageFilter: userTable.messageFilter,
         // Profile song (resolved into a lean `music` object below, raw columns
         // dropped) so settings can preview/edit the attached song.
         musicProvider: userTable.musicProvider,

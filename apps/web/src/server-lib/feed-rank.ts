@@ -1,7 +1,7 @@
 import { postTable } from "@umamin/db/schema/post";
 import { desc } from "drizzle-orm";
 import type { Db } from "./db";
-import { getHotScore } from "./hot-score";
+import { getHotScore, isHotEligible } from "./hot-score";
 
 // Hot-feed ranking, ported from apps/www's Redis zset to a single Workers KV
 // key. The cron (*/5) recomputes the ranking with ONE bounded Turso query and
@@ -31,6 +31,9 @@ const hotRankColumns = {
   pollVoteCount: postTable.pollVoteCount,
   commentCount: postTable.commentCount,
   repostCount: postTable.repostCount,
+  modSevere: postTable.modSevere,
+  modDrama: postTable.modDrama,
+  modClearedAt: postTable.modClearedAt,
 };
 
 export function isRedisHotCursor(
@@ -101,6 +104,8 @@ export async function getRedisHotPostIdsPage(
 export async function recomputeHotFeed(
   db: Db,
   kv: KVNamespace | undefined,
+  // Whether classifier labels are live (the content-moderation flag).
+  enforce = false,
 ): Promise<void> {
   if (!kv) {
     return;
@@ -113,7 +118,8 @@ export async function recomputeHotFeed(
     .limit(HOT_FEED_RECOMPUTE_SCAN);
 
   const ids = posts
-    .map((post) => ({ id: post.id, score: getHotScore(post) }))
+    .filter((post) => isHotEligible(post, enforce))
+    .map((post) => ({ id: post.id, score: getHotScore(post, enforce) }))
     .sort((left, right) => right.score - left.score)
     .slice(0, HOT_FEED_MAX_ITEMS)
     .map((entry) => entry.id);

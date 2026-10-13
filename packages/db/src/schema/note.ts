@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 
+import { reviewableContentColumns } from "./moderation";
 import { userTable } from "./user";
 
 export const noteTable = sqliteTable(
@@ -40,8 +41,14 @@ export const noteTable = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp" }).$onUpdate(
       () => new Date(),
     ),
+    ...reviewableContentColumns(),
   },
-  (t) => [index("updated_at_id_idx").on(t.updatedAt, t.id)],
+  (t) => [
+    index("updated_at_id_idx").on(t.updatedAt, t.id),
+    index("note_mod_flagged_idx")
+      .on(t.modFlaggedAt)
+      .where(sql`${t.modFlaggedAt} IS NOT NULL`),
+  ],
 );
 
 export const noteReactionTable = sqliteTable(

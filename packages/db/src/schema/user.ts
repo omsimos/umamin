@@ -30,6 +30,15 @@ export const userTable = sqliteTable(
     // Owner-private message filter; must never ride a public payload — kept out
     // of publicUserColumns and stripped from PublicUser (see apps/web lib/types.ts toPublicUser).
     blockedWords: text("blocked_words", { mode: "json" }).$type<string[]>(),
+    // Owner-private viewing preferences (same exposure rules as blockedWords).
+    // hideDrama collapses posts and notes the classifier labels as drama;
+    // messageFilter opts the user's inbox into classification.
+    hideDrama: integer("hide_drama", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    messageFilter: integer("message_filter", { mode: "boolean" })
+      .notNull()
+      .default(false),
     // Pinned profile post: soft reference, no FK — an FK to postTable would
     // create a circular schema import (post.ts already references userTable).
     // deletePostAction clears it; a dangling id just renders no pin.

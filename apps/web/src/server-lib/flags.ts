@@ -1,4 +1,5 @@
 import { PostHog } from "posthog-node";
+import { FLAG_CONTENT_MODERATION } from "../lib/flags";
 import type { AppEnv } from "./env";
 import { formatErrorChain } from "./errors";
 import { captureServerException } from "./posthog";
@@ -175,6 +176,11 @@ export async function isFlagEnabled(
   key: string,
 ): Promise<boolean> {
   return (await resolveFlags(env, viewerId, [key]))[key] ?? false;
+}
+
+/** The global content-moderation switch (see lib/flags.ts). */
+export function isModerationEnforced(env: AppEnv): Promise<boolean> {
+  return isFlagEnabled(env, null, FLAG_CONTENT_MODERATION);
 }
 
 /** Test-only: drop the in-isolate cache between cases. */

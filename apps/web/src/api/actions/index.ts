@@ -35,6 +35,7 @@ import {
 import {
   allowIpHandler,
   banUserHandler,
+  clearContentFlagHandler,
   denyIpHandler,
   unbanUserHandler,
 } from "./moderation";
@@ -202,6 +203,7 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/banUserAction", banUserHandler)
   .post("/actions/unbanUserAction", unbanUserHandler)
   .post("/actions/denyIpAction", denyIpHandler)
-  .post("/actions/allowIpAction", allowIpHandler);
+  .post("/actions/allowIpAction", allowIpHandler)
+  .post("/actions/clearContentFlagAction", clearContentFlagHandler);
 
 export type ActionsType = typeof actionsApp;

@@ -17,6 +17,7 @@
     "test:watch": "vitest",
     "test:workers": "vitest run --config vitest.workers.config.ts",
     "check-types": "tsc --noEmit",
+    "eval:moderation": "tsx scripts/moderation-eval.ts",
     "clean": "rm -rf dist .turbo .wrangler node_modules"
   },
   "dependencies": {
@@ -35,6 +36,7 @@
     "@umamin/db": "workspace:*",
     "@umamin/encryption": "workspace:*",
     "@umamin/ui": "workspace:*",
+    "ai": "7.0.123",
     "arctic": "^3.7.0",
     "aws4fetch": "^1.0.20",
     "blobatar": "^2.7.0",
@@ -72,6 +74,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.1.1",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.1",
     "vitest": "^4.1.11",

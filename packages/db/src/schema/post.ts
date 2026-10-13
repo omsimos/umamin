@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 
+import { reviewableContentColumns } from "./moderation";
 import { userTable } from "./user";
 
 // Denormalized onto the post row (not a join table) so feed reads pay zero
@@ -53,10 +54,14 @@ export const postTable = sqliteTable(
     // no sweeper. Lives on the post row so feed reads know a post has a poll
     // without extra scans.
     pollEndsAt: integer("poll_ends_at", { mode: "timestamp" }),
+    ...reviewableContentColumns(),
   },
   (t) => [
     index("post_created_at_id_idx").on(t.createdAt, t.id),
     index("post_author_created_at_idx").on(t.authorId, t.createdAt, t.id),
+    index("post_mod_flagged_idx")
+      .on(t.modFlaggedAt)
+      .where(sql`${t.modFlaggedAt} IS NOT NULL`),
   ],
 );
 
@@ -129,9 +134,13 @@ export const postCommentTable = sqliteTable(
       .default(sql`(unixepoch())`)
       .$onUpdate(() => new Date()),
     likeCount: integer("like_count").notNull().default(0),
+    ...reviewableContentColumns(),
   },
   (t) => [
     index("post_comment_post_created_idx").on(t.postId, t.createdAt, t.id),
+    index("post_comment_mod_flagged_idx")
+      .on(t.modFlaggedAt)
+      .where(sql`${t.modFlaggedAt} IS NOT NULL`),
     index("post_comment_author_created_idx").on(t.authorId, t.createdAt, t.id),
     // Backs the aura first-comment-per-post existence checks (createComment /
     // deleteComment): an exact (post, author) two-column seek instead of

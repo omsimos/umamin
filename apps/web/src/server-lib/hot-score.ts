@@ -1,4 +1,5 @@
 import type { SelectPost } from "@umamin/db/schema/post";
+import { contentLabel } from "./content-label";
 
 /**
  * Static Hot score shared by the ranked-id list and the SQL fallback so both
@@ -20,7 +21,15 @@ export const HOT_DIVERSIFY_MAX_GAP = 720;
 export type HotRankablePost = Pick<
   SelectPost,
   "createdAt" | "likeCount" | "pollVoteCount" | "commentCount" | "repostCount"
->;
+> &
+  Partial<Pick<SelectPost, "modSevere" | "modDrama" | "modClearedAt">>;
+
+// Severe content never enters Hot. Drama stays but ranks on recency alone: a
+// fight's comments and quote-reposts are exactly the engagement that would
+// otherwise push it to the top.
+export function isHotEligible(post: HotRankablePost, enforce: boolean) {
+  return contentLabel(post, enforce) !== "severe";
+}
 
 export function getHotEngagement(post: HotRankablePost) {
   return (
@@ -32,17 +41,18 @@ export function getHotEngagement(post: HotRankablePost) {
 }
 
 // Float — what the ranked list orders by.
-export function getHotScore(post: HotRankablePost) {
+export function getHotScore(post: HotRankablePost, enforce = false) {
+  const engagement =
+    contentLabel(post, enforce) === "drama" ? 0 : getHotEngagement(post);
   return (
-    post.createdAt.getTime() / 10_000 +
-    Math.log1p(getHotEngagement(post)) * HOT_SCORE_K
+    post.createdAt.getTime() / 10_000 + Math.log1p(engagement) * HOT_SCORE_K
   );
 }
 
 // Rounded int — what cursors, comparisons, and diversification use. Sub-10s
 // ordering loss is covered by the createdAt/postId cursor tiebreaks.
-export function getHotScoreKey(post: HotRankablePost) {
-  return Math.round(getHotScore(post));
+export function getHotScoreKey(post: HotRankablePost, enforce = false) {
+  return Math.round(getHotScore(post, enforce));
 }
 
 /**
