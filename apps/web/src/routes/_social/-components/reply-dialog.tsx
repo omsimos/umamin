@@ -11,6 +11,7 @@ import { Loader2Icon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ChatList } from "@/components/chat-list";
+import { ContentCover } from "@/components/content-cover";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { ExpectedError } from "@/lib/expected-error";
 import { captureException } from "@/lib/posthog";
@@ -77,11 +78,20 @@ const ChatForm = ({ note }: ChatFormProps) => {
   return (
     <div className="flex flex-col gap-4 px-5 py-6 sm:px-6">
       <div className="max-h-[50dvh] overflow-y-auto">
-        <ChatList
-          imageUrl={user?.imageUrl}
-          question={note.content ?? ""}
-          reply={message}
-        />
+        {/* The Reply button sits outside the note card's cover. */}
+        <ContentCover
+          label={note.moderation}
+          revealKey={`note:${note.id}`}
+          isOwn={false}
+          isAuthenticated
+          noun="note"
+        >
+          <ChatList
+            imageUrl={user?.imageUrl}
+            question={note.content ?? ""}
+            reply={message}
+          />
+        </ContentCover>
       </div>
 
       {!message && (

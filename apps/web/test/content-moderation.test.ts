@@ -15,6 +15,7 @@ vi.mock("../src/server-lib/content-classifier", () => ({ classifyContent }));
 
 import { messageReplyTable, messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
+import { notificationTable } from "@umamin/db/schema/notification";
 import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
@@ -290,6 +291,26 @@ describe("content moderation (real libSQL)", () => {
         { kind: "comment", text: "congrats!", context: "my exam results" },
         expect.anything(),
       );
+    });
+
+    it("keeps a folded comment's text out of the post author's notification", async () => {
+      await db
+        .insert(postTable)
+        .values({ id: "p1", content: "my exam results", authorId: "viewer" });
+      classifyContent.mockResolvedValue({
+        severe: 20,
+        drama: 95,
+        reason: "callout",
+      });
+
+      await callJson(
+        buildApp(db, authed("author")),
+        "createCommentAction",
+        { postId: "p1", content: "nangopya ka lang naman" },
+        { FLAGS_FORCE_ON: "content-moderation" },
+      );
+      const [row] = await db.select().from(notificationTable);
+      expect(row).toMatchObject({ type: "comment", preview: null });
     });
 
     it("replaces a note's scores and any moderator clear when it is rewritten", async () => {

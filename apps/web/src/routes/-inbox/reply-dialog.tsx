@@ -12,6 +12,7 @@ import { Loader2Icon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ChatList } from "@/components/chat-list";
+import { ContentCover } from "@/components/content-cover";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
@@ -91,10 +92,21 @@ export function ReplyDialog(props: Props) {
               {props.data.question}
             </h3>
 
-            <ChatList
-              question={props.data.content}
-              reply={props.data.reply ?? reply}
-            />
+            {/* Opened from the card's menu, which sits outside the card's
+                cover, so the body is covered here too. */}
+            <ContentCover
+              label={props.data.moderation}
+              revealKey={`message:${props.data.id}`}
+              isOwn={false}
+              isAuthenticated
+              coverDrama
+              noun="message"
+            >
+              <ChatList
+                question={props.data.content}
+                reply={props.data.reply ?? reply}
+              />
+            </ContentCover>
 
             {reply && updatedAt && (
               <div className="text-muted-foreground text-sm italic w-full text-center mt-10">

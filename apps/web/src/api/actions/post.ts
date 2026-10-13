@@ -91,13 +91,21 @@ const createPostSchema = z
 // ── plain reads embedded in the action file (imperative queryFn callers) ─────
 export const getPostHandler = action(
   { schema: z.object({ id: idSchema }), auth: "none" },
-  ({ id }, { session, c }) =>
-    getPostById(ctxDb(c), { postId: id, viewerId: session?.userId }),
+  async ({ id }, { session, c }) =>
+    getPostById(ctxDb(c), {
+      postId: id,
+      viewerId: session?.userId,
+      enforce: await isModerationEnforced(c.env),
+    }),
 );
 
 export const getPostPublicHandler = action(
   { schema: z.object({ id: idSchema }), auth: "none" },
-  ({ id }, { c }) => getPostById(ctxDb(c), { postId: id }),
+  async ({ id }, { c }) =>
+    getPostById(ctxDb(c), {
+      postId: id,
+      enforce: await isModerationEnforced(c.env),
+    }),
 );
 
 export const createPostHandler = action(
@@ -415,11 +423,10 @@ export const createCommentHandler = action(
           type: "comment",
           targetId: postId,
           actorId: session.userId,
-          // A covered comment must not be read in full from the bell.
-          preview:
-            contentLabel(createdComment, enforce) === "severe"
-              ? null
-              : createdComment.content,
+          // A covered or folded comment must not be read in full from the bell.
+          preview: contentLabel(createdComment, enforce)
+            ? null
+            : createdComment.content,
           blockChecked: true,
         },
       );

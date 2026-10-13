@@ -24,7 +24,7 @@ import { ExpectedError } from "@/lib/expected-error";
 import { useAppNavigate } from "@/lib/navigation";
 import { queryKeys } from "@/lib/query";
 import { removeMessage } from "@/lib/query-cache";
-import type { MessagesResponse } from "@/lib/types";
+import type { ContentLabel, MessagesResponse } from "@/lib/types";
 import { saveImage } from "@/lib/utils";
 import { deleteMessageAction } from "./actions";
 import { ReplyDialog } from "./reply-dialog";
@@ -35,6 +35,7 @@ export type ReceivedMenuProps = {
   content: string;
   reply?: string | null;
   updatedAt?: Date | null;
+  moderation?: ContentLabel | null;
 };
 
 export function ReceivedMessageMenu(props: ReceivedMenuProps) {
