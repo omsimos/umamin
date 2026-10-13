@@ -2,6 +2,7 @@ import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { cn } from "@umamin/ui/lib/utils";
 import { BarChart3Icon } from "lucide-react";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
+import { ContentCover } from "@/components/content-cover";
 import { PostImages } from "@/components/post-images";
 import { TimeAgo } from "@/components/time-ago";
 import { Link } from "@/lib/navigation";
@@ -10,6 +11,9 @@ import type { QuotedPostData } from "@/lib/types";
 type Props = {
   /** null = quoted post deleted or hidden from this viewer (husk). */
   post: QuotedPostData | null;
+  // For the cover over a labelled quote; the composer preview omits them.
+  isAuthenticated?: boolean;
+  currentUserId?: string;
   /** False in the composer preview — no navigation while writing the quote. */
   linked?: boolean;
   className?: string;
@@ -20,7 +24,13 @@ type Props = {
  * (no like/repost buttons, no image lightbox) — the whole card links to the
  * quoted post, where full engagement lives.
  */
-export function QuotedPostCard({ post, linked = true, className }: Props) {
+export function QuotedPostCard({
+  post,
+  linked = true,
+  isAuthenticated = false,
+  currentUserId,
+  className,
+}: Props) {
   if (!post) {
     return (
       <div
@@ -56,24 +66,35 @@ export function QuotedPostCard({ post, linked = true, className }: Props) {
         />
       </div>
 
-      {post.content && (
-        <p className="mt-1.5 line-clamp-4 whitespace-pre-line text-sm">
-          {post.content}
-        </p>
-      )}
+      <ContentCover
+        label={post.moderation}
+        revealKey={`post:${post.id}`}
+        isOwn={!!currentUserId && currentUserId === post.author.id}
+        isAuthenticated={isAuthenticated}
+      >
+        {post.content && (
+          <p className="mt-1.5 line-clamp-4 whitespace-pre-line text-sm">
+            {post.content}
+          </p>
+        )}
 
-      {/* Embeds stop at one level: the quoted poll renders as a static
-          indicator (no options/counts) and the card links through to vote. */}
-      {post.pollEndsAt && (
-        <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
-          <BarChart3Icon className="size-4" />
-          Poll
-        </p>
-      )}
+        {/* Embeds stop at one level: the quoted poll renders as a static
+            indicator (no options/counts) and the card links through to vote. */}
+        {post.pollEndsAt && (
+          <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <BarChart3Icon className="size-4" />
+            Poll
+          </p>
+        )}
 
-      {post.images && post.images.length > 0 && (
-        <PostImages images={post.images} interactive={false} className="mt-2" />
-      )}
+        {post.images && post.images.length > 0 && (
+          <PostImages
+            images={post.images}
+            interactive={false}
+            className="mt-2"
+          />
+        )}
+      </ContentCover>
     </>
   );
 

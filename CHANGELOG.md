@@ -23,6 +23,13 @@ any that are empty.
 ### Added
 
 - Mute an account to stop seeing its posts, reposts and notes without blocking it. Its comments fold into a single line you can open, it can no longer notify you, and it is never told. Manage muted accounts in Settings, under Privacy.
+- Posts, comments and notes that may contain slurs, threats, someone's private details or insults aimed at a person now appear blurred. One tap shows them. If it's your own post, you see it as written, with a note that others see it covered.
+- Posts and notes that look like callouts, indirects, gossip or public fights fold into a single line by default. Tap to read one, or turn this off in Settings, under Privacy, with Hide disputes.
+- Moderators get a review queue for flagged posts, comments and notes, where they can clear a wrong flag or remove the content.
+
+### Changed
+
+- Disputes no longer climb to the top of Hot on the strength of their comments and reposts, and blurred posts stay out of Hot.
 
 ## [7.8.1] - 2026-10-02
 

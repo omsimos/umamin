@@ -48,6 +48,14 @@ describe("wrangler feature-flag vars", () => {
     expect(config.env.staging?.vars?.FLAGS_FORCE_ON).toContain("umamin-pro");
   });
 
+  // Covers and down-ranking are previewed and QA'd on staging before the
+  // production flag is flipped.
+  it("forces content moderation on in staging", () => {
+    expect(config.env.staging?.vars?.FLAGS_FORCE_ON).toContain(
+      "content-moderation",
+    );
+  });
+
   // Both environments report into one PostHog project, so the property that
   // separates them has to differ — and production is the gated one.
   it("tags the two environments distinctly", () => {

@@ -38,6 +38,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { BlockUserDialog } from "@/components/block-user-dialog";
+import { ContentCover } from "@/components/content-cover";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
@@ -413,11 +414,19 @@ export function NoteCard({
           </CardHeader>
 
           <CardContent className="flex w-full flex-col">
-            <PostBody
-              content={data.content}
-              className="font-display text-lg leading-snug"
-            />
-            {data.music && <MusicEmbed music={data.music} />}
+            <ContentCover
+              label={data.moderation}
+              revealKey={`note:${data.id}`}
+              isOwn={!!currentUserId && currentUserId === user?.id}
+              isAuthenticated={isAuthenticated}
+              noun="note"
+            >
+              <PostBody
+                content={data.content}
+                className="font-display text-lg leading-snug"
+              />
+              {data.music && <MusicEmbed music={data.music} />}
+            </ContentCover>
           </CardContent>
 
           <CardFooter className="w-full pt-0">

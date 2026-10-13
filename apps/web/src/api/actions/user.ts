@@ -638,6 +638,39 @@ export const toggleQuietModeHandler = action(
   },
 );
 
+// Same SQL flip as quiet mode, for the same stale-session-row reason.
+export const toggleHideDramaHandler = action(
+  {
+    auth: "user",
+    rateLimit: { name: "write", key: ({ user }) => `hidedrama:${user.id}` },
+  },
+  async (_input, { user, c }) => {
+    const [row] = await ctxDb(c)
+      .update(userTable)
+      .set({ hideDrama: sql`NOT ${userTable.hideDrama}` })
+      .where(eq(userTable.id, user.id))
+      .returning({ hideDrama: userTable.hideDrama });
+
+    return { hideDrama: row?.hideDrama ?? !user.hideDrama };
+  },
+);
+
+export const toggleMessageFilterHandler = action(
+  {
+    auth: "user",
+    rateLimit: { name: "write", key: ({ user }) => `msgfilter:${user.id}` },
+  },
+  async (_input, { user, c }) => {
+    const [row] = await ctxDb(c)
+      .update(userTable)
+      .set({ messageFilter: sql`NOT ${userTable.messageFilter}` })
+      .where(eq(userTable.id, user.id))
+      .returning({ messageFilter: userTable.messageFilter });
+
+    return { messageFilter: row?.messageFilter ?? !user.messageFilter };
+  },
+);
+
 const blockedWordsSchema = z.object({
   words: z.array(z.string().max(200)).max(200),
 });

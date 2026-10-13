@@ -3,7 +3,7 @@ import { privateQueryDefaults, queryKeys } from "@/lib/query";
 import { fetchFeatureFlags } from "@/lib/query-fetchers";
 import type { FeatureFlagsResponse } from "@/lib/types";
 
-const HIDDEN: FeatureFlagsResponse = { pro: false };
+const HIDDEN: FeatureFlagsResponse = { pro: false, contentModeration: false };
 
 /**
  * Reads the Worker-resolved flags. A route that gates on a flag prefetches this

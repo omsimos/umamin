@@ -33,6 +33,14 @@ export function toggleQuietModeAction() {
   return callAction<{ quietMode: boolean }>("toggleQuietModeAction");
 }
 
+export function toggleHideDramaAction() {
+  return callAction<{ hideDrama: boolean }>("toggleHideDramaAction");
+}
+
+export function toggleMessageFilterAction() {
+  return callAction<{ messageFilter: boolean }>("toggleMessageFilterAction");
+}
+
 export function updateBlockedWordsAction(input: { words: string[] }) {
   return callAction<{ success: true; blockedWords: string[] }>(
     "updateBlockedWordsAction",

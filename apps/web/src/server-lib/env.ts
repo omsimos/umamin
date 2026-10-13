@@ -32,4 +32,8 @@ export type Secrets = {
   AI_GATEWAY_API_KEY: string;
 };
 
-export type AppEnv = Env & Partial<Secrets>;
+// FLAGS_FORCE_ON is typed by wrangler as staging's exact literal, but it is a
+// comma-separated list that .dev.vars and tests override freely.
+export type AppEnv = Omit<Env, "FLAGS_FORCE_ON"> & {
+  FLAGS_FORCE_ON?: string;
+} & Partial<Secrets>;

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { FLAG_UMAMIN_PRO } from "../../lib/flags";
 import type { AppBindings } from "../../server-lib/context";
-import { resolveFlags } from "../../server-lib/flags";
+import { isModerationEnforced, resolveFlags } from "../../server-lib/flags";
 import { withPrivateRead } from "../../server-lib/read-route";
 import { getSessionFrom } from "./_shared";
 
@@ -12,10 +12,13 @@ export const flagsRoutes = new Hono<AppBindings>().get(
   "/flags",
   withPrivateRead("resolving feature flags", async (c) => {
     const { session } = await getSessionFrom(c);
-    const flags = await resolveFlags(c.env, session?.userId ?? null, [
-      FLAG_UMAMIN_PRO,
+    const [flags, contentModeration] = await Promise.all([
+      resolveFlags(c.env, session?.userId ?? null, [FLAG_UMAMIN_PRO]),
+      // Global, not per viewer (see lib/flags.ts); read here so settings can
+      // hide the content-filter switches while the feature is off.
+      isModerationEnforced(c.env),
     ]);
 
-    return { pro: flags[FLAG_UMAMIN_PRO] ?? false };
+    return { pro: flags[FLAG_UMAMIN_PRO] ?? false, contentModeration };
   }),
 );

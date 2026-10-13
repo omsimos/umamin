@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
-import { MessageCircleOffIcon } from "lucide-react";
+import { MessageCircleOffIcon, MessageSquareOffIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
@@ -12,7 +13,7 @@ import type {
   UserProfileResponse,
   UserWithAccount,
 } from "@/lib/types";
-import { toggleQuietModeAction } from "./actions";
+import { toggleHideDramaAction, toggleQuietModeAction } from "./actions";
 import { BlockedUsersSection } from "./blocked-users-section";
 import { BlockedWordsSection } from "./blocked-words-section";
 import { MutedUsersSection } from "./muted-users-section";
@@ -61,6 +62,37 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
   });
 
+  const { contentModeration } = useFeatureFlags();
+  const toggleHideDrama = useSingleFlightAction(toggleHideDramaAction);
+
+  const hideDramaMutation = useMutation({
+    mutationFn: async () => {
+      const res = await toggleHideDrama();
+      if ("error" in res && res.error) {
+        throw new ExpectedError(res.error);
+      }
+
+      return "hideDrama" in res ? res.hideDrama : undefined;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (currentUser) => ({
+            ...currentUser,
+            hideDrama: data ?? currentUser.hideDrama,
+          })),
+      );
+      toast.success(
+        data ? "Disputes will be folded." : "Disputes will show in full.",
+      );
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error(err.message ?? "Couldn't update this setting.");
+    },
+  });
+
   return (
     <div className="space-y-8">
       <section>
@@ -79,6 +111,24 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             onCheckedChange={() => quietModeMutation.mutate()}
           />
         </div>
+
+        {contentModeration && (
+          <div className="flex items-center space-x-4 rounded-md border p-4 mt-2">
+            <MessageSquareOffIcon className="size-6" />
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium leading-none">Hide disputes</p>
+              <p className="text-sm text-muted-foreground">
+                Fold posts and notes that look like callouts, indirects or
+                public fights. Tap one to read it.
+              </p>
+            </div>
+            <Switch
+              disabled={hideDramaMutation.isPending}
+              checked={user?.hideDrama ?? true}
+              onCheckedChange={() => hideDramaMutation.mutate()}
+            />
+          </div>
+        )}
 
         <PushNotificationToggle />
       </section>

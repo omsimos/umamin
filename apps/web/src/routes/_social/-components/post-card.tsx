@@ -20,6 +20,7 @@ import { memo, useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ComposeDialog } from "@/components/compose-dialog";
+import { ContentCover } from "@/components/content-cover";
 import { GroupBadge } from "@/components/group-badge";
 import { PollCard } from "@/components/poll-card";
 import { PostBody } from "@/components/post-body";
@@ -345,23 +346,35 @@ function PostCardImpl({
           </div>
         </div>
 
-        <PostBody content={data?.content ?? ""} className="mt-1" />
+        <ContentCover
+          label={data.moderation}
+          revealKey={`${isComment ? "comment" : "post"}:${data.id}`}
+          isOwn={!!currentUserId && currentUserId === author?.id}
+          isAuthenticated={isAuthenticated}
+          noun={isComment ? "comment" : "post"}
+        >
+          <PostBody content={data?.content ?? ""} className="mt-1" />
 
-        {!isComment && "poll" in data && data.poll && (
-          <PollCard
-            postId={data.id}
-            poll={data.poll}
-            isAuthenticated={isAuthenticated}
-          />
-        )}
+          {!isComment && "poll" in data && data.poll && (
+            <PollCard
+              postId={data.id}
+              poll={data.poll}
+              isAuthenticated={isAuthenticated}
+            />
+          )}
 
-        {"images" in data && data.images && data.images.length > 0 && (
-          <PostImages images={data.images} />
-        )}
+          {"images" in data && data.images && data.images.length > 0 && (
+            <PostImages images={data.images} />
+          )}
 
-        {quotablePost?.quotedPostId && (
-          <QuotedPostCard post={quotablePost.quotedPost ?? null} />
-        )}
+          {quotablePost?.quotedPostId && (
+            <QuotedPostCard
+              post={quotablePost.quotedPost ?? null}
+              isAuthenticated={isAuthenticated}
+              currentUserId={currentUserId}
+            />
+          )}
+        </ContentCover>
 
         {/* gap-4 (not space-x) so the controls' negative margins can enlarge
             their tap targets without shifting the visual layout. */}

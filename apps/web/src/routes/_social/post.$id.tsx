@@ -119,6 +119,7 @@ function Post() {
 
       <PostCardMain
         isAuthenticated={isAuthenticated}
+        currentUserId={viewerId ?? undefined}
         imageId={imageId}
         data={post}
       />

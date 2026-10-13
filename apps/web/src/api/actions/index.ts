@@ -84,6 +84,8 @@ import {
   muteUserHandler,
   removeProfileBannerHandler,
   removeProfilePhotoHandler,
+  toggleHideDramaHandler,
+  toggleMessageFilterHandler,
   toggleQuietModeHandler,
   unblockUserHandler,
   unfollowUserHandler,
@@ -161,6 +163,8 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/muteUserAction", muteUserHandler)
   .post("/actions/unmuteUserAction", unmuteUserHandler)
   .post("/actions/toggleQuietModeAction", toggleQuietModeHandler)
+  .post("/actions/toggleHideDramaAction", toggleHideDramaHandler)
+  .post("/actions/toggleMessageFilterAction", toggleMessageFilterHandler)
   .post("/actions/updateBlockedWordsAction", updateBlockedWordsHandler)
   .post("/actions/updateProfilePhotoAction", updateProfilePhotoHandler)
   .post("/actions/updateProfileBannerAction", updateProfileBannerHandler)

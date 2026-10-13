@@ -573,6 +573,8 @@ export type UserProfileViewerResponse = {
 // point. Fails closed, so an unreachable PostHog reads as "keep it hidden".
 export type FeatureFlagsResponse = {
   pro: boolean;
+  // The global content-moderation switch: gates the content-filter settings.
+  contentModeration: boolean;
 };
 
 // ── moderation review (moderator-only) ───────────────────────────────────────

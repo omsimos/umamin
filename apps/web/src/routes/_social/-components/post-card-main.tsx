@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ComposeDialog } from "@/components/compose-dialog";
+import { ContentCover } from "@/components/content-cover";
 import { GroupBadge } from "@/components/group-badge";
 import { PollCard } from "@/components/poll-card";
 import { PostBody } from "@/components/post-body";
@@ -54,9 +55,15 @@ type Props = {
   // Stable screenshot-target id (shared with PostHeader's Save Image).
   imageId: string;
   isAuthenticated?: boolean;
+  currentUserId?: string;
 };
 
-export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
+export function PostCardMain({
+  data,
+  imageId,
+  isAuthenticated,
+  currentUserId,
+}: Props) {
   const author = data.author;
   const [liked, setLiked] = useState<boolean>(data.isLiked === true);
   const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
@@ -245,21 +252,34 @@ export function PostCardMain({ data, imageId, isAuthenticated }: Props) {
       </div>
 
       <div className="text-[15px] w-full">
-        <PostBody content={data.content} className="mt-1" />
+        <ContentCover
+          label={data.moderation}
+          revealKey={`post:${data.id}`}
+          isOwn={!!currentUserId && currentUserId === data.author?.id}
+          isAuthenticated={!!isAuthenticated}
+        >
+          <PostBody content={data.content} className="mt-1" />
 
-        {data.poll && (
-          <PollCard
-            postId={data.id}
-            poll={data.poll}
-            isAuthenticated={!!isAuthenticated}
-          />
-        )}
+          {data.poll && (
+            <PollCard
+              postId={data.id}
+              poll={data.poll}
+              isAuthenticated={!!isAuthenticated}
+            />
+          )}
 
-        {data.images && data.images.length > 0 && (
-          <PostImages images={data.images} />
-        )}
+          {data.images && data.images.length > 0 && (
+            <PostImages images={data.images} />
+          )}
 
-        {data.quotedPostId && <QuotedPostCard post={data.quotedPost ?? null} />}
+          {data.quotedPostId && (
+            <QuotedPostCard
+              post={data.quotedPost ?? null}
+              isAuthenticated={!!isAuthenticated}
+              currentUserId={currentUserId}
+            />
+          )}
+        </ContentCover>
 
         {/* gap-4 (not space-x) so the controls' negative margins can enlarge
             their tap targets without shifting the visual layout. */}
