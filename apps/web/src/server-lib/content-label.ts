@@ -2,11 +2,13 @@ import type { ContentScores } from "./content-classifier";
 
 // Thresholds on the 0-100 scores content-classifier.ts stores. Kept server-side
 // so the client only ever sees the derived label, never a score it could use
-// to write just under a line. Drama starts high: it is collapsed for every
-// viewer by default, and indirects are the least reliable category.
+// to write just under a line. Set from a labelled sample of production posts
+// and notes (scripts/moderation-eval.ts). Drama sits high because it is
+// collapsed for every viewer by default and indirects are the noisiest
+// category: sad or romantic posts addressed to "you" read as parinig.
 export const REVIEW_THRESHOLD = 60;
-export const SEVERE_THRESHOLD = 85;
-export const DRAMA_THRESHOLD = 75;
+export const SEVERE_THRESHOLD = 80;
+export const DRAMA_THRESHOLD = 85;
 
 export type ContentLabel = "severe" | "drama";
 

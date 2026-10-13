@@ -158,9 +158,9 @@ describe("classifyContent", () => {
 
 describe("contentLabel", () => {
   it("labels at the thresholds and not below", () => {
-    expect(contentLabel({ modSevere: 85, modDrama: 0 }, true)).toBe("severe");
-    expect(contentLabel({ modSevere: 84, modDrama: 75 }, true)).toBe("drama");
-    expect(contentLabel({ modSevere: 84, modDrama: 74 }, true)).toBeNull();
+    expect(contentLabel({ modSevere: 80, modDrama: 0 }, true)).toBe("severe");
+    expect(contentLabel({ modSevere: 79, modDrama: 85 }, true)).toBe("drama");
+    expect(contentLabel({ modSevere: 79, modDrama: 84 }, true)).toBeNull();
   });
 
   it("is off in shadow mode, for cleared rows and for unclassified rows", () => {
