@@ -11,11 +11,18 @@ import {
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
 import { Button } from "@umamin/ui/components/button";
-import { ShieldXIcon, Trash2Icon, UserXIcon } from "lucide-react";
+import {
+  ShieldXIcon,
+  Trash2Icon,
+  UserXIcon,
+  Volume2Icon,
+  VolumeXIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
+import { useMuteUser } from "@/hooks/use-mute-user";
 import { ExpectedError } from "@/lib/expected-error";
 import { queryKeys } from "@/lib/query";
 import {
@@ -34,6 +41,7 @@ type CommentMenuProps = {
   authorUsername?: string;
   isAuthenticated: boolean;
   currentUserId?: string;
+  isMuted?: boolean;
 };
 
 export function CommentMenu({
@@ -43,8 +51,10 @@ export function CommentMenu({
   authorUsername,
   isAuthenticated,
   currentUserId,
+  isMuted = false,
 }: CommentMenuProps) {
   const queryClient = useQueryClient();
+  const muteMutation = useMuteUser();
   const [open, setOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const canDelete = !!currentUserId && currentUserId === authorId;
@@ -111,6 +121,20 @@ export function CommentMenu({
       : []),
     ...(canBlock
       ? [
+          {
+            title: `${isMuted ? "Unmute" : "Mute"}${authorUsername ? ` @${authorUsername}` : ""}`,
+            onClick: () =>
+              muteMutation.mutate({
+                userId: authorId,
+                username: authorUsername,
+                mute: !isMuted,
+              }),
+            icon: isMuted ? (
+              <Volume2Icon className="h-4 w-4" />
+            ) : (
+              <VolumeXIcon className="h-4 w-4" />
+            ),
+          },
           {
             title: authorUsername ? `Block @${authorUsername}` : "Block",
             onClick: () => setBlockOpen(true),

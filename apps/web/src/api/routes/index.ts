@@ -8,6 +8,7 @@ import { groupsRoutes } from "./groups";
 import { meRoutes } from "./me";
 import { messagesRoutes } from "./messages";
 import { moderationRoutes } from "./moderation";
+import { mutedUsersRoutes } from "./muted-users";
 import { notesRoutes } from "./notes";
 import { notificationsRoutes } from "./notifications";
 import { postsRoutes } from "./posts";
@@ -28,6 +29,7 @@ export const readsApp = new Hono<AppBindings>()
   .route("/", meRoutes)
   .route("/", messagesRoutes)
   .route("/", blockedUsersRoutes)
+  .route("/", mutedUsersRoutes)
   .route("/", notificationsRoutes)
   .route("/", usersRoutes)
   .route("/", groupsRoutes)

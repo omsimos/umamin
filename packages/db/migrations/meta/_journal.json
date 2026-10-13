@@ -183,6 +183,20 @@
       "when": 1788241392442,
       "tag": "0025_noisy_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1791868240065,
+      "tag": "0026_parched_scarlet_spider",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1791871286961,
+      "tag": "0027_gray_terror",
+      "breakpoints": true
     }
   ]
 }

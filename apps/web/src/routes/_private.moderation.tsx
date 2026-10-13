@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { pageSeo } from "@/lib/seo";
 import { IpDenylistManager } from "./-moderation/ip-denylist-manager";
+import { ReviewQueue } from "./-moderation/review-queue";
 
 // Moderator-gated. The parent _private beforeLoad already ensured the
 // current-user query and returns it in context; a non-moderator gets notFound
@@ -22,16 +23,24 @@ export const Route = createFileRoute("/_private/moderation")({
 
 function ModerationPage() {
   return (
-    <div className="container max-w-lg space-y-6 py-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Moderation</h1>
-        <p className="text-sm text-muted-foreground">
-          IP denylist — an Umamin-level block for a specific abusive IP. To ban
-          an account, use the Ban action on the member&apos;s profile.
-        </p>
-      </div>
+    <div className="container max-w-lg space-y-8 py-8">
+      <h1 className="text-2xl font-semibold tracking-tight">Moderation</h1>
 
-      <IpDenylistManager />
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Review</h2>
+        <ReviewQueue />
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">IP denylist</h2>
+          <p className="text-sm text-muted-foreground">
+            An Umamin-level block for a specific abusive IP. To ban an account,
+            use the Ban action on the member&apos;s profile.
+          </p>
+        </div>
+        <IpDenylistManager />
+      </section>
     </div>
   );
 }

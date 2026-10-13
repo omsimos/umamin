@@ -3,6 +3,7 @@ import type { NotesResponse } from "../../lib/types";
 import type { AppBindings } from "../../server-lib/context";
 import { getCurrentNoteData, getNotesPage } from "../../server-lib/data";
 import { UNAUTHORIZED_ERROR } from "../../server-lib/errors";
+import { isModerationEnforced } from "../../server-lib/flags";
 import {
   getCachedPublicPayload,
   withPrivateRead,
@@ -27,7 +28,11 @@ export const notesRoutes = new Hono<AppBindings>()
         { cursor },
         PUBLIC_NOTES_MAX_AGE,
         PUBLIC_BROWSER_MAX_AGE,
-        () => getNotesPage(db, { cursor }),
+        async () =>
+          getNotesPage(db, {
+            cursor,
+            enforce: await isModerationEnforced(c.env),
+          }),
       );
 
       return getNotesPage(db, {

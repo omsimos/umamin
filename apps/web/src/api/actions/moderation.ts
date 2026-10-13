@@ -1,3 +1,5 @@
+import { noteTable } from "@umamin/db/schema/note";
+import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import * as z from "zod";
@@ -5,6 +7,7 @@ import { action } from "../../server-lib/action";
 import { canonicalizeIp, extractClientIp } from "../../server-lib/ip";
 import { allowIp, denyIp } from "../../server-lib/ip-denylist";
 import { isModerator } from "../../server-lib/moderation";
+import { idSchema } from "../../server-lib/schema";
 import { invalidateUserSessions } from "../../server-lib/session";
 import { ctxDb } from "./_shared";
 
@@ -143,6 +146,41 @@ export const allowIpHandler = action(
       return { error: NOT_FOUND };
     }
     await allowIp(c.env.KV, ip);
+    return { success: true };
+  },
+);
+
+const clearFlagSchema = z.object({
+  kind: z.enum(["post", "comment", "note"]),
+  id: idSchema,
+});
+
+const REVIEW_TABLES = {
+  post: postTable,
+  comment: postCommentTable,
+  note: noteTable,
+} as const;
+
+// A moderator marks a classifier flag a false positive: the row keeps its
+// scores (for tuning) but loses its label and leaves the review queue.
+export const clearContentFlagHandler = action(
+  {
+    schema: clearFlagSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `clearflag:${session.userId}`,
+    },
+  },
+  async ({ kind, id }, { user, c }) => {
+    if (!isModerator(user, c.env.MODERATOR_USERS)) {
+      return { error: "Not found" };
+    }
+    const table = REVIEW_TABLES[kind];
+    await ctxDb(c)
+      .update(table)
+      .set({ modClearedAt: new Date() })
+      .where(eq(table.id, id));
     return { success: true };
   },
 );

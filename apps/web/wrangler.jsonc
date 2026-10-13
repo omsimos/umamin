@@ -140,7 +140,8 @@
         // the PostHog rollout says. Comma-separated flag keys; local dev reads
         // this same block (CLOUDFLARE_ENV=staging), so Pro works locally too.
         // A flag that SHOULD be previewable in its hidden state is left out.
-        "FLAGS_FORCE_ON": "umamin-pro"
+        // content-moderation: covers and Hot down-ranking, QA'd here first.
+        "FLAGS_FORCE_ON": "umamin-pro,content-moderation"
       }
     },
     "production": {

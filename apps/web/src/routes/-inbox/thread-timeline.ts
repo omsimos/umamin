@@ -1,5 +1,9 @@
 import { format, isSameDay, isToday, isYesterday } from "date-fns";
-import type { MessageThreadResponse, ThreadEntry } from "@/lib/types";
+import type {
+  ContentLabel,
+  MessageThreadResponse,
+  ThreadEntry,
+} from "@/lib/types";
 
 export type ThreadTimelineItem =
   | { kind: "day"; key: string; label: string }
@@ -7,6 +11,8 @@ export type ThreadTimelineItem =
       kind: "message";
       key: string;
       content: string;
+      // Set only on the receiver's copy of a sender's words (message filter).
+      moderation: ContentLabel | null;
       createdAt: Date | null;
       // Display side, already resolved against the viewer's role.
       side: "incoming" | "outgoing";
@@ -49,12 +55,14 @@ export function buildThreadTimeline({
   const raw: {
     key: string;
     content: string;
+    moderation: ContentLabel | null;
     fromSender: boolean;
     createdAt: Date | null;
   }[] = [
     {
       key: "content",
       content: message.content,
+      moderation: message.moderation ?? null,
       fromSender: true,
       createdAt: messageCreatedAt,
     },
@@ -64,6 +72,7 @@ export function buildThreadTimeline({
     raw.push({
       key: "legacy-reply",
       content: message.reply,
+      moderation: null,
       fromSender: false,
       // The legacy column carries no timestamp of its own. updatedAt is exact
       // only while it is still the newest write; later entries move it.
@@ -75,6 +84,7 @@ export function buildThreadTimeline({
     raw.push({
       key: entry.id,
       content: entry.content,
+      moderation: entry.moderation ?? null,
       fromSender: entry.fromSender,
       createdAt: toDate(entry.createdAt),
     });
@@ -115,6 +125,7 @@ export function buildThreadTimeline({
       kind: "message",
       key: row.key,
       content: row.content,
+      moderation: row.moderation,
       createdAt: row.createdAt,
       side,
       tight: !startsDay && prevSide === side,

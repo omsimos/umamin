@@ -1,4 +1,5 @@
 import { noteTable } from "@umamin/db/schema/note";
+import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { accountTable, userTable } from "@umamin/db/schema/user";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -135,7 +136,10 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
     it("resolves the Pro offer to hidden when PostHog is unconfigured", async () => {
       const res = await fetchApp("/flags");
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ pro: false });
+      expect(await res.json()).toEqual({
+        pro: false,
+        contentModeration: false,
+      });
     });
 
     it("reflects a forced-on flag for a signed-in viewer", async () => {
@@ -146,9 +150,9 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       const res = await fetchApp(
         "/flags",
         { headers: { cookie: `session=${token}` } },
-        { FLAGS_FORCE_ON: "umamin-pro" },
+        { FLAGS_FORCE_ON: "umamin-pro,content-moderation" },
       );
-      expect(await res.json()).toEqual({ pro: true });
+      expect(await res.json()).toEqual({ pro: true, contentModeration: true });
     });
   });
 
@@ -171,6 +175,84 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       const second = await fetchApp("/public/notes");
       expect(second.status).toBe(200);
       expect(await second.json()).toEqual(firstBody);
+    });
+  });
+
+  // Every read route has to pass the content-moderation flag down; a route
+  // that forgot would silently stay in shadow mode while the flag is on.
+  describe("content-moderation labels", () => {
+    const ON: Partial<AppEnv> = { FLAGS_FORCE_ON: "content-moderation" };
+
+    beforeEach(async () => {
+      await db.insert(userTable).values({ id: "a1", username: "author_xyz" });
+      await db.insert(postTable).values({
+        id: "p-severe",
+        content: "x",
+        authorId: "a1",
+        modSevere: 95,
+        modDrama: 10,
+      });
+      await db.insert(postCommentTable).values({
+        id: "c-drama",
+        postId: "p-severe",
+        authorId: "a1",
+        content: "y",
+        modSevere: 5,
+        modDrama: 90,
+      });
+      await db.insert(noteTable).values({
+        id: "n-severe",
+        userId: "a1",
+        content: "z",
+        isAnonymous: false,
+        modSevere: 99,
+        modDrama: 0,
+      });
+    });
+
+    const labels = async (path: string, env: Partial<AppEnv>) => {
+      const body = JSON.stringify(await (await fetchApp(path, {}, env)).json());
+      expect(body).not.toMatch(/"mod[A-Z]/);
+      return [...body.matchAll(/"moderation":("\w+"|null)/g)].map((m) => m[1]);
+    };
+
+    it("labels every public read when the flag is on", async () => {
+      expect(await labels("/public/posts?sort=latest", ON)).toContain(
+        '"severe"',
+      );
+      expect(await labels("/public/posts?sort=hot", ON)).not.toContain(
+        '"severe"',
+      );
+      expect(await labels("/public/posts/p-severe", ON)).toEqual(['"severe"']);
+      expect(await labels("/public/posts/p-severe/comments", ON)).toEqual([
+        '"drama"',
+      ]);
+      expect(await labels("/public/notes", ON)).toEqual(['"severe"']);
+      expect(await labels("/public/user/author_xyz/posts", ON)).toEqual([
+        '"severe"',
+      ]);
+    });
+
+    it("labels nothing in shadow mode", async () => {
+      expect(await labels("/public/posts?sort=latest", {})).toEqual(["null"]);
+      expect(await labels("/public/notes", {})).toEqual(["null"]);
+    });
+
+    it("labels the signed-in reads that fill the shared entry", async () => {
+      const token = generateSessionToken();
+      await createSession(db, token, "a1");
+      const headers = { cookie: `session=${token}` };
+      const signedIn = async (path: string) =>
+        JSON.stringify(await (await fetchApp(path, { headers }, ON)).json());
+
+      expect(await signedIn("/posts?sort=latest")).toContain(
+        '"moderation":"severe"',
+      );
+      expect(await signedIn("/posts?sort=following")).not.toMatch(/"mod[A-Z]/);
+      expect(await signedIn("/posts/p-severe/comments")).toContain(
+        '"moderation":"drama"',
+      );
+      expect(await signedIn("/notes")).toContain('"moderation":"severe"');
     });
   });
 

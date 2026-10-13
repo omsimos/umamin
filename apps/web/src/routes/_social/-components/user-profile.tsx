@@ -16,6 +16,8 @@ import {
   MessageSquareXIcon,
   Share2Icon,
   ShieldCheckIcon,
+  Volume2Icon,
+  VolumeXIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -25,6 +27,7 @@ import { proThemeClass } from "@/components/pro-flair";
 import { shareProfile } from "@/components/share-button";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
+import { useMuteUser } from "@/hooks/use-mute-user";
 import { ExpectedError } from "@/lib/expected-error";
 import { useAppNavigate } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
@@ -102,6 +105,8 @@ export function UserProfile({ username, initialUser }: Props) {
   const isFollowing = viewer?.isFollowing === true;
   const isBlocked = viewer?.isBlocked === true;
   const isBlockedBy = viewer?.isBlockedBy === true;
+  const isMuted = viewer?.isMuted === true;
+  const muteMutation = useMuteUser();
   const isSelf = !!currentUser?.user?.id && currentUser.user.id === profile.id;
   const isModeratorViewer = currentUser?.user?.isModerator === true;
   const isBanned = viewer?.isBanned === true;
@@ -442,6 +447,21 @@ export function UserProfile({ username, initialUser }: Props) {
     blockMutation.mutate(resolvedViewer.isBlocked);
   };
 
+  const handleMute = async () => {
+    if (muteMutation.isPending) return;
+
+    const resolvedViewer = await requireAuthenticatedViewer();
+    if (!resolvedViewer || resolvedViewer.currentUserId === profile.id) {
+      return;
+    }
+
+    muteMutation.mutate({
+      userId: profile.id,
+      username: profile.username,
+      mute: !resolvedViewer.isMuted,
+    });
+  };
+
   const handleFollow = async () => {
     if (blockMutation.isPending) return;
 
@@ -506,6 +526,19 @@ export function UserProfile({ username, initialUser }: Props) {
             </span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={muteMutation.isPending}
+            onClick={handleMute}
+          >
+            <span className="flex items-center gap-2">
+              {isMuted ? (
+                <Volume2Icon className="size-4" />
+              ) : (
+                <VolumeXIcon className="size-4" />
+              )}
+              {isMuted ? "Unmute" : "Mute"}
+            </span>
+          </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockMutation.isPending}
             onClick={handleBlock}

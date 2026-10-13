@@ -19,7 +19,13 @@ import {
 import { action } from "../../server-lib/action";
 import { noBlockBetween } from "../../server-lib/blocks";
 import { hasPlusPerks } from "../../server-lib/content";
-import { getPostById } from "../../server-lib/data";
+import { classifyContent } from "../../server-lib/content-classifier";
+import {
+  contentLabel,
+  reviewableScoreColumns,
+} from "../../server-lib/content-label";
+import { getPostById, withModeration } from "../../server-lib/data";
+import { isModerationEnforced } from "../../server-lib/flags";
 import { isModerator } from "../../server-lib/moderation";
 import { notify } from "../../server-lib/notifications";
 import {
@@ -117,16 +123,30 @@ export const createPostHandler = action(
       }
     }
 
+    const formattedContent = content
+      .replace(/(\r\n|\n|\r){2,}/g, "\n\n")
+      .trim();
+
+    let quotedContent: string | null = null;
     if (quotedPostId) {
       const [quoted] = await db
-        .select({ id: postTable.id })
+        .select({ id: postTable.id, content: postTable.content })
         .from(postTable)
         .where(eq(postTable.id, quotedPostId))
         .limit(1);
       if (!quoted) {
         return { error: "The post you're quoting is no longer available." };
       }
+      quotedContent = quoted.content;
     }
+
+    // Runs alongside the image claim below; it never rejects (fails open to
+    // null), so an early return leaves nothing dangling.
+    const classifying = classifyContent(
+      c.env,
+      { kind: "post", text: formattedContent, context: quotedContent },
+      { defer: defer(c) },
+    );
 
     const r2 = createR2(c.env);
     let claimedImages: Awaited<
@@ -146,9 +166,7 @@ export const createPostHandler = action(
       }
     }
 
-    const formattedContent = content
-      .replace(/(\r\n|\n|\r){2,}/g, "\n\n")
-      .trim();
+    const scores = await classifying;
 
     let createdPost: typeof postTable.$inferSelect;
     let createdPollOptions: (typeof pollOptionTable.$inferSelect)[] = [];
@@ -164,6 +182,7 @@ export const createPostHandler = action(
             quotedPostId: quotedPostId ?? null,
             pollEndsAt:
               poll && pollLabels ? pollEndsAtFrom(poll.duration) : null,
+            ...reviewableScoreColumns(scores),
           })
           .returning();
 
@@ -209,7 +228,8 @@ export const createPostHandler = action(
 
     return {
       success: true,
-      post: createdPost,
+      // The author's own copy: never labelled, and raw scores stay server-side.
+      post: withModeration(createdPost, false),
       poll:
         createdPost.pollEndsAt && createdPollOptions.length > 0
           ? {
@@ -320,6 +340,7 @@ export const createCommentHandler = action(
     const [target] = await db
       .select({
         authorId: postTable.authorId,
+        content: postTable.content,
         blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
       })
       .from(postTable)
@@ -332,10 +353,24 @@ export const createCommentHandler = action(
       return { error: "Post not found" };
     }
 
+    const [scores, enforce] = await Promise.all([
+      classifyContent(
+        c.env,
+        { kind: "comment", text: formatted, context: target.content },
+        { defer: defer(c) },
+      ),
+      isModerationEnforced(c.env),
+    ]);
+
     await db.transaction(async (tx) => {
       const [comment] = await tx
         .insert(postCommentTable)
-        .values({ postId, content: formatted, authorId: session.userId })
+        .values({
+          postId,
+          content: formatted,
+          authorId: session.userId,
+          ...reviewableScoreColumns(scores),
+        })
         .returning();
 
       createdComment = comment;
@@ -380,13 +415,20 @@ export const createCommentHandler = action(
           type: "comment",
           targetId: postId,
           actorId: session.userId,
-          preview: createdComment.content,
+          // A covered comment must not be read in full from the bell.
+          preview:
+            contentLabel(createdComment, enforce) === "severe"
+              ? null
+              : createdComment.content,
           blockChecked: true,
         },
       );
     }
 
-    return { success: true, comment: createdComment };
+    return {
+      success: true,
+      comment: createdComment && withModeration(createdComment, false),
+    };
   },
 );
 

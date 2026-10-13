@@ -27,6 +27,13 @@ export type Secrets = {
   LEMONSQUEEZY_STORE_ID: string;
   LEMONSQUEEZY_VARIANT_ID: string;
   LEMONSQUEEZY_WEBHOOK_SECRET: string;
+  // Vercel AI Gateway key for the content classifier (content-classifier.ts).
+  // Unset means nothing is classified, so local dev and tests make no calls.
+  AI_GATEWAY_API_KEY: string;
 };
 
-export type AppEnv = Env & Partial<Secrets>;
+// FLAGS_FORCE_ON is typed by wrangler as staging's exact literal, but it is a
+// comma-separated list that .dev.vars and tests override freely.
+export type AppEnv = Omit<Env, "FLAGS_FORCE_ON"> & {
+  FLAGS_FORCE_ON?: string;
+} & Partial<Secrets>;

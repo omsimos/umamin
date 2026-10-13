@@ -62,6 +62,11 @@ LEMONSQUEEZY_STORE_ID=
 LEMONSQUEEZY_VARIANT_ID=
 LEMONSQUEEZY_WEBHOOK_SECRET=
 
+# --- Content classifier -----------------------------------------------------
+# Vercel AI Gateway key with access to typesafe-ai/jev. Unset locally is fine:
+# nothing gets classified and content shows normally.
+AI_GATEWAY_API_KEY=
+
 # --- Feature flags ----------------------------------------------------------
 # Feature flags gate PRODUCTION ONLY (server-lib/flags.ts). Local dev runs with
 # CLOUDFLARE_ENV=staging and so already inherits staging's FLAGS_FORCE_ON from

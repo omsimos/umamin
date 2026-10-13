@@ -9,7 +9,7 @@ export const messagesRoutes = new Hono<AppBindings>()
   .get(
     "/messages",
     withPrivateRead("fetching messages", async (c) => {
-      const { session } = await getSessionFrom(c);
+      const { session, user } = await getSessionFrom(c);
       if (!session) {
         return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 401 });
       }
@@ -19,13 +19,14 @@ export const messagesRoutes = new Hono<AppBindings>()
         type,
         cursor: c.req.query("cursor") ?? null,
         userId: session.userId,
+        filterMessages: user?.messageFilter === true,
       });
     }),
   )
   .get(
     "/messages/:id/thread",
     withPrivateRead("fetching message thread", async (c) => {
-      const { session } = await getSessionFrom(c);
+      const { session, user } = await getSessionFrom(c);
       if (!session) {
         return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 401 });
       }
@@ -38,6 +39,7 @@ export const messagesRoutes = new Hono<AppBindings>()
       const thread = await getMessageThread(resolveDb(c.env), {
         messageId,
         viewerId: session.userId,
+        filterMessages: user?.messageFilter === true,
       });
 
       // Non-participant, blocked, or missing all read as not-found — the

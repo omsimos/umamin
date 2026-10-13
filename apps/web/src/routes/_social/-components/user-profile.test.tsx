@@ -104,6 +104,8 @@ describe("UserProfile", () => {
         hasPassword: true,
         blockedWords: null,
         pushPrefs: 0,
+        hideDrama: true,
+        messageFilter: false,
         accounts: [],
         isModerator: false,
       },
@@ -117,6 +119,7 @@ describe("UserProfile", () => {
       isFollowing: true,
       isBlocked: false,
       isBlockedBy: false,
+      isMuted: false,
       isBanned: false,
     });
 

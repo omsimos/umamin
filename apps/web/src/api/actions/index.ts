@@ -35,6 +35,7 @@ import {
 import {
   allowIpHandler,
   banUserHandler,
+  clearContentFlagHandler,
   denyIpHandler,
   unbanUserHandler,
 } from "./moderation";
@@ -80,11 +81,15 @@ import {
   generalSettingsHandler,
   getCurrentUserHandler,
   getUserProfileHandler,
+  muteUserHandler,
   removeProfileBannerHandler,
   removeProfilePhotoHandler,
+  toggleHideDramaHandler,
+  toggleMessageFilterHandler,
   toggleQuietModeHandler,
   unblockUserHandler,
   unfollowUserHandler,
+  unmuteUserHandler,
   updateBlockedWordsHandler,
   updatePasswordHandler,
   updateProfileBannerHandler,
@@ -155,7 +160,11 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/unfollowUserAction", unfollowUserHandler)
   .post("/actions/blockUserAction", blockUserHandler)
   .post("/actions/unblockUserAction", unblockUserHandler)
+  .post("/actions/muteUserAction", muteUserHandler)
+  .post("/actions/unmuteUserAction", unmuteUserHandler)
   .post("/actions/toggleQuietModeAction", toggleQuietModeHandler)
+  .post("/actions/toggleHideDramaAction", toggleHideDramaHandler)
+  .post("/actions/toggleMessageFilterAction", toggleMessageFilterHandler)
   .post("/actions/updateBlockedWordsAction", updateBlockedWordsHandler)
   .post("/actions/updateProfilePhotoAction", updateProfilePhotoHandler)
   .post("/actions/updateProfileBannerAction", updateProfileBannerHandler)
@@ -198,6 +207,7 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/banUserAction", banUserHandler)
   .post("/actions/unbanUserAction", unbanUserHandler)
   .post("/actions/denyIpAction", denyIpHandler)
-  .post("/actions/allowIpAction", allowIpHandler);
+  .post("/actions/allowIpAction", allowIpHandler)
+  .post("/actions/clearContentFlagAction", clearContentFlagHandler);
 
 export type ActionsType = typeof actionsApp;

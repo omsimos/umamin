@@ -4,6 +4,8 @@ import * as z from "zod";
 import { parseMusicUrl } from "../../lib/music";
 import { action } from "../../server-lib/action";
 import { formatContent } from "../../server-lib/content";
+import { classifyContent } from "../../server-lib/content-classifier";
+import { reviewableScoreColumns } from "../../server-lib/content-label";
 import { getCurrentNoteData } from "../../server-lib/data";
 import {
   isForeignKeyConstraintViolation,
@@ -12,7 +14,7 @@ import {
 import { isModerator } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { idSchema } from "../../server-lib/schema";
-import { ctxDb } from "./_shared";
+import { ctxDb, defer } from "./_shared";
 
 const NOTE_NOT_FOUND = "Note not found";
 
@@ -49,9 +51,20 @@ export const createNoteHandler = action(
     const formattedContent = formatContent(content);
 
     const music = musicUrl ? parseMusicUrl(musicUrl) : null;
-    const { title: musicTitle, thumbnail: musicThumbnail } = music
-      ? await fetchMusicMeta(music)
-      : { title: null, thumbnail: null };
+    const [{ title: musicTitle, thumbnail: musicThumbnail }, scores] =
+      await Promise.all([
+        music
+          ? fetchMusicMeta(music)
+          : Promise.resolve({ title: null, thumbnail: null }),
+        classifyContent(
+          c.env,
+          { kind: "note", text: formattedContent },
+          { defer: defer(c) },
+        ),
+      ]);
+    // A note is one row per user, rewritten on every save: the scores (and
+    // any moderator clear) belong to the old text and must be replaced.
+    const moderation = reviewableScoreColumns(scores);
 
     const musicProvider = music?.provider ?? null;
     const musicId = music?.id ?? null;
@@ -75,6 +88,7 @@ export const createNoteHandler = action(
           musicTitle,
           musicThumbnail,
           ...legacyMusic,
+          ...moderation,
           updatedAt: sql`(unixepoch())`,
         })
         .onConflictDoUpdate({
@@ -88,6 +102,7 @@ export const createNoteHandler = action(
             musicTitle,
             musicThumbnail,
             ...legacyMusic,
+            ...moderation,
             updatedAt: sql`(unixepoch())`,
           },
         })
@@ -136,6 +151,7 @@ export const clearNoteHandler = action(
           spotifyTrackId: null,
           spotifyTitle: null,
           spotifyThumbnail: null,
+          ...reviewableScoreColumns(null),
         })
         .where(eq(noteTable.userId, session.userId))
         .returning({ id: noteTable.id });

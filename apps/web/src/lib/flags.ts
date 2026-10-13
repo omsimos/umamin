@@ -9,3 +9,13 @@
  * regardless — flipping this off must never revoke something someone paid for.
  */
 export const FLAG_UMAMIN_PRO = "umamin-pro";
+
+/**
+ * Turns classifier labels on: covers severe posts, comments and notes, collapses
+ * drama for viewers who hide it, and down-ranks both in Hot. It is a GLOBAL
+ * switch, resolved with no viewer, because the label is baked into shared
+ * cached pages and the Hot list. Off means shadow mode: content is still
+ * classified and stored, nothing changes for users. The opt-in private message
+ * filter does not depend on it (the receiver chose it).
+ */
+export const FLAG_CONTENT_MODERATION = "content-moderation";

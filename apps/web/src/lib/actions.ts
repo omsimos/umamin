@@ -48,6 +48,14 @@ export function blockUserAction(input: { userId: string }) {
   return callAction<{ success?: boolean }>("blockUserAction", input);
 }
 
+export function muteUserAction(input: { userId: string }) {
+  return callAction<{ success?: boolean }>("muteUserAction", input);
+}
+
+export function unmuteUserAction(input: { userId: string }) {
+  return callAction<{ success?: boolean }>("unmuteUserAction", input);
+}
+
 type FollowOut = { alreadyFollowing?: boolean; alreadyRemoved?: boolean };
 
 export function followUserAction(input: { userId: string }) {

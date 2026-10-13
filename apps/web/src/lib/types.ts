@@ -43,6 +43,8 @@ export type PublicUser = Omit<
   | "passwordHash"
   | "lastSeenNotificationsAt"
   | "blockedWords"
+  | "hideDrama"
+  | "messageFilter"
   | "bannerImageUrl"
   | "pushPrefs"
   | "musicProvider"
@@ -100,6 +102,9 @@ export type CurrentUserClient = PublicUserWithBadge & {
   // Push-notification preference bitmask (0 = off). Owner-private — only ever
   // served to the user's own session (mirrors blockedWords/hasPassword).
   pushPrefs: number;
+  // Content-filter preferences, owner-private like blockedWords.
+  hideDrama: boolean;
+  messageFilter: boolean;
 };
 // Only what the Account settings card renders. The provider subject id and the
 // owning userId never leave the server — this payload is dehydrated into every
@@ -118,6 +123,8 @@ export function toPublicUser(user: SelectUser): PublicUser {
     passwordHash: _passwordHash,
     lastSeenNotificationsAt: _lastSeenNotificationsAt,
     blockedWords: _blockedWords,
+    hideDrama: _hideDrama,
+    messageFilter: _messageFilter,
     bannerImageUrl: _bannerImageUrl,
     pushPrefs: _pushPrefs,
     musicProvider: _musicProvider,
@@ -200,28 +207,49 @@ export type PollData = {
   myVoteOptionId?: string | null;
 };
 
+// ── content moderation ───────────────────────────────────────────────────────
+
+// Raw classifier columns are server-only (content-label.ts thresholds them);
+// read payloads carry only the derived label.
+export type ModerationColumn =
+  | "modSevere"
+  | "modDrama"
+  | "modReason"
+  | "modFlaggedAt"
+  | "modClearedAt";
+
+export type ContentLabel = "severe" | "drama";
+
+type Moderated = {
+  // null/undefined = show normally. Optional so optimistic client items can
+  // omit it.
+  moderation?: ContentLabel | null;
+};
+
 // The embedded card inside a quote post. Never carries viewer overlays, a
 // nested quotedPost, or a live poll — embedding stops at one level (the card
 // links through; pollEndsAt alone drives a static "Poll" indicator).
-export type QuotedPostData = Omit<SelectPost, "images"> & {
-  images?: PostImageDisplay[] | null;
-  author: FeedAuthor;
-};
+export type QuotedPostData = Omit<SelectPost, "images" | ModerationColumn> &
+  Moderated & {
+    images?: PostImageDisplay[] | null;
+    author: FeedAuthor;
+  };
 
-export type PostData = Omit<SelectPost, "images"> & {
-  images?: PostImageDisplay[] | null;
-  // Set when quotedPostId is set: the resolved post, or null when it's been
-  // deleted / its author is blocked — rendered as an "unavailable" husk.
-  quotedPost?: QuotedPostData | null;
-  // Set when pollEndsAt is set; null only if the option rows are missing.
-  poll?: PollData | null;
-  author: FeedAuthorWithBadge;
-  comments?: SelectPostComment[];
-  isLiked?: boolean;
-  isReposted?: boolean;
-  // Set only by the profile posts page, on the author's pinned post.
-  isPinned?: boolean;
-};
+export type PostData = Omit<SelectPost, "images" | ModerationColumn> &
+  Moderated & {
+    images?: PostImageDisplay[] | null;
+    // Set when quotedPostId is set: the resolved post, or null when it's been
+    // deleted / its author is blocked — rendered as an "unavailable" husk.
+    quotedPost?: QuotedPostData | null;
+    // Set when pollEndsAt is set; null only if the option rows are missing.
+    poll?: PollData | null;
+    author: FeedAuthorWithBadge;
+    comments?: SelectPostComment[];
+    isLiked?: boolean;
+    isReposted?: boolean;
+    // Set only by the profile posts page, on the author's pinned post.
+    isPinned?: boolean;
+  };
 
 // Strips viewer overlays + the nested embed so quote composers/optimistic
 // items carry exactly the documented QuotedPostData shape.
@@ -237,10 +265,12 @@ export function toQuotedPostData(post: PostData): QuotedPostData {
   return rest;
 }
 
-export type CommentData = SelectPostComment & {
-  author: FeedAuthorWithBadge;
-  isLiked?: boolean;
-};
+export type CommentData = Omit<SelectPostComment, ModerationColumn> &
+  Moderated & {
+    author: FeedAuthorWithBadge;
+    isLiked?: boolean;
+    isMuted?: boolean;
+  };
 
 export type RepostData = {
   id: string;
@@ -279,17 +309,23 @@ export type NoteItem = Omit<
   | "spotifyTrackId"
   | "spotifyTitle"
   | "spotifyThumbnail"
-> & {
-  user?: FeedAuthorWithBadge;
-  isReacted?: boolean;
-  music: MusicAttachment | null;
-};
+  | ModerationColumn
+> &
+  Moderated & {
+    user?: FeedAuthorWithBadge;
+    isReacted?: boolean;
+    music: MusicAttachment | null;
+  };
 
 export type NotesResponse = CursorPage<NoteItem>;
 
-export type MessageWithReceiver = SelectMessage & {
-  receiver: FeedAuthor;
-};
+export type MessageWithReceiver = Omit<
+  SelectMessage,
+  "modSevere" | "modDrama" | "modReason"
+> &
+  Moderated & {
+    receiver: FeedAuthor;
+  };
 
 export type MessagesResponse = {
   messages: MessageWithReceiver[];
@@ -298,7 +334,7 @@ export type MessagesResponse = {
 
 // One thread entry past the legacy first reply (message.reply). `fromSender`
 // is the only authorship signal — reply rows never carry a user id.
-export type ThreadEntry = {
+export type ThreadEntry = Moderated & {
   id: string;
   content: string;
   fromSender: boolean;
@@ -364,6 +400,12 @@ export type BlockedUser = FeedAuthor & {
 };
 
 export type BlockedUsersResponse = CursorPage<BlockedUser>;
+
+export type MutedUser = FeedAuthor & {
+  mutedAt: Date;
+};
+
+export type MutedUsersResponse = CursorPage<MutedUser>;
 
 export type FollowListUser = FeedAuthorWithBadge & {
   isFollowing: boolean;
@@ -524,6 +566,7 @@ export type UserProfileViewerResponse = {
   isFollowing: boolean;
   isBlocked: boolean;
   isBlockedBy: boolean;
+  isMuted: boolean;
   // Moderator-only: whether the profile owner is currently banned. Always false
   // for non-moderators (ban state never leaks). Gates the profile "Unban"/"Ban"
   // menu entry. See getUserProfileViewerData.
@@ -534,4 +577,27 @@ export type UserProfileViewerResponse = {
 // point. Fails closed, so an unreachable PostHog reads as "keep it hidden".
 export type FeatureFlagsResponse = {
   pro: boolean;
+  // The global content-moderation switch: gates the content-filter settings.
+  contentModeration: boolean;
 };
+
+// ── moderation review (moderator-only) ───────────────────────────────────────
+
+export type ReviewKind = "post" | "comment" | "note";
+
+export type ReviewItem = {
+  kind: ReviewKind;
+  id: string;
+  content: string;
+  // null for an anonymous note: its author stays hidden from moderators too.
+  author: FeedAuthor | null;
+  // The post a comment belongs to, for linking.
+  postId: string | null;
+  createdAt: Date;
+  flaggedAt: Date | null;
+  severe: number | null;
+  drama: number | null;
+  reason: string | null;
+};
+
+export type ReviewPage = { data: ReviewItem[]; nextCursor: string | null };

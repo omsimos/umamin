@@ -29,6 +29,7 @@ import {
   accountTable,
   userBlockTable,
   userFollowTable,
+  userMuteTable,
   userTable,
 } from "@umamin/db/schema/user";
 import { aesDecrypt } from "@umamin/encryption";
@@ -57,6 +58,7 @@ import type {
   BlockedUsersResponse,
   CommentData,
   CommentsResponse,
+  ContentLabel,
   CurrentUserClient,
   CurrentUserResponse,
   FeedAuthorWithBadge,
@@ -76,6 +78,8 @@ import type {
   GroupUnreadState,
   MessagesResponse,
   MessageThreadResponse,
+  ModerationColumn,
+  MutedUsersResponse,
   NoteItem,
   NotesResponse,
   NotificationBadgeResponse,
@@ -89,6 +93,7 @@ import type {
   UserProfileViewerResponse,
 } from "../lib/types";
 import { noBlockBetween } from "./blocks";
+import { contentLabel } from "./content-label";
 import { parseCursor } from "./cursor";
 import type { Db } from "./db";
 import { getRedisHotPostIdsPage, isRedisHotCursor } from "./feed-rank";
@@ -98,8 +103,13 @@ import {
   JOINED_GROUPS_CAP,
   normalizeGroupTag,
 } from "./group";
-import { diversifyHotCandidates, getHotScoreKey } from "./hot-score";
+import {
+  diversifyHotCandidates,
+  getHotScoreKey,
+  isHotEligible,
+} from "./hot-score";
 import { isModerator } from "./moderation";
+import { getMutedIds } from "./mutes";
 import { countUnseen } from "./notifications";
 
 // 180s (was 120s): public reads are eventually-consistent and every surface
@@ -174,7 +184,7 @@ const publicUserColumns = {
 // equippedGroupId feeds withGroupBadge; points kept for forward-compat. The
 // FULL publicUserColumns stays on the current-user + profile reads (which
 // render bio/counts). Must match the FeedAuthor type in lib/types.ts (9 keys).
-const feedAuthorColumns = {
+export const feedAuthorColumns = {
   id: userTable.id,
   username: userTable.username,
   displayName: userTable.displayName,
@@ -245,6 +255,7 @@ function withGroupBadge<U extends { equippedGroupId: string | null }>(
 async function getQuotedPostMap(
   db: Db,
   posts: Pick<SelectPost, "quotedPostId">[],
+  enforce: boolean,
 ): Promise<Map<string, QuotedPostData>> {
   const ids = Array.from(
     new Set(
@@ -264,9 +275,42 @@ async function getQuotedPostMap(
 
   return new Map(
     quoted.map(
-      (row) => [row.post.id, { ...row.post, author: row.author }] as const,
+      (row) =>
+        [
+          row.post.id,
+          { ...withModeration(row.post, enforce), author: row.author },
+        ] as const,
     ),
   );
+}
+
+// Strips the server-only classifier columns and attaches the label the client
+// renders from. Every post/comment/note payload goes through this, so a raw
+// score never reaches the wire.
+export function withModeration<
+  T extends {
+    modSevere: number | null;
+    modDrama: number | null;
+    modReason: string | null;
+    modFlaggedAt?: Date | null;
+    modClearedAt?: Date | null;
+  },
+>(
+  row: T,
+  enforce: boolean,
+): Omit<T, ModerationColumn> & { moderation: ContentLabel | null } {
+  const {
+    modSevere,
+    modDrama,
+    modReason: _modReason,
+    modFlaggedAt: _modFlaggedAt,
+    modClearedAt,
+    ...rest
+  } = row;
+  return {
+    ...rest,
+    moderation: contentLabel({ modSevere, modDrama, modClearedAt }, enforce),
+  };
 }
 
 // `undefined` = not a quote; `null` = quote whose target is gone (husk).
@@ -482,6 +526,7 @@ function getFeedCursorCondition(
 async function getPublicLatestPostsPage(
   db: Db,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const parsedCursor = parseFeedCursor(cursor);
   const postCursorCondition = getFeedCursorCondition(
@@ -590,7 +635,7 @@ async function getPublicLatestPostsPage(
   ]);
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, posts),
+    getQuotedPostMap(db, posts, enforce),
     getPollOptionsMap(db, posts),
     getGroupBadgeMap(db, users),
   ]);
@@ -608,7 +653,7 @@ async function getPublicLatestPostsPage(
     }
 
     const feedPost = {
-      ...post,
+      ...withModeration(post, enforce),
       author,
       quotedPost: resolveQuotedPost(post, quotedMap),
       poll: resolvePoll(post, pollMap),
@@ -652,6 +697,7 @@ async function getRedisHotPostsPage(
   db: Db,
   kv: KVNamespace | undefined,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<FeedResponse | null> {
   const page = await getRedisHotPostIdsPage(
     kv,
@@ -671,12 +717,16 @@ async function getRedisHotPostsPage(
   // happens at the route level. The per-viewer overlay (blocks/likes/reposts)
   // is layered on by the caller.
   return {
-    data: await hydrateHotPostIds(db, page.ids),
+    data: await hydrateHotPostIds(db, page.ids, enforce),
     nextCursor: page.nextCursor,
   };
 }
 
-async function hydrateHotPostIds(db: Db, ids: string[]): Promise<FeedItem[]> {
+async function hydrateHotPostIds(
+  db: Db,
+  ids: string[],
+  enforce: boolean,
+): Promise<FeedItem[]> {
   const posts =
     ids.length > 0
       ? await db.select().from(postTable).where(inArray(postTable.id, ids))
@@ -691,7 +741,7 @@ async function hydrateHotPostIds(db: Db, ids: string[]): Promise<FeedItem[]> {
       : [];
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, posts),
+    getQuotedPostMap(db, posts, enforce),
     getPollOptionsMap(db, posts),
     getGroupBadgeMap(db, users),
   ]);
@@ -705,7 +755,7 @@ async function hydrateHotPostIds(db: Db, ids: string[]): Promise<FeedItem[]> {
   // worst nudges the same-author spacing below.
   const candidates = ids.flatMap((postId) => {
     const post = postMap.get(postId);
-    return post ? [{ post, scoreKey: getHotScoreKey(post) }] : [];
+    return post ? [{ post, scoreKey: getHotScoreKey(post, enforce) }] : [];
   });
   return diversifyHotCandidates(candidates).flatMap<FeedItem>(({ post }) => {
     const author = userMap.get(post.authorId);
@@ -718,7 +768,7 @@ async function hydrateHotPostIds(db: Db, ids: string[]): Promise<FeedItem[]> {
       {
         type: "post" as const,
         post: {
-          ...post,
+          ...withModeration(post, enforce),
           author,
           quotedPost: resolveQuotedPost(post, quotedMap),
           poll: resolvePoll(post, pollMap),
@@ -734,6 +784,7 @@ async function getCachedPublicHotPostsPage(
   db: Db,
   cursor: string | null,
   rankedAtMs: number,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const parsedCursor = parseHotFeedCursor(cursor);
 
@@ -744,9 +795,10 @@ async function getCachedPublicHotPostsPage(
     .limit(HOT_FEED_CANDIDATE_SIZE);
 
   const rankedCandidates = candidatePosts
+    .filter((post) => isHotEligible(post, enforce))
     .map((post) => ({
       post,
-      scoreKey: getHotScoreKey(post),
+      scoreKey: getHotScoreKey(post, enforce),
     }))
     .sort(compareHotCandidates)
     .filter((candidate) => isAfterHotCursor(candidate, parsedCursor));
@@ -772,6 +824,7 @@ async function getCachedPublicHotPostsPage(
     getQuotedPostMap(
       db,
       pageRows.map((candidate) => candidate.post),
+      enforce,
     ),
     getPollOptionsMap(
       db,
@@ -794,7 +847,7 @@ async function getCachedPublicHotPostsPage(
       {
         type: "post" as const,
         post: {
-          ...post,
+          ...withModeration(post, enforce),
           author,
           quotedPost: resolveQuotedPost(post, quotedMap),
           poll: resolvePoll(post, pollMap),
@@ -821,10 +874,11 @@ async function getPublicHotPostsPage(
   kv: KVNamespace | undefined,
   cursor: string | null,
   rankedAtMs: number,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const redisData =
     !cursor || isRedisHotCursor(cursor)
-      ? await getRedisHotPostsPage(db, kv, cursor)
+      ? await getRedisHotPostsPage(db, kv, cursor, enforce)
       : null;
 
   if (isRedisHotCursor(cursor)) {
@@ -832,7 +886,8 @@ async function getPublicHotPostsPage(
   }
 
   return (
-    redisData ?? (await getCachedPublicHotPostsPage(db, cursor, rankedAtMs))
+    redisData ??
+    (await getCachedPublicHotPostsPage(db, cursor, rankedAtMs, enforce))
   );
 }
 
@@ -840,6 +895,7 @@ async function getFollowingPostsPage(
   db: Db,
   viewerId: string,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const parsedCursor = parseFeedCursor(cursor);
   const postCursorCondition = getFeedCursorCondition(
@@ -956,7 +1012,7 @@ async function getFollowingPostsPage(
   ]);
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, posts),
+    getQuotedPostMap(db, posts, enforce),
     getPollOptionsMap(db, posts),
     getGroupBadgeMap(db, users),
   ]);
@@ -974,7 +1030,7 @@ async function getFollowingPostsPage(
     }
 
     const feedPost = {
-      ...post,
+      ...withModeration(post, enforce),
       author,
       quotedPost: resolveQuotedPost(post, quotedMap),
       poll: resolvePoll(post, pollMap),
@@ -1052,64 +1108,66 @@ async function getPostFeedViewerOverlay(
   actorIds: string[],
   pollPostIds: string[] = [],
 ) {
-  const [likedRows, repostRows, blockRows, voteRows] = await Promise.all([
-    postIds.length > 0
-      ? db
-          .select({ postId: postLikeTable.postId })
-          .from(postLikeTable)
-          .where(
-            and(
-              eq(postLikeTable.userId, viewerId),
-              inArray(postLikeTable.postId, postIds),
-            ),
-          )
-      : [],
-    postIds.length > 0
-      ? db
-          .select({ postId: postRepostTable.postId })
-          .from(postRepostTable)
-          .where(
-            and(
-              eq(postRepostTable.userId, viewerId),
-              inArray(postRepostTable.postId, postIds),
-            ),
-          )
-      : [],
-    actorIds.length > 0
-      ? db
-          .select({
-            blockerId: userBlockTable.blockerId,
-            blockedId: userBlockTable.blockedId,
-          })
-          .from(userBlockTable)
-          .where(
-            or(
+  const [likedRows, repostRows, blockRows, voteRows, mutedUserIds] =
+    await Promise.all([
+      postIds.length > 0
+        ? db
+            .select({ postId: postLikeTable.postId })
+            .from(postLikeTable)
+            .where(
               and(
-                eq(userBlockTable.blockerId, viewerId),
-                inArray(userBlockTable.blockedId, actorIds),
+                eq(postLikeTable.userId, viewerId),
+                inArray(postLikeTable.postId, postIds),
               ),
+            )
+        : [],
+      postIds.length > 0
+        ? db
+            .select({ postId: postRepostTable.postId })
+            .from(postRepostTable)
+            .where(
               and(
-                inArray(userBlockTable.blockerId, actorIds),
-                eq(userBlockTable.blockedId, viewerId),
+                eq(postRepostTable.userId, viewerId),
+                inArray(postRepostTable.postId, postIds),
               ),
-            ),
-          )
-      : [],
-    pollPostIds.length > 0
-      ? db
-          .select({
-            postId: pollVoteTable.postId,
-            optionId: pollVoteTable.optionId,
-          })
-          .from(pollVoteTable)
-          .where(
-            and(
-              eq(pollVoteTable.userId, viewerId),
-              inArray(pollVoteTable.postId, pollPostIds),
-            ),
-          )
-      : [],
-  ]);
+            )
+        : [],
+      actorIds.length > 0
+        ? db
+            .select({
+              blockerId: userBlockTable.blockerId,
+              blockedId: userBlockTable.blockedId,
+            })
+            .from(userBlockTable)
+            .where(
+              or(
+                and(
+                  eq(userBlockTable.blockerId, viewerId),
+                  inArray(userBlockTable.blockedId, actorIds),
+                ),
+                and(
+                  inArray(userBlockTable.blockerId, actorIds),
+                  eq(userBlockTable.blockedId, viewerId),
+                ),
+              ),
+            )
+        : [],
+      pollPostIds.length > 0
+        ? db
+            .select({
+              postId: pollVoteTable.postId,
+              optionId: pollVoteTable.optionId,
+            })
+            .from(pollVoteTable)
+            .where(
+              and(
+                eq(pollVoteTable.userId, viewerId),
+                inArray(pollVoteTable.postId, pollPostIds),
+              ),
+            )
+        : [],
+      getMutedIds(db, viewerId, actorIds),
+    ]);
 
   return {
     blockedUserIds: new Set(
@@ -1117,6 +1175,7 @@ async function getPostFeedViewerOverlay(
         row.blockerId === viewerId ? [row.blockedId] : [row.blockerId],
       ),
     ),
+    mutedUserIds,
     likedPostIds: new Set(likedRows.map((row) => row.postId)),
     repostedPostIds: new Set(repostRows.map((row) => row.postId)),
     myVoteByPostId: new Map(
@@ -1130,20 +1189,20 @@ function applyPostFeedViewerOverlay(
   overlay: Awaited<ReturnType<typeof getPostFeedViewerOverlay>>,
 ): FeedItem[] {
   return items.flatMap((item) => {
-    const isAuthorBlocked = overlay.blockedUserIds.has(item.post.author.id);
-    const isReposterBlocked =
-      item.type === "repost" && overlay.blockedUserIds.has(item.repost.user.id);
+    const isHidden = (userId: string) =>
+      overlay.blockedUserIds.has(userId) || overlay.mutedUserIds.has(userId);
+    const isAuthorHidden = isHidden(item.post.author.id);
+    const isReposterHidden =
+      item.type === "repost" && isHidden(item.repost.user.id);
 
-    if (isAuthorBlocked || isReposterBlocked) {
+    if (isAuthorHidden || isReposterHidden) {
       return [];
     }
 
-    // A quoted post from a blocked user degrades to the "unavailable" husk
-    // (matching what its own page shows the viewer) instead of leaking through
-    // the embed.
+    // A quoted post from a blocked or muted user degrades to the
+    // "unavailable" husk instead of leaking through the embed.
     const quotedPost =
-      item.post.quotedPost &&
-      overlay.blockedUserIds.has(item.post.quotedPost.author.id)
+      item.post.quotedPost && isHidden(item.post.quotedPost.author.id)
         ? null
         : item.post.quotedPost;
 
@@ -1179,19 +1238,28 @@ export async function getPostsPage(
     // shared public cache entry). Never supplied for `following`, which has no
     // viewer-independent form.
     publicData?: FeedResponse;
+    // Whether classifier labels are live (the content-moderation flag).
+    enforce?: boolean;
   },
 ): Promise<FeedResponse> {
+  const enforce = params.enforce ?? false;
   const publicData =
     params.publicData ??
     (params.sort === "following" && params.viewerId
-      ? await getFollowingPostsPage(db, params.viewerId, params.cursor ?? null)
+      ? await getFollowingPostsPage(
+          db,
+          params.viewerId,
+          params.cursor ?? null,
+          enforce,
+        )
       : params.sort === "latest"
-        ? await getPublicLatestPostsPage(db, params.cursor ?? null)
+        ? await getPublicLatestPostsPage(db, params.cursor ?? null, enforce)
         : await getPublicHotPostsPage(
             db,
             kv,
             params.cursor ?? null,
             getHotFeedRankedAtMs(params.cursor ?? null),
+            enforce,
           ));
 
   if (!params.viewerId) {
@@ -1218,6 +1286,7 @@ async function getPublicUserPostsPage(
   db: Db,
   authorId: string,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<FeedResponse> {
   const parsedCursor = parseCursor(cursor);
   const cursorCondition = parsedCursor
@@ -1278,7 +1347,7 @@ async function getPublicUserPostsPage(
     ...rows.map((row) => row.post),
   ];
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, pagePosts),
+    getQuotedPostMap(db, pagePosts, enforce),
     getPollOptionsMap(db, pagePosts),
     getGroupBadgeMap(db, [
       ...rows.map((row) => row.author),
@@ -1292,7 +1361,7 @@ async function getPublicUserPostsPage(
   ): FeedItem => ({
     type: "post" as const,
     post: {
-      ...row.post,
+      ...withModeration(row.post, enforce),
       author: withGroupBadge(row.author, badgeMap),
       quotedPost: resolveQuotedPost(row.post, quotedMap),
       poll: resolvePoll(row.post, pollMap),
@@ -1333,12 +1402,14 @@ export async function getUserPostsPage(
     authorId: string;
     cursor?: string | null;
     viewerId?: string | null;
+    enforce?: boolean;
   },
 ): Promise<FeedResponse> {
   const publicData = await getPublicUserPostsPage(
     db,
     params.authorId,
     params.cursor ?? null,
+    params.enforce ?? false,
   );
 
   if (!params.viewerId) {
@@ -1361,7 +1432,11 @@ export async function getUserPostsPage(
   };
 }
 
-async function getPublicPost(db: Db, postId: string): Promise<PostResponse> {
+async function getPublicPost(
+  db: Db,
+  postId: string,
+  enforce: boolean,
+): Promise<PostResponse> {
   // Explicit join over the relational `with: { author: true }`: the relation
   // selects every user column (passwordHash, blockedWords, ...) and a type
   // cast can't strip them at runtime — this payload is client-bound and
@@ -1378,13 +1453,13 @@ async function getPublicPost(db: Db, postId: string): Promise<PostResponse> {
   }
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
-    getQuotedPostMap(db, [row.post]),
+    getQuotedPostMap(db, [row.post], enforce),
     getPollOptionsMap(db, [row.post]),
     getGroupBadgeMap(db, [row.author]),
   ]);
 
   return {
-    ...row.post,
+    ...withModeration(row.post, enforce),
     author: withGroupBadge(row.author, badgeMap),
     quotedPost: resolveQuotedPost(row.post, quotedMap),
     poll: resolvePoll(row.post, pollMap),
@@ -1478,12 +1553,13 @@ export async function getPostById(
     // Pre-fetched viewer-independent post. `undefined` means "not supplied"
     // (fetch it); a caller that already resolved a missing post shouldn't call.
     publicPost?: PostResponse;
+    enforce?: boolean;
   },
 ): Promise<PostResponse> {
   const publicPost =
     params.publicPost !== undefined
       ? params.publicPost
-      : await getPublicPost(db, params.postId);
+      : await getPublicPost(db, params.postId, params.enforce ?? false);
 
   if (!publicPost || !params.viewerId) {
     return publicPost;
@@ -1528,6 +1604,7 @@ async function getPublicCommentsPage(
   db: Db,
   postId: string,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<CommentsResponse> {
   const parsedCursor = parseCursor(cursor);
 
@@ -1568,7 +1645,7 @@ async function getPublicCommentsPage(
 
     return [
       {
-        ...comment,
+        ...withModeration(comment, enforce),
         author: withGroupBadge(author, badgeMap),
         isLiked: false,
       },
@@ -1608,7 +1685,7 @@ async function getCommentViewerOverlay(
   commentIds: string[],
   authorIds: string[],
 ) {
-  const [likedRows, blockRows] = await Promise.all([
+  const [likedRows, blockRows, mutedUserIds] = await Promise.all([
     commentIds.length > 0
       ? db
           .select({ commentId: postCommentLikeTable.commentId })
@@ -1640,6 +1717,7 @@ async function getCommentViewerOverlay(
             ),
           )
       : [],
+    getMutedIds(db, viewerId, authorIds),
   ]);
 
   return {
@@ -1648,6 +1726,7 @@ async function getCommentViewerOverlay(
         row.blockerId === viewerId ? [row.blockedId] : [row.blockerId],
       ),
     ),
+    mutedUserIds,
     likedCommentIds: new Set(likedRows.map((row) => row.commentId)),
   };
 }
@@ -1660,11 +1739,17 @@ export async function getPostCommentsPage(
     viewerId?: string | null;
     // Pre-fetched viewer-independent page (shared public cache entry).
     publicData?: CommentsResponse;
+    enforce?: boolean;
   },
 ): Promise<CommentsResponse> {
   const publicData =
     params.publicData ??
-    (await getPublicCommentsPage(db, params.postId, params.cursor ?? null));
+    (await getPublicCommentsPage(
+      db,
+      params.postId,
+      params.cursor ?? null,
+      params.enforce ?? false,
+    ));
 
   if (!params.viewerId) {
     return publicData;
@@ -1686,10 +1771,13 @@ export async function getPostCommentsPage(
         return [];
       }
 
+      // Muted comments are collapsed client-side, not dropped, so replies
+      // around them still read as a conversation.
       return [
         {
           ...comment,
           isLiked: overlay.likedCommentIds.has(comment.id),
+          isMuted: overlay.mutedUserIds.has(comment.author.id),
         },
       ];
     }),
@@ -1725,6 +1813,7 @@ function resolveNoteMusic(note: SelectNote): MusicAttachment | null {
 // `user` object is suppressed.
 function toNoteItem(
   note: SelectNote,
+  enforce: boolean,
   extra?: Pick<NoteItem, "user" | "isReacted">,
 ): NoteItem {
   const {
@@ -1738,12 +1827,17 @@ function toNoteItem(
     spotifyThumbnail: _sth,
     ...rest
   } = note;
-  return { ...rest, music: resolveNoteMusic(note), ...extra };
+  return {
+    ...withModeration(rest, enforce),
+    music: resolveNoteMusic(note),
+    ...extra,
+  };
 }
 
 async function getPublicNotesPage(
   db: Db,
   cursor: string | null,
+  enforce: boolean,
 ): Promise<NotesResponse> {
   const parsedCursor = parseCursor(cursor);
 
@@ -1781,8 +1875,8 @@ async function getPublicNotesPage(
 
   const data = rows.map(({ note, user }) =>
     note.isAnonymous
-      ? toNoteItem(note)
-      : toNoteItem(note, {
+      ? toNoteItem(note, enforce)
+      : toNoteItem(note, enforce, {
           user: user ? withGroupBadge(user, badgeMap) : undefined,
         }),
   );
@@ -1807,7 +1901,7 @@ async function getNoteViewerOverlay(
   authorIds: string[],
   noteIds: string[],
 ) {
-  const [blockRows, reactedRows] = await Promise.all([
+  const [blockRows, reactedRows, mutedUserIds] = await Promise.all([
     authorIds.length > 0
       ? db
           .select({
@@ -1839,6 +1933,7 @@ async function getNoteViewerOverlay(
             ),
           )
       : [],
+    getMutedIds(db, viewerId, authorIds),
   ]);
 
   return {
@@ -1847,6 +1942,7 @@ async function getNoteViewerOverlay(
         row.blockerId === viewerId ? [row.blockedId] : [row.blockerId],
       ),
     ),
+    mutedUserIds,
     reactedNoteIds: new Set(reactedRows.map((row) => row.noteId)),
   };
 }
@@ -1858,10 +1954,16 @@ export async function getNotesPage(
     viewerId?: string | null;
     // Pre-fetched viewer-independent page (shared public cache entry).
     publicData?: NotesResponse;
+    enforce?: boolean;
   },
 ): Promise<NotesResponse> {
   const publicData =
-    params.publicData ?? (await getPublicNotesPage(db, params.cursor ?? null));
+    params.publicData ??
+    (await getPublicNotesPage(
+      db,
+      params.cursor ?? null,
+      params.enforce ?? false,
+    ));
 
   if (!params.viewerId) {
     return publicData;
@@ -1885,7 +1987,9 @@ export async function getNotesPage(
     ...publicData,
     // Preserve the shared public page window; viewer overlays may shorten it.
     data: publicData.data.flatMap((note) =>
-      note.user?.id && overlay.blockedUserIds.has(note.user.id)
+      note.user?.id &&
+      (overlay.blockedUserIds.has(note.user.id) ||
+        overlay.mutedUserIds.has(note.user.id))
         ? []
         : [{ ...note, isReacted: overlay.reactedNoteIds.has(note.id) }],
     ),
@@ -1907,7 +2011,8 @@ export async function getCurrentNoteData(
   };
 
   const data = await getCachedData();
-  return data ? toNoteItem(data) : null;
+  // The viewer's own note: authors always see their content uncovered.
+  return data ? toNoteItem(data, false) : null;
 }
 
 export async function getCurrentUserData(
@@ -1932,6 +2037,9 @@ export async function getCurrentUserData(
         blockedWords: userTable.blockedWords,
         // Owner-private push-notification preference bitmask (see types/user.ts).
         pushPrefs: userTable.pushPrefs,
+        // Owner-private content-filter preferences.
+        hideDrama: userTable.hideDrama,
+        messageFilter: userTable.messageFilter,
         // Profile song (resolved into a lean `music` object below, raw columns
         // dropped) so settings can preview/edit the attached song.
         musicProvider: userTable.musicProvider,
@@ -2085,7 +2193,7 @@ async function getUserProfileViewerOverlay(
   viewerId: string,
   targetId: string,
 ) {
-  // Fold the three exists() probes into one round-trip (was three).
+  // Fold the exists() probes into one round-trip.
   const [row] = await db
     .select({
       isFollowing: exists(
@@ -2121,6 +2229,17 @@ async function getUserProfileViewerOverlay(
             ),
           ),
       ),
+      isMuted: exists(
+        db
+          .select({ id: userMuteTable.id })
+          .from(userMuteTable)
+          .where(
+            and(
+              eq(userMuteTable.muterId, viewerId),
+              eq(userMuteTable.mutedId, targetId),
+            ),
+          ),
+      ),
     })
     .from(userTable)
     .where(eq(userTable.id, targetId))
@@ -2130,6 +2249,7 @@ async function getUserProfileViewerOverlay(
     isFollowing: Boolean(row?.isFollowing),
     isBlocked: Boolean(row?.isBlocked),
     isBlockedBy: Boolean(row?.isBlockedBy),
+    isMuted: Boolean(row?.isMuted),
   };
 }
 
@@ -2148,6 +2268,7 @@ async function getUserProfileViewerDataForUser(
       isFollowing: false,
       isBlocked: false,
       isBlockedBy: false,
+      isMuted: false,
       isBanned: false,
     };
   }
@@ -2456,12 +2577,75 @@ export async function getBlockedUsersPage(
   };
 }
 
+export async function getMutedUsersPage(
+  db: Db,
+  params: {
+    viewerId: string;
+    cursor?: string | null;
+  },
+): Promise<MutedUsersResponse> {
+  const parsedCursor = parseCursor(params.cursor ?? null);
+  const cursorCondition = parsedCursor
+    ? or(
+        lt(userMuteTable.createdAt, parsedCursor.cursorDate),
+        and(
+          eq(userMuteTable.createdAt, parsedCursor.cursorDate),
+          lt(userMuteTable.id, parsedCursor.cursorId),
+        ),
+      )
+    : undefined;
+
+  const baseCondition = eq(userMuteTable.muterId, params.viewerId);
+
+  const edgeRows = await db
+    .select({
+      id: userMuteTable.id,
+      createdAt: userMuteTable.createdAt,
+      mutedId: userMuteTable.mutedId,
+    })
+    .from(userMuteTable)
+    .where(
+      cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
+    )
+    .orderBy(desc(userMuteTable.createdAt), desc(userMuteTable.id))
+    .limit(BLOCKED_USERS_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(edgeRows, BLOCKED_USERS_PAGE_SIZE);
+  const mutedIds = pageRows.map((row) => row.mutedId);
+
+  const users =
+    mutedIds.length > 0
+      ? await db
+          .select(feedAuthorColumns)
+          .from(userTable)
+          .where(inArray(userTable.id, mutedIds))
+      : [];
+
+  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const data = pageRows.flatMap((row) => {
+    const user = userMap.get(row.mutedId);
+    return user ? [{ ...user, mutedAt: row.createdAt }] : [];
+  });
+
+  const lastEdge = pageRows[pageRows.length - 1];
+
+  return {
+    data,
+    nextCursor:
+      hasMore && lastEdge
+        ? `${lastEdge.createdAt.getTime()}.${lastEdge.id}`
+        : null,
+  };
+}
+
 export async function getMessagesPage(
   db: Db,
   params: {
     type: "received" | "sent";
     cursor?: string | null;
     userId: string;
+    // The viewer's opt-in message filter (user.messageFilter).
+    filterMessages?: boolean;
   },
 ): Promise<MessagesResponse> {
   const getCachedData = async () => {
@@ -2602,7 +2786,7 @@ export async function getMessagesPage(
         // Never expose the (logged-in) sender's account id to the recipient —
         // returning it de-anonymizes every "anonymous" sender. [audit #22]
         return {
-          ...message,
+          ...withModeration(message, params.filterMessages === true),
           senderId: null,
           // Each side's read watermark is private to that side.
           senderReadAt: null,
@@ -2612,7 +2796,8 @@ export async function getMessagesPage(
       }
 
       return {
-        ...message,
+        // The sender's own words: never labelled.
+        ...withModeration(message, false),
         // Opened state is the receiver's alone — stripping it here (not in the
         // UI) is what keeps senders from reading it off the wire.
         openedAt: null,
@@ -2635,7 +2820,7 @@ const THREAD_REPLIES_LIMIT = 200;
 
 export async function getMessageThread(
   db: Db,
-  params: { messageId: string; viewerId: string },
+  params: { messageId: string; viewerId: string; filterMessages?: boolean },
 ): Promise<MessageThreadResponse | null> {
   // All three reads run together — the auth verdict only decides whether the
   // rows are returned, so nothing needs to waterfall (Tokyo round trips
@@ -2653,6 +2838,9 @@ export async function getMessageThread(
         content: messageReplyTable.content,
         fromSender: messageReplyTable.fromSender,
         createdAt: messageReplyTable.createdAt,
+        modSevere: messageReplyTable.modSevere,
+        modDrama: messageReplyTable.modDrama,
+        modReason: messageReplyTable.modReason,
       })
       .from(messageReplyTable)
       .where(eq(messageReplyTable.messageId, params.messageId))
@@ -2711,17 +2899,27 @@ export async function getMessageThread(
     }
   }
 
+  // Labels are for the receiver who opted in, and only on the sender's words.
+  const filter = isReceiver && params.filterMessages === true;
   const replies = await Promise.all(
     replyRows.map(async (entry) => {
       let entryContent = entry.content;
       try {
         entryContent = await aesDecrypt(entry.content);
       } catch {}
-      return { ...entry, content: entryContent };
+      return {
+        ...withModeration(entry, filter && entry.fromSender),
+        content: entryContent,
+      };
     }),
   );
 
-  const shared = { ...message, content, reply, receiver };
+  const shared = {
+    ...withModeration(message, filter),
+    content,
+    reply,
+    receiver,
+  };
 
   return {
     message: isReceiver

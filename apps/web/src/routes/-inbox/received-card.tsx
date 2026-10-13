@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { MailIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ContentCover } from "@/components/content-cover";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { actionError } from "@/lib/api";
 import { vibrate } from "@/lib/haptics";
@@ -128,9 +129,18 @@ export function ReceivedMessageCard({ data }: { data: MessageWithReceiver }) {
         <p className="font-bold text-center leading-normal text-lg min-w-0 break-words mb-4">
           {data.question}
         </p>
-        <div className="flex w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted break-words min-w-0">
-          {data.content}
-        </div>
+        <ContentCover
+          label={data.moderation}
+          revealKey={`message:${data.id}`}
+          isOwn={false}
+          isAuthenticated
+          coverDrama
+          noun="message"
+        >
+          <div className="flex w-full flex-col gap-2 rounded-lg p-5 whitespace-pre-wrap bg-muted break-words min-w-0">
+            {data.content}
+          </div>
+        </ContentCover>
         <p className="text-muted-foreground text-sm mt-4 italic text-center">
           <TimeAgoVerbose date={data.createdAt} />
         </p>

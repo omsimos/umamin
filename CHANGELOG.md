@@ -18,6 +18,24 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.9.0] - 2026-10-13
+
+### Added
+
+- Mute an account to stop seeing its posts, reposts and notes without blocking it. Its comments fold into a single line you can open, it can no longer notify you, and it is never told. Manage muted accounts in Settings, under Privacy.
+- Posts, comments and notes that may contain slurs, threats, someone's private details or insults aimed at a person now appear blurred. One tap shows them. If it's your own post, you see it as written, with a note that others see it covered.
+- Posts and notes that look like callouts, indirects, gossip or public fights fold into a single line by default. Tap to read one, or turn this off in Settings, under Privacy, with Hide disputes.
+- Moderators get a review queue for flagged posts, comments and notes, where they can clear a wrong flag or remove the content.
+- Turn on Filter hurtful messages in Settings, under Privacy, to have new anonymous messages checked and covered when they look hurtful. Covered messages still arrive, and you can open them.
+
+### Changed
+
+- Disputes no longer climb to the top of Hot on the strength of their comments and reposts, and blurred posts stay out of Hot.
+
+### Security & Privacy
+
+- The privacy policy now explains the automated content checks, which service runs them, and that private messages are only checked for people who turn the filter on.
+
 ## [7.8.1] - 2026-10-02
 
 ### Fixed
@@ -1029,6 +1047,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.9.0]: https://github.com/omsimos/umamin/compare/v7.8.1...v7.9.0
 [7.8.1]: https://github.com/omsimos/umamin/compare/v7.8.0...v7.8.1
 [7.8.0]: https://github.com/omsimos/umamin/compare/v7.7.0...v7.8.0
 [7.7.0]: https://github.com/omsimos/umamin/compare/v7.6.3...v7.7.0

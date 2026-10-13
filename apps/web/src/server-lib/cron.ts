@@ -4,6 +4,7 @@ import { lt } from "drizzle-orm";
 import { getDb } from "./db";
 import type { AppEnv } from "./env";
 import { recomputeHotFeed as recomputeHotFeedRanking } from "./feed-rank";
+import { isModerationEnforced } from "./flags";
 
 // Scheduled-handler bodies. Kept as named functions so server.ts's scheduled()
 // dispatch is declarative and each job is unit-testable in isolation.
@@ -43,5 +44,9 @@ export async function cleanupNotifications(env: AppEnv): Promise<void> {
 // */5 * * * * — recompute the hot-feed ranking: one bounded Turso query → one KV
 // id-list write, replacing the Redis zset (see server-lib/feed-rank.ts).
 export async function recomputeHotFeed(env: AppEnv): Promise<void> {
-  await recomputeHotFeedRanking(getDb(env), env.KV);
+  await recomputeHotFeedRanking(
+    getDb(env),
+    env.KV,
+    await isModerationEnforced(env),
+  );
 }

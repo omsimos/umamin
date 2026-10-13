@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
+import { contentScoreColumns } from "./moderation";
 
 import { userTable } from "./user";
 
@@ -31,6 +32,9 @@ export const messageTable = sqliteTable(
     // thread open only, never per fetch. Each is private to its own side.
     senderReadAt: integer("sender_read_at", { mode: "timestamp" }),
     receiverReadAt: integer("receiver_read_at", { mode: "timestamp" }),
+    // Scores for `content`, written only when the receiver had the message
+    // filter on at send time.
+    ...contentScoreColumns(),
   },
   (t) => [
     index("receiver_id_created_at_id_idx").on(t.receiverId, t.createdAt, t.id),
@@ -58,6 +62,8 @@ export const messageReplyTable = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
+    // Sender follow-ups only, and only for a receiver with the filter on.
+    ...contentScoreColumns(),
   },
   (t) => [
     // Keyset pagination per thread; id tiebreaker for same-second inserts.
