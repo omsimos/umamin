@@ -10,10 +10,13 @@ import {
 // `*.css`); the family names map to --font-* in styles.css.
 import "@fontsource-variable/geist/index.css";
 import "@fontsource-variable/geist-mono/index.css";
-import "@fontsource-variable/bricolage-grotesque/index.css";
+// "standard" carries the width axis as well as weight: headings use Archivo
+// slightly expanded (styles.css), and the italic is real, not synthesized.
+import "@fontsource-variable/archivo/standard.css";
+import "@fontsource-variable/archivo/standard-italic.css";
 // Resolved to the same hashed URLs the stylesheets above reference, for the
 // preload links in `head` below.
-import bricolageLatin from "@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2?url";
+import archivoLatin from "@fontsource-variable/archivo/files/archivo-latin-standard-normal.woff2?url";
 import geistLatin from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url";
 import type { ReactNode } from "react";
 import { NotFoundPage } from "@/components/not-found-page";
@@ -83,7 +86,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       // alongside the CSS instead. Only `latin`: the other subsets are
       // unicode-range gated and must stay lazy, or every visitor pays for
       // bytes almost none of them render.
-      ...[geistLatin, bricolageLatin].map((href) => ({
+      ...[geistLatin, archivoLatin].map((href) => ({
         rel: "preload",
         as: "font",
         type: "font/woff2",

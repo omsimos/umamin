@@ -85,10 +85,6 @@ export function DemoChat() {
           chat ended — nothing was saved, anywhere
         </p>
       </div>
-
-      <p className="text-sm text-muted-foreground">
-        Matched by interests, gone in an hour. No account, no history.
-      </p>
     </div>
   );
 }

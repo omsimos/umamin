@@ -18,11 +18,23 @@ export const Route = createFileRoute("/_public/register")({
       path: "/register",
       robots: "noindex, follow",
     }),
+  // The landing page's link preview hands over the name the visitor typed.
+  validateSearch: (search: Record<string, unknown>): { username?: string } => {
+    const username =
+      typeof search.username === "string"
+        ? search.username
+            .toLowerCase()
+            .replace(/[^a-z0-9_-]/g, "")
+            .slice(0, 20)
+        : "";
+    return username ? { username } : {};
+  },
   component: RegisterPage,
 });
 
 function RegisterPage() {
   useRedirectIfAuthed();
+  const { username } = Route.useSearch();
 
   return (
     <section className="max-w-lg md:max-w-md container min-h-screen">
@@ -44,7 +56,7 @@ function RegisterPage() {
         </p>
       </div>
 
-      <RegisterForm />
+      <RegisterForm defaultUsername={username} />
 
       <div className="mt-4 text-center text-sm w-full">
         Already have an account?{" "}

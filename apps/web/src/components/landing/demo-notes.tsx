@@ -45,9 +45,6 @@ export function DemoNotes() {
           tap to shuffle thoughts
         </span>
       </button>
-      <p className="pt-3 text-sm text-muted-foreground">
-        Drop a thought. Strangers reply anonymously.
-      </p>
     </div>
   );
 }

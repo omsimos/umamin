@@ -1,21 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@umamin/ui/components/button";
-import {
-  ArrowRightIcon,
-  InboxIcon,
-  MessageSquareQuoteIcon,
-  MessagesSquareIcon,
-  ScrollTextIcon,
-} from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 import { CipherText } from "@/components/landing/cipher-text";
-import { DemoChat } from "@/components/landing/demo-chat";
-import { DemoMessage } from "@/components/landing/demo-message";
-import { DemoNotes } from "@/components/landing/demo-notes";
-import { DemoSocial } from "@/components/landing/demo-social";
-import { Marquee } from "@/components/landing/marquee";
-import { ProductCard } from "@/components/landing/product-card";
+import { CommunityWall } from "@/components/landing/community-wall";
+import { FeatureBento } from "@/components/landing/feature-bento";
+import { HeroPreview } from "@/components/landing/hero-preview";
+import { UmaShowcase } from "@/components/landing/uma-showcase";
 import { PwaRedirect } from "@/components/pwa-redirect";
-import { umaminChatUrl } from "@/lib/chat-link";
+import { Uma } from "@/components/uma";
 import { Link } from "@/lib/navigation";
 import { pageSeo } from "@/lib/seo";
 
@@ -32,105 +24,149 @@ export const Route = createFileRoute("/_marketing/")({
   component: Home,
 });
 
+const FACTS = [
+  { value: "2022", label: "Started in the Philippines" },
+  { value: "700K+", label: "People in the first week" },
+  { value: "AES-256", label: "Encryption on stored messages" },
+  { value: "Open", label: "Source, on GitHub" },
+];
+
 function Home() {
   return (
     <main className="overflow-x-clip pb-16">
       <PwaRedirect />
 
-      <section className="relative px-6 pb-20 pt-36 md:pb-28 md:pt-44">
-        <div className="mx-auto max-w-5xl">
-          <h1 className="animate-rise pt-6 font-display text-5xl font-extrabold leading-[0.95] tracking-tighter [animation-delay:100ms] sm:text-7xl md:text-8xl">
-            Say what you
-            <br />
-            <em className="text-primary">actually</em>{" "}
-            <CipherText words={["think.", "feel.", "mean.", "won't say."]} />
-          </h1>
+      <section className="relative px-6 pb-16 pt-32 md:pb-24 md:pt-40">
+        <div className="mx-auto grid grid-cols-1 max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-16">
+          <div>
+            <h1 className="animate-rise font-display text-5xl font-extrabold leading-[0.95] tracking-tighter [animation-delay:100ms] sm:text-7xl xl:text-8xl">
+              Say what you
+              <br />
+              <em className="text-primary">actually</em>{" "}
+              <CipherText words={["think.", "feel.", "mean.", "won't say."]} />
+            </h1>
 
-          <p className="max-w-xl animate-rise pt-6 text-muted-foreground [animation-delay:200ms] md:text-lg">
-            Umamin is the open-source playground for anonymity — encrypted
-            anonymous messages, notes strangers reply to, a feed of unowned hot
-            takes, and chats that self-destruct.
-          </p>
+            <p className="max-w-xl animate-rise pt-6 text-muted-foreground [animation-delay:200ms] md:text-lg">
+              Umamin is where people say the things they wouldn't say with their
+              name on it. Get anonymous messages, post notes and hot takes, join
+              groups, and talk to strangers.
+            </p>
 
-          <div className="flex animate-rise flex-wrap items-center gap-3 pt-8 [animation-delay:300ms]">
-            <Button size="lg" className="rounded-full md:text-base" asChild>
-              <Link to="/register">
-                Claim your link
-                <ArrowRightIcon />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="rounded-full md:text-base"
-              asChild
-            >
-              <Link to="/feed">Browse the feed</Link>
-            </Button>
+            <div className="flex animate-rise flex-wrap items-center gap-3 pt-8 [animation-delay:300ms]">
+              <Button
+                size="lg"
+                variant="outline"
+                className="rounded-full md:text-base"
+                asChild
+              >
+                <Link to="/feed">
+                  Browse the feed
+                  <ArrowRightIcon />
+                </Link>
+              </Button>
+            </div>
           </div>
 
-          <p className="animate-rise pt-6 font-mono text-xs text-muted-foreground [animation-delay:400ms]">
-            umamin.link/to/<span className="text-primary">you</span>
-          </p>
+          <div className="animate-rise [animation-delay:350ms]">
+            <HeroPreview />
+          </div>
         </div>
       </section>
 
-      <Marquee />
+      <section aria-label="Umamin in numbers" className="border-y px-6">
+        <dl className="mx-auto grid max-w-6xl grid-cols-2 md:grid-cols-4">
+          {FACTS.map((fact, i) => (
+            <div
+              key={fact.label}
+              className={`flex flex-col gap-1 py-6 md:py-8 ${i % 2 === 1 ? "pl-6" : ""} ${i > 0 ? "md:border-l md:pl-6" : ""} ${i < 2 ? "border-b md:border-b-0" : ""} ${i % 2 === 1 ? "border-l" : ""}`}
+            >
+              <dt className="order-2 text-sm text-muted-foreground">
+                {fact.label}
+              </dt>
+              <dd className="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
+                {fact.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
 
-      <section id="playground" className="px-6 pb-8 pt-20 md:pt-28">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="font-display text-4xl font-extrabold tracking-tighter md:text-5xl">
-            Four ways to be <em className="text-primary">nobody</em>.
+      <section className="px-6 pt-20 md:pt-28">
+        <div className="mx-auto grid grid-cols-1 max-w-6xl gap-10 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-16">
+          <div className="lg:pt-16">
+            <h2 className="font-display text-4xl font-extrabold tracking-tighter text-balance md:text-5xl">
+              Made by the people <em className="text-primary">on it</em>.
+            </h2>
+            <p className="pt-4 text-muted-foreground md:text-lg">
+              Late-night thoughts, study-spot polls, song recs and the messages
+              people were too shy to send with their name. Students, friend
+              groups and strangers fill it every day.
+            </p>
+            <p className="pt-6 text-xs text-muted-foreground">
+              Examples of the kinds of things people share. Names and posts are
+              made up.
+            </p>
+          </div>
+          <CommunityWall />
+        </div>
+      </section>
+
+      <section id="playground" className="px-6 pt-20 md:pt-28">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="font-display text-4xl font-extrabold tracking-tighter text-balance md:text-5xl">
+            Five ways to be <em className="text-primary">nobody</em>.
           </h2>
           <p className="pt-3 text-muted-foreground md:text-lg">
-            Every card below is a live demo — go ahead, poke them.
+            Every demo below works. Go ahead and poke it.
           </p>
-
-          <div className="grid gap-4 pt-10 md:grid-cols-2">
-            <ProductCard
-              name="Messages"
-              tag="the classic"
-              accent="bg-primary/15 text-primary"
-              icon={<InboxIcon className="size-4" />}
-              cta={{ label: "Claim your link", href: "/register" }}
-            >
-              <DemoMessage />
-            </ProductCard>
-
-            <ProductCard
-              name="Notes"
-              tag="say it out loud"
-              accent="bg-amber-400/15 text-amber-500"
-              icon={<ScrollTextIcon className="size-4" />}
-              cta={{ label: "Browse notes", href: "/notes" }}
-            >
-              <DemoNotes />
-            </ProductCard>
-
-            <ProductCard
-              name="Social"
-              tag="the feed"
-              accent="bg-sky-400/15 text-sky-400"
-              icon={<MessagesSquareIcon className="size-4" />}
-              cta={{ label: "Open the feed", href: "/feed" }}
-            >
-              <DemoSocial />
-            </ProductCard>
-
-            <ProductCard
-              name="Chat"
-              tag="new"
-              accent="bg-violet-400/15 text-violet-400"
-              icon={<MessageSquareQuoteIcon className="size-4" />}
-              cta={{
-                label: "Start a chat",
-                href: umaminChatUrl("landing"),
-                external: true,
-              }}
-            >
-              <DemoChat />
-            </ProductCard>
+          <div className="pt-10">
+            <FeatureBento />
           </div>
+        </div>
+      </section>
+
+      <section className="px-6 pt-20 md:pt-28">
+        <div className="mx-auto grid grid-cols-1 max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <div className="flex items-center gap-3">
+              <Uma className="size-12" />
+              <p className="font-semibold">Meet Uma</p>
+            </div>
+            <h2 className="pt-4 font-display text-4xl font-extrabold tracking-tighter text-balance md:text-5xl">
+              Less drama in your feed,{" "}
+              <em className="text-primary">your call</em>.
+            </h2>
+            <p className="pt-4 text-muted-foreground md:text-lg">
+              Uma checks new posts, comments and notes. It folds the ones that
+              look like callouts, indirects or fights, and covers anything that
+              may contain slurs, threats or someone's private details.
+            </p>
+            <ul className="grid gap-2 pt-6 text-sm">
+              <li className="flex items-start gap-2.5">
+                <span
+                  aria-hidden
+                  className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary"
+                />
+                Tap anything Uma folded to read it.
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span
+                  aria-hidden
+                  className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary"
+                />
+                Turn folding off in Settings whenever you want.
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span
+                  aria-hidden
+                  className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary"
+                />
+                Uma is automated and can be wrong, so people decide what gets
+                removed.
+              </li>
+            </ul>
+          </div>
+          <UmaShowcase />
         </div>
       </section>
 

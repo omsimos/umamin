@@ -3,7 +3,7 @@
    mirrors apps/www app/globals.css. */
 @plugin "@tailwindcss/typography";
 
-/* next/font set --font-geist-sans / --font-geist-mono / --font-bricolage on
+/* next/font set --font-geist-sans / --font-geist-mono / --font-display on
    <body>; under Vite the fonts self-host via @fontsource-variable (imported in
    __root.tsx) and their family names map straight to the theme vars here. */
 @theme {
@@ -12,8 +12,7 @@
     sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", monospace;
   --font-display:
-    "Bricolage Grotesque Variable", "Geist Variable", ui-sans-serif, system-ui,
-    sans-serif;
+    "Archivo Variable", "Geist Variable", ui-sans-serif, system-ui, sans-serif;
 
   --animate-marquee: marquee 32s linear infinite;
   @keyframes marquee {
@@ -63,6 +62,13 @@
 
   /* Opacity/transform only — the revealed card is taller than the sealed one
      and the virtualizer must remeasure the snapped height, not an animated one. */
+  --animate-scroll-up: scroll-up 60s linear infinite;
+  @keyframes scroll-up {
+    to {
+      transform: translateY(-50%);
+    }
+  }
+
   --animate-reveal-pop: reveal-pop 0.3s ease-out both;
   @keyframes reveal-pop {
     from {
@@ -152,4 +158,25 @@
   ::view-transition-new(*) {
     animation: none;
   }
+}
+
+/* Uma (components/uma.tsx). The body stays light in dark mode so the
+   character keeps its outline against a dark card. */
+:root {
+  --uma-body: oklch(0.965 0.022 300);
+  --uma-fold: oklch(0.86 0.05 300);
+  --uma-ink: oklch(0.29 0.04 300);
+  --uma-cheek: oklch(0.8 0.11 352);
+}
+.dark {
+  --uma-body: oklch(0.91 0.03 300);
+  --uma-fold: oklch(0.78 0.06 300);
+  --uma-ink: oklch(0.24 0.04 300);
+  --uma-cheek: oklch(0.78 0.12 352);
+}
+
+/* Headings use Archivo slightly expanded; the utility itself only sets the
+   family. */
+.font-display {
+  font-stretch: 112%;
 }

@@ -16,6 +16,8 @@ function renderCover(
     isAuthenticated?: boolean;
     hideDrama?: boolean;
     revealKey?: string;
+    coverDrama?: boolean;
+    noun?: string;
   } = {},
 ) {
   const client = new QueryClient();
@@ -32,6 +34,8 @@ function renderCover(
         revealKey={revealKey}
         isOwn={opts.isOwn ?? false}
         isAuthenticated={opts.isAuthenticated ?? false}
+        coverDrama={opts.coverDrama}
+        noun={opts.noun}
       >
         {children}
       </ContentCover>
@@ -86,5 +90,31 @@ describe("ContentCover", () => {
     renderCover("severe", { isOwn: true, isAuthenticated: true });
     expect(screen.getByText("the body").closest("[aria-hidden]")).toBeNull();
     expect(screen.getByText("Others see this post covered.")).toBeVisible();
+  });
+
+  it("explains a fold and reveals it from the explainer", async () => {
+    renderCover("drama");
+    await userEvent.click(screen.getByRole("button", { name: "Why?" }));
+    expect(
+      await screen.findByRole("heading", { name: "Why is this folded?" }),
+    ).toBeVisible();
+
+    await userEvent.click(screen.getByRole("button", { name: "Show post" }));
+    expect(screen.getByText("the body")).toBeVisible();
+  });
+
+  it("only promises moderator review where the queue covers it", async () => {
+    renderCover("severe");
+    await userEvent.click(screen.getByRole("button", { name: "Why?" }));
+    expect(await screen.findByText(/Moderators review posts/)).toBeVisible();
+  });
+
+  it("never sends a filtered message's reader to moderators", async () => {
+    renderCover("drama", { coverDrama: true, noun: "message" });
+    await userEvent.click(screen.getByRole("button", { name: "Why?" }));
+    expect(
+      await screen.findByText(/You turned on Filter hurtful messages/),
+    ).toBeVisible();
+    expect(screen.queryByText(/Moderators/)).toBeNull();
   });
 });

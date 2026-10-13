@@ -67,7 +67,7 @@ export function profileCardModel(user: ProfileCardUser): ProfileCardModel {
 }
 
 /** next/font registers hashed family names — resolve the real list from the
- *  CSS vars instead of hardcoding "Bricolage Grotesque". */
+ *  CSS vars instead of hardcoding the family. */
 function fontFamily(varName: string): string {
   const value = getComputedStyle(document.body)
     .getPropertyValue(varName)
