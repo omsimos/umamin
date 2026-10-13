@@ -105,7 +105,7 @@ export function UmaExplainer({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm" showCloseButton={false}>
           <DialogHeader className="items-center text-center sm:text-center">
             <Uma mood={mood} className="mb-2 size-20" />
             <DialogTitle>{title}</DialogTitle>
