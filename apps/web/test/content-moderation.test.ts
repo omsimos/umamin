@@ -19,6 +19,7 @@ import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import {
+  getCurrentNoteData,
   getMessagesPage,
   getMessageThread,
   getNotesPage,
@@ -161,6 +162,15 @@ describe("content moderation (real libSQL)", () => {
       const notes = await getNotesPage(db, { enforce: true });
       expect(notes.data[0]?.moderation).toBe("severe");
       expectNoRawScores(notes);
+
+      // The author's own-note read carries the label so their card can say
+      // how others see it, without the scores.
+      const own = await getCurrentNoteData(db, "author", true);
+      expect(own?.moderation).toBe("severe");
+      expectNoRawScores(own);
+      expect((await getCurrentNoteData(db, "author", false))?.moderation).toBe(
+        null,
+      );
     });
   });
 

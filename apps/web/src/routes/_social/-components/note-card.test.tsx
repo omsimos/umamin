@@ -61,11 +61,19 @@ function makeNote(overrides: Partial<NoteItem> = {}): NoteItem {
   };
 }
 
-function renderCard(note: NoteItem, isAuthenticated = true) {
+function renderCard(
+  note: NoteItem,
+  isAuthenticated = true,
+  ownNoteId?: string,
+) {
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <NoteCard data={note} isAuthenticated={isAuthenticated} />
+      <NoteCard
+        data={note}
+        isAuthenticated={isAuthenticated}
+        ownNoteId={ownNoteId}
+      />
     </QueryClientProvider>,
   );
 }
@@ -237,5 +245,23 @@ describe("NoteCard music embed", () => {
   it("renders no embed when the note has no song", () => {
     renderCard(makeNote());
     expect(screen.queryByRole("button", { name: /on spotify/i })).toBeNull();
+  });
+});
+
+describe("NoteCard moderation cover", () => {
+  it("shows the writer their own flagged anonymous note as written", () => {
+    renderCard(makeNote({ moderation: "severe" }), true, "note-1");
+    expect(screen.getByText(/overthinking about tests/)).toBeVisible();
+    expect(
+      screen.getByText("Others see this note covered."),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps someone else's flagged anonymous note covered", () => {
+    renderCard(makeNote({ moderation: "severe" }), true, "note-2");
+    expect(
+      screen.getByText(/overthinking about tests/).closest("[aria-hidden]"),
+    ).not.toBeNull();
+    expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
   });
 });

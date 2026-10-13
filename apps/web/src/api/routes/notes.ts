@@ -50,7 +50,11 @@ export const notesRoutes = new Hono<AppBindings>()
         return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 401 });
       }
 
-      const note = await getCurrentNoteData(resolveDb(c.env), session.userId);
+      const note = await getCurrentNoteData(
+        resolveDb(c.env),
+        session.userId,
+        await isModerationEnforced(c.env),
+      );
       return note ?? Response.json(null);
     }),
   );
