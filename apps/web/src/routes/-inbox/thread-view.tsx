@@ -16,6 +16,7 @@ import { LockIcon } from "lucide-react";
 import type { KeyboardEventHandler } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ContentCover } from "@/components/content-cover";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { Link } from "@/lib/navigation";
@@ -324,7 +325,17 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
                 side={item.side}
                 state={item.key === pendingKey ? "pending" : "idle"}
               >
-                {item.content}
+                <ContentCover
+                  label={item.moderation}
+                  revealKey={`message:${data.message.id}:${item.key}`}
+                  isOwn={false}
+                  isAuthenticated
+                  coverDrama
+                  noun="message"
+                  className="min-w-48"
+                >
+                  {item.content}
+                </ContentCover>
               </ChatBubble>
               {item.endsRun && item.createdAt && (
                 <ChatMeta>

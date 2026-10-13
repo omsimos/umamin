@@ -319,9 +319,13 @@ export type NoteItem = Omit<
 
 export type NotesResponse = CursorPage<NoteItem>;
 
-export type MessageWithReceiver = SelectMessage & {
-  receiver: FeedAuthor;
-};
+export type MessageWithReceiver = Omit<
+  SelectMessage,
+  "modSevere" | "modDrama" | "modReason"
+> &
+  Moderated & {
+    receiver: FeedAuthor;
+  };
 
 export type MessagesResponse = {
   messages: MessageWithReceiver[];
@@ -330,7 +334,7 @@ export type MessagesResponse = {
 
 // One thread entry past the legacy first reply (message.reply). `fromSender`
 // is the only authorship signal — reply rows never carry a user id.
-export type ThreadEntry = {
+export type ThreadEntry = Moderated & {
   id: string;
   content: string;
   fromSender: boolean;

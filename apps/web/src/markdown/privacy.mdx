@@ -25,6 +25,12 @@ Welcome to Umamin! We are committed to protecting your privacy and ensuring that
 - **PostHog:** When something breaks, we send an automatic error report to PostHog so we can fix it. A report contains the error message and technical stack trace, the page it happened on, and your browser and device type. If you were signed in, it also includes your account ID so we can tell whether a bug affects one account or many. We do not send the contents of your messages, posts, or notes.
 - We use PostHog only for error reports — no session recording, no click tracking, no analytics profile.
 
+### 2.4 Automated Content Checks
+
+- When you publish a post, quote, comment or note, its text is checked by an automated classifier. We send the text, plus the post it replies to or quotes, through the Vercel AI Gateway to TypeSafe AI. We store the resulting scores with your content and use them to blur or fold it, to rank Hot, and to show possibly harmful content to our moderators for review.
+- Private messages are checked only if the person receiving them turns on **Filter hurtful messages** in their settings. A message sent to anyone else is never sent for checking.
+- Images are not checked. The classifier never deletes content or suspends an account on its own: people make those decisions.
+
 ## 3. How We Use Your Information
 
 - **Authentication and Security:** To verify your identity and protect your account.

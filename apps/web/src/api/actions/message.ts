@@ -6,6 +6,8 @@ import * as z from "zod";
 import { action } from "../../server-lib/action";
 import { matchesBlockedWords } from "../../server-lib/blocked-words";
 import { formatContent } from "../../server-lib/content";
+import { classifyContent } from "../../server-lib/content-classifier";
+import { scoreColumns } from "../../server-lib/content-label";
 import { ACCESS_BLOCKED_ERROR } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
@@ -131,7 +133,10 @@ export const createReplyHandler = action(
         : Promise.resolve([]),
       isSender
         ? db
-            .select({ blockedWords: userTable.blockedWords })
+            .select({
+              blockedWords: userTable.blockedWords,
+              messageFilter: userTable.messageFilter,
+            })
             .from(userTable)
             .where(eq(userTable.id, msg.receiverId))
             .limit(1)
@@ -153,7 +158,18 @@ export const createReplyHandler = action(
       }
     }
 
-    const encrypted = await aesEncrypt(formatted);
+    // Only the sender's follow-ups, and only for a receiver who opted in: a
+    // message to anyone else never leaves the server for classification.
+    const [encrypted, scores] = await Promise.all([
+      aesEncrypt(formatted),
+      isSender && receiverRows[0]?.messageFilter
+        ? classifyContent(
+            c.env,
+            { kind: "message", text: formatted },
+            { defer: defer(c) },
+          )
+        : Promise.resolve(null),
+    ]);
     const now = new Date();
 
     if (isReceiver && !msg.reply) {
@@ -199,6 +215,7 @@ export const createReplyHandler = action(
           messageId,
           fromSender: isSender,
           content: encrypted,
+          ...scoreColumns(scores),
         })
         .returning({
           id: messageReplyTable.id,
@@ -344,6 +361,7 @@ export const sendMessageHandler = action(
         .select({
           quietMode: userTable.quietMode,
           blockedWords: userTable.blockedWords,
+          messageFilter: userTable.messageFilter,
         })
         .from(userTable)
         .where(eq(userTable.id, receiverId))
@@ -362,13 +380,25 @@ export const sendMessageHandler = action(
       return { success: true };
     }
 
-    const encryptedContent = await aesEncrypt(formattedContent);
+    // Classified only for a receiver who opted in. A flagged message is still
+    // delivered (covered), so the sender learns nothing from the outcome.
+    const [encryptedContent, scores] = await Promise.all([
+      aesEncrypt(formattedContent),
+      receiver.messageFilter
+        ? classifyContent(
+            c.env,
+            { kind: "message", text: formattedContent },
+            { defer: defer(c) },
+          )
+        : Promise.resolve(null),
+    ]);
 
     await db.insert(messageTable).values({
       senderId,
       receiverId,
       question,
       content: encryptedContent,
+      ...scoreColumns(scores),
     });
 
     await notify(

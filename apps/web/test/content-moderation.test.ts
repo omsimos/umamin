@@ -13,11 +13,14 @@ vi.mock("../src/server-lib/posthog", () => ({
 const { classifyContent } = vi.hoisted(() => ({ classifyContent: vi.fn() }));
 vi.mock("../src/server-lib/content-classifier", () => ({ classifyContent }));
 
+import { messageReplyTable, messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import {
+  getMessagesPage,
+  getMessageThread,
   getNotesPage,
   getPostById,
   getPostCommentsPage,
@@ -30,7 +33,7 @@ import {
   getDramaReviewPage,
   getSevereReviewPage,
 } from "../src/server-lib/moderation-review";
-import { authed, buildApp, callJson } from "./helpers/actions";
+import { ANON, authed, buildApp, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
 
 const SEVERE = { modSevere: 95, modDrama: 99, modReason: "harassment" };
@@ -379,6 +382,151 @@ describe("content moderation (real libSQL)", () => {
       const page = await getDramaReviewPage(db);
       expect(page.data.map((item) => item.id)).toContain("parinig");
       expect(page.data.map((item) => item.id)).not.toContain("fine");
+    });
+  });
+
+  describe("opt-in message filter", () => {
+    const HURTFUL = { severe: 93, drama: 99, reason: "harassment" };
+
+    beforeEach(async () => {
+      // aesEncrypt reads the key from process.env (32 zero bytes here).
+      process.env.AES_256_GCM_KEY = Buffer.from(new Uint8Array(32)).toString(
+        "base64",
+      );
+      classifyContent.mockResolvedValue(HURTFUL);
+    });
+
+    const send = (content: string) =>
+      callJson(buildApp(db, ANON), "sendMessageAction", {
+        question: "ask me",
+        content,
+        receiverId: "viewer",
+      });
+
+    it("never sends a message to the classifier unless the receiver opted in", async () => {
+      await send("you are the worst");
+      expect(classifyContent).not.toHaveBeenCalled();
+      const [row] = await db.select().from(messageTable);
+      expect(row?.modSevere).toBeNull();
+    });
+
+    it("classifies and still delivers for a receiver who opted in", async () => {
+      await db.update(userTable).set({ messageFilter: true });
+      const { json } = await send("you are the worst");
+      expect(json).toEqual({ success: true });
+      expect(classifyContent).toHaveBeenCalledWith(
+        expect.anything(),
+        { kind: "message", text: "you are the worst" },
+        expect.anything(),
+      );
+      const [row] = await db.select().from(messageTable);
+      expect(row?.modSevere).toBe(93);
+    });
+
+    it("labels the receiver's copy only while their filter is on, and never the sender's", async () => {
+      await db.update(userTable).set({ messageFilter: true });
+      await callJson(buildApp(db, authed("author")), "sendMessageAction", {
+        question: "ask me",
+        content: "you are the worst",
+        receiverId: "viewer",
+      });
+
+      const received = await getMessagesPage(db, {
+        type: "received",
+        userId: "viewer",
+        filterMessages: true,
+      });
+      expect(received.messages[0]?.moderation).toBe("severe");
+      expectNoRawScores(received);
+
+      const filterOff = await getMessagesPage(db, {
+        type: "received",
+        userId: "viewer",
+        filterMessages: false,
+      });
+      expect(filterOff.messages[0]?.moderation).toBeNull();
+
+      const sent = await getMessagesPage(db, {
+        type: "sent",
+        userId: "author",
+        filterMessages: true,
+      });
+      expect(sent.messages[0]?.moderation).toBeNull();
+      expectNoRawScores(sent);
+    });
+
+    it("labels only the sender's follow-ups in the receiver's thread", async () => {
+      await db.update(userTable).set({ messageFilter: true });
+      await db.insert(messageTable).values({
+        id: "m1",
+        question: "q",
+        content: "c",
+        receiverId: "viewer",
+        senderId: "author",
+        reply: "first reply",
+      });
+      await db.insert(messageReplyTable).values([
+        {
+          id: "r1",
+          messageId: "m1",
+          fromSender: true,
+          content: "x",
+          modSevere: 95,
+          modDrama: 10,
+        },
+        {
+          id: "r2",
+          messageId: "m1",
+          fromSender: false,
+          content: "y",
+          modSevere: 95,
+          modDrama: 10,
+        },
+      ]);
+
+      const thread = await getMessageThread(db, {
+        messageId: "m1",
+        viewerId: "viewer",
+        filterMessages: true,
+      });
+      const labels = new Map(thread?.replies.map((r) => [r.id, r.moderation]));
+      expect(labels.get("r1")).toBe("severe");
+      expect(labels.get("r2")).toBeNull();
+      expectNoRawScores(thread);
+
+      const senderView = await getMessageThread(db, {
+        messageId: "m1",
+        viewerId: "author",
+        filterMessages: true,
+      });
+      expect(senderView?.replies.every((r) => r.moderation === null)).toBe(
+        true,
+      );
+    });
+
+    it("classifies a sender's follow-up only when the receiver opted in", async () => {
+      await db.insert(messageTable).values({
+        id: "m2",
+        question: "q",
+        content: "c",
+        receiverId: "viewer",
+        senderId: "author",
+        reply: "receiver replied",
+      });
+      const followUp = () =>
+        callJson(buildApp(db, authed("author")), "createReplyAction", {
+          messageId: "m2",
+          content: "you again",
+        });
+
+      await followUp();
+      expect(classifyContent).not.toHaveBeenCalled();
+
+      await db.update(userTable).set({ messageFilter: true });
+      await followUp();
+      expect(classifyContent).toHaveBeenCalledTimes(1);
+      const rows = await db.select().from(messageReplyTable);
+      expect(rows.map((r) => r.modSevere).sort()).toEqual([93, null]);
     });
   });
 });

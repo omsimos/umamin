@@ -2644,6 +2644,8 @@ export async function getMessagesPage(
     type: "received" | "sent";
     cursor?: string | null;
     userId: string;
+    // The viewer's opt-in message filter (user.messageFilter).
+    filterMessages?: boolean;
   },
 ): Promise<MessagesResponse> {
   const getCachedData = async () => {
@@ -2784,7 +2786,7 @@ export async function getMessagesPage(
         // Never expose the (logged-in) sender's account id to the recipient —
         // returning it de-anonymizes every "anonymous" sender. [audit #22]
         return {
-          ...message,
+          ...withModeration(message, params.filterMessages === true),
           senderId: null,
           // Each side's read watermark is private to that side.
           senderReadAt: null,
@@ -2794,7 +2796,8 @@ export async function getMessagesPage(
       }
 
       return {
-        ...message,
+        // The sender's own words: never labelled.
+        ...withModeration(message, false),
         // Opened state is the receiver's alone — stripping it here (not in the
         // UI) is what keeps senders from reading it off the wire.
         openedAt: null,
@@ -2817,7 +2820,7 @@ const THREAD_REPLIES_LIMIT = 200;
 
 export async function getMessageThread(
   db: Db,
-  params: { messageId: string; viewerId: string },
+  params: { messageId: string; viewerId: string; filterMessages?: boolean },
 ): Promise<MessageThreadResponse | null> {
   // All three reads run together — the auth verdict only decides whether the
   // rows are returned, so nothing needs to waterfall (Tokyo round trips
@@ -2835,6 +2838,9 @@ export async function getMessageThread(
         content: messageReplyTable.content,
         fromSender: messageReplyTable.fromSender,
         createdAt: messageReplyTable.createdAt,
+        modSevere: messageReplyTable.modSevere,
+        modDrama: messageReplyTable.modDrama,
+        modReason: messageReplyTable.modReason,
       })
       .from(messageReplyTable)
       .where(eq(messageReplyTable.messageId, params.messageId))
@@ -2893,17 +2899,27 @@ export async function getMessageThread(
     }
   }
 
+  // Labels are for the receiver who opted in, and only on the sender's words.
+  const filter = isReceiver && params.filterMessages === true;
   const replies = await Promise.all(
     replyRows.map(async (entry) => {
       let entryContent = entry.content;
       try {
         entryContent = await aesDecrypt(entry.content);
       } catch {}
-      return { ...entry, content: entryContent };
+      return {
+        ...withModeration(entry, filter && entry.fromSender),
+        content: entryContent,
+      };
     }),
   );
 
-  const shared = { ...message, content, reply, receiver };
+  const shared = {
+    ...withModeration(message, filter),
+    content,
+    reply,
+    receiver,
+  };
 
   return {
     message: isReceiver

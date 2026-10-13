@@ -1,7 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Label } from "@umamin/ui/components/label";
 import { Switch } from "@umamin/ui/components/switch";
-import { MessageCircleOffIcon, MessageSquareOffIcon } from "lucide-react";
+import {
+  MessageCircleOffIcon,
+  MessageSquareOffIcon,
+  ShieldIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
@@ -13,7 +17,11 @@ import type {
   UserProfileResponse,
   UserWithAccount,
 } from "@/lib/types";
-import { toggleHideDramaAction, toggleQuietModeAction } from "./actions";
+import {
+  toggleHideDramaAction,
+  toggleMessageFilterAction,
+  toggleQuietModeAction,
+} from "./actions";
 import { BlockedUsersSection } from "./blocked-users-section";
 import { BlockedWordsSection } from "./blocked-words-section";
 import { MutedUsersSection } from "./muted-users-section";
@@ -93,6 +101,38 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
   });
 
+  const toggleMessageFilter = useSingleFlightAction(toggleMessageFilterAction);
+
+  const messageFilterMutation = useMutation({
+    mutationFn: async () => {
+      const res = await toggleMessageFilter();
+      if ("error" in res && res.error) {
+        throw new ExpectedError(res.error);
+      }
+
+      return "messageFilter" in res ? res.messageFilter : undefined;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (currentUser) => ({
+            ...currentUser,
+            messageFilter: data ?? currentUser.messageFilter,
+          })),
+      );
+      // The inbox labels follow the setting, so refetch what's on screen.
+      queryClient.invalidateQueries({ queryKey: queryKeys.receivedMessages() });
+      toast.success(
+        data ? "Message filter turned on." : "Message filter turned off.",
+      );
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error(err.message ?? "Couldn't update this setting.");
+    },
+  });
+
   return (
     <div className="space-y-8">
       <section>
@@ -126,6 +166,27 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
               disabled={hideDramaMutation.isPending}
               checked={user?.hideDrama ?? true}
               onCheckedChange={() => hideDramaMutation.mutate()}
+            />
+          </div>
+        )}
+
+        {contentModeration && (
+          <div className="flex items-center space-x-4 rounded-md border p-4 mt-2">
+            <ShieldIcon className="size-6" />
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium leading-none">
+                Filter hurtful messages
+              </p>
+              <p className="text-sm text-muted-foreground">
+                New messages are checked by an automated service and covered if
+                they look hurtful. Covered messages still arrive, and you can
+                open them.
+              </p>
+            </div>
+            <Switch
+              disabled={messageFilterMutation.isPending}
+              checked={user?.messageFilter ?? false}
+              onCheckedChange={() => messageFilterMutation.mutate()}
             />
           </div>
         )}
