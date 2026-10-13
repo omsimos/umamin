@@ -37,7 +37,7 @@ export function DemoGroups() {
             onChange={(e) =>
               setTag(e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase())
             }
-            className="w-28 rounded-lg border bg-background px-3 py-2 font-mono text-base tracking-[0.3em] text-foreground uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-28 rounded-lg border bg-background px-3 py-2 text-base font-semibold tracking-widest text-foreground uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </label>
 

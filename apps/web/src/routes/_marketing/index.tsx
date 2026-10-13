@@ -3,7 +3,7 @@ import { Button } from "@umamin/ui/components/button";
 import { ArrowRightIcon } from "lucide-react";
 import { CipherText } from "@/components/landing/cipher-text";
 import { CommunityWall } from "@/components/landing/community-wall";
-import { FeatureTour } from "@/components/landing/feature-tour";
+import { FeatureBento } from "@/components/landing/feature-bento";
 import { HeroPreview } from "@/components/landing/hero-preview";
 import { UmaShowcase } from "@/components/landing/uma-showcase";
 import { PwaRedirect } from "@/components/pwa-redirect";
@@ -30,14 +30,6 @@ const FACTS = [
   { value: "AES-256", label: "Encryption on stored messages" },
   { value: "Open", label: "Source, on GitHub" },
 ];
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-      {children}
-    </p>
-  );
-}
 
 function Home() {
   return (
@@ -102,8 +94,7 @@ function Home() {
       <section className="px-6 pt-20 md:pt-28">
         <div className="mx-auto grid grid-cols-1 max-w-6xl gap-10 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-16">
           <div className="lg:pt-16">
-            <Eyebrow>The community</Eyebrow>
-            <h2 className="pt-3 font-display text-4xl font-extrabold tracking-tighter text-balance md:text-5xl">
+            <h2 className="font-display text-4xl font-extrabold tracking-tighter text-balance md:text-5xl">
               Made by the people <em className="text-primary">on it</em>.
             </h2>
             <p className="pt-4 text-muted-foreground md:text-lg">
@@ -122,15 +113,14 @@ function Home() {
 
       <section id="playground" className="px-6 pt-20 md:pt-28">
         <div className="mx-auto max-w-6xl">
-          <Eyebrow>Try it here</Eyebrow>
-          <h2 className="pt-3 font-display text-4xl font-extrabold tracking-tighter text-balance md:text-5xl">
+          <h2 className="font-display text-4xl font-extrabold tracking-tighter text-balance md:text-5xl">
             Five ways to be <em className="text-primary">nobody</em>.
           </h2>
           <p className="pt-3 text-muted-foreground md:text-lg">
             Every demo below works. Go ahead and poke it.
           </p>
           <div className="pt-10">
-            <FeatureTour />
+            <FeatureBento />
           </div>
         </div>
       </section>
@@ -140,7 +130,7 @@ function Home() {
           <div>
             <div className="flex items-center gap-3">
               <Uma className="size-12" />
-              <Eyebrow>Meet Uma</Eyebrow>
+              <p className="font-semibold">Meet Uma</p>
             </div>
             <h2 className="pt-4 font-display text-4xl font-extrabold tracking-tighter text-balance md:text-5xl">
               Less drama in your feed,{" "}

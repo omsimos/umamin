@@ -50,7 +50,7 @@ export function HeroPreview() {
 
       <label
         htmlFor="hero-username"
-        className="flex items-center rounded-full border bg-card px-4 py-2.5 font-mono text-sm shadow-sm focus-within:ring-2 focus-within:ring-ring"
+        className="flex items-center rounded-full border bg-card px-4 py-2.5 text-sm shadow-sm focus-within:ring-2 focus-within:ring-ring"
       >
         <span className="text-muted-foreground">umamin.link/to/</span>
         <input

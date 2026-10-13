@@ -64,10 +64,6 @@ export function DemoSocial() {
           </div>
         </div>
       </div>
-
-      <p className="pt-3 text-sm text-muted-foreground">
-        A whole feed of takes nobody has to own. Hot, sorted.
-      </p>
     </div>
   );
 }
