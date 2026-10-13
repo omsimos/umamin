@@ -1,4 +1,5 @@
 import { messageReplyTable, messageTable } from "@umamin/db/schema/message";
+import { noteTable } from "@umamin/db/schema/note";
 import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { aesEncrypt } from "@umamin/encryption";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
@@ -338,7 +339,7 @@ export const sendMessageHandler = action(
       return { error: "You can't send a message to yourself" };
     }
 
-    const [blockedRows, receiverRows] = await Promise.all([
+    const [blockedRows, receiverRows, noteRows] = await Promise.all([
       senderId
         ? db
             .select({ id: userBlockTable.id })
@@ -362,9 +363,21 @@ export const sendMessageHandler = action(
           quietMode: userTable.quietMode,
           blockedWords: userTable.blockedWords,
           messageFilter: userTable.messageFilter,
+          question: userTable.question,
         })
         .from(userTable)
         .where(eq(userTable.id, receiverId))
+        .limit(1),
+      // A note reply carries the receiver's note as its question.
+      db
+        .select({ id: noteTable.id })
+        .from(noteTable)
+        .where(
+          and(
+            eq(noteTable.userId, receiverId),
+            eq(noteTable.content, question),
+          ),
+        )
         .limit(1),
     ]);
 
@@ -374,6 +387,15 @@ export const sendMessageHandler = action(
     if (blocked || !receiver || receiver.quietMode) {
       return { success: true };
     }
+
+    // The receiver sees the question as their own prompt, outside any cover,
+    // so it must be text they wrote: their profile question or their note. A
+    // stale or hand-crafted one falls back to the profile question instead of
+    // reaching them past blocked words and the message filter.
+    const storedQuestion =
+      question === receiver.question || noteRows.length > 0
+        ? question
+        : receiver.question;
 
     const formattedContent = formatContent(content);
     if (matchesBlockedWords(formattedContent, receiver.blockedWords)) {
@@ -396,7 +418,7 @@ export const sendMessageHandler = action(
     await db.insert(messageTable).values({
       senderId,
       receiverId,
-      question,
+      question: storedQuestion,
       content: encryptedContent,
       ...scoreColumns(scores),
     });

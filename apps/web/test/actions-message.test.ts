@@ -7,6 +7,7 @@ vi.mock("../src/server-lib/argon2", () => ({
 }));
 
 import { messageReplyTable, messageTable } from "@umamin/db/schema/message";
+import { noteTable } from "@umamin/db/schema/note";
 import { notificationTable } from "@umamin/db/schema/notification";
 import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { aesDecrypt } from "@umamin/encryption";
@@ -85,6 +86,38 @@ describe("message actions (real libSQL)", () => {
     });
     expect(json).toEqual({ success: true });
     expect(await countMessages(db, "recv")).toBe(1);
+  });
+
+  it("stores only a question the receiver wrote: their prompt or their note", async () => {
+    await db
+      .update(userTable)
+      .set({ question: "ask me" })
+      .where(eq(userTable.id, "recv"));
+    await db.insert(noteTable).values({
+      id: "n1",
+      userId: "recv",
+      content: "my note",
+      isAnonymous: true,
+    });
+
+    const app = buildApp(db, ANON);
+    for (const question of ["ask me", "my note", "a sender's insult"]) {
+      await callJson(app, "sendMessageAction", {
+        question,
+        content: "hi",
+        receiverId: "recv",
+      });
+    }
+
+    const stored = await db
+      .select({ question: messageTable.question })
+      .from(messageTable)
+      .where(eq(messageTable.receiverId, "recv"));
+    expect(stored.map((row) => row.question).sort()).toEqual([
+      "ask me",
+      "ask me",
+      "my note",
+    ]);
   });
 
   it("silently drops a message to a quiet-mode receiver (no row written)", async () => {
