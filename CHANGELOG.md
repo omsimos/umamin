@@ -24,6 +24,10 @@ any that are empty.
 
 - Meet Uma, the character on folded and covered posts, comments, notes and messages. Tap Why? on any fold or cover to see why Uma hid it and how to read it.
 
+### Changed
+
+- A redesigned home page. Type a username to preview your profile link, try every feature in place, including groups, and see how Uma folds drama.
+
 ## [7.9.1] - 2026-10-13
 
 ### Fixed

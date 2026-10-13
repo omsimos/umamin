@@ -63,6 +63,13 @@
 
   /* Opacity/transform only — the revealed card is taller than the sealed one
      and the virtualizer must remeasure the snapped height, not an animated one. */
+  --animate-scroll-up: scroll-up 60s linear infinite;
+  @keyframes scroll-up {
+    to {
+      transform: translateY(-50%);
+    }
+  }
+
   --animate-reveal-pop: reveal-pop 0.3s ease-out both;
   @keyframes reveal-pop {
     from {

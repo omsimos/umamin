@@ -18,7 +18,11 @@ type FieldErrors = Partial<Record<keyof Values, string>>;
 // each is announced to assistive tech (role="alert"). Server returns
 // { redirect } on success (full navigation → session cookie applied) or
 // { error }.
-export function RegisterForm() {
+export function RegisterForm({
+  defaultUsername,
+}: {
+  defaultUsername?: string;
+}) {
   const [errors, setErrors] = useState<FieldErrors>({});
 
   const { mutate, isPending } = useMutation({
@@ -76,6 +80,7 @@ export function RegisterForm() {
             id="username"
             name="username"
             placeholder="umamin"
+            defaultValue={defaultUsername}
             autoComplete="username"
             onChange={(e) => {
               e.currentTarget.value = e.currentTarget.value.toLowerCase();
