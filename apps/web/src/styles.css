@@ -12,8 +12,7 @@
     sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", monospace;
   --font-display:
-    "Archivo Variable", "Geist Variable", ui-sans-serif, system-ui,
-    sans-serif;
+    "Archivo Variable", "Geist Variable", ui-sans-serif, system-ui, sans-serif;
 
   --animate-marquee: marquee 32s linear infinite;
   @keyframes marquee {
