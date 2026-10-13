@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
-import { EyeOffIcon, MessageSquareOffIcon } from "lucide-react";
+import { EyeOffIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { Uma } from "@/components/uma";
+import { type CoverKind, UmaExplainer } from "@/components/uma-explainer";
 import { privateQueryDefaults, queryKeys } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { ContentLabel } from "@/lib/types";
@@ -50,6 +52,10 @@ function Covered({
   children,
 }: Props & { label: ContentLabel }) {
   const [isRevealed, setIsRevealed] = useState(() => revealed.has(revealKey));
+  // The explainer mounts on first open, so a list of covers doesn't each
+  // subscribe to the media query up front.
+  const [whyOpen, setWhyOpen] = useState(false);
+  const [whyMounted, setWhyMounted] = useState(false);
   const { data: currentUser } = useQuery({
     queryKey: queryKeys.currentUser(),
     queryFn: fetchCurrentUserOptional,
@@ -83,7 +89,38 @@ function Covered({
 
   if (label === "drama" && !hidesDrama) return children;
 
-  if (label === "drama" && !coverDrama) {
+  const kind: CoverKind = coverDrama
+    ? "message"
+    : label === "drama"
+      ? "dispute"
+      : "severe";
+
+  const whyButton = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="text-muted-foreground underline underline-offset-4"
+      onClick={() => {
+        setWhyMounted(true);
+        setWhyOpen(true);
+      }}
+    >
+      Why?
+    </Button>
+  );
+
+  const explainer = whyMounted && (
+    <UmaExplainer
+      kind={kind}
+      noun={noun}
+      open={whyOpen}
+      onOpenChange={setWhyOpen}
+      onReveal={reveal}
+    />
+  );
+
+  if (kind === "dispute") {
     return (
       <div
         className={cn(
@@ -91,17 +128,19 @@ function Covered({
           className,
         )}
       >
-        <MessageSquareOffIcon className="size-4 shrink-0" aria-hidden />
-        <p className="flex-1 truncate">Hidden: possible dispute</p>
+        <Uma className="size-5" />
+        <p className="flex-1 truncate">Folded: possible dispute</p>
+        {whyButton}
         <Button type="button" variant="ghost" size="sm" onClick={reveal}>
           Show
         </Button>
+        {explainer}
       </div>
     );
   }
 
   return (
-    <div className={cn("relative mt-1 min-h-24", className)}>
+    <div className={cn("relative mt-1 min-h-36", className)}>
       <div
         aria-hidden
         inert
@@ -110,13 +149,18 @@ function Covered({
         {children}
       </div>
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/60 p-3 text-center">
+        <Uma mood="serious" className="size-9" />
         <p className="text-sm font-medium">
           This {noun} may contain hurtful content.
         </p>
-        <Button type="button" variant="outline" size="sm" onClick={reveal}>
-          View
-        </Button>
+        <div className="flex items-center gap-1">
+          {whyButton}
+          <Button type="button" variant="outline" size="sm" onClick={reveal}>
+            View
+          </Button>
+        </div>
       </div>
+      {explainer}
     </div>
   );
 }

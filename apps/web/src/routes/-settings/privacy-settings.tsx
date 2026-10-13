@@ -159,8 +159,8 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             <div className="flex-1 space-y-1">
               <p className="text-sm font-medium leading-none">Hide disputes</p>
               <p className="text-sm text-muted-foreground">
-                Fold posts and notes that look like callouts, indirects or
-                public fights. Tap one to read it.
+                Uma folds posts that look like callouts, indirects, gossip or
+                fights. Turn this off to see them in full.
               </p>
             </div>
             <Switch
@@ -180,9 +180,8 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
                 Filter hurtful messages
               </p>
               <p className="text-sm text-muted-foreground">
-                New messages are checked by an automated service and covered if
-                they look hurtful. Covered messages still arrive, and you can
-                open them.
+                Uma checks new anonymous messages and covers the ones that look
+                hurtful. They still arrive, and you can open any of them.
               </p>
             </div>
             <Switch

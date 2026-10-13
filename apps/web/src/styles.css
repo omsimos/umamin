@@ -153,3 +153,18 @@
     animation: none;
   }
 }
+
+/* Uma (components/uma.tsx). The body stays light in dark mode so the
+   character keeps its outline against a dark card. */
+:root {
+  --uma-body: oklch(0.965 0.022 300);
+  --uma-fold: oklch(0.86 0.05 300);
+  --uma-ink: oklch(0.29 0.04 300);
+  --uma-cheek: oklch(0.8 0.11 352);
+}
+.dark {
+  --uma-body: oklch(0.91 0.03 300);
+  --uma-fold: oklch(0.78 0.06 300);
+  --uma-ink: oklch(0.24 0.04 300);
+  --uma-cheek: oklch(0.78 0.12 352);
+}

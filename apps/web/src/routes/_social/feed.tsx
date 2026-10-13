@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/app-header";
 import { ChatAnnouncement } from "@/components/chat-announcement";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { RouteSegmentError } from "@/components/route-segment-error";
+import { UmaAnnouncement } from "@/components/uma-announcement";
 import { normalizeFeedSort } from "@/lib/feed-sort";
 import { loadViewerId } from "@/lib/loader-viewer";
 import {
@@ -109,6 +110,7 @@ function Feed() {
         <main className="pb-40">
           <section className="pt-6 w-full max-w-xl mx-auto bg-background border-muted">
             <div className="space-y-6">
+              <UmaAnnouncement className="mx-4 sm:mx-0" />
               <ChatAnnouncement className="mx-4 sm:mx-0" />
               <FeedClient
                 sort={sort}
