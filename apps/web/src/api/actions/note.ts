@@ -11,6 +11,7 @@ import {
   isForeignKeyConstraintViolation,
   UNAUTHENTICATED_ERROR,
 } from "../../server-lib/errors";
+import { isModerationEnforced } from "../../server-lib/flags";
 import { isModerator } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { idSchema } from "../../server-lib/schema";
@@ -117,14 +118,23 @@ export const createNoteHandler = action(
 
     return {
       success: true,
-      note: await getCurrentNoteData(db, session.userId),
+      note: await getCurrentNoteData(
+        db,
+        session.userId,
+        await isModerationEnforced(c.env),
+      ),
     };
   },
 );
 
 export const getCurrentNoteHandler = action(
   { authError: UNAUTHENTICATED_ERROR },
-  (_input, { session, c }) => getCurrentNoteData(ctxDb(c), session.userId),
+  async (_input, { session, c }) =>
+    getCurrentNoteData(
+      ctxDb(c),
+      session.userId,
+      await isModerationEnforced(c.env),
+    ),
 );
 
 export const clearNoteHandler = action(

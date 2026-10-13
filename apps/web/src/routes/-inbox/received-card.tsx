@@ -123,6 +123,7 @@ export function ReceivedMessageCard({ data }: { data: MessageWithReceiver }) {
             content={data.content}
             reply={data.reply}
             updatedAt={data.updatedAt}
+            moderation={data.moderation}
           />
         </div>
 

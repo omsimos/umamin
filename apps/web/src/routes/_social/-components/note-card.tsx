@@ -74,6 +74,10 @@ type Props = {
   data: NoteItem;
   isAuthenticated: boolean;
   currentUserId?: string;
+  // The viewer's own note id, from the private current-note read. The only way
+  // to recognise their note when it is anonymous: the shared list carries no
+  // author for those.
+  ownNoteId?: string;
   index?: number;
   isHighlighted?: boolean;
 };
@@ -82,6 +86,7 @@ export function NoteCard({
   data,
   isAuthenticated,
   currentUserId,
+  ownNoteId,
   index = 0,
   isHighlighted = false,
 }: Props) {
@@ -417,7 +422,10 @@ export function NoteCard({
             <ContentCover
               label={data.moderation}
               revealKey={`note:${data.id}`}
-              isOwn={!!currentUserId && currentUserId === user?.id}
+              isOwn={
+                (!!currentUserId && currentUserId === user?.id) ||
+                data.id === ownNoteId
+              }
               isAuthenticated={isAuthenticated}
               noun="note"
             >

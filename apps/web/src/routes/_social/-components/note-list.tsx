@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   Alert,
   AlertDescription,
@@ -17,9 +17,10 @@ import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
   PUBLIC_STALE_TIME,
+  pageQueryOptions,
   queryKeys,
 } from "@/lib/query";
-import { fetchNotesPage } from "@/lib/query-fetchers";
+import { fetchCurrentNote, fetchNotesPage } from "@/lib/query-fetchers";
 import type { NoteItem, NotesResponse } from "@/lib/types";
 import { useIntersectionLoadMore } from "../-lib/hooks";
 import { NoteCard } from "./note-card";
@@ -53,6 +54,11 @@ export function NoteList({
     ...infiniteQueryDefaults,
   });
   const hasResolvedData = data !== undefined;
+  // Shares CurrentUserNote's cache entry, so this adds no request.
+  const { data: ownNote } = useQuery<NoteItem | null>({
+    ...pageQueryOptions(queryKeys.currentNote(), fetchCurrentNote),
+    enabled: !!currentUserId,
+  });
 
   // De-duplicate notes by id across pages.
   const allPosts: NoteItem[] = (() => {
@@ -171,6 +177,7 @@ export function NoteList({
                 <NoteCard
                   isAuthenticated={isAuthenticated}
                   currentUserId={currentUserId}
+                  ownNoteId={ownNote?.id}
                   data={post}
                   index={index}
                   isHighlighted={isHighlighted}

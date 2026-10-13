@@ -1,6 +1,8 @@
+import { messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { accountTable, userTable } from "@umamin/db/schema/user";
+import { aesEncrypt } from "@umamin/encryption";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readsApp } from "../src/api/routes";
@@ -253,6 +255,44 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
         '"moderation":"drama"',
       );
       expect(await signedIn("/notes")).toContain('"moderation":"severe"');
+    });
+
+    it("labels the author's own note and received messages only while enforced", async () => {
+      process.env.AES_256_GCM_KEY = Buffer.from(new Uint8Array(32)).toString(
+        "base64",
+      );
+      await db.update(userTable).set({ messageFilter: true });
+      await db.insert(messageTable).values({
+        id: "m-severe",
+        receiverId: "a1",
+        question: "ask me",
+        content: await aesEncrypt("w"),
+        modSevere: 95,
+        modDrama: 10,
+      });
+      const token = generateSessionToken();
+      await createSession(db, token, "a1");
+      const headers = { cookie: `session=${token}` };
+      const read = async (path: string, env: Partial<AppEnv>) => {
+        __clearFlagCache();
+        const body = JSON.stringify(
+          await (await fetchApp(path, { headers }, env)).json(),
+        );
+        expect(body).not.toMatch(/"mod[A-Z]/);
+        return body;
+      };
+
+      expect(await read("/notes/current", ON)).toContain(
+        '"moderation":"severe"',
+      );
+      expect(await read("/messages?type=received", ON)).toContain(
+        '"moderation":"severe"',
+      );
+      // Turning the flag off is the kill switch, even for opted-in receivers.
+      expect(await read("/messages?type=received", {})).toContain(
+        '"moderation":null',
+      );
+      expect(await read("/notes/current", {})).toContain('"moderation":null');
     });
   });
 

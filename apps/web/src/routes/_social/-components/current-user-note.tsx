@@ -37,6 +37,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
+import { ContentCover } from "@/components/content-cover";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
@@ -257,12 +258,20 @@ export function CurrentUserNote({
             )}
           </div>
 
-          <PostBody
-            content={data.content}
-            className="font-display text-lg leading-snug"
-          />
+          <ContentCover
+            label={data.moderation}
+            revealKey={`note:${data.id}`}
+            isOwn
+            isAuthenticated
+            noun="note"
+          >
+            <PostBody
+              content={data.content}
+              className="font-display text-lg leading-snug"
+            />
 
-          {data.music && <MusicEmbed music={data.music} />}
+            {data.music && <MusicEmbed music={data.music} />}
+          </ContentCover>
         </CardContent>
 
         {(data.reactionCount ?? 0) > 0 && (

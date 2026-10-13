@@ -72,6 +72,20 @@ export const Route = createFileRoute("/_social/post/$id")({
 
     const authorName =
       post.author?.displayName ?? post.author?.username ?? "User";
+
+    // The page covers labelled text, so its tab title, link previews and the
+    // search index must not show it either.
+    if (post.moderation) {
+      return pageSeo({
+        title: `${authorName} on Umamin`,
+        description: `A post by ${authorName} on Umamin.`,
+        path: `/post/${loaderData.id}`,
+        ogType: "article",
+        twitterCard: "summary",
+        robots: "noindex",
+      });
+    }
+
     const description = truncate(post.content, 160);
     const title = truncate(`${authorName}: ${post.content}`, 70);
 

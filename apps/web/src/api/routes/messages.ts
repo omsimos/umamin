@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { AppBindings } from "../../server-lib/context";
 import { getMessagesPage, getMessageThread } from "../../server-lib/data";
 import { NOT_FOUND_ERROR, UNAUTHORIZED_ERROR } from "../../server-lib/errors";
+import { isModerationEnforced } from "../../server-lib/flags";
 import { withPrivateRead } from "../../server-lib/read-route";
 import { getSessionFrom, resolveDb } from "./_shared";
 
@@ -19,7 +20,8 @@ export const messagesRoutes = new Hono<AppBindings>()
         type,
         cursor: c.req.query("cursor") ?? null,
         userId: session.userId,
-        filterMessages: user?.messageFilter === true,
+        filterMessages:
+          user?.messageFilter === true && (await isModerationEnforced(c.env)),
       });
     }),
   )
@@ -39,7 +41,8 @@ export const messagesRoutes = new Hono<AppBindings>()
       const thread = await getMessageThread(resolveDb(c.env), {
         messageId,
         viewerId: session.userId,
-        filterMessages: user?.messageFilter === true,
+        filterMessages:
+          user?.messageFilter === true && (await isModerationEnforced(c.env)),
       });
 
       // Non-participant, blocked, or missing all read as not-found — the

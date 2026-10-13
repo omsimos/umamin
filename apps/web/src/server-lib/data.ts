@@ -1999,6 +1999,7 @@ export async function getNotesPage(
 export async function getCurrentNoteData(
   db: Db,
   userId: string,
+  enforce: boolean,
 ): Promise<NoteItem | null> {
   const getCachedData = async () => {
     const [data] = await db
@@ -2011,8 +2012,9 @@ export async function getCurrentNoteData(
   };
 
   const data = await getCachedData();
-  // The viewer's own note: authors always see their content uncovered.
-  return data ? toNoteItem(data, false) : null;
+  // Only ever read by the note's author, who sees it uncovered; the label lets
+  // their card say how others see it.
+  return data ? toNoteItem(data, enforce) : null;
 }
 
 export async function getCurrentUserData(
