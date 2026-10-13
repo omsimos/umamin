@@ -24,6 +24,8 @@ any that are empty.
 
 - Meet Uma, the character on folded and covered posts, comments, notes and messages. Tap Why? on any fold or cover to see why Uma hid it and how to read it.
 
+## [7.9.1] - 2026-10-13
+
 ### Fixed
 
 - If you post an anonymous note that gets covered, you now see it as written, with a note that others see it covered.
@@ -1067,7 +1069,8 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
-[7.10.0]: https://github.com/omsimos/umamin/compare/v7.9.0...v7.10.0
+[7.10.0]: https://github.com/omsimos/umamin/compare/v7.9.1...v7.10.0
+[7.9.1]: https://github.com/omsimos/umamin/compare/v7.9.0...v7.9.1
 [7.9.0]: https://github.com/omsimos/umamin/compare/v7.8.1...v7.9.0
 [7.8.1]: https://github.com/omsimos/umamin/compare/v7.8.0...v7.8.1
 [7.8.0]: https://github.com/omsimos/umamin/compare/v7.7.0...v7.8.0
