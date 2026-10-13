@@ -146,6 +146,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             </p>
           </div>
           <Switch
+            aria-label="Quiet Mode"
             disabled={quietModeMutation.isPending}
             checked={user?.quietMode}
             onCheckedChange={() => quietModeMutation.mutate()}
@@ -163,6 +164,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
               </p>
             </div>
             <Switch
+              aria-label="Hide disputes"
               disabled={hideDramaMutation.isPending}
               checked={user?.hideDrama ?? true}
               onCheckedChange={() => hideDramaMutation.mutate()}
@@ -184,6 +186,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
               </p>
             </div>
             <Switch
+              aria-label="Filter hurtful messages"
               disabled={messageFilterMutation.isPending}
               checked={user?.messageFilter ?? false}
               onCheckedChange={() => messageFilterMutation.mutate()}
