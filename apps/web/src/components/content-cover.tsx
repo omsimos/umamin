@@ -92,7 +92,7 @@ function Covered({
         )}
       >
         <MessageSquareOffIcon className="size-4 shrink-0" aria-hidden />
-        <p className="flex-1">Hidden: this may be part of a dispute.</p>
+        <p className="flex-1 truncate">Hidden: possible dispute</p>
         <Button type="button" variant="ghost" size="sm" onClick={reveal}>
           Show
         </Button>
@@ -101,7 +101,7 @@ function Covered({
   }
 
   return (
-    <div className={cn("relative mt-1", className)}>
+    <div className={cn("relative mt-1 min-h-24", className)}>
       <div
         aria-hidden
         inert

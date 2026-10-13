@@ -85,6 +85,8 @@ export function ReviewQueue() {
 
 function ReviewList({ kind }: { kind: QueueKind }) {
   const queryClient = useQueryClient();
+  // Removal is permanent, so it takes a second tap on the same row.
+  const [confirming, setConfirming] = useState<string | null>(null);
   const { data, isLoading, error } = useQuery({
     queryKey: queryKey(kind),
     queryFn: () => fetchReview(kind),
@@ -181,9 +183,19 @@ function ReviewList({ kind }: { kind: QueueKind }) {
               size="sm"
               variant="destructive"
               disabled={busy(item)}
-              onClick={() => removeMutation.mutate(item)}
+              onClick={() => {
+                const key = `${item.kind}:${item.id}`;
+                if (confirming === key) {
+                  setConfirming(null);
+                  removeMutation.mutate(item);
+                } else {
+                  setConfirming(key);
+                }
+              }}
             >
-              Remove
+              {confirming === `${item.kind}:${item.id}`
+                ? "Tap again to remove"
+                : "Remove"}
             </Button>
           </div>
         </li>
