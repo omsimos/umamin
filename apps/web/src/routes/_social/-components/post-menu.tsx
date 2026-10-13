@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,14 +18,18 @@ import {
   ShieldXIcon,
   Trash2Icon,
   UserXIcon,
+  Volume2Icon,
+  VolumeXIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BlockUserDialog } from "@/components/block-user-dialog";
 import { Menu } from "@/components/menu";
+import { useMuteUser } from "@/hooks/use-mute-user";
 import { ExpectedError } from "@/lib/expected-error";
-import { queryKeys } from "@/lib/query";
+import { pageQueryOptions, queryKeys } from "@/lib/query";
 import { patchCurrentUser, removePostEverywhere } from "@/lib/query-cache";
+import { fetchUserProfileViewer } from "@/lib/query-fetchers";
 import type { CurrentUserResponse, FeedItem, FeedResponse } from "@/lib/types";
 import { saveImage, sharePost } from "@/lib/utils";
 import {
@@ -55,6 +59,7 @@ export function PostMenu({
   onDeleted,
 }: PostMenuProps) {
   const queryClient = useQueryClient();
+  const muteMutation = useMuteUser();
   const [open, setOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const canDelete = !!currentUserId && currentUserId === authorId;
@@ -67,6 +72,18 @@ export function PostMenu({
   const isPinned = currentUser?.user?.pinnedPostId === postId;
   // A maintainer viewing someone else's post (own posts use canDelete).
   const canModerate = currentUser?.user?.isModerator === true && canBlock;
+
+  // Cache read only: the author's profile page is the one place this viewer
+  // query is loaded, and the only place a muted author's posts still show.
+  // It carries the real queryFn: an observer's options replace the query's,
+  // so omitting it would break the profile's own refetch after a mute.
+  const { data: authorViewer } = useQuery({
+    ...pageQueryOptions(queryKeys.userProfileViewer(authorUsername ?? ""), () =>
+      fetchUserProfileViewer(authorUsername ?? ""),
+    ),
+    enabled: false,
+  });
+  const isAuthorMuted = authorViewer?.isMuted === true;
 
   const pinMutation = useMutation({
     mutationFn: async () => {
@@ -196,6 +213,20 @@ export function PostMenu({
       : []),
     ...(canBlock
       ? [
+          {
+            title: `${isAuthorMuted ? "Unmute" : "Mute"}${authorUsername ? ` @${authorUsername}` : ""}`,
+            onClick: () =>
+              muteMutation.mutate({
+                userId: authorId,
+                username: authorUsername,
+                mute: !isAuthorMuted,
+              }),
+            icon: isAuthorMuted ? (
+              <Volume2Icon className="h-4 w-4" />
+            ) : (
+              <VolumeXIcon className="h-4 w-4" />
+            ),
+          },
           {
             title: authorUsername ? `Block @${authorUsername}` : "Block",
             onClick: () => setBlockOpen(true),

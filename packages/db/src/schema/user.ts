@@ -214,6 +214,32 @@ export const userBlockTable = sqliteTable(
   ],
 );
 
+// One-way and private, unlike user_block: it only hides the muted user's
+// content from the muter and never touches follows or delivery.
+export const userMuteTable = sqliteTable(
+  "user_mute",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    muterId: text("muter_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    mutedId: text("muted_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("user_mute_muter_muted_uidx").on(t.muterId, t.mutedId),
+    index("user_mute_muter_created_idx").on(t.muterId, t.createdAt),
+    // Backs the ON DELETE CASCADE lookup when a muted account is deleted.
+    index("user_mute_muted_idx").on(t.mutedId),
+  ],
+);
+
 export const userRelations = relations(userTable, ({ many }) => ({
   sentMessages: many(messageTable, { relationName: "sender" }),
   receivedMessages: many(messageTable, { relationName: "receiver" }),
@@ -255,8 +281,10 @@ export type SelectSession = typeof sessionTable.$inferSelect;
 export type SelectAccount = typeof accountTable.$inferSelect;
 export type SelectUserFollow = typeof userFollowTable.$inferSelect;
 export type SelectUserBlock = typeof userBlockTable.$inferSelect;
+export type SelectUserMute = typeof userMuteTable.$inferSelect;
 
 export type InsertUser = typeof userTable.$inferInsert;
 export type InsertSession = typeof sessionTable.$inferInsert;
 export type InsertUserFollow = typeof userFollowTable.$inferInsert;
 export type InsertUserBlock = typeof userBlockTable.$inferInsert;
+export type InsertUserMute = typeof userMuteTable.$inferInsert;

@@ -117,6 +117,7 @@ describe("UserProfile", () => {
       isFollowing: true,
       isBlocked: false,
       isBlockedBy: false,
+      isMuted: false,
       isBanned: false,
     });
 

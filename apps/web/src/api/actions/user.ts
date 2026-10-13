@@ -2,6 +2,7 @@ import {
   sessionTable,
   userBlockTable,
   userFollowTable,
+  userMuteTable,
   userTable,
 } from "@umamin/db/schema/user";
 import { and, eq, or, sql } from "drizzle-orm";
@@ -22,6 +23,7 @@ import {
 } from "../../server-lib/errors";
 import { isReservedModeratorName } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
+import { MAX_MUTES } from "../../server-lib/mutes";
 import { notify } from "../../server-lib/notifications";
 import { AURA_POINTS, awardAura, reverseAura } from "../../server-lib/points";
 import { captureRequestException } from "../../server-lib/posthog";
@@ -547,6 +549,73 @@ export const unblockUserHandler = action(
 
       return { success: true };
     });
+  },
+);
+
+export const muteUserHandler = action(
+  {
+    schema: z.object({ userId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `mute:${session.userId}`,
+    },
+  },
+  async ({ userId }, { session, c }) => {
+    const db = ctxDb(c);
+    if (session.userId === userId) {
+      return { error: "You cannot mute yourself." };
+    }
+
+    const [[target], [muteCount]] = await Promise.all([
+      db
+        .select({ id: userTable.id })
+        .from(userTable)
+        .where(eq(userTable.id, userId))
+        .limit(1),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(userMuteTable)
+        .where(eq(userMuteTable.muterId, session.userId)),
+    ]);
+
+    if (!target) {
+      return { error: "User not found." };
+    }
+
+    if ((muteCount?.count ?? 0) >= MAX_MUTES) {
+      return {
+        error: `You can mute up to ${MAX_MUTES} accounts. Unmute someone first.`,
+      };
+    }
+
+    await db
+      .insert(userMuteTable)
+      .values({ muterId: session.userId, mutedId: userId })
+      .onConflictDoNothing();
+
+    return { success: true };
+  },
+);
+
+export const unmuteUserHandler = action(
+  {
+    schema: z.object({ userId: idSchema }),
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `mute:${session.userId}`,
+    },
+  },
+  async ({ userId }, { session, c }) => {
+    await ctxDb(c)
+      .delete(userMuteTable)
+      .where(
+        and(
+          eq(userMuteTable.muterId, session.userId),
+          eq(userMuteTable.mutedId, userId),
+        ),
+      );
+
+    return { success: true };
   },
 );
 

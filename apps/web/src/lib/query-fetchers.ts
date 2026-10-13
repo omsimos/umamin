@@ -17,6 +17,7 @@ import type {
   GroupViewerResponse,
   MessagesResponse,
   MessageThreadResponse,
+  MutedUsersResponse,
   NoteItem,
   NotesResponse,
   NotificationBadgeResponse,
@@ -189,6 +190,12 @@ export async function fetchFollowingPage(
 export async function fetchBlockedUsersPage(cursor: string | null) {
   return fetchJson<BlockedUsersResponse>(
     appendCursor("/api/blocked-users", cursor),
+  );
+}
+
+export async function fetchMutedUsersPage(cursor: string | null) {
+  return fetchJson<MutedUsersResponse>(
+    appendCursor("/api/muted-users", cursor),
   );
 }
 

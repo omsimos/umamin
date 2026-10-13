@@ -32,6 +32,7 @@ import {
   ScanFaceIcon,
   ShieldXIcon,
   UserXIcon,
+  VolumeXIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -46,6 +47,7 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import { useMuteUser } from "@/hooks/use-mute-user";
 import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
@@ -88,6 +90,7 @@ export function NoteCard({
   const [blockOpen, setBlockOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const queryClient = useQueryClient();
+  const muteMutation = useMuteUser();
 
   // Anonymous notes have no identified author to block.
   const canBlock =
@@ -374,6 +377,16 @@ export function NoteCard({
                       },
                       ...(canBlock
                         ? [
+                            {
+                              title: username ? `Mute @${username}` : "Mute",
+                              onClick: () =>
+                                muteMutation.mutate({
+                                  userId: user.id,
+                                  username,
+                                  mute: true,
+                                }),
+                              icon: <VolumeXIcon className="h-4 w-4" />,
+                            },
                             {
                               title: username ? `Block @${username}` : "Block",
                               onClick: () => setBlockOpen(true),

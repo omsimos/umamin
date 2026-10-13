@@ -339,6 +339,7 @@ function PostCardImpl({
                 authorUsername={author?.username}
                 isAuthenticated={isAuthenticated}
                 currentUserId={currentUserId}
+                isMuted={"isMuted" in data && data.isMuted === true}
               />
             )}
           </div>

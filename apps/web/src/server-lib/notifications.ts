@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import { hasBlockBetween } from "./blocks";
 import type { Db } from "./db";
 import type { AppEnv } from "./env";
+import { getMutedIds } from "./mutes";
 import { sendPushForNotification } from "./notification-push";
 import { captureServerException } from "./posthog";
 
@@ -53,7 +54,9 @@ export function countUnseen(
  * now → read-your-writes); the best-effort Web Push runs off the response's
  * critical path via `deps.defer` (ctx.waitUntil).
  * Suppressed when a block exists in either direction between actor and
- * recipient; the push fan-out sits behind the same guard.
+ * recipient, or when the recipient has muted the actor; the push fan-out sits
+ * behind the same guard. Mute is checked here rather than on read so an
+ * aggregated row isn't hidden just because its latest actor is muted.
  */
 export async function notify(
   deps: NotifyDeps,
@@ -70,9 +73,13 @@ export async function notify(
     return;
   }
 
-  if (actorId && !blockChecked) {
+  if (actorId) {
     try {
-      if (await hasBlockBetween(deps.db, recipientId, actorId)) {
+      const [blocked, mutedIds] = await Promise.all([
+        blockChecked ? false : hasBlockBetween(deps.db, recipientId, actorId),
+        getMutedIds(deps.db, recipientId, [actorId]),
+      ]);
+      if (blocked || mutedIds.size > 0) {
         return;
       }
     } catch (err) {

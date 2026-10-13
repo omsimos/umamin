@@ -240,6 +240,7 @@ export function toQuotedPostData(post: PostData): QuotedPostData {
 export type CommentData = SelectPostComment & {
   author: FeedAuthorWithBadge;
   isLiked?: boolean;
+  isMuted?: boolean;
 };
 
 export type RepostData = {
@@ -364,6 +365,12 @@ export type BlockedUser = FeedAuthor & {
 };
 
 export type BlockedUsersResponse = CursorPage<BlockedUser>;
+
+export type MutedUser = FeedAuthor & {
+  mutedAt: Date;
+};
+
+export type MutedUsersResponse = CursorPage<MutedUser>;
 
 export type FollowListUser = FeedAuthorWithBadge & {
   isFollowing: boolean;
@@ -524,6 +531,7 @@ export type UserProfileViewerResponse = {
   isFollowing: boolean;
   isBlocked: boolean;
   isBlockedBy: boolean;
+  isMuted: boolean;
   // Moderator-only: whether the profile owner is currently banned. Always false
   // for non-moderators (ban state never leaks). Gates the profile "Unban"/"Ban"
   // menu entry. See getUserProfileViewerData.

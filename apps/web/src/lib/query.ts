@@ -33,6 +33,7 @@ export const queryKeys = {
   followers: (username: string) => ["followers", username] as const,
   following: (username: string) => ["following", username] as const,
   blockedUsers: () => ["blocked_users"] as const,
+  mutedUsers: () => ["muted_users"] as const,
   receivedMessages: () => ["received_messages"] as const,
   sentMessages: () => ["sent_messages"] as const,
   messageThread: (messageId: string) => ["message-thread", messageId] as const,

@@ -15,6 +15,7 @@ import type {
 import { toggleQuietModeAction } from "./actions";
 import { BlockedUsersSection } from "./blocked-users-section";
 import { BlockedWordsSection } from "./blocked-words-section";
+import { MutedUsersSection } from "./muted-users-section";
 import { PushNotificationToggle } from "./push-notification-toggle";
 
 export function PrivacySettings({ user }: { user: UserWithAccount }) {
@@ -83,6 +84,8 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
       </section>
 
       <BlockedWordsSection user={user} />
+
+      <MutedUsersSection />
 
       <BlockedUsersSection />
     </div>

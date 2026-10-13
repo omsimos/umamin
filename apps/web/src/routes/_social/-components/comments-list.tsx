@@ -15,6 +15,7 @@ import {
 import { fetchPostCommentsPage } from "@/lib/query-fetchers";
 import type { CommentData, CommentsResponse } from "@/lib/types";
 import { useIntersectionLoadMore } from "../-lib/hooks";
+import { MutedComment } from "./muted-comment";
 import { PostCard } from "./post-card";
 import { PostCardSkeleton } from "./post-card-skeleton";
 
@@ -108,8 +109,8 @@ export function CommentsList({
 
   return (
     <div className="w-full [--list-row-height:180px]">
-      {comments.map((comment) => (
-        <div key={comment.id} className="list-row pb-4">
+      {comments.map((comment) => {
+        const card = (
           <PostCard
             isComment
             isAuthenticated={isAuthenticated}
@@ -117,8 +118,14 @@ export function CommentsList({
             data={comment}
             className="border-b"
           />
-        </div>
-      ))}
+        );
+
+        return (
+          <div key={comment.id} className="list-row pb-4">
+            {comment.isMuted ? <MutedComment>{card}</MutedComment> : card}
+          </div>
+        );
+      })}
 
       {hasNextPage && (
         <>

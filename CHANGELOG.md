@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.9.0] - 2026-10-13
+
+### Added
+
+- Mute an account to stop seeing its posts, reposts and notes without blocking it. Its comments fold into a single line you can open, it can no longer notify you, and it is never told. Manage muted accounts in Settings, under Privacy.
+
 ## [7.8.1] - 2026-10-02
 
 ### Fixed
@@ -1029,6 +1035,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.9.0]: https://github.com/omsimos/umamin/compare/v7.8.1...v7.9.0
 [7.8.1]: https://github.com/omsimos/umamin/compare/v7.8.0...v7.8.1
 [7.8.0]: https://github.com/omsimos/umamin/compare/v7.7.0...v7.8.0
 [7.7.0]: https://github.com/omsimos/umamin/compare/v7.6.3...v7.7.0

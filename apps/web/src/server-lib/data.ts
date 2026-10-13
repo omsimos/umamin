@@ -29,6 +29,7 @@ import {
   accountTable,
   userBlockTable,
   userFollowTable,
+  userMuteTable,
   userTable,
 } from "@umamin/db/schema/user";
 import { aesDecrypt } from "@umamin/encryption";
@@ -76,6 +77,7 @@ import type {
   GroupUnreadState,
   MessagesResponse,
   MessageThreadResponse,
+  MutedUsersResponse,
   NoteItem,
   NotesResponse,
   NotificationBadgeResponse,
@@ -100,6 +102,7 @@ import {
 } from "./group";
 import { diversifyHotCandidates, getHotScoreKey } from "./hot-score";
 import { isModerator } from "./moderation";
+import { getMutedIds } from "./mutes";
 import { countUnseen } from "./notifications";
 
 // 180s (was 120s): public reads are eventually-consistent and every surface
@@ -1052,64 +1055,66 @@ async function getPostFeedViewerOverlay(
   actorIds: string[],
   pollPostIds: string[] = [],
 ) {
-  const [likedRows, repostRows, blockRows, voteRows] = await Promise.all([
-    postIds.length > 0
-      ? db
-          .select({ postId: postLikeTable.postId })
-          .from(postLikeTable)
-          .where(
-            and(
-              eq(postLikeTable.userId, viewerId),
-              inArray(postLikeTable.postId, postIds),
-            ),
-          )
-      : [],
-    postIds.length > 0
-      ? db
-          .select({ postId: postRepostTable.postId })
-          .from(postRepostTable)
-          .where(
-            and(
-              eq(postRepostTable.userId, viewerId),
-              inArray(postRepostTable.postId, postIds),
-            ),
-          )
-      : [],
-    actorIds.length > 0
-      ? db
-          .select({
-            blockerId: userBlockTable.blockerId,
-            blockedId: userBlockTable.blockedId,
-          })
-          .from(userBlockTable)
-          .where(
-            or(
+  const [likedRows, repostRows, blockRows, voteRows, mutedUserIds] =
+    await Promise.all([
+      postIds.length > 0
+        ? db
+            .select({ postId: postLikeTable.postId })
+            .from(postLikeTable)
+            .where(
               and(
-                eq(userBlockTable.blockerId, viewerId),
-                inArray(userBlockTable.blockedId, actorIds),
+                eq(postLikeTable.userId, viewerId),
+                inArray(postLikeTable.postId, postIds),
               ),
+            )
+        : [],
+      postIds.length > 0
+        ? db
+            .select({ postId: postRepostTable.postId })
+            .from(postRepostTable)
+            .where(
               and(
-                inArray(userBlockTable.blockerId, actorIds),
-                eq(userBlockTable.blockedId, viewerId),
+                eq(postRepostTable.userId, viewerId),
+                inArray(postRepostTable.postId, postIds),
               ),
-            ),
-          )
-      : [],
-    pollPostIds.length > 0
-      ? db
-          .select({
-            postId: pollVoteTable.postId,
-            optionId: pollVoteTable.optionId,
-          })
-          .from(pollVoteTable)
-          .where(
-            and(
-              eq(pollVoteTable.userId, viewerId),
-              inArray(pollVoteTable.postId, pollPostIds),
-            ),
-          )
-      : [],
-  ]);
+            )
+        : [],
+      actorIds.length > 0
+        ? db
+            .select({
+              blockerId: userBlockTable.blockerId,
+              blockedId: userBlockTable.blockedId,
+            })
+            .from(userBlockTable)
+            .where(
+              or(
+                and(
+                  eq(userBlockTable.blockerId, viewerId),
+                  inArray(userBlockTable.blockedId, actorIds),
+                ),
+                and(
+                  inArray(userBlockTable.blockerId, actorIds),
+                  eq(userBlockTable.blockedId, viewerId),
+                ),
+              ),
+            )
+        : [],
+      pollPostIds.length > 0
+        ? db
+            .select({
+              postId: pollVoteTable.postId,
+              optionId: pollVoteTable.optionId,
+            })
+            .from(pollVoteTable)
+            .where(
+              and(
+                eq(pollVoteTable.userId, viewerId),
+                inArray(pollVoteTable.postId, pollPostIds),
+              ),
+            )
+        : [],
+      getMutedIds(db, viewerId, actorIds),
+    ]);
 
   return {
     blockedUserIds: new Set(
@@ -1117,6 +1122,7 @@ async function getPostFeedViewerOverlay(
         row.blockerId === viewerId ? [row.blockedId] : [row.blockerId],
       ),
     ),
+    mutedUserIds,
     likedPostIds: new Set(likedRows.map((row) => row.postId)),
     repostedPostIds: new Set(repostRows.map((row) => row.postId)),
     myVoteByPostId: new Map(
@@ -1130,20 +1136,20 @@ function applyPostFeedViewerOverlay(
   overlay: Awaited<ReturnType<typeof getPostFeedViewerOverlay>>,
 ): FeedItem[] {
   return items.flatMap((item) => {
-    const isAuthorBlocked = overlay.blockedUserIds.has(item.post.author.id);
-    const isReposterBlocked =
-      item.type === "repost" && overlay.blockedUserIds.has(item.repost.user.id);
+    const isHidden = (userId: string) =>
+      overlay.blockedUserIds.has(userId) || overlay.mutedUserIds.has(userId);
+    const isAuthorHidden = isHidden(item.post.author.id);
+    const isReposterHidden =
+      item.type === "repost" && isHidden(item.repost.user.id);
 
-    if (isAuthorBlocked || isReposterBlocked) {
+    if (isAuthorHidden || isReposterHidden) {
       return [];
     }
 
-    // A quoted post from a blocked user degrades to the "unavailable" husk
-    // (matching what its own page shows the viewer) instead of leaking through
-    // the embed.
+    // A quoted post from a blocked or muted user degrades to the
+    // "unavailable" husk instead of leaking through the embed.
     const quotedPost =
-      item.post.quotedPost &&
-      overlay.blockedUserIds.has(item.post.quotedPost.author.id)
+      item.post.quotedPost && isHidden(item.post.quotedPost.author.id)
         ? null
         : item.post.quotedPost;
 
@@ -1608,7 +1614,7 @@ async function getCommentViewerOverlay(
   commentIds: string[],
   authorIds: string[],
 ) {
-  const [likedRows, blockRows] = await Promise.all([
+  const [likedRows, blockRows, mutedUserIds] = await Promise.all([
     commentIds.length > 0
       ? db
           .select({ commentId: postCommentLikeTable.commentId })
@@ -1640,6 +1646,7 @@ async function getCommentViewerOverlay(
             ),
           )
       : [],
+    getMutedIds(db, viewerId, authorIds),
   ]);
 
   return {
@@ -1648,6 +1655,7 @@ async function getCommentViewerOverlay(
         row.blockerId === viewerId ? [row.blockedId] : [row.blockerId],
       ),
     ),
+    mutedUserIds,
     likedCommentIds: new Set(likedRows.map((row) => row.commentId)),
   };
 }
@@ -1686,10 +1694,13 @@ export async function getPostCommentsPage(
         return [];
       }
 
+      // Muted comments are collapsed client-side, not dropped, so replies
+      // around them still read as a conversation.
       return [
         {
           ...comment,
           isLiked: overlay.likedCommentIds.has(comment.id),
+          isMuted: overlay.mutedUserIds.has(comment.author.id),
         },
       ];
     }),
@@ -1807,7 +1818,7 @@ async function getNoteViewerOverlay(
   authorIds: string[],
   noteIds: string[],
 ) {
-  const [blockRows, reactedRows] = await Promise.all([
+  const [blockRows, reactedRows, mutedUserIds] = await Promise.all([
     authorIds.length > 0
       ? db
           .select({
@@ -1839,6 +1850,7 @@ async function getNoteViewerOverlay(
             ),
           )
       : [],
+    getMutedIds(db, viewerId, authorIds),
   ]);
 
   return {
@@ -1847,6 +1859,7 @@ async function getNoteViewerOverlay(
         row.blockerId === viewerId ? [row.blockedId] : [row.blockerId],
       ),
     ),
+    mutedUserIds,
     reactedNoteIds: new Set(reactedRows.map((row) => row.noteId)),
   };
 }
@@ -1885,7 +1898,9 @@ export async function getNotesPage(
     ...publicData,
     // Preserve the shared public page window; viewer overlays may shorten it.
     data: publicData.data.flatMap((note) =>
-      note.user?.id && overlay.blockedUserIds.has(note.user.id)
+      note.user?.id &&
+      (overlay.blockedUserIds.has(note.user.id) ||
+        overlay.mutedUserIds.has(note.user.id))
         ? []
         : [{ ...note, isReacted: overlay.reactedNoteIds.has(note.id) }],
     ),
@@ -2085,7 +2100,7 @@ async function getUserProfileViewerOverlay(
   viewerId: string,
   targetId: string,
 ) {
-  // Fold the three exists() probes into one round-trip (was three).
+  // Fold the exists() probes into one round-trip.
   const [row] = await db
     .select({
       isFollowing: exists(
@@ -2121,6 +2136,17 @@ async function getUserProfileViewerOverlay(
             ),
           ),
       ),
+      isMuted: exists(
+        db
+          .select({ id: userMuteTable.id })
+          .from(userMuteTable)
+          .where(
+            and(
+              eq(userMuteTable.muterId, viewerId),
+              eq(userMuteTable.mutedId, targetId),
+            ),
+          ),
+      ),
     })
     .from(userTable)
     .where(eq(userTable.id, targetId))
@@ -2130,6 +2156,7 @@ async function getUserProfileViewerOverlay(
     isFollowing: Boolean(row?.isFollowing),
     isBlocked: Boolean(row?.isBlocked),
     isBlockedBy: Boolean(row?.isBlockedBy),
+    isMuted: Boolean(row?.isMuted),
   };
 }
 
@@ -2148,6 +2175,7 @@ async function getUserProfileViewerDataForUser(
       isFollowing: false,
       isBlocked: false,
       isBlockedBy: false,
+      isMuted: false,
       isBanned: false,
     };
   }
@@ -2443,6 +2471,67 @@ export async function getBlockedUsersPage(
   const data = pageRows.flatMap((row) => {
     const user = userMap.get(row.blockedId);
     return user ? [{ ...user, blockedAt: row.createdAt }] : [];
+  });
+
+  const lastEdge = pageRows[pageRows.length - 1];
+
+  return {
+    data,
+    nextCursor:
+      hasMore && lastEdge
+        ? `${lastEdge.createdAt.getTime()}.${lastEdge.id}`
+        : null,
+  };
+}
+
+export async function getMutedUsersPage(
+  db: Db,
+  params: {
+    viewerId: string;
+    cursor?: string | null;
+  },
+): Promise<MutedUsersResponse> {
+  const parsedCursor = parseCursor(params.cursor ?? null);
+  const cursorCondition = parsedCursor
+    ? or(
+        lt(userMuteTable.createdAt, parsedCursor.cursorDate),
+        and(
+          eq(userMuteTable.createdAt, parsedCursor.cursorDate),
+          lt(userMuteTable.id, parsedCursor.cursorId),
+        ),
+      )
+    : undefined;
+
+  const baseCondition = eq(userMuteTable.muterId, params.viewerId);
+
+  const edgeRows = await db
+    .select({
+      id: userMuteTable.id,
+      createdAt: userMuteTable.createdAt,
+      mutedId: userMuteTable.mutedId,
+    })
+    .from(userMuteTable)
+    .where(
+      cursorCondition ? and(baseCondition, cursorCondition) : baseCondition,
+    )
+    .orderBy(desc(userMuteTable.createdAt), desc(userMuteTable.id))
+    .limit(BLOCKED_USERS_PAGE_SIZE + 1);
+
+  const { hasMore, pageRows } = getPageRows(edgeRows, BLOCKED_USERS_PAGE_SIZE);
+  const mutedIds = pageRows.map((row) => row.mutedId);
+
+  const users =
+    mutedIds.length > 0
+      ? await db
+          .select(feedAuthorColumns)
+          .from(userTable)
+          .where(inArray(userTable.id, mutedIds))
+      : [];
+
+  const userMap = new Map(users.map((user) => [user.id, user] as const));
+  const data = pageRows.flatMap((row) => {
+    const user = userMap.get(row.mutedId);
+    return user ? [{ ...user, mutedAt: row.createdAt }] : [];
   });
 
   const lastEdge = pageRows[pageRows.length - 1];
