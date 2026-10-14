@@ -18,6 +18,18 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.10.1] - 2026-10-14
+
+### Changed
+
+- Uma now covers sexual harassment, asking minors for photos or video calls, threats to share someone's private photos, and posts telling someone to hurt themselves.
+
+### Fixed
+
+- Replies and quotes that call out a hurtful post are no longer covered as if they wrote it.
+- Uma now covers threats against someone even when they also mention self-harm.
+- Insults aimed at someone's @handle are covered even when they mention politics.
+
 ## [7.10.0] - 2026-10-13
 
 ### Added
@@ -1074,6 +1086,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.10.1]: https://github.com/omsimos/umamin/compare/v7.10.0...v7.10.1
 [7.10.0]: https://github.com/omsimos/umamin/compare/v7.9.1...v7.10.0
 [7.9.1]: https://github.com/omsimos/umamin/compare/v7.9.0...v7.9.1
 [7.9.0]: https://github.com/omsimos/umamin/compare/v7.8.1...v7.9.0
