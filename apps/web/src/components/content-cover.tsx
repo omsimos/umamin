@@ -92,7 +92,7 @@ function Covered({
           </p>
           {target &&
             (appeal.sent ? (
-              <p>Sent for review.</p>
+              <p className="flex h-8 items-center">Sent for review.</p>
             ) : (
               <Button
                 type="button"
