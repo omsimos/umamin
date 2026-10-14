@@ -754,7 +754,10 @@ describe("content moderation (real libSQL)", () => {
       await followUp();
       expect(classifyContent).not.toHaveBeenCalled();
 
-      await db.update(userTable).set({ messageFilter: true });
+      await db
+        .update(userTable)
+        .set({ messageFilter: true, question: "q" })
+        .where(eq(userTable.id, "viewer"));
       await followUp();
       expect(classifyContent).toHaveBeenCalledTimes(1);
       // The thread's question only; the receiver's reply stays out of it.
@@ -765,6 +768,18 @@ describe("content moderation (real libSQL)", () => {
       );
       const rows = await db.select().from(messageReplyTable);
       expect(rows.map((r) => r.modSevere).sort()).toEqual([93, null]);
+
+      // A question the receiver didn't write (an old thread) is not context.
+      await db
+        .update(userTable)
+        .set({ question: "something else" })
+        .where(eq(userTable.id, "viewer"));
+      await followUp();
+      expect(classifyContent).toHaveBeenLastCalledWith(
+        expect.anything(),
+        { kind: "message", text: "you again", question: null },
+        expect.anything(),
+      );
     });
   });
 });
