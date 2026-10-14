@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
@@ -62,6 +62,23 @@ describe("ContentCover", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "View" }));
     expect(screen.getByText("the body").closest("[aria-hidden]")).toBeNull();
+  });
+
+  it("moves focus to what it revealed, from the button and from the explainer", async () => {
+    renderCover("drama");
+    await userEvent.click(screen.getByRole("button", { name: "Show" }));
+    await waitFor(() =>
+      expect(screen.getByText("the body").parentElement).toHaveFocus(),
+    );
+
+    renderCover("severe");
+    await userEvent.click(screen.getByRole("button", { name: "Why?" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "View post" }),
+    );
+    await waitFor(() =>
+      expect(screen.getAllByText("the body")[1].parentElement).toHaveFocus(),
+    );
   });
 
   it("keeps a revealed item open when it mounts again", async () => {

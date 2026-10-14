@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { EyeOffIcon } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Uma } from "@/components/uma";
 import { type CoverKind, UmaExplainer } from "@/components/uma-explainer";
 import { privateQueryDefaults, queryKeys } from "@/lib/query";
@@ -52,8 +52,9 @@ function Covered({
   children,
 }: Props & { label: ContentLabel }) {
   const [isRevealed, setIsRevealed] = useState(() => revealed.has(revealKey));
+  const [revealedHere, setRevealedHere] = useState(false);
   // The explainer mounts on first open, so a list of covers doesn't each
-  // subscribe to the media query up front.
+  // build a dialog up front.
   const [whyOpen, setWhyOpen] = useState(false);
   const [whyMounted, setWhyMounted] = useState(false);
   const { data: currentUser } = useQuery({
@@ -63,6 +64,7 @@ function Covered({
     enabled: isAuthenticated && label === "drama" && !coverDrama,
   });
 
+  if (revealedHere) return <FocusOnMount>{children}</FocusOnMount>;
   if (isRevealed) return children;
 
   if (isOwn) {
@@ -82,6 +84,7 @@ function Covered({
   const reveal = () => {
     revealed.add(revealKey);
     setIsRevealed(true);
+    setRevealedHere(true);
   };
 
   const hidesDrama =
@@ -161,6 +164,21 @@ function Covered({
         </div>
       </div>
       {explainer}
+    </div>
+  );
+}
+
+// Revealing removes the button that had focus. Moves focus to what it
+// revealed, after the explainer's own focus return when it was opened.
+function FocusOnMount({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const id = setTimeout(() => ref.current?.focus({ preventScroll: true }));
+    return () => clearTimeout(id);
+  }, []);
+  return (
+    <div ref={ref} tabIndex={-1} className="outline-none">
+      {children}
     </div>
   );
 }

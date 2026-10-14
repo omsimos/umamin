@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { QuotedPostData } from "@/lib/types";
 import { QuotedPostCard } from "./quoted-post-card";
@@ -68,6 +70,22 @@ describe("QuotedPostCard", () => {
     );
     expect(screen.getAllByText(/alice/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole("link")).toBeInTheDocument();
+  });
+
+  it("reveals a covered quote in place instead of following the card link", async () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <QuotedPostCard post={makeQuoted({ moderation: "severe" })} />
+      </QueryClientProvider>,
+    );
+    const view = screen.getByRole("button", { name: "View" });
+    // A button inside the anchor would follow it on tap.
+    expect(view.closest("a")).toBeNull();
+
+    await userEvent.click(view);
+    expect(
+      screen.getByText("the original post").closest("[aria-hidden]"),
+    ).toBeNull();
   });
 
   it("renders a non-linked preview for the composer", () => {
