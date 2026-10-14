@@ -78,6 +78,9 @@ export interface ChatMessage {
   whisper?: WhisperState;
   effect?: SendEffect;
   gameResult?: GameResult;
+  /** Own optimistic sends only: "sending" until the room acks, "failed" when
+   *  it rejected or the socket dropped first. Absent once delivered. */
+  delivery?: "sending" | "failed";
 }
 
 export interface SendOpts {
@@ -173,9 +176,6 @@ export interface SessionSnapshot {
 export type SnapshotMeta = Omit<SessionSnapshot, "messages">;
 
 export interface FindMatchOptions {
-  /** Caller's own shareable code — stamped on their queue row so deep-link
-   *  visitors can land on them whenever they're searching. */
-  inviteCode?: string;
   /** One-shot code from a ?join= deep link. Never persisted, never replayed
    *  on a rematch. */
   joinCode?: string;
@@ -192,6 +192,8 @@ export interface ChatTransport {
   getSnapshot(): SessionSnapshot;
   findMatch(self: SelfIdentity, options?: FindMatchOptions): void;
   send(text: string, opts?: SendOpts): void;
+  /** Re-sends a message whose delivery is "failed". */
+  retrySend(messageId: string): void;
   react(messageId: string, emoji: string): void;
   /** Recipient-only: reveal a whisper and start its burn timer. */
   viewWhisper(messageId: string): void;
