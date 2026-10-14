@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppBindings } from "../../server-lib/context";
 import { NOT_FOUND_ERROR } from "../../server-lib/errors";
+import { isModerationEnforced } from "../../server-lib/flags";
 import { listDeniedIps } from "../../server-lib/ip-denylist";
 import { isModerator } from "../../server-lib/moderation";
 import {
@@ -20,9 +21,10 @@ export const moderationRoutes = new Hono<AppBindings>()
       }
 
       const db = resolveDb(c.env);
+      const enforce = await isModerationEnforced(c.env);
       return c.req.query("kind") === "drama"
-        ? getDramaReviewPage(db)
-        : getSevereReviewPage(db, c.req.query("cursor") ?? null);
+        ? getDramaReviewPage(db, enforce)
+        : getSevereReviewPage(db, c.req.query("cursor") ?? null, enforce);
     }),
   )
   .get(

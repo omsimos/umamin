@@ -216,7 +216,9 @@ export type ModerationColumn =
   | "modDrama"
   | "modReason"
   | "modFlaggedAt"
-  | "modClearedAt";
+  | "modClearedAt"
+  | "modReviewedAt"
+  | "modAppealedAt";
 
 export type ContentLabel = "severe" | "drama";
 
@@ -593,11 +595,19 @@ export type ReviewItem = {
   author: FeedAuthor | null;
   // The post a comment belongs to, for linking.
   postId: string | null;
+  // The post a comment replies to or a quote quotes, so the moderator can
+  // see what the author was responding to.
+  context: string | null;
   createdAt: Date;
   flaggedAt: Date | null;
   severe: number | null;
   drama: number | null;
   reason: string | null;
+  // What viewers see right now: null when the score is under the line or
+  // enforcement is off.
+  label: ContentLabel | null;
+  appealed: boolean;
+  disputes: number;
 };
 
 export type ReviewPage = { data: ReviewItem[]; nextCursor: string | null };

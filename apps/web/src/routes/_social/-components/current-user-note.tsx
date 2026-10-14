@@ -261,6 +261,7 @@ export function CurrentUserNote({
           <ContentCover
             label={data.moderation}
             revealKey={`note:${data.id}`}
+            target={{ kind: "note", id: data.id }}
             isOwn
             isAuthenticated
             noun="note"

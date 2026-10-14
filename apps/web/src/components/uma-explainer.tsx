@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@umamin/ui/components/dialog";
+import type { ReviewRequest } from "@/components/content-cover";
 import { Uma } from "@/components/uma";
 
 export type CoverKind = "dispute" | "severe" | "message";
@@ -55,12 +56,15 @@ export function UmaExplainer({
   open,
   onOpenChange,
   onReveal,
+  dispute,
 }: {
   kind: CoverKind;
   noun: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onReveal: () => void;
+  // Signed-in viewers of public content can tell a moderator Uma was wrong.
+  dispute?: ReviewRequest;
 }) {
   const { title, lines, action } = copyFor(kind, noun);
   const mood = kind === "dispute" ? "calm" : "serious";
@@ -76,6 +80,22 @@ export function UmaExplainer({
       {rest.map((line) => (
         <p key={line}>{line}</p>
       ))}
+      {dispute &&
+        (dispute.sent ? (
+          <p className="text-foreground">
+            Thanks. A moderator will take a look.
+          </p>
+        ) : (
+          <Button
+            type="button"
+            variant="link"
+            className="h-auto min-h-11 px-0 text-muted-foreground underline"
+            disabled={dispute.pending}
+            onClick={dispute.send}
+          >
+            Uma got this wrong
+          </Button>
+        ))}
     </div>
   );
   const buttons = (

@@ -69,6 +69,7 @@ export function QuotedPostCard({
       <ContentCover
         label={post.moderation}
         revealKey={`post:${post.id}`}
+        target={{ kind: "post", id: post.id }}
         isOwn={!!currentUserId && currentUserId === post.author.id}
         isAuthenticated={isAuthenticated}
       >

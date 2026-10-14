@@ -2,10 +2,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { queryKeys } from "@/lib/query";
 import type { ContentLabel } from "@/lib/types";
 import { ContentCover } from "./content-cover";
+
+const { callAction } = vi.hoisted(() => ({
+  callAction: vi.fn(async () => ({ success: true })),
+}));
+vi.mock("@/lib/api", () => ({ callAction }));
 
 let keySeq = 0;
 
@@ -18,6 +23,7 @@ function renderCover(
     revealKey?: string;
     coverDrama?: boolean;
     noun?: string;
+    target?: { kind: "post" | "comment" | "note"; id: string };
   } = {},
 ) {
   const client = new QueryClient();
@@ -36,6 +42,7 @@ function renderCover(
         isAuthenticated={opts.isAuthenticated ?? false}
         coverDrama={opts.coverDrama}
         noun={opts.noun}
+        target={opts.target}
       >
         {children}
       </ContentCover>
@@ -107,6 +114,53 @@ describe("ContentCover", () => {
     renderCover("severe", { isOwn: true, isAuthenticated: true });
     expect(screen.getByText("the body").closest("[aria-hidden]")).toBeNull();
     expect(screen.getByText("Others see this post covered.")).toBeVisible();
+  });
+
+  it("lets the author ask for review of their own covered post, once", async () => {
+    callAction.mockClear();
+    renderCover("severe", {
+      isOwn: true,
+      isAuthenticated: true,
+      target: { kind: "post", id: "p1" },
+    });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Ask for review" }),
+    );
+    expect(callAction).toHaveBeenCalledWith("appealContentLabelAction", {
+      kind: "post",
+      id: "p1",
+    });
+    expect(await screen.findByText("Sent for review.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Ask for review" })).toBeNull();
+  });
+
+  it("lets a signed-in viewer tell a moderator Uma got it wrong", async () => {
+    callAction.mockClear();
+    renderCover("drama", {
+      isAuthenticated: true,
+      hideDrama: true,
+      target: { kind: "comment", id: "c1" },
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Why?" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Uma got this wrong" }),
+    );
+    expect(callAction).toHaveBeenCalledWith("disputeContentLabelAction", {
+      kind: "comment",
+      id: "c1",
+    });
+    expect(
+      await screen.findByText("Thanks. A moderator will take a look."),
+    ).toBeVisible();
+  });
+
+  it("offers no review request without an account or for private messages", async () => {
+    renderCover("severe", { target: { kind: "post", id: "p2" } });
+    await userEvent.click(screen.getByRole("button", { name: "Why?" }));
+    await screen.findByRole("heading", { name: "Why is this covered?" });
+    expect(
+      screen.queryByRole("button", { name: "Uma got this wrong" }),
+    ).toBeNull();
   });
 
   it("explains a fold and reveals it from the explainer", async () => {

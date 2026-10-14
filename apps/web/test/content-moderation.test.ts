@@ -367,7 +367,7 @@ describe("content moderation (real libSQL)", () => {
     });
 
     it("lists flagged content newest first and hides anonymous authors", async () => {
-      const page = await getSevereReviewPage(db, null);
+      const page = await getSevereReviewPage(db, null, true);
       expect(page.data.map((item) => item.id)).toEqual([
         "anon-note",
         "flagged",
@@ -399,8 +399,157 @@ describe("content moderation (real libSQL)", () => {
         { kind: "post", id: "flagged" },
         { MODERATOR_USERS: "u_author" },
       );
-      const page = await getSevereReviewPage(db, null);
+      const page = await getSevereReviewPage(db, null, true);
       expect(page.data.map((item) => item.id)).toEqual(["anon-note"]);
+    });
+
+    const MOD_ENV = {
+      MODERATOR_USERS: "u_mod",
+      FLAGS_FORCE_ON: "content-moderation",
+    };
+    const asUser = (id: string) =>
+      buildApp(db, authed(id, { username: `u_${id}` }));
+    const queueIds = async () =>
+      (await getSevereReviewPage(db, null, true)).data.map((item) => item.id);
+
+    it("shows what a flagged comment or quote responds to, and its live label", async () => {
+      await db.insert(postTable).values({
+        id: "quote",
+        content: "grabe ito oh",
+        authorId: "viewer",
+        quotedPostId: "fine",
+        modFlaggedAt: new Date(),
+        ...SEVERE,
+      });
+      await db.insert(postCommentTable).values({
+        id: "reply",
+        postId: "fine",
+        content: "tama",
+        authorId: "viewer",
+        modFlaggedAt: new Date(),
+        modSevere: 65,
+        modDrama: 10,
+      });
+      const page = await getSevereReviewPage(db, null, true);
+      const byId = new Map(page.data.map((item) => [item.id, item]));
+      expect(byId.get("quote")).toMatchObject({
+        context: "ok",
+        label: "severe",
+      });
+      // Flagged at 65 but under the cover line: in the queue, not covered.
+      expect(byId.get("reply")).toMatchObject({ context: "ok", label: null });
+
+      const shadow = await getSevereReviewPage(db, null, false);
+      expect(shadow.data.every((item) => item.label === null)).toBe(true);
+    });
+
+    it("lets a moderator keep a label, which takes it out of the queue for good", async () => {
+      await db.insert(userTable).values({ id: "mod", username: "u_mod" });
+      expect(
+        (
+          await callJson(
+            asUser("viewer"),
+            "keepContentFlagAction",
+            { kind: "post", id: "flagged" },
+            MOD_ENV,
+          )
+        ).json,
+      ).toEqual({ error: "Not found" });
+
+      await callJson(
+        asUser("mod"),
+        "keepContentFlagAction",
+        { kind: "post", id: "flagged" },
+        MOD_ENV,
+      );
+      expect(await queueIds()).toEqual(["anon-note"]);
+      const post = await getPostById(db, { postId: "flagged", enforce: true });
+      expect(post?.moderation).toBe("severe");
+
+      // Nobody can push it back in after the decision.
+      expect(
+        (
+          await callJson(
+            asUser("viewer"),
+            "disputeContentLabelAction",
+            { kind: "post", id: "flagged" },
+            MOD_ENV,
+          )
+        ).json,
+      ).toEqual({ error: "A moderator already reviewed this." });
+      expect(await queueIds()).toEqual(["anon-note"]);
+    });
+
+    it("queues a folded post when its author asks for review, once", async () => {
+      await db.insert(postTable).values({
+        id: "sad",
+        content: "i miss you",
+        authorId: "author",
+        ...DRAMA,
+      });
+      expect(await queueIds()).not.toContain("sad");
+
+      expect(
+        (
+          await callJson(
+            asUser("viewer"),
+            "appealContentLabelAction",
+            { kind: "post", id: "sad" },
+            MOD_ENV,
+          )
+        ).json,
+      ).toEqual({ error: "This isn't covered or folded anymore." });
+
+      await callJson(
+        asUser("author"),
+        "appealContentLabelAction",
+        { kind: "post", id: "sad" },
+        MOD_ENV,
+      );
+      const item = (await getSevereReviewPage(db, null, true)).data.find(
+        (entry) => entry.id === "sad",
+      );
+      expect(item).toMatchObject({ appealed: true, label: "drama" });
+
+      // Nothing to appeal on unlabelled content.
+      expect(
+        (
+          await callJson(
+            asUser("author"),
+            "appealContentLabelAction",
+            { kind: "post", id: "fine" },
+            MOD_ENV,
+          )
+        ).json,
+      ).toEqual({ error: "This isn't covered or folded anymore." });
+    });
+
+    it("counts each viewer's dispute once and never the author's", async () => {
+      await db.insert(userTable).values({ id: "other", username: "u_other" });
+      await db.insert(postTable).values({
+        id: "sad",
+        content: "i miss you",
+        authorId: "author",
+        ...DRAMA,
+      });
+      const dispute = (id: string) =>
+        callJson(
+          asUser(id),
+          "disputeContentLabelAction",
+          { kind: "post", id: "sad" },
+          MOD_ENV,
+        );
+      expect((await dispute("author")).json).toEqual({
+        error: "This isn't covered or folded anymore.",
+      });
+      await dispute("viewer");
+      await dispute("viewer");
+      await dispute("other");
+
+      const item = (await getSevereReviewPage(db, null, true)).data.find(
+        (entry) => entry.id === "sad",
+      );
+      expect(item?.disputes).toBe(2);
     });
 
     it("surfaces recent drama scores for threshold checks", async () => {
@@ -410,7 +559,7 @@ describe("content moderation (real libSQL)", () => {
         authorId: "author",
         ...DRAMA,
       });
-      const page = await getDramaReviewPage(db);
+      const page = await getDramaReviewPage(db, true);
       expect(page.data.map((item) => item.id)).toContain("parinig");
       expect(page.data.map((item) => item.id)).not.toContain("fine");
     });
