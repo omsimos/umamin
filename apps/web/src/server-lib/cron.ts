@@ -1,6 +1,7 @@
 import { notificationTable } from "@umamin/db/schema/notification";
 import { sessionTable } from "@umamin/db/schema/user";
 import { lt } from "drizzle-orm";
+import { retryUnclassifiedContent } from "./content-retry";
 import { getDb } from "./db";
 import type { AppEnv } from "./env";
 import { recomputeHotFeed as recomputeHotFeedRanking } from "./feed-rank";
@@ -49,4 +50,22 @@ export async function recomputeHotFeed(env: AppEnv): Promise<void> {
     env.KV,
     await isModerationEnforced(env),
   );
+}
+
+// */5 * * * * — re-classify recent rows a write left unclassified (see
+// server-lib/content-retry.ts).
+export async function retryUnclassified(
+  env: AppEnv,
+  defer?: (promise: Promise<unknown>) => void,
+): Promise<void> {
+  const { attempted, classified } = await retryUnclassifiedContent(
+    getDb(env),
+    env,
+    defer,
+  );
+  if (attempted > 0) {
+    console.log(
+      `[cron] moderation retry: classified ${classified}/${attempted}`,
+    );
+  }
 }

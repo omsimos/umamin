@@ -9,6 +9,7 @@ import {
   cleanupNotifications,
   cleanupSessions,
   recomputeHotFeed,
+  retryUnclassified,
 } from "./server-lib/cron";
 import type { AppEnv } from "./server-lib/env";
 import { formatErrorChain } from "./server-lib/errors";
@@ -107,6 +108,7 @@ const scheduled: ExportedHandlerScheduledHandler<AppEnv> = async (
       break;
     case "*/5 * * * *":
       ctx.waitUntil(report(recomputeHotFeed(env)));
+      ctx.waitUntil(report(retryUnclassified(env, (p) => ctx.waitUntil(p))));
       break;
     default:
       console.log(`[cron] unhandled: ${event.cron}`);
