@@ -78,7 +78,9 @@ export function ChatSessionProvider({
     if (transport) return;
     const t = createWsTransport({
       credentials: getSessionCredentials(),
-      onRateLimited: (message) => toast(message),
+      // One toast per message, not per rejected op: a burst of sends would
+      // otherwise stack a copy for each.
+      onRateLimited: (message) => toast(message, { id: message }),
       onError: (message) => {
         const self = lastSelf.current;
         if (message === QUEUE_TIMEOUT_MESSAGE && self) {
@@ -91,7 +93,7 @@ export function ChatSessionProvider({
           });
           return;
         }
-        toast.error(message);
+        toast.error(message, { id: message });
       },
     });
     setCreated(t);
