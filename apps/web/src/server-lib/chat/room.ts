@@ -22,9 +22,12 @@ import {
   AUTH_DEADLINE_MS,
   AWAY_GRACE_MS,
   GRACE_MS,
+  IDLE_MATCH_MS,
   MATCH_START_GRACE_MS,
   MAX_FRAME_CHARS,
+  MAX_ROOM_SOCKETS,
   MESSAGE_CAP,
+  SEND_DEDUPE_WINDOW,
   STALE_SOCKET_MS,
   SWEEP_INTERVAL_MS,
 } from "../../lib/chat/constants";
@@ -165,7 +168,7 @@ export class ChatRoom extends DurableObject<AppEnv> {
       reaction_a TEXT, reaction_b TEXT, reply_to INTEGER, kind TEXT,
       whisper_viewed_at INTEGER, burned INTEGER NOT NULL DEFAULT 0,
       game TEXT, effect TEXT, vibe_reacted INTEGER NOT NULL DEFAULT 0,
-      created_at INTEGER NOT NULL)`);
+      created_at INTEGER NOT NULL, client_id TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS timers (
       kind TEXT NOT NULL, ref INTEGER NOT NULL, at INTEGER NOT NULL,
       PRIMARY KEY (kind, ref))`);
@@ -205,11 +208,13 @@ export class ChatRoom extends DurableObject<AppEnv> {
       return new Response("Expected WebSocket", { status: 426 });
     }
     const { 0: client, 1: server } = new WebSocketPair();
+    const crowded = this.ctx.getWebSockets().length >= MAX_ROOM_SOCKETS;
     this.ctx.acceptWebSocket(server);
     const attachment: Attachment = { side: null, connectedAt: Date.now() };
     server.serializeAttachment(attachment);
     // Unknown or purged room: close right away, without touching storage.
     if (!this.loadCreds()) server.close(CLOSE.GONE, "gone");
+    else if (crowded) server.close(CLOSE.TOO_MANY, "too many");
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -379,6 +384,19 @@ export class ChatRoom extends DurableObject<AppEnv> {
   // --- Ops ----------------------------------------------------------------
 
   private async handleOp(ws: WebSocket, side: Side, frame: RoomOpFrame) {
+    // A retry of a send whose ack was lost: answer with the stored message
+    // instead of writing a duplicate.
+    if (frame.t === "send") {
+      const existing = this.findSend(side, frame.id);
+      if (existing !== null) {
+        this.sendTo(ws, {
+          t: "ack",
+          id: frame.id,
+          messageId: String(existing),
+        });
+        return;
+      }
+    }
     const now = Date.now();
     const match = this.loadMatch();
     const before = this.vibeScore(match);
@@ -398,7 +416,12 @@ export class ChatRoom extends DurableObject<AppEnv> {
     // commit together.
     let inserted: MessageRow | null = null;
     if (result.match) this.saveMatch(result.match);
-    if (result.insert) inserted = this.insertMessage(result.insert);
+    if (result.insert) {
+      inserted = this.insertMessage(
+        result.insert,
+        frame.t === "send" ? frame.id : null,
+      );
+    }
     if (result.update) this.updateMessage(result.update);
     if (result.burnAt && result.update) {
       this.setTimer("burn", result.update.seq, result.burnAt);
@@ -406,7 +429,13 @@ export class ChatRoom extends DurableObject<AppEnv> {
     if (result.ended) this.scheduleEnd(now);
     if (result.burnAt || result.ended) await this.syncAlarm();
 
-    this.sendTo(ws, { t: "ack", id: frame.id });
+    this.sendTo(ws, {
+      t: "ack",
+      id: frame.id,
+      ...(frame.t === "send" && inserted
+        ? { messageId: String(inserted.seq) }
+        : {}),
+    });
 
     const changed = [inserted, result.update ?? null].filter(
       (m): m is MessageRow => m !== null,
@@ -495,12 +524,20 @@ export class ChatRoom extends DurableObject<AppEnv> {
           }
           break;
         }
-        case "sweep":
+        case "sweep": {
           await this.closeStaleSockets(now);
-          if (this.loadMatch().status === "active") {
-            this.setTimer("sweep", 0, now + SWEEP_INTERVAL_MS);
-          }
+          const match = this.loadMatch();
+          if (match.status !== "active") break;
+          const lastAt =
+            this.sql
+              .exec<{ at: number | null }>(
+                "SELECT MAX(created_at) AS at FROM messages",
+              )
+              .one().at ?? match.createdAt;
+          if (now - lastAt >= IDLE_MATCH_MS) this.endWithoutLeaver(now);
+          else this.setTimer("sweep", 0, now + SWEEP_INTERVAL_MS);
           break;
+        }
       }
     }
     await this.syncAlarm();
@@ -639,11 +676,23 @@ export class ChatRoom extends DurableObject<AppEnv> {
     );
   }
 
-  private insertMessage(m: NewMessage): MessageRow {
+  private findSend(side: Side, clientId: string): number | null {
+    const row = this.sql
+      .exec<{ seq: number }>(
+        "SELECT seq FROM messages WHERE seq > ? AND author = ? AND client_id = ?",
+        this.messageCount() - SEND_DEDUPE_WINDOW,
+        side,
+        clientId,
+      )
+      .toArray()[0];
+    return row ? row.seq : null;
+  }
+
+  private insertMessage(m: NewMessage, clientId: string | null): MessageRow {
     const { seq } = this.sql
       .exec<{ seq: number }>(
-        `INSERT INTO messages (author, text, reaction_a, reaction_b, reply_to, kind, whisper_viewed_at, burned, game, effect, vibe_reacted, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING seq`,
+        `INSERT INTO messages (author, text, reaction_a, reaction_b, reply_to, kind, whisper_viewed_at, burned, game, effect, vibe_reacted, created_at, client_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING seq`,
         m.author,
         m.text,
         m.reactionA,
@@ -656,6 +705,7 @@ export class ChatRoom extends DurableObject<AppEnv> {
         m.effect,
         m.vibeReacted ? 1 : 0,
         m.createdAt,
+        clientId,
       )
       .one();
     this.counts = undefined;

@@ -22,6 +22,12 @@ export const AWAY_GRACE_MS = 90 * SECOND;
  *  every incoming frame for free, so this only has to catch silent ones; a
  *  shorter interval is a billed alarm per room per interval. */
 export const SWEEP_INTERVAL_MS = 5 * MINUTE;
+/** An active match with no new message for this long ends at the next sweep.
+ *  Two forgotten-but-open tabs would otherwise keep a room (and its sweep
+ *  alarm) alive indefinitely. */
+export const IDLE_MATCH_MS = 60 * MINUTE;
+/** Sockets one room accepts (both sides, all tabs). */
+export const MAX_ROOM_SOCKETS = 8;
 /** Client keepalive cadence. Answered by the runtime's auto-response, so it
  *  never wakes (or bills) the object. */
 export const PING_INTERVAL_MS = 25 * SECOND;
@@ -34,6 +40,9 @@ export const AUTH_DEADLINE_MS = 5 * SECOND;
 
 /** Max messages in a sync payload (conversations are short and ephemeral). */
 export const MESSAGE_CAP = 100;
+/** A retried send is matched against this many of the newest messages. A
+ *  bounded rowid range scan, so dedupe needs no index (no extra write). */
+export const SEND_DEDUPE_WINDOW = 64;
 /** Hard cap on stored messages per match; bounds storage for marathon or
  *  abusive rooms. At the send rate limit this is over five hours of chat. */
 export const MAX_ROOM_MESSAGES = 10_000;

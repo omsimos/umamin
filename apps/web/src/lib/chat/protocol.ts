@@ -67,10 +67,10 @@ export const roomFrameSchema = z.discriminatedUnion("t", [
     v: z.number().int(),
     sessionId,
     secret,
-    lastSeq: z.number().int().min(0).optional(),
   }),
   z.object({
     t: z.literal("send"),
+    // Also the idempotency key: a retry must reuse the original op id.
     id: opId,
     text: z.string().max(MAX_MESSAGE_LEN * 2),
     replyTo: messageId.optional(),
@@ -126,7 +126,9 @@ export type RoomServerFrame =
   | { t: "meta"; meta: SnapshotMeta }
   | { t: "msgs"; messages: ChatMessage[] }
   | { t: "typing"; on: boolean }
-  | { t: "ack"; id: string }
+  /** `messageId` is set when a send stored (or had already stored) a message,
+   *  so the client can swap its optimistic bubble without guessing. */
+  | { t: "ack"; id: string; messageId?: string }
   | { t: "err"; id?: string; code: ServerErrorCode };
 
 export type ServerFrame = LobbyServerFrame | RoomServerFrame;

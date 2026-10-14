@@ -30,7 +30,6 @@ describe("parseFrame", () => {
       v: PROTOCOL_VERSION,
       sessionId: "sess-1",
       secret: "secret-1",
-      lastSeq: 4,
     };
     expect(room(JSON.stringify(auth))).toEqual(auth);
     const send = { t: "send", id: "op-1", text: "hi", replyTo: "12" };

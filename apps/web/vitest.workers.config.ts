@@ -11,6 +11,9 @@ export default defineConfig({
   },
   plugins: [
     cloudflareTest({
+      // The chat Durable Objects must be exported by `main` for
+      // runInDurableObject / runDurableObjectAlarm to reach them.
+      main: "./test/chat-entry.ts",
       miniflare: {
         compatibilityDate: "2026-07-01",
         compatibilityFlags: ["nodejs_compat"],
@@ -18,6 +21,15 @@ export default defineConfig({
         // Workers Rate Limiting binding, so ratelimit tests drive checkRateLimit
         // with a binding stub (the plan's documented fallback).
         kvNamespaces: ["KV"],
+        durableObjects: {
+          CHAT_LOBBY: { className: "ChatLobby", useSQLite: true },
+          CHAT_ROOM: { className: "ChatRoom", useSQLite: true },
+        },
+        // RL_CHAT_CONNECT is left unset: checkRateLimit fails open.
+        bindings: {
+          FLAGS_FORCE_ON: "umamin-chat",
+          APP_URL: "https://chat.test",
+        },
         // Workers forbids runtime Wasm compilation (WebAssembly.compile(bytes)).
         // The only supported path is a precompiled module: this rule makes a
         // `.wasm` import resolve to a CompiledWasm binding (bundled + compiled at

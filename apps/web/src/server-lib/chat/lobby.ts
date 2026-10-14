@@ -228,7 +228,8 @@ export class ChatLobby extends DurableObject<AppEnv> {
       state: "waiting",
       ipKey,
       connectedAt,
-      ...self,
+      waiter: self.waiter,
+      seat: self.seat,
     } satisfies LobbyAttachment);
     this.sendTo(ws, { t: "waiting", since: now });
     await this.syncAlarm(now);
@@ -262,6 +263,10 @@ export class ChatLobby extends DurableObject<AppEnv> {
         waiter: q.waiter,
         seat: q.seat,
       } satisfies LobbyAttachment);
+      // A requeued joiner may never have been told it was waiting.
+      if (state === "waiting") {
+        this.sendTo(q.ws, { t: "waiting", since: q.waiter.enqueuedAt });
+      }
     };
     setState(first, "pairing");
     setState(second, "pairing");
