@@ -92,6 +92,9 @@ export function csrfOriginCheck(): Middleware {
 export function securityHeadersMiddleware(): Middleware {
   return async (c, next) => {
     await next();
+    // A WebSocket upgrade must pass through untouched: c.header() rebuilds the
+    // response, which can drop its webSocket (chat-socket.worker.test.ts).
+    if (c.res.status === 101) return;
     for (const [key, value] of Object.entries(securityHeaders(c.env))) {
       c.header(key, value);
     }

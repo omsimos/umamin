@@ -14,7 +14,8 @@ export type LimiterName =
   | "group-join"
   | "read"
   | "group-message"
-  | "group-read";
+  | "group-read"
+  | "chat-connect";
 
 const BINDING: Record<LimiterName, keyof Env> = {
   auth: "RL_AUTH",
@@ -24,6 +25,7 @@ const BINDING: Record<LimiterName, keyof Env> = {
   read: "RL_READ",
   "group-message": "RL_GROUP_MESSAGE",
   "group-read": "RL_GROUP_READ",
+  "chat-connect": "RL_CHAT_CONNECT",
 };
 
 /**

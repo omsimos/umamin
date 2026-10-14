@@ -119,3 +119,8 @@ export default {
   fetch: app.fetch,
   scheduled,
 };
+
+// Durable Object classes must be exports of the Worker entry for wrangler to
+// bind them (wrangler.jsonc "exports" + durable_objects.bindings).
+export { ChatLobby } from "./server-lib/chat/lobby";
+export { ChatRoom } from "./server-lib/chat/room";
