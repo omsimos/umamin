@@ -20,7 +20,7 @@ import { LevelUpToast } from "./-umamin-chat/components/chat/vibe/level-up-toast
 import { VibeSheet } from "./-umamin-chat/components/chat/vibe/vibe-sheet";
 import { MatchingRadar } from "./-umamin-chat/components/matching/matching-radar";
 import { RouteError } from "./-umamin-chat/components/route-error";
-import { AppShell, Wordmark } from "./-umamin-chat/components/shell/app-shell";
+import { AppShell } from "./-umamin-chat/components/shell/app-shell";
 import { SessionRail } from "./-umamin-chat/components/shell/session-rail";
 import { useChatStats } from "./-umamin-chat/lib/share-card/use-chat-stats";
 import { useSendEffects } from "./-umamin-chat/lib/use-send-effects";
@@ -204,9 +204,7 @@ function Session() {
         onNewMatch={newMatch}
         onEndChat={endChat}
       />
-    ) : (
-      <Wordmark />
-    );
+    ) : null;
 
   const showIceBreaker =
     !iceBreakerDismissed &&

@@ -27,7 +27,8 @@ export function AppShell({
   rail,
   children,
 }: {
-  rail: ReactNode;
+  /** The session menu, or null outside an active match. */
+  rail: ReactNode | null;
   children: ReactNode;
 }) {
   return (
@@ -35,25 +36,29 @@ export function AppShell({
     // indicator itself in the standalone PWA.
     <div className="bg-background text-foreground flex h-svh overflow-hidden pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]">
       <aside className="hidden w-64 shrink-0 flex-col border-r p-4 lg:flex">
-        {rail}
+        {rail ?? <Wordmark />}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 border-b px-3 py-2 lg:hidden">
-          <Drawer>
-            <DrawerTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Open menu">
-                <Menu />
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent>
-              <DrawerTitle className="sr-only">Menu</DrawerTitle>
-              <DrawerDescription className="sr-only">
-                Your identity and session controls
-              </DrawerDescription>
-              <div className="flex flex-col gap-3 p-4">{rail}</div>
-            </DrawerContent>
-          </Drawer>
+          {/* Unmounted with the menu, so "New match" (which keeps this page
+              mounted) can't leave the drawer open over the radar. */}
+          {rail && (
+            <Drawer>
+              <DrawerTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Open menu">
+                  <Menu />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerTitle className="sr-only">Menu</DrawerTitle>
+                <DrawerDescription className="sr-only">
+                  Your identity and session controls
+                </DrawerDescription>
+                <div className="flex flex-col gap-3 p-4">{rail}</div>
+              </DrawerContent>
+            </Drawer>
+          )}
           <Wordmark />
         </header>
 
