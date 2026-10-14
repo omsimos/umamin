@@ -18,6 +18,33 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.11.0] - 2026-10-14
+
+### Added
+
+- If Uma covers or folds your post, comment or note, tap Ask for review and a moderator will look at it.
+- When you're signed in, you can tell a moderator Uma got a cover or fold wrong from its Why? sheet.
+
+### Changed
+
+- Uma now covers sexual harassment, asking minors for photos or video calls, threats to share someone's private photos, and posts telling someone to hurt themselves.
+- Uma reads the earlier replies on a post, the question a message answers and a poll's options before it decides, so it catches pile-on replies and leaves alone the answers you asked for.
+- Uma's Why? sheet opens in the middle of the screen, so nothing at the bottom of the page covers it.
+- Moderators see what a flagged reply or quote responds to, whether its author asked for review, and how many people disagree with Uma.
+
+### Fixed
+
+- Replies and quotes that call out a hurtful post are no longer covered as if they wrote it.
+- Uma now covers threats against someone even when they also mention self-harm.
+- Insults aimed at someone's @handle are covered even when they mention politics.
+- Posts, comments and notes that Uma couldn't check when they went up are checked again within minutes.
+- Tapping View or Why? on a covered quoted post shows it in place instead of opening the post.
+- A message you reveal in your inbox stays revealed when you open its thread.
+
+### Accessibility
+
+- After you reveal folded or covered content, focus moves to it.
+
 ## [7.10.0] - 2026-10-13
 
 ### Added
@@ -1074,6 +1101,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.11.0]: https://github.com/omsimos/umamin/compare/v7.10.0...v7.11.0
 [7.10.0]: https://github.com/omsimos/umamin/compare/v7.9.1...v7.10.0
 [7.9.1]: https://github.com/omsimos/umamin/compare/v7.9.0...v7.9.1
 [7.9.0]: https://github.com/omsimos/umamin/compare/v7.8.1...v7.9.0

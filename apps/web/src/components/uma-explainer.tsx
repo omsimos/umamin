@@ -7,16 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@umamin/ui/components/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@umamin/ui/components/drawer";
+import type { ReviewRequest } from "@/components/content-cover";
 import { Uma } from "@/components/uma";
-import { useMediaQuery } from "@/hooks/use-media-query";
 
 export type CoverKind = "dispute" | "severe" | "message";
 
@@ -54,8 +46,9 @@ function copyFor(kind: CoverKind, noun: string) {
 }
 
 /**
- * Uma's "Why?" sheet for a folded or covered item: a bottom drawer on phones,
- * a dialog on desktop (same split as the follow list).
+ * Uma's "Why?" sheet for a folded or covered item. A centered dialog at every
+ * width: a bottom drawer on phones sat under the AdSense anchor ad, which hid
+ * its last lines.
  */
 export function UmaExplainer({
   kind,
@@ -63,14 +56,16 @@ export function UmaExplainer({
   open,
   onOpenChange,
   onReveal,
+  dispute,
 }: {
   kind: CoverKind;
   noun: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onReveal: () => void;
+  // Signed-in viewers of public content can tell a moderator Uma was wrong.
+  dispute?: ReviewRequest;
 }) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
   const { title, lines, action } = copyFor(kind, noun);
   const mood = kind === "dispute" ? "calm" : "serious";
 
@@ -85,6 +80,22 @@ export function UmaExplainer({
       {rest.map((line) => (
         <p key={line}>{line}</p>
       ))}
+      {dispute &&
+        (dispute.sent ? (
+          <p className="text-foreground">
+            Thanks. A moderator will take a look.
+          </p>
+        ) : (
+          <Button
+            type="button"
+            variant="link"
+            className="h-auto min-h-11 px-0 text-muted-foreground underline"
+            disabled={dispute.pending}
+            onClick={dispute.send}
+          >
+            Uma got this wrong
+          </Button>
+        ))}
     </div>
   );
   const buttons = (
@@ -102,37 +113,19 @@ export function UmaExplainer({
     </>
   );
 
-  if (isDesktop) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-sm" showCloseButton={false}>
-          <DialogHeader className="items-center text-center sm:text-center">
-            <Uma mood={mood} className="mb-2 size-20" />
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription className="text-foreground">
-              {first}
-            </DialogDescription>
-          </DialogHeader>
-          {body}
-          <DialogFooter>{buttons}</DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
-        <DrawerHeader className="items-center">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm" showCloseButton={false}>
+        <DialogHeader className="items-center text-center sm:text-center">
           <Uma mood={mood} className="mb-2 size-20" />
-          <DrawerTitle>{title}</DrawerTitle>
-          <DrawerDescription className="text-foreground">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="text-foreground">
             {first}
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="px-4">{body}</div>
-        <DrawerFooter className="flex-col-reverse">{buttons}</DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+          </DialogDescription>
+        </DialogHeader>
+        {body}
+        <DialogFooter>{buttons}</DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

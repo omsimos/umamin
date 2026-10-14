@@ -69,6 +69,7 @@ export function QuotedPostCard({
       <ContentCover
         label={post.moderation}
         revealKey={`post:${post.id}`}
+        target={{ kind: "post", id: post.id }}
         isOwn={!!currentUserId && currentUserId === post.author.id}
         isAuthenticated={isAuthenticated}
       >
@@ -109,13 +110,16 @@ export function QuotedPostCard({
     return <div className={cardClassName}>{body}</div>;
   }
 
+  // A sibling overlay link, as on the post card, rather than wrapping the
+  // body: the cover's buttons inside it must not be descendants of a link.
   return (
-    <Link
-      href={`/post/${post.id}`}
-      aria-label={`View quoted post by @${post.author.username}`}
-      className={cardClassName}
-    >
+    <div className={cardClassName}>
+      <Link
+        href={`/post/${post.id}`}
+        aria-label={`View quoted post by @${post.author.username}`}
+        className="absolute inset-0 rounded-xl"
+      />
       {body}
-    </Link>
+    </div>
   );
 }

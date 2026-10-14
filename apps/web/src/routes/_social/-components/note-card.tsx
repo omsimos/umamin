@@ -422,6 +422,7 @@ export function NoteCard({
             <ContentCover
               label={data.moderation}
               revealKey={`note:${data.id}`}
+              target={{ kind: "note", id: data.id }}
               isOwn={
                 (!!currentUserId && currentUserId === user?.id) ||
                 data.id === ownNoteId

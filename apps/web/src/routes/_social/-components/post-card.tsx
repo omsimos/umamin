@@ -349,6 +349,7 @@ function PostCardImpl({
         <ContentCover
           label={data.moderation}
           revealKey={`${isComment ? "comment" : "post"}:${data.id}`}
+          target={{ kind: isComment ? "comment" : "post", id: data.id }}
           isOwn={!!currentUserId && currentUserId === author?.id}
           isAuthenticated={isAuthenticated}
           noun={isComment ? "comment" : "post"}

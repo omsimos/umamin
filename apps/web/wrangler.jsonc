@@ -114,7 +114,7 @@
         ]
       },
       "triggers": {
-        // sessions cleanup, notifications cleanup, hot-feed recompute
+        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry
         "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
       },
       "vars": {

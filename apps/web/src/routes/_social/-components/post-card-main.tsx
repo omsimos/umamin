@@ -255,6 +255,7 @@ export function PostCardMain({
         <ContentCover
           label={data.moderation}
           revealKey={`post:${data.id}`}
+          target={{ kind: "post", id: data.id }}
           isOwn={!!currentUserId && currentUserId === data.author?.id}
           isAuthenticated={!!isAuthenticated}
         >

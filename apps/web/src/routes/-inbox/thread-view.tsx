@@ -327,7 +327,13 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
               >
                 <ContentCover
                   label={item.moderation}
-                  revealKey={`message:${data.message.id}:${item.key}`}
+                  // The opening message shares the inbox card's key, so a
+                  // reveal there carries into the thread.
+                  revealKey={
+                    item.key === "content"
+                      ? `message:${data.message.id}`
+                      : `message:${data.message.id}:${item.key}`
+                  }
                   isOwn={false}
                   isAuthenticated
                   coverDrama

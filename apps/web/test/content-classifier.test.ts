@@ -28,18 +28,19 @@ function answers(
     hate: p("hate"),
     threat: p("threat"),
     doxxing: p("doxxing"),
+    sexual: p("sexual"),
+    encouragesSelfHarm: p("encouragesSelfHarm"),
     harassment: p("harassment"),
     drama: {
       choice: drama?.choice ?? "none",
       probabilities: { none: drama?.none ?? 0.99 },
     },
-    selfHarm: p("selfHarm"),
     political: p("political"),
   };
 }
 
-function mockModel(result: ClassifierAnswers) {
-  const toWire = Object.fromEntries(
+function mockAnswers(result: ClassifierAnswers) {
+  return Object.fromEntries(
     Object.entries(result).map(([id, answer]) => [
       id,
       "choice" in answer
@@ -57,8 +58,11 @@ function mockModel(result: ClassifierAnswers) {
         : { type: "boolean" as const, probability: answer.probability },
     ]),
   );
+}
+
+function mockModel(result: ClassifierAnswers) {
   return new Experimental_EvaluationMockModelV4({
-    doEvaluate: async () => ({ answers: toWire, warnings: [] }),
+    doEvaluate: async () => ({ answers: mockAnswers(result), warnings: [] }),
   });
 }
 
@@ -71,10 +75,14 @@ describe("scoreAnswers", () => {
     });
   });
 
-  it("never scores a self-harm statement as a threat", () => {
-    const scores = scoreAnswers(answers({ threat: 0.9, selfHarm: 0.8 }));
-    expect(scores.severe).toBeLessThan(10);
-    expect(scores.reason).toBeNull();
+  it("names the new severe categories as the reason", () => {
+    expect(scoreAnswers(answers({ sexual: 0.96 }))).toMatchObject({
+      severe: 96,
+      reason: "sexual",
+    });
+    expect(
+      scoreAnswers(answers({ encouragesSelfHarm: 0.91, harassment: 0.7 })),
+    ).toMatchObject({ severe: 91, reason: "encouragesSelfHarm" });
   });
 
   it("zeroes drama and harassment for political opinion but keeps hate", () => {
@@ -90,6 +98,20 @@ describe("scoreAnswers", () => {
     expect(scoreAnswers(answers({ hate: 0.96, political: 0.9 })).severe).toBe(
       96,
     );
+  });
+
+  it("never exempts political-sounding abuse aimed at a user's @handle", () => {
+    const abuse = answers(
+      { harassment: 0.9, political: 0.6 },
+      { choice: "callout", none: 0.01 },
+    );
+    expect(
+      scoreAnswers(abuse, "Ang mga DDS tulad ni @marco ay mga bobo"),
+    ).toEqual({ severe: 90, drama: 99, reason: "harassment" });
+    // An email address is not a mention.
+    expect(
+      scoreAnswers(abuse, "email mo ko sa juan@gmail.com, mga DDS").severe,
+    ).toBeLessThan(10);
   });
 
   it("names the drama kind when nothing severe stands out", () => {
@@ -111,6 +133,64 @@ describe("classifyContent", () => {
         },
       ),
     ).toMatchObject({ severe: 93, reason: "threat" });
+  });
+
+  it("sends the parent post apart from the author's own text", async () => {
+    const doEvaluate = vi.fn(async () => ({
+      answers: mockAnswers(answers()),
+      warnings: [],
+    }));
+    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    await classifyContent(
+      env,
+      { kind: "comment", text: "wag ganyan", context: "parent post" },
+      { model },
+    );
+    const [[{ state }]] = doEvaluate.mock.calls as unknown as [
+      [{ state: Record<string, unknown> }],
+    ];
+    expect(state).toMatchObject({
+      text: "wag ganyan",
+      replyingTo: "parent post",
+    });
+    expect(state).not.toHaveProperty("context");
+  });
+
+  it("sends a comment's thread and a message's question as their own fields", async () => {
+    const doEvaluate = vi.fn(async () => ({
+      answers: mockAnswers(answers()),
+      warnings: [],
+    }));
+    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    await classifyContent(
+      env,
+      {
+        kind: "comment",
+        text: "HAHA tama",
+        context: "parent post",
+        thread: ["oldest", "second", "x".repeat(300), "newest"],
+      },
+      { model },
+    );
+    await classifyContent(
+      env,
+      { kind: "message", text: "mataray pero mabait", question: "Ask me" },
+      { model },
+    );
+    const [[comment], [message]] = doEvaluate.mock.calls as unknown as [
+      [{ state: Record<string, string | string[]> }],
+      [{ state: Record<string, string | string[]> }],
+    ];
+    expect(comment.state.earlierComments).toEqual([
+      "second",
+      "x".repeat(200),
+      "newest",
+    ]);
+    expect(comment.state.platform).toContain('"earlierComments"');
+    expect(message.state).toMatchObject({ question: "Ask me" });
+    expect(message.state).not.toHaveProperty("replyingTo");
+    expect(message.state.platform).toContain('"question"');
+    expect(message.state.platform).not.toContain('"earlierComments"');
   });
 
   it("returns null without a key, so nothing is ever sent", async () => {
@@ -153,6 +233,49 @@ describe("classifyContent", () => {
       await classifyContent(env, { kind: "post", text: "anything" }, { model }),
     ).toBeNull();
     expect(captureServerException).not.toHaveBeenCalled();
+  });
+
+  it("logs a gateway-wrapped timeout without reporting it or its text", async () => {
+    vi.mocked(captureServerException).mockClear();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const throwing = (err: Error) =>
+      new Experimental_EvaluationMockModelV4({
+        doEvaluate: async () => {
+          throw err;
+        },
+      });
+    const gatewayError = (cause?: unknown) =>
+      Object.assign(new Error("Gateway request failed"), {
+        name: "GatewayResponseError",
+        statusCode: 500,
+        cause,
+      });
+
+    await classifyContent(
+      env,
+      { kind: "comment", text: "secret words" },
+      {
+        model: throwing(
+          gatewayError(new DOMException("aborted", "AbortError")),
+        ),
+      },
+    );
+    expect(captureServerException).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]).toEqual([
+      "content classification skipped",
+      { kind: "comment", error: "AbortError" },
+    ]);
+
+    // The same 500 without our abort behind it is a real failure.
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await classifyContent(
+      env,
+      { kind: "comment", text: "secret words" },
+      { model: throwing(gatewayError()) },
+    );
+    expect(captureServerException).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
   });
 });
 

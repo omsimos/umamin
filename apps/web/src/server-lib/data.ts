@@ -294,6 +294,8 @@ export function withModeration<
     modReason: string | null;
     modFlaggedAt?: Date | null;
     modClearedAt?: Date | null;
+    modReviewedAt?: Date | null;
+    modAppealedAt?: Date | null;
   },
 >(
   row: T,
@@ -305,6 +307,8 @@ export function withModeration<
     modReason: _modReason,
     modFlaggedAt: _modFlaggedAt,
     modClearedAt,
+    modReviewedAt: _modReviewedAt,
+    modAppealedAt: _modAppealedAt,
     ...rest
   } = row;
   return {

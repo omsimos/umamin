@@ -44,5 +44,8 @@ export function reviewableScoreColumns(scores: ContentScores | null) {
     modFlaggedAt:
       scores && scores.severe >= REVIEW_THRESHOLD ? new Date() : null,
     modClearedAt: null,
+    // A rewritten note is new text: earlier review decisions don't carry over.
+    modReviewedAt: null,
+    modAppealedAt: null,
   };
 }

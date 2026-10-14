@@ -91,6 +91,8 @@ export const createReplyHandler = action(
         receiverId: messageTable.receiverId,
         senderId: messageTable.senderId,
         reply: messageTable.reply,
+        // Plaintext, unlike the content and replies.
+        question: messageTable.question,
       })
       .from(messageTable)
       .where(eq(messageTable.id, messageId))
@@ -137,6 +139,7 @@ export const createReplyHandler = action(
             .select({
               blockedWords: userTable.blockedWords,
               messageFilter: userTable.messageFilter,
+              question: userTable.question,
             })
             .from(userTable)
             .where(eq(userTable.id, msg.receiverId))
@@ -166,7 +169,15 @@ export const createReplyHandler = action(
       isSender && receiverRows[0]?.messageFilter
         ? classifyContent(
             c.env,
-            { kind: "message", text: formatted },
+            {
+              kind: "message",
+              text: formatted,
+              // Threads from before the send path checked the question can
+              // hold one the sender typed, which must not soften their
+              // follow-ups. Only the receiver's own current question counts.
+              question:
+                msg.question === receiverRows[0].question ? msg.question : null,
+            },
             { defer: defer(c) },
           )
         : Promise.resolve(null),
@@ -409,7 +420,11 @@ export const sendMessageHandler = action(
       receiver.messageFilter
         ? classifyContent(
             c.env,
-            { kind: "message", text: formattedContent },
+            {
+              kind: "message",
+              text: formattedContent,
+              question: storedQuestion,
+            },
             { defer: defer(c) },
           )
         : Promise.resolve(null),

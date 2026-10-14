@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import {
@@ -9,10 +14,11 @@ import {
 } from "@umamin/ui/components/tabs";
 import { useState } from "react";
 import { toast } from "sonner";
+import { TimeAgo } from "@/components/time-ago";
 import { callAction } from "@/lib/api";
 import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
-import type { ReviewItem, ReviewKind, ReviewPage } from "@/lib/types";
+import type { ReviewItem, ReviewPage } from "@/lib/types";
 import { getActionError } from "@/lib/utils";
 import {
   deleteCommentAction,
@@ -24,8 +30,13 @@ type QueueKind = "severe" | "drama";
 
 const queryKey = (kind: QueueKind) => ["moderation", "review", kind] as const;
 
-async function fetchReview(kind: QueueKind): Promise<ReviewPage> {
-  const res = await fetch(`/api/moderation/review?kind=${kind}`, {
+async function fetchReview(
+  kind: QueueKind,
+  cursor: string | null,
+): Promise<ReviewPage> {
+  const params = new URLSearchParams({ kind });
+  if (cursor) params.set("cursor", cursor);
+  const res = await fetch(`/api/moderation/review?${params}`, {
     credentials: "include",
   });
   const data = (await res.json()) as ReviewPage & { error?: string };
@@ -35,8 +46,13 @@ async function fetchReview(kind: QueueKind): Promise<ReviewPage> {
   return data;
 }
 
-function clearContentFlagAction(input: { kind: ReviewKind; id: string }) {
-  return callAction<{ success?: boolean }>("clearContentFlagAction", input);
+type Decision = "clear" | "keep";
+
+function decideAction(decision: Decision, item: ReviewItem) {
+  return callAction<{ success?: boolean }>(
+    decision === "clear" ? "clearContentFlagAction" : "keepContentFlagAction",
+    { kind: item.kind, id: item.id },
+  );
 }
 
 function removeContent(item: ReviewItem) {
@@ -67,15 +83,17 @@ export function ReviewQueue() {
       </TabsList>
       <TabsContent value="severe" className="mt-4 space-y-3">
         <p className="text-xs text-muted-foreground">
-          Content the classifier scored as possibly severe. Clear a flag when
-          it's wrong; remove content that breaks the rules.
+          Flagged by a high severe score, by its author asking for review, or by
+          viewers saying Uma got it wrong. Uncover a label that's wrong, keep
+          one that's right, and remove content that breaks the rules.
         </p>
         <ReviewList kind="severe" />
       </TabsContent>
       <TabsContent value="drama" className="mt-4 space-y-3">
         <p className="text-xs text-muted-foreground">
           Recent content with a drama score of 50 or more, for checking where
-          the hide threshold should sit. Nothing here is acted on automatically.
+          the fold line should sit. Rows marked Folded are folded right now for
+          viewers who hide disputes.
         </p>
         <ReviewList kind="drama" />
       </TabsContent>
@@ -83,40 +101,61 @@ export function ReviewQueue() {
   );
 }
 
+const decisionToast: Record<Decision, string> = {
+  clear: "Uncovered.",
+  keep: "Kept as is.",
+};
+
 function ReviewList({ kind }: { kind: QueueKind }) {
   const queryClient = useQueryClient();
   // Removal is permanent, so it takes a second tap on the same row.
   const [confirming, setConfirming] = useState<string | null>(null);
-  const { data, isLoading, error } = useQuery({
+  const {
+    data,
+    isLoading,
+    error,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: queryKey(kind),
-    queryFn: () => fetchReview(kind),
+    queryFn: ({ pageParam }) => fetchReview(kind, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
   });
 
   const settle = (item: ReviewItem) =>
-    queryClient.setQueryData<ReviewPage>(queryKey(kind), (current) =>
-      current
-        ? {
-            ...current,
-            data: current.data.filter(
+    queryClient.setQueryData<InfiniteData<ReviewPage, string | null>>(
+      queryKey(kind),
+      (current) =>
+        current && {
+          ...current,
+          pages: current.pages.map((page) => ({
+            ...page,
+            data: page.data.filter(
               (row) => !(row.kind === item.kind && row.id === item.id),
             ),
-          }
-        : current,
+          })),
+        },
     );
 
-  const clearMutation = useMutation({
-    mutationFn: async (item: ReviewItem) => {
-      const error = getActionError(
-        await clearContentFlagAction({ kind: item.kind, id: item.id }),
-      );
+  const decideMutation = useMutation({
+    mutationFn: async ({
+      decision,
+      item,
+    }: {
+      decision: Decision;
+      item: ReviewItem;
+    }) => {
+      const error = getActionError(await decideAction(decision, item));
       if (error) throw new ExpectedError(error);
-      return item;
+      return { decision, item };
     },
-    onSuccess: (item) => {
+    onSuccess: ({ decision, item }) => {
       settle(item);
-      toast.success("Flag cleared.");
+      toast.success(decisionToast[decision]);
     },
-    onError: () => toast.error("Couldn't clear the flag."),
+    onError: () => toast.error("Couldn't save that. Try again."),
   });
 
   const removeMutation = useMutation({
@@ -142,64 +181,120 @@ function ReviewList({ kind }: { kind: QueueKind }) {
       </p>
     );
   }
-  if (!data?.data.length) {
+  const items = data?.pages.flatMap((page) => page.data) ?? [];
+  if (!items.length) {
     return <p className="text-sm text-muted-foreground">Nothing to review.</p>;
   }
 
   const busy = (item: ReviewItem) =>
-    (clearMutation.isPending && clearMutation.variables?.id === item.id) ||
+    (decideMutation.isPending &&
+      decideMutation.variables?.item.id === item.id) ||
     (removeMutation.isPending && removeMutation.variables?.id === item.id);
 
   return (
-    <ul className="divide-y rounded-lg border">
-      {data.data.map((item) => (
-        <li key={`${item.kind}:${item.id}`} className="space-y-2 p-3">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="secondary">{item.kind}</Badge>
-            {item.reason && <Badge variant="outline">{item.reason}</Badge>}
-            <span>
-              severe {item.severe ?? "–"} · drama {item.drama ?? "–"}
-            </span>
-            <span className="truncate">
-              {item.author ? `@${item.author.username}` : "anonymous"}
-            </span>
-          </div>
-          <p className="whitespace-pre-wrap break-words text-sm">
-            {item.content}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild size="sm" variant="ghost">
-              <Link href={contentHref(item)}>Open</Link>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy(item)}
-              onClick={() => clearMutation.mutate(item)}
-            >
-              Clear flag
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={busy(item)}
-              onClick={() => {
-                const key = `${item.kind}:${item.id}`;
-                if (confirming === key) {
-                  setConfirming(null);
-                  removeMutation.mutate(item);
-                } else {
-                  setConfirming(key);
-                }
-              }}
-            >
-              {confirming === `${item.kind}:${item.id}`
-                ? "Tap again to remove"
-                : "Remove"}
-            </Button>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="divide-y rounded-lg border">
+        {items.map((item) => {
+          const key = `${item.kind}:${item.id}`;
+          return (
+            <li key={key} className="space-y-2 p-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary">{item.kind}</Badge>
+                <LabelBadge item={item} />
+                {item.reason && <Badge variant="outline">{item.reason}</Badge>}
+                {item.appealed && <Badge variant="outline">author asked</Badge>}
+                {item.disputes > 0 && (
+                  <Badge variant="outline">
+                    {item.disputes === 1
+                      ? "1 viewer disagrees"
+                      : `${item.disputes} viewers disagree`}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                <span>
+                  severe {item.severe ?? "–"} · drama {item.drama ?? "–"}
+                </span>
+                <span className="truncate">
+                  {item.author ? `@${item.author.username}` : "anonymous"}
+                </span>
+                <TimeAgo date={item.createdAt} />
+              </div>
+              {item.context && (
+                <p className="line-clamp-3 whitespace-pre-wrap break-words border-l-2 pl-2 text-xs text-muted-foreground">
+                  <span className="font-medium">
+                    {item.kind === "comment" ? "Replying to: " : "Quoting: "}
+                  </span>
+                  {item.context}
+                </p>
+              )}
+              <p className="whitespace-pre-wrap break-words text-sm">
+                {item.content}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild size="sm" variant="ghost">
+                  <Link href={contentHref(item)}>Open</Link>
+                </Button>
+                {item.label && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy(item)}
+                    onClick={() =>
+                      decideMutation.mutate({ decision: "clear", item })
+                    }
+                  >
+                    Uncover
+                  </Button>
+                )}
+                {kind === "severe" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy(item)}
+                    onClick={() =>
+                      decideMutation.mutate({ decision: "keep", item })
+                    }
+                  >
+                    {item.label ? "Keep" : "Dismiss"}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={busy(item)}
+                  onClick={() => {
+                    if (confirming === key) {
+                      setConfirming(null);
+                      removeMutation.mutate(item);
+                    } else {
+                      setConfirming(key);
+                    }
+                  }}
+                >
+                  {confirming === key ? "Tap again to remove" : "Remove"}
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {hasNextPage && (
+        <Button
+          variant="outline"
+          className="w-full"
+          disabled={isFetchingNextPage}
+          onClick={() => fetchNextPage()}
+        >
+          {isFetchingNextPage ? "Loading…" : "Load more"}
+        </Button>
+      )}
+    </>
   );
+}
+
+function LabelBadge({ item }: { item: ReviewItem }) {
+  if (item.label === "severe") return <Badge>Covered</Badge>;
+  if (item.label === "drama") return <Badge>Folded</Badge>;
+  return <Badge variant="outline">Not covered</Badge>;
 }

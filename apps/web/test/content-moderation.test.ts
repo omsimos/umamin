@@ -275,22 +275,70 @@ describe("content moderation (real libSQL)", () => {
       expect(row).toMatchObject({ modSevere: null, modFlaggedAt: null });
     });
 
-    it("passes the parent post to the classifier for a comment", async () => {
+    it("passes the parent post and other people's latest comments for a comment", async () => {
+      await db.insert(userTable).values({ id: "third", username: "u_third" });
       await db
         .insert(postTable)
         .values({ id: "p1", content: "my exam results", authorId: "viewer" });
+      const t = Date.now() / 1000;
+      await db.insert(postCommentTable).values(
+        [
+          ["too old", "third"],
+          ["si @x nangopya", "viewer"],
+          ["my own earlier comment", "author"],
+          ["true yan", "third"],
+          ["kawawa naman", "viewer"],
+        ].map(([content, authorId], i) => ({
+          id: `c${i}`,
+          postId: "p1",
+          authorId,
+          content,
+          createdAt: new Date((t - 100 + i * 10) * 1000),
+        })),
+      );
       classifyContent.mockResolvedValue({ severe: 1, drama: 1, reason: null });
 
       const app = buildApp(db, authed("author"));
       await callJson(app, "createCommentAction", {
         postId: "p1",
-        content: "congrats!",
+        content: "HAHA tama",
       });
       expect(classifyContent).toHaveBeenCalledWith(
         expect.anything(),
-        { kind: "comment", text: "congrats!", context: "my exam results" },
+        {
+          kind: "comment",
+          text: "HAHA tama",
+          context: "my exam results",
+          thread: ["si @x nangopya", "true yan", "kawawa naman"],
+        },
         expect.anything(),
       );
+    });
+
+    it("classifies a poll's options with its question but stores only the question", async () => {
+      classifyContent.mockResolvedValue({ severe: 1, drama: 1, reason: null });
+      const app = buildApp(
+        db,
+        authed("author", { createdAt: new Date("2020-01-01") }),
+      );
+      const { json } = await callJson<{ success?: boolean }>(
+        app,
+        "createPostAction",
+        {
+          content: "sino pinaka pangit?",
+          poll: { options: ["@jessa", "@mae"], duration: "1d" },
+        },
+      );
+      expect(json.success).toBe(true);
+      expect(classifyContent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          text: "sino pinaka pangit?\nPoll options: @jessa, @mae",
+        }),
+        expect.anything(),
+      );
+      const [row] = await db.select().from(postTable);
+      expect(row?.content).toBe("sino pinaka pangit?");
     });
 
     it("keeps a folded comment's text out of the post author's notification", async () => {
@@ -367,7 +415,7 @@ describe("content moderation (real libSQL)", () => {
     });
 
     it("lists flagged content newest first and hides anonymous authors", async () => {
-      const page = await getSevereReviewPage(db, null);
+      const page = await getSevereReviewPage(db, null, true);
       expect(page.data.map((item) => item.id)).toEqual([
         "anon-note",
         "flagged",
@@ -399,8 +447,157 @@ describe("content moderation (real libSQL)", () => {
         { kind: "post", id: "flagged" },
         { MODERATOR_USERS: "u_author" },
       );
-      const page = await getSevereReviewPage(db, null);
+      const page = await getSevereReviewPage(db, null, true);
       expect(page.data.map((item) => item.id)).toEqual(["anon-note"]);
+    });
+
+    const MOD_ENV = {
+      MODERATOR_USERS: "u_mod",
+      FLAGS_FORCE_ON: "content-moderation",
+    };
+    const asUser = (id: string) =>
+      buildApp(db, authed(id, { username: `u_${id}` }));
+    const queueIds = async () =>
+      (await getSevereReviewPage(db, null, true)).data.map((item) => item.id);
+
+    it("shows what a flagged comment or quote responds to, and its live label", async () => {
+      await db.insert(postTable).values({
+        id: "quote",
+        content: "grabe ito oh",
+        authorId: "viewer",
+        quotedPostId: "fine",
+        modFlaggedAt: new Date(),
+        ...SEVERE,
+      });
+      await db.insert(postCommentTable).values({
+        id: "reply",
+        postId: "fine",
+        content: "tama",
+        authorId: "viewer",
+        modFlaggedAt: new Date(),
+        modSevere: 65,
+        modDrama: 10,
+      });
+      const page = await getSevereReviewPage(db, null, true);
+      const byId = new Map(page.data.map((item) => [item.id, item]));
+      expect(byId.get("quote")).toMatchObject({
+        context: "ok",
+        label: "severe",
+      });
+      // Flagged at 65 but under the cover line: in the queue, not covered.
+      expect(byId.get("reply")).toMatchObject({ context: "ok", label: null });
+
+      const shadow = await getSevereReviewPage(db, null, false);
+      expect(shadow.data.every((item) => item.label === null)).toBe(true);
+    });
+
+    it("lets a moderator keep a label, which takes it out of the queue for good", async () => {
+      await db.insert(userTable).values({ id: "mod", username: "u_mod" });
+      expect(
+        (
+          await callJson(
+            asUser("viewer"),
+            "keepContentFlagAction",
+            { kind: "post", id: "flagged" },
+            MOD_ENV,
+          )
+        ).json,
+      ).toEqual({ error: "Not found" });
+
+      await callJson(
+        asUser("mod"),
+        "keepContentFlagAction",
+        { kind: "post", id: "flagged" },
+        MOD_ENV,
+      );
+      expect(await queueIds()).toEqual(["anon-note"]);
+      const post = await getPostById(db, { postId: "flagged", enforce: true });
+      expect(post?.moderation).toBe("severe");
+
+      // Nobody can push it back in after the decision.
+      expect(
+        (
+          await callJson(
+            asUser("viewer"),
+            "disputeContentLabelAction",
+            { kind: "post", id: "flagged" },
+            MOD_ENV,
+          )
+        ).json,
+      ).toEqual({ error: "A moderator already reviewed this." });
+      expect(await queueIds()).toEqual(["anon-note"]);
+    });
+
+    it("queues a folded post when its author asks for review, once", async () => {
+      await db.insert(postTable).values({
+        id: "sad",
+        content: "i miss you",
+        authorId: "author",
+        ...DRAMA,
+      });
+      expect(await queueIds()).not.toContain("sad");
+
+      expect(
+        (
+          await callJson(
+            asUser("viewer"),
+            "appealContentLabelAction",
+            { kind: "post", id: "sad" },
+            MOD_ENV,
+          )
+        ).json,
+      ).toEqual({ error: "This isn't covered or folded anymore." });
+
+      await callJson(
+        asUser("author"),
+        "appealContentLabelAction",
+        { kind: "post", id: "sad" },
+        MOD_ENV,
+      );
+      const item = (await getSevereReviewPage(db, null, true)).data.find(
+        (entry) => entry.id === "sad",
+      );
+      expect(item).toMatchObject({ appealed: true, label: "drama" });
+
+      // Nothing to appeal on unlabelled content.
+      expect(
+        (
+          await callJson(
+            asUser("author"),
+            "appealContentLabelAction",
+            { kind: "post", id: "fine" },
+            MOD_ENV,
+          )
+        ).json,
+      ).toEqual({ error: "This isn't covered or folded anymore." });
+    });
+
+    it("counts each viewer's dispute once and never the author's", async () => {
+      await db.insert(userTable).values({ id: "other", username: "u_other" });
+      await db.insert(postTable).values({
+        id: "sad",
+        content: "i miss you",
+        authorId: "author",
+        ...DRAMA,
+      });
+      const dispute = (id: string) =>
+        callJson(
+          asUser(id),
+          "disputeContentLabelAction",
+          { kind: "post", id: "sad" },
+          MOD_ENV,
+        );
+      expect((await dispute("author")).json).toEqual({
+        error: "This isn't covered or folded anymore.",
+      });
+      await dispute("viewer");
+      await dispute("viewer");
+      await dispute("other");
+
+      const item = (await getSevereReviewPage(db, null, true)).data.find(
+        (entry) => entry.id === "sad",
+      );
+      expect(item?.disputes).toBe(2);
     });
 
     it("surfaces recent drama scores for threshold checks", async () => {
@@ -410,7 +607,7 @@ describe("content moderation (real libSQL)", () => {
         authorId: "author",
         ...DRAMA,
       });
-      const page = await getDramaReviewPage(db);
+      const page = await getDramaReviewPage(db, true);
       expect(page.data.map((item) => item.id)).toContain("parinig");
       expect(page.data.map((item) => item.id)).not.toContain("fine");
     });
@@ -442,12 +639,16 @@ describe("content moderation (real libSQL)", () => {
     });
 
     it("classifies and still delivers for a receiver who opted in", async () => {
-      await db.update(userTable).set({ messageFilter: true });
+      // A sender-supplied question ("ask me") never reaches the classifier;
+      // the receiver's own profile prompt does.
+      await db
+        .update(userTable)
+        .set({ messageFilter: true, question: "Roast me" });
       const { json } = await send("you are the worst");
       expect(json).toEqual({ success: true });
       expect(classifyContent).toHaveBeenCalledWith(
         expect.anything(),
-        { kind: "message", text: "you are the worst" },
+        { kind: "message", text: "you are the worst", question: "Roast me" },
         expect.anything(),
       );
       const [row] = await db.select().from(messageTable);
@@ -553,11 +754,32 @@ describe("content moderation (real libSQL)", () => {
       await followUp();
       expect(classifyContent).not.toHaveBeenCalled();
 
-      await db.update(userTable).set({ messageFilter: true });
+      await db
+        .update(userTable)
+        .set({ messageFilter: true, question: "q" })
+        .where(eq(userTable.id, "viewer"));
       await followUp();
       expect(classifyContent).toHaveBeenCalledTimes(1);
+      // The thread's question only; the receiver's reply stays out of it.
+      expect(classifyContent).toHaveBeenCalledWith(
+        expect.anything(),
+        { kind: "message", text: "you again", question: "q" },
+        expect.anything(),
+      );
       const rows = await db.select().from(messageReplyTable);
       expect(rows.map((r) => r.modSevere).sort()).toEqual([93, null]);
+
+      // A question the receiver didn't write (an old thread) is not context.
+      await db
+        .update(userTable)
+        .set({ question: "something else" })
+        .where(eq(userTable.id, "viewer"));
+      await followUp();
+      expect(classifyContent).toHaveBeenLastCalledWith(
+        expect.anything(),
+        { kind: "message", text: "you again", question: null },
+        expect.anything(),
+      );
     });
   });
 });

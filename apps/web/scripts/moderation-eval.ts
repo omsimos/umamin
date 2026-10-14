@@ -9,6 +9,11 @@
 //     recall at each threshold so SEVERE_THRESHOLD / DRAMA_THRESHOLD in
 //     server-lib/content-label.ts can be set from real data.
 //
+//   pnpm eval:moderation check [scripts/moderation-cases.json]
+//     Regression suite: hand-written cases with the label each must get.
+//     Run it after any change to the questions, the context wording, or the
+//     thresholds. Exits 1 on any mismatch.
+//
 // Reads AI_GATEWAY_API_KEY from the environment or apps/web/.dev.vars.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -17,7 +22,10 @@ import {
   type ContentScores,
   classifyContent,
 } from "../src/server-lib/content-classifier";
-import { SEVERE_THRESHOLD } from "../src/server-lib/content-label";
+import {
+  DRAMA_THRESHOLD,
+  SEVERE_THRESHOLD,
+} from "../src/server-lib/content-label";
 import type { AppEnv } from "../src/server-lib/env";
 
 type Row = {
@@ -188,11 +196,76 @@ async function run(input: string) {
   }
 }
 
+type Expect = "severe" | "drama" | "clean" | "covered" | "not-severe";
+type Case = {
+  id: string;
+  kind: ContentKind;
+  text: string;
+  context?: string;
+  thread?: string[];
+  question?: string;
+  expect: Expect;
+};
+
+const label = (scores: ContentScores) =>
+  scores.severe >= SEVERE_THRESHOLD
+    ? "severe"
+    : scores.drama >= DRAMA_THRESHOLD
+      ? "drama"
+      : "clean";
+
+const ACCEPTS: Record<Expect, string[]> = {
+  severe: ["severe"],
+  drama: ["drama"],
+  clean: ["clean"],
+  covered: ["severe", "drama"],
+  "not-severe": ["drama", "clean"],
+};
+
+async function check(input: string) {
+  const key = apiKey();
+  if (!key) throw new Error("AI_GATEWAY_API_KEY is not set");
+  const env = { AI_GATEWAY_API_KEY: key } as AppEnv;
+  const cases = JSON.parse(readFileSync(input, "utf8")) as Case[];
+
+  const failures: string[] = [];
+  const queue = [...cases];
+  await Promise.all(
+    Array.from({ length: 4 }, async () => {
+      for (let item = queue.shift(); item; item = queue.shift()) {
+        const classify = () =>
+          classifyContent(env, {
+            kind: item.kind,
+            text: item.text,
+            context: item.context ?? null,
+            thread: item.thread ?? null,
+            question: item.question ?? null,
+          });
+        // A cold Gateway call can outlast the production timeout.
+        const scores = (await classify()) ?? (await classify());
+        const got = scores ? label(scores) : "error";
+        const ok = ACCEPTS[item.expect].includes(got);
+        const line = `${ok ? "pass" : "FAIL"}  ${item.id.padEnd(28)} expect ${item.expect.padEnd(10)} got ${got.padEnd(6)} severe ${scores?.severe ?? "-"} drama ${scores?.drama ?? "-"} ${scores?.reason ?? ""}`;
+        console.log(line);
+        if (!ok) failures.push(line);
+      }
+    }),
+  );
+
+  console.log(`\n${cases.length - failures.length}/${cases.length} passed`);
+  if (failures.length) {
+    console.log(failures.join("\n"));
+    process.exit(1);
+  }
+}
+
 if (mode === "seed" && file) await seed(file);
 else if (mode === "run" && file) await run(file);
+else if (mode === "check")
+  await check(file ?? join(import.meta.dirname, "moderation-cases.json"));
 else {
   console.error(
-    "usage: pnpm eval:moderation seed <out.csv> [--base url] [--pages n]\n       pnpm eval:moderation run <labeled.csv> [--out results.json]",
+    "usage: pnpm eval:moderation seed <out.csv> [--base url] [--pages n]\n       pnpm eval:moderation run <labeled.csv> [--out results.json]\n       pnpm eval:moderation check [cases.json]",
   );
   process.exit(1);
 }

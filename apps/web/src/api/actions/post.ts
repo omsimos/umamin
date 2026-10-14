@@ -21,6 +21,10 @@ import { noBlockBetween } from "../../server-lib/blocks";
 import { hasPlusPerks } from "../../server-lib/content";
 import { classifyContent } from "../../server-lib/content-classifier";
 import {
+  getEarlierComments,
+  postClassifierText,
+} from "../../server-lib/content-context";
+import {
   contentLabel,
   reviewableScoreColumns,
 } from "../../server-lib/content-label";
@@ -152,7 +156,11 @@ export const createPostHandler = action(
     // null), so an early return leaves nothing dangling.
     const classifying = classifyContent(
       c.env,
-      { kind: "post", text: formattedContent, context: quotedContent },
+      {
+        kind: "post",
+        text: postClassifierText(formattedContent, pollLabels),
+        context: quotedContent,
+      },
       { defer: defer(c) },
     );
 
@@ -345,15 +353,20 @@ export const createCommentHandler = action(
 
     const formatted = content.replace(/(\r\n|\n|\r){2,}/g, "\n\n").trim();
 
-    const [target] = await db
-      .select({
-        authorId: postTable.authorId,
-        content: postTable.content,
-        blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
-      })
-      .from(postTable)
-      .where(eq(postTable.id, postId))
-      .limit(1);
+    // The thread read rides the same round trip; it is discarded if the post
+    // turns out to be missing or blocked.
+    const [[target], thread] = await Promise.all([
+      db
+        .select({
+          authorId: postTable.authorId,
+          content: postTable.content,
+          blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+        })
+        .from(postTable)
+        .where(eq(postTable.id, postId))
+        .limit(1),
+      getEarlierComments(db, { postId, authorId: session.userId }),
+    ]);
 
     // The post is already invisible to a blocked viewer, so an attempt to
     // comment on it reads as a missing post — same outcome as a bad id.
@@ -364,7 +377,12 @@ export const createCommentHandler = action(
     const [scores, enforce] = await Promise.all([
       classifyContent(
         c.env,
-        { kind: "comment", text: formatted, context: target.content },
+        {
+          kind: "comment",
+          text: formatted,
+          context: target.content,
+          thread,
+        },
         { defer: defer(c) },
       ),
       isModerationEnforced(c.env),

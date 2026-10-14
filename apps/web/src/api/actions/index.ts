@@ -34,9 +34,12 @@ import {
 } from "./message";
 import {
   allowIpHandler,
+  appealContentLabelHandler,
   banUserHandler,
   clearContentFlagHandler,
   denyIpHandler,
+  disputeContentLabelHandler,
+  keepContentFlagHandler,
   unbanUserHandler,
 } from "./moderation";
 import {
@@ -208,6 +211,9 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/unbanUserAction", unbanUserHandler)
   .post("/actions/denyIpAction", denyIpHandler)
   .post("/actions/allowIpAction", allowIpHandler)
-  .post("/actions/clearContentFlagAction", clearContentFlagHandler);
+  .post("/actions/clearContentFlagAction", clearContentFlagHandler)
+  .post("/actions/keepContentFlagAction", keepContentFlagHandler)
+  .post("/actions/appealContentLabelAction", appealContentLabelHandler)
+  .post("/actions/disputeContentLabelAction", disputeContentLabelHandler);
 
 export type ActionsType = typeof actionsApp;

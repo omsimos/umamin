@@ -19,4 +19,8 @@ export const reviewableContentColumns = () => ({
   modFlaggedAt: integer("mod_flagged_at", { mode: "timestamp" }),
   // A moderator marked the flag a false positive; the row gets no label.
   modClearedAt: integer("mod_cleared_at", { mode: "timestamp" }),
+  // A moderator looked and kept the label; the row leaves the queue for good.
+  modReviewedAt: integer("mod_reviewed_at", { mode: "timestamp" }),
+  // The author asked a moderator to look at the label.
+  modAppealedAt: integer("mod_appealed_at", { mode: "timestamp" }),
 });

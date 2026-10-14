@@ -1,9 +1,13 @@
+import { moderationDisputeTable } from "@umamin/db/schema/moderation-dispute";
 import { noteTable } from "@umamin/db/schema/note";
 import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import * as z from "zod";
 import { action } from "../../server-lib/action";
+import { contentLabel } from "../../server-lib/content-label";
+import type { Db } from "../../server-lib/db";
+import { isModerationEnforced } from "../../server-lib/flags";
 import { canonicalizeIp, extractClientIp } from "../../server-lib/ip";
 import { allowIp, denyIp } from "../../server-lib/ip-denylist";
 import { isModerator } from "../../server-lib/moderation";
@@ -181,6 +185,135 @@ export const clearContentFlagHandler = action(
       .update(table)
       .set({ modClearedAt: new Date() })
       .where(eq(table.id, id));
+    return { success: true };
+  },
+);
+
+const keepFlagSchema = clearFlagSchema;
+
+// A moderator looked and agrees with the label (or, for an uncovered flag,
+// sees nothing to act on): the row keeps its label and leaves the queue.
+export const keepContentFlagHandler = action(
+  {
+    schema: keepFlagSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `keepflag:${session.userId}`,
+    },
+  },
+  async ({ kind, id }, { user, c }) => {
+    if (!isModerator(user, c.env.MODERATOR_USERS)) {
+      return { error: "Not found" };
+    }
+    const table = REVIEW_TABLES[kind];
+    await ctxDb(c)
+      .update(table)
+      .set({ modReviewedAt: new Date() })
+      .where(eq(table.id, id));
+    return { success: true };
+  },
+);
+
+const OWNER_COLUMNS = {
+  post: postTable.authorId,
+  comment: postCommentTable.authorId,
+  note: noteTable.userId,
+} as const;
+
+async function loadLabelled(
+  db: Db,
+  kind: keyof typeof REVIEW_TABLES,
+  id: string,
+  enforce: boolean,
+) {
+  const table = REVIEW_TABLES[kind];
+  const [row] = await db
+    .select({
+      ownerId: OWNER_COLUMNS[kind],
+      modSevere: table.modSevere,
+      modDrama: table.modDrama,
+      modClearedAt: table.modClearedAt,
+      modReviewedAt: table.modReviewedAt,
+      modAppealedAt: table.modAppealedAt,
+    })
+    .from(table)
+    .where(eq(table.id, id))
+    .limit(1);
+  return row && contentLabel(row, enforce) ? row : null;
+}
+
+const NOT_LABELLED = "This isn't covered or folded anymore.";
+const ALREADY_REVIEWED = "A moderator already reviewed this.";
+
+// The author asks a moderator to look at Uma's label on their own content.
+export const appealContentLabelHandler = action(
+  {
+    schema: clearFlagSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `appeal:${session.userId}`,
+    },
+  },
+  async ({ kind, id }, { session, c }) => {
+    const db = ctxDb(c);
+    const row = await loadLabelled(
+      db,
+      kind,
+      id,
+      await isModerationEnforced(c.env),
+    );
+    if (!row || row.ownerId !== session.userId) return { error: NOT_LABELLED };
+    if (row.modReviewedAt) return { error: ALREADY_REVIEWED };
+
+    const table = REVIEW_TABLES[kind];
+    await db
+      .update(table)
+      .set({
+        modAppealedAt: sql`coalesce(${table.modAppealedAt}, unixepoch())`,
+        modFlaggedAt: sql`coalesce(${table.modFlaggedAt}, unixepoch())`,
+      })
+      .where(eq(table.id, id));
+    return { success: true };
+  },
+);
+
+// A viewer says Uma's label is wrong. Counted once per viewer; it puts the
+// item in the review queue unless a moderator already decided on it.
+export const disputeContentLabelHandler = action(
+  {
+    schema: clearFlagSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `dispute:${session.userId}`,
+    },
+  },
+  async ({ kind, id }, { session, c }) => {
+    const db = ctxDb(c);
+    const row = await loadLabelled(
+      db,
+      kind,
+      id,
+      await isModerationEnforced(c.env),
+    );
+    if (!row || row.ownerId === session.userId) return { error: NOT_LABELLED };
+    if (row.modReviewedAt) return { error: ALREADY_REVIEWED };
+
+    const table = REVIEW_TABLES[kind];
+    await db.batch([
+      db
+        .insert(moderationDisputeTable)
+        .values({ kind, targetId: id, userId: session.userId })
+        .onConflictDoNothing(),
+      db
+        .update(table)
+        .set({
+          modFlaggedAt: sql`coalesce(${table.modFlaggedAt}, unixepoch())`,
+        })
+        .where(and(eq(table.id, id), isNull(table.modReviewedAt))),
+    ]);
     return { success: true };
   },
 );

@@ -1,3 +1,4 @@
+import { moderationDisputeTable } from "@umamin/db/schema/moderation-dispute";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import { and, eq, sql } from "drizzle-orm";
 import * as z from "zod";
@@ -7,6 +8,7 @@ import { formatContent } from "../../server-lib/content";
 import { classifyContent } from "../../server-lib/content-classifier";
 import { reviewableScoreColumns } from "../../server-lib/content-label";
 import { getCurrentNoteData } from "../../server-lib/data";
+import type { Db } from "../../server-lib/db";
 import {
   isForeignKeyConstraintViolation,
   UNAUTHENTICATED_ERROR,
@@ -113,6 +115,7 @@ export const createNoteHandler = action(
         await tx
           .delete(noteReactionTable)
           .where(eq(noteReactionTable.noteId, row.id));
+        await clearNoteDisputes(tx, row.id);
       }
     });
 
@@ -170,12 +173,25 @@ export const clearNoteHandler = action(
         await tx
           .delete(noteReactionTable)
           .where(eq(noteReactionTable.noteId, row.id));
+        await clearNoteDisputes(tx, row.id);
       }
     });
 
     return { success: true };
   },
 );
+
+// Disputes were about the old text.
+function clearNoteDisputes(tx: Pick<Db, "delete">, noteId: string) {
+  return tx
+    .delete(moderationDisputeTable)
+    .where(
+      and(
+        eq(moderationDisputeTable.kind, "note"),
+        eq(moderationDisputeTable.targetId, noteId),
+      ),
+    );
+}
 
 export const removeNoteHandler = action(
   {
