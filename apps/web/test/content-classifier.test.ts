@@ -197,6 +197,49 @@ describe("classifyContent", () => {
     ).toBeNull();
     expect(captureServerException).not.toHaveBeenCalled();
   });
+
+  it("logs a gateway-wrapped timeout without reporting it or its text", async () => {
+    vi.mocked(captureServerException).mockClear();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const throwing = (err: Error) =>
+      new Experimental_EvaluationMockModelV4({
+        doEvaluate: async () => {
+          throw err;
+        },
+      });
+    const gatewayError = (cause?: unknown) =>
+      Object.assign(new Error("Gateway request failed"), {
+        name: "GatewayResponseError",
+        statusCode: 500,
+        cause,
+      });
+
+    await classifyContent(
+      env,
+      { kind: "comment", text: "secret words" },
+      {
+        model: throwing(
+          gatewayError(new DOMException("aborted", "AbortError")),
+        ),
+      },
+    );
+    expect(captureServerException).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]).toEqual([
+      "content classification skipped",
+      { kind: "comment", error: "AbortError" },
+    ]);
+
+    // The same 500 without our abort behind it is a real failure.
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await classifyContent(
+      env,
+      { kind: "comment", text: "secret words" },
+      { model: throwing(gatewayError()) },
+    );
+    expect(captureServerException).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
+  });
 });
 
 describe("contentLabel", () => {

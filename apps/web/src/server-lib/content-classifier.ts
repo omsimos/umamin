@@ -171,11 +171,23 @@ function defaultModel(
   return gateway.evaluationModel(MODEL_ID);
 }
 
-function isExpectedFailure(err: unknown) {
-  if (!(err instanceof Error)) return false;
-  if (err.name === "AbortError" || err.name === "TimeoutError") return true;
-  const status = (err as { statusCode?: unknown }).statusCode;
-  return status === 429;
+// The Gateway reports our own timeout as a 500 whose cause is the AbortError,
+// so the cause chain is walked. Returns the matching error's name, or null for
+// a failure worth reporting.
+function expectedFailureName(err: unknown): string | null {
+  let current = err;
+  for (let depth = 0; depth < 5; depth++) {
+    if (typeof current !== "object" || current === null) return null;
+    const { name, statusCode, cause } = current as {
+      name?: unknown;
+      statusCode?: unknown;
+      cause?: unknown;
+    };
+    if (name === "AbortError" || name === "TimeoutError") return name;
+    if (statusCode === 429) return typeof name === "string" ? name : "429";
+    current = cause;
+  }
+  return null;
 }
 
 export async function classifyContent(
@@ -223,7 +235,14 @@ export async function classifyContent(
     });
     return scoreAnswers(result.answers, text);
   } catch (err) {
-    if (!isExpectedFailure(err)) {
+    const expected = expectedFailureName(err);
+    if (expected) {
+      // Kind and error name only: enough for Workers Logs to show the rate.
+      console.warn("content classification skipped", {
+        kind: input.kind,
+        error: expected,
+      });
+    } else {
       console.error("content classification failed", err);
       captureServerException(env, opts.defer, err, {
         properties: { classifier: input.kind },
