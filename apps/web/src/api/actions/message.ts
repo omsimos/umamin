@@ -91,6 +91,8 @@ export const createReplyHandler = action(
         receiverId: messageTable.receiverId,
         senderId: messageTable.senderId,
         reply: messageTable.reply,
+        // Plaintext, unlike the content and replies.
+        question: messageTable.question,
       })
       .from(messageTable)
       .where(eq(messageTable.id, messageId))
@@ -166,7 +168,7 @@ export const createReplyHandler = action(
       isSender && receiverRows[0]?.messageFilter
         ? classifyContent(
             c.env,
-            { kind: "message", text: formatted },
+            { kind: "message", text: formatted, question: msg.question },
             { defer: defer(c) },
           )
         : Promise.resolve(null),
@@ -409,7 +411,11 @@ export const sendMessageHandler = action(
       receiver.messageFilter
         ? classifyContent(
             c.env,
-            { kind: "message", text: formattedContent },
+            {
+              kind: "message",
+              text: formattedContent,
+              question: storedQuestion,
+            },
             { defer: defer(c) },
           )
         : Promise.resolve(null),

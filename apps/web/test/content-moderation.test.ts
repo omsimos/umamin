@@ -275,22 +275,70 @@ describe("content moderation (real libSQL)", () => {
       expect(row).toMatchObject({ modSevere: null, modFlaggedAt: null });
     });
 
-    it("passes the parent post to the classifier for a comment", async () => {
+    it("passes the parent post and other people's latest comments for a comment", async () => {
+      await db.insert(userTable).values({ id: "third", username: "u_third" });
       await db
         .insert(postTable)
         .values({ id: "p1", content: "my exam results", authorId: "viewer" });
+      const t = Date.now() / 1000;
+      await db.insert(postCommentTable).values(
+        [
+          ["too old", "third"],
+          ["si @x nangopya", "viewer"],
+          ["my own earlier comment", "author"],
+          ["true yan", "third"],
+          ["kawawa naman", "viewer"],
+        ].map(([content, authorId], i) => ({
+          id: `c${i}`,
+          postId: "p1",
+          authorId,
+          content,
+          createdAt: new Date((t - 100 + i * 10) * 1000),
+        })),
+      );
       classifyContent.mockResolvedValue({ severe: 1, drama: 1, reason: null });
 
       const app = buildApp(db, authed("author"));
       await callJson(app, "createCommentAction", {
         postId: "p1",
-        content: "congrats!",
+        content: "HAHA tama",
       });
       expect(classifyContent).toHaveBeenCalledWith(
         expect.anything(),
-        { kind: "comment", text: "congrats!", context: "my exam results" },
+        {
+          kind: "comment",
+          text: "HAHA tama",
+          context: "my exam results",
+          thread: ["si @x nangopya", "true yan", "kawawa naman"],
+        },
         expect.anything(),
       );
+    });
+
+    it("classifies a poll's options with its question but stores only the question", async () => {
+      classifyContent.mockResolvedValue({ severe: 1, drama: 1, reason: null });
+      const app = buildApp(
+        db,
+        authed("author", { createdAt: new Date("2020-01-01") }),
+      );
+      const { json } = await callJson<{ success?: boolean }>(
+        app,
+        "createPostAction",
+        {
+          content: "sino pinaka pangit?",
+          poll: { options: ["@jessa", "@mae"], duration: "1d" },
+        },
+      );
+      expect(json.success).toBe(true);
+      expect(classifyContent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          text: "sino pinaka pangit?\nPoll options: @jessa, @mae",
+        }),
+        expect.anything(),
+      );
+      const [row] = await db.select().from(postTable);
+      expect(row?.content).toBe("sino pinaka pangit?");
     });
 
     it("keeps a folded comment's text out of the post author's notification", async () => {
@@ -591,12 +639,16 @@ describe("content moderation (real libSQL)", () => {
     });
 
     it("classifies and still delivers for a receiver who opted in", async () => {
-      await db.update(userTable).set({ messageFilter: true });
+      // A sender-supplied question ("ask me") never reaches the classifier;
+      // the receiver's own profile prompt does.
+      await db
+        .update(userTable)
+        .set({ messageFilter: true, question: "Roast me" });
       const { json } = await send("you are the worst");
       expect(json).toEqual({ success: true });
       expect(classifyContent).toHaveBeenCalledWith(
         expect.anything(),
-        { kind: "message", text: "you are the worst" },
+        { kind: "message", text: "you are the worst", question: "Roast me" },
         expect.anything(),
       );
       const [row] = await db.select().from(messageTable);
@@ -705,6 +757,12 @@ describe("content moderation (real libSQL)", () => {
       await db.update(userTable).set({ messageFilter: true });
       await followUp();
       expect(classifyContent).toHaveBeenCalledTimes(1);
+      // The thread's question only; the receiver's reply stays out of it.
+      expect(classifyContent).toHaveBeenCalledWith(
+        expect.anything(),
+        { kind: "message", text: "you again", question: "q" },
+        expect.anything(),
+      );
       const rows = await db.select().from(messageReplyTable);
       expect(rows.map((r) => r.modSevere).sort()).toEqual([93, null]);
     });

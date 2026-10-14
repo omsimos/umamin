@@ -156,6 +156,43 @@ describe("classifyContent", () => {
     expect(state).not.toHaveProperty("context");
   });
 
+  it("sends a comment's thread and a message's question as their own fields", async () => {
+    const doEvaluate = vi.fn(async () => ({
+      answers: mockAnswers(answers()),
+      warnings: [],
+    }));
+    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    await classifyContent(
+      env,
+      {
+        kind: "comment",
+        text: "HAHA tama",
+        context: "parent post",
+        thread: ["oldest", "second", "x".repeat(300), "newest"],
+      },
+      { model },
+    );
+    await classifyContent(
+      env,
+      { kind: "message", text: "mataray pero mabait", question: "Ask me" },
+      { model },
+    );
+    const [[comment], [message]] = doEvaluate.mock.calls as unknown as [
+      [{ state: Record<string, string | string[]> }],
+      [{ state: Record<string, string | string[]> }],
+    ];
+    expect(comment.state.earlierComments).toEqual([
+      "second",
+      "x".repeat(200),
+      "newest",
+    ]);
+    expect(comment.state.platform).toContain('"earlierComments"');
+    expect(message.state).toMatchObject({ question: "Ask me" });
+    expect(message.state).not.toHaveProperty("replyingTo");
+    expect(message.state.platform).toContain('"question"');
+    expect(message.state.platform).not.toContain('"earlierComments"');
+  });
+
   it("returns null without a key, so nothing is ever sent", async () => {
     expect(
       await classifyContent({} as AppEnv, { kind: "post", text: "hello" }),

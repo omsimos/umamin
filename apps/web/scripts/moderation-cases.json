@@ -384,5 +384,132 @@
     "kind": "post",
     "text": "i miss you, sana okay ka. kahit hindi na tayo",
     "expect": "not-severe"
+  },
+  {
+    "id": "thread-pile-on-agree",
+    "kind": "comment",
+    "text": "sinabi mo pa",
+    "context": "may nag-chismis na naman sa gc",
+    "thread": ["si @carla na naman yan, chismosa talaga yan kahit kailan"],
+    "expect": "covered"
+  },
+  {
+    "id": "thread-pile-on-plus-one",
+    "kind": "comment",
+    "text": "+1 dito, totoo yan",
+    "context": "bakit ang tahimik ng block natin",
+    "thread": [
+      "kasi andyan si @mae, plastic kasi yan kaya walang nakikipag usap"
+    ],
+    "expect": "covered"
+  },
+  {
+    "id": "thread-pile-on-add",
+    "kind": "comment",
+    "text": "oo siya yan, tapos di pa nag aambag sa project",
+    "context": "rant lang: may kaklase akong laging late",
+    "thread": ["si @joy ba yan? tamad talaga yan, pabigat sa group"],
+    "expect": "covered"
+  },
+  {
+    "id": "thread-counter-defend",
+    "kind": "comment",
+    "text": "grabe ka naman, wag ganyan sa kanya. ang ganda nga eh",
+    "context": "new profile pic ko guys",
+    "thread": ["@bea mukha kang palaka dito HAHAHA"],
+    "expect": "clean"
+  },
+  {
+    "id": "thread-counter-report",
+    "kind": "comment",
+    "text": "nireport ko na yung comment sa taas, hindi okay magsabi ng ganyan",
+    "context": "pagod na ako sa lahat",
+    "thread": ["sana mamatay ka na @mika, pabigat ka lang"],
+    "expect": "clean"
+  },
+  {
+    "id": "thread-counter-no-proof",
+    "kind": "comment",
+    "text": "wala kang proof, wag kang basta mag-akusa",
+    "context": "sino kaya yung nangopya sa exam kahapon? alam niyo na yan",
+    "thread": ["si @jessa yan, kitang kita ko may kodigo siya"],
+    "expect": "not-severe"
+  },
+  {
+    "id": "thread-counter-stop",
+    "kind": "comment",
+    "text": "hindi nakakatawa yan, proud kami sayo nico",
+    "context": "first day ko sa gym today",
+    "thread": ["@nico parang baboy na tumatakbo HAHAHA"],
+    "expect": "clean"
+  },
+  {
+    "id": "thread-neutral-in-hostile",
+    "kind": "comment",
+    "text": "ako punta ako, kita kits sa gym",
+    "context": "sino pupunta sa intrams bukas",
+    "thread": ["@leo wag ka na pumunta, nakakahiya ka"],
+    "expect": "clean"
+  },
+  {
+    "id": "question-first-impression",
+    "kind": "message",
+    "text": "mataray tingnan pero mabait pala",
+    "question": "Ano first impression mo sakin?",
+    "expect": "clean"
+  },
+  {
+    "id": "question-solicited-critique",
+    "kind": "message",
+    "text": "minsan ang yabang mo kapag nanalo ka",
+    "question": "Ano ayaw mo sa akin? Be honest",
+    "expect": "clean"
+  },
+  {
+    "id": "question-light-roast",
+    "kind": "message",
+    "text": "ang tagal mo mag reply sa gc, parang may load ka lang tuwing pasko",
+    "question": "Roast me, kaya ko yan",
+    "expect": "clean"
+  },
+  {
+    "id": "question-roast-death-wish",
+    "kind": "message",
+    "text": "sana mamatay ka na, pabigat ka sa lahat",
+    "question": "Roast me, kaya ko yan",
+    "expect": "severe"
+  },
+  {
+    "id": "question-ama-kys",
+    "kind": "message",
+    "text": "kys na lang, walang may gusto sayo",
+    "question": "Ask me anything",
+    "expect": "severe"
+  },
+  {
+    "id": "question-rate-slur",
+    "kind": "message",
+    "text": "0, bakla ka kasi, nakakadiri ka",
+    "question": "Rate me 1-10",
+    "expect": "severe"
+  },
+  {
+    "id": "question-honest-insult",
+    "kind": "message",
+    "text": "lahat, plastic ka at sinungaling, walang may gusto sayo",
+    "question": "Ano ayaw mo sa akin? Be honest",
+    "expect": "covered"
+  },
+  {
+    "id": "poll-options-target",
+    "kind": "post",
+    "text": "Sino pinaka pangit sa section natin?\nPoll options: @jessa, @mae, @carla",
+    "expect": "covered"
+  },
+  {
+    "id": "poll-options-benign",
+    "kind": "post",
+    "text": "Saan tayo kakain mamaya?\nPoll options: Jollibee, Mang Inasal, McDo",
+    "expect": "clean"
   }
 ]

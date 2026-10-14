@@ -202,6 +202,8 @@ type Case = {
   kind: ContentKind;
   text: string;
   context?: string;
+  thread?: string[];
+  question?: string;
   expect: Expect;
 };
 
@@ -236,6 +238,8 @@ async function check(input: string) {
             kind: item.kind,
             text: item.text,
             context: item.context ?? null,
+            thread: item.thread ?? null,
+            question: item.question ?? null,
           });
         // A cold Gateway call can outlast the production timeout.
         const scores = (await classify()) ?? (await classify());

@@ -15,6 +15,8 @@ const MODEL_ID = "typesafe-ai/jev";
 const TIMEOUT_MS = 2000;
 const MIN_TEXT_LENGTH = 3;
 const CONTEXT_MAX_LENGTH = 500;
+const THREAD_MAX_COMMENTS = 3;
+const THREAD_COMMENT_MAX_LENGTH = 200;
 
 // Sent once in the state rather than repeated per question: the state is
 // billed once, each question separately.
@@ -25,6 +27,17 @@ const PLATFORM_CONTEXT =
 // score down for no reason.
 const REPLY_CONTEXT =
   '"replyingTo" is a different person\'s post that the author is replying to or quoting. Judge only what the author wrote in "text": the author is responsible for replyingTo only if their text agrees with it, repeats it, or adds to it. Condemning, questioning, or reporting it is not the author attacking anyone.';
+
+// Replaces REPLY_CONTEXT when a comment has earlier comments. The last clause
+// keeps a defender in a hostile thread from scoring like the attacker: without
+// it, pile-ons were caught but counter-speech drama rose with them.
+const THREAD_CONTEXT =
+  '"replyingTo" is a different person\'s post that the author is commenting on, and "earlierComments" are other people\'s comments on that post, oldest first, written before the author\'s. Judge only what the author wrote in "text": the author is responsible for replyingTo or an earlier comment only if their text agrees with it, repeats it, or adds to it. Condemning, questioning, or reporting it is not the author attacking anyone. Agreeing with, laughing along with, or adding to an earlier comment that attacks or mocks someone is joining in on it; defending that person or disagreeing with the comment is not drama.';
+
+// Safe to soften on because the question is the recipient's own text: the send
+// path stores their profile prompt or note, never a sender-supplied string.
+const QUESTION_CONTEXT =
+  '"question" is the prompt the recipient posted on their own profile, and "text" is an anonymous message someone sent them in answer to it. Judge only what the sender wrote in "text". Answering what the recipient asked, even frankly, is not drama or gossip by itself.';
 
 export const CLASSIFIER_QUESTIONS = {
   hate: {
@@ -190,18 +203,50 @@ function expectedFailureName(err: unknown): string | null {
   return null;
 }
 
+export type ClassifyInput = {
+  kind: ContentKind;
+  text: string;
+  // Parent post for a comment, quoted post for a quote.
+  context?: string | null;
+  // A comment's earlier comments by other people, oldest first.
+  thread?: readonly string[] | null;
+  // The recipient's profile prompt a message answers.
+  question?: string | null;
+};
+
+function buildState(input: ClassifyInput, text: string) {
+  const thread = (input.thread ?? [])
+    .map((comment) => comment.trim().slice(0, THREAD_COMMENT_MAX_LENGTH))
+    .filter(Boolean)
+    .slice(-THREAD_MAX_COMMENTS);
+  const question = input.question?.trim().slice(0, CONTEXT_MAX_LENGTH);
+
+  const platform = [PLATFORM_CONTEXT];
+  if (thread.length > 0) platform.push(THREAD_CONTEXT);
+  else if (input.context) platform.push(REPLY_CONTEXT);
+  if (question) platform.push(QUESTION_CONTEXT);
+
+  return {
+    platform: platform.join(" "),
+    kind: input.kind,
+    text,
+    ...(input.context
+      ? { replyingTo: input.context.slice(0, CONTEXT_MAX_LENGTH) }
+      : {}),
+    ...(thread.length > 0 ? { earlierComments: thread } : {}),
+    ...(question ? { question } : {}),
+  };
+}
+
 export async function classifyContent(
   env: AppEnv,
-  input: {
-    kind: ContentKind;
-    text: string;
-    // Parent post for a comment, quoted post for a quote.
-    context?: string | null;
-  },
+  input: ClassifyInput,
   opts: {
     // Test seam; production resolves Jev through the Gateway.
     model?: Experimental_EvaluationModel;
     defer?: (promise: Promise<unknown>) => void;
+    // A background retry has no user waiting on it.
+    timeoutMs?: number;
   } = {},
 ): Promise<ContentScores | null> {
   const text = input.text.trim();
@@ -211,23 +256,17 @@ export async function classifyContent(
   if (!opts.model && !apiKey) return null;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    opts.timeoutMs ?? TIMEOUT_MS,
+  );
 
   try {
     const sdk = await import("ai");
     const model = opts.model ?? defaultModel(sdk, apiKey as string);
     const result = await sdk.experimental_evaluate({
       model,
-      state: {
-        platform: input.context
-          ? `${PLATFORM_CONTEXT} ${REPLY_CONTEXT}`
-          : PLATFORM_CONTEXT,
-        kind: input.kind,
-        text,
-        ...(input.context
-          ? { replyingTo: input.context.slice(0, CONTEXT_MAX_LENGTH) }
-          : {}),
-      },
+      state: buildState(input, text),
       questions: CLASSIFIER_QUESTIONS,
       // The call blocks a user's write; a retry would only add latency.
       maxRetries: 0,
