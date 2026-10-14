@@ -19,7 +19,6 @@ import { useIdentityDraft } from "./-umamin-chat/lib/identity/use-identity-draft
 import { useInviteCode } from "./-umamin-chat/lib/invite/use-invite-code";
 import { loadCardAssets } from "./-umamin-chat/lib/share-card/assets";
 import { buildInviteCard } from "./-umamin-chat/lib/share-card/invite-template";
-import { INVITE_BASE_URL } from "./-umamin-chat/lib/share-card/theme";
 import { useChatSession } from "./-umamin-chat/session/chat-context";
 
 const TITLE = "Umamin Chat — Anonymous conversations with unexpected people";
@@ -194,9 +193,7 @@ function Lobby() {
               description="Post it to your story, then copy your link and add it with a link sticker where the dashed guide shows (the guide isn't on the shared image). Anyone who taps it lands on you while you're searching."
               filename="umamin-chat-invite.png"
               copyUrl={
-                inviteCode
-                  ? `${INVITE_BASE_URL}/?join=${inviteCode}`
-                  : undefined
+                inviteCode ? absoluteUrl(`/chat?join=${inviteCode}`) : undefined
               }
               build={async () =>
                 buildInviteCard(

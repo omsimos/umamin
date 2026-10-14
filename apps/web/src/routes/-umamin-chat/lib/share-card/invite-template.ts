@@ -4,6 +4,7 @@ import {
   CARD_H,
   CARD_W,
   DISPLAY_FONT,
+  DISPLAY_HOST,
   escapeXml,
   estTextWidth,
   PUBMAT,
@@ -144,7 +145,7 @@ export function buildInviteCard(
     );
     footX += 86;
   }
-  const domain = "umamin.chat";
+  const domain = DISPLAY_HOST;
   texts.push(
     {
       text: domain,

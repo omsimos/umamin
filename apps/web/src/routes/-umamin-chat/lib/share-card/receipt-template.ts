@@ -6,6 +6,7 @@ import {
   CARD_H,
   CARD_W,
   DISPLAY_FONT,
+  DISPLAY_HOST,
   escapeXml,
   estTextWidth,
   formatDuration,
@@ -188,7 +189,7 @@ export function buildReceiptCard(
     );
     footX += 86;
   }
-  const domain = "umamin.chat";
+  const domain = DISPLAY_HOST;
   texts.push(
     {
       text: domain,

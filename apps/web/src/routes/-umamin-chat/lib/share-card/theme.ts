@@ -6,9 +6,9 @@ export const CARD_H = 1920;
 export const DISPLAY_FONT = '"Archivo Variable", system-ui, sans-serif';
 export const SANS_FONT = '"Geist Variable", system-ui, sans-serif';
 
-// The short domain (redirects to /chat on www.umamin.link, query string
-// preserved): what people retype from a story image.
-export const INVITE_BASE_URL = "https://umamin.chat";
+// The short domain printed on story images, for people who retype it. The
+// copied link is the canonical /chat?join= URL instead: until umamin.chat
+// redirects to /chat, it still serves the old app and its separate pool.
 export const DISPLAY_HOST = "umamin.chat";
 
 export const CARD_COLORS = {
