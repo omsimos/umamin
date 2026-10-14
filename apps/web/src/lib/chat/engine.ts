@@ -184,12 +184,13 @@ export function send(
   if (input.messageCount >= MAX_ROOM_MESSAGES) {
     return { ok: false, code: "cap" };
   }
-  // Whisper and effect are mutually exclusive: whisper wins, and a locked
-  // effect on a whisper is irrelevant because it is dropped.
-  const keptEffect = !input.whisper && effect ? (effect as SendEffect) : null;
-  if (keptEffect && (EFFECT_MIN_LEVEL[keptEffect] ?? 1) > ctx.level) {
+  // The gate applies to whatever was asked for, so a crafted frame can't use
+  // a whisper to probe locked effects.
+  if (effect && (EFFECT_MIN_LEVEL[effect as SendEffect] ?? 1) > ctx.level) {
     return { ok: false, code: "locked" };
   }
+  // Whisper and effect are mutually exclusive: whisper wins.
+  const keptEffect = !input.whisper && effect ? (effect as SendEffect) : null;
   return {
     ok: true,
     charge: "sendMessage",
