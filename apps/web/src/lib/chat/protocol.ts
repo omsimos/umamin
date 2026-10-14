@@ -55,7 +55,7 @@ export const lobbyFrameSchema = z.discriminatedUnion("t", [
     interests: z
       .array(z.string().max(MAX_INTEREST_LEN * 2))
       .max(MAX_INTERESTS * 2),
-    inviteCode: code,
+    // No inviteCode: the lobby derives it from the secret (see invite.ts).
     joinCode: code,
   }),
 ]);

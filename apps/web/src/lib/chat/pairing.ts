@@ -16,14 +16,19 @@ import type { Participant } from "./engine";
 
 export interface Waiter {
   sessionId: string;
+  /** SHA-256 of the session secret. A second socket for the same sessionId
+   *  may replace this waiter only when its hash matches. */
+  secretHash: string;
   interests: string[];
-  inviteCode: string | null;
+  /** Server-derived from the secret (invite.ts), never client-chosen. */
+  inviteCode: string;
   enqueuedAt: number;
   fallbackAt: number;
 }
 
 export interface Joiner {
   sessionId: string;
+  secretHash: string;
   interests: string[];
   joinCode: string | null;
 }
@@ -38,7 +43,10 @@ const byAge = (x: Waiter, y: Waiter) => x.enqueuedAt - y.enqueuedAt;
 const shares = (a: string[], b: string[]) => a.some((i) => b.includes(i));
 
 /** Finds a partner for a joiner, or null to queue them. An invite code wins
- *  over interests; otherwise the oldest waiter with a shared interest. */
+ *  over interests; otherwise the oldest waiter with a shared interest. The
+ *  caller has already resolved a same-sessionId waiter (replaced it on a
+ *  matching secret, rejected the joiner otherwise), so "others" is everyone
+ *  else in the pool. */
 export function pickPartner(pool: Waiter[], joiner: Joiner): PairPick | null {
   const others = pool
     .filter((w) => w.sessionId !== joiner.sessionId)
@@ -82,11 +90,12 @@ export function nextFallbackAt(pool: Waiter[]): number | null {
 
 export function newWaiter(
   joiner: Joiner,
-  inviteCode: string | null,
+  inviteCode: string,
   now: number,
 ): Waiter {
   return {
     sessionId: joiner.sessionId,
+    secretHash: joiner.secretHash,
     interests: joiner.interests,
     inviteCode,
     enqueuedAt: now,
