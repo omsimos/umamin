@@ -28,18 +28,19 @@ function answers(
     hate: p("hate"),
     threat: p("threat"),
     doxxing: p("doxxing"),
+    sexual: p("sexual"),
+    encouragesSelfHarm: p("encouragesSelfHarm"),
     harassment: p("harassment"),
     drama: {
       choice: drama?.choice ?? "none",
       probabilities: { none: drama?.none ?? 0.99 },
     },
-    selfHarm: p("selfHarm"),
     political: p("political"),
   };
 }
 
-function mockModel(result: ClassifierAnswers) {
-  const toWire = Object.fromEntries(
+function mockAnswers(result: ClassifierAnswers) {
+  return Object.fromEntries(
     Object.entries(result).map(([id, answer]) => [
       id,
       "choice" in answer
@@ -57,8 +58,11 @@ function mockModel(result: ClassifierAnswers) {
         : { type: "boolean" as const, probability: answer.probability },
     ]),
   );
+}
+
+function mockModel(result: ClassifierAnswers) {
   return new Experimental_EvaluationMockModelV4({
-    doEvaluate: async () => ({ answers: toWire, warnings: [] }),
+    doEvaluate: async () => ({ answers: mockAnswers(result), warnings: [] }),
   });
 }
 
@@ -71,10 +75,14 @@ describe("scoreAnswers", () => {
     });
   });
 
-  it("never scores a self-harm statement as a threat", () => {
-    const scores = scoreAnswers(answers({ threat: 0.9, selfHarm: 0.8 }));
-    expect(scores.severe).toBeLessThan(10);
-    expect(scores.reason).toBeNull();
+  it("names the new severe categories as the reason", () => {
+    expect(scoreAnswers(answers({ sexual: 0.96 }))).toMatchObject({
+      severe: 96,
+      reason: "sexual",
+    });
+    expect(
+      scoreAnswers(answers({ encouragesSelfHarm: 0.91, harassment: 0.7 })),
+    ).toMatchObject({ severe: 91, reason: "encouragesSelfHarm" });
   });
 
   it("zeroes drama and harassment for political opinion but keeps hate", () => {
@@ -90,6 +98,20 @@ describe("scoreAnswers", () => {
     expect(scoreAnswers(answers({ hate: 0.96, political: 0.9 })).severe).toBe(
       96,
     );
+  });
+
+  it("never exempts political-sounding abuse aimed at a user's @handle", () => {
+    const abuse = answers(
+      { harassment: 0.9, political: 0.6 },
+      { choice: "callout", none: 0.01 },
+    );
+    expect(
+      scoreAnswers(abuse, "Ang mga DDS tulad ni @marco ay mga bobo"),
+    ).toEqual({ severe: 90, drama: 99, reason: "harassment" });
+    // An email address is not a mention.
+    expect(
+      scoreAnswers(abuse, "email mo ko sa juan@gmail.com, mga DDS").severe,
+    ).toBeLessThan(10);
   });
 
   it("names the drama kind when nothing severe stands out", () => {
@@ -111,6 +133,27 @@ describe("classifyContent", () => {
         },
       ),
     ).toMatchObject({ severe: 93, reason: "threat" });
+  });
+
+  it("sends the parent post apart from the author's own text", async () => {
+    const doEvaluate = vi.fn(async () => ({
+      answers: mockAnswers(answers()),
+      warnings: [],
+    }));
+    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    await classifyContent(
+      env,
+      { kind: "comment", text: "wag ganyan", context: "parent post" },
+      { model },
+    );
+    const [[{ state }]] = doEvaluate.mock.calls as unknown as [
+      [{ state: Record<string, unknown> }],
+    ];
+    expect(state).toMatchObject({
+      text: "wag ganyan",
+      replyingTo: "parent post",
+    });
+    expect(state).not.toHaveProperty("context");
   });
 
   it("returns null without a key, so nothing is ever sent", async () => {

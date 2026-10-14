@@ -19,7 +19,12 @@ const CONTEXT_MAX_LENGTH = 500;
 // Sent once in the state rather than repeated per question: the state is
 // billed once, each question separately.
 const PLATFORM_CONTEXT =
-  "The text is from a Philippine social app and may be English, Filipino/Tagalog, or Taglish. Casual profanity used for emphasis or banter (tangina, leche, bwisit, gago between friends) is not by itself hateful or harassing.";
+  'The text is from a Philippine social app and may be English, Filipino/Tagalog, Bisaya, or Taglish, sometimes disguised with alternating caps, number substitution, or split syllables ("t4ng1na", "ba is liw" for baliw). Casual profanity used for emphasis or banter (tangina, leche, bwisit, gago between friends) is not by itself hateful or harassing.';
+
+// Only sent with a replyingTo: on a standalone post it nudged every drama
+// score down for no reason.
+const REPLY_CONTEXT =
+  '"replyingTo" is a different person\'s post that the author is replying to or quoting. Judge only what the author wrote in "text": the author is responsible for replyingTo only if their text agrees with it, repeats it, or adds to it. Condemning, questioning, or reporting it is not the author attacking anyone.';
 
 export const CLASSIFIER_QUESTIONS = {
   hate: {
@@ -27,6 +32,9 @@ export const CLASSIFIER_QUESTIONS = {
     instructions:
       "Does the text attack or use slurs against people because of race, ethnicity, nationality, religion, gender, sexual orientation, or disability? Criticism of politicians, parties, or public figures is not hate.",
   },
+  // The wording alone keeps cries for help from scoring as threats. A score
+  // override on a separate self-harm question let "I'll kill you and then
+  // myself" through; scripts/moderation-cases.json holds both sides.
   threat: {
     type: "boolean",
     instructions:
@@ -36,6 +44,16 @@ export const CLASSIFIER_QUESTIONS = {
     type: "boolean",
     instructions:
       "Does the text reveal private information about a real person, such as full name with school or address, phone number, or private photos or chat screenshots?",
+  },
+  sexual: {
+    type: "boolean",
+    instructions:
+      "Does the text sexually harass someone, ask someone for sexual photos, video calls, or meetups, sexualize a minor or anyone who says they are under 18, or threaten to share someone's intimate photos?",
+  },
+  encouragesSelfHarm: {
+    type: "boolean",
+    instructions:
+      "Does the text tell, dare, or wish another person to hurt or kill themselves (for example kys, magpakamatay ka na)? The author talking about their own pain or wanting to die is not this.",
   },
   harassment: {
     type: "boolean",
@@ -55,11 +73,6 @@ export const CLASSIFIER_QUESTIONS = {
       fight: "Hostile back-and-forth with another user",
     },
   },
-  selfHarm: {
-    type: "boolean",
-    instructions:
-      "Does the author talk about hurting themselves or wanting to die?",
-  },
   political: {
     type: "boolean",
     instructions:
@@ -72,9 +85,10 @@ export type ClassifierAnswers = {
   hate: BooleanAnswer;
   threat: BooleanAnswer;
   doxxing: BooleanAnswer;
+  sexual: BooleanAnswer;
+  encouragesSelfHarm: BooleanAnswer;
   harassment: BooleanAnswer;
   drama: { choice: string; probabilities?: Record<string, number> };
-  selfHarm: BooleanAnswer;
   political: BooleanAnswer;
 };
 
@@ -88,25 +102,39 @@ export type ContentScores = {
 
 const CLEAN: ContentScores = { severe: 0, drama: 0, reason: null };
 
-const SEVERE_KEYS = ["hate", "threat", "doxxing", "harassment"] as const;
+const SEVERE_KEYS = [
+  "hate",
+  "threat",
+  "doxxing",
+  "sexual",
+  "encouragesSelfHarm",
+  "harassment",
+] as const;
 // Below this, a severe question doesn't name the reason; the drama choice does.
 const SEVERE_REASON_FLOOR = 50;
 
 const pct = (probability: number) =>
   Math.round(Math.min(Math.max(probability, 0), 1) * 100);
 
+// An @handle means the text is aimed at a user on the app, which the
+// political exemption must never cover.
+const MENTION = /(?:^|[^\w@])@[\w-]{2,}/;
+
 /** Pure mapping from Jev's answers to the 0-100 scores stored on a row. */
-export function scoreAnswers(answers: ClassifierAnswers): ContentScores {
+export function scoreAnswers(
+  answers: ClassifierAnswers,
+  text = "",
+): ContentScores {
   const severe: Record<(typeof SEVERE_KEYS)[number], number> = {
     hate: answers.hate.probability,
     threat: answers.threat.probability,
     doxxing: answers.doxxing.probability,
+    sexual: answers.sexual.probability,
+    encouragesSelfHarm: answers.encouragesSelfHarm.probability,
     harassment: answers.harassment.probability,
   };
-  // A cry for help must never be blurred as a threat.
-  if (answers.selfHarm.probability >= 0.5) severe.threat = 0;
 
-  const political = answers.political.probability >= 0.5;
+  const political = answers.political.probability >= 0.5 && !MENTION.test(text);
   if (political) severe.harassment = 0;
 
   const noneProbability =
@@ -179,11 +207,13 @@ export async function classifyContent(
     const result = await sdk.experimental_evaluate({
       model,
       state: {
-        platform: PLATFORM_CONTEXT,
+        platform: input.context
+          ? `${PLATFORM_CONTEXT} ${REPLY_CONTEXT}`
+          : PLATFORM_CONTEXT,
         kind: input.kind,
         text,
         ...(input.context
-          ? { context: input.context.slice(0, CONTEXT_MAX_LENGTH) }
+          ? { replyingTo: input.context.slice(0, CONTEXT_MAX_LENGTH) }
           : {}),
       },
       questions: CLASSIFIER_QUESTIONS,
@@ -191,7 +221,7 @@ export async function classifyContent(
       maxRetries: 0,
       abortSignal: controller.signal,
     });
-    return scoreAnswers(result.answers);
+    return scoreAnswers(result.answers, text);
   } catch (err) {
     if (!isExpectedFailure(err)) {
       console.error("content classification failed", err);
