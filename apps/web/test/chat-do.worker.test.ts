@@ -672,6 +672,18 @@ describe("ChatRoom", () => {
     expect(ack).toMatchObject({ t: "ack", messageId: msgs.messages[0]?.id });
   });
 
+  it("shows a message's send op id to its author only", async () => {
+    const { stub, ana, ben, a } = await liveRoom();
+    a.send({ t: "send", id: "op-visible", text: "mine" });
+    await a.next("ack", (f) => f.id === "op-visible");
+    const author = await authRoom(stub, ana);
+    const partner = await authRoom(stub, ben);
+    const [mine] = (await author.next("sync")).messages;
+    const [theirs] = (await partner.next("sync")).messages;
+    expect(mine?.clientId).toBe("op-visible");
+    expect(theirs).not.toHaveProperty("clientId");
+  });
+
   it("answers a retried send with the original message instead of a duplicate", async () => {
     const { stub, a } = await liveRoom();
     const frame = { t: "send", id: "retry-me", text: "once" };

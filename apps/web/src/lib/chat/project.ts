@@ -118,11 +118,13 @@ function whisperState(row: MessageRow): WhisperState["state"] | null {
   return row.whisperViewedAt ? "revealed" : "hidden";
 }
 
-/** `replyTarget` is the row `row.replyTo` points at, if it still exists. */
+/** `replyTarget` is the row `row.replyTo` points at, if it still exists.
+ *  `clientId` is the send op id that stored the row; only its author sees it. */
 export function projectMessage(
   row: MessageRow,
   viewer: Side,
   replyTarget: MessageRow | null,
+  clientId?: string | null,
 ): ChatMessage {
   const isAuthor = row.author === viewer;
   const whisper = whisperState(row);
@@ -174,6 +176,7 @@ export function projectMessage(
         }
       : {}),
     ...(row.effect ? { effect: row.effect } : {}),
+    ...(clientId && isAuthor ? { clientId } : {}),
     ...(row.kind === "game" && row.game
       ? {
           gameResult: {

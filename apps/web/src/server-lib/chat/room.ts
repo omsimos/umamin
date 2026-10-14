@@ -109,10 +109,11 @@ type MessageRowSql = {
   effect: string | null;
   vibe_reacted: number;
   created_at: number;
+  client_id: string | null;
 };
 
 const MESSAGE_COLUMNS =
-  "seq, author, text, reaction_a, reaction_b, reply_to, kind, whisper_viewed_at, burned, game, effect, vibe_reacted, created_at";
+  "seq, author, text, reaction_a, reaction_b, reply_to, kind, whisper_viewed_at, burned, game, effect, vibe_reacted, created_at, client_id";
 
 const SIDE_REF: Record<Side, number> = { a: 0, b: 1 };
 
@@ -440,7 +441,12 @@ export class ChatRoom extends DurableObject<AppEnv> {
     const changed = [inserted, result.update ?? null].filter(
       (m): m is MessageRow => m !== null,
     );
-    if (changed.length > 0) this.broadcastMessages(changed);
+    if (changed.length > 0) {
+      this.broadcastMessages(
+        changed,
+        inserted && frame.t === "send" ? { [inserted.seq]: frame.id } : {},
+      );
+    }
     const after = this.vibeScore(this.loadMatch());
     if (result.match || after.score !== before.score) this.broadcastMeta();
   }
@@ -759,13 +765,14 @@ export class ChatRoom extends DurableObject<AppEnv> {
   }
 
   private recentMessages(viewer: Side) {
-    const rows = this.sql
+    const raw = this.sql
       .exec<MessageRowSql>(
         `SELECT ${MESSAGE_COLUMNS} FROM (SELECT ${MESSAGE_COLUMNS} FROM messages ORDER BY seq DESC LIMIT ?) ORDER BY seq`,
         MESSAGE_CAP,
       )
-      .toArray()
-      .map(toMessage);
+      .toArray();
+    const clientIds = new Map(raw.map((r) => [r.seq, r.client_id]));
+    const rows = raw.map(toMessage);
     const bySeq = new Map(rows.map((r) => [r.seq, r]));
     const missing = [
       ...new Set(
@@ -788,6 +795,7 @@ export class ChatRoom extends DurableObject<AppEnv> {
         r,
         viewer,
         r.replyTo ? (bySeq.get(r.replyTo) ?? null) : null,
+        clientIds.get(r.seq),
       ),
     );
   }
@@ -836,12 +844,20 @@ export class ChatRoom extends DurableObject<AppEnv> {
     }
   }
 
-  private broadcastMessages(rows: MessageRow[]) {
+  private broadcastMessages(
+    rows: MessageRow[],
+    clientIds: Record<number, string> = {},
+  ) {
     for (const side of ["a", "b"] as const) {
       const sockets = this.socketsFor(side);
       if (sockets.length === 0) continue;
       const messages = rows.map((r) =>
-        projectMessage(r, side, r.replyTo ? this.getMessage(r.replyTo) : null),
+        projectMessage(
+          r,
+          side,
+          r.replyTo ? this.getMessage(r.replyTo) : null,
+          clientIds[r.seq],
+        ),
       );
       for (const ws of sockets) this.sendTo(ws, { t: "msgs", messages });
     }

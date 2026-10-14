@@ -81,6 +81,9 @@ export interface ChatMessage {
   /** Own optimistic sends only: "sending" until the room acks, "failed" when
    *  it rejected or the socket dropped first. Absent once delivered. */
   delivery?: "sending" | "failed";
+  /** Own messages only: the send op id that stored it, so a reconnect's sync
+   *  can retire the matching optimistic bubble at once. */
+  clientId?: string;
 }
 
 export interface SendOpts {
