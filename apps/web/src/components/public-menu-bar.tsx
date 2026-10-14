@@ -4,9 +4,11 @@ import {
   CircleUserRoundIcon,
   LayoutDashboardIcon,
   LogInIcon,
+  MessageSquareQuoteIcon,
   MessagesSquareIcon,
   ScrollTextIcon,
 } from "lucide-react";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { Link, usePathname } from "@/lib/navigation";
 import {
   infiniteQueryDefaults,
@@ -30,6 +32,7 @@ export function PublicMenubar() {
     ...infiniteQueryDefaults,
   });
 
+  const { chat } = useFeatureFlags();
   const username = currentUser?.user?.username;
   const isAuthenticated = !!currentUser?.user?.id;
   const pathname = usePathname();
@@ -47,6 +50,14 @@ export function PublicMenubar() {
       {/* Authed users get Groups (with an unread dot); logged-out viewers keep
           the anonymous-chat cross-promo (their no-signup audience). */}
       {isAuthenticated ? <NavGroups /> : <ChatPromo />}
+
+      {/* Logged-out viewers reach chat through the promo above; members get
+          a direct tab once it is launched. */}
+      {isAuthenticated && chat && (
+        <MenubarLink href="/chat" title="Chat">
+          <MessageSquareQuoteIcon className="h-6 w-6" />
+        </MenubarLink>
+      )}
 
       <MenubarLink href="/notes" title="Notes">
         <ScrollTextIcon className="h-6 w-6" />

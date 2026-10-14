@@ -2,7 +2,7 @@ import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { ArrowRightIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { umaminChatUrl } from "@/lib/chat-link";
+import { UmaminChatLink } from "@/components/umamin-chat-link";
 
 const DISMISSED_KEY = "umamin:chat-announcement-dismissed";
 
@@ -55,14 +55,10 @@ export function ChatAnnouncement({ className }: { className?: string }) {
         size="sm"
         className="order-last w-full shrink-0 rounded-full sm:order-none sm:w-auto"
       >
-        <a
-          href={umaminChatUrl("announcement")}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <UmaminChatLink utm="announcement">
           Try it
           <ArrowRightIcon />
-        </a>
+        </UmaminChatLink>
       </Button>
       <Button
         variant="ghost"

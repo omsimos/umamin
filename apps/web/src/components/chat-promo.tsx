@@ -19,9 +19,7 @@ import {
 import { ArrowRightIcon, MessageSquareQuoteIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { umaminChatUrl } from "@/lib/chat-link";
-
-const CHAT_URL = umaminChatUrl("nav");
+import { UmaminChatLink } from "./umamin-chat-link";
 
 const SEEN_KEY = "umamin:chat-promo-seen";
 
@@ -91,10 +89,10 @@ export function ChatPromo() {
 
   const cta = (
     <Button asChild size="lg" className="w-full rounded-full">
-      <a href={CHAT_URL} target="_blank" rel="noopener noreferrer">
+      <UmaminChatLink utm="nav">
         Start chatting
         <ArrowRightIcon />
-      </a>
+      </UmaminChatLink>
     </Button>
   );
 

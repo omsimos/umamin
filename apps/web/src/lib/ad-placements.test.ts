@@ -18,10 +18,17 @@ const EXPECTED_KEYS = [
   "profile_top",
   "inbox_top",
   "notes_input_top",
+  "chat_lobby",
+  "chat_ended",
 ] as const;
 
 // Below-the-fold placements lazy-load on scroll; the rest are eager.
-const LAZY_KEYS = new Set<string>(["profile_bottom", "to_user", "profile_top"]);
+const LAZY_KEYS = new Set<string>([
+  "profile_bottom",
+  "to_user",
+  "profile_top",
+  "chat_lobby",
+]);
 
 describe("adPlacements", () => {
   it("exposes exactly the expected keys", () => {

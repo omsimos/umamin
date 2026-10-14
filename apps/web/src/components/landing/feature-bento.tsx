@@ -13,7 +13,7 @@ import { DemoGroups } from "@/components/landing/demo-groups";
 import { DemoMessage } from "@/components/landing/demo-message";
 import { DemoNotes } from "@/components/landing/demo-notes";
 import { DemoSocial } from "@/components/landing/demo-social";
-import { umaminChatUrl } from "@/lib/chat-link";
+import { useChatLink } from "@/hooks/use-chat-link";
 import { Link } from "@/lib/navigation";
 
 type Feature = {
@@ -74,11 +74,8 @@ const FEATURES: Feature[] = [
     accent: "bg-violet-400/15 text-violet-500",
     title: "Talk to a stranger, then it's gone",
     body: "Pick your interests and get matched with someone who shares one. No account needed, and nothing is kept after the chat ends.",
-    cta: {
-      label: "Start a chat",
-      href: umaminChatUrl("landing"),
-      external: true,
-    },
+    // Resolved per render from the rollout flag (see FeatureBento).
+    cta: { label: "Start a chat", href: "", external: true },
     demo: <DemoChat />,
   },
 ];
@@ -140,10 +137,15 @@ function BentoCard({ feature: f }: { feature: Feature }) {
 }
 
 export function FeatureBento() {
+  const chat = useChatLink("landing");
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {FEATURES.map((f) => (
-        <BentoCard key={f.name} feature={f} />
+        <BentoCard
+          key={f.name}
+          feature={f.name === "Chat" ? { ...f, cta: { ...f.cta, ...chat } } : f}
+        />
       ))}
     </div>
   );

@@ -1,13 +1,12 @@
 import { ArrowUpRightIcon } from "lucide-react";
 import { UmaminLogo } from "@/components/umamin-logo";
-import { umaminChatUrl } from "@/lib/chat-link";
+import { useChatLink } from "@/hooks/use-chat-link";
 import { Link } from "@/lib/navigation";
 
 const PRODUCTS = [
   { label: "Messages", href: "/login" },
   { label: "Notes", href: "/notes" },
   { label: "Social", href: "/feed" },
-  { label: "Chat", href: umaminChatUrl("footer"), external: true },
 ];
 
 const RESOURCES = [
@@ -71,6 +70,9 @@ function FooterLinks({
 }
 
 export function SiteFooter() {
+  const chat = useChatLink("footer");
+  const products = [...PRODUCTS, { label: "Chat", ...chat }];
+
   return (
     <footer className="border-t border-dashed px-6 pb-24 pt-14 lg:pb-14">
       <div className="mx-auto max-w-5xl">
@@ -111,7 +113,7 @@ export function SiteFooter() {
             aria-label="Footer"
             className="flex flex-wrap gap-x-16 gap-y-10 md:gap-x-20"
           >
-            <FooterLinks title="Products" links={PRODUCTS} />
+            <FooterLinks title="Products" links={products} />
             <FooterLinks title="Resources" links={RESOURCES} />
             <FooterLinks title="Legal" links={LEGAL} />
           </nav>

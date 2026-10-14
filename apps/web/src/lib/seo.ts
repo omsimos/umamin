@@ -37,6 +37,9 @@ type PageSeoInput = {
   twitterCard?: "summary" | "summary_large_image";
   /** e.g. "noindex, follow". Omitted → inherits the root's index,follow default. */
   robots?: string;
+  /** App path of a page-specific share image, used for og:image and
+   *  twitter:image. Omitted → the site-wide images. */
+  image?: string;
 };
 
 /**
@@ -55,6 +58,7 @@ export function pageSeo({
   ogType = "website",
   twitterCard = "summary_large_image",
   robots,
+  image,
 }: PageSeoInput): { meta: MetaTag[]; links: { rel: string; href: string }[] } {
   const meta: MetaTag[] = [
     { title },
@@ -68,7 +72,7 @@ export function pageSeo({
     { property: "og:site_name", content: "Umamin" },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
-    { property: "og:image", content: absoluteUrl(OG_IMAGE) },
+    { property: "og:image", content: absoluteUrl(image ?? OG_IMAGE) },
   );
   if (path) meta.push({ property: "og:url", content: absoluteUrl(path) });
 
@@ -78,7 +82,10 @@ export function pageSeo({
     { name: "twitter:description", content: description },
   );
   if (twitterCard === "summary_large_image") {
-    meta.push({ name: "twitter:image", content: absoluteUrl(TWITTER_IMAGE) });
+    meta.push({
+      name: "twitter:image",
+      content: absoluteUrl(image ?? TWITTER_IMAGE),
+    });
   }
 
   return {

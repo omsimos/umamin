@@ -1,4 +1,7 @@
+import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
+import { MessageSquareQuoteIcon } from "lucide-react";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { Link, usePathname } from "@/lib/navigation";
 import { AccountSheet } from "./account-sheet";
 import { UmaminLogo } from "./umamin-logo";
@@ -8,6 +11,7 @@ import { UmaminLogo } from "./umamin-logo";
 // render mismatched hydration for every PWA user (React #418).
 export function Navbar() {
   const pathname = usePathname();
+  const { chat } = useFeatureFlags();
 
   // Post detail is a focused view on every breakpoint (its own PostHeader).
   if (pathname.startsWith("/post")) {
@@ -43,7 +47,22 @@ export function Navbar() {
           <UmaminLogo className="size-6" />
         </Link>
 
-        <AccountSheet avatarClassName="size-8" />
+        <div className="flex items-center gap-2">
+          {chat && (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-muted-foreground"
+            >
+              <Link href="/chat">
+                <MessageSquareQuoteIcon />
+                Chat
+              </Link>
+            </Button>
+          )}
+          <AccountSheet avatarClassName="size-8" />
+        </div>
       </div>
     </nav>
   );

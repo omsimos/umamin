@@ -22,8 +22,8 @@ import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
+import { UmaminChatLink } from "@/components/umamin-chat-link";
 import { actionError, callAction } from "@/lib/api";
-import { umaminChatUrl } from "@/lib/chat-link";
 import { ExpectedError } from "@/lib/expected-error";
 import { Link, useAppNavigate } from "@/lib/navigation";
 import {
@@ -35,10 +35,6 @@ import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 
 const NAV_ITEM_CLASS =
   "flex items-center gap-4 rounded-md py-3 text-lg font-semibold transition-colors hover:text-foreground/80";
-
-// Cross-promo to the anonymous chat app, demoted here from the bottom nav (its
-// slot now holds Groups). Logged-out viewers still get the full promo in the bar.
-const CHAT_URL = umaminChatUrl("account");
 
 // Avatar that opens the account drawer (X-style). Logged-out viewers get a
 // plain Login link instead — no drawer to open.
@@ -175,15 +171,10 @@ export function AccountSheet({
             </DrawerClose>
 
             <DrawerClose asChild>
-              <a
-                href={CHAT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={NAV_ITEM_CLASS}
-              >
+              <UmaminChatLink utm="account" className={NAV_ITEM_CLASS}>
                 <MessageSquareQuoteIcon className="size-6" />
                 Umamin Chat
-              </a>
+              </UmaminChatLink>
             </DrawerClose>
 
             <DrawerClose asChild>
