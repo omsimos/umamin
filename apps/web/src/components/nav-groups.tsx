@@ -13,12 +13,11 @@ import {
   fetchGroupUnread,
 } from "@/lib/query-fetchers";
 
-// Bottom-nav Groups entry. Shares the currentUser + group-unread caches with the
-// /groups hub (same query keys) — no extra requests, no extra writes. The dot is
-// presence-only (the unread signal is one boolean per group), derived from
-// group.lastMessageAt vs the read watermark; it clears when a room is opened.
-export function NavGroups() {
-  const pathname = usePathname();
+/** Whether any joined group has unread chat. Shares the currentUser +
+ *  group-unread caches with the /groups hub (same query keys), so every
+ *  surface showing the dot costs one request between them. The dot is
+ *  presence-only (one boolean per group) and clears when a room is opened. */
+export function useGroupUnread(): boolean {
   const { data } = useQuery({
     queryKey: queryKeys.currentUser(),
     queryFn: fetchCurrentUserOptional,
@@ -37,7 +36,13 @@ export function NavGroups() {
     refetchOnWindowFocus: true,
   });
 
-  const hasUnread = (unread ?? []).some((u) => u.hasUnread);
+  return (unread ?? []).some((u) => u.hasUnread);
+}
+
+// Bottom-nav Groups entry, shown while the Chat tab isn't launched.
+export function NavGroups() {
+  const pathname = usePathname();
+  const hasUnread = useGroupUnread();
   const active = pathname === "/groups" || pathname.startsWith("/groups/");
 
   return (

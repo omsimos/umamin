@@ -47,16 +47,18 @@ export function PublicMenubar() {
         isPostDetail && "lg:hidden",
       )}
     >
-      {/* Authed users get Groups (with an unread dot); logged-out viewers keep
-          the anonymous-chat cross-promo (their no-signup audience). */}
-      {isAuthenticated ? <NavGroups /> : <ChatPromo />}
-
-      {/* Logged-out viewers reach chat through the promo above; members get
-          a direct tab once it is launched. */}
-      {isAuthenticated && chat && (
+      {/* Five slots with Profile in the middle. Members get Chat once it is
+          launched, which moves Groups to the account drawer; until then they
+          keep Groups (with its unread dot). Logged-out viewers keep the
+          anonymous-chat cross-promo (their no-signup audience). */}
+      {!isAuthenticated ? (
+        <ChatPromo />
+      ) : chat ? (
         <MenubarLink href="/chat" title="Chat">
           <MessageSquareQuoteIcon className="h-6 w-6" />
         </MenubarLink>
+      ) : (
+        <NavGroups />
       )}
 
       <MenubarLink href="/notes" title="Notes">
