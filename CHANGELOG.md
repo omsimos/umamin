@@ -18,6 +18,13 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.13.0] - 2026-10-16
+
+### Added
+
+- Uma now covers posts, comments and notes that look like scams, such as free GCash or load, fake prizes, "see who sent your message" pages, betting promos, or links pretending to be Umamin or a bank. Links in a covered scam stay unclickable even after you view it, and moderators review each one.
+- If you turned on Filter hurtful messages, Uma also covers messages that look like scams.
+
 ## [7.12.0] - 2026-10-16
 
 ### Added
@@ -1130,6 +1137,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.13.0]: https://github.com/omsimos/umamin/compare/v7.12.0...v7.13.0
 [7.12.0]: https://github.com/omsimos/umamin/compare/v7.11.0...v7.12.0
 [7.11.0]: https://github.com/omsimos/umamin/compare/v7.10.0...v7.11.0
 [7.10.0]: https://github.com/omsimos/umamin/compare/v7.9.1...v7.10.0
