@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { queryKeys } from "@/lib/query";
 import type { ContentLabel } from "@/lib/types";
 import { ContentCover } from "./content-cover";
+import { PostBody } from "./post-body";
 
 const { callAction } = vi.hoisted(() => ({
   callAction: vi.fn(async () => ({ success: true })),
@@ -178,6 +179,47 @@ describe("ContentCover", () => {
     renderCover("severe");
     await userEvent.click(screen.getByRole("button", { name: "Why?" }));
     expect(await screen.findByText(/Moderators review posts/)).toBeVisible();
+  });
+
+  it("covers a scam for everyone and keeps its links unclickable after viewing", async () => {
+    const client = new QueryClient();
+    const ui = (label: ContentLabel) => (
+      <QueryClientProvider client={client}>
+        <ContentCover
+          label={label}
+          revealKey={`post:${++keySeq}`}
+          isOwn={false}
+          isAuthenticated={false}
+        >
+          <PostBody content="free load at https://claim.example.test now" />
+        </ContentCover>
+      </QueryClientProvider>
+    );
+
+    render(ui("scam"));
+    expect(screen.getByText("This post looks like a scam.")).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Why?" }));
+    expect(
+      await screen.findByText(/I turned off the links in it/),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "View post" }));
+    expect(screen.getByText("https://claim.example.test")).toBeVisible();
+    expect(screen.queryByRole("link")).toBeNull();
+
+    render(ui("severe"));
+    await userEvent.click(screen.getByRole("button", { name: "View" }));
+    expect(screen.getByRole("link")).toHaveAttribute(
+      "href",
+      "https://claim.example.test",
+    );
+  });
+
+  it("covers a scam message without sending its reader to moderators", async () => {
+    renderCover("scam", { coverDrama: true, noun: "message" });
+    expect(screen.getByText("This message looks like a scam.")).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Why?" }));
+    expect(await screen.findByText(/looks like a scam, like/)).toBeVisible();
+    expect(screen.queryByText(/Moderators/)).toBeNull();
   });
 
   it("never sends a filtered message's reader to moderators", async () => {

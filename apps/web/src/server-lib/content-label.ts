@@ -10,20 +10,30 @@ export const REVIEW_THRESHOLD = 60;
 export const SEVERE_THRESHOLD = 80;
 export const DRAMA_THRESHOLD = 85;
 
-export type ContentLabel = "severe" | "drama";
+// "scam" is severe content whose top reason is scam: covered the same way, but
+// with its own copy and with links left unclickable.
+export type ContentLabel = "severe" | "scam" | "drama";
 
 type ScoredRow = {
   modSevere?: number | null;
   modDrama?: number | null;
+  modReason?: string | null;
   modClearedAt?: Date | null;
 };
+
+/** Covered for every viewer, as opposed to drama's opt-out fold. */
+export function isCoveredLabel(label: ContentLabel | null) {
+  return label === "severe" || label === "scam";
+}
 
 export function contentLabel(
   row: ScoredRow,
   enforce: boolean,
 ): ContentLabel | null {
   if (!enforce || row.modClearedAt) return null;
-  if ((row.modSevere ?? 0) >= SEVERE_THRESHOLD) return "severe";
+  if ((row.modSevere ?? 0) >= SEVERE_THRESHOLD) {
+    return row.modReason === "scam" ? "scam" : "severe";
+  }
   if ((row.modDrama ?? 0) >= DRAMA_THRESHOLD) return "drama";
   return null;
 }

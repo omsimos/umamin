@@ -196,7 +196,7 @@ async function run(input: string) {
   }
 }
 
-type Expect = "severe" | "drama" | "clean" | "covered" | "not-severe";
+type Expect = "severe" | "scam" | "drama" | "clean" | "covered" | "not-severe";
 type Case = {
   id: string;
   kind: ContentKind;
@@ -209,16 +209,19 @@ type Case = {
 
 const label = (scores: ContentScores) =>
   scores.severe >= SEVERE_THRESHOLD
-    ? "severe"
+    ? scores.reason === "scam"
+      ? "scam"
+      : "severe"
     : scores.drama >= DRAMA_THRESHOLD
       ? "drama"
       : "clean";
 
 const ACCEPTS: Record<Expect, string[]> = {
   severe: ["severe"],
+  scam: ["scam"],
   drama: ["drama"],
   clean: ["clean"],
-  covered: ["severe", "drama"],
+  covered: ["severe", "scam", "drama"],
   "not-severe": ["drama", "clean"],
 };
 

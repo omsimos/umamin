@@ -1,5 +1,5 @@
 import { cn } from "@umamin/ui/lib/utils";
-import type { ReactNode } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 import { Link } from "@/lib/navigation";
 import { ExternalLink } from "./external-link";
 
@@ -7,6 +7,11 @@ import { ExternalLink } from "./external-link";
 // inside words / email addresses (e.g. foo@bar.com won't linkify as a mention).
 const TOKEN_RE =
   /(https?:\/\/[^\s]+)|(?<![\w@])@([a-zA-Z0-9_-]{1,30})|(?<![\w#])#([a-zA-Z0-9_]{1,50})/g;
+
+// Content Uma labelled a scam keeps its links as plain text, even after the
+// viewer reveals it, so one tap can't open the page the scam points to.
+const PlainLinksContext = createContext(false);
+export const PlainLinks = PlainLinksContext.Provider;
 
 // Renders post/comment content with clickable links, @mention profile links, and
 // #hashtags. Builds React nodes (JSX children auto-escape) — never
@@ -18,6 +23,7 @@ export function PostBody({
   content: string;
   className?: string;
 }) {
+  const plainLinks = useContext(PlainLinksContext);
   const nodes: ReactNode[] = [];
   let last = 0;
   let key = 0;
@@ -34,17 +40,23 @@ export function PostBody({
       const trailing = url.match(/[).,!?;:'"\]]+$/)?.[0] ?? "";
       const cleanUrl = trailing ? url.slice(0, -trailing.length) : url;
       nodes.push(
-        // ExternalLink confirms before leaving the app (warning harder on risky
-        // URLs). relative z-10 lifts it above the post-card's full-card open
-        // overlay so it's clickable; the link's own handler stops that overlay
-        // from also firing. [#29]
-        <ExternalLink
-          key={key++}
-          href={cleanUrl}
-          className="relative z-10 text-pink-500 hover:underline break-all"
-        >
-          {cleanUrl}
-        </ExternalLink>,
+        plainLinks ? (
+          <span key={key++} className="break-all">
+            {cleanUrl}
+          </span>
+        ) : (
+          // ExternalLink confirms before leaving the app (warning harder on
+          // risky URLs). relative z-10 lifts it above the post-card's
+          // full-card open overlay so it's clickable; the link's own handler
+          // stops that overlay from also firing. [#29]
+          <ExternalLink
+            key={key++}
+            href={cleanUrl}
+            className="relative z-10 text-pink-500 hover:underline break-all"
+          >
+            {cleanUrl}
+          </ExternalLink>
+        ),
       );
       if (trailing) nodes.push(trailing);
     } else if (mention) {

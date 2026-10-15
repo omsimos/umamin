@@ -41,6 +41,7 @@ import { makeTestDb } from "./helpers/db";
 const SEVERE = { modSevere: 95, modDrama: 99, modReason: "harassment" };
 const DRAMA = { modSevere: 40, modDrama: 98, modReason: "indirect" };
 const CLEAN = { modSevere: 2, modDrama: 3, modReason: null };
+const SCAM = { modSevere: 97, modDrama: 10, modReason: "scam" };
 
 // Every raw classifier column is server-only; a leak would let users read
 // their own scores and write just under the thresholds.
@@ -128,6 +129,18 @@ describe("content moderation (real libSQL)", () => {
       expectNoRawScores(profile);
     });
 
+    it("labels a scam apart from other covered content", async () => {
+      await db.insert(postTable).values({
+        id: "scam",
+        content: "free gcash https://example.test",
+        authorId: "author",
+        ...SCAM,
+      });
+      const post = await getPostById(db, { postId: "scam", enforce: true });
+      expect(post?.moderation).toBe("scam");
+      expectNoRawScores(post);
+    });
+
     it("drops a cleared flag", async () => {
       await db
         .update(postTable)
@@ -204,6 +217,14 @@ describe("content moderation (real libSQL)", () => {
           likeCount: 50,
           ...SEVERE,
         },
+        {
+          id: "giveaway",
+          content: "g",
+          authorId: "author",
+          createdAt: new Date(now - 20_000),
+          commentCount: 300,
+          ...SCAM,
+        },
       ]);
     });
 
@@ -223,6 +244,7 @@ describe("content moderation (real libSQL)", () => {
       });
       expect(shadow.data[0]?.post.id).toBe("fight");
       expect(shadow.data.map((item) => item.post.id)).toContain("abuse");
+      expect(shadow.data.map((item) => item.post.id)).toContain("giveaway");
     });
 
     it("applies the same rules in the cron's ranked list", async () => {

@@ -30,6 +30,7 @@ function answers(
     doxxing: p("doxxing"),
     sexual: p("sexual"),
     encouragesSelfHarm: p("encouragesSelfHarm"),
+    scam: p("scam"),
     harassment: p("harassment"),
     drama: {
       choice: drama?.choice ?? "none",
@@ -83,6 +84,9 @@ describe("scoreAnswers", () => {
     expect(
       scoreAnswers(answers({ encouragesSelfHarm: 0.91, harassment: 0.7 })),
     ).toMatchObject({ severe: 91, reason: "encouragesSelfHarm" });
+    expect(
+      scoreAnswers(answers({ scam: 0.97, harassment: 0.4 })),
+    ).toMatchObject({ severe: 97, reason: "scam" });
   });
 
   it("zeroes drama and harassment for political opinion but keeps hate", () => {
@@ -284,6 +288,22 @@ describe("contentLabel", () => {
     expect(contentLabel({ modSevere: 80, modDrama: 0 }, true)).toBe("severe");
     expect(contentLabel({ modSevere: 79, modDrama: 85 }, true)).toBe("drama");
     expect(contentLabel({ modSevere: 79, modDrama: 84 }, true)).toBeNull();
+  });
+
+  it("labels covered content whose top reason is scam as a scam", () => {
+    expect(
+      contentLabel({ modSevere: 97, modDrama: 0, modReason: "scam" }, true),
+    ).toBe("scam");
+    expect(
+      contentLabel({ modSevere: 97, modDrama: 0, modReason: "threat" }, true),
+    ).toBe("severe");
+    // Below the line the reason alone covers nothing.
+    expect(
+      contentLabel({ modSevere: 70, modDrama: 90, modReason: "scam" }, true),
+    ).toBe("drama");
+    expect(
+      contentLabel({ modSevere: 70, modDrama: 0, modReason: "scam" }, true),
+    ).toBeNull();
   });
 
   it("is off in shadow mode, for cleared rows and for unclassified rows", () => {

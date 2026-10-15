@@ -10,7 +10,16 @@ import {
 import type { ReviewRequest } from "@/components/content-cover";
 import { Uma } from "@/components/uma";
 
-export type CoverKind = "dispute" | "severe" | "message";
+export type CoverKind =
+  | "dispute"
+  | "severe"
+  | "scam"
+  | "message"
+  | "message-scam";
+
+// Messages render as plain text, so only public content had links to turn off.
+const SCAM_ADVICE =
+  "Don't send anyone your password or a one-time code (OTP). I turned off the links in it so you can't open one by accident.";
 
 function copyFor(kind: CoverKind, noun: string) {
   if (kind === "dispute") {
@@ -33,6 +42,28 @@ function copyFor(kind: CoverKind, noun: string) {
         "You can still view it if you choose to.",
       ],
       action: `View ${noun}`,
+    };
+  }
+  if (kind === "scam") {
+    return {
+      title: "Why is this covered?",
+      lines: [
+        `I covered this ${noun} for everyone because it looks like a scam, like free money, a prize, or a link that asks you to log in.`,
+        SCAM_ADVICE,
+        `Moderators review ${noun}s like this and remove the ones that break the rules. I'm automated, so if I got this one wrong, they can clear it.`,
+      ],
+      action: `View ${noun}`,
+    };
+  }
+  if (kind === "message-scam") {
+    return {
+      title: "Why is this covered?",
+      lines: [
+        "You turned on Filter hurtful messages, and this one looks like a scam, like free money, a prize, or a link that asks you to log in.",
+        "Don't send anyone your password or a one-time code (OTP), and don't open links from it.",
+        "I'm automated, and I might be wrong about it. Only you see this cover.",
+      ],
+      action: "View message",
     };
   }
   return {

@@ -295,6 +295,7 @@ function ReviewList({ kind }: { kind: QueueKind }) {
 
 function LabelBadge({ item }: { item: ReviewItem }) {
   if (item.label === "severe") return <Badge>Covered</Badge>;
+  if (item.label === "scam") return <Badge>Covered: scam</Badge>;
   if (item.label === "drama") return <Badge>Folded</Badge>;
   return <Badge variant="outline">Not covered</Badge>;
 }

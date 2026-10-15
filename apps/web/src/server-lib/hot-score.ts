@@ -1,5 +1,5 @@
 import type { SelectPost } from "@umamin/db/schema/post";
-import { contentLabel } from "./content-label";
+import { contentLabel, isCoveredLabel } from "./content-label";
 
 /**
  * Static Hot score shared by the ranked-id list and the SQL fallback so both
@@ -28,7 +28,7 @@ export type HotRankablePost = Pick<
 // fight's comments and quote-reposts are exactly the engagement that would
 // otherwise push it to the top.
 export function isHotEligible(post: HotRankablePost, enforce: boolean) {
-  return contentLabel(post, enforce) !== "severe";
+  return !isCoveredLabel(contentLabel(post, enforce));
 }
 
 export function getHotEngagement(post: HotRankablePost) {
