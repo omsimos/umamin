@@ -8,7 +8,7 @@ import {
   ScrollTextIcon,
 } from "lucide-react";
 import { ProductCard } from "@/components/landing/product-card";
-import { umaminChatUrl } from "@/lib/chat-link";
+import { useChatLink } from "@/hooks/use-chat-link";
 import { Link } from "@/lib/navigation";
 import { pageSeo } from "@/lib/seo";
 
@@ -30,6 +30,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function AboutPage() {
+  const chatLink = useChatLink("about");
+
   return (
     <main className="overflow-x-clip pb-16">
       <section className="relative px-6 pb-14 pt-36 md:pt-44">
@@ -212,11 +214,7 @@ function AboutPage() {
               tag="new"
               accent="bg-violet-400/15 text-violet-400"
               icon={<MessageSquareQuoteIcon className="size-4" />}
-              cta={{
-                label: "Start a chat",
-                href: umaminChatUrl("about"),
-                external: true,
-              }}
+              cta={{ label: "Start a chat", ...chatLink }}
             >
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Get matched with anonymous strangers based on shared interests,

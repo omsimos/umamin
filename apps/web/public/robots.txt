@@ -5,6 +5,7 @@ Disallow: /api/*
 Disallow: /auth/*
 Disallow: /inbox/*
 Disallow: /settings/*
+Disallow: /chat/session
 
 Host: https://www.umamin.link
 Sitemap: https://www.umamin.link/sitemap.xml

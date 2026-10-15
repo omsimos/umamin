@@ -28,7 +28,11 @@ describe("useFeatureFlags", () => {
   it("reads as hidden before the flags arrive", () => {
     fetchFeatureFlags.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useFeatureFlags(), { wrapper });
-    expect(result.current).toEqual({ pro: false, contentModeration: false });
+    expect(result.current).toEqual({
+      pro: false,
+      contentModeration: false,
+      chat: false,
+    });
   });
 
   it("reads as hidden when the request fails", async () => {
@@ -37,14 +41,26 @@ describe("useFeatureFlags", () => {
     await waitFor(() => {
       expect(fetchFeatureFlags).toHaveBeenCalled();
     });
-    expect(result.current).toEqual({ pro: false, contentModeration: false });
+    expect(result.current).toEqual({
+      pro: false,
+      contentModeration: false,
+      chat: false,
+    });
   });
 
   it("passes through a resolved flag", async () => {
-    fetchFeatureFlags.mockResolvedValue({ pro: true, contentModeration: true });
+    fetchFeatureFlags.mockResolvedValue({
+      pro: true,
+      contentModeration: true,
+      chat: true,
+    });
     const { result } = renderHook(() => useFeatureFlags(), { wrapper });
     await waitFor(() => {
-      expect(result.current).toEqual({ pro: true, contentModeration: true });
+      expect(result.current).toEqual({
+        pro: true,
+        contentModeration: true,
+        chat: true,
+      });
     });
   });
 });
@@ -58,6 +74,7 @@ describe("loadFeatureFlags", () => {
     await expect(loadFeatureFlags(queryClient)).resolves.toEqual({
       pro: false,
       contentModeration: false,
+      chat: false,
     });
   });
 });

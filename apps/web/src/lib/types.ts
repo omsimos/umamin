@@ -581,6 +581,8 @@ export type FeatureFlagsResponse = {
   pro: boolean;
   // The global content-moderation switch: gates the content-filter settings.
   contentModeration: boolean;
+  // The global Umamin Chat switch: gates /chat and its entry points.
+  chat: boolean;
 };
 
 // ── moderation review (moderator-only) ───────────────────────────────────────

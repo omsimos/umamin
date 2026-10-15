@@ -18,6 +18,35 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.12.0] - 2026-10-16
+
+### Added
+
+- Umamin Chat is now part of Umamin at umamin.link/chat. Pick an alias and a few interests, get matched with someone who shares one, and chat anonymously. Nothing is saved, and you don't need an account.
+- If you're signed in, Chat has its own tab in the bottom bar.
+- Umamin Chat games have 24 cards per deck and a new Green or Red Flag deck. You won't get the same card twice in a chat until the deck runs out.
+- After both answers are revealed, a game card offers a question you can send with one tap to keep the conversation going.
+- When a chat starts, the opener suggestions include one about the interest you share and a button to start a This or That round.
+
+### Changed
+
+- Every Umamin Chat game, send effect and reaction is available from your first message.
+- Groups moved from the bottom bar to the account menu. When a group chat has unread messages, your avatar and the Groups item show a dot.
+- When a chat ends, you see how many rounds you played and how many answers matched.
+
+### Fixed
+
+- Note cards on Notes no longer have their tilted corners cut off.
+
+### SEO
+
+- Shared links now tell apps the size and description of their preview image, so previews can show the image right away.
+- The Umamin Chat page is in the sitemap and has its own title, description and preview image.
+
+### Removed
+
+- The Umamin Chat vibe meter and levels.
+
 ## [7.11.0] - 2026-10-14
 
 ### Added
@@ -1101,6 +1130,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.12.0]: https://github.com/omsimos/umamin/compare/v7.11.0...v7.12.0
 [7.11.0]: https://github.com/omsimos/umamin/compare/v7.10.0...v7.11.0
 [7.10.0]: https://github.com/omsimos/umamin/compare/v7.9.1...v7.10.0
 [7.9.1]: https://github.com/omsimos/umamin/compare/v7.9.0...v7.9.1

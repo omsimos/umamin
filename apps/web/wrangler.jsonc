@@ -18,6 +18,13 @@
     "directory": "./dist/client",
     "binding": "ASSETS"
   },
+  // Umamin Chat Durable Objects (server-lib/chat). Declared once here and
+  // inherited by both envs; each env still provisions its own namespaces. The
+  // durable_objects bindings below are NOT inheritable and live in each env.
+  "exports": {
+    "ChatLobby": { "type": "durable-object", "storage": "sqlite" },
+    "ChatRoom": { "type": "durable-object", "storage": "sqlite" }
+  },
   "env": {
     "staging": {
       "name": "umamin-web",
@@ -62,6 +69,12 @@
           "id": "6dcbf8d991fe4123b2b6eb2a0dfd0fb3"
         }
       ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "CHAT_LOBBY", "class_name": "ChatLobby" },
+          { "name": "CHAT_ROOM", "class_name": "ChatRoom" }
+        ]
+      },
       // Workers Rate Limiting bindings (unsafe). period is 10 or 60 only;
       // group-edit (2/day) moves to Turso. namespace_ids are account-global —
       // staging uses 1001-1007, production 2001-2007, so the two environments
@@ -110,6 +123,14 @@
             "type": "ratelimit",
             "namespace_id": "1007",
             "simple": { "limit": 60, "period": 60 }
+          },
+          {
+            // Umamin Chat socket upgrades, per IP. Generous for shared NAT
+            // (schools, offices, CGNAT); reconnects after deploys land here too.
+            "name": "RL_CHAT_CONNECT",
+            "type": "ratelimit",
+            "namespace_id": "1008",
+            "simple": { "limit": 40, "period": 60 }
           }
         ]
       },
@@ -141,7 +162,7 @@
         // this same block (CLOUDFLARE_ENV=staging), so Pro works locally too.
         // A flag that SHOULD be previewable in its hidden state is left out.
         // content-moderation: covers and Hot down-ranking, QA'd here first.
-        "FLAGS_FORCE_ON": "umamin-pro,content-moderation"
+        "FLAGS_FORCE_ON": "umamin-pro,content-moderation,umamin-chat"
       }
     },
     "production": {
@@ -178,6 +199,12 @@
           "id": "568d96f109aa46a28e0cb7ed31294147"
         }
       ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "CHAT_LOBBY", "class_name": "ChatLobby" },
+          { "name": "CHAT_ROOM", "class_name": "ChatRoom" }
+        ]
+      },
       "unsafe": {
         "bindings": [
           {
@@ -221,6 +248,14 @@
             "type": "ratelimit",
             "namespace_id": "2007",
             "simple": { "limit": 60, "period": 60 }
+          },
+          {
+            // Umamin Chat socket upgrades, per IP. Generous for shared NAT
+            // (schools, offices, CGNAT); reconnects after deploys land here too.
+            "name": "RL_CHAT_CONNECT",
+            "type": "ratelimit",
+            "namespace_id": "2008",
+            "simple": { "limit": 40, "period": 60 }
           }
         ]
       },

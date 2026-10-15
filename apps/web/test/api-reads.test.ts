@@ -141,6 +141,7 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       expect(await res.json()).toEqual({
         pro: false,
         contentModeration: false,
+        chat: false,
       });
     });
 
@@ -152,9 +153,13 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       const res = await fetchApp(
         "/flags",
         { headers: { cookie: `session=${token}` } },
-        { FLAGS_FORCE_ON: "umamin-pro,content-moderation" },
+        { FLAGS_FORCE_ON: "umamin-pro,content-moderation,umamin-chat" },
       );
-      expect(await res.json()).toEqual({ pro: true, contentModeration: true });
+      expect(await res.json()).toEqual({
+        pro: true,
+        contentModeration: true,
+        chat: true,
+      });
     });
   });
 

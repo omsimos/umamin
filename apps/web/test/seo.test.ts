@@ -72,6 +72,38 @@ describe("pageSeo", () => {
     expect(metaValue(meta, "og:image")).toContain("/opengraph-image.png");
     expect(metaValue(meta, "twitter:image")).toContain("/twitter-image.png");
   });
+
+  it("uses a page's own share image for both og and twitter", () => {
+    vi.stubEnv("VITE_SITE_URL", "https://www.umamin.link");
+    const { meta } = pageSeo({
+      title: "t",
+      description: "d",
+      path: "/chat",
+      image: "/chat-opengraph.png",
+    });
+    expect(metaValue(meta, "og:image")).toBe(
+      "https://www.umamin.link/chat-opengraph.png",
+    );
+    expect(metaValue(meta, "twitter:image")).toBe(
+      "https://www.umamin.link/chat-opengraph.png",
+    );
+  });
+
+  it("declares the size and alt of whichever image the page uses", () => {
+    const site = pageSeo({ title: "t", description: "d" }).meta;
+    const chat = pageSeo({
+      title: "t",
+      description: "d",
+      image: "/chat-opengraph.png",
+    }).meta;
+    expect(metaValue(site, "og:image:width")).toBe("1400");
+    expect(metaValue(chat, "og:image:width")).toBe("2400");
+    expect(metaValue(chat, "og:image:height")).toBe("1260");
+    expect(metaValue(chat, "og:image:alt")).toMatch(/Umamin Chat/);
+    expect(metaValue(chat, "twitter:image:alt")).toBe(
+      metaValue(chat, "og:image:alt"),
+    );
+  });
 });
 
 // Canonical/OG, robots.txt and sitemap.xml must all advertise ONE host, or

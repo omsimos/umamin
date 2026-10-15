@@ -49,6 +49,16 @@ export const adPlacements = {
     minHeight: 250,
     lazy: false,
   },
+  chat_lobby: {
+    slotId: "9136683633",
+    minHeight: 280,
+    lazy: true,
+  },
+  chat_ended: {
+    slotId: "4273719285",
+    minHeight: 280,
+    lazy: false,
+  },
 } as const;
 
 export type AdPlacement = keyof typeof adPlacements;

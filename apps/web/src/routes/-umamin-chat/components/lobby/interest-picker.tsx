@@ -1,0 +1,46 @@
+import { cn } from "@umamin/ui/lib/utils";
+import { INTERESTS } from "@/lib/chat/content";
+
+export function InterestPicker({
+  selected,
+  onToggle,
+}: {
+  selected: string[];
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {INTERESTS.map((interest) => {
+        const on = selected.includes(interest.id);
+        return (
+          <button
+            key={interest.id}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onToggle(interest.id)}
+            className={cn(
+              "h-9 rounded-full border px-3.5 text-sm transition-[color,background-color,border-color,transform] active:scale-95",
+              "focus-visible:border-ring focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
+              on
+                ? "border-primary/60 bg-primary/10 text-foreground font-medium"
+                : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            {/* Keyed by state so selecting pops the content without
+                remounting the button (focus stays put). */}
+            <span
+              key={String(on)}
+              className={cn(
+                "inline-flex items-center gap-1.5",
+                on && "animate-chat-pop-in motion-reduce:animate-none",
+              )}
+            >
+              <span aria-hidden>{interest.emoji}</span>
+              {interest.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}

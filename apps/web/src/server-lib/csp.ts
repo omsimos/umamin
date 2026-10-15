@@ -34,6 +34,11 @@ function buildCsp(env: AppEnv, isProd: boolean): string {
     "https://us.i.posthog.com",
     "https://us-assets.i.posthog.com",
   ];
+  // Umamin Chat sockets. CSP3 lets 'self' match same-host wss:, but older
+  // Safari doesn't, so name the host explicitly.
+  if (env.APP_URL?.startsWith("https://")) {
+    connectSrc.push(`wss://${new URL(env.APP_URL).host}`);
+  }
   if (env.R2_ACCOUNT_ID) {
     connectSrc.push(`https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`);
   }

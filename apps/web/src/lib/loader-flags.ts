@@ -3,7 +3,11 @@ import { loaderFetchJson } from "./loader-fetch";
 import { PRIVATE_STALE_TIME, queryKeys } from "./query";
 import type { FeatureFlagsResponse } from "./types";
 
-const HIDDEN: FeatureFlagsResponse = { pro: false, contentModeration: false };
+const HIDDEN: FeatureFlagsResponse = {
+  pro: false,
+  contentModeration: false,
+  chat: false,
+};
 
 /**
  * Primes the feature flags for a route that gates a surface on one, so SSR

@@ -92,6 +92,9 @@ export function csrfOriginCheck(): Middleware {
 export function securityHeadersMiddleware(): Middleware {
   return async (c, next) => {
     await next();
+    // Security headers mean nothing on a WebSocket upgrade, and c.header()
+    // rebuilds the response; leave the 101 exactly as the Durable Object sent it.
+    if (c.res.status === 101) return;
     for (const [key, value] of Object.entries(securityHeaders(c.env))) {
       c.header(key, value);
     }

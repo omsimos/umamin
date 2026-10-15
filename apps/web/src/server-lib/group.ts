@@ -19,7 +19,7 @@ export const GROUP_CHAT_ENABLED: boolean = false;
 export const GROUP_CHAT_DISABLED_ERROR =
   "Group chat is temporarily unavailable.";
 
-// Fixed group-chat reaction set — same emojis as apps/chat for consistency.
+// Fixed group-chat reaction set.
 // Gates the picker (UX) AND the react action (server-side validation), so the
 // emoji column can never hold arbitrary client content.
 export const GROUP_CHAT_REACTION_EMOJIS = [

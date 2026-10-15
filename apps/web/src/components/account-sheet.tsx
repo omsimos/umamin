@@ -21,9 +21,10 @@ import {
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
+import { useGroupUnread } from "@/components/nav-groups";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
+import { UmaminChatLink } from "@/components/umamin-chat-link";
 import { actionError, callAction } from "@/lib/api";
-import { umaminChatUrl } from "@/lib/chat-link";
 import { ExpectedError } from "@/lib/expected-error";
 import { Link, useAppNavigate } from "@/lib/navigation";
 import {
@@ -33,12 +34,20 @@ import {
 } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 
+function UnreadDot({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "absolute size-2.5 rounded-full bg-primary ring-2 ring-background",
+        className,
+      )}
+    />
+  );
+}
+
 const NAV_ITEM_CLASS =
   "flex items-center gap-4 rounded-md py-3 text-lg font-semibold transition-colors hover:text-foreground/80";
-
-// Cross-promo to the anonymous chat app, demoted here from the bottom nav (its
-// slot now holds Groups). Logged-out viewers still get the full promo in the bar.
-const CHAT_URL = umaminChatUrl("account");
 
 // Avatar that opens the account drawer (X-style). Logged-out viewers get a
 // plain Login link instead — no drawer to open.
@@ -77,6 +86,7 @@ export function AccountSheet({
   });
 
   const user = data?.user;
+  const groupUnread = useGroupUnread();
 
   if (!user) {
     return (
@@ -92,13 +102,18 @@ export function AccountSheet({
   return (
     <Drawer direction="left">
       <DrawerTrigger
-        aria-label="Open account menu"
-        className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={
+          groupUnread
+            ? "Open account menu (unread group messages)"
+            : "Open account menu"
+        }
+        className="relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Avatar className={cn("size-9", avatarClassName)}>
           <AvatarImage src={user.imageUrl ?? ""} alt="" />
           <BlobatarFallback seed={user.id} />
         </Avatar>
+        {groupUnread && <UnreadDot className="-right-0.5 -top-0.5" />}
       </DrawerTrigger>
 
       <DrawerContent className="p-0">
@@ -169,21 +184,20 @@ export function AccountSheet({
 
             <DrawerClose asChild>
               <Link href="/groups" className={NAV_ITEM_CLASS}>
-                <UsersRoundIcon className="size-6" />
+                <span className="relative">
+                  <UsersRoundIcon className="size-6" />
+                  {groupUnread && <UnreadDot className="-right-1 -top-1" />}
+                </span>
                 Groups
+                {groupUnread && <span className="sr-only">(unread)</span>}
               </Link>
             </DrawerClose>
 
             <DrawerClose asChild>
-              <a
-                href={CHAT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={NAV_ITEM_CLASS}
-              >
+              <UmaminChatLink utm="account" className={NAV_ITEM_CLASS}>
                 <MessageSquareQuoteIcon className="size-6" />
                 Umamin Chat
-              </a>
+              </UmaminChatLink>
             </DrawerClose>
 
             <DrawerClose asChild>

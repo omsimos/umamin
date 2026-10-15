@@ -28,8 +28,15 @@ function parseJsonc(source: string): unknown {
   return JSON.parse(stripped);
 }
 
+type EnvBlock = {
+  vars?: Record<string, string>;
+  durable_objects?: { bindings: { name: string; class_name: string }[] };
+  unsafe?: { bindings: { name: string; namespace_id: string }[] };
+};
+
 type WranglerConfig = {
-  env: Record<string, { vars?: Record<string, string> }>;
+  exports?: Record<string, { type: string; storage?: string }>;
+  env: Record<string, EnvBlock>;
 };
 
 // vitest roots at apps/web (import.meta.url is not a file: URL under jsdom).
@@ -56,10 +63,50 @@ describe("wrangler feature-flag vars", () => {
     );
   });
 
+  it("forces Umamin Chat on in staging", () => {
+    expect(config.env.staging?.vars?.FLAGS_FORCE_ON).toContain("umamin-chat");
+  });
+
   // Both environments report into one PostHog project, so the property that
   // separates them has to differ — and production is the gated one.
   it("tags the two environments distinctly", () => {
     expect(config.env.staging?.vars?.POSTHOG_ENV).toBe("staging");
     expect(config.env.production?.vars?.POSTHOG_ENV).toBe("production");
+  });
+});
+
+// durable_objects bindings are NOT inheritable: an env block without them
+// deploys a Worker whose chat routes throw on `env.CHAT_ROOM`.
+describe("wrangler Umamin Chat bindings", () => {
+  const chatBindings = (env: string) =>
+    Object.fromEntries(
+      (config.env[env]?.durable_objects?.bindings ?? []).map((b) => [
+        b.name,
+        b.class_name,
+      ]),
+    );
+
+  it.each(["staging", "production"])("binds both chat objects in %s", (env) => {
+    expect(chatBindings(env)).toMatchObject({
+      CHAT_LOBBY: "ChatLobby",
+      CHAT_ROOM: "ChatRoom",
+    });
+  });
+
+  it("declares both classes as SQLite-backed exports", () => {
+    expect(config.exports?.ChatLobby).toMatchObject({ storage: "sqlite" });
+    expect(config.exports?.ChatRoom).toMatchObject({ storage: "sqlite" });
+  });
+
+  // Rate-limit namespace ids are account-global; sharing one would let staging
+  // traffic drain production's connect budget.
+  it("gives each environment its own connect limiter", () => {
+    const id = (env: string) =>
+      config.env[env]?.unsafe?.bindings.find(
+        (b) => b.name === "RL_CHAT_CONNECT",
+      )?.namespace_id;
+    expect(id("staging")).toBeDefined();
+    expect(id("production")).toBeDefined();
+    expect(id("staging")).not.toBe(id("production"));
   });
 });

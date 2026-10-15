@@ -11,6 +11,22 @@
 export const OG_IMAGE = "/opengraph-image.png";
 export const TWITTER_IMAGE = "/twitter-image.png";
 
+// Every share image with its real pixel size and alt text. Pages may only pick
+// from this table: the root declares og:image:width/height too, and head meta
+// dedupes per property, so a page image without its own dimensions would
+// inherit the root's wrong ones.
+const SHARE_IMAGES = {
+  [OG_IMAGE]: { width: 1400, height: 800, alt: "Umamin" },
+  [TWITTER_IMAGE]: { width: 1400, height: 800, alt: "Umamin" },
+  "/chat-opengraph.png": {
+    width: 2400,
+    height: 1260,
+    alt: "Umamin Chat: anonymous conversations with unexpected people",
+  },
+} as const;
+
+export type ShareImage = keyof typeof SHARE_IMAGES;
+
 // Read per call rather than at module load: Vite still inlines the literal, and
 // tests can stub the env.
 function siteOrigin(): string {
@@ -37,6 +53,9 @@ type PageSeoInput = {
   twitterCard?: "summary" | "summary_large_image";
   /** e.g. "noindex, follow". Omitted → inherits the root's index,follow default. */
   robots?: string;
+  /** A page-specific share image, used for og:image and twitter:image.
+   *  Omitted → the site-wide images. */
+  image?: ShareImage;
 };
 
 /**
@@ -55,6 +74,7 @@ export function pageSeo({
   ogType = "website",
   twitterCard = "summary_large_image",
   robots,
+  image,
 }: PageSeoInput): { meta: MetaTag[]; links: { rel: string; href: string }[] } {
   const meta: MetaTag[] = [
     { title },
@@ -68,7 +88,13 @@ export function pageSeo({
     { property: "og:site_name", content: "Umamin" },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
-    { property: "og:image", content: absoluteUrl(OG_IMAGE) },
+  );
+  const og = image ?? OG_IMAGE;
+  meta.push(
+    { property: "og:image", content: absoluteUrl(og) },
+    { property: "og:image:width", content: String(SHARE_IMAGES[og].width) },
+    { property: "og:image:height", content: String(SHARE_IMAGES[og].height) },
+    { property: "og:image:alt", content: SHARE_IMAGES[og].alt },
   );
   if (path) meta.push({ property: "og:url", content: absoluteUrl(path) });
 
@@ -78,7 +104,11 @@ export function pageSeo({
     { name: "twitter:description", content: description },
   );
   if (twitterCard === "summary_large_image") {
-    meta.push({ name: "twitter:image", content: absoluteUrl(TWITTER_IMAGE) });
+    const tw = image ?? TWITTER_IMAGE;
+    meta.push(
+      { name: "twitter:image", content: absoluteUrl(tw) },
+      { name: "twitter:image:alt", content: SHARE_IMAGES[tw].alt },
+    );
   }
 
   return {
