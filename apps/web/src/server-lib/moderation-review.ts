@@ -256,6 +256,7 @@ function toItem(
       {
         modSevere: row.severe,
         modDrama: row.drama,
+        modReason: row.reason,
         modClearedAt: row.clearedAt,
       },
       enforce,

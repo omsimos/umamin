@@ -11,7 +11,10 @@ import { captureServerException } from "./posthog";
 // The AI SDK is imported lazily: statically it adds ~325 kB to the Worker's
 // startup bundle, which every request would pay for on a cold start.
 
-const MODEL_ID = "typesafe-ai/jev";
+// Pinned: the bare alias follows jev-latest, which moves without a deploy, and
+// the thresholds and scripts/moderation-cases.json were tuned on 1.13. 1.14
+// scored counter-speech 15-30 points higher on drama in the regression gate.
+const MODEL_ID = "typesafe-ai/jev-1.13.0";
 const TIMEOUT_MS = 2000;
 const MIN_TEXT_LENGTH = 3;
 const CONTEXT_MAX_LENGTH = 500;
@@ -68,6 +71,13 @@ export const CLASSIFIER_QUESTIONS = {
     instructions:
       "Does the text tell, dare, or wish another person to hurt or kill themselves (for example kys, magpakamatay ka na)? The author talking about their own pain or wanting to die is not this.",
   },
+  // Common local scams named outright: the generic wording alone doesn't tie
+  // "see who sent your message" or a lookalike domain to phishing.
+  scam: {
+    type: "boolean",
+    instructions:
+      "Is the text a scam, phishing, or spam attempt? For example: promising free money, GCash or Maya cash, load, prizes, or giveaways for clicking a link or sending details; asking for an OTP, password, or login; offering to reveal who sent an anonymous message; investment or crypto schemes that double money; online casino, sabong, or betting promotions; selling followers or accounts; or a link pretending to be Umamin, GCash, Maya, a bank, or a delivery service. Sharing a normal link to a song, article, or video is not a scam. Warning people about a scam is not a scam.",
+  },
   harassment: {
     type: "boolean",
     instructions:
@@ -100,6 +110,7 @@ export type ClassifierAnswers = {
   doxxing: BooleanAnswer;
   sexual: BooleanAnswer;
   encouragesSelfHarm: BooleanAnswer;
+  scam: BooleanAnswer;
   harassment: BooleanAnswer;
   drama: { choice: string; probabilities?: Record<string, number> };
   political: BooleanAnswer;
@@ -121,6 +132,7 @@ const SEVERE_KEYS = [
   "doxxing",
   "sexual",
   "encouragesSelfHarm",
+  "scam",
   "harassment",
 ] as const;
 // Below this, a severe question doesn't name the reason; the drama choice does.
@@ -144,6 +156,7 @@ export function scoreAnswers(
     doxxing: answers.doxxing.probability,
     sexual: answers.sexual.probability,
     encouragesSelfHarm: answers.encouragesSelfHarm.probability,
+    scam: answers.scam.probability,
     harassment: answers.harassment.probability,
   };
 

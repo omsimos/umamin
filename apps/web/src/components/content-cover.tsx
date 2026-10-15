@@ -4,6 +4,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { EyeOffIcon } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { PlainLinks } from "@/components/post-body";
 import { Uma } from "@/components/uma";
 import { type CoverKind, UmaExplainer } from "@/components/uma-explainer";
 import { callAction } from "@/lib/api";
@@ -47,7 +48,12 @@ export function ContentCover(props: Props) {
   // Most content carries no label; it renders as-is without mounting the
   // reveal state or the current-user subscription below.
   if (!props.label) return props.children;
-  return <Covered {...props} label={props.label} />;
+  const covered = <Covered {...props} label={props.label} />;
+  return props.label === "scam" ? (
+    <PlainLinks value={true}>{covered}</PlainLinks>
+  ) : (
+    covered
+  );
 }
 
 function Covered({
@@ -86,9 +92,9 @@ function Covered({
         <div className="relative z-10 mt-2 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
           <EyeOffIcon className="size-3.5 shrink-0" aria-hidden />
           <p>
-            {label === "severe"
-              ? `Others see this ${noun} covered.`
-              : `Folded for people who hide disputes.`}
+            {label === "drama"
+              ? `Folded for people who hide disputes.`
+              : `Others see this ${noun} covered.`}
           </p>
           {target &&
             (appeal.sent ? (
@@ -121,11 +127,16 @@ function Covered({
 
   if (label === "drama" && !hidesDrama) return children;
 
-  const kind: CoverKind = coverDrama
-    ? "message"
-    : label === "drama"
-      ? "dispute"
-      : "severe";
+  const kind: CoverKind =
+    label === "scam"
+      ? coverDrama
+        ? "message-scam"
+        : "scam"
+      : coverDrama
+        ? "message"
+        : label === "drama"
+          ? "dispute"
+          : "severe";
 
   const whyButton = (
     <Button
@@ -184,7 +195,9 @@ function Covered({
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/60 p-3 text-center">
         <Uma mood="serious" className="size-9" />
         <p className="text-sm font-medium">
-          This {noun} may contain hurtful content.
+          {label === "scam"
+            ? `This ${noun} looks like a scam.`
+            : `This ${noun} may contain hurtful content.`}
         </p>
         <div className="flex items-center gap-1">
           {whyButton}

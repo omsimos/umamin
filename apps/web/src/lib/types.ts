@@ -220,7 +220,7 @@ export type ModerationColumn =
   | "modReviewedAt"
   | "modAppealedAt";
 
-export type ContentLabel = "severe" | "drama";
+export type ContentLabel = "severe" | "scam" | "drama";
 
 type Moderated = {
   // null/undefined = show normally. Optional so optimistic client items can

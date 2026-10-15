@@ -181,7 +181,8 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
               </p>
               <p className="text-sm text-muted-foreground">
                 Uma checks new anonymous messages and covers the ones that look
-                hurtful. They still arrive, and you can open any of them.
+                hurtful or like scams. They still arrive, and you can open any
+                of them.
               </p>
             </div>
             <Switch
