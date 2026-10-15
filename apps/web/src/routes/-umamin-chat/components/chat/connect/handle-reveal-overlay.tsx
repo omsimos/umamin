@@ -12,8 +12,8 @@ const FLIP_DELAY_MS = 600;
 function copyHandle(handle: string) {
   navigator.clipboard
     ?.writeText(handle)
-    .then(() => toast("Copied — save it somewhere safe."))
-    .catch(() => toast("Couldn't copy — long-press to select it instead."));
+    .then(() => toast("Copied. Save it somewhere safe."))
+    .catch(() => toast("Couldn't copy. Long-press to select it instead."));
 }
 
 function FlipCard({
@@ -137,7 +137,7 @@ export function HandleRevealOverlay({
         You found each other.
       </h2>
       <p className="text-muted-foreground mt-1 mb-5 max-w-xs text-sm">
-        Save these — they vanish with the chat.
+        Save these. They vanish with the chat.
       </p>
       <Button ref={closeRef} className="rounded-full" onClick={onClose}>
         Keep chatting

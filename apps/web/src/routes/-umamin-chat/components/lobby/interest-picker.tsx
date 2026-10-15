@@ -19,11 +19,11 @@ export function InterestPicker({
             aria-pressed={on}
             onClick={() => onToggle(interest.id)}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-sm transition-[color,background-color,border-color,transform] active:scale-95",
+              "h-9 rounded-full border px-3.5 text-sm transition-[color,background-color,border-color,transform] active:scale-95",
               "focus-visible:border-ring focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
               on
-                ? "bg-primary text-primary-foreground border-primary font-medium"
-                : "bg-card text-muted-foreground hover:text-foreground",
+                ? "border-primary/60 bg-primary/10 text-foreground font-medium"
+                : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             {/* Keyed by state so selecting pops the content without
@@ -31,11 +31,12 @@ export function InterestPicker({
             <span
               key={String(on)}
               className={cn(
-                "inline-block",
+                "inline-flex items-center gap-1.5",
                 on && "animate-chat-pop-in motion-reduce:animate-none",
               )}
             >
-              <span aria-hidden>{interest.emoji}</span> {interest.label}
+              <span aria-hidden>{interest.emoji}</span>
+              {interest.label}
             </span>
           </button>
         );

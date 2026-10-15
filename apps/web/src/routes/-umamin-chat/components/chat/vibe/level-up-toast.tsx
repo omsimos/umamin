@@ -45,7 +45,7 @@ export function LevelUpToast({
       {/* role=status doubles as the polite announcement for screen readers. */}
       <div
         role="status"
-        className="pointer-events-none fixed inset-x-0 top-16 z-30 flex justify-center px-4"
+        className="pointer-events-none fixed inset-x-0 top-[calc(4.25rem+env(safe-area-inset-top))] z-30 flex justify-center px-4"
       >
         <button
           type="button"
@@ -62,7 +62,7 @@ export function LevelUpToast({
           <span aria-hidden>{meta.emoji}</span>
           <span className="flex min-w-0 flex-col items-start text-left">
             <span>
-              Level {level} — {meta.name}
+              Level {level}: {meta.name}
             </span>
             {meta.unlocks && (
               <span className="text-muted-foreground text-xs">

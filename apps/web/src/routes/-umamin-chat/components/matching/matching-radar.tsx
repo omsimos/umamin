@@ -1,3 +1,4 @@
+import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { useEffect, useState } from "react";
 import { interestById, MATCH_TIPS } from "@/lib/chat/content";
@@ -9,12 +10,6 @@ function formatElapsed(seconds: number): string {
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
-
-const GHOSTS = [
-  { top: "12%", left: "18%" },
-  { top: "22%", right: "14%" },
-  { bottom: "16%", left: "28%" },
-];
 
 export function MatchingRadar({
   self,
@@ -39,74 +34,65 @@ export function MatchingRadar({
   useEffect(() => {
     const id = setInterval(
       () => setTipIndex((i) => (i + 1) % MATCH_TIPS.length),
-      3000,
+      4000,
     );
     return () => clearInterval(id);
   }, []);
 
   return (
-    <div className="relative flex h-full flex-col items-center justify-center p-6 text-center">
-      {GHOSTS.map((pos, i) => (
-        <span
-          key={`${pos.top ?? pos.bottom}-${pos.left ?? pos.right}`}
-          aria-hidden
-          className="bg-muted animate-chat-drift motion-reduce:animate-none absolute size-9 rounded-full opacity-40 blur-[1px]"
-          style={{ ...pos, animationDelay: `${i * 1.7}s` }}
-        />
-      ))}
+    <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 py-10 text-center">
+      <div className="my-auto flex w-full max-w-sm flex-col items-center">
+        <div className="relative flex size-20 items-center justify-center">
+          <span
+            aria-hidden
+            className="bg-primary/15 absolute inset-0 animate-ping rounded-full [animation-duration:2s] motion-reduce:animate-none"
+          />
+          <SeedAvatar
+            seed={self.avatarSeed}
+            alias={self.alias}
+            className="ring-background relative size-16 ring-4"
+          />
+        </div>
 
-      <div className="relative mb-7 flex size-32 items-center justify-center">
-        <span className="border-primary absolute size-32 animate-ping rounded-full border opacity-60" />
-        <span
-          className="border-primary absolute size-24 animate-ping rounded-full border opacity-40"
-          style={{ animationDelay: "0.5s" }}
-        />
-        <span
-          aria-hidden
-          className="bg-primary/20 absolute size-20 rounded-full blur-md"
-        />
-        <SeedAvatar
-          seed={self.avatarSeed}
-          alias={self.alias}
-          className="size-16"
-        />
+        <h2 className="mt-5 text-lg font-semibold">Finding someone for you</h2>
+        <p
+          className="text-muted-foreground mt-1 text-sm tabular-nums"
+          aria-live="off"
+        >
+          Searching · {formatElapsed(elapsed)}
+        </p>
+
+        <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+          {interests.length > 0 ? (
+            interests.map((id) => {
+              const it = interestById(id);
+              return (
+                <Badge key={id} variant="secondary" className="font-normal">
+                  {it ? `${it.emoji} ${it.label}` : id}
+                </Badge>
+              );
+            })
+          ) : (
+            <Badge variant="secondary" className="font-normal">
+              Anyone
+            </Badge>
+          )}
+        </div>
+
+        <WarmupCard onPick={onWarmupPick} />
+
+        <p
+          key={tipIndex}
+          className="text-muted-foreground animate-chat-pop-in mt-5 text-xs motion-reduce:animate-none"
+        >
+          <span className="text-foreground font-medium">Tip:</span>{" "}
+          {MATCH_TIPS[tipIndex]}
+        </p>
+
+        <Button variant="outline" className="mt-6 w-full" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
-
-      <h2 className="font-display text-lg font-bold">
-        Finding someone for you…
-      </h2>
-
-      <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-        {(interests.length > 0 ? interests : ["anyone"]).map((id) => {
-          const it = interestById(id);
-          return (
-            <span
-              key={id}
-              className="border-primary/30 bg-primary/10 text-primary rounded-full border px-2.5 py-0.5 text-[11px]"
-            >
-              {it ? `${it.emoji} ${it.label}` : "Anyone"}
-            </span>
-          );
-        })}
-      </div>
-
-      <p className="text-muted-foreground mt-3 text-[11px] tabular-nums">
-        searching · {formatElapsed(elapsed)}
-      </p>
-
-      <p className="text-muted-foreground mt-5 max-w-xs text-xs">
-        <span className="font-medium">Tip:</span> {MATCH_TIPS[tipIndex]}
-      </p>
-
-      <WarmupCard onPick={onWarmupPick} />
-
-      <Button
-        variant="outline"
-        className="mt-6 rounded-full"
-        onClick={onCancel}
-      >
-        Cancel
-      </Button>
     </div>
   );
 }

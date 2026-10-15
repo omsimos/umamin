@@ -23,34 +23,32 @@ export function WarmupCard({ onPick }: { onPick?: (prompt: string) => void }) {
   return (
     <section
       aria-label="Warm-up question"
-      className="bg-card mt-6 w-full max-w-xs rounded-xl border p-3"
+      className="bg-card mt-6 w-full rounded-xl border p-4 text-left"
     >
-      <p className="text-muted-foreground text-[11px] font-medium">
-        While you wait — pick a side
-      </p>
+      <p className="text-sm font-medium">While you wait, pick a side</p>
       {/* Keyed per card so each new one pops in. */}
       <div
         key={card.id}
-        className="animate-chat-pop-in motion-reduce:animate-none mt-2 grid grid-cols-2 gap-2"
+        className="animate-chat-pop-in motion-reduce:animate-none mt-3 grid grid-cols-2 gap-2"
       >
         <button
           type="button"
           onClick={() => pick("A")}
-          className="hover:border-primary/50 focus-visible:ring-ring/50 min-h-12 rounded-xl border px-3 py-2 text-sm font-medium transition-transform outline-none focus-visible:ring-[3px] active:scale-95"
+          className="hover:bg-muted focus-visible:ring-ring/50 min-h-12 rounded-lg border px-3 py-2 text-sm transition-[background-color,transform] outline-none focus-visible:ring-[3px] active:scale-[0.97]"
         >
           {card.optionA}
         </button>
         <button
           type="button"
           onClick={() => pick("B")}
-          className="hover:border-primary/50 focus-visible:ring-ring/50 min-h-12 rounded-xl border px-3 py-2 text-sm font-medium transition-transform outline-none focus-visible:ring-[3px] active:scale-95"
+          className="hover:bg-muted focus-visible:ring-ring/50 min-h-12 rounded-lg border px-3 py-2 text-sm transition-[background-color,transform] outline-none focus-visible:ring-[3px] active:scale-[0.97]"
         >
           {card.optionB}
         </button>
       </div>
       {picked > 0 && (
-        <p className="text-muted-foreground mt-2 text-[11px] tabular-nums">
-          {picked} picked ✦ your last pick becomes an opener
+        <p className="text-muted-foreground mt-2 text-xs tabular-nums">
+          {picked} picked · your last pick becomes an opener
         </p>
       )}
     </section>

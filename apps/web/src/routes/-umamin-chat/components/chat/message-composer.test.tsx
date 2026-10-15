@@ -56,13 +56,13 @@ describe("MessageComposer", () => {
       screen.getByRole("button", { name: "Message options" }),
     );
     await userEvent.click(screen.getByRole("button", { name: /Whisper/ }));
-    expect(screen.getByText(/disappears ~10s after/)).toBeInTheDocument();
+    expect(screen.getByText(/disappears about 10s after/)).toBeInTheDocument();
 
     await userEvent.type(screen.getByRole("textbox"), "secret");
     await userEvent.click(screen.getByRole("button", { name: /send/i }));
     expect(onSend).toHaveBeenCalledWith("secret", { whisper: true });
     // Mode resets — the chip is gone.
-    expect(screen.queryByText(/disappears ~10s after/)).toBeNull();
+    expect(screen.queryByText(/disappears about 10s after/)).toBeNull();
   });
 
   it("whisper and effect modes are mutually exclusive", async () => {

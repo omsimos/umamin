@@ -49,23 +49,23 @@ export const MATCH_ID_KEY = "umamin-chat:matchId";
 const RELOAD_KEY = "umamin-chat:versionReloadAt";
 
 export const RATE_LIMITED_MESSAGE =
-  "You're going a little fast — try again in a moment.";
+  "You're going a little fast. Try again in a moment.";
 const GENERIC_ERROR = "Something went wrong. Please try again.";
 const ERROR_MESSAGES: Record<
   Exclude<ServerErrorCode, "rate_limited">,
   string
 > = {
   invalid: GENERIC_ERROR,
-  locked: "That unlocks at a higher Vibe Level — keep the chat flowing.",
+  locked: "That unlocks at a higher vibe level. Keep the chat flowing.",
   not_unlocked: "You both need to tap the heart first.",
   cap: "This chat has hit its message limit.",
 };
 export const QUEUE_TIMEOUT_MESSAGE =
-  "No one turned up this time — try searching again.";
+  "No one turned up this time. Try searching again.";
 const UNREACHABLE_MESSAGE =
-  "Couldn't reach Umamin Chat — check your connection and try again.";
-const OFFLINE_MESSAGE = "Reconnecting — try that again in a moment.";
-const UPDATED_MESSAGE = "Umamin Chat was updated — refresh the page.";
+  "Couldn't reach Umamin Chat. Check your connection and try again.";
+const OFFLINE_MESSAGE = "Reconnecting. Try that again in a moment.";
+const UPDATED_MESSAGE = "Umamin Chat was updated. Refresh the page.";
 
 /** A partner's typing indicator clears after this long without a refresh. */
 export const TYPING_STALE_MS = 8 * SECOND;

@@ -148,24 +148,24 @@ describe("MessageBubble", () => {
     expect(screen.queryByRole("button", { name: "Reply" })).toBeNull();
   });
 
-  it("renders the quoted reply preview with a viewer-relative label", () => {
-    renderBubble(
+  it("names the quoted message's author from the viewer's side", () => {
+    const quote = () =>
+      screen.getByRole("button", { name: /Go to replied-to message/ });
+    const { unmount } = renderBubble(
       makeMessage({
         replyTo: { id: "m0", author: "self", text: "the original" },
       }),
     );
-    expect(screen.getByText("Blue Fox replied to you")).toBeInTheDocument();
-    expect(screen.getByText("the original")).toBeInTheDocument();
-  });
+    expect(quote()).toHaveTextContent(/^Youthe original$/);
+    unmount();
 
-  it("labels a self-reply to the partner's message", () => {
     renderBubble(
       makeMessage({
         author: "self",
         replyTo: { id: "m0", author: "partner", text: "the original" },
       }),
     );
-    expect(screen.getByText("You replied to Blue Fox")).toBeInTheDocument();
+    expect(quote()).toHaveTextContent(/^Blue Foxthe original$/);
   });
 
   it("jumps to the quoted message when the preview is tapped", async () => {

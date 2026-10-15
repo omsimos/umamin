@@ -170,7 +170,7 @@ export function buildReceiptCard(
       },
     ]),
     {
-      text: "nothing was saved — that's the point",
+      text: "nothing was saved, that's the point",
       x: cx,
       y: barcodeY + 140,
       font: `400 26px ${SANS_FONT}`,

@@ -974,7 +974,7 @@ describe("wsTransport", () => {
       ctx.reload.mockReturnValue(false);
       activeRoom(ctx).room.serverClose(4426);
       expect(ctx.onError).toHaveBeenCalledWith(
-        expect.stringMatching(/refresh/),
+        expect.stringMatching(/[Rr]efresh/),
       );
     });
 

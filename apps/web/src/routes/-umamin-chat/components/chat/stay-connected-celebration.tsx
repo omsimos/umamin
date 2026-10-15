@@ -56,7 +56,7 @@ export function StayConnectedCelebration({
       <p className="text-muted-foreground mt-1 mb-5 max-w-xs text-sm">
         You and {partnerAlias} both want to keep talking.
         {onDropHandle &&
-          " Want this to outlive the poof? Swap handles — only revealed if you both do."}
+          " Want this to outlive the poof? Swap handles. They're only revealed if you both do."}
       </p>
       {onDropHandle ? (
         <>

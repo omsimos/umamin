@@ -88,7 +88,7 @@ function pickShared(interests: string[], random: Rng): string[] {
 function greeting(sharedInterestIds: string[], random: Rng): string {
   const label = interestById(sharedInterestIds[0])?.label ?? "that";
   const openers = [
-    `hey! saw we both like ${label} — what got you into it?`,
+    `hey! saw we both like ${label}, what got you into it?`,
     `oh nice, a fellow ${label} person 👀 how's it going?`,
     `hey there! ${label} squad apparently. what's up?`,
   ];

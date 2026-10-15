@@ -29,14 +29,14 @@ function OptionButton({
       onClick={() => onAnswer(pick)}
       aria-pressed={pickedBySelf}
       className={cn(
-        "relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl border px-3 py-2.5 text-center text-sm font-medium",
+        "relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2.5 text-center text-sm font-medium",
         "focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
-        "transition-[transform,border-color] not-disabled:active:scale-95",
+        "transition-[transform,border-color,background-color] not-disabled:active:scale-[0.97]",
         pickedBySelf
           ? "border-primary bg-primary/10"
           : answered
             ? "opacity-60"
-            : "hover:border-primary/50",
+            : "hover:bg-muted",
       )}
     >
       {label}
@@ -59,7 +59,7 @@ function OptionButton({
 }
 
 /** Result line, viewer-relative. In guess mode the success copy depends on
- *  who was the mind reader — the dealer's pick was the truth. */
+ *  who was the mind reader: the dealer's pick was the truth. */
 function resultLine(round: GameRound, partnerAlias: string, matched: boolean) {
   if (round.mode !== "guess") {
     return matched ? "⚡ It's a match!" : "Opposites attract 🤷";
@@ -67,7 +67,7 @@ function resultLine(round: GameRound, partnerAlias: string, matched: boolean) {
   if (round.dealtBy === "partner") {
     return matched
       ? "🔮 You read their mind!"
-      : "Way off — they're full of surprises 😏";
+      : "Way off, they're full of surprises 😏";
   }
   return matched
     ? `🔮 ${partnerAlias} read you like a book!`
@@ -83,14 +83,14 @@ function hintLine(round: GameRound, partnerAlias: string) {
   }
   if (round.partnerAnswered) {
     return guessing
-      ? `${partnerAlias} answered — what did they pick? 🔮`
-      : `${partnerAlias} picked — your turn 👀`;
+      ? `${partnerAlias} answered. What did they pick? 🔮`
+      : `${partnerAlias} picked. Your turn 👀`;
   }
-  if (guessing) return `Trust your gut — what did ${partnerAlias} pick? 🔮`;
+  if (guessing) return `Trust your gut: what did ${partnerAlias} pick? 🔮`;
   if (round.mode === "guess") {
-    return `Answer honestly — ${partnerAlias} is guessing your pick`;
+    return `Answer honestly, ${partnerAlias} is guessing your pick`;
   }
-  return "Pick one — answers reveal together";
+  return "Pick one. Answers reveal together";
 }
 
 export function GameRoundCard({
@@ -120,10 +120,10 @@ export function GameRoundCard({
   return (
     <section
       aria-label={guess ? "Mind Reader round" : `${meta.label} round`}
-      className="border-primary/30 from-primary/10 mx-4 mb-2 rounded-xl border bg-gradient-to-br to-transparent p-3"
+      className="bg-card animate-chat-bubble-in origin-bottom rounded-xl border p-3 motion-reduce:animate-none"
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-muted-foreground text-[11px] font-medium">
+        <p className="text-muted-foreground text-xs font-medium">
           {guess ? (
             <>
               <span aria-hidden>🔮</span> Mind Reader · {meta.label}
@@ -193,7 +193,6 @@ export function GameRoundCard({
               variant="outline"
               size="sm"
               onClick={onPlayAgain}
-              className="rounded-full"
             >
               Play another
             </Button>
@@ -209,7 +208,7 @@ export function GameRoundCard({
           </p>
         )}
       </div>
-      {/* Viewport edge pulse for a hot streak — static inset shadow, faded via
+      {/* Viewport edge pulse for a hot streak: a static inset shadow, faded via
           opacity only; base opacity-0 keeps it invisible under reduced motion. */}
       {matched && streak >= 3 && (
         <div

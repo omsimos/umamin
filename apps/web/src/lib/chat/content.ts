@@ -27,8 +27,8 @@ export function interestById(id: string): Interest | undefined {
 
 export const MATCH_TIPS = [
   'a simple "hey, what are you into?" goes a long way.',
-  "ask about the thing you both picked — instant common ground.",
-  "no pressure — it's anonymous and nothing is saved.",
+  "ask about the thing you both picked. Instant common ground.",
+  "no pressure. It's anonymous and nothing is saved.",
   "curiosity beats small talk. ask a real question.",
 ];
 

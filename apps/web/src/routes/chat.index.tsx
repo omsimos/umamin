@@ -2,10 +2,11 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { Skeleton } from "@umamin/ui/components/skeleton";
-import { ArrowRight, Share2 } from "lucide-react";
+import { ArrowRightIcon, Share2Icon } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { AppHeader } from "@/components/app-header";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import { PublicMenubar } from "@/components/public-menu-bar";
@@ -23,7 +24,7 @@ import { useChatSession } from "./-umamin-chat/session/chat-context";
 
 const TITLE = "Umamin Chat — Anonymous conversations with unexpected people";
 const DESCRIPTION =
-  "Get matched with a stranger who shares your interests and start a real-time, anonymous chat. No sign-up, no history — nothing is saved.";
+  "Get matched with a stranger who shares your interests and start a real-time, anonymous chat. No sign-up, no history, nothing saved.";
 
 export const Route = createFileRoute("/chat/")({
   // No default is materialized: returning one would canonicalize every bare
@@ -83,6 +84,7 @@ function LobbyPage() {
     <>
       <Navbar />
       <PublicMenubar />
+      <AppHeader />
       <main className="pt-24">
         <Lobby />
       </main>
@@ -118,7 +120,7 @@ function Lobby() {
         ? {
             joinCode: join,
             onInviteMiss: () =>
-              toast("They're not around — finding you someone new"),
+              toast("They're not around. Finding you someone new"),
           }
         : undefined,
     );
@@ -126,21 +128,19 @@ function Lobby() {
   }
 
   return (
-    <div className="container mx-auto flex max-w-xl flex-col pb-28 lg:pb-12">
-      <p className="flex items-center gap-2 text-sm font-semibold">
-        Umamin Chat
-        <Badge variant="secondary" className="px-1.5 text-[10px]">
-          Beta
-        </Badge>
-      </p>
-      <h1 className="font-display mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-        Anonymous conversations with{" "}
-        <span className="text-primary">unexpected people.</span>
-      </h1>
-      <p className="text-muted-foreground mt-1 text-sm">
-        Pick what you're into — we'll match you with a stranger who shares it.
-        No history, nothing saved.
-      </p>
+    <div className="container mx-auto flex w-full max-w-lg flex-col gap-6 pb-28 lg:pb-12">
+      <header>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+          Chat
+          <Badge variant="secondary" className="font-normal">
+            Beta
+          </Badge>
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Talk one on one with someone who shares your interests. Anonymous, and
+          nothing is saved.
+        </p>
+      </header>
 
       {join && (
         <InviteBanner
@@ -148,80 +148,79 @@ function Lobby() {
         />
       )}
 
-      <div className="mt-6">
-        {draft.ready ? (
-          <IdentityCard
-            alias={draft.alias}
-            avatarSeed={draft.avatarSeed}
-            maxAlias={draft.maxAlias}
-            onAliasChange={draft.setAlias}
-            onShuffle={draft.shuffle}
-          />
-        ) : (
-          <Skeleton className="h-[150px] rounded-xl" />
-        )}
-      </div>
+      {draft.ready ? (
+        <IdentityCard
+          alias={draft.alias}
+          avatarSeed={draft.avatarSeed}
+          maxAlias={draft.maxAlias}
+          onAliasChange={draft.setAlias}
+          onShuffle={draft.shuffle}
+        />
+      ) : (
+        <Skeleton className="h-[106px] rounded-xl" />
+      )}
 
-      <p className="text-muted-foreground mt-6 mb-2 text-[11px] font-medium tracking-wide uppercase">
-        Your interests
-      </p>
-      <InterestPicker
-        selected={draft.interests}
-        onToggle={draft.toggleInterest}
-      />
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-muted-foreground text-sm font-medium">
+            Interests
+          </h2>
+          <p className="text-muted-foreground text-xs">
+            {draft.interests.length > 0
+              ? `${draft.interests.length} selected · matches on any`
+              : "None picked · matches with anyone"}
+          </p>
+        </div>
+        <InterestPicker
+          selected={draft.interests}
+          onToggle={draft.toggleInterest}
+        />
+      </section>
 
-      <div className="pt-8">
+      <div className="flex flex-col gap-2">
         <Button
           size="lg"
-          className="h-12 w-full rounded-full text-base"
+          className="h-11 w-full text-base"
           disabled={!draft.ready}
           onClick={start}
         >
-          Find someone who gets you
-          <ArrowRight />
+          Find someone to chat with
+          <ArrowRightIcon />
         </Button>
-        <p className="text-muted-foreground mt-2 text-center text-[11px]">
-          {draft.interests.length > 0
-            ? `${draft.interests.length} selected · matches on at least one`
-            : "no interests picked · we'll match you with anyone"}
-        </p>
         {draft.ready && (
-          <div className="mt-4 flex justify-center">
-            <ShareCardAction
-              label="Share your card"
-              title="Your invite card"
-              description="Post it to your story, then copy your link and add it with a link sticker where the dashed guide shows (the guide isn't on the shared image). Anyone who taps it lands on you while you're searching."
-              filename="umamin-chat-invite.png"
-              copyUrl={
-                inviteCode ? absoluteUrl(`/chat?join=${inviteCode}`) : undefined
-              }
-              build={async () =>
-                buildInviteCard(
-                  {
-                    alias: draft.alias.trim() || "Anonymous",
-                    avatarSeed: draft.avatarSeed,
-                    interests: draft.interests,
-                  },
-                  await loadCardAssets(),
-                )
-              }
-              trigger={(open) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={open}
-                  className="text-muted-foreground rounded-full"
-                >
-                  <Share2 className="size-3.5" />
-                  Share your card
-                </Button>
-              )}
-            />
-          </div>
+          <ShareCardAction
+            label="Share your card"
+            title="Your invite card"
+            description="Post it to your story, then copy your link and add it with a link sticker where the dashed guide shows (the guide isn't on the shared image). Anyone who taps it lands on you while you're searching."
+            filename="umamin-chat-invite.png"
+            copyUrl={
+              inviteCode ? absoluteUrl(`/chat?join=${inviteCode}`) : undefined
+            }
+            build={async () =>
+              buildInviteCard(
+                {
+                  alias: draft.alias.trim() || "Anonymous",
+                  avatarSeed: draft.avatarSeed,
+                  interests: draft.interests,
+                },
+                await loadCardAssets(),
+              )
+            }
+            trigger={(open) => (
+              <Button
+                variant="ghost"
+                className="text-muted-foreground w-full"
+                onClick={open}
+              >
+                <Share2Icon />
+                Invite a friend with your card
+              </Button>
+            )}
+          />
         )}
       </div>
 
-      <ClientOnlyAdContainer placement="chat_lobby" className="mt-6" />
+      <ClientOnlyAdContainer placement="chat_lobby" />
     </div>
   );
 }

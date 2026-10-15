@@ -44,7 +44,12 @@ describe("IceBreakerBanner", () => {
       />,
     );
     expect(
-      screen.getByText("You both like Music & Gaming"),
+      screen.getByText((_, el) =>
+        Boolean(
+          el?.getAttribute("data-slot") === "marker-content" &&
+            el.textContent === "You both like 🎵 Music & 🎮 Gaming",
+        ),
+      ),
     ).toBeInTheDocument();
   });
 
@@ -56,7 +61,7 @@ describe("IceBreakerBanner", () => {
         onDismiss={() => {}}
       />,
     );
-    expect(screen.getByText("Say hi 👋")).toBeInTheDocument();
+    expect(screen.getByText(/Say hi 👋/)).toBeInTheDocument();
     expect(screen.queryByText(/You both like/)).toBeNull();
   });
 });

@@ -104,7 +104,7 @@ describe("buildReceiptCard", () => {
     // 4 base lines + the 5 gamification extras = the 9-row maximum.
     const maxed = makeStats({
       extras: [
-        { label: "VIBE", value: "Level 5 — Kindred" },
+        { label: "VIBE", value: "Level 5: Kindred" },
         { label: "VIBE CHECK", value: "9/12 matched" },
         { label: "MIND READS", value: "4/6 right" },
         { label: "BEST COMBO", value: "x5" },

@@ -1,5 +1,10 @@
 import { Button } from "@umamin/ui/components/button";
-import { ArrowRight, Copy } from "lucide-react";
+import {
+  ArrowRightIcon,
+  CopyIcon,
+  MessageCircleOffIcon,
+  Share2Icon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
@@ -18,7 +23,7 @@ import { ShareCardAction } from "../share/share-card-action";
 
 const TICK_MS = 700;
 
-/** Count-up digits for the afterglow stats — the one non-keyframe animation;
+/** Count-up digits for the afterglow stats, the one non-keyframe animation;
  *  reduced motion (or jsdom) jumps straight to the value. */
 function TickUp({ value }: { value: number }) {
   const reduced =
@@ -44,7 +49,7 @@ function TickUp({ value }: { value: number }) {
 }
 
 /** Afterglow: how far the chemistry got before the poof. Hidden for chats
- *  that never got going (level 1, no combo) — no participation trophies. */
+ *  that never got going (level 1, no combo): no participation trophies. */
 function AfterglowCard({
   vibe,
   gameTally,
@@ -58,13 +63,13 @@ function AfterglowCard({
 }) {
   const meta = vibeLevelMeta(vibe.level);
   return (
-    <div className="bg-muted/50 relative mb-4 w-full max-w-xs overflow-hidden rounded-xl border px-4 py-3">
+    <div className="bg-card relative mt-5 w-full overflow-hidden rounded-xl border px-4 py-3">
       <span
         aria-hidden
         className="animate-chat-shimmer-sweep motion-reduce:animate-none pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0"
       />
       <p className="text-sm font-semibold">
-        <span aria-hidden>{meta.emoji}</span> You hit Level {vibe.level} —{" "}
+        <span aria-hidden>{meta.emoji}</span> You hit level {vibe.level}:{" "}
         {meta.name}
       </p>
       <p className="text-muted-foreground mt-1 flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-xs">
@@ -108,8 +113,8 @@ export function EndedView({
   partnerAlias: string | undefined;
   /** Frozen receipt stats; null hides the share button (e.g. partner unknown). */
   stats?: ChatReceiptStats | null;
-  /** The partner's mutually-revealed handle — shown for copying during the
-   *  post-end grace window, gone forever after. Never on the receipt. */
+  /** The partner's mutually-revealed handle, shown for copying during the
+   *  post-end grace window and gone forever after. Never on the receipt. */
   revealedHandle?: string;
   vibe?: VibeState;
   gameTally?: GameTally;
@@ -128,74 +133,89 @@ export function EndedView({
   return (
     <section
       aria-label="Chat ended"
-      className="flex flex-1 flex-col items-center justify-center p-6 text-center"
+      className="flex flex-1 flex-col items-center overflow-y-auto px-6 py-10 text-center"
     >
-      <div aria-hidden className="mb-3 text-4xl">
-        👋
-      </div>
-      <h2 className="font-display text-lg font-bold">{title}</h2>
-      <p className="text-muted-foreground mt-1 mb-5 max-w-xs text-sm">
-        Poof — that conversation's gone. Nothing was saved.
-      </p>
-      {showAfterglow && vibe && (
-        <AfterglowCard
-          vibe={vibe}
-          gameTally={gameTally ?? { rounds: 0, matched: 0 }}
-          guessTally={guessTally ?? { rounds: 0, correct: 0 }}
-          gameStreak={gameStreak ?? { current: 0, best: 0 }}
-        />
-      )}
-      {revealedHandle && (
-        <div className="bg-muted/50 mb-4 w-full max-w-xs rounded-xl border px-4 py-3">
-          <p className="text-sm font-medium">
-            <span aria-hidden>💞</span> You stayed connected
-          </p>
-          <div className="mt-1 flex items-center justify-center gap-2">
-            <span className="truncate text-sm font-bold">{revealedHandle}</span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 rounded-full text-xs"
-              onClick={() =>
-                navigator.clipboard
-                  ?.writeText(revealedHandle)
-                  .then(() => toast("Copied — save it somewhere safe."))
-                  .catch(() => toast("Couldn't copy — select it instead."))
-              }
-            >
-              <Copy /> Copy
-            </Button>
-          </div>
-          <p className="text-muted-foreground mt-1 text-xs">
-            Copy it now — this screen won't come back.
-          </p>
+      <div className="my-auto flex w-full max-w-sm flex-col items-center">
+        <div
+          aria-hidden
+          className="bg-muted text-muted-foreground flex size-14 items-center justify-center rounded-full"
+        >
+          <MessageCircleOffIcon className="size-6" />
         </div>
-      )}
-      <Button className="rounded-full" onClick={onFindNew}>
-        Find someone new
-        <ArrowRight />
-      </Button>
-      {stats && (
-        <div className="mt-2">
-          <ShareCardAction
-            label="Share the vibe"
-            filename="umamin-chat-receipt.png"
-            build={async () => buildReceiptCard(stats, await loadCardAssets())}
+        <h2 className="mt-4 text-lg font-semibold">{title}</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          The conversation is gone. Nothing was saved.
+        </p>
+
+        {showAfterglow && vibe && (
+          <AfterglowCard
+            vibe={vibe}
+            gameTally={gameTally ?? { rounds: 0, matched: 0 }}
+            guessTally={guessTally ?? { rounds: 0, correct: 0 }}
+            gameStreak={gameStreak ?? { current: 0, best: 0 }}
           />
+        )}
+        {revealedHandle && (
+          <div className="bg-card mt-5 w-full rounded-xl border p-4">
+            <p className="text-sm font-medium">
+              <span aria-hidden>💞</span> You stayed connected
+            </p>
+            <div className="bg-muted/60 mt-3 flex items-center justify-between gap-2 rounded-lg py-1.5 pr-1.5 pl-3">
+              <span className="truncate text-sm font-semibold">
+                {revealedHandle}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() =>
+                  navigator.clipboard
+                    ?.writeText(revealedHandle)
+                    .then(() => toast("Copied. Save it somewhere safe."))
+                    .catch(() => toast("Couldn't copy. Select it instead."))
+                }
+              >
+                <CopyIcon /> Copy
+              </Button>
+            </div>
+            <p className="text-muted-foreground mt-2 text-xs">
+              Copy it now. This screen won't come back.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-6 flex w-full flex-col gap-2">
+          <Button className="w-full" onClick={onFindNew}>
+            Find someone new
+            <ArrowRightIcon />
+          </Button>
+          {stats && (
+            <ShareCardAction
+              label="Share the vibe"
+              filename="umamin-chat-receipt.png"
+              build={async () =>
+                buildReceiptCard(stats, await loadCardAssets())
+              }
+              trigger={(open) => (
+                <Button variant="outline" className="w-full" onClick={open}>
+                  <Share2Icon />
+                  Share the vibe
+                </Button>
+              )}
+            />
+          )}
+          <Button
+            variant="ghost"
+            className="text-muted-foreground w-full"
+            onClick={onBackToLobby}
+          >
+            Back to lobby
+          </Button>
         </div>
-      )}
-      <Button
-        variant="ghost"
-        className="text-muted-foreground mt-2"
-        onClick={onBackToLobby}
-      >
-        Back to lobby
-      </Button>
-      <ClientOnlyAdContainer
-        placement="chat_ended"
-        className="mt-8 w-full max-w-sm"
-      />
+
+        <ClientOnlyAdContainer placement="chat_ended" className="mt-8 w-full" />
+      </div>
     </section>
   );
 }

@@ -27,9 +27,9 @@ import type { Reactor } from "../reaction-details";
 import { VibeRing } from "./vibe-ring";
 
 function progressNote(vibe: VibeState): string {
-  if (vibe.level >= MAX_VIBE_LEVEL) return "Maxed out — kindred spirits.";
+  if (vibe.level >= MAX_VIBE_LEVEL) return "Maxed out. Kindred spirits.";
   const p = vibeProgress(vibe.score, vibe.level);
-  if (p < 0.34) return `Fresh into level ${vibe.level} — keep it flowing.`;
+  if (p < 0.34) return `Fresh into level ${vibe.level}. Keep it flowing.`;
   if (p < 0.75) return `Halfway-ish to level ${vibe.level + 1}.`;
   return `So close to level ${vibe.level + 1}!`;
 }
@@ -72,7 +72,7 @@ function VibeSummary({
       </div>
       <div className="text-center">
         <p className="font-display text-lg font-semibold">
-          <span aria-hidden>{meta.emoji}</span> Level {vibe.level} — {meta.name}
+          <span aria-hidden>{meta.emoji}</span> Level {vibe.level}: {meta.name}
         </p>
         <p className="text-muted-foreground mt-0.5 text-sm">
           {progressNote(vibe)}

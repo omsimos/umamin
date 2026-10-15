@@ -25,7 +25,7 @@ describe("HandleRevealOverlay", () => {
     expect(screen.getByText("@otter")).toBeInTheDocument();
     expect(screen.getByText("@fox")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Copy/ })).toHaveLength(2);
-    expect(screen.getByText(/they vanish with the chat/)).toBeInTheDocument();
+    expect(screen.getByText(/They vanish with the chat/)).toBeInTheDocument();
   });
 
   it("closes via keep chatting", async () => {

@@ -44,6 +44,44 @@ describe("MessageList", () => {
     expect(container.querySelector(".animate-bounce")).not.toBeNull();
   });
 
+  it("shows the partner's avatar once per run, on its last bubble", () => {
+    const run = [
+      makeMessage({ id: "p1", text: "one" }),
+      makeMessage({ id: "p2", text: "two" }),
+      makeMessage({ id: "s1", author: "self", text: "mine" }),
+      makeMessage({ id: "p3", text: "three" }),
+    ];
+    const avatarRows = () =>
+      screen
+        .getAllByRole("img", { name: PARTNER.alias })
+        .map((img) => img.closest("[data-slot=message]")?.textContent);
+
+    const { rerender } = render(
+      <MessageList
+        messages={run}
+        partnerStatus="online"
+        onReact={() => {}}
+        onReply={() => {}}
+        self={SELF}
+        partner={PARTNER}
+      />,
+    );
+    expect(avatarRows()).toEqual(["two", "three"]);
+
+    // A typing bubble continues the run, so the avatar moves down to it.
+    rerender(
+      <MessageList
+        messages={run}
+        partnerStatus="typing"
+        onReact={() => {}}
+        onReply={() => {}}
+        self={SELF}
+        partner={PARTNER}
+      />,
+    );
+    expect(avatarRows()).toEqual(["two", "Partner is typing"]);
+  });
+
   it("renders the header slot above the messages", () => {
     render(
       <MessageList

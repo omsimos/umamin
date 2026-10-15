@@ -52,7 +52,7 @@ const sectionLabel =
   "text-muted-foreground px-1 text-[10px] font-semibold tracking-wider uppercase";
 
 function lockedToast(level: number, onShowVibe?: () => void) {
-  toast(`Unlocks at Vibe Level ${level} — keep the chat flowing`, {
+  toast(`Unlocks at vibe level ${level}. Keep the chat flowing`, {
     ...(onShowVibe
       ? { action: { label: "See vibe", onClick: onShowVibe } }
       : {}),
@@ -91,7 +91,7 @@ function PlayTile({
     <button
       type="button"
       aria-label={
-        locked ? `${label} — unlocks at vibe level ${minLevel}` : label
+        locked ? `${label}, unlocks at vibe level ${minLevel}` : label
       }
       onClick={() => (locked ? lockedToast(minLevel, onShowVibe) : onPlay())}
       className={cn(
@@ -206,7 +206,7 @@ function ActionsBody({
                 aria-pressed={on}
                 aria-label={
                   locked
-                    ? `Send with ${e.label} — unlocks at vibe level ${minLevel}`
+                    ? `Send with ${e.label}, unlocks at vibe level ${minLevel}`
                     : `Send with ${e.label}`
                 }
                 onClick={() => {
@@ -258,8 +258,8 @@ export function ComposerActions({
   onShowVibe?: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  // Same breakpoint as the shell's rail/drawer split (lg): bottom sheet on
-  // mobile (the grid outgrew a popover), popover where space isn't scarce.
+  // Bottom sheet below lg (the grid outgrew a popover), popover where space
+  // isn't scarce.
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   function trigger(onClick?: () => void) {
@@ -269,14 +269,14 @@ export function ComposerActions({
         aria-label="Message options"
         onClick={onClick}
         className={cn(
-          "hover:bg-accent flex size-9 shrink-0 items-center justify-center rounded-full border",
+          "hover:bg-accent bg-muted/40 text-muted-foreground hover:text-foreground flex size-12 shrink-0 items-center justify-center rounded-full border",
           "focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
-          "transition-transform active:scale-90",
+          "transition-[color,background-color,transform] active:scale-90",
           (mode.whisper || mode.effect) && "border-primary text-primary",
         )}
       >
         <Plus
-          className={cn("size-4 transition-transform", open && "rotate-45")}
+          className={cn("size-5 transition-transform", open && "rotate-45")}
         />
       </button>
     );

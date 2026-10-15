@@ -124,7 +124,7 @@ export function useChatStats(
         if (acc.vibeLevel >= 2) {
           extras.push({
             label: "VIBE",
-            value: `Level ${acc.vibeLevel} — ${vibeLevelMeta(acc.vibeLevel).name}`,
+            value: `Level ${acc.vibeLevel}: ${vibeLevelMeta(acc.vibeLevel).name}`,
           });
         }
         if (acc.tally.rounds > 0) {

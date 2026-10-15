@@ -195,7 +195,7 @@ describe("useChatStats", () => {
       }),
     });
     expect(result.current?.extras).toEqual([
-      { label: "VIBE", value: "Level 3 \u2014 Clicking" },
+      { label: "VIBE", value: "Level 3: Clicking" },
       { label: "VIBE CHECK", value: "3/4 matched" },
       { label: "MIND READS", value: "1/2 right" },
       { label: "BEST COMBO", value: "x3" },

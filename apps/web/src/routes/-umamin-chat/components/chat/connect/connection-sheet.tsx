@@ -26,8 +26,8 @@ import type { Reactor } from "../reaction-details";
 function copyHandle(handle: string) {
   navigator.clipboard
     ?.writeText(handle)
-    .then(() => toast("Copied — save it somewhere safe."))
-    .catch(() => toast("Couldn't copy — long-press to select it instead."));
+    .then(() => toast("Copied. Save it somewhere safe."))
+    .catch(() => toast("Couldn't copy. Long-press to select it instead."));
 }
 
 function HandleCard({ who, handle }: { who: Reactor; handle: string }) {
@@ -78,7 +78,7 @@ function ConnectionBody({
         <HandleCard who={partner} handle={reveal.partner.handle ?? ""} />
         <HandleCard who={self} handle={reveal.self.handle ?? ""} />
         <p className="text-muted-foreground mt-1 text-center text-xs">
-          Save these — they vanish with the chat.
+          Save these. They vanish with the chat.
         </p>
       </div>
     );
@@ -92,7 +92,7 @@ function ConnectionBody({
           <p className="truncate text-sm font-semibold">{reveal.self.handle}</p>
         </div>
         <p className="text-muted-foreground animate-pulse text-sm">
-          Shared ✓ — waiting for {partner.alias}…
+          Shared ✓ · waiting for {partner.alias}…
         </p>
         <Button
           variant="ghost"

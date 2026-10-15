@@ -20,14 +20,18 @@ import { LevelUpToast } from "./-umamin-chat/components/chat/vibe/level-up-toast
 import { VibeSheet } from "./-umamin-chat/components/chat/vibe/vibe-sheet";
 import { MatchingRadar } from "./-umamin-chat/components/matching/matching-radar";
 import { RouteError } from "./-umamin-chat/components/route-error";
-import { AppShell } from "./-umamin-chat/components/shell/app-shell";
-import { SessionRail } from "./-umamin-chat/components/shell/session-rail";
+import {
+  SessionBackButton,
+  SessionFrame,
+  SessionHeader,
+  SessionTitle,
+} from "./-umamin-chat/components/shell/session-frame";
 import { useChatStats } from "./-umamin-chat/lib/share-card/use-chat-stats";
 import { useSendEffects } from "./-umamin-chat/lib/use-send-effects";
 import { useChatSession } from "./-umamin-chat/session/chat-context";
 
-// Full-screen: a top-level route, so neither the app navbar nor the menubar
-// renders here. Client-driven: during SSR the transport doesn't exist yet and
+// Full-screen like group chat: a top-level route, so neither the app navbar
+// nor the menubar renders here. Client-driven: during SSR the transport doesn't exist yet and
 // the snapshot is "loading", so the server only ever renders the spinner.
 export const Route = createFileRoute("/chat/session")({
   head: () =>
@@ -196,207 +200,215 @@ function Session() {
     leave("self-ended");
   }
 
-  const rail =
-    phase === "active" ? (
-      <SessionRail
-        selfAlias={self.alias}
-        selfSeed={self.avatarSeed}
-        onNewMatch={newMatch}
-        onEndChat={endChat}
-      />
-    ) : null;
+  function cancelSearch() {
+    leave();
+    navigate({ to: "/chat" });
+  }
+
+  function backToLobby() {
+    // Releases the held ended view, or the lobby would still see it.
+    leave();
+    navigate({ to: "/chat" });
+  }
 
   const showIceBreaker =
     !iceBreakerDismissed &&
     messages.filter((m) => m.author === "self").length === 0;
   const mutual = stayConnected.self && stayConnected.partner;
 
+  const header =
+    phase === "active" && partner ? (
+      <ChatHeader
+        partner={partner}
+        vibe={snapshot.vibe}
+        gameStreak={snapshot.gameStreak}
+        stayConnectedActive={stayConnected.self}
+        mutual={mutual}
+        revealTease={reveal.partner.submitted && !bothRevealed}
+        ringPulse={levelUp !== null}
+        onStayConnected={signalStayConnected}
+        onOpenConnect={() => setConnectOpen(true)}
+        onShowVibe={() => setVibeSheetOpen(true)}
+        onNewMatch={newMatch}
+        onEndChat={endChat}
+      />
+    ) : (
+      <SessionHeader>
+        <SessionBackButton
+          label={phase === "matching" ? "Cancel search" : "Back to lobby"}
+          onClick={phase === "matching" ? cancelSearch : backToLobby}
+        />
+        <SessionTitle>{phase === "ended" ? "Chat ended" : "Chat"}</SessionTitle>
+      </SessionHeader>
+    );
+
   return (
-    <AppShell rail={rail}>
-      <div className="relative flex h-full flex-col">
-        {phase === "loading" && (
-          <div className="flex flex-1 items-center justify-center">
-            <Loader2
-              aria-label="Loading"
-              className="text-muted-foreground size-6 animate-spin"
-            />
-          </div>
-        )}
-
-        {phase === "matching" && (
-          <MatchingRadar
-            self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
-            interests={self.interests}
-            onWarmupPick={setWarmupPrompt}
-            onCancel={() => {
-              leave();
-              navigate({ to: "/chat" });
-            }}
+    <SessionFrame header={header}>
+      {phase === "loading" && (
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2
+            aria-label="Loading"
+            className="text-muted-foreground size-6 animate-spin"
           />
-        )}
+        </div>
+      )}
 
-        {phase === "active" && partner && (
-          <>
-            <ChatHeader
-              partner={partner}
-              vibe={snapshot.vibe}
-              gameStreak={snapshot.gameStreak}
-              stayConnectedActive={stayConnected.self}
-              mutual={mutual}
-              revealTease={reveal.partner.submitted && !bothRevealed}
-              ringPulse={levelUp !== null}
-              onStayConnected={signalStayConnected}
-              onOpenConnect={() => setConnectOpen(true)}
-              onShowVibe={() => setVibeSheetOpen(true)}
-            />
-            <MessageList
-              messages={messages}
-              partnerStatus={partner.status}
-              onReact={react}
-              onReply={setReplyTarget}
-              onViewWhisper={viewWhisper}
-              onRetry={retrySend}
-              vibeLevel={vibeLevel}
-              self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
-              partner={{
-                alias: partner.alias,
-                avatarSeed: partner.avatarSeed,
-              }}
-              header={
-                showIceBreaker ? (
-                  <IceBreakerBanner
-                    sharedInterests={partner.sharedInterests}
-                    extraPrompt={warmupPrompt}
-                    onPrompt={(text) => {
-                      send(text);
-                      setIceBreakerDismissed(true);
-                    }}
-                    onDismiss={() => setIceBreakerDismissed(true)}
-                  />
-                ) : undefined
-              }
-            />
-            {snapshot.game && (
-              // Keyed by round so a re-deal remounts: reveal animations stay
-              // one-shot and stale option state can't leak across deals.
-              <GameRoundCard
-                key={snapshot.game.cardId}
-                round={snapshot.game}
-                partnerAlias={partner.alias}
-                streak={snapshot.gameStreak.current}
-                onAnswer={(pick) => {
-                  if (snapshot.game) answerCard(snapshot.game.cardId, pick);
-                }}
-                onDismiss={dismissGame}
-                onPlayAgain={playAnother}
-              />
-            )}
-            <MessageComposer
-              onSend={sendWithMode}
-              onTyping={setTyping}
-              onDealCard={dealCard}
-              vibeLevel={vibeLevel}
-              onShowVibe={() => setVibeSheetOpen(true)}
-              replyTo={
-                replyTarget
-                  ? {
-                      authorLabel:
-                        replyTarget.author === "self"
-                          ? "yourself"
-                          : partner.alias,
-                      text: replyTarget.text,
-                    }
-                  : null
-              }
-              onCancelReply={() => setReplyTarget(null)}
-            />
-          </>
-        )}
+      {phase === "matching" && (
+        <MatchingRadar
+          self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
+          interests={self.interests}
+          onWarmupPick={setWarmupPrompt}
+          onCancel={cancelSearch}
+        />
+      )}
 
-        {phase === "ended" && (
-          <EndedView
-            reason={snapshot.endedReason}
-            partnerAlias={partner?.alias}
-            stats={receiptStats}
-            revealedHandle={bothRevealed ? reveal.partner.handle : undefined}
-            vibe={snapshot.vibe}
-            gameTally={snapshot.gameTally}
-            guessTally={snapshot.guessTally}
-            gameStreak={snapshot.gameStreak}
-            onFindNew={() => findMatch(self)}
-            onBackToLobby={() => {
-              // Releases the held ended view, or the lobby would still see it.
-              leave();
-              navigate({ to: "/chat" });
-            }}
-          />
-        )}
-
-        {phase === "active" && activeEffect && (
-          <SendEffectOverlay effect={activeEffect} onDone={clearEffect} />
-        )}
-
-        {phase === "active" && partner && (
-          <VibeSheet
-            open={vibeSheetOpen}
-            onOpenChange={setVibeSheetOpen}
-            vibe={snapshot.vibe}
-            gameTally={snapshot.gameTally}
-            guessTally={snapshot.guessTally}
-            gameStreak={snapshot.gameStreak}
-            self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
-            partner={{ alias: partner.alias, avatarSeed: partner.avatarSeed }}
-          />
-        )}
-
-        {phase === "active" && levelUp !== null && (
-          <LevelUpToast
-            key={levelUp}
-            level={levelUp}
-            onDone={() => setLevelUp(null)}
-            onShowVibe={() => setVibeSheetOpen(true)}
-          />
-        )}
-
-        {phase === "active" && mutual && !celebrationDismissed && partner && (
-          <StayConnectedCelebration
-            selfAlias={self.alias}
-            selfSeed={self.avatarSeed}
-            partnerAlias={partner.alias}
-            partnerSeed={partner.avatarSeed}
-            onContinue={() => setCelebrationDismissed(true)}
-            onDropHandle={() => {
-              setCelebrationDismissed(true);
-              setConnectOpen(true);
-            }}
-          />
-        )}
-
-        {phase === "active" && partner && (
-          <ConnectionSheet
-            open={connectOpen}
-            onOpenChange={setConnectOpen}
-            reveal={reveal}
-            self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
-            partner={{ alias: partner.alias, avatarSeed: partner.avatarSeed }}
-            onSubmit={submitRevealHandle}
-            onWithdraw={withdrawRevealHandle}
-          />
-        )}
-
-        {phase === "active" && revealOverlayOpen && bothRevealed && partner && (
-          <HandleRevealOverlay
+      {phase === "active" && partner && (
+        <>
+          <MessageList
+            messages={messages}
+            partnerStatus={partner.status}
+            onReact={react}
+            onReply={setReplyTarget}
+            onViewWhisper={viewWhisper}
+            onRetry={retrySend}
+            vibeLevel={vibeLevel}
             self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
             partner={{
               alias: partner.alias,
               avatarSeed: partner.avatarSeed,
             }}
-            selfHandle={reveal.self.handle ?? ""}
-            partnerHandle={reveal.partner.handle ?? ""}
-            onClose={() => setRevealOverlayOpen(false)}
+            dock={
+              snapshot.game ? (
+                // Keyed by round so a re-deal remounts: reveal animations stay
+                // one-shot and stale option state can't leak across deals.
+                <GameRoundCard
+                  key={snapshot.game.cardId}
+                  round={snapshot.game}
+                  partnerAlias={partner.alias}
+                  streak={snapshot.gameStreak.current}
+                  onAnswer={(pick) => {
+                    if (snapshot.game) answerCard(snapshot.game.cardId, pick);
+                  }}
+                  onDismiss={dismissGame}
+                  onPlayAgain={playAnother}
+                />
+              ) : undefined
+            }
+            header={
+              showIceBreaker ? (
+                <IceBreakerBanner
+                  sharedInterests={partner.sharedInterests}
+                  extraPrompt={warmupPrompt}
+                  onPrompt={(text) => {
+                    send(text);
+                    setIceBreakerDismissed(true);
+                  }}
+                  onDismiss={() => setIceBreakerDismissed(true)}
+                />
+              ) : undefined
+            }
           />
-        )}
-      </div>
-    </AppShell>
+          <MessageComposer
+            onSend={sendWithMode}
+            onTyping={setTyping}
+            onDealCard={dealCard}
+            vibeLevel={vibeLevel}
+            onShowVibe={() => setVibeSheetOpen(true)}
+            replyTo={
+              replyTarget
+                ? {
+                    authorLabel:
+                      replyTarget.author === "self"
+                        ? "yourself"
+                        : partner.alias,
+                    text: replyTarget.text,
+                  }
+                : null
+            }
+            onCancelReply={() => setReplyTarget(null)}
+          />
+        </>
+      )}
+
+      {phase === "ended" && (
+        <EndedView
+          reason={snapshot.endedReason}
+          partnerAlias={partner?.alias}
+          stats={receiptStats}
+          revealedHandle={bothRevealed ? reveal.partner.handle : undefined}
+          vibe={snapshot.vibe}
+          gameTally={snapshot.gameTally}
+          guessTally={snapshot.guessTally}
+          gameStreak={snapshot.gameStreak}
+          onFindNew={() => findMatch(self)}
+          onBackToLobby={backToLobby}
+        />
+      )}
+
+      {phase === "active" && activeEffect && (
+        <SendEffectOverlay effect={activeEffect} onDone={clearEffect} />
+      )}
+
+      {phase === "active" && partner && (
+        <VibeSheet
+          open={vibeSheetOpen}
+          onOpenChange={setVibeSheetOpen}
+          vibe={snapshot.vibe}
+          gameTally={snapshot.gameTally}
+          guessTally={snapshot.guessTally}
+          gameStreak={snapshot.gameStreak}
+          self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
+          partner={{ alias: partner.alias, avatarSeed: partner.avatarSeed }}
+        />
+      )}
+
+      {phase === "active" && levelUp !== null && (
+        <LevelUpToast
+          key={levelUp}
+          level={levelUp}
+          onDone={() => setLevelUp(null)}
+          onShowVibe={() => setVibeSheetOpen(true)}
+        />
+      )}
+
+      {phase === "active" && mutual && !celebrationDismissed && partner && (
+        <StayConnectedCelebration
+          selfAlias={self.alias}
+          selfSeed={self.avatarSeed}
+          partnerAlias={partner.alias}
+          partnerSeed={partner.avatarSeed}
+          onContinue={() => setCelebrationDismissed(true)}
+          onDropHandle={() => {
+            setCelebrationDismissed(true);
+            setConnectOpen(true);
+          }}
+        />
+      )}
+
+      {phase === "active" && partner && (
+        <ConnectionSheet
+          open={connectOpen}
+          onOpenChange={setConnectOpen}
+          reveal={reveal}
+          self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
+          partner={{ alias: partner.alias, avatarSeed: partner.avatarSeed }}
+          onSubmit={submitRevealHandle}
+          onWithdraw={withdrawRevealHandle}
+        />
+      )}
+
+      {phase === "active" && revealOverlayOpen && bothRevealed && partner && (
+        <HandleRevealOverlay
+          self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
+          partner={{
+            alias: partner.alias,
+            avatarSeed: partner.avatarSeed,
+          }}
+          selfHandle={reveal.self.handle ?? ""}
+          partnerHandle={reveal.partner.handle ?? ""}
+          onClose={() => setRevealOverlayOpen(false)}
+        />
+      )}
+    </SessionFrame>
   );
 }

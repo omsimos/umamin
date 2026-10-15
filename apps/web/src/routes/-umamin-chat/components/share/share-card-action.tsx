@@ -62,7 +62,7 @@ function PreviewBody({
             // the tap — required for the share sheet on mobile.
             void sharePng(card.blob, filename).then((result) => {
               if (result === "downloaded") {
-                toast("Saved — share it anywhere");
+                toast("Saved. Share it anywhere");
               }
             });
           }}
@@ -89,7 +89,7 @@ function PreviewBody({
             className="rounded-full"
             onClick={() => {
               navigator.clipboard.writeText(copyUrl);
-              toast("Link copied — add it with a link sticker");
+              toast("Link copied. Add it with a link sticker");
             }}
           >
             <Link2 />
@@ -146,7 +146,7 @@ export function ShareCardAction({
         setCard({ blob: share, url });
       } catch {
         if (!alive) return;
-        toast("Couldn't generate the image — try again.");
+        toast("Couldn't generate the image. Try again.");
         setOpen(false);
       }
     })();

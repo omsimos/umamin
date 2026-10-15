@@ -1,16 +1,23 @@
 import { Button } from "@umamin/ui/components/button";
-import { Input } from "@umamin/ui/components/input";
+import {
+  ChatComposer,
+  ChatComposerInput,
+  ChatComposerSend,
+} from "@umamin/ui/components/chat";
 import { cn } from "@umamin/ui/lib/utils";
-import { Flame, Send, X } from "lucide-react";
+import { FlameIcon, ReplyIcon, XIcon } from "lucide-react";
 import {
   type ChangeEvent,
   type FormEvent,
   type KeyboardEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
+import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
+import { MAX_MESSAGE_LEN } from "@/lib/chat/constants";
 import type { GameMode } from "@/lib/chat/types";
 import {
   ComposerActions,
@@ -35,9 +42,39 @@ const EFFECT_LABELS: Record<string, string> = {
 };
 
 function modeLabel(mode: ComposerMode): string {
-  if (mode.whisper) return "Whisper — disappears ~10s after it's read";
+  if (mode.whisper) return "Whisper: disappears about 10s after it's read";
   if (mode.effect) return EFFECT_LABELS[mode.effect] ?? "";
   return "";
+}
+
+/** A dismissible strip above the input: the reply target or the send mode. */
+function ComposerChip({
+  icon,
+  children,
+  clearLabel,
+  onClear,
+}: {
+  icon?: ReactNode;
+  children: ReactNode;
+  clearLabel: string;
+  onClear?: () => void;
+}) {
+  return (
+    <div className="bg-muted/50 animate-chat-pop-in mb-2 flex items-center gap-2 rounded-xl py-1.5 pr-1 pl-3 motion-reduce:animate-none">
+      {icon}
+      <div className="min-w-0 flex-1 text-xs">{children}</div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label={clearLabel}
+        onClick={onClear}
+        className="size-7 shrink-0 rounded-full"
+      >
+        <XIcon />
+      </Button>
+    </div>
+  );
 }
 
 export function MessageComposer({
@@ -63,9 +100,16 @@ export function MessageComposer({
   const [mode, setMode] = useState<ComposerMode>(IDLE_MODE);
   const typingRef = useRef(false);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const autosizeRef = useDynamicTextarea(value);
+  const inputRef = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      textareaRef.current = el;
+      autosizeRef(el);
+    },
+    [autosizeRef],
+  );
   const canSend = value.trim().length > 0;
-  const modeActive = mode.whisper || mode.effect;
 
   const stopTyping = useCallback(() => {
     if (idleTimer.current) {
@@ -78,7 +122,7 @@ export function MessageComposer({
     }
   }, [onTyping]);
 
-  function handleChange(e: ChangeEvent<HTMLInputElement>) {
+  function handleChange(e: ChangeEvent<HTMLTextAreaElement>) {
     setValue(e.target.value);
     if (!onTyping) return;
     if (e.target.value.trim().length === 0) {
@@ -93,15 +137,7 @@ export function MessageComposer({
     idleTimer.current = setTimeout(stopTyping, TYPING_IDLE_MS);
   }
 
-  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Escape" && replyTo) {
-      e.preventDefault();
-      onCancelReply?.();
-    }
-  }
-
-  function submit(e: FormEvent) {
-    e.preventDefault();
+  function send() {
     if (!canSend) return;
     onSend(value.trim(), mode);
     setValue("");
@@ -109,61 +145,64 @@ export function MessageComposer({
     stopTyping();
   }
 
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Escape" && replyTo) {
+      e.preventDefault();
+      onCancelReply?.();
+      return;
+    }
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      send();
+    }
+  }
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    send();
+  }
+
   useEffect(() => stopTyping, [stopTyping]);
 
-  // Starting a reply is an intent to type — pull focus to the input.
+  // Starting a reply is an intent to type, so pull focus to the input.
   useEffect(() => {
-    if (replyTo) inputRef.current?.focus();
+    if (replyTo) textareaRef.current?.focus();
   }, [replyTo]);
 
   return (
-    <div className="border-t">
+    <div className="bg-background shrink-0 border-t px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       {replyTo && (
-        <div className="bg-muted/40 flex items-center justify-between gap-3 border-b px-4 py-2">
-          <div className="min-w-0">
-            <p className="text-xs font-medium">
-              Replying to {replyTo.authorLabel}
-            </p>
-            <p className="text-muted-foreground truncate text-xs">
-              {replyTo.text}
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Cancel reply"
-            onClick={onCancelReply}
-            className="shrink-0 rounded-full"
-          >
-            <X />
-          </Button>
-        </div>
+        <ComposerChip
+          icon={
+            <ReplyIcon
+              aria-hidden
+              className="text-muted-foreground size-4 shrink-0"
+            />
+          }
+          clearLabel="Cancel reply"
+          onClear={onCancelReply}
+        >
+          <p className="font-medium">Replying to {replyTo.authorLabel}</p>
+          <p className="text-muted-foreground truncate">{replyTo.text}</p>
+        </ComposerChip>
       )}
-      {modeActive && (
-        <div className="bg-muted/40 flex items-center justify-between gap-3 border-b px-4 py-1.5">
-          <p className="flex min-w-0 items-center gap-1.5 truncate text-xs font-medium">
-            {mode.whisper && (
-              <Flame
+      {(mode.whisper || mode.effect) && (
+        <ComposerChip
+          icon={
+            mode.whisper ? (
+              <FlameIcon
                 aria-hidden
-                className="size-3.5 shrink-0 text-orange-500"
+                className="size-4 shrink-0 text-orange-500"
               />
-            )}
-            {modeLabel(mode)}
-          </p>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Clear message option"
-            onClick={() => setMode(IDLE_MODE)}
-            className="size-7 shrink-0 rounded-full"
-          >
-            <X />
-          </Button>
-        </div>
+            ) : undefined
+          }
+          clearLabel="Clear message option"
+          onClear={() => setMode(IDLE_MODE)}
+        >
+          <p className="truncate font-medium">{modeLabel(mode)}</p>
+        </ComposerChip>
       )}
-      <form onSubmit={submit} className="flex items-center gap-2 p-3">
+      <ChatComposer onSubmit={submit}>
         <ComposerActions
           mode={mode}
           onModeChange={setMode}
@@ -171,7 +210,7 @@ export function MessageComposer({
           vibeLevel={vibeLevel}
           onShowVibe={onShowVibe}
         />
-        <Input
+        <ChatComposerInput
           ref={inputRef}
           value={value}
           onChange={handleChange}
@@ -179,22 +218,14 @@ export function MessageComposer({
           onBlur={stopTyping}
           placeholder={mode.whisper ? "Whisper something…" : "Type a message…"}
           aria-label="Message"
-          maxLength={2000}
-          className={cn(
-            "rounded-full",
-            mode.whisper && "ring-2 ring-orange-500/30",
-          )}
+          autoComplete="off"
+          maxLength={MAX_MESSAGE_LEN}
+          className={cn(mode.whisper && "border-orange-400/60 border-dashed")}
         />
-        <Button
-          type="submit"
-          size="icon"
-          aria-label="Send"
-          disabled={!canSend}
-          className="rounded-full"
-        >
-          <Send />
-        </Button>
-      </form>
+        {/* Never disabled by a pending send: the append is optimistic, and
+            a disabled button would drop focus and close the mobile keyboard. */}
+        <ChatComposerSend disabled={!canSend} aria-label="Send" />
+      </ChatComposer>
     </div>
   );
 }

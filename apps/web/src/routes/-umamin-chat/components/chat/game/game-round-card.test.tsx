@@ -61,7 +61,7 @@ describe("GameRoundCard", () => {
 
   it("nudges when the partner picked first", () => {
     renderCard(makeRound({ partnerAnswered: true }));
-    expect(screen.getByText(/Blue Fox picked — your turn/)).toBeInTheDocument();
+    expect(screen.getByText(/Blue Fox picked\. Your turn/)).toBeInTheDocument();
   });
 
   it("reveals a match with both chips on the same option", () => {

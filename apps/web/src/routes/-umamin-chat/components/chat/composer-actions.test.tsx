@@ -77,7 +77,7 @@ describe("ComposerActions", () => {
     await openActions();
     await userEvent.click(
       screen.getByRole("button", {
-        name: /Hot Takes — unlocks at vibe level 3/,
+        name: /Hot Takes, unlocks at vibe level 3/,
       }),
     );
     expect(onDealCard).not.toHaveBeenCalled();
@@ -116,7 +116,7 @@ describe("ComposerActions", () => {
     await openActions();
     await userEvent.click(
       screen.getByRole("button", {
-        name: /Send with sparkles — unlocks at vibe level 3/,
+        name: /Send with sparkles, unlocks at vibe level 3/,
       }),
     );
     expect(onModeChange).not.toHaveBeenCalled();

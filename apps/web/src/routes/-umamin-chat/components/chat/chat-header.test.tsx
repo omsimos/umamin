@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { Partner } from "@/lib/chat/types";
@@ -23,18 +23,12 @@ function renderHeader(overrides: Partial<Props> = {}) {
     stayConnectedActive: false,
     onStayConnected: () => {},
     onShowVibe: () => {},
+    onNewMatch: () => {},
+    onEndChat: () => {},
     ...overrides,
   };
   return render(<ChatHeader {...props} />);
 }
-
-const statusSpan = (text: string) =>
-  screen.getByText(
-    (_: string, el: Element | null) =>
-      el?.tagName === "SPAN" &&
-      el.textContent?.trim() === text &&
-      el.className.includes("text-[11px]"),
-  );
 
 describe("ChatHeader", () => {
   it("calls onStayConnected when the heart button is clicked", async () => {
@@ -61,27 +55,46 @@ describe("ChatHeader", () => {
 
   it("shows 'online', 'typing…', 'away' or 'left' based on partner status", () => {
     for (const [status, label] of [
-      ["online", "● online"],
-      ["typing", "● typing…"],
-      ["away", "● away"],
-      ["left", "● left"],
+      ["online", "online"],
+      ["typing", "typing…"],
+      ["away", "away"],
+      ["left", "left"],
     ] as const) {
       const { unmount } = renderHeader({ partner: makePartner({ status }) });
-      expect(statusSpan(label)).toBeInTheDocument();
+      expect(screen.getByText(label, { exact: true })).toBeInTheDocument();
       unmount();
     }
   });
 
-  it("tones the status line per state (emerald online, amber away, muted left)", () => {
-    for (const [status, label, tone] of [
-      ["online", "● online", "text-emerald-600"],
-      ["away", "● away", "text-amber-600"],
-      ["left", "● left", "text-muted-foreground"],
-    ] as const) {
-      const { unmount } = renderHeader({ partner: makePartner({ status }) });
-      expect(statusSpan(label).className).toContain(tone);
-      unmount();
-    }
+  it("ends the chat from the back button only after confirming", async () => {
+    const onEndChat = vi.fn();
+    renderHeader({ onEndChat });
+    await userEvent.click(screen.getByRole("button", { name: "End chat" }));
+    expect(onEndChat).not.toHaveBeenCalled();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Keep chatting" }),
+    );
+    expect(onEndChat).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "End chat" }));
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "End chat",
+      }),
+    );
+    expect(onEndChat).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts a new match from the options menu without a confirm", async () => {
+    const onNewMatch = vi.fn();
+    renderHeader({ onNewMatch });
+    await userEvent.click(screen.getByRole("button", { name: "Chat options" }));
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: "New match" }),
+    );
+    expect(onNewMatch).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
   it("opens the vibe sheet from the partner cluster", async () => {

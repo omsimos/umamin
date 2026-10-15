@@ -1,30 +1,32 @@
+import { Marker, MarkerContent } from "@umamin/ui/components/marker";
 import { cn } from "@umamin/ui/lib/utils";
 import type { ReactNode } from "react";
 
-/** Centered system-style row in the message stream — the shared shell for
- *  game results and one-shot milestone moments. No author side, no
- *  react/reply affordances. */
+/** A centered row in the message stream with no author side: game results,
+ *  burned whispers and milestones. */
 export function SystemMoment({
   children,
   className,
+  separator = false,
   animate = false,
 }: {
   children: ReactNode;
   className?: string;
-  /** Pop the row in on mount (fresh moments only — history renders static). */
+  /** Rule lines either side, for one-line moments. */
+  separator?: boolean;
+  /** Pop the row in on mount (fresh moments only; history renders static). */
   animate?: boolean;
 }) {
   return (
-    <div className="flex w-full justify-center">
-      <div
-        className={cn(
-          "bg-muted/40 text-muted-foreground max-w-[90%] rounded-xl border border-dashed px-4 py-2 text-center text-xs",
-          animate && "animate-chat-pop-in motion-reduce:animate-none",
-          className,
-        )}
-      >
-        {children}
-      </div>
-    </div>
+    <Marker
+      variant={separator ? "separator" : "default"}
+      className={cn(
+        "justify-center py-1 text-xs",
+        animate && "animate-chat-pop-in motion-reduce:animate-none",
+        className,
+      )}
+    >
+      <MarkerContent className="text-center">{children}</MarkerContent>
+    </Marker>
   );
 }
