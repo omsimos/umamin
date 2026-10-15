@@ -11,7 +11,10 @@ import { captureServerException } from "./posthog";
 // The AI SDK is imported lazily: statically it adds ~325 kB to the Worker's
 // startup bundle, which every request would pay for on a cold start.
 
-const MODEL_ID = "typesafe-ai/jev";
+// Pinned: the bare alias follows jev-latest, which moves without a deploy, and
+// the thresholds and scripts/moderation-cases.json were tuned on 1.13. 1.14
+// scored counter-speech 15-30 points higher on drama in the regression gate.
+const MODEL_ID = "typesafe-ai/jev-1.13.0";
 const TIMEOUT_MS = 2000;
 const MIN_TEXT_LENGTH = 3;
 const CONTEXT_MAX_LENGTH = 500;
