@@ -41,7 +41,7 @@ any that are empty.
 ### SEO
 
 - Shared links now tell apps the size and description of their preview image, so previews can show the image right away.
-- Umamin Chat has its own page in search results and in the sitemap.
+- The Umamin Chat page is in the sitemap and has its own title, description and preview image.
 
 ### Removed
 
