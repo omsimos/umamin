@@ -88,6 +88,22 @@ describe("pageSeo", () => {
       "https://www.umamin.link/chat-opengraph.png",
     );
   });
+
+  it("declares the size and alt of whichever image the page uses", () => {
+    const site = pageSeo({ title: "t", description: "d" }).meta;
+    const chat = pageSeo({
+      title: "t",
+      description: "d",
+      image: "/chat-opengraph.png",
+    }).meta;
+    expect(metaValue(site, "og:image:width")).toBe("1400");
+    expect(metaValue(chat, "og:image:width")).toBe("2400");
+    expect(metaValue(chat, "og:image:height")).toBe("1260");
+    expect(metaValue(chat, "og:image:alt")).toMatch(/Umamin Chat/);
+    expect(metaValue(chat, "twitter:image:alt")).toBe(
+      metaValue(chat, "og:image:alt"),
+    );
+  });
 });
 
 // Canonical/OG, robots.txt and sitemap.xml must all advertise ONE host, or

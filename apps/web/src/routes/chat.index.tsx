@@ -131,7 +131,7 @@ function Lobby() {
     <div className="container mx-auto flex w-full max-w-lg flex-col gap-6 pb-28 lg:pb-12">
       <header>
         <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          Chat
+          Umamin Chat
           <Badge variant="secondary" className="font-normal">
             Beta
           </Badge>
