@@ -172,8 +172,10 @@ export function NoteList({
                   the card — `list-row` turns on paint containment permanently
                   (not just while offscreen), so it would clip that ring. Exactly
                   one row is ever highlighted, and it's the one the deep link
-                  scrolled to. */}
-              <div className={isHighlighted ? undefined : "list-row"}>
+                  scrolled to. The others get 4px of bleed room (padding
+                  cancelled by a negative margin) so the card's tilt doesn't
+                  clip at the corners. */}
+              <div className={isHighlighted ? undefined : "list-row -m-1 p-1"}>
                 <NoteCard
                   isAuthenticated={isAuthenticated}
                   currentUserId={currentUserId}

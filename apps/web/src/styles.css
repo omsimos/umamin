@@ -225,8 +225,9 @@
    clipped. Checked: card overlays are all `inset-*`, and every menu / dialog /
    lightbox is portaled to the body. The one thing clipped is the ~2px sideways
    bleed of the card's `shadow-sm` (5% opacity, invisible in practice); a row that
-   paints something real outside its box must opt OUT of this class instead — see
-   the highlighted note in note-list.tsx, whose ring sits 4px outside the card. */
+   paints something real outside its box must opt OUT of this class or pad the
+   row with a matching negative margin — see note-list.tsx, where the tilted
+   note cards need bleed room and the highlighted note's ring sits 4px out. */
 @utility list-row {
   content-visibility: auto;
   contain-intrinsic-size: auto var(--list-row-height, 400px);
