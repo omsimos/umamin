@@ -3,24 +3,21 @@
  * needs plus `now` and returns what to write, with no I/O. The ChatRoom
  * Durable Object loads the rows, charges the returned rate-limit bucket,
  * persists the result and broadcasts projections. Keeping the rules here lets
- * the anti-leak and unlock gates run under the plain node test runner.
+ * them run under the plain node test runner.
  */
 import {
   ALLOWED_EFFECTS,
   ALLOWED_REACTIONS,
-  EFFECT_MIN_LEVEL,
   MAX_MESSAGE_LEN,
   MAX_REVEAL_HANDLE_LEN,
   MAX_ROOM_MESSAGES,
-  REACTION_MIN_LEVEL,
   type SendEffect,
   WHISPER_BURN_MS,
 } from "./constants";
-import { cardById, DECK_MIN_LEVEL, GUESS_MODE_MIN_LEVEL } from "./decks";
+import { cardById } from "./decks";
 import type { LimiterName } from "./limits";
 import type { ServerErrorCode } from "./protocol";
 import type { GameMode, GamePick } from "./types";
-import { computeVibe, type VibeCounters } from "./vibe";
 
 export type Side = "a" | "b";
 
@@ -87,8 +84,6 @@ export interface MessageRow {
   burned: boolean;
   game: GameRecord | null;
   effect: SendEffect | null;
-  /** The non-author reacted at least once. Feeds the vibe and never clears. */
-  vibeReacted: boolean;
   createdAt: number;
 }
 
@@ -142,21 +137,11 @@ export function initialMatch(
   };
 }
 
-export function matchVibe(match: MatchState, counts: VibeCounters) {
-  return computeVibe({
-    ...counts,
-    rounds: match.gameTally.rounds + match.guessTally.rounds,
-    successes: match.gameTally.matched + match.guessTally.correct,
-    mutualStayConnected: match.stayA && match.stayB,
-  });
-}
-
-/** Everything an op may consult. `level` is the current shared vibe level. */
+/** Everything an op may consult. */
 export interface OpContext {
   match: MatchState;
   side: Side;
   now: number;
-  level: number;
 }
 
 const isActive = (ctx: OpContext) => ctx.match.status === "active";
@@ -184,11 +169,6 @@ export function send(
   if (input.messageCount >= MAX_ROOM_MESSAGES) {
     return { ok: false, code: "cap" };
   }
-  // The gate applies to whatever was asked for, so a crafted frame can't use
-  // a whisper to probe locked effects.
-  if (effect && (EFFECT_MIN_LEVEL[effect as SendEffect] ?? 1) > ctx.level) {
-    return { ok: false, code: "locked" };
-  }
   // Whisper and effect are mutually exclusive: whisper wins.
   const keptEffect = !input.whisper && effect ? (effect as SendEffect) : null;
   return {
@@ -205,7 +185,6 @@ export function send(
       burned: false,
       game: null,
       effect: keptEffect,
-      vibeReacted: false,
       createdAt: ctx.now,
     },
   };
@@ -239,17 +218,12 @@ export function react(
   if (!isActive(ctx) || !msg) return NOOP;
   const current = ctx.side === "a" ? msg.reactionA : msg.reactionB;
   const next = current === emoji ? null : emoji;
-  if (next && (REACTION_MIN_LEVEL[emoji] ?? 1) > ctx.level) {
-    return { ok: false, code: "locked" };
-  }
-  const reactingToPartner = msg.author !== ctx.side;
   return {
     ok: true,
     charge: "react",
     update: {
       ...msg,
       ...(ctx.side === "a" ? { reactionA: next } : { reactionB: next }),
-      vibeReacted: msg.vibeReacted || (Boolean(next) && reactingToPartner),
     },
   };
 }
@@ -269,12 +243,6 @@ export function dealCard(
   const card = cardById(cardId);
   if (!card) return { ok: false, code: "invalid" };
   if (!isActive(ctx)) return NOOP;
-  if (
-    DECK_MIN_LEVEL[card.deck] > ctx.level ||
-    (mode === "guess" && GUESS_MODE_MIN_LEVEL > ctx.level)
-  ) {
-    return { ok: false, code: "locked" };
-  }
   // Dealing always replaces the current round, answered or not. Discarded
   // rounds never reach the tally, and this is the escape hatch when a partner
   // never answers.
@@ -361,7 +329,6 @@ export function answerCard(
         dealtBy: next.dealtBy,
       },
       effect: null,
-      vibeReacted: false,
       createdAt: ctx.now,
     },
   };
@@ -437,22 +404,4 @@ export function markSeen(match: MatchState, side: Side): MatchState | null {
 
 export function bothSeen(match: MatchState): boolean {
   return match.seenA && match.seenB;
-}
-
-/** Reference derivation of the vibe inputs from message rows. The room runs
- *  the same counts as one SQL aggregate; this version backs the tests and keeps
- *  the semantics in one readable place. */
-export function countVibe(rows: Iterable<MessageRow>): VibeCounters {
-  const counts = { msgsA: 0, msgsB: 0, reactions: 0, whispers: 0 };
-  for (const row of rows) {
-    if (row.kind !== "game") {
-      if (row.author === "a") counts.msgsA += 1;
-      else counts.msgsB += 1;
-    }
-    if (row.vibeReacted) counts.reactions += 1;
-    if (row.kind === "whisper" && row.whisperViewedAt !== null) {
-      counts.whispers += 1;
-    }
-  }
-  return counts;
 }

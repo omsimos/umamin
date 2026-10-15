@@ -19,10 +19,8 @@ type Props = Parameters<typeof ChatHeader>[0];
 function renderHeader(overrides: Partial<Props> = {}) {
   const props: Props = {
     partner: makePartner(),
-    vibe: { score: 0, level: 1 },
     stayConnectedActive: false,
     onStayConnected: () => {},
-    onShowVibe: () => {},
     onNewMatch: () => {},
     onEndChat: () => {},
     ...overrides,
@@ -95,20 +93,6 @@ describe("ChatHeader", () => {
     );
     expect(onNewMatch).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("alertdialog")).toBeNull();
-  });
-
-  it("opens the vibe sheet from the partner cluster", async () => {
-    const onShowVibe = vi.fn();
-    renderHeader({ onShowVibe, vibe: { score: 30, level: 2 } });
-    await userEvent.click(
-      screen.getByRole("button", { name: /Vibe level 2 with Quiet Fox/ }),
-    );
-    expect(onShowVibe).toHaveBeenCalledTimes(1);
-  });
-
-  it("renders the vibe ring at the partner's level", () => {
-    renderHeader({ vibe: { score: 60, level: 3 } });
-    expect(screen.getByTestId("vibe-ring")).toHaveAttribute("data-level", "3");
   });
 
   it("shows the combo chip only while a streak of 2+ is live", () => {

@@ -4,7 +4,6 @@ import {
   MAX_MESSAGE_LEN,
   MAX_REVEAL_HANDLE_LEN,
   MAX_ROOM_MESSAGES,
-  REACTION_MIN_LEVEL,
   WHISPER_BURN_MS,
 } from "./constants";
 import { GAME_DECKS } from "./decks";
@@ -12,7 +11,6 @@ import {
   answerCard,
   bothSeen,
   burnWhisper,
-  countVibe,
   dealCard,
   dismissGame,
   endMatch,
@@ -21,7 +19,6 @@ import {
   type MatchState,
   type MessageRow,
   markSeen,
-  matchVibe,
   type OpContext,
   type OpResult,
   react,
@@ -59,17 +56,8 @@ class Room {
     this.limiter = opts.limits ? new SideLimiter() : null;
   }
 
-  get vibe() {
-    return matchVibe(this.match, countVibe(this.rows));
-  }
-
   ctx(side: Side): OpContext {
-    return {
-      match: this.match,
-      side,
-      now: this.now,
-      level: this.vibe.level,
-    };
+    return { match: this.match, side, now: this.now };
   }
 
   row(seq: number): MessageRow | null {
@@ -164,15 +152,6 @@ class Room {
     return this.apply(side, leave(this.ctx(side)));
   }
 
-  /** Trades message pairs until the shared vibe reaches `level`. */
-  warmUp(level: number) {
-    while (this.vibe.level < level) {
-      if (this.rows.length > 200) throw new Error(`level ${level} unreachable`);
-      this.send("a", "hey");
-      this.send("b", "hi");
-    }
-  }
-
   playRound(cardId: string, pickA: GamePick, pickB: GamePick, mode?: GameMode) {
     this.deal("a", cardId, mode);
     this.answer("a", cardId, pickA);
@@ -265,24 +244,6 @@ describe("send", () => {
     expect(room.last()).toMatchObject({ kind: "whisper", effect: null });
   });
 
-  it("rejects a locked effect even on a whisper", () => {
-    const room = matched();
-    expect(
-      room.send("a", "psst", { whisper: true, effect: "sparkles" }),
-    ).toEqual({ ok: false, code: "locked" });
-  });
-
-  it("rejects a locked effect below its level and allows it once reached", () => {
-    const room = matched();
-    expect(room.send("a", "shiny", { effect: "sparkles" })).toEqual({
-      ok: false,
-      code: "locked",
-    });
-    room.warmUp(3);
-    room.send("a", "shiny", { effect: "sparkles" });
-    expect(room.last().effect).toBe("sparkles");
-  });
-
   it("refuses with cap once the room holds MAX_ROOM_MESSAGES", () => {
     const room = matched();
     const input = { text: "one more", replyTarget: null };
@@ -315,12 +276,9 @@ describe("react", () => {
   it("keeps one reaction per side: a new emoji replaces the previous", () => {
     const room = matched();
     room.send("a", "hi");
-    const base = ALLOWED_REACTIONS.filter(
-      (e) => (REACTION_MIN_LEVEL[e] ?? 1) === 1,
-    );
-    for (const emoji of base) room.react("a", 1, emoji);
+    for (const emoji of ALLOWED_REACTIONS) room.react("a", 1, emoji);
     expect(room.row(1)).toMatchObject({
-      reactionA: base.at(-1),
+      reactionA: ALLOWED_REACTIONS.at(-1),
       reactionB: null,
     });
   });
@@ -362,23 +320,6 @@ describe("react", () => {
   it("no-ops on a message that didn't resolve in this room", () => {
     const room = matched();
     expect(room.react("b", 42, "❤️")).toEqual({ ok: true });
-  });
-
-  it("rejects a locked reaction below its level and allows it once reached", () => {
-    const room = matched();
-    room.send("a", "hello");
-    expect(room.react("b", 1, "🫶")).toEqual({ ok: false, code: "locked" });
-    room.warmUp(REACTION_MIN_LEVEL["🫶"]);
-    room.react("b", 1, "🫶");
-    expect(room.row(1)?.reactionB).toBe("🫶");
-  });
-
-  it("clearing a gated reaction is allowed below its level", () => {
-    const room = matched();
-    room.send("a", "hello");
-    const msg = { ...room.last(), reactionB: "🥹" };
-    const res = react({ ...room.ctx("b"), level: 1 }, msg, "🥹");
-    expect(res.ok && res.update?.reactionB).toBeNull();
   });
 });
 
@@ -560,25 +501,6 @@ describe("games", () => {
     expect(room.match.gameTally).toEqual({ rounds: 2, matched: 1 });
   });
 
-  it("rejects locked decks and guess mode below their levels", () => {
-    const room = matched();
-    expect(room.deal("a", GAME_DECKS["hot-takes"][0].id)).toEqual({
-      ok: false,
-      code: "locked",
-    });
-    expect(room.deal("a", CARD, "guess")).toEqual({
-      ok: false,
-      code: "locked",
-    });
-    expect(room.match.game).toBeNull();
-    room.warmUp(4);
-    room.deal("a", GAME_DECKS["never-have-i-ever"][0].id, "guess");
-    expect(room.match.game).toMatchObject({
-      cardId: GAME_DECKS["never-have-i-ever"][0].id,
-      mode: "guess",
-    });
-  });
-
   it("rate-limits rapid dealing per side", () => {
     const room = new Room({ limits: true });
     const cards = GAME_DECKS["this-or-that"];
@@ -593,11 +515,7 @@ describe("games", () => {
 });
 
 describe("guess mode (Mind Reader)", () => {
-  const guessRoom = () => {
-    const room = matched();
-    room.warmUp(2);
-    return room;
-  };
+  const guessRoom = matched;
 
   it("a correct guess tallies guessTally and leaves gameTally untouched", () => {
     const room = guessRoom();
@@ -633,7 +551,6 @@ describe("game streak", () => {
 
   it("a correct guess extends the same streak as a match", () => {
     const room = matched();
-    room.warmUp(2);
     room.playRound(cards[0].id, "A", "A");
     room.playRound(cards[1].id, "B", "B", "guess");
     expect(room.match.streak).toEqual({ current: 2, best: 2 });
@@ -767,75 +684,5 @@ describe("ending", () => {
     });
     expect(room.deal("a", "nope")).toEqual({ ok: false, code: "invalid" });
     expect(room.react("a", 1, "nope")).toEqual({ ok: false, code: "invalid" });
-  });
-});
-
-describe("vibe derived from rows", () => {
-  it("messages only count in two-sided pairs", () => {
-    const room = matched();
-    for (const text of ["one", "two", "three"]) room.send("a", text);
-    expect(room.vibe.score).toBe(0);
-    room.send("b", "finally");
-    expect(room.vibe.score).toBe(2);
-  });
-
-  it("a partner's first reaction bumps once; toggles and re-sets never add or remove", () => {
-    const room = matched();
-    room.send("a", "hey");
-    const before = room.vibe.score;
-    room.react("b", 1, "🔥");
-    expect(room.vibe.score).toBe(before + 2);
-    room.react("b", 1, "🔥");
-    expect(room.vibe.score).toBe(before + 2);
-    room.react("b", 1, "❤️");
-    expect(room.vibe.score).toBe(before + 2);
-  });
-
-  it("reactions on different partner messages each count", () => {
-    const room = matched();
-    room.send("a", "one");
-    room.send("a", "two");
-    room.react("b", 1, "🔥");
-    room.react("b", 2, "🔥");
-    expect(countVibe(room.rows).reactions).toBe(2);
-  });
-
-  it("self-reacts don't feed the meter", () => {
-    const room = matched();
-    room.send("a", "hey");
-    room.react("a", 1, "🔥");
-    expect(room.row(1)?.vibeReacted).toBe(false);
-    expect(countVibe(room.rows).reactions).toBe(0);
-  });
-
-  it("a whisper reveal adds its bonus, and the burn doesn't take it back", () => {
-    const room = matched();
-    room.send("a", "psst", { whisper: true });
-    const before = room.vibe.score;
-    room.viewWhisper("b", 1);
-    expect(room.vibe.score).toBe(before + 6);
-    room.burn(1);
-    expect(room.vibe.score).toBe(before + 6);
-  });
-
-  it("whispers count as messages; game rows don't", () => {
-    const room = matched();
-    room.send("a", "psst", { whisper: true });
-    room.playRound(CARD, "A", "A");
-    expect(countVibe(room.rows)).toMatchObject({ msgsA: 1, msgsB: 0 });
-  });
-
-  it("mutual stay-connected adds its bonus only when both tapped", () => {
-    const room = matched();
-    room.stay("a");
-    expect(room.vibe.score).toBe(0);
-    room.stay("b");
-    expect(room.vibe.score).toBe(20);
-  });
-
-  it("completed rounds and successes raise the score", () => {
-    const room = matched();
-    room.playRound(CARD, "A", "A");
-    expect(room.vibe.score).toBe(10);
   });
 });

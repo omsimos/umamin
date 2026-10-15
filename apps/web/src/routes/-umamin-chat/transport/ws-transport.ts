@@ -56,7 +56,6 @@ const ERROR_MESSAGES: Record<
   string
 > = {
   invalid: GENERIC_ERROR,
-  locked: "That unlocks at a higher vibe level. Keep the chat flowing.",
   not_unlocked: "You both need to tap the heart first.",
   cap: "This chat has hit its message limit.",
 };

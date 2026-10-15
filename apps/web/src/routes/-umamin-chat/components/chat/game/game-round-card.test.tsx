@@ -25,8 +25,10 @@ function renderCard(
     onAnswer: (pick: "A" | "B") => void;
     onDismiss: () => void;
     onPlayAgain: () => void;
+    onFollowUp: (text: string) => void;
   }> = {},
   streak = 0,
+  followUpSent = false,
 ) {
   return render(
     <GameRoundCard
@@ -36,6 +38,8 @@ function renderCard(
       onAnswer={handlers.onAnswer ?? (() => {})}
       onDismiss={handlers.onDismiss ?? (() => {})}
       onPlayAgain={handlers.onPlayAgain ?? (() => {})}
+      onFollowUp={handlers.onFollowUp}
+      followUpSent={followUpSent}
     />,
   );
 }
@@ -84,17 +88,40 @@ describe("GameRoundCard", () => {
     );
   });
 
-  it("fires play-another and dismiss", async () => {
+  it("fires next-card and dismiss", async () => {
     const onPlayAgain = vi.fn();
     const onDismiss = vi.fn();
     renderCard(
       makeRound({ selfPick: "A", partnerAnswered: true, partnerPick: "A" }),
       { onPlayAgain, onDismiss },
     );
-    await userEvent.click(screen.getByRole("button", { name: "Play another" }));
+    await userEvent.click(screen.getByRole("button", { name: "Next card" }));
     expect(onPlayAgain).toHaveBeenCalledTimes(1);
     await userEvent.click(screen.getByRole("button", { name: "Dismiss game" }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers the follow-up question only after the reveal, until it's asked", async () => {
+    const onFollowUp = vi.fn();
+    const ask = { name: `Ask Blue Fox: ${CARD.followUp}` };
+    const { unmount } = renderCard(makeRound({ selfPick: "A" }), {
+      onFollowUp,
+    });
+    expect(screen.queryByRole("button", ask)).toBeNull();
+    unmount();
+
+    const revealed = makeRound({
+      selfPick: "A",
+      partnerAnswered: true,
+      partnerPick: "B",
+    });
+    const second = renderCard(revealed, { onFollowUp });
+    await userEvent.click(screen.getByRole("button", ask));
+    expect(onFollowUp).toHaveBeenCalledWith(CARD.followUp);
+    second.unmount();
+
+    renderCard(revealed, { onFollowUp }, 0, true);
+    expect(screen.queryByRole("button", ask)).toBeNull();
   });
 
   it("renders nothing for an unknown card", () => {
@@ -125,6 +152,9 @@ describe("GameRoundCard", () => {
       }),
     );
     expect(screen.getByText("🔮 You read their mind!")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Coffee/ })).toHaveTextContent(
+      "Your guess",
+    );
   });
 
   it("guess mode: the dealer sees who read whom", () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { RoomServerFrame } from "@/lib/chat/protocol";
+import { PROTOCOL_VERSION, type RoomServerFrame } from "@/lib/chat/protocol";
 import {
   type ChatMessage,
   IDLE_SNAPSHOT,
@@ -179,7 +179,7 @@ describe("wsTransport", () => {
       expect(last().frames()).toEqual([
         {
           t: "join",
-          v: 1,
+          v: PROTOCOL_VERSION,
           sessionId: "s1",
           secret: "s1-secret",
           alias: "NightOwl",
@@ -256,7 +256,12 @@ describe("wsTransport", () => {
       expect(t.getSnapshot().phase).toBe("matching");
       room.open();
       expect(room.frames()).toEqual([
-        { t: "auth", v: 1, sessionId: "s1", secret: "s1-secret" },
+        {
+          t: "auth",
+          v: PROTOCOL_VERSION,
+          sessionId: "s1",
+          secret: "s1-secret",
+        },
       ]);
       room.push({
         t: "sync",
@@ -353,12 +358,12 @@ describe("wsTransport", () => {
       expect(again.frames()[0]).toMatchObject({ t: "auth" });
       again.push({
         t: "sync",
-        meta: meta({ vibe: { score: 40, level: 2 } }),
+        meta: meta({ gameTally: { rounds: 3, matched: 2 } }),
         messages: [msg("5", "partner", "new")],
       });
       const snap = ctx.t.getSnapshot();
       expect(snap.messages.map((m) => m.text)).toEqual(["new"]);
-      expect(snap.vibe.level).toBe(2);
+      expect(snap.gameTally).toEqual({ rounds: 3, matched: 2 });
     });
 
     it("keeps showing the chat while reconnecting", () => {
@@ -789,12 +794,12 @@ describe("wsTransport", () => {
       room.push({ t: "err", id: sentOps(room)[0].id, code: "rate_limited" });
       expect(ctx.onRateLimited).toHaveBeenCalledWith(RATE_LIMITED_MESSAGE);
       ctx.t.dealCard("card-9");
-      room.push({ t: "err", id: sentOps(room)[1].id, code: "locked" });
+      room.push({ t: "err", id: sentOps(room)[1].id, code: "not_unlocked" });
       ctx.t.submitRevealHandle("@me");
       room.push({ t: "err", id: sentOps(room)[2].id, code: "invalid" });
       expect(ctx.onRateLimited).toHaveBeenCalledTimes(1);
       expect(ctx.onError.mock.calls.map(([m]) => m)).toEqual([
-        expect.stringMatching(/vibe level/i),
+        expect.stringMatching(/tap the heart/i),
         "Something went wrong. Please try again.",
       ]);
     });

@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GAME_DECKS } from "@/lib/chat/decks";
 import { ComposerActions, IDLE_MODE } from "./composer-actions";
 
 // Run on the desktop (popover) path: vaul's drawer leaves aria-hidden/state
@@ -31,23 +30,26 @@ async function openActions() {
 }
 
 describe("ComposerActions", () => {
-  it("deals a random card from the chosen deck", async () => {
-    const onDealCard = vi.fn();
+  it("starts the chosen game and closes the sheet", async () => {
+    const onPlay = vi.fn();
     render(
       <ComposerActions
         mode={IDLE_MODE}
         onModeChange={() => {}}
-        onDealCard={onDealCard}
+        onPlay={onPlay}
       />,
     );
     await openActions();
-    await userEvent.click(screen.getByRole("button", { name: /This or That/ }));
-    expect(onDealCard).toHaveBeenCalledTimes(1);
-    const dealt = onDealCard.mock.calls[0][0];
-    expect(GAME_DECKS["this-or-that"].some((c) => c.id === dealt)).toBe(true);
+    await userEvent.click(screen.getByRole("button", { name: /Hot Takes/ }));
+    expect(onPlay).toHaveBeenCalledWith("hot-takes");
+    expect(screen.queryByRole("button", { name: /Mind Reader/ })).toBeNull();
+
+    await openActions();
+    await userEvent.click(screen.getByRole("button", { name: /Mind Reader/ }));
+    expect(onPlay).toHaveBeenLastCalledWith("mind-reader");
   });
 
-  it("hides the play section when onDealCard is absent", async () => {
+  it("hides the play section when onPlay is absent", async () => {
     render(<ComposerActions mode={IDLE_MODE} onModeChange={() => {}} />);
     await openActions();
     expect(screen.queryByRole("button", { name: /This or That/ })).toBeNull();
@@ -62,71 +64,30 @@ describe("ComposerActions", () => {
     expect(onModeChange).toHaveBeenCalledWith({ whisper: true });
   });
 
-  it("locked tiles explain instead of dealing, and offer the vibe sheet", async () => {
-    const onDealCard = vi.fn();
-    const onShowVibe = vi.fn();
-    render(
-      <ComposerActions
-        mode={IDLE_MODE}
-        onModeChange={() => {}}
-        onDealCard={onDealCard}
-        vibeLevel={1}
-        onShowVibe={onShowVibe}
-      />,
-    );
-    await openActions();
-    await userEvent.click(
-      screen.getByRole("button", {
-        name: /Hot Takes, unlocks at vibe level 3/,
-      }),
-    );
-    expect(onDealCard).not.toHaveBeenCalled();
-  });
-
-  it("unlocked decks and Mind Reader deal at a sufficient level", async () => {
-    const onDealCard = vi.fn();
-    render(
-      <ComposerActions
-        mode={IDLE_MODE}
-        onModeChange={() => {}}
-        onDealCard={onDealCard}
-        vibeLevel={3}
-      />,
-    );
-    await openActions();
-    await userEvent.click(screen.getByRole("button", { name: "Hot Takes" }));
-    expect(
-      GAME_DECKS["hot-takes"].some((c) => c.id === onDealCard.mock.calls[0][0]),
-    ).toBe(true);
-
-    await openActions();
-    await userEvent.click(screen.getByRole("button", { name: "Mind Reader" }));
-    expect(onDealCard).toHaveBeenLastCalledWith(expect.any(String), "guess");
-  });
-
-  it("locked effects don't arm a send mode", async () => {
+  it("arms an effect, and picking the armed one again clears it", async () => {
     const onModeChange = vi.fn();
-    render(
+    const { rerender } = render(
+      <ComposerActions mode={IDLE_MODE} onModeChange={onModeChange} />,
+    );
+    await openActions();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Send with golden hearts" }),
+    );
+    expect(onModeChange).toHaveBeenLastCalledWith({
+      whisper: false,
+      effect: "golden",
+    });
+
+    rerender(
       <ComposerActions
-        mode={IDLE_MODE}
+        mode={{ whisper: false, effect: "golden" }}
         onModeChange={onModeChange}
-        vibeLevel={1}
       />,
     );
     await openActions();
     await userEvent.click(
-      screen.getByRole("button", {
-        name: /Send with sparkles, unlocks at vibe level 3/,
-      }),
+      screen.getByRole("button", { name: "Send with golden hearts" }),
     );
-    expect(onModeChange).not.toHaveBeenCalled();
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Send with confetti" }),
-    );
-    expect(onModeChange).toHaveBeenCalledWith({
-      whisper: false,
-      effect: "confetti",
-    });
+    expect(onModeChange).toHaveBeenLastCalledWith(IDLE_MODE);
   });
 });

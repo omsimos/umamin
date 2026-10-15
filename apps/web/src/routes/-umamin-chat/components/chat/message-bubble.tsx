@@ -18,7 +18,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { FlameIcon, ReplyIcon } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { WHISPER_BURN_MS } from "@/lib/chat/constants";
-import { cardById, DECK_META } from "@/lib/chat/decks";
+import { cardById, cardTitle, DECK_META } from "@/lib/chat/decks";
 import type { ChatMessage, GameResult } from "@/lib/chat/types";
 import { groupReactions } from "../../lib/reactions";
 import { SeedAvatar } from "../seed-avatar";
@@ -66,7 +66,7 @@ function GameResultRow({
     <SystemMoment className="py-2">
       <span className="block font-medium">
         <span aria-hidden>{guess ? "🔮" : meta.emoji}</span>{" "}
-        {guess ? "Mind Reader" : meta.label} · {card.optionA} vs {card.optionB}
+        {guess ? "Mind Reader" : meta.label} · {cardTitle(card)}
       </span>
       <span className="mt-0.5 block">{picksLine}</span>
       <span className="text-foreground mt-0.5 block font-semibold">
@@ -125,7 +125,6 @@ export function MessageBubble({
   showAvatar = true,
   self,
   partner,
-  vibeLevel = 1,
 }: {
   message: ChatMessage;
   onReact: (emoji: string) => void;
@@ -142,8 +141,6 @@ export function MessageBubble({
   showAvatar?: boolean;
   self: Reactor;
   partner: Reactor;
-  /** Gates which reaction emojis the picker offers. */
-  vibeLevel?: number;
 }) {
   const mine = message.author === "self";
 
@@ -198,7 +195,6 @@ export function MessageBubble({
             onRetry={onRetry}
             self={self}
             partner={partner}
-            vibeLevel={vibeLevel}
           />
         )}
       </MessageContent>
@@ -290,7 +286,6 @@ function TextBody({
   onRetry,
   self,
   partner,
-  vibeLevel,
 }: {
   message: ChatMessage;
   mine: boolean;
@@ -301,7 +296,6 @@ function TextBody({
   onRetry?: () => void;
   self: Reactor;
   partner: Reactor;
-  vibeLevel: number;
 }) {
   const [open, setOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -378,7 +372,6 @@ function TextBody({
               <div className="flex items-center gap-0.5">
                 <ReactionPicker
                   current={selfReaction}
-                  vibeLevel={vibeLevel}
                   onPick={(emoji) => {
                     onReact(emoji);
                     setOpen(false);

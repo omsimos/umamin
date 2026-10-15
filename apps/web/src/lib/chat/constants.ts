@@ -66,13 +66,6 @@ export const ALLOWED_EFFECTS = [
   "golden",
 ] as const;
 export type SendEffect = (typeof ALLOWED_EFFECTS)[number];
-/** Vibe level required to send an effect (absent = 1). The engine enforces it;
- *  the dimmed tiles in the composer sheet are UX only. */
-export const EFFECT_MIN_LEVEL: Partial<Record<SendEffect, number>> = {
-  sparkles: 3,
-  poof: 4,
-  golden: 5,
-};
 
 /** Client-generated anonymous session credentials. */
 export const MAX_SESSION_ID_LEN = 128;
@@ -89,18 +82,5 @@ export const MAX_INTERESTS = 24;
 export const MAX_INTEREST_LEN = 48;
 
 /** Reactions are a fixed UI affordance. Each side gets one reaction per message. */
-export const ALLOWED_REACTIONS = [
-  "❤️",
-  "😂",
-  "🔥",
-  "😮",
-  "👍",
-  "😢",
-  "🫶",
-  "🥹",
-];
-/** Vibe level required to SET a reaction (absent = 1); clearing is always allowed. */
-export const REACTION_MIN_LEVEL: Record<string, number> = {
-  "🫶": 2,
-  "🥹": 3,
-};
+/** Six, so the picker plus the reply button fits a 360px screen. */
+export const ALLOWED_REACTIONS = ["❤️", "😂", "🔥", "😮", "👍", "😢"];

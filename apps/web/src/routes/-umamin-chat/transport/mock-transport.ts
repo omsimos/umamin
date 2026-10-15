@@ -8,7 +8,6 @@ import {
   EMPTY_REVEAL,
   EMPTY_STREAK,
   EMPTY_TALLY,
-  EMPTY_VIBE,
   type EndedReason,
   type FindMatchOptions,
   type GameMode,
@@ -18,11 +17,6 @@ import {
   type SendOpts,
   type SessionSnapshot,
 } from "@/lib/chat/types";
-import {
-  computeVibe,
-  EMPTY_VIBE_COUNTERS,
-  type VibeCounters,
-} from "@/lib/chat/vibe";
 import { randomAlias, randomAvatarSeed } from "../lib/alias";
 
 const PARTNER_LINES = [
@@ -160,24 +154,6 @@ export function createMockTransport(
     if (Object.keys(next).length > 0) set(next);
   }
 
-  // Vibe bookkeeping through the SHARED computeVibe (same import as the
-  // server), so the mock can never disagree with the backend on a level.
-  let vibeCounters: VibeCounters = { ...EMPTY_VIBE_COUNTERS };
-
-  function refreshVibe(next: Partial<SessionSnapshot> = {}) {
-    const merged = { ...state, ...next };
-    set({
-      ...next,
-      vibe: computeVibe({
-        ...vibeCounters,
-        rounds: merged.gameTally.rounds + merged.guessTally.rounds,
-        successes: merged.gameTally.matched + merged.guessTally.correct,
-        mutualStayConnected:
-          merged.stayConnected.self && merged.stayConnected.partner,
-      }),
-    });
-  }
-
   function revealRound(selfPick: GamePick, partnerPick: GamePick) {
     if (!state.game) return;
     const { cardId, mode } = state.game;
@@ -185,7 +161,7 @@ export function createMockTransport(
     // mock partner's prediction matching your truthful pick is a hit).
     const success = selfPick === partnerPick;
     const streakNext = success ? state.gameStreak.current + 1 : 0;
-    refreshVibe({
+    set({
       game: {
         ...state.game,
         selfPick,
@@ -267,8 +243,7 @@ export function createMockTransport(
         } else {
           addMessage({ author: "partner", text });
         }
-        vibeCounters.msgsB += 1;
-        refreshVibe({ partner: { ...state.partner, status: "online" } });
+        set({ partner: { ...state.partner, status: "online" } });
       });
     });
   }
@@ -291,7 +266,6 @@ export function createMockTransport(
       hiddenWhisperText.clear();
       pendingPartnerPick = null;
       pendingPartnerHandle = null;
-      vibeCounters = { ...EMPTY_VIBE_COUNTERS };
       msgSeq = 0;
       matchSeq += 1;
       state = {
@@ -305,7 +279,6 @@ export function createMockTransport(
         gameTally: EMPTY_TALLY,
         guessTally: EMPTY_GUESS_TALLY,
         gameStreak: EMPTY_STREAK,
-        vibe: EMPTY_VIBE,
         reveal: EMPTY_REVEAL,
       };
       emit();
@@ -350,8 +323,6 @@ export function createMockTransport(
         ...(whisper ? { whisper: { state: "hidden" as const } } : {}),
         ...(opts?.effect && !whisper ? { effect: opts.effect } : {}),
       });
-      vibeCounters.msgsA += 1;
-      refreshVibe();
       if (whisper) {
         // The mock partner "taps" your whisper, then it burns — and whispers
         // one back so the recipient flow is playable offline.
@@ -432,8 +403,6 @@ export function createMockTransport(
         text: plaintext,
         whisper: { state: "revealed", viewedAt: Date.now() },
       }));
-      vibeCounters.whispers += 1;
-      refreshVibe();
       schedule(WHISPER_BURN_MS, () => burnWhisper(messageId));
     },
 
@@ -441,8 +410,6 @@ export function createMockTransport(
       if (state.phase !== "active") return;
       const target = state.messages.find((m) => m.id === messageId);
       if (!target) return;
-      const setting =
-        target.reactions.find((r) => r.by === "self")?.emoji !== emoji;
       // Mirrors the server: one reaction per user — repeating the current
       // emoji clears it, a different one replaces it.
       set({
@@ -459,12 +426,6 @@ export function createMockTransport(
           };
         }),
       });
-      // Set events on the partner's messages feed the vibe (self-reacts
-      // don't count); toggling off never decrements. Mirrors the server.
-      if (setting && target.author === "partner") {
-        vibeCounters.reactions += 1;
-        refreshVibe();
-      }
     },
 
     retrySend(_messageId: string) {
@@ -478,13 +439,13 @@ export function createMockTransport(
 
     signalStayConnected() {
       if (state.phase !== "active") return;
-      refreshVibe({ stayConnected: { ...state.stayConnected, self: true } });
+      set({ stayConnected: { ...state.stayConnected, self: true } });
       schedule(timings.stayConnectedReplyDelay, () => {
         if (state.phase !== "active") return;
-        refreshVibe({
+        set({
           stayConnected: { ...state.stayConnected, partner: true },
+          reveal: { ...state.reveal, unlocked: true },
         });
-        set({ reveal: { ...state.reveal, unlocked: true } });
         // The mock partner drops a handle a beat later — submitted flips, but
         // the handle itself stays withheld until the user submits too (the
         // asymmetric tease, mirrored from the server's anti-leak gate).

@@ -1,6 +1,6 @@
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
-import { X } from "lucide-react";
+import { MessageCircleIcon, X } from "lucide-react";
 import { cardById, DECK_META } from "@/lib/chat/decks";
 import type { GamePick, GameRound } from "@/lib/chat/types";
 
@@ -21,6 +21,13 @@ function OptionButton({
   const pickedBySelf = round.selfPick === pick;
   const pickedByPartner = round.partnerPick === pick;
   const answered = round.selfPick !== null;
+  // In Mind Reader the non-dealer's pick is a prediction, so say so.
+  const guess = round.mode === "guess";
+  const selfChip = guess && round.dealtBy === "partner" ? "Your guess" : "You";
+  const partnerChip =
+    guess && round.dealtBy === "self"
+      ? `${partnerAlias}'s guess`
+      : partnerAlias;
 
   return (
     <button
@@ -44,12 +51,12 @@ function OptionButton({
         <span className="flex flex-wrap items-center justify-center gap-1">
           {pickedBySelf && (
             <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold">
-              You
+              {selfChip}
             </span>
           )}
           {pickedByPartner && (
-            <span className="bg-muted text-muted-foreground max-w-24 truncate rounded-full px-2 py-0.5 text-[10px] font-semibold">
-              {partnerAlias}
+            <span className="bg-muted text-muted-foreground max-w-28 truncate rounded-full px-2 py-0.5 text-[10px] font-semibold">
+              {partnerChip}
             </span>
           )}
         </span>
@@ -100,6 +107,8 @@ export function GameRoundCard({
   onAnswer,
   onDismiss,
   onPlayAgain,
+  onFollowUp,
+  followUpSent = false,
 }: {
   round: GameRound;
   partnerAlias: string;
@@ -107,8 +116,12 @@ export function GameRoundCard({
   streak?: number;
   onAnswer: (pick: GamePick) => void;
   onDismiss: () => void;
-  /** Deals another random card from the same deck (and mode). */
+  /** Deals another unplayed card from the same deck (and mode). */
   onPlayAgain: () => void;
+  /** Sends the card's follow-up question. Absent = no follow-up offered. */
+  onFollowUp?: (text: string) => void;
+  /** Either side already asked it, so don't offer it twice. */
+  followUpSent?: boolean;
 }) {
   const card = cardById(round.cardId);
   if (!card) return null;
@@ -149,7 +162,11 @@ export function GameRoundCard({
           <X />
         </Button>
       </div>
-      {card.prompt && <p className="mt-1 text-sm font-medium">{card.prompt}</p>}
+      {card.prompt && (
+        <p className="mt-1.5 text-base leading-snug font-semibold">
+          {card.prompt}
+        </p>
+      )}
       <div className="mt-2 grid grid-cols-2 gap-2">
         <OptionButton
           label={card.optionA}
@@ -194,7 +211,7 @@ export function GameRoundCard({
               size="sm"
               onClick={onPlayAgain}
             >
-              Play another
+              Next card
             </Button>
           </>
         ) : (
@@ -208,6 +225,21 @@ export function GameRoundCard({
           </p>
         )}
       </div>
+      {revealed && onFollowUp && !followUpSent && (
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => onFollowUp(card.followUp)}
+          aria-label={`Ask ${partnerAlias}: ${card.followUp}`}
+          className="animate-chat-pop-in mt-2 h-auto min-h-9 w-full justify-start gap-2 rounded-xl py-2 text-left text-xs font-normal whitespace-normal motion-reduce:animate-none"
+        >
+          <MessageCircleIcon aria-hidden className="text-muted-foreground" />
+          <span>
+            <span className="text-muted-foreground">Ask: </span>
+            {card.followUp}
+          </span>
+        </Button>
+      )}
       {/* Viewport edge pulse for a hot streak: a static inset shadow, faded via
           opacity only; base opacity-0 keeps it invisible under reduced motion. */}
       {matched && streak >= 3 && (

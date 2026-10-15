@@ -11,7 +11,7 @@
  *   attachments after hibernation.
  * - One chat message is one row written. `messages` uses a rowid primary key
  *   without AUTOINCREMENT (which would also write sqlite_sequence) and no
- *   secondary index; vibe inputs are a COUNT over the rows, not counters.
+ *   secondary index.
  * - No setTimeout: every deadline is a row in `timers`, and the single alarm
  *   tracks MIN(at).
  * - A room that was never initialized is never written to, so probing random
@@ -55,7 +55,6 @@ import {
   type RoomServerFrame,
   roomFrameSchema,
 } from "../../lib/chat/protocol";
-import type { VibeCounters } from "../../lib/chat/vibe";
 import type { AppEnv } from "../env";
 import { captureServerException } from "../posthog";
 import { hashesEqual, hashSecret } from "./secret";
@@ -107,13 +106,12 @@ type MessageRowSql = {
   burned: number;
   game: string | null;
   effect: string | null;
-  vibe_reacted: number;
   created_at: number;
   client_id: string | null;
 };
 
 const MESSAGE_COLUMNS =
-  "seq, author, text, reaction_a, reaction_b, reply_to, kind, whisper_viewed_at, burned, game, effect, vibe_reacted, created_at, client_id";
+  "seq, author, text, reaction_a, reaction_b, reply_to, kind, whisper_viewed_at, burned, game, effect, created_at, client_id";
 
 const SIDE_REF: Record<Side, number> = { a: 0, b: 1 };
 
@@ -130,7 +128,6 @@ function toMessage(row: MessageRowSql): MessageRow {
     burned: row.burned === 1,
     game: row.game ? (JSON.parse(row.game) as GameRecord) : null,
     effect: row.effect as MessageRow["effect"],
-    vibeReacted: row.vibe_reacted === 1,
     createdAt: row.created_at,
   };
 }
@@ -141,7 +138,6 @@ export class ChatRoom extends DurableObject<AppEnv> {
   // Caches, rebuilt lazily after hibernation.
   private creds: Credentials | null | undefined;
   private match: MatchState | undefined;
-  private counts: VibeCounters | undefined;
   private alarmAt: number | null | undefined;
 
   constructor(ctx: DurableObjectState, env: AppEnv) {
@@ -168,7 +164,7 @@ export class ChatRoom extends DurableObject<AppEnv> {
       author TEXT NOT NULL, text TEXT NOT NULL,
       reaction_a TEXT, reaction_b TEXT, reply_to INTEGER, kind TEXT,
       whisper_viewed_at INTEGER, burned INTEGER NOT NULL DEFAULT 0,
-      game TEXT, effect TEXT, vibe_reacted INTEGER NOT NULL DEFAULT 0,
+      game TEXT, effect TEXT,
       created_at INTEGER NOT NULL, client_id TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS timers (
       kind TEXT NOT NULL, ref INTEGER NOT NULL, at INTEGER NOT NULL,
@@ -400,8 +396,7 @@ export class ChatRoom extends DurableObject<AppEnv> {
     }
     const now = Date.now();
     const match = this.loadMatch();
-    const before = this.vibeScore(match);
-    const ctx: OpContext = { match, side, now, level: before.level };
+    const ctx: OpContext = { match, side, now };
     const result = this.dispatch(ctx, frame);
 
     if (!result.ok) {
@@ -447,8 +442,7 @@ export class ChatRoom extends DurableObject<AppEnv> {
         inserted && frame.t === "send" ? { [inserted.seq]: frame.id } : {},
       );
     }
-    const after = this.vibeScore(this.loadMatch());
-    if (result.match || after.score !== before.score) this.broadcastMeta();
+    if (result.match) this.broadcastMeta();
   }
 
   private dispatch(ctx: OpContext, frame: RoomOpFrame): OpResult {
@@ -575,7 +569,6 @@ export class ChatRoom extends DurableObject<AppEnv> {
     await this.ctx.storage.deleteAll();
     this.creds = null;
     this.match = undefined;
-    this.counts = undefined;
     this.alarmAt = null;
   }
 
@@ -697,8 +690,8 @@ export class ChatRoom extends DurableObject<AppEnv> {
   private insertMessage(m: NewMessage, clientId: string | null): MessageRow {
     const { seq } = this.sql
       .exec<{ seq: number }>(
-        `INSERT INTO messages (author, text, reaction_a, reaction_b, reply_to, kind, whisper_viewed_at, burned, game, effect, vibe_reacted, created_at, client_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING seq`,
+        `INSERT INTO messages (author, text, reaction_a, reaction_b, reply_to, kind, whisper_viewed_at, burned, game, effect, created_at, client_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING seq`,
         m.author,
         m.text,
         m.reactionA,
@@ -709,59 +702,23 @@ export class ChatRoom extends DurableObject<AppEnv> {
         m.burned ? 1 : 0,
         m.game ? JSON.stringify(m.game) : null,
         m.effect,
-        m.vibeReacted ? 1 : 0,
         m.createdAt,
         clientId,
       )
       .one();
-    this.counts = undefined;
     return { ...m, seq };
   }
 
   private updateMessage(m: MessageRow) {
     this.sql.exec(
-      `UPDATE messages SET text = ?, reaction_a = ?, reaction_b = ?, whisper_viewed_at = ?, burned = ?, vibe_reacted = ? WHERE seq = ?`,
+      `UPDATE messages SET text = ?, reaction_a = ?, reaction_b = ?, whisper_viewed_at = ?, burned = ? WHERE seq = ?`,
       m.text,
       m.reactionA,
       m.reactionB,
       m.whisperViewedAt,
       m.burned ? 1 : 0,
-      m.vibeReacted ? 1 : 0,
       m.seq,
     );
-    this.counts = undefined;
-  }
-
-  /** Same semantics as engine.countVibe, as one aggregate. Reads are cheap;
-   *  the result is cached until a message changes. */
-  private vibeCounts(): VibeCounters {
-    if (this.counts) return this.counts;
-    const row = this.sql
-      .exec<{
-        a: number | null;
-        b: number | null;
-        r: number | null;
-        w: number | null;
-      }>(
-        `SELECT
-          SUM(author = 'a' AND (kind IS NULL OR kind != 'game')) AS a,
-          SUM(author = 'b' AND (kind IS NULL OR kind != 'game')) AS b,
-          SUM(vibe_reacted) AS r,
-          SUM(kind = 'whisper' AND whisper_viewed_at IS NOT NULL) AS w
-        FROM messages`,
-      )
-      .one();
-    this.counts = {
-      msgsA: row.a ?? 0,
-      msgsB: row.b ?? 0,
-      reactions: row.r ?? 0,
-      whispers: row.w ?? 0,
-    };
-    return this.counts;
-  }
-
-  private vibeScore(match: MatchState) {
-    return engine.matchVibe(match, this.vibeCounts());
   }
 
   private recentMessages(viewer: Side) {
@@ -830,7 +787,6 @@ export class ChatRoom extends DurableObject<AppEnv> {
       match,
       viewer,
       this.socketsFor(partner, except).length > 0,
-      this.vibeCounts(),
       this.creds?.matchId ?? "",
     );
   }

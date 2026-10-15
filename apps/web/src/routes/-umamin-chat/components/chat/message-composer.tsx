@@ -18,7 +18,7 @@ import {
 } from "react";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { MAX_MESSAGE_LEN } from "@/lib/chat/constants";
-import type { GameMode } from "@/lib/chat/types";
+import type { PlayChoice } from "@/lib/chat/decks";
 import {
   ComposerActions,
   type ComposerMode,
@@ -80,21 +80,16 @@ function ComposerChip({
 export function MessageComposer({
   onSend,
   onTyping,
-  onDealCard,
+  onPlay,
   replyTo,
   onCancelReply,
-  vibeLevel,
-  onShowVibe,
 }: {
   onSend: (text: string, mode: ComposerMode) => void;
   onTyping?: (isTyping: boolean) => void;
-  /** Deal a game card from the actions sheet. Absent = games hidden. */
-  onDealCard?: (cardId: string, gameMode?: GameMode) => void;
+  /** Start a game from the actions sheet. Absent = games hidden. */
+  onPlay?: (choice: PlayChoice) => void;
   replyTo?: ComposerReplyTo | null;
   onCancelReply?: () => void;
-  /** Gates locked play/effect tiles in the actions sheet. */
-  vibeLevel?: number;
-  onShowVibe?: () => void;
 }) {
   const [value, setValue] = useState("");
   const [mode, setMode] = useState<ComposerMode>(IDLE_MODE);
@@ -203,13 +198,7 @@ export function MessageComposer({
         </ComposerChip>
       )}
       <ChatComposer onSubmit={submit}>
-        <ComposerActions
-          mode={mode}
-          onModeChange={setMode}
-          onDealCard={onDealCard}
-          vibeLevel={vibeLevel}
-          onShowVibe={onShowVibe}
-        />
+        <ComposerActions mode={mode} onModeChange={setMode} onPlay={onPlay} />
         <ChatComposerInput
           ref={inputRef}
           value={value}

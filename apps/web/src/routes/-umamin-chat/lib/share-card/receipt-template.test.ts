@@ -101,17 +101,16 @@ describe("buildReceiptCard", () => {
   });
 
   it("keeps the paper above the footer at every possible line count", () => {
-    // 4 base lines + the 5 gamification extras = the 9-row maximum.
+    // 4 base lines + the 4 game extras = the 8-row maximum.
     const maxed = makeStats({
       extras: [
-        { label: "VIBE", value: "Level 5: Kindred" },
         { label: "VIBE CHECK", value: "9/12 matched" },
         { label: "MIND READS", value: "4/6 right" },
         { label: "BEST COMBO", value: "x5" },
         { label: "STAYED CONNECTED", value: "it's mutual" },
       ],
     });
-    expect(receiptLines(maxed)).toHaveLength(9);
+    expect(receiptLines(maxed)).toHaveLength(8);
     for (const stats of [makeStats(), maxed]) {
       const bottom = paperBottom(buildReceiptCard(stats).svg);
       expect(bottom).toBeLessThanOrEqual(RECEIPT_FOOTER_TOP);

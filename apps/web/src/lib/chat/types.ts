@@ -128,15 +128,6 @@ export interface GameStreak {
 
 export const EMPTY_STREAK: GameStreak = { current: 0, best: 0 };
 
-/** Shared per-match chemistry — identical for both viewers; levels unlock
- *  decks, modes, effects, and reactions. */
-export interface VibeState {
-  score: number;
-  level: number;
-}
-
-export const EMPTY_VIBE: VibeState = { score: 0, level: 1 };
-
 export interface RevealSide {
   submitted: boolean;
   /** Self: own echo, always present once submitted. Partner: present ONLY
@@ -169,7 +160,6 @@ export interface SessionSnapshot {
   gameTally: GameTally;
   guessTally: GuessTally;
   gameStreak: GameStreak;
-  vibe: VibeState;
   reveal: RevealState;
   endedReason?: EndedReason;
 }
@@ -231,7 +221,6 @@ export const IDLE_SNAPSHOT: SessionSnapshot = {
   gameTally: EMPTY_TALLY,
   guessTally: EMPTY_GUESS_TALLY,
   gameStreak: EMPTY_STREAK,
-  vibe: EMPTY_VIBE,
   reveal: EMPTY_REVEAL,
 };
 

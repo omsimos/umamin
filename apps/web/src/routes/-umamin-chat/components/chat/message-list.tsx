@@ -43,8 +43,6 @@ type ListProps = {
   header?: ReactNode;
   self: Reactor;
   partner: Reactor;
-  /** Gates which reaction emojis the picker offers. */
-  vibeLevel?: number;
   /** The live game round. It sits after the last message, inside the
    *  scroll content, so following the live edge keeps it and the latest
    *  messages in view as it grows. */
@@ -74,7 +72,6 @@ function Thread({
   header,
   self,
   partner,
-  vibeLevel,
   dock,
 }: ListProps) {
   const { scrollToEnd, scrollToMessage } = useMessageScroller();
@@ -150,7 +147,6 @@ function Thread({
               showAvatar={lastOfRun}
               self={self}
               partner={partner}
-              vibeLevel={vibeLevel}
             />
             {i === MILESTONE_AT - 1 && messages.length >= MILESTONE_AT && (
               <SystemMoment

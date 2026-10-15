@@ -13,12 +13,10 @@ import type {
   GameStreak,
   GameTally,
   GuessTally,
-  VibeState,
 } from "@/lib/chat/types";
 import { loadCardAssets } from "../../lib/share-card/assets";
 import { buildReceiptCard } from "../../lib/share-card/receipt-template";
 import type { ChatReceiptStats } from "../../lib/share-card/types";
-import { vibeLevelMeta } from "../../lib/vibe-levels";
 import { ShareCardAction } from "../share/share-card-action";
 
 const TICK_MS = 700;
@@ -48,20 +46,18 @@ function TickUp({ value }: { value: number }) {
   return <span className="tabular-nums">{shown}</span>;
 }
 
-/** Afterglow: how far the chemistry got before the poof. Hidden for chats
- *  that never got going (level 1, no combo): no participation trophies. */
+/** Afterglow: a recap of the games before the poof. The caller hides it
+ *  when no round was completed. */
 function AfterglowCard({
-  vibe,
   gameTally,
   guessTally,
   gameStreak,
 }: {
-  vibe: VibeState;
   gameTally: GameTally;
   guessTally: GuessTally;
   gameStreak: GameStreak;
 }) {
-  const meta = vibeLevelMeta(vibe.level);
+  const rounds = gameTally.rounds + guessTally.rounds;
   return (
     <div className="bg-card relative mt-5 w-full overflow-hidden rounded-xl border px-4 py-3">
       <span
@@ -69,8 +65,8 @@ function AfterglowCard({
         className="animate-chat-shimmer-sweep motion-reduce:animate-none pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0"
       />
       <p className="text-sm font-semibold">
-        <span aria-hidden>{meta.emoji}</span> You hit level {vibe.level}:{" "}
-        {meta.name}
+        <span aria-hidden>🎲</span> You played <TickUp value={rounds} />{" "}
+        {rounds === 1 ? "round" : "rounds"} together
       </p>
       <p className="text-muted-foreground mt-1 flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-xs">
         {gameStreak.best >= 2 && (
@@ -102,7 +98,6 @@ export function EndedView({
   partnerAlias,
   stats,
   revealedHandle,
-  vibe,
   gameTally,
   guessTally,
   gameStreak,
@@ -116,7 +111,6 @@ export function EndedView({
   /** The partner's mutually-revealed handle, shown for copying during the
    *  post-end grace window and gone forever after. Never on the receipt. */
   revealedHandle?: string;
-  vibe?: VibeState;
   gameTally?: GameTally;
   guessTally?: GuessTally;
   gameStreak?: GameStreak;
@@ -127,8 +121,6 @@ export function EndedView({
     reason === "partner-left" && partnerAlias
       ? `${partnerAlias} left`
       : "Chat ended";
-  const showAfterglow =
-    vibe && (vibe.level >= 2 || (gameStreak?.best ?? 0) >= 2);
 
   return (
     <section
@@ -147,14 +139,15 @@ export function EndedView({
           The conversation is gone. Nothing was saved.
         </p>
 
-        {showAfterglow && vibe && (
-          <AfterglowCard
-            vibe={vibe}
-            gameTally={gameTally ?? { rounds: 0, matched: 0 }}
-            guessTally={guessTally ?? { rounds: 0, correct: 0 }}
-            gameStreak={gameStreak ?? { current: 0, best: 0 }}
-          />
-        )}
+        {gameTally &&
+          guessTally &&
+          gameTally.rounds + guessTally.rounds > 0 && (
+            <AfterglowCard
+              gameTally={gameTally}
+              guessTally={guessTally}
+              gameStreak={gameStreak ?? { current: 0, best: 0 }}
+            />
+          )}
         {revealedHandle && (
           <div className="bg-card mt-5 w-full rounded-xl border p-4">
             <p className="text-sm font-medium">

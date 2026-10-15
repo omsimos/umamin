@@ -11,7 +11,6 @@ import { REPLY_PREVIEW_LEN } from "./constants";
 import {
   type MatchState,
   type MessageRow,
-  matchVibe,
   otherSide,
   type Side,
 } from "./engine";
@@ -21,7 +20,6 @@ import type {
   SnapshotMeta,
   WhisperState,
 } from "./types";
-import type { VibeCounters } from "./vibe";
 
 /** Placeholder for quoted whispers: a reply preview must not outlive the burn. */
 export const WHISPER_PREVIEW = "🔥 Whisper";
@@ -35,7 +33,6 @@ export function projectMeta(
   match: MatchState,
   viewer: Side,
   partnerOnline: boolean,
-  counts: VibeCounters,
   matchId: string,
 ): SnapshotMeta {
   const partner = otherSide(viewer);
@@ -89,7 +86,6 @@ export function projectMeta(
     gameTally: match.gameTally,
     guessTally: match.guessTally,
     gameStreak: match.streak,
-    vibe: matchVibe(match, counts),
     reveal: {
       unlocked: match.stayA && match.stayB,
       self: {

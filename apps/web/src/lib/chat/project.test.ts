@@ -14,7 +14,6 @@ import {
   projectMeta,
   WHISPER_PREVIEW,
 } from "./project";
-import { EMPTY_VIBE_COUNTERS } from "./vibe";
 
 const ANA = { alias: "ana", avatarSeed: "seed-a", interests: ["music", "art"] };
 const BEN = { alias: "ben", avatarSeed: "seed-b", interests: ["music"] };
@@ -28,7 +27,7 @@ const base = (patch: Partial<MatchState> = {}): MatchState => ({
 });
 
 const meta = (match: MatchState, viewer: Side, partnerOnline = true) =>
-  projectMeta(match, viewer, partnerOnline, EMPTY_VIBE_COUNTERS, "room-1");
+  projectMeta(match, viewer, partnerOnline, "room-1");
 
 const row = (patch: Partial<MessageRow> = {}): MessageRow => ({
   seq: 1,
@@ -42,7 +41,6 @@ const row = (patch: Partial<MessageRow> = {}): MessageRow => ({
   burned: false,
   game: null,
   effect: null,
-  vibeReacted: false,
   createdAt: 1234,
   ...patch,
 });
@@ -97,15 +95,6 @@ describe("projectMeta", () => {
     const ended = endMatch(base(), 10, null);
     expect(meta(ended, "a").endedReason).toBe("partner-left");
     expect(meta(ended, "b").endedReason).toBe("partner-left");
-  });
-
-  it("vibe is identical for both viewers and follows the counts", () => {
-    const m = base({ stayA: true, stayB: true });
-    const counts = { msgsA: 4, msgsB: 7, reactions: 1, whispers: 1 };
-    const a = projectMeta(m, "a", true, counts, "r").vibe;
-    const b = projectMeta(m, "b", true, counts, "r").vibe;
-    expect(a).toEqual(b);
-    expect(a.score).toBe(2 * 4 + 2 + 6 + 20);
   });
 
   describe("game round", () => {
@@ -253,7 +242,7 @@ describe("projectMessage", () => {
       "gameResult",
     ]);
     const rows = [
-      row({ reactionA: "🔥", effect: "hearts", vibeReacted: true }),
+      row({ reactionA: "🔥", effect: "hearts" }),
       whisper({ seq: 2, whisperViewedAt: 9 }),
       row({
         seq: 3,

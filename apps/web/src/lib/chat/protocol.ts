@@ -1,8 +1,8 @@
 /**
- * Umamin Chat wire protocol (v1). Frames are JSON text. Client frames are
+ * Umamin Chat wire protocol (v2). Frames are JSON text. Client frames are
  * validated with these schemas inside the Durable Objects; server frames are
- * typed only, since the client trusts its own server. Keep v1 additive: a
- * breaking change bumps PROTOCOL_VERSION, and the server answers an old client
+ * typed only, since the client trusts its own server. Keep a version additive:
+ * a breaking change bumps PROTOCOL_VERSION, and the server answers an old client
  * with CLOSE.VERSION so it reloads the new bundle.
  */
 import * as z from "zod";
@@ -18,7 +18,7 @@ import {
 } from "./constants";
 import type { ChatMessage, SnapshotMeta } from "./types";
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /** Keepalive text frames, answered by the runtime's auto-response so they
  *  never wake the object. Not JSON on purpose. */
@@ -112,7 +112,6 @@ export type RoomOpFrame = Exclude<RoomFrame, { t: "auth" } | { t: "typing" }>;
 
 export type ServerErrorCode =
   | "invalid"
-  | "locked"
   | "not_unlocked"
   | "rate_limited"
   | "cap";

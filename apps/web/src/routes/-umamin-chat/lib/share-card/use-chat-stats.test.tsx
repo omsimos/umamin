@@ -167,7 +167,6 @@ describe("useChatStats", () => {
             gameTally: { rounds: 4, matched: 3 },
             guessTally: { rounds: 2, correct: 1 },
             gameStreak: { current: 0, best: 3 },
-            vibe: { score: 70, level: 3 },
             stayConnected: { self: true, partner: true },
             reveal: {
               unlocked: true,
@@ -185,7 +184,6 @@ describe("useChatStats", () => {
         gameTally: { rounds: 4, matched: 3 },
         guessTally: { rounds: 2, correct: 1 },
         gameStreak: { current: 0, best: 3 },
-        vibe: { score: 70, level: 3 },
         stayConnected: { self: true, partner: true },
         reveal: {
           unlocked: true,
@@ -195,7 +193,6 @@ describe("useChatStats", () => {
       }),
     });
     expect(result.current?.extras).toEqual([
-      { label: "VIBE", value: "Level 3: Clicking" },
       { label: "VIBE CHECK", value: "3/4 matched" },
       { label: "MIND READS", value: "1/2 right" },
       { label: "BEST COMBO", value: "x3" },

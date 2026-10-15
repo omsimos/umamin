@@ -22,14 +22,12 @@ import {
   HeartIcon,
   LogOutIcon,
   ShuffleIcon,
-  SparklesIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { interestById } from "@/lib/chat/content";
-import type { GameStreak, Partner, VibeState } from "@/lib/chat/types";
+import type { GameStreak, Partner } from "@/lib/chat/types";
 import { SeedAvatar } from "../seed-avatar";
 import { SessionBackButton, SessionHeader } from "../shell/session-frame";
-import { VibeRing } from "./vibe/vibe-ring";
 
 const STATUS_LABEL = {
   online: "online",
@@ -47,31 +45,24 @@ const STATUS_DOT = {
 
 export function ChatHeader({
   partner,
-  vibe,
   gameStreak,
   stayConnectedActive,
   mutual = false,
   revealTease = false,
-  ringPulse = false,
   onStayConnected,
   onOpenConnect,
-  onShowVibe,
   onNewMatch,
   onEndChat,
 }: {
   partner: Partner;
-  vibe: VibeState;
   gameStreak?: GameStreak;
   stayConnectedActive: boolean;
-  /** A level-up just landed: pulse the vibe ring once. */
-  ringPulse?: boolean;
   /** Both tapped the heart, so it now opens the handle exchange. */
   mutual?: boolean;
   /** The partner left a handle you haven't matched yet: badge the heart. */
   revealTease?: boolean;
   onStayConnected: () => void;
   onOpenConnect?: () => void;
-  onShowVibe: () => void;
   onNewMatch: () => void;
   onEndChat: () => void;
 }) {
@@ -84,19 +75,12 @@ export function ChatHeader({
     <SessionHeader>
       <SessionBackButton label="End chat" onClick={() => setConfirmEnd(true)} />
 
-      <button
-        type="button"
-        onClick={onShowVibe}
-        aria-label={`Vibe level ${vibe.level} with ${partner.alias}, open details`}
-        className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-0.5 text-left outline-none focus-visible:ring-[3px]"
-      >
-        <VibeRing vibe={vibe} pulse={ringPulse}>
-          <SeedAvatar
-            seed={partner.avatarSeed}
-            alias={partner.alias}
-            className="size-8"
-          />
-        </VibeRing>
+      <div className="flex min-w-0 flex-1 items-center gap-2.5 px-1 py-0.5">
+        <SeedAvatar
+          seed={partner.avatarSeed}
+          alias={partner.alias}
+          className="size-8"
+        />
         <span className="min-w-0">
           <span className="block truncate text-sm font-semibold">
             {partner.alias}
@@ -135,7 +119,7 @@ export function ChatHeader({
             )}
           </span>
         </span>
-      </button>
+      </div>
 
       <Button
         variant="ghost"
@@ -182,10 +166,6 @@ export function ChatHeader({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onSelect={onShowVibe}>
-            <SparklesIcon />
-            Vibe and stats
-          </DropdownMenuItem>
           <DropdownMenuItem onSelect={onNewMatch}>
             <ShuffleIcon />
             New match

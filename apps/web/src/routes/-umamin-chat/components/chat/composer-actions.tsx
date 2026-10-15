@@ -13,16 +13,8 @@ import {
 import { cn } from "@umamin/ui/lib/utils";
 import { Flame, Plus } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
-import { EFFECT_MIN_LEVEL } from "@/lib/chat/constants";
-import {
-  DECK_META,
-  DECK_MIN_LEVEL,
-  type DeckId,
-  GAME_DECKS,
-  GUESS_MODE_MIN_LEVEL,
-} from "@/lib/chat/decks";
-import type { GameMode, SendEffect } from "@/lib/chat/types";
+import { DECK_META, DECK_ORDER, type PlayChoice } from "@/lib/chat/decks";
+import type { SendEffect } from "@/lib/chat/types";
 import { useMediaQuery } from "../../lib/use-media-query";
 
 /** What the next send will be — whisper and effect are mutually exclusive. */
@@ -41,133 +33,58 @@ const EFFECTS: { id: SendEffect; emoji: string; label: string }[] = [
   { id: "golden", emoji: "👑", label: "golden hearts" },
 ];
 
-const DECKS: DeckId[] = [
-  "this-or-that",
-  "would-you-rather",
-  "hot-takes",
-  "never-have-i-ever",
-];
+const PLAYS: { id: PlayChoice; emoji: string; label: string; hint: string }[] =
+  [
+    ...DECK_ORDER.map((id) => ({ id, ...DECK_META[id] })),
+    {
+      id: "mind-reader",
+      emoji: "🔮",
+      label: "Mind Reader",
+      hint: "Guess their answer",
+    },
+  ];
 
 const sectionLabel =
   "text-muted-foreground px-1 text-[10px] font-semibold tracking-wider uppercase";
 
-function lockedToast(level: number, onShowVibe?: () => void) {
-  toast(`Unlocks at vibe level ${level}. Keep the chat flowing`, {
-    ...(onShowVibe
-      ? { action: { label: "See vibe", onClick: onShowVibe } }
-      : {}),
-  });
-}
-
-function LockChip({ level }: { level: number }) {
-  return (
-    <span className="bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[9px] font-semibold">
-      <span aria-hidden>🔒</span> L{level}
-    </span>
-  );
-}
-
-function PlayTile({
-  emoji,
-  label,
-  hint,
-  minLevel,
-  vibeLevel,
-  onPlay,
-  onShowVibe,
-}: {
-  emoji: string;
-  label: string;
-  hint: string;
-  minLevel: number;
-  vibeLevel: number;
-  onPlay: () => void;
-  onShowVibe?: () => void;
-}) {
-  const locked = minLevel > vibeLevel;
-  return (
-    // Locked tiles stay real buttons (not disabled) so the explainer toast is
-    // reachable by touch, keyboard, and screen readers alike.
-    <button
-      type="button"
-      aria-label={
-        locked ? `${label}, unlocks at vibe level ${minLevel}` : label
-      }
-      onClick={() => (locked ? lockedToast(minLevel, onShowVibe) : onPlay())}
-      className={cn(
-        "flex min-h-12 items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm",
-        "focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
-        "transition-transform active:scale-95",
-        locked ? "opacity-60" : "hover:border-primary/50",
-      )}
-    >
-      <span aria-hidden className="text-base leading-none">
-        {emoji}
-      </span>
-      <span className="flex min-w-0 flex-col">
-        <span className="flex items-center gap-1.5 font-medium">
-          <span className="truncate">{label}</span>
-          {locked && <LockChip level={minLevel} />}
-        </span>
-        <span className="text-muted-foreground text-xs">{hint}</span>
-      </span>
-    </button>
-  );
-}
-
 function ActionsBody({
   mode,
-  vibeLevel,
   onChoose,
-  onDeal,
-  onShowVibe,
+  onPlay,
 }: {
   mode: ComposerMode;
-  vibeLevel: number;
   onChoose: (next: ComposerMode) => void;
-  /** Absent = games hidden (mirrors the route not wiring dealCard). */
-  onDeal?: (cardId: string, gameMode?: GameMode) => void;
-  onShowVibe?: () => void;
+  /** Absent = games hidden (mirrors the route not wiring games). */
+  onPlay?: (choice: PlayChoice) => void;
 }) {
-  function dealFrom(deck: DeckId) {
-    const cards = GAME_DECKS[deck];
-    onDeal?.(cards[Math.floor(Math.random() * cards.length)].id);
-  }
-
-  function dealGuess() {
-    const pool = DECKS.filter((d) => DECK_MIN_LEVEL[d] <= vibeLevel).flatMap(
-      (d) => GAME_DECKS[d],
-    );
-    onDeal?.(pool[Math.floor(Math.random() * pool.length)].id, "guess");
-  }
-
   return (
     <div className="flex flex-col gap-3">
-      {onDeal && (
+      {onPlay && (
         <div className="flex flex-col gap-1.5">
           <p className={sectionLabel}>Play together</p>
           <div className="grid grid-cols-2 gap-1.5">
-            {DECKS.map((deck) => (
-              <PlayTile
-                key={deck}
-                emoji={DECK_META[deck].emoji}
-                label={DECK_META[deck].label}
-                hint="play a quick round"
-                minLevel={DECK_MIN_LEVEL[deck]}
-                vibeLevel={vibeLevel}
-                onPlay={() => dealFrom(deck)}
-                onShowVibe={onShowVibe}
-              />
+            {PLAYS.map((play) => (
+              <button
+                key={play.id}
+                type="button"
+                onClick={() => onPlay(play.id)}
+                className={cn(
+                  "hover:border-primary/50 flex min-h-12 items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm",
+                  "focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
+                  "transition-transform active:scale-95",
+                )}
+              >
+                <span aria-hidden className="text-base leading-none">
+                  {play.emoji}
+                </span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate font-medium">{play.label}</span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {play.hint}
+                  </span>
+                </span>
+              </button>
             ))}
-            <PlayTile
-              emoji="🔮"
-              label="Mind Reader"
-              hint="guess their pick"
-              minLevel={GUESS_MODE_MIN_LEVEL}
-              vibeLevel={vibeLevel}
-              onPlay={dealGuess}
-              onShowVibe={onShowVibe}
-            />
           </div>
         </div>
       )}
@@ -187,7 +104,7 @@ function ActionsBody({
           <span className="flex flex-col">
             <span className="font-medium">Whisper</span>
             <span className="text-muted-foreground text-xs">
-              disappears after reading
+              Disappears after they read it
             </span>
           </span>
         </button>
@@ -196,43 +113,24 @@ function ActionsBody({
         <p className={sectionLabel}>Send with</p>
         <div className="flex items-center gap-1.5">
           {EFFECTS.map((e) => {
-            const minLevel = EFFECT_MIN_LEVEL[e.id] ?? 1;
-            const locked = minLevel > vibeLevel;
             const on = mode.effect === e.id;
             return (
               <button
                 key={e.id}
                 type="button"
                 aria-pressed={on}
-                aria-label={
-                  locked
-                    ? `Send with ${e.label}, unlocks at vibe level ${minLevel}`
-                    : `Send with ${e.label}`
+                aria-label={`Send with ${e.label}`}
+                onClick={() =>
+                  onChoose(on ? IDLE_MODE : { whisper: false, effect: e.id })
                 }
-                onClick={() => {
-                  if (locked) {
-                    lockedToast(minLevel, onShowVibe);
-                    return;
-                  }
-                  onChoose(on ? IDLE_MODE : { whisper: false, effect: e.id });
-                }}
                 className={cn(
-                  "relative flex size-11 items-center justify-center rounded-full border text-lg leading-none",
+                  "hover:border-primary/50 flex size-11 items-center justify-center rounded-full border text-lg leading-none",
                   "focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
                   "transition-transform active:scale-90",
                   on && "border-primary bg-primary/10",
-                  locked ? "opacity-50" : "hover:border-primary/50",
                 )}
               >
                 <span aria-hidden>{e.emoji}</span>
-                {locked && (
-                  <span
-                    aria-hidden
-                    className="bg-muted absolute -right-1 -bottom-1 rounded-full px-1 text-[9px]"
-                  >
-                    🔒
-                  </span>
-                )}
               </button>
             );
           })}
@@ -245,17 +143,12 @@ function ActionsBody({
 export function ComposerActions({
   mode,
   onModeChange,
-  onDealCard,
-  vibeLevel = 1,
-  onShowVibe,
+  onPlay,
 }: {
   mode: ComposerMode;
   onModeChange: (mode: ComposerMode) => void;
-  /** Deal a random card (optionally in guess mode). Absent = games hidden. */
-  onDealCard?: (cardId: string, gameMode?: GameMode) => void;
-  /** Gates locked tiles; the server re-enforces every gate. */
-  vibeLevel?: number;
-  onShowVibe?: () => void;
+  /** Start a round. Absent = games hidden. */
+  onPlay?: (choice: PlayChoice) => void;
 }) {
   const [open, setOpen] = useState(false);
   // Bottom sheet below lg (the grid outgrew a popover), popover where space
@@ -285,20 +178,18 @@ export function ComposerActions({
   const body = (
     <ActionsBody
       mode={mode}
-      vibeLevel={vibeLevel}
       onChoose={(next) => {
         onModeChange(next);
         setOpen(false);
       }}
-      onDeal={
-        onDealCard
-          ? (cardId, gameMode) => {
-              onDealCard(cardId, gameMode);
+      onPlay={
+        onPlay
+          ? (choice) => {
+              onPlay(choice);
               setOpen(false);
             }
           : undefined
       }
-      onShowVibe={onShowVibe}
     />
   );
 

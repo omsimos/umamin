@@ -92,4 +92,41 @@ describe("EndedView", () => {
       screen.getByRole("button", { name: /share the vibe/i }),
     ).toBeInTheDocument();
   });
+
+  it("recaps the games only when a round was completed", () => {
+    // Reduced motion lands the count-up digits on their final values at once.
+    const matchMedia = vi
+      .spyOn(window, "matchMedia")
+      .mockImplementation(
+        (query) => ({ matches: true, media: query }) as MediaQueryList,
+      );
+    const props = {
+      reason: undefined,
+      partnerAlias: "Fox",
+      gameStreak: { current: 0, best: 3 },
+      onFindNew: () => {},
+      onBackToLobby: () => {},
+    };
+    const { rerender } = render(
+      <EndedView
+        {...props}
+        gameTally={{ rounds: 0, matched: 0 }}
+        guessTally={{ rounds: 0, correct: 0 }}
+      />,
+    );
+    expect(screen.queryByText(/You played/)).toBeNull();
+
+    rerender(
+      <EndedView
+        {...props}
+        gameTally={{ rounds: 3, matched: 2 }}
+        guessTally={{ rounds: 1, correct: 1 }}
+      />,
+    );
+    expect(screen.getByText(/You played/)).toHaveTextContent(
+      "You played 4 rounds together",
+    );
+    expect(screen.getByText(/matched/)).toHaveTextContent("2/3 matched");
+    matchMedia.mockRestore();
+  });
 });

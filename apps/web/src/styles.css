@@ -87,7 +87,6 @@
     both;
   --animate-chat-bubble-in: chat-bubble-in 180ms ease-out both;
   --animate-chat-shimmer-sweep: chat-shimmer-sweep 900ms ease-in-out both;
-  --animate-chat-ring-pulse: chat-ring-pulse 700ms ease-out 2 both;
   --animate-chat-card-flip: chat-card-flip 480ms ease-in-out both;
   --animate-chat-flame-flicker: chat-flame-flicker 600ms ease-in-out infinite;
   --animate-chat-streak-glow: chat-streak-glow 700ms ease-out both;
@@ -148,19 +147,6 @@
   }
   100% {
     transform: translateX(220%) skewX(-12deg);
-    opacity: 0;
-  }
-}
-
-/* Applied to an overlay carrying a static shadow: opacity and scale animate,
-   never box-shadow itself. */
-@keyframes chat-ring-pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(1.5);
     opacity: 0;
   }
 }

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { cardById, GAME_DECKS } from "@/lib/chat/decks";
+import { cardById, drawCard, type PlayChoice } from "@/lib/chat/decks";
 import type { ChatMessage } from "@/lib/chat/types";
 import { pageSeo } from "@/lib/seo";
 import { ChatHeader } from "./-umamin-chat/components/chat/chat-header";
@@ -16,8 +16,6 @@ import { MessageComposer } from "./-umamin-chat/components/chat/message-composer
 import { MessageList } from "./-umamin-chat/components/chat/message-list";
 import { SendEffectOverlay } from "./-umamin-chat/components/chat/send-effect-overlay";
 import { StayConnectedCelebration } from "./-umamin-chat/components/chat/stay-connected-celebration";
-import { LevelUpToast } from "./-umamin-chat/components/chat/vibe/level-up-toast";
-import { VibeSheet } from "./-umamin-chat/components/chat/vibe/vibe-sheet";
 import { MatchingRadar } from "./-umamin-chat/components/matching/matching-radar";
 import { RouteError } from "./-umamin-chat/components/route-error";
 import {
@@ -79,8 +77,6 @@ function Session() {
   const [iceBreakerDismissed, setIceBreakerDismissed] = useState(false);
   const [celebrationDismissed, setCelebrationDismissed] = useState(false);
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
-  const [vibeSheetOpen, setVibeSheetOpen] = useState(false);
-  const [levelUp, setLevelUp] = useState<number | null>(null);
   const [connectOpen, setConnectOpen] = useState(false);
   const [revealOverlayOpen, setRevealOverlayOpen] = useState(false);
   const [warmupPrompt, setWarmupPrompt] = useState<string | null>(null);
@@ -97,30 +93,12 @@ function Session() {
     setIceBreakerDismissed(false);
     setCelebrationDismissed(false);
     setReplyTarget(null);
-    setVibeSheetOpen(false);
-    setLevelUp(null);
     setConnectOpen(false);
     setRevealOverlayOpen(false);
   }, [snapshot.matchId]);
 
-  // Celebrate level TRANSITIONS only: the seen-level ref is seeded per match
-  // identity, so a reload (or rejoining mid-match) starts at the current level
-  // and doesn't re-celebrate. No server dedup state for a cosmetic one-shot.
-  const seenLevel = useRef({ matchId: "", level: 1 });
-  const vibeLevel = snapshot.vibe.level;
-  useEffect(() => {
-    if (!snapshot.matchId) return;
-    if (seenLevel.current.matchId !== snapshot.matchId) {
-      seenLevel.current = { matchId: snapshot.matchId, level: vibeLevel };
-      return;
-    }
-    if (vibeLevel > seenLevel.current.level) {
-      seenLevel.current.level = vibeLevel;
-      if (phase === "active") setLevelUp(vibeLevel);
-    }
-  }, [snapshot.matchId, vibeLevel, phase]);
-
-  // Reveal moments, same seeded-transition pattern: the asymmetric tease when
+  // Reveal moments, seeded per match identity so a reload doesn't replay
+  // them: the asymmetric tease when
   // the partner submits first ("they left something — never WHAT"), and the
   // one-shot flip overlay when both handles land.
   const reveal = snapshot.reveal;
@@ -179,16 +157,28 @@ function Session() {
     setReplyTarget(null);
   }
 
+  // Cards already played this match (from the result rows) plus the live
+  // one, so a deal never repeats while the deck still has fresh cards.
+  function play(choice: PlayChoice) {
+    const played = new Set(
+      messages.flatMap((m) => (m.gameResult ? [m.gameResult.cardId] : [])),
+    );
+    if (snapshot.game) played.add(snapshot.game.cardId);
+    const card = drawCard(choice, played);
+    dealCard(card.id, choice === "mind-reader" ? "guess" : undefined);
+  }
+
   function playAnother() {
     const round = snapshot.game;
     const deck = cardById(round?.cardId ?? "")?.deck;
     if (!round || !deck) return;
-    const cards = GAME_DECKS[deck];
-    dealCard(
-      cards[Math.floor(Math.random() * cards.length)].id,
-      round.mode === "guess" ? "guess" : undefined,
-    );
+    play(round.mode === "guess" ? "mind-reader" : deck);
   }
+
+  const liveCard = snapshot.game ? cardById(snapshot.game.cardId) : undefined;
+  const followUpSent = Boolean(
+    liveCard && messages.some((m) => m.text === liveCard.followUp),
+  );
 
   function newMatch() {
     leave();
@@ -213,22 +203,32 @@ function Session() {
 
   const showIceBreaker =
     !iceBreakerDismissed &&
-    messages.filter((m) => m.author === "self").length === 0;
+    !messages.some((m) => m.author === "self" && !m.gameResult);
+
+  // While the live card shows a revealed round, its result row would repeat
+  // it; the row takes over once the card is dismissed or re-dealt.
+  const liveResultIndex =
+    snapshot.game?.partnerPick !== undefined
+      ? messages.findLastIndex(
+          (m) => m.gameResult?.cardId === snapshot.game?.cardId,
+        )
+      : -1;
+  const thread =
+    liveResultIndex === -1
+      ? messages
+      : messages.filter((_, i) => i !== liveResultIndex);
   const mutual = stayConnected.self && stayConnected.partner;
 
   const header =
     phase === "active" && partner ? (
       <ChatHeader
         partner={partner}
-        vibe={snapshot.vibe}
         gameStreak={snapshot.gameStreak}
         stayConnectedActive={stayConnected.self}
         mutual={mutual}
         revealTease={reveal.partner.submitted && !bothRevealed}
-        ringPulse={levelUp !== null}
         onStayConnected={signalStayConnected}
         onOpenConnect={() => setConnectOpen(true)}
-        onShowVibe={() => setVibeSheetOpen(true)}
         onNewMatch={newMatch}
         onEndChat={endChat}
       />
@@ -265,13 +265,12 @@ function Session() {
       {phase === "active" && partner && (
         <>
           <MessageList
-            messages={messages}
+            messages={thread}
             partnerStatus={partner.status}
             onReact={react}
             onReply={setReplyTarget}
             onViewWhisper={viewWhisper}
             onRetry={retrySend}
-            vibeLevel={vibeLevel}
             self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
             partner={{
               alias: partner.alias,
@@ -291,6 +290,8 @@ function Session() {
                   }}
                   onDismiss={dismissGame}
                   onPlayAgain={playAnother}
+                  onFollowUp={(text) => send(text)}
+                  followUpSent={followUpSent}
                 />
               ) : undefined
             }
@@ -303,6 +304,14 @@ function Session() {
                     send(text);
                     setIceBreakerDismissed(true);
                   }}
+                  onPlay={
+                    snapshot.game
+                      ? undefined
+                      : () => {
+                          play("this-or-that");
+                          setIceBreakerDismissed(true);
+                        }
+                  }
                   onDismiss={() => setIceBreakerDismissed(true)}
                 />
               ) : undefined
@@ -311,9 +320,7 @@ function Session() {
           <MessageComposer
             onSend={sendWithMode}
             onTyping={setTyping}
-            onDealCard={dealCard}
-            vibeLevel={vibeLevel}
-            onShowVibe={() => setVibeSheetOpen(true)}
+            onPlay={play}
             replyTo={
               replyTarget
                 ? {
@@ -336,7 +343,6 @@ function Session() {
           partnerAlias={partner?.alias}
           stats={receiptStats}
           revealedHandle={bothRevealed ? reveal.partner.handle : undefined}
-          vibe={snapshot.vibe}
           gameTally={snapshot.gameTally}
           guessTally={snapshot.guessTally}
           gameStreak={snapshot.gameStreak}
@@ -347,28 +353,6 @@ function Session() {
 
       {phase === "active" && activeEffect && (
         <SendEffectOverlay effect={activeEffect} onDone={clearEffect} />
-      )}
-
-      {phase === "active" && partner && (
-        <VibeSheet
-          open={vibeSheetOpen}
-          onOpenChange={setVibeSheetOpen}
-          vibe={snapshot.vibe}
-          gameTally={snapshot.gameTally}
-          guessTally={snapshot.guessTally}
-          gameStreak={snapshot.gameStreak}
-          self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
-          partner={{ alias: partner.alias, avatarSeed: partner.avatarSeed }}
-        />
-      )}
-
-      {phase === "active" && levelUp !== null && (
-        <LevelUpToast
-          key={levelUp}
-          level={levelUp}
-          onDone={() => setLevelUp(null)}
-          onShowVibe={() => setVibeSheetOpen(true)}
-        />
       )}
 
       {phase === "active" && mutual && !celebrationDismissed && partner && (

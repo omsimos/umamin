@@ -69,7 +69,7 @@ export function buildReceiptCard(
 
   // The story height is fixed, so past five line items the whole layout
   // compresses (smaller avatars, tighter header and row spacing) — at the
-  // maximum nine rows the paper bottom still clears the footer.
+  // maximum eight rows the paper bottom still clears the footer.
   const compact = lines.length >= 6;
   const top = compact ? 280 : 330; // receipt body top
   const avatarR = compact ? 92 : 110;
