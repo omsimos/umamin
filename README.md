@@ -19,7 +19,7 @@
 This monorepo hosts two open-source apps for anonymous communication:
 
 - **Umamin** — [www.umamin.link](https://www.umamin.link) — the main social platform: a profile-based inbox for sending and receiving **encrypted anonymous messages**. Built with TanStack Start and Hono on Cloudflare Workers, with Drizzle ORM and Turso/libSQL.
-- **Umamin Chat** — [chat.umamin.link](https://chat.umamin.link) — **ephemeral, anonymous 1:1 chat**: get matched with a stranger who shares your interests. No sign-up, no history, nothing saved. Built with Vite, React, and Convex.
+- **Umamin Chat** — **ephemeral, anonymous 1:1 chat**: get matched with a stranger who shares your interests. No sign-up, no history, nothing saved. Part of `apps/web` at `/chat`, running on Durable Objects.
 
 ## Contributing
 
@@ -32,9 +32,8 @@ If you like this project, please consider giving it a star! ✨ If you wish to s
 | App         | Description                                                                          |
 | ----------- | ------------------------------------------------------------------------------------ |
 | `apps/web`  | **Umamin** — anonymous messaging platform & landing page (TanStack Start + Hono, Cloudflare Workers) |
-| `apps/chat` | **Umamin Chat** — ephemeral, anonymous stranger chat (Vite + React + Convex)         |
 
-> `apps/web` is the app that serves [www.umamin.link](https://www.umamin.link). It replaced the original Next.js build in v7.0.0, which has since been removed — see the `legacy/www-final` tag for its final state.
+> `apps/web` is the app that serves [www.umamin.link](https://www.umamin.link). It replaced the original Next.js build in v7.0.0, which has since been removed — see the `legacy/www-final` tag for its final state. Umamin Chat's original Vite + Convex app (`apps/chat`) was folded into `apps/web` the same way; its final state is the `legacy/chat-final` tag.
 
 **Packages**
 
@@ -51,8 +50,6 @@ If you like this project, please consider giving it a star! ✨ If you wish to s
 - `pnpm` >= 10
 
 > **Umamin (web)** runs on Cloudflare Workers via `wrangler`, which is already a dev dependency — no global install and no Cloudflare account are needed for local development. Workers KV and the rate-limit bindings are emulated locally by Miniflare.
-
-> **Umamin Chat** uses [Convex](https://www.convex.dev) as its backend. `pnpm dev:chat` starts a local Convex deployment automatically (no account or extra install needed), and the chat falls back to an in-memory mock when `VITE_CONVEX_URL` is unset — so you can work on its UI without a backend.
 
 ### Install Dependencies
 

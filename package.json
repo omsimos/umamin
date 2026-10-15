@@ -5,7 +5,6 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=web",
-    "dev:chat": "turbo run dev --filter=chat",
     "dev:org": "turbo run dev --filter=org",
     "clean": "turbo clean && rm -rf .turbo node_modules",
     "db:generate": "pnpm --filter=@umamin/db generate",
