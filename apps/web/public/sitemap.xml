@@ -1,45 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Rendered from apps/www app/sitemap.ts (static list; lastModified intentionally
-     omitted, /login + /register dropped as noindex utility pages). -->
+<!-- Rendered from apps/www app/sitemap.ts (static list; /login + /register
+     dropped as noindex utility pages). No lastmod: a static file can't keep it
+     accurate. No changefreq/priority: Google ignores both. Each loc must match
+     the page's canonical URL exactly, including the trailing slash on the root. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://www.umamin.link</loc>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://www.umamin.link/notes</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.umamin.link/feed</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.umamin.link/chat</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.umamin.link/about</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://www.umamin.link/privacy</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.umamin.link/terms</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://www.umamin.link/child-safety</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
+  <url><loc>https://www.umamin.link/</loc></url>
+  <url><loc>https://www.umamin.link/notes</loc></url>
+  <url><loc>https://www.umamin.link/feed</loc></url>
+  <url><loc>https://www.umamin.link/chat</loc></url>
+  <url><loc>https://www.umamin.link/about</loc></url>
+  <url><loc>https://www.umamin.link/privacy</loc></url>
+  <url><loc>https://www.umamin.link/terms</loc></url>
+  <url><loc>https://www.umamin.link/child-safety</loc></url>
 </urlset>

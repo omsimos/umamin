@@ -125,6 +125,9 @@ describe("canonical host consistency", () => {
       /<loc>([^<]+)<\/loc>/g,
     )) {
       expect(new URL(loc[1]).origin).toBe(origin);
+      // Canonicals are serialized URLs, so the root canonical is `origin/`.
+      // A loc that differs from its serialized form never matches its page.
+      expect(loc[1]).toBe(new URL(loc[1]).href);
     }
   });
 });
