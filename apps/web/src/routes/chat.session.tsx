@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cardById, drawCard, type PlayChoice } from "@/lib/chat/decks";
+import { visibleOnline } from "@/lib/chat/stats";
 import type { ChatMessage } from "@/lib/chat/types";
 import { pageSeo } from "@/lib/seo";
 import { ChatHeader } from "./-umamin-chat/components/chat/chat-header";
@@ -257,6 +258,7 @@ function Session() {
         <MatchingRadar
           self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
           interests={self.interests}
+          online={visibleOnline(snapshot.stats)}
           onWarmupPick={setWarmupPrompt}
           onCancel={cancelSearch}
         />

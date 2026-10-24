@@ -27,6 +27,7 @@ import {
 } from "@/lib/chat/protocol";
 import {
   type ChatMessage,
+  type ChatStats,
   type ChatTransport,
   type FindMatchOptions,
   type GameMode,
@@ -203,6 +204,7 @@ export function createWsTransport(
   let pendingFind: { self: SelfIdentity; options?: FindMatchOptions } | null =
     null;
   let reloadRequested = false;
+  let lobbyStats: ChatStats | undefined;
 
   // --- Snapshot ------------------------------------------------------------
 
@@ -217,8 +219,13 @@ export function createWsTransport(
   } | null = null;
 
   function matchingSnapshot(self: SelfIdentity): SessionSnapshot {
-    if (matchingCache?.self !== self) {
-      matchingCache = { ...IDLE_SNAPSHOT, phase: "matching", self };
+    if (matchingCache?.self !== self || matchingCache.stats !== lobbyStats) {
+      matchingCache = {
+        ...IDLE_SNAPSHOT,
+        phase: "matching",
+        self,
+        ...(lobbyStats ? { stats: lobbyStats } : {}),
+      };
     }
     return matchingCache;
   }
@@ -370,6 +377,7 @@ export function createWsTransport(
     selfTyping = false;
     selfTypingSentAt = 0;
     roomCache = null;
+    lobbyStats = undefined;
   }
 
   function roomSocket(): ReconnectingSocket | null {
@@ -415,6 +423,11 @@ export function createWsTransport(
       onMessage: (data) => {
         if (mode.kind !== "lobby" || mode.socket !== socket) return;
         const frame = parse<LobbyServerFrame>(data);
+        if (frame?.t === "stats") {
+          lobbyStats = { waiting: frame.waiting, chatting: frame.chatting };
+          commit();
+          return;
+        }
         if (frame?.t !== "matched") return;
         socket.close();
         if (joinCode && !frame.viaInvite) findOptions?.onInviteMiss?.();
