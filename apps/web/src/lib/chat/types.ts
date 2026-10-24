@@ -148,6 +148,13 @@ export const EMPTY_REVEAL: RevealState = {
   partner: { submitted: false },
 };
 
+/** Live Umamin Chat headcount, kept by the lobby. `chatting` counts people,
+ *  two per match that hasn't ended. */
+export interface ChatStats {
+  waiting: number;
+  chatting: number;
+}
+
 export interface SessionSnapshot {
   phase: SessionPhase;
   /** Stable id for the current match; "" when idle. */
@@ -162,6 +169,8 @@ export interface SessionSnapshot {
   gameStreak: GameStreak;
   reveal: RevealState;
   endedReason?: EndedReason;
+  /** Matching only: the lobby's headcount, once it has sent one. */
+  stats?: ChatStats;
 }
 
 /** The snapshot minus its message list: the `meta` frame. Messages travel as

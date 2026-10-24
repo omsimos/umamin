@@ -179,6 +179,10 @@ async function eventually(check: () => Promise<boolean>, label: string) {
   throw new Error(`never became true: ${label}`);
 }
 
+/** Frame types minus the headcount, which every lobby event may resend. */
+const queueFrames = (c: Client) =>
+  c.frames.map((f) => f.t).filter((t) => t !== "stats");
+
 /** Moves every waiter's deadlines into the past, as if the clock ran on. */
 function expireWaiters(stub: DurableObjectStub, field: "fallbackAt" | "all") {
   return runInDurableObject(stub, (_i, state) => {
@@ -240,8 +244,8 @@ describe("ChatLobby", () => {
       joinCode: victimCode,
     });
 
-    expect(squatter.frames.map((f) => f.t)).toEqual(["waiting"]);
-    expect(guest.frames.map((f) => f.t)).toEqual(["waiting"]);
+    expect(queueFrames(squatter)).toEqual(["waiting"]);
+    expect(queueFrames(guest)).toEqual(["waiting"]);
   });
 
   it("drops a waiter from the pool when its socket closes", async () => {
@@ -254,7 +258,7 @@ describe("ChatLobby", () => {
     );
 
     const b = await waitingIn(lobby, person(["shared"]));
-    expect(b.frames.map((f) => f.t)).toEqual(["waiting"]);
+    expect(queueFrames(b)).toEqual(["waiting"]);
   });
 
   it("pairs waiters with no shared interest once the fallback is due", async () => {
@@ -382,6 +386,57 @@ describe("ChatLobby", () => {
       next.next("matched"),
     ]);
     expect(ms.matchId).toBe(mn.matchId);
+  });
+});
+
+describe("ChatLobby headcount", () => {
+  it("tells each waiter how many are waiting, updating as the pool changes", async () => {
+    const lobby = newLobby();
+    const a = await waitingIn(lobby, person(["count-a"]));
+    expect(await a.next("stats")).toMatchObject({ waiting: 1, chatting: 0 });
+
+    const b = await waitingIn(lobby, person(["count-b"]));
+    expect(await b.next("stats")).toMatchObject({ waiting: 2, chatting: 0 });
+    await a.next("stats", (f) => f.waiting === 2);
+
+    const from = a.raw.length;
+    b.close();
+    await a.next("stats", (f) => f.waiting === 1, from);
+  });
+
+  it("counts a match as two chatting until its room reports the end", async () => {
+    const lobby = newLobby();
+    const ana = person(["count-pair"]);
+    const ben = person(["count-pair"]);
+    const watcher = await waitingIn(lobby, person(["count-watch"]));
+    const a = await waitingIn(lobby, ana);
+    const b = await joinLobby(lobby, ben);
+    const { matchId } = await a.next("matched");
+    await b.next("matched");
+
+    await watcher.next("stats", (f) => f.chatting === 2);
+    expect(await lobby.getStats()).toEqual({ waiting: 1, chatting: 2 });
+
+    const ra = await authRoom(roomStub(matchId), ana);
+    await ra.next("sync");
+    const rb = await authRoom(roomStub(matchId), ben);
+    await rb.next("sync");
+    const from = watcher.raw.length;
+    await op(ra, { t: "leave" });
+
+    await watcher.next("stats", (f) => f.chatting === 0, from);
+    expect(await lobby.getStats()).toEqual({ waiting: 1, chatting: 0 });
+  });
+
+  it("stops counting a match whose end report never arrived", async () => {
+    const lobby = newLobby();
+    await runInDurableObject(lobby, (_i, state) => {
+      state.storage.sql.exec(
+        "INSERT INTO rooms (match_id, started_at) VALUES ('lost', 0), ('live', ?)",
+        Date.now(),
+      );
+    });
+    expect(await lobby.getStats()).toEqual({ waiting: 0, chatting: 2 });
   });
 });
 
@@ -732,6 +787,15 @@ describe("ChatRoom", () => {
     const theirs = await b.next("meta", (f) => f.meta.phase === "ended");
     expect(mine.meta.endedReason).toBe("self-ended");
     expect(theirs.meta.endedReason).toBe("partner-left");
+  });
+
+  it("still ends a room created before it knew its lobby", async () => {
+    const { stub, a, b } = await liveRoom();
+    await runInDurableObject(stub, (_i, state) => {
+      state.storage.sql.exec("ALTER TABLE match DROP COLUMN lobby_id");
+    });
+    expect((await op(a, { t: "leave" })).t).toBe("ack");
+    await b.next("meta", (f) => f.meta.phase === "ended");
   });
 
   it("purges after the end: closes sockets with 4404 and leaves no storage", async () => {

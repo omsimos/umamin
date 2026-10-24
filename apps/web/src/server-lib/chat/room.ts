@@ -68,6 +68,9 @@ export interface RoomInit {
   matchId: string;
   a: RoomSeat;
   b: RoomSeat;
+  /** The ChatLobby that created the room, told when the match ends so it
+   *  stops counting it. */
+  lobbyId?: string;
 }
 
 interface Attachment {
@@ -156,7 +159,7 @@ export class ChatRoom extends DurableObject<AppEnv> {
       match_id TEXT NOT NULL,
       a_sid TEXT NOT NULL, a_hash TEXT NOT NULL,
       b_sid TEXT NOT NULL, b_hash TEXT NOT NULL,
-      state TEXT NOT NULL)`);
+      state TEXT NOT NULL, lobby_id TEXT)`);
     // Rowid primary key, no AUTOINCREMENT: messages are only ever removed all
     // at once by deleteAll(), so seq stays monotonic without the extra write.
     this.sql.exec(`CREATE TABLE IF NOT EXISTS messages (
@@ -172,13 +175,14 @@ export class ChatRoom extends DurableObject<AppEnv> {
     const strip = ({ sessionId: _s, secretHash: _h, ...p }: RoomSeat) => p;
     const match = engine.initialMatch(strip(input.a), strip(input.b), now);
     this.sql.exec(
-      "INSERT INTO match (id, match_id, a_sid, a_hash, b_sid, b_hash, state) VALUES (1, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO match (id, match_id, a_sid, a_hash, b_sid, b_hash, state, lobby_id) VALUES (1, ?, ?, ?, ?, ?, ?, ?)",
       input.matchId,
       input.a.sessionId,
       input.a.secretHash,
       input.b.sessionId,
       input.b.secretHash,
       JSON.stringify(match),
+      input.lobbyId ?? null,
     );
     this.setTimer("start", 0, now + MATCH_START_GRACE_MS);
     this.setTimer("sweep", 0, now + SWEEP_INTERVAL_MS);
@@ -549,12 +553,48 @@ export class ChatRoom extends DurableObject<AppEnv> {
     this.broadcastMeta();
   }
 
-  /** The match just ended: drop the liveness timers and schedule the purge. */
+  /** The match just ended: drop the liveness timers, schedule the purge and
+   *  take the match off the lobby's headcount. */
   private scheduleEnd(now: number) {
     this.sql.exec(
       "DELETE FROM timers WHERE kind IN ('start', 'away', 'sweep')",
     );
     this.setTimer("purge", 0, now + GRACE_MS);
+    this.reportEnded();
+  }
+
+  /** Best effort: a lost report is pruned by the lobby after
+   *  MAX_TRACKED_MATCH_MS. */
+  private reportEnded() {
+    const matchId = this.creds?.matchId;
+    // Rooms created before the headcount existed have no lobby_id column,
+    // and the lobby never counted them.
+    const hasColumn =
+      this.sql
+        .exec(
+          "SELECT 1 FROM pragma_table_info('match') WHERE name = 'lobby_id'",
+        )
+        .toArray().length > 0;
+    const lobbyId = hasColumn
+      ? this.sql
+          .exec<{ lobby_id: string | null }>(
+            "SELECT lobby_id FROM match WHERE id = 1",
+          )
+          .one().lobby_id
+      : null;
+    if (!matchId || !lobbyId) return;
+    this.ctx.waitUntil(
+      (async () => {
+        try {
+          const lobby = this.env.CHAT_LOBBY.get(
+            this.env.CHAT_LOBBY.idFromString(lobbyId),
+          );
+          await lobby.roomEnded(matchId);
+        } catch (err) {
+          this.report(err, "report-ended");
+        }
+      })(),
+    );
   }
 
   private async purge() {

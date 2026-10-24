@@ -14,11 +14,14 @@ function formatElapsed(seconds: number): string {
 export function MatchingRadar({
   self,
   interests,
+  online,
   onCancel,
   onWarmupPick,
 }: {
   self: { alias: string; avatarSeed: string };
   interests: string[];
+  /** People in Umamin Chat right now; null hides it. */
+  online: number | null;
   onCancel: () => void;
   /** Latest warm-up pick, offered as an ice-breaker once matched. */
   onWarmupPick?: (prompt: string) => void;
@@ -60,6 +63,7 @@ export function MatchingRadar({
           aria-live="off"
         >
           Searching · {formatElapsed(elapsed)}
+          {online !== null && ` · ${online.toLocaleString()} online`}
         </p>
 
         <div className="mt-4 flex flex-wrap justify-center gap-1.5">

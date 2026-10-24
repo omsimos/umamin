@@ -215,6 +215,34 @@ describe("wsTransport", () => {
       expect(seen).toHaveLength(1);
     });
 
+    it("exposes the lobby headcount while matching, and drops it in the room", () => {
+      const { t, last } = setup();
+      t.findMatch(SELF);
+      last().open();
+      last().push({ t: "stats", waiting: 3, chatting: 8 });
+      expect(t.getSnapshot()).toMatchObject({
+        phase: "matching",
+        self: SELF,
+        stats: { waiting: 3, chatting: 8 },
+      });
+
+      last().push({ t: "matched", matchId: MATCH, viaInvite: false });
+      last().open();
+      last().push({ t: "sync", meta: meta(), messages: [] });
+      expect(t.getSnapshot().phase).toBe("active");
+      expect(t.getSnapshot().stats).toBeUndefined();
+    });
+
+    it("forgets a cancelled search's headcount", () => {
+      const { t, last } = setup();
+      t.findMatch(SELF);
+      last().open();
+      last().push({ t: "stats", waiting: 3, chatting: 8 });
+      t.leave();
+      t.findMatch(SELF);
+      expect(t.getSnapshot().stats).toBeUndefined();
+    });
+
     it("forwards a join code and reports a miss only when the invite failed", () => {
       const { t, last } = setup();
       const onInviteMiss = vi.fn();
