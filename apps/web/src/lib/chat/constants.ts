@@ -26,6 +26,14 @@ export const SWEEP_INTERVAL_MS = 5 * MINUTE;
  *  Two forgotten-but-open tabs would otherwise keep a room (and its sweep
  *  alarm) alive indefinitely. */
 export const IDLE_MATCH_MS = 60 * MINUTE;
+/** The lobby stops counting a match this long after it started, in case the
+ *  room's end report never arrived. Longer than any realistic chat: the
+ *  message cap at the send rate limit is about five hours. */
+export const MAX_TRACKED_MATCH_MS = 6 * 60 * MINUTE;
+/** Edge cache TTL (seconds) for the /api/chat/stats headcount. */
+export const CHAT_STATS_MAX_AGE = 30;
+/** Below this the headcount is hidden: "1 online" reads as an empty room. */
+export const MIN_ONLINE_SHOWN = 3;
 /** Sockets one room accepts (both sides, all tabs). */
 export const MAX_ROOM_SOCKETS = 8;
 /** Client keepalive cadence. Answered by the runtime's auto-response, so it

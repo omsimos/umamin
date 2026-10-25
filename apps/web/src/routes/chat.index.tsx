@@ -20,6 +20,7 @@ import { useIdentityDraft } from "./-umamin-chat/lib/identity/use-identity-draft
 import { useInviteCode } from "./-umamin-chat/lib/invite/use-invite-code";
 import { loadCardAssets } from "./-umamin-chat/lib/share-card/assets";
 import { buildInviteCard } from "./-umamin-chat/lib/share-card/invite-template";
+import { useOnlineCount } from "./-umamin-chat/lib/use-online-count";
 import { useChatSession } from "./-umamin-chat/session/chat-context";
 
 const TITLE = "Umamin Chat — Anonymous conversations with unexpected people";
@@ -99,6 +100,7 @@ function Lobby() {
   const { snapshot, findMatch } = useChatSession();
   const draft = useIdentityDraft();
   const inviteCode = useInviteCode();
+  const online = useOnlineCount();
 
   // A live session outranks the lobby: a reload or accidental back within the
   // away grace drops the user straight into their chat (or their spot in the
@@ -130,12 +132,16 @@ function Lobby() {
   return (
     <div className="container mx-auto flex w-full max-w-lg flex-col gap-6 pb-28 lg:pb-12">
       <header>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          Umamin Chat
-          <Badge variant="secondary" className="font-normal">
-            Beta
-          </Badge>
-        </h1>
+        {/* The count shares the title row so it can't shift the page in. */}
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            Umamin Chat
+            <Badge variant="secondary" className="font-normal">
+              Beta
+            </Badge>
+          </h1>
+          {online !== null && <OnlineCount count={online} />}
+        </div>
         <p className="text-muted-foreground text-sm">
           Talk one on one with someone who shares your interests. Anonymous, and
           nothing is saved.
@@ -222,5 +228,14 @@ function Lobby() {
 
       <ClientOnlyAdContainer placement="chat_lobby" />
     </div>
+  );
+}
+
+function OnlineCount({ count }: { count: number }) {
+  return (
+    <p className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-xs tabular-nums">
+      <span aria-hidden className="size-2 rounded-full bg-emerald-500" />
+      {count.toLocaleString()} online
+    </p>
   );
 }

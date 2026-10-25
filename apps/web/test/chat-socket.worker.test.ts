@@ -106,6 +106,26 @@ describe("chat socket routes", () => {
     expect((await listDurableObjectIds(env.CHAT_LOBBY)).length).toBe(before);
   });
 
+  it("serves the lobby headcount with an edge cache TTL", async () => {
+    const res = await SELF.fetch(`${ORIGIN}/api/chat/stats`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toContain("s-maxage=30");
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body).toEqual({
+      waiting: expect.any(Number),
+      chatting: expect.any(Number),
+    });
+  });
+
+  it("404s the headcount while the flag is off, without reaching the lobby", async () => {
+    const before = (await listDurableObjectIds(env.CHAT_LOBBY)).length;
+    const off = { ...(env as unknown as AppEnv), FLAGS_FORCE_ON: "" };
+    const res = await chatSocketApp.request("/chat/stats", {}, off);
+    expect(res.status).toBe(404);
+    expect(res.headers.get("cache-control")).toContain("s-maxage=0");
+    expect((await listDurableObjectIds(env.CHAT_LOBBY)).length).toBe(before);
+  });
+
   it("404s a malformed matchId without creating an object", async () => {
     const before = (await listDurableObjectIds(env.CHAT_ROOM)).length;
     const res = await SELF.fetch(`${ORIGIN}/api/chat/room/not-a-uuid`, {

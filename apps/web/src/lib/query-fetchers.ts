@@ -1,3 +1,4 @@
+import type { ChatStats } from "@/lib/chat/types";
 import type { FeedSort } from "@/lib/feed-sort";
 import type {
   BlockedUsersResponse,
@@ -133,6 +134,10 @@ export async function fetchUserPostsPage(
 ) {
   const url = appendCursor(`/api/public/user/${username}/posts`, cursor);
   return fetchJson<FeedResponse>(url);
+}
+
+export async function fetchChatStats() {
+  return fetchJson<ChatStats>("/api/chat/stats");
 }
 
 export async function fetchCurrentNote() {

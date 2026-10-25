@@ -16,7 +16,7 @@ import {
   MAX_SESSION_ID_LEN,
   MAX_SESSION_SECRET_LEN,
 } from "./constants";
-import type { ChatMessage, SnapshotMeta } from "./types";
+import type { ChatMessage, ChatStats, SnapshotMeta } from "./types";
 
 export const PROTOCOL_VERSION = 2;
 
@@ -118,6 +118,7 @@ export type ServerErrorCode =
 
 export type LobbyServerFrame =
   | { t: "waiting"; since: number }
+  | ({ t: "stats" } & ChatStats)
   | { t: "matched"; matchId: string; viaInvite: boolean };
 
 export type RoomServerFrame =
