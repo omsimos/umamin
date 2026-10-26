@@ -4,7 +4,6 @@ import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import {
   CheckIcon,
-  MessageCircleIcon,
   PlusIcon,
   SettingsIcon,
   UsersRoundIcon,
@@ -16,7 +15,6 @@ import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
 import {
-  GROUP_CHAT_ENABLED,
   type GroupAccent,
   type GroupIcon,
   OWNED_GROUPS_CAP,
@@ -31,7 +29,6 @@ import {
 } from "@/lib/query";
 import {
   fetchCurrentUserOptional,
-  fetchGroupUnread,
   fetchUserGroups,
 } from "@/lib/query-fetchers";
 import { hasPlusFeatures } from "@/lib/utils";
@@ -70,17 +67,6 @@ export function GroupsHub() {
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
   });
-
-  const { data: unread } = useQuery({
-    queryKey: queryKeys.groupUnread(),
-    queryFn: fetchGroupUnread,
-    enabled: GROUP_CHAT_ENABLED,
-    staleTime: PRIVATE_STALE_TIME,
-    refetchOnWindowFocus: true,
-  });
-  const unreadIds = new Set(
-    (unread ?? []).filter((u) => u.hasUnread).map((u) => u.groupId),
-  );
 
   const memberships = groups?.data ?? [];
   const invites = groups?.invites ?? [];
@@ -192,78 +178,50 @@ export function GroupsHub() {
           </p>
         ) : (
           <ul className="space-y-2">
-            {memberships.map(({ group, role }) => {
-              const hasUnread = unreadIds.has(group.id);
-              return (
-                <li
-                  key={group.id}
-                  className="flex items-center gap-3 rounded-lg border p-3"
-                >
-                  <div className="relative">
-                    <GroupGlyph icon={group.icon} accent={group.accent} />
-                    {hasUnread && (
-                      <span
-                        role="img"
-                        className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-primary ring-2 ring-background"
-                        aria-label="Unread messages"
-                      />
-                    )}
-                  </div>
+            {memberships.map(({ group, role }) => (
+              <li
+                key={group.id}
+                className="flex items-center gap-3 rounded-lg border p-3"
+              >
+                <GroupGlyph icon={group.icon} accent={group.accent} />
 
-                  <Link
-                    href={`/groups/${group.tag}`}
-                    className="min-w-0 flex-1"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="truncate font-medium">{group.name}</span>
-                      <Badge
-                        variant="secondary"
-                        className="font-mono text-[10px]"
-                      >
-                        {group.tag}
-                      </Badge>
-                      {role === "owner" && (
-                        <span className="text-xs text-muted-foreground">
-                          Owner
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {group.memberCount}{" "}
-                      {group.memberCount === 1 ? "member" : "members"}
-                    </p>
-                  </Link>
-
-                  <div>
-                    {GROUP_CHAT_ENABLED && (
-                      <Button
-                        asChild
-                        size="icon"
-                        variant="ghost"
-                        aria-label={`Open ${group.name} chat`}
-                      >
-                        <Link href={`/groups/${group.tag}/chat`}>
-                          <MessageCircleIcon />
-                        </Link>
-                      </Button>
-                    )}
-
+                <Link href={`/groups/${group.tag}`} className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{group.name}</span>
+                    <Badge
+                      variant="secondary"
+                      className="font-mono text-[10px]"
+                    >
+                      {group.tag}
+                    </Badge>
                     {role === "owner" && (
-                      <Button
-                        asChild
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Manage group"
-                      >
-                        <Link href={`/groups/${group.tag}`}>
-                          <SettingsIcon />
-                        </Link>
-                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        Owner
+                      </span>
                     )}
                   </div>
-                </li>
-              );
-            })}
+                  <p className="text-xs text-muted-foreground">
+                    {group.memberCount}{" "}
+                    {group.memberCount === 1 ? "member" : "members"}
+                  </p>
+                </Link>
+
+                <div>
+                  {role === "owner" && (
+                    <Button
+                      asChild
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Manage group"
+                    >
+                      <Link href={`/groups/${group.tag}`}>
+                        <SettingsIcon />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </li>
+            ))}
           </ul>
         )}
 

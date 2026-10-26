@@ -77,7 +77,7 @@
       },
       // Workers Rate Limiting bindings (unsafe). period is 10 or 60 only;
       // group-edit (2/day) moves to Turso. namespace_ids are account-global —
-      // staging uses 1001-1007, production 2001-2007, so the two environments
+      // staging uses the 1000s, production the 2000s, so the two environments
       // never share limiter counters (same IP hitting both must not drain one
       // budget).
       "unsafe": {
@@ -111,18 +111,6 @@
             "type": "ratelimit",
             "namespace_id": "1005",
             "simple": { "limit": 100, "period": 60 }
-          },
-          {
-            "name": "RL_GROUP_MESSAGE",
-            "type": "ratelimit",
-            "namespace_id": "1006",
-            "simple": { "limit": 30, "period": 60 }
-          },
-          {
-            "name": "RL_GROUP_READ",
-            "type": "ratelimit",
-            "namespace_id": "1007",
-            "simple": { "limit": 60, "period": 60 }
           },
           {
             // Umamin Chat socket upgrades, per IP. Generous for shared NAT
@@ -236,18 +224,6 @@
             "type": "ratelimit",
             "namespace_id": "2005",
             "simple": { "limit": 100, "period": 60 }
-          },
-          {
-            "name": "RL_GROUP_MESSAGE",
-            "type": "ratelimit",
-            "namespace_id": "2006",
-            "simple": { "limit": 30, "period": 60 }
-          },
-          {
-            "name": "RL_GROUP_READ",
-            "type": "ratelimit",
-            "namespace_id": "2007",
-            "simple": { "limit": 60, "period": 60 }
           },
           {
             // Umamin Chat socket upgrades, per IP. Generous for shared NAT

@@ -26,7 +26,11 @@ any that are empty.
 
 ### Changed
 
-- Anonymous messages, replies, and group chat messages can now be up to 2000 characters. Profile questions, posts, comments, and notes keep their 500-character limit.
+- Anonymous messages and replies can now be up to 2000 characters. Profile questions, posts, comments, and notes keep their 500-character limit.
+
+### Removed
+
+- Group chat is gone. It was already turned off, and its messages are no longer kept. Groups, tags, invites and badges work as before, and old group chat links now open the group page.
 
 ## [7.14.0] - 2026-10-24
 

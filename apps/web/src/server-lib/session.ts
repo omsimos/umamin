@@ -55,8 +55,8 @@ const microCache = new Map<string, CacheEntry>();
 
 // The micro-cache only holds SETTLED results, so concurrent lookups of the same
 // token all miss it and each issues its own Turso read. That happens on every
-// page whose loaders run in parallel (the feed's /api/me alongside /api/posts,
-// the group chat's three reads). Collapsing them to one in-flight promise is
+// page whose loaders run in parallel (the feed's /api/me alongside
+// /api/posts). Collapsing them to one in-flight promise is
 // what makes parallelising those loaders cheaper than serialising them.
 const inflight = new Map<string, Promise<SessionValidationResult>>();
 

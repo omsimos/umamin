@@ -18,7 +18,6 @@ vi.mock("@/hooks/use-feature-flags", () => ({ useFeatureFlags: () => flags }));
 
 vi.mock("@/lib/query-fetchers", () => ({
   fetchCurrentUserOptional: () => new Promise(() => {}),
-  fetchGroupUnread: async () => [],
 }));
 
 vi.mock("./nav-notifications", () => ({

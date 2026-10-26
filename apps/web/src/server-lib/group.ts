@@ -9,28 +9,6 @@ export const GROUP_MEMBER_CAP = 50;
 export const OWNED_GROUPS_CAP = 1;
 export const JOINED_GROUPS_CAP = 5;
 
-// Temporary kill switch for group chat: while polling cost is addressed the
-// feature is off. When false, every entry point (chat page, "Open chat" button,
-// hub chat icon, unread dots) shows a disabled state and the chat read/poll
-// routes + mutations short-circuit. Flip to true to restore it — nothing else
-// to change.
-export const GROUP_CHAT_ENABLED: boolean = false;
-
-export const GROUP_CHAT_DISABLED_ERROR =
-  "Group chat is temporarily unavailable.";
-
-// Fixed group-chat reaction set.
-// Gates the picker (UX) AND the react action (server-side validation), so the
-// emoji column can never hold arbitrary client content.
-export const GROUP_CHAT_REACTION_EMOJIS = [
-  "❤️",
-  "😂",
-  "🔥",
-  "😮",
-  "👍",
-  "😢",
-] as const;
-
 export const GROUP_PLUS_REQUIRED_ERROR =
   "Creating a group is an Umamin+ perk — free once your account is a year old, or included with Umamin Pro.";
 // Reserved tags surface as "taken" too — exposing a tag as specifically

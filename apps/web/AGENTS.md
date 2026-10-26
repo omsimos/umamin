@@ -250,13 +250,10 @@ join goes through `addActiveMember(tx)`, which guards the cap atomically.
 `user.equippedGroupId`, a soft reference; resolve it per page with
 `getGroupBadgeMap`/`withGroupBadge`.
 
-**Group chat.** Polling on Turso, not push. The client polls
-`/api/groups/[tag]/chat/head` every 8 s, served from an 8 s Cache API entry;
-keep those two numbers close. Membership is re-checked on every read, send and
-react. Messages are encrypted at rest (not end-to-end). `getGroupMessageReactions`
-must join on `groupId`; a bare `messageId IN (...)` is a cross-group IDOR. If it
-ever needs real push, use a Durable Object with hibernatable WebSockets, like
-Umamin Chat.
+Groups have no chat. Group chat was removed in 7.15.0, and
+`/groups/$tag/chat` redirects to the group page. Its tables
+(`group_message*`) and `group.lastMessageAt` stay in the schema until a later
+release drops them. Don't build on them.
 
 **Aura.** A cosmetic score. Award and reverse only through
 `server-lib/points.ts` (`awardAura`, `reverseAura`) inside the action's

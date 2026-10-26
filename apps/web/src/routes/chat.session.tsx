@@ -29,7 +29,7 @@ import { useChatStats } from "./-umamin-chat/lib/share-card/use-chat-stats";
 import { useSendEffects } from "./-umamin-chat/lib/use-send-effects";
 import { useChatSession } from "./-umamin-chat/session/chat-context";
 
-// Full-screen like group chat: a top-level route, so neither the app navbar
+// Full-screen: a top-level route, so neither the app navbar
 // nor the menubar renders here. Client-driven: during SSR the transport doesn't exist yet and
 // the snapshot is "loading", so the server only ever renders the spinner.
 export const Route = createFileRoute("/chat/session")({

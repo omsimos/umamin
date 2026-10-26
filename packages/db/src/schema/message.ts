@@ -28,7 +28,7 @@ export const messageTable = sqliteTable(
     // Denormalized thread signal: bumped on every message_reply insert so
     // lists can show activity without touching the reply table.
     lastReplyAt: integer("last_reply_at", { mode: "timestamp" }),
-    // Per-side read watermarks (group_message_read pattern) — written on
+    // Per-side read watermarks, written on
     // thread open only, never per fetch. Each is private to its own side.
     senderReadAt: integer("sender_read_at", { mode: "timestamp" }),
     receiverReadAt: integer("receiver_read_at", { mode: "timestamp" }),

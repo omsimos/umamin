@@ -3,7 +3,7 @@ import type { AppEnv } from "./env";
 export const RATE_LIMIT_ERROR =
   "Too many requests. Please try again in a minute.";
 
-// The 7 sliding-window limiters that map onto Workers Rate Limiting bindings
+// The sliding-window limiters that map onto Workers Rate Limiting bindings
 // (plan fact #3). NOTE: `group-edit` (2/day) is intentionally NOT here — a
 // 1-day period can't be expressed by the binding (period is 10|60s only), so it
 // moves to Turso edit-window columns checked inside the edit action (Phase 2).
@@ -13,8 +13,6 @@ export type LimiterName =
   | "write"
   | "group-join"
   | "read"
-  | "group-message"
-  | "group-read"
   | "chat-connect";
 
 const BINDING: Record<LimiterName, keyof Env> = {
@@ -23,8 +21,6 @@ const BINDING: Record<LimiterName, keyof Env> = {
   write: "RL_WRITE",
   "group-join": "RL_GROUP_JOIN",
   read: "RL_READ",
-  "group-message": "RL_GROUP_MESSAGE",
-  "group-read": "RL_GROUP_READ",
   "chat-connect": "RL_CHAT_CONNECT",
 };
 
