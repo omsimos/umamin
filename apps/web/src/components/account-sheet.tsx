@@ -224,16 +224,17 @@ export function AccountSheet({
             </button>
           </div>
 
-          <Link
-            href={`https://github.com/omsimos/umamin/releases/tag/${version}`}
-            target="_blank"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <span className="font-display font-bold tracking-tighter">
-              umamin
-            </span>{" "}
-            {version}
-          </Link>
+          <DrawerClose asChild>
+            <Link
+              href="/changelog"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <span className="font-display font-bold tracking-tighter">
+                umamin
+              </span>{" "}
+              {version}
+            </Link>
+          </DrawerClose>
         </div>
       </DrawerContent>
     </Drawer>

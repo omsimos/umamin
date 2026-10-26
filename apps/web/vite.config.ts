@@ -70,7 +70,9 @@ function vapidKeyGuard(): Plugin {
 // MDX powers the /privacy, /terms, /child-safety docs (markdown/*.mdx). The
 // plugin must sit AHEAD of viteReact so React refresh sees the compiled JSX
 // (mdx emits an ESM React component); `enforce: "pre"` is what @mdx-js/rollup
-// recommends for the Vite pipeline.
+// recommends for the Vite pipeline. `mdExtensions: []` keeps it off plain .md:
+// /changelog imports the root CHANGELOG.md with ?raw, and mdx would otherwise
+// compile it into a component.
 export default defineConfig({
   // Client only: the SSR bundle is not minified, so its stack traces already
   // name real functions, and mapping it would mean mutating the deployed Worker
@@ -89,7 +91,10 @@ export default defineConfig({
   plugins: [
     vapidKeyGuard(),
     cloudflare({ viteEnvironment: { name: "ssr" } }),
-    { enforce: "pre", ...mdx({ remarkPlugins: [remarkGfm] }) },
+    {
+      enforce: "pre",
+      ...mdx({ mdExtensions: [], remarkPlugins: [remarkGfm] }),
+    },
     tanstackStart({ server: { entry: "./server.ts" } }),
     viteReact(),
     tailwindcss(),

@@ -23,6 +23,7 @@ any that are empty.
 ### Added
 
 - Umamin Chat now shows how many people are online, counting everyone searching or in a chat. You'll see it next to the title on the chat page and while you search for someone. It only shows once at least three people are on.
+- A changelog page at umamin.link/changelog lists every release. Open it from Changelog in the site footer or by tapping the version in the account menu.
 
 ### Changed
 

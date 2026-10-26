@@ -12,9 +12,13 @@ const src = fileURLToPath(new URL("./src", import.meta.url));
 
 export default defineConfig({
   // mdx (ahead of react) lets the /privacy, /terms, /child-safety doc-route
-  // smoke test import and render markdown/*.mdx under jsdom.
+  // smoke test import and render markdown/*.mdx under jsdom. Plain .md stays
+  // raw text, as in vite.config.ts.
   plugins: [
-    { enforce: "pre", ...mdx({ remarkPlugins: [remarkGfm] }) },
+    {
+      enforce: "pre",
+      ...mdx({ mdExtensions: [], remarkPlugins: [remarkGfm] }),
+    },
     react(),
   ],
   resolve: {

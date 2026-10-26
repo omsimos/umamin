@@ -16,11 +16,7 @@ const RESOURCES = [
     href: "https://github.com/omsimos/umamin",
     external: true,
   },
-  {
-    label: "Release notes",
-    href: "https://github.com/omsimos/umamin/releases",
-    external: true,
-  },
+  { label: "Changelog", href: "/changelog" },
 ];
 
 const LEGAL = [
