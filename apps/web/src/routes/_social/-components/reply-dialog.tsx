@@ -37,7 +37,7 @@ export function ReplyDialog({ isOpen, setIsOpen, note }: ReplyDialogProps) {
       <DialogContent className="p-0">
         <DialogTitle className="sr-only">Reply to note</DialogTitle>
         <DialogDescription className="sr-only">
-          Send an anonymous reply to this note, up to 500 characters.
+          Send an anonymous reply to this note, up to 2000 characters.
         </DialogDescription>
         <ChatForm note={note} />
       </DialogContent>
@@ -110,7 +110,7 @@ const ChatForm = ({ note }: ChatFormProps) => {
             onChange={(e) => {
               setContent(e.target.value);
             }}
-            maxLength={500}
+            maxLength={2000}
             placeholder="Type your anonymous reply..."
             className="max-h-20 min-h-10 resize-none text-base focus-visible:ring-transparent"
             autoComplete="off"

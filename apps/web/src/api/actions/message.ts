@@ -75,7 +75,7 @@ export const createReplyHandler = action(
         .string()
         .trim()
         .min(1, { error: "Content cannot be empty" })
-        .max(500, { error: "Content cannot exceed 500 characters" }),
+        .max(2000, { error: "Content cannot exceed 2000 characters" }),
     }),
     rateLimit: {
       name: "message",
@@ -322,7 +322,7 @@ export const markThreadReadHandler = action(
 
 const sendMessageSchema = z.object({
   question: z.string().trim().min(1).max(500),
-  content: z.string().trim().min(1).max(500),
+  content: z.string().trim().min(1).max(2000),
   receiverId: z.string().min(1),
 });
 

@@ -105,7 +105,7 @@ export function ChatForm({ user }: { user: PublicUser }) {
               onChange={(e) => {
                 setContent(e.target.value);
               }}
-              maxLength={500}
+              maxLength={2000}
               placeholder="Type your anonymous message..."
               className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
               autoComplete="off"

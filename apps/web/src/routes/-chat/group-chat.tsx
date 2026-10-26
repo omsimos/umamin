@@ -80,8 +80,8 @@ import { ReactionsDrawer } from "./reactions-drawer";
 // 8s: the head poll is the only continuous interval poller and each tick is a
 // billed edge request. Keep aligned with the head route's cache TTL.
 const HEAD_POLL_MS = 8000;
-const GROUP_MESSAGE_MAX = 1000;
-const COUNTER_VISIBLE_AT = 900;
+const GROUP_MESSAGE_MAX = 2000;
+const COUNTER_VISIBLE_AT = 1800;
 const EMPTY_CURSOR = "0.";
 const MENTION_SPLIT = /(@[a-z0-9_-]+)/gi;
 const MENTION_TEST = /^@[a-z0-9_-]+$/i;

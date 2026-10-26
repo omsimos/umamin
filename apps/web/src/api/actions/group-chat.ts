@@ -25,7 +25,7 @@ import { ctxDb, defer } from "./_shared";
 // Turso via withPublicRead now, so the send/react paths no longer write them
 // (plan: "group-chat head keys → delete").
 
-const GROUP_MESSAGE_MAX = 1000;
+const GROUP_MESSAGE_MAX = 2000;
 const MAX_MENTIONS = 10;
 const MENTION_RE = /@([a-z0-9_-]+)/gi;
 

@@ -24,6 +24,10 @@ any that are empty.
 
 - Umamin Chat now shows how many people are online, counting everyone searching or in a chat. You'll see it next to the title on the chat page and while you search for someone. It only shows once at least three people are on.
 
+### Changed
+
+- Anonymous messages, replies, and group chat messages can now be up to 2000 characters. Profile questions, posts, comments, and notes keep their 500-character limit.
+
 ## [7.13.0] - 2026-10-16
 
 ### Added
