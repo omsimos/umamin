@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_marketing/about")({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-dashed px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+    <span className="inline-flex items-center rounded-full border border-dashed px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
       {children}
     </span>
   );
@@ -36,10 +36,7 @@ function AboutPage() {
     <main className="overflow-x-clip pb-16">
       <section className="relative px-6 pb-14 pt-36 md:pt-44">
         <div className="mx-auto max-w-5xl">
-          <p className="animate-rise font-mono text-xs uppercase tracking-widest text-muted-foreground [animation-delay:50ms]">
-            About
-          </p>
-          <h1 className="animate-rise pt-4 font-display text-5xl font-extrabold leading-[0.95] tracking-tighter [animation-delay:100ms] sm:text-6xl md:text-7xl">
+          <h1 className="animate-rise font-display text-5xl font-extrabold leading-[0.95] tracking-tighter [animation-delay:100ms] sm:text-6xl md:text-7xl">
             The story of <em className="text-primary">Umamin</em>.
           </h1>
           <p className="max-w-2xl animate-rise pt-6 text-muted-foreground [animation-delay:200ms] md:text-lg">
@@ -55,7 +52,7 @@ function AboutPage() {
 
       <section className="px-6 py-12 md:py-14">
         <div className="mx-auto max-w-3xl">
-          <SectionLabel>2022 · the beginning</SectionLabel>
+          <SectionLabel>2022 · The beginning</SectionLabel>
           <p className="pt-5 text-lg leading-relaxed text-muted-foreground">
             Umamin is an open-source project founded by{" "}
             <strong className="font-medium text-foreground">
@@ -81,7 +78,7 @@ function AboutPage() {
 
       <section className="relative px-6 py-12 md:py-16">
         <div className="mx-auto max-w-3xl">
-          <SectionLabel>the numbers</SectionLabel>
+          <SectionLabel>The numbers</SectionLabel>
           <h2 className="pt-5 font-display text-3xl font-extrabold tracking-tighter md:text-4xl">
             What virality looked like from the{" "}
             <em className="text-primary">inside</em>.
@@ -125,7 +122,7 @@ function AboutPage() {
 
       <section className="px-6 py-12 md:py-14">
         <div className="mx-auto max-w-3xl">
-          <SectionLabel>the collective</SectionLabel>
+          <SectionLabel>The collective</SectionLabel>
           <p className="pt-5 text-lg leading-relaxed text-muted-foreground">
             The team later formed the{" "}
             <a
@@ -145,7 +142,7 @@ function AboutPage() {
 
       <section className="px-6 py-12 md:py-14">
         <div className="mx-auto max-w-3xl">
-          <SectionLabel>today</SectionLabel>
+          <SectionLabel>Today</SectionLabel>
           <p className="pt-5 text-lg leading-relaxed text-muted-foreground">
             Today, Umamin is solely maintained and developed by its original
             creator,{" "}
@@ -159,7 +156,7 @@ function AboutPage() {
 
       <section className="px-6 py-12 md:py-16">
         <div className="mx-auto max-w-5xl">
-          <SectionLabel>what's inside</SectionLabel>
+          <SectionLabel>What's inside</SectionLabel>
           <h2 className="pt-5 font-display text-3xl font-extrabold tracking-tighter md:text-4xl">
             More than a message box.
           </h2>
@@ -171,7 +168,7 @@ function AboutPage() {
           <div className="grid gap-4 pt-10 md:grid-cols-2">
             <ProductCard
               name="Umamin Messages"
-              tag="classic"
+              tag="Classic"
               accent="bg-primary/15 text-primary"
               icon={<InboxIcon className="size-4" />}
               cta={{ label: "Claim your link", href: "/register" }}
@@ -184,7 +181,7 @@ function AboutPage() {
 
             <ProductCard
               name="Umamin Notes"
-              tag="out loud"
+              tag="Out loud"
               accent="bg-amber-400/15 text-amber-500"
               icon={<ScrollTextIcon className="size-4" />}
               cta={{ label: "Browse notes", href: "/notes" }}
@@ -198,7 +195,7 @@ function AboutPage() {
 
             <ProductCard
               name="Umamin Social"
-              tag="the feed"
+              tag="The feed"
               accent="bg-sky-400/15 text-sky-400"
               icon={<MessagesSquareIcon className="size-4" />}
               cta={{ label: "Open the feed", href: "/feed" }}
@@ -211,7 +208,7 @@ function AboutPage() {
 
             <ProductCard
               name="Umamin Chat"
-              tag="new"
+              tag="New"
               accent="bg-violet-400/15 text-violet-400"
               icon={<MessageSquareQuoteIcon className="size-4" />}
               cta={{ label: "Start a chat", ...chatLink }}

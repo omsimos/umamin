@@ -45,7 +45,7 @@ export function ProductCard({
           </span>
           <h3 className="font-display text-lg font-bold">{name}</h3>
         </div>
-        <span className="whitespace-nowrap rounded-full border border-dashed px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+        <span className="whitespace-nowrap rounded-full border border-dashed px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
           {tag}
         </span>
       </div>
