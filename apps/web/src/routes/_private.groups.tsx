@@ -8,8 +8,6 @@ import { BackHeaderPage } from "./-shared/chrome";
 
 export const Route = createFileRoute("/_private/groups")({
   // SSR-prime the hub list (parity with www's HydrationBoundary prefetch).
-  // groupUnread is deliberately not primed — it's gated on GROUP_CHAT_ENABLED
-  // and polled client-side.
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData({
       queryKey: queryKeys.userGroups(),

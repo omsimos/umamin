@@ -40,8 +40,6 @@ import {
   CheckIcon,
   EllipsisIcon,
   Loader2Icon,
-  MessageCircleIcon,
-  MessageCircleOffIcon,
   SquarePenIcon,
   TagIcon,
   Trash2Icon,
@@ -57,11 +55,7 @@ import { GroupEditDialog } from "@/components/group-edit-dialog";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
-import {
-  GROUP_CHAT_ENABLED,
-  type GroupAccent,
-  type GroupIcon,
-} from "@/lib/group";
+import type { GroupAccent, GroupIcon } from "@/lib/group";
 import { GROUP_ACCENT_CLASSES, GROUP_ICON_MAP } from "@/lib/group-icons";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
@@ -407,19 +401,6 @@ export function GroupPageClient({
 
       {isMember && (
         <div className="space-y-2">
-          {GROUP_CHAT_ENABLED ? (
-            <Button asChild className="w-full">
-              <Link href={`/groups/${tag}/chat`}>
-                <MessageCircleIcon /> Open chat
-              </Link>
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2.5 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-              <MessageCircleOffIcon className="size-4 shrink-0" />
-              <span>Group chat is temporarily unavailable.</span>
-            </div>
-          )}
-
           <div className="flex items-center gap-2">
             <Button
               variant={equipped ? "secondary" : "outline"}

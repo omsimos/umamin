@@ -1,7 +1,7 @@
 /**
  * A reconnecting WebSocket with an application-level keepalive. Generic on
- * purpose: it knows nothing about the frames it carries, so group chat can
- * adopt it later. The owner re-sends whatever handshake it needs from
+ * purpose: it knows nothing about the frames it carries, so other realtime
+ * features can reuse it. The owner re-sends whatever handshake it needs from
  * `onOpen`, which runs on every (re)connect.
  *
  * SSR-safe: nothing touches `window`, `document` or `WebSocket` until

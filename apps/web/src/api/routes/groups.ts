@@ -4,7 +4,6 @@ import {
   getGroupMembersPage,
   getGroupPageData,
   getGroupPendingRequestsPage,
-  getGroupUnreadStates,
   getGroupViewerRelationship,
   getUserGroups,
 } from "../../server-lib/data";
@@ -13,7 +12,6 @@ import {
   NOT_FOUND_ERROR,
   UNAUTHORIZED_ERROR,
 } from "../../server-lib/errors";
-import { GROUP_CHAT_ENABLED } from "../../server-lib/group";
 import { withPrivateRead, withPublicRead } from "../../server-lib/read-route";
 import { getSessionFrom, resolveDb } from "./_shared";
 
@@ -26,16 +24,6 @@ export const groupsRoutes = new Hono<AppBindings>()
         return Response.json({ error: UNAUTHORIZED_ERROR }, { status: 401 });
       }
       return getUserGroups(resolveDb(c.env), session.userId);
-    }),
-  )
-  // Per-viewer unread flags for the groups hub dot; two bounded queries.
-  .get(
-    "/groups/unread",
-    withPrivateRead("fetching group unread", async (c) => {
-      if (!GROUP_CHAT_ENABLED) return [];
-      const { session } = await getSessionFrom(c);
-      if (!session) return [];
-      return getGroupUnreadStates(resolveDb(c.env), session.userId);
     }),
   )
   // Per-viewer relationship — drives the request/accept CTA vs owner controls.

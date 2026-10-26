@@ -96,7 +96,6 @@ function WhisperCountdown({ viewedAt }: { viewedAt: number }) {
   );
 }
 
-/** Group chat's retry affordance, so a failed send reads the same in both. */
 function RetryButton({ onRetry }: { onRetry?: () => void }) {
   return (
     <button

@@ -20,12 +20,6 @@ import {
   updateGroupHandler,
 } from "./group";
 import {
-  deleteGroupMessageHandler,
-  markGroupChatReadHandler,
-  reactToGroupMessageHandler,
-  sendGroupMessageHandler,
-} from "./group-chat";
-import {
   createReplyHandler,
   deleteMessageHandler,
   markThreadReadHandler,
@@ -185,11 +179,6 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/kickGroupMemberAction", kickGroupMemberHandler)
   .post("/actions/updateGroupAction", updateGroupHandler)
   .post("/actions/deleteGroupAction", deleteGroupHandler)
-  // group chat
-  .post("/actions/sendGroupMessageAction", sendGroupMessageHandler)
-  .post("/actions/markGroupChatReadAction", markGroupChatReadHandler)
-  .post("/actions/deleteGroupMessageAction", deleteGroupMessageHandler)
-  .post("/actions/reactToGroupMessageAction", reactToGroupMessageHandler)
   // pro
   .post("/actions/createProCheckoutAction", createProCheckoutHandler)
   .post("/actions/updateProfileThemeAction", updateProfileThemeHandler)

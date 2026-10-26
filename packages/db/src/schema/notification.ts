@@ -24,6 +24,8 @@ export type NotificationType =
   | "group_invite"
   | "group_request"
   | "group_accept"
+  // Group chat was removed, so nothing creates these anymore. Old rows still
+  // render until the group chat tables are dropped.
   | "group_mention";
 
 // One row per (recipient, type, target), aggregated via upsert — a viral post

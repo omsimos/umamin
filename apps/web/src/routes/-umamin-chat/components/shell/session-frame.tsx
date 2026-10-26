@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 
 /**
- * The session's full-screen column, matching group chat: edge to edge on
+ * The session's full-screen column: edge to edge on
  * mobile, a bordered max-w-2xl column on desktop. It insets the notch and
  * side safe areas itself, since there's no app chrome around it; the composer
  * owns the bottom inset.

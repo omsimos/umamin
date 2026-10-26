@@ -50,7 +50,7 @@ describe("session core (real libSQL)", () => {
 
   // The micro-cache only holds settled results, so concurrent validations of
   // the same token used to each issue their own Turso read. Route loaders that
-  // run in parallel (the feed, the group chat) hit exactly that case.
+  // run in parallel (the feed) hit exactly that case.
   it("collapses concurrent validations of one token into a single query", async () => {
     await seedUser(db, "user1");
     const token = generateSessionToken();

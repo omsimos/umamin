@@ -27,9 +27,8 @@ function notificationHref(notification: NotificationItem): string | null {
     case "group_invite":
     case "group_request":
     case "group_accept":
-      return `/groups/${notification.targetId}`;
     case "group_mention":
-      return `/groups/${notification.targetId}/chat`;
+      return `/groups/${notification.targetId}`;
     default:
       return null;
   }
