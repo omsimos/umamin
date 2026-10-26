@@ -18,16 +18,21 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
-## [7.14.0] - 2026-10-24
+## [7.15.0] - 2026-10-27
 
 ### Added
 
-- Umamin Chat now shows how many people are online, counting everyone searching or in a chat. You'll see it next to the title on the chat page and while you search for someone. It only shows once at least three people are on.
 - A changelog page at umamin.link/changelog lists every release. Open it from Changelog in the site footer or by tapping the version in the account menu.
 
 ### Changed
 
 - Anonymous messages, replies, and group chat messages can now be up to 2000 characters. Profile questions, posts, comments, and notes keep their 500-character limit.
+
+## [7.14.0] - 2026-10-24
+
+### Added
+
+- Umamin Chat now shows how many people are online, counting everyone searching or in a chat. You'll see it next to the title on the chat page and while you search for someone. It only shows once at least three people are on.
 
 ## [7.13.0] - 2026-10-16
 
@@ -1148,6 +1153,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.15.0]: https://github.com/omsimos/umamin/compare/v7.14.0...v7.15.0
 [7.14.0]: https://github.com/omsimos/umamin/compare/v7.13.0...v7.14.0
 [7.13.0]: https://github.com/omsimos/umamin/compare/v7.12.0...v7.13.0
 [7.12.0]: https://github.com/omsimos/umamin/compare/v7.11.0...v7.12.0
