@@ -16,7 +16,7 @@ function withFlags(flags: FeatureFlagsResponse | null) {
   );
 }
 
-const OFF = { pro: false, contentModeration: false, chat: false };
+const OFF = { pro: false, contentModeration: false, chat: false, dm: false };
 
 // Launching chat must be a flag flip: every entry point follows this hook.
 describe("useChatLink", () => {

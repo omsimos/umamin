@@ -513,6 +513,8 @@ export type FeatureFlagsResponse = {
   contentModeration: boolean;
   // The global Umamin Chat switch: gates /chat and its entry points.
   chat: boolean;
+  // The global direct-messages switch: gates the Chats tab and DM sockets.
+  dm: boolean;
 };
 
 // ── moderation review (moderator-only) ───────────────────────────────────────

@@ -204,6 +204,13 @@
       "when": 1791961504739,
       "tag": "0028_furry_bloodstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1793077622588,
+      "tag": "0029_quiet_warbound",
+      "breakpoints": true
     }
   ]
 }

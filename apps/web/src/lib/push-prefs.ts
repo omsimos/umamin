@@ -10,7 +10,7 @@ export const PUSH_CATEGORY = {
   social: 1 << 0,
   // New followers.
   follow: 1 << 1,
-  // Anonymous messages received.
+  // Anonymous messages and direct messages received.
   message: 1 << 2,
   // Group activity: joins, invites, requests, accepts, mentions.
   group: 1 << 3,

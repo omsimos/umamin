@@ -18,12 +18,13 @@
     "directory": "./dist/client",
     "binding": "ASSETS"
   },
-  // Umamin Chat Durable Objects (server-lib/chat). Declared once here and
+  // Durable Objects (server-lib/chat, server-lib/dm). Declared once here and
   // inherited by both envs; each env still provisions its own namespaces. The
   // durable_objects bindings below are NOT inheritable and live in each env.
   "exports": {
     "ChatLobby": { "type": "durable-object", "storage": "sqlite" },
-    "ChatRoom": { "type": "durable-object", "storage": "sqlite" }
+    "ChatRoom": { "type": "durable-object", "storage": "sqlite" },
+    "DmRoom": { "type": "durable-object", "storage": "sqlite" }
   },
   "env": {
     "staging": {
@@ -72,7 +73,8 @@
       "durable_objects": {
         "bindings": [
           { "name": "CHAT_LOBBY", "class_name": "ChatLobby" },
-          { "name": "CHAT_ROOM", "class_name": "ChatRoom" }
+          { "name": "CHAT_ROOM", "class_name": "ChatRoom" },
+          { "name": "DM_ROOM", "class_name": "DmRoom" }
         ]
       },
       // Workers Rate Limiting bindings (unsafe). period is 10 or 60 only;
@@ -150,7 +152,7 @@
         // this same block (CLOUDFLARE_ENV=staging), so Pro works locally too.
         // A flag that SHOULD be previewable in its hidden state is left out.
         // content-moderation: covers and Hot down-ranking, QA'd here first.
-        "FLAGS_FORCE_ON": "umamin-pro,content-moderation,umamin-chat"
+        "FLAGS_FORCE_ON": "umamin-pro,content-moderation,umamin-chat,umamin-dm"
       }
     },
     "production": {
@@ -190,7 +192,8 @@
       "durable_objects": {
         "bindings": [
           { "name": "CHAT_LOBBY", "class_name": "ChatLobby" },
-          { "name": "CHAT_ROOM", "class_name": "ChatRoom" }
+          { "name": "CHAT_ROOM", "class_name": "ChatRoom" },
+          { "name": "DM_ROOM", "class_name": "DmRoom" }
         ]
       },
       "unsafe": {

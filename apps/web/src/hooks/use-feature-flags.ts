@@ -7,6 +7,7 @@ const HIDDEN: FeatureFlagsResponse = {
   pro: false,
   contentModeration: false,
   chat: false,
+  dm: false,
 };
 
 /**

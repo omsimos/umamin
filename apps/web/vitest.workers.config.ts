@@ -24,6 +24,7 @@ export default defineConfig({
         durableObjects: {
           CHAT_LOBBY: { className: "ChatLobby", useSQLite: true },
           CHAT_ROOM: { className: "ChatRoom", useSQLite: true },
+          DM_ROOM: { className: "DmRoom", useSQLite: true },
         },
         // RL_CHAT_CONNECT is left unset: checkRateLimit fails open.
         bindings: {

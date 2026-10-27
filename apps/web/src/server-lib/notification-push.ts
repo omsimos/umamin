@@ -103,6 +103,15 @@ export const PUSH_COPY: Record<NotificationType, CopyEntry> = {
   },
 };
 
+// Direct messages aren't notification rows (a bell row per message would be a
+// Turso write per message), but they push through the same gate. They share
+// the anonymous-message category: one "messages" switch covers both.
+const DM_PUSH_COPY: CopyEntry = {
+  category: PUSH_CATEGORY.message,
+  title: (a) => (a ? `@${a} sent you a message` : "You have a new message"),
+  url: (_id, a) => (a ? `/inbox/chats/${a}` : "/inbox?tab=chats"),
+};
+
 // Defensive fallback for any future/unmapped type (the Record above makes this
 // unreachable while the map stays total — kept so a runtime surprise degrades
 // gracefully instead of pushing an undefined title). Gated by master-on.
@@ -126,7 +135,7 @@ function vapidFromEnv(env: AppEnv) {
 
 type SendParams = {
   recipientId: string;
-  type: NotificationType;
+  type: NotificationType | "dm";
   targetId?: string;
   actorId?: string | null;
 };
@@ -145,7 +154,7 @@ export async function sendPushForNotification(
   const vapid = vapidFromEnv(env);
   if (!vapid) return;
 
-  const copy = PUSH_COPY[type] ?? GENERIC_COPY;
+  const copy = type === "dm" ? DM_PUSH_COPY : (PUSH_COPY[type] ?? GENERIC_COPY);
 
   // All three reads key off values already in hand, so they run together rather
   // than as three chained Tokyo round trips per engagement event. The gates

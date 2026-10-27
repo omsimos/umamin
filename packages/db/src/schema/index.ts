@@ -1,3 +1,4 @@
+export * from "./dm";
 export * from "./group";
 export * from "./group-message";
 export * from "./message";

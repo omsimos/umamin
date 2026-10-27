@@ -1,5 +1,9 @@
 import { PostHog } from "posthog-node";
-import { FLAG_CONTENT_MODERATION, FLAG_UMAMIN_CHAT } from "../lib/flags";
+import {
+  FLAG_CONTENT_MODERATION,
+  FLAG_UMAMIN_CHAT,
+  FLAG_UMAMIN_DM,
+} from "../lib/flags";
 import type { AppEnv } from "./env";
 import { formatErrorChain } from "./errors";
 import { captureServerException } from "./posthog";
@@ -186,6 +190,11 @@ export function isModerationEnforced(env: AppEnv): Promise<boolean> {
 /** The global Umamin Chat switch (see lib/flags.ts). */
 export function isUmaminChatEnabled(env: AppEnv): Promise<boolean> {
   return isFlagEnabled(env, null, FLAG_UMAMIN_CHAT);
+}
+
+/** The global direct-messages switch (see lib/flags.ts). */
+export function isDmEnabled(env: AppEnv): Promise<boolean> {
+  return isFlagEnabled(env, null, FLAG_UMAMIN_DM);
 }
 
 /** Test-only: drop the in-isolate cache between cases. */

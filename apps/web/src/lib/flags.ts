@@ -27,3 +27,10 @@ export const FLAG_CONTENT_MODERATION = "content-moderation";
  * upgrades, so the surface stays unreachable in production until launch.
  */
 export const FLAG_UMAMIN_CHAT = "umamin-chat";
+
+/**
+ * Direct messages (the Chats tab in /inbox, the DmRoom Durable Objects). A
+ * GLOBAL switch resolved with no viewer: a conversation has two people, and a
+ * per-viewer rollout would let one side message someone who can't open it.
+ */
+export const FLAG_UMAMIN_DM = "umamin-dm";

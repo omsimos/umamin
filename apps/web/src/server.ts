@@ -124,3 +124,4 @@ export default {
 // bind them (wrangler.jsonc "exports" + durable_objects.bindings).
 export { ChatLobby } from "./server-lib/chat/lobby";
 export { ChatRoom } from "./server-lib/chat/room";
+export { DmRoom } from "./server-lib/dm/room";

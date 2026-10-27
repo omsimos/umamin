@@ -1,4 +1,4 @@
-// Worker `main` for the chat workers tests. It mounts only the chat socket
+// Worker `main` for the chat and DM workers tests. It mounts only the chat socket
 // routes behind the real security-headers middleware: the full src/server.ts
 // pulls in TanStack Start, which doesn't load in the vitest pool.
 import { Hono } from "hono";
@@ -8,6 +8,7 @@ import { securityHeadersMiddleware } from "../src/server-lib/middleware";
 
 export { ChatLobby } from "../src/server-lib/chat/lobby";
 export { ChatRoom } from "../src/server-lib/chat/room";
+export { DmRoom } from "../src/server-lib/dm/room";
 
 const app = new Hono<{ Bindings: AppEnv }>()
   .use("*", securityHeadersMiddleware())
