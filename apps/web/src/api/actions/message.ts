@@ -75,7 +75,7 @@ export const createReplyHandler = action(
         .string()
         .trim()
         .min(1, { error: "Content cannot be empty" })
-        .max(500, { error: "Content cannot exceed 500 characters" }),
+        .max(2000, { error: "Content cannot exceed 2000 characters" }),
     }),
     rateLimit: {
       name: "message",
@@ -281,9 +281,8 @@ export const createReplyHandler = action(
   },
 );
 
-// Watermark write on thread open (group_message_read pattern) — called once
-// when the thread page mounts, never per fetch, and skipped client-side when
-// there is nothing unread. One statement: each side's CASE moves only its own
+// Watermark write on thread open, called once when the thread page mounts,
+// never per fetch, and skipped client-side when there is nothing unread. One statement: each side's CASE moves only its own
 // watermark (a non-participant matches neither), the receiver's first open
 // also unseals (openedAt, replacing a second openMessage call), and updatedAt
 // is pinned so a read never restamps the legacy reply's displayed time.
@@ -322,7 +321,7 @@ export const markThreadReadHandler = action(
 
 const sendMessageSchema = z.object({
   question: z.string().trim().min(1).max(500),
-  content: z.string().trim().min(1).max(500),
+  content: z.string().trim().min(1).max(2000),
   receiverId: z.string().min(1),
 });
 

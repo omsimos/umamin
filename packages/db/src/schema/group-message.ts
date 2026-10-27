@@ -12,6 +12,10 @@ import { nanoid } from "nanoid";
 import { groupTable } from "./group";
 import { userTable } from "./user";
 
+// Group chat was removed from the app. These tables stay only until the
+// follow-up release drops them (code and migrations deploy unordered, so the
+// drop can't ship with the code removal).
+
 export const groupMessageTable = sqliteTable(
   "group_message",
   {

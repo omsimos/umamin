@@ -83,7 +83,7 @@ export function ReplyDialog(props: Props) {
       <DialogContent className="p-0 sm:max-w-xl">
         <DialogTitle className="sr-only">Reply to message</DialogTitle>
         <DialogDescription className="sr-only">
-          Reply to this anonymous message, up to 500 characters.
+          Reply to this anonymous message, up to 2000 characters.
         </DialogDescription>
 
         <div className="flex flex-col gap-6 px-5 py-6 sm:px-7">
@@ -130,7 +130,7 @@ export function ReplyDialog(props: Props) {
                 disabled={mutation.isPending}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                maxLength={500}
+                maxLength={2000}
                 placeholder="Type your reply..."
                 className="focus-visible:ring-transparent flex-1 text-base resize-none min-h-10 max-h-20"
                 autoComplete="off"

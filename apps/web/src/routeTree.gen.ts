@@ -16,6 +16,7 @@ import { Route as SocialRouteImport } from './routes/_social'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as MarketingIndexRouteImport } from './routes/_marketing/index'
 import { Route as MarketingAboutRouteImport } from './routes/_marketing/about'
+import { Route as MarketingChangelogRouteImport } from './routes/_marketing/changelog'
 import { Route as PrivateGroupsRouteImport } from './routes/_private.groups'
 import { Route as PrivateInboxRouteImport } from './routes/_private.inbox'
 import { Route as PrivateModerationRouteImport } from './routes/_private.moderation'
@@ -70,6 +71,11 @@ const MarketingIndexRoute = MarketingIndexRouteImport.update({
 const MarketingAboutRoute = MarketingAboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingChangelogRoute = MarketingChangelogRouteImport.update({
+  id: '/changelog',
+  path: '/changelog',
   getParentRoute: () => MarketingRoute,
 } as any)
 const PrivateGroupsRoute = PrivateGroupsRouteImport.update({
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/': typeof MarketingIndexRoute
   '/chat': typeof ChatRouteWithChildren
   '/about': typeof MarketingAboutRoute
+  '/changelog': typeof MarketingChangelogRoute
   '/groups': typeof PrivateGroupsRoute
   '/inbox': typeof PrivateInboxRoute
   '/moderation': typeof PrivateModerationRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof MarketingIndexRoute
   '/about': typeof MarketingAboutRoute
+  '/changelog': typeof MarketingChangelogRoute
   '/groups': typeof PrivateGroupsRoute
   '/inbox': typeof PrivateInboxRoute
   '/moderation': typeof PrivateModerationRoute
@@ -257,6 +265,7 @@ export interface FileRoutesById {
   '/_social': typeof SocialRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/_marketing/about': typeof MarketingAboutRoute
+  '/_marketing/changelog': typeof MarketingChangelogRoute
   '/_private/groups': typeof PrivateGroupsRoute
   '/_private/inbox': typeof PrivateInboxRoute
   '/_private/moderation': typeof PrivateModerationRoute
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/'
     | '/chat'
     | '/about'
+    | '/changelog'
     | '/groups'
     | '/inbox'
     | '/moderation'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/changelog'
     | '/groups'
     | '/inbox'
     | '/moderation'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/_social'
     | '/chat'
     | '/_marketing/about'
+    | '/_marketing/changelog'
     | '/_private/groups'
     | '/_private/inbox'
     | '/_private/moderation'
@@ -433,6 +445,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof MarketingAboutRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/changelog': {
+      id: '/_marketing/changelog'
+      path: '/changelog'
+      fullPath: '/changelog'
+      preLoaderRoute: typeof MarketingChangelogRouteImport
       parentRoute: typeof MarketingRoute
     }
     '/_private/groups': {
@@ -608,11 +627,13 @@ declare module '@tanstack/react-router' {
 
 interface MarketingRouteChildren {
   MarketingAboutRoute: typeof MarketingAboutRoute
+  MarketingChangelogRoute: typeof MarketingChangelogRoute
   MarketingIndexRoute: typeof MarketingIndexRoute
 }
 
 const MarketingRouteChildren: MarketingRouteChildren = {
   MarketingAboutRoute: MarketingAboutRoute,
+  MarketingChangelogRoute: MarketingChangelogRoute,
   MarketingIndexRoute: MarketingIndexRoute,
 }
 

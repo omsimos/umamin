@@ -28,8 +28,8 @@ import { createReplyAction, markThreadReadAction } from "./actions";
 import { buildThreadTimeline } from "./thread-timeline";
 import { hasUnreadThread } from "./thread-unread";
 
-const MAX_LENGTH = 500;
-const COUNTER_VISIBLE_AT = 400;
+const MAX_LENGTH = 2000;
+const COUNTER_VISIBLE_AT = 1800;
 
 // Placeholder id for the optimistically appended bubble; swapped for the
 // server row on success. Single-flight sends mean at most one exists.

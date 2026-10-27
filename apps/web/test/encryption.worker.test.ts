@@ -1,7 +1,7 @@
 import { aesDecrypt, aesEncrypt } from "@umamin/encryption";
 import { beforeAll, describe, expect, it } from "vitest";
 
-// Spike C (plan): @umamin/encryption (AES-256-GCM at rest, DMs + group chat) is
+// Spike C (plan): @umamin/encryption (AES-256-GCM at rest) is
 // pure WebCrypto + Buffer. Confirm it round-trips inside workerd — Buffer is
 // covered by nodejs_compat and crypto.subtle is Workers-native. Mirrors
 // packages/encryption/src/index.test.ts.

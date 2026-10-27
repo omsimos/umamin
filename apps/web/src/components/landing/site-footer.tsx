@@ -16,11 +16,7 @@ const RESOURCES = [
     href: "https://github.com/omsimos/umamin",
     external: true,
   },
-  {
-    label: "Release notes",
-    href: "https://github.com/omsimos/umamin/releases",
-    external: true,
-  },
+  { label: "Changelog", href: "/changelog" },
 ];
 
 const LEGAL = [
@@ -38,9 +34,7 @@ function FooterLinks({
 }) {
   return (
     <div>
-      <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-        {title}
-      </h3>
+      <h3 className="text-sm font-semibold">{title}</h3>
       <ul className="space-y-2.5 pt-4 text-sm">
         {links.map((link) => (
           <li key={link.label}>
