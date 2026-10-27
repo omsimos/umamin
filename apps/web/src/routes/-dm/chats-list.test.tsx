@@ -1,5 +1,9 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import {
+  focusManager,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import { act, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DmThreadItem } from "@/lib/dm/types";
 import { fetchDmThreadsPage } from "@/lib/query-fetchers";
@@ -12,6 +16,10 @@ vi.mock("@/lib/navigation", () => ({
       {children}
     </a>
   ),
+}));
+
+vi.mock("@/hooks/use-chat-link", () => ({
+  useChatLink: () => ({ href: "/chat", external: false }),
 }));
 
 vi.mock("@/lib/query-fetchers", () => ({
@@ -89,5 +97,58 @@ describe("ChatsList", () => {
     renderList();
 
     expect(await screen.findByText("No chats yet")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Try it/ })).toHaveAttribute(
+      "href",
+      "/chat",
+    );
+  });
+
+  it("offers Umamin Chat only after the last page", async () => {
+    vi.mocked(fetchDmThreadsPage).mockResolvedValue({
+      data: [thread({})],
+      nextCursor: "more",
+    });
+
+    const { unmount } = renderList();
+    await screen.findByRole("link", { name: /bob/ });
+    expect(screen.queryByRole("link", { name: /Try it/ })).toBeNull();
+    unmount();
+
+    vi.mocked(fetchDmThreadsPage).mockResolvedValue({
+      data: [thread({})],
+      nextCursor: null,
+    });
+    renderList();
+    expect(await screen.findByRole("link", { name: /Try it/ })).toHaveAttribute(
+      "href",
+      "/chat",
+    );
+  });
+
+  it("refetches when the app regains focus", async () => {
+    vi.mocked(fetchDmThreadsPage).mockResolvedValue({
+      data: [thread({ preview: "old news" })],
+      nextCursor: null,
+    });
+    renderList();
+    await screen.findByText("old news");
+
+    vi.mocked(fetchDmThreadsPage).mockResolvedValue({
+      data: [thread({ preview: "fresh", unread: true })],
+      nextCursor: null,
+    });
+    // Past the stale window, as after the app sat in the background.
+    const now = Date.now();
+    const clock = vi.spyOn(Date, "now").mockReturnValue(now + 60_000);
+    try {
+      act(() => {
+        focusManager.setFocused(false);
+        focusManager.setFocused(true);
+      });
+      expect(await screen.findByText("fresh")).toBeInTheDocument();
+    } finally {
+      clock.mockRestore();
+      focusManager.setFocused(undefined);
+    }
   });
 });

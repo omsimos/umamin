@@ -504,14 +504,16 @@ export function UserProfile({ username, initialUser }: Props) {
   const headerActions = (
     <>
       {canOpenChat && (
+        // Labeled so it isn't mistaken for the anonymous Message icon next
+        // to it.
         <Button
-          size="icon"
           variant="secondary"
           aria-label={`Chat with @${profile.username}`}
           className="rounded-full bg-background/70 backdrop-blur"
           onClick={() => navigate(`/inbox/chats/${profile.username}`)}
         >
           <MessagesSquareIcon className="size-4" />
+          Chat
         </Button>
       )}
       <Button

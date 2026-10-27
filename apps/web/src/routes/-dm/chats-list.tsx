@@ -9,6 +9,7 @@ import { Skeleton } from "@umamin/ui/components/skeleton";
 import { cn } from "@umamin/ui/lib/utils";
 import { AlertCircleIcon, MessagesSquareIcon } from "lucide-react";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
+import { ChatAnnouncement } from "@/components/chat-announcement";
 import { TimeAgo } from "@/components/time-ago";
 import type { DmThreadItem, DmThreadsResponse } from "@/lib/dm/types";
 import { Link } from "@/lib/navigation";
@@ -72,6 +73,19 @@ function ThreadRow({ thread }: { thread: DmThreadItem }) {
   );
 }
 
+// Chats only reach mutual follows, so this points people who want someone
+// new to Umamin Chat instead.
+function StrangerChatPromo() {
+  return (
+    <ChatAnnouncement
+      title="Want to meet someone new?"
+      description="Umamin Chat matches you with a stranger who shares your interests."
+      utm="inbox-chats"
+      dismissKey="umamin:chats-tab-promo-dismissed"
+    />
+  );
+}
+
 function RowSkeleton() {
   return (
     <div className="flex items-center gap-3 px-2 py-2.5">
@@ -100,8 +114,10 @@ export function ChatsList() {
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
-    // Returning to the tab after reading a chat should show it read.
+    // Returning to the tab after reading a chat should show it read, and
+    // returning to the app should show chats that moved while it was hidden.
     refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const threads = data?.pages.flatMap((page) => page.data) ?? [];
@@ -134,14 +150,17 @@ export function ChatsList() {
 
   if (threads.length === 0) {
     return (
-      <Alert>
-        <MessagesSquareIcon />
-        <AlertTitle>No chats yet</AlertTitle>
-        <AlertDescription>
-          When you and someone follow each other, tap the chat button on their
-          profile to start a conversation.
-        </AlertDescription>
-      </Alert>
+      <div className="space-y-3">
+        <Alert>
+          <MessagesSquareIcon />
+          <AlertTitle>No chats yet</AlertTitle>
+          <AlertDescription>
+            When you and someone follow each other, tap Chat on their profile to
+            start a conversation.
+          </AlertDescription>
+        </Alert>
+        <StrangerChatPromo />
+      </div>
     );
   }
 
@@ -150,9 +169,13 @@ export function ChatsList() {
       {threads.map((t) => (
         <ThreadRow key={t.threadId} thread={t} />
       ))}
-      {hasNextPage && (
+      {hasNextPage ? (
         <div ref={sentinelRef}>
           <RowSkeleton />
+        </div>
+      ) : (
+        <div className="pt-3">
+          <StrangerChatPromo />
         </div>
       )}
     </div>
