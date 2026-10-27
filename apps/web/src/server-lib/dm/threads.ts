@@ -21,7 +21,7 @@ import {
 import { alias } from "drizzle-orm/sqlite-core";
 import { DM_THREADS_PAGE_SIZE } from "../../lib/dm/constants";
 import type {
-  DmReportReason,
+  DmReportItem,
   DmReportSnapshotEntry,
   DmThreadItem,
   DmThreadsResponse,
@@ -218,16 +218,6 @@ export async function queueDmPurge(
 }
 
 // ── reports (moderator-only) ────────────────────────────────────────────────
-
-export interface DmReportItem {
-  id: string;
-  reason: DmReportReason;
-  createdAt: number;
-  reporter: { id: string; username: string } | null;
-  reported: { id: string; username: string } | null;
-  messageSeq: number;
-  snapshot: DmReportSnapshotEntry[];
-}
 
 const REPORTS_PAGE_SIZE = 20;
 

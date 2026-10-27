@@ -13,11 +13,12 @@ vi.mock("@/lib/navigation", () => ({
   usePathname: () => "/notes",
 }));
 
-const flags = vi.hoisted(() => ({ chat: false }));
+const flags = vi.hoisted(() => ({ chat: false, dm: false }));
 vi.mock("@/hooks/use-feature-flags", () => ({ useFeatureFlags: () => flags }));
 
 vi.mock("@/lib/query-fetchers", () => ({
   fetchCurrentUserOptional: () => new Promise(() => {}),
+  fetchDmUnread: () => new Promise(() => {}),
 }));
 
 vi.mock("./nav-notifications", () => ({
@@ -26,12 +27,14 @@ vi.mock("./nav-notifications", () => ({
 
 import { PublicMenubar } from "./public-menu-bar";
 
-function renderBar(chat: boolean) {
+function renderBar(chat: boolean, dm = false, unread = 0) {
   flags.chat = chat;
+  flags.dm = dm;
   const client = new QueryClient();
   client.setQueryData(queryKeys.currentUser(), {
     user: { id: "u1", username: "ana" },
   });
+  client.setQueryData(queryKeys.dmUnread(), { count: unread });
   render(
     <QueryClientProvider client={client}>
       <PublicMenubar />
@@ -57,5 +60,19 @@ describe("PublicMenubar", () => {
     expect(hrefs).toHaveLength(5);
     expect(hrefs[0]).toBe("/groups");
     expect(hrefs[2]).toBe("/user/ana");
+  });
+
+  it("marks Profile when there are unread chats and DMs are on", () => {
+    renderBar(true, true, 2);
+    expect(
+      screen.getByRole("link", { name: "Your profile (unread chats)" }),
+    ).toHaveAttribute("href", "/user/ana");
+  });
+
+  it("ignores a cached unread count once DMs are off", () => {
+    renderBar(true, false, 2);
+    expect(
+      screen.getByRole("link", { name: "Your profile" }),
+    ).toBeInTheDocument();
   });
 });

@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { queryKeys } from "@/lib/query";
 import {
   fetchCurrentUserOptional,
   fetchUserProfile,
@@ -9,9 +11,16 @@ import {
 import type { CurrentUserResponse, PublicUserWithBadge } from "@/lib/types";
 import { UserProfile } from "./user-profile";
 
+const navigate = vi.fn();
+const flags = { dm: false };
+
 // next/navigation → the nav shim; UserProfile uses useAppNavigate.
 vi.mock("@/lib/navigation", () => ({
-  useAppNavigate: () => vi.fn(),
+  useAppNavigate: () => navigate,
+}));
+
+vi.mock("@/hooks/use-feature-flags", () => ({
+  useFeatureFlags: () => flags,
 }));
 
 vi.mock("sonner", () => ({
@@ -39,8 +48,17 @@ vi.mock("@/components/ban-user-dialog", () => ({
 }));
 
 vi.mock("@/components/user-card", () => ({
-  UserCard: ({ primaryAction }: { primaryAction?: React.ReactNode }) => (
-    <div>{primaryAction}</div>
+  UserCard: ({
+    headerActions,
+    primaryAction,
+  }: {
+    headerActions?: React.ReactNode;
+    primaryAction?: React.ReactNode;
+  }) => (
+    <div>
+      {headerActions}
+      {primaryAction}
+    </div>
   ),
 }));
 
@@ -77,13 +95,14 @@ const profile: PublicUserWithBadge = {
   updatedAt: new Date("2026-06-01T00:00:00.000Z"),
 };
 
-function renderProfile() {
+function renderProfile(seed?: (queryClient: QueryClient) => void) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
+  seed?.(queryClient);
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -95,6 +114,7 @@ function renderProfile() {
 describe("UserProfile", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    flags.dm = false;
     vi.mocked(fetchUserProfile).mockResolvedValue(profile);
     vi.mocked(fetchCurrentUserOptional).mockResolvedValue({
       user: {
@@ -132,5 +152,55 @@ describe("UserProfile", () => {
     expect(
       await screen.findByRole("button", { name: "Following" }),
     ).toBeInTheDocument();
+  });
+
+  describe("chat button", () => {
+    // Seeded rather than fetched so the first render already has the viewer
+    // state; otherwise "hidden" passes on the pre-load render.
+    async function renderWithViewer(over: {
+      isFollowing?: boolean;
+      isBlocked?: boolean;
+    }) {
+      const viewer = {
+        currentUserId: "viewer-1",
+        isAuthenticated: true,
+        isFollowing: true,
+        isBlocked: false,
+        isBlockedBy: false,
+        isMuted: false,
+        isBanned: false,
+        ...over,
+      };
+      vi.mocked(fetchUserProfileViewer).mockResolvedValue(viewer);
+      const currentUser = await fetchCurrentUserOptional();
+      renderProfile((queryClient) => {
+        queryClient.setQueryData(queryKeys.currentUser(), currentUser);
+        queryClient.setQueryData(queryKeys.userProfileViewer("alice"), viewer);
+      });
+    }
+
+    it("opens the chat when DMs are on and the viewer follows them", async () => {
+      flags.dm = true;
+      await renderWithViewer({});
+
+      const button = await screen.findByRole("button", {
+        name: "Chat with @alice",
+      });
+      await userEvent.click(button);
+      expect(navigate).toHaveBeenCalledWith("/inbox/chats/alice");
+    });
+
+    it.each([
+      ["DMs are off", false, {}],
+      ["the viewer doesn't follow them", true, { isFollowing: false }],
+      ["the viewer blocked them", true, { isBlocked: true }],
+    ])("is hidden when %s", async (_case, dm, over) => {
+      flags.dm = dm;
+      await renderWithViewer(over);
+
+      expect(
+        screen.queryByRole("button", { name: "Chat with @alice" }),
+      ).toBeNull();
+    });
   });
 });

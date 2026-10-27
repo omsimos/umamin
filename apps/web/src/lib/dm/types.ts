@@ -75,3 +75,14 @@ export interface DmReportSnapshotEntry {
   text: string | null;
   createdAt: number;
 }
+
+/** One open report in the moderator queue, with the decrypted snapshot. */
+export interface DmReportItem {
+  id: string;
+  reason: DmReportReason;
+  createdAt: number;
+  reporter: { id: string; username: string } | null;
+  reported: { id: string; username: string } | null;
+  messageSeq: number;
+  snapshot: DmReportSnapshotEntry[];
+}

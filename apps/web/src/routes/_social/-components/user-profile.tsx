@@ -14,6 +14,7 @@ import {
   EllipsisIcon,
   MessageCircleIcon,
   MessageSquareXIcon,
+  MessagesSquareIcon,
   Share2Icon,
   ShieldCheckIcon,
   Volume2Icon,
@@ -27,6 +28,7 @@ import { proThemeClass } from "@/components/pro-flair";
 import { shareProfile } from "@/components/share-button";
 import { UserCard } from "@/components/user-card";
 import { YouTabs } from "@/components/you-tabs";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useMuteUser } from "@/hooks/use-mute-user";
 import { ExpectedError } from "@/lib/expected-error";
 import { useAppNavigate } from "@/lib/navigation";
@@ -110,6 +112,10 @@ export function UserProfile({ username, initialUser }: Props) {
   const isSelf = !!currentUser?.user?.id && currentUser.user.id === profile.id;
   const isModeratorViewer = currentUser?.user?.isModerator === true;
   const isBanned = viewer?.isBanned === true;
+  const flags = useFeatureFlags();
+  // Following is the viewer's half of the mutual-follow rule; the chat page
+  // explains when the other half is missing.
+  const canOpenChat = flags.dm && isFollowing && !isBlocked && !isBlockedBy;
   const [banOpen, setBanOpen] = useState(false);
 
   const resolveViewer = async () => {
@@ -492,10 +498,22 @@ export function UserProfile({ username, initialUser }: Props) {
     navigate(`/to/${profile.username}`);
   };
 
-  // Other profiles get a Message icon + an overflow menu (Share + Block) at the
-  // banner's top-right; self gets edit + share, handled inside UserCard.
+  // Other profiles get a Chat icon (when DMs are on), a Message icon and an
+  // overflow menu (Share + Block) at the banner's top-right; self gets edit +
+  // share, handled inside UserCard.
   const headerActions = (
     <>
+      {canOpenChat && (
+        <Button
+          size="icon"
+          variant="secondary"
+          aria-label={`Chat with @${profile.username}`}
+          className="rounded-full bg-background/70 backdrop-blur"
+          onClick={() => navigate(`/inbox/chats/${profile.username}`)}
+        >
+          <MessagesSquareIcon className="size-4" />
+        </Button>
+      )}
       <Button
         size="icon"
         variant="secondary"

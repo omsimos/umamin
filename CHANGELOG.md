@@ -23,6 +23,7 @@ any that are empty.
 ### Added
 
 - A changelog page at umamin.link/changelog lists every release. Open it from Changelog in the site footer or by tapping the version in the account menu.
+- Chats let two people who follow each other message privately. Open one from the chat button on a profile, and find all of them in the new Chats tab in your inbox. You'll see when the other person is typing and when they've read your message. You can react, reply, unsend your own messages, and report a message to our moderators. Profile shows a dot when you have unread chats.
 
 ### Changed
 

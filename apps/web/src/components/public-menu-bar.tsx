@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@umamin/ui/lib/utils";
 import {
-  CircleUserRoundIcon,
   LayoutDashboardIcon,
   LogInIcon,
   MessageSquareQuoteIcon,
@@ -20,6 +19,7 @@ import { ChatPromo } from "./chat-promo";
 import { MenubarLink } from "./menubar-link";
 import { NavGroups } from "./nav-groups";
 import { NavNotifications } from "./nav-notifications";
+import { NavProfile } from "./nav-profile";
 
 // Client-side auth (currentUser cache) so the (public) layout stays static —
 // logged-in viewers still get a Profile/Share/Settings nav, not the all-/login
@@ -67,13 +67,7 @@ export function PublicMenubar() {
 
       {username ? (
         // Lands on the profile's Posts tab; Received/Sent are one tap away.
-        <MenubarLink
-          href={`/user/${username}`}
-          ariaLabel="Your profile"
-          title="Profile"
-        >
-          <CircleUserRoundIcon className="h-6 w-6" />
-        </MenubarLink>
+        <NavProfile username={username} />
       ) : (
         <Link href="/login" aria-label="home button" title="Inbox">
           <LayoutDashboardIcon />
