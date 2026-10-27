@@ -160,6 +160,7 @@ export function DmMessageBubble({
                 </BubbleContent>
               </PopoverTrigger>
               <PopoverContent
+                aria-label="Message options"
                 side="top"
                 align={mine ? "end" : "start"}
                 sideOffset={8}

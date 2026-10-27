@@ -78,7 +78,17 @@ function merge(current: UiDmMessage[], incoming: DmMessage[]): UiDmMessage[] {
       .map((m) => [m.id, m]),
   );
   for (const m of incoming) byId.set(m.id, m);
-  return order([...byId.values()]);
+  // An unsend arrives as the target alone; replies already on screen still
+  // quote its text until they're scrubbed here.
+  const unsent = new Set(
+    incoming.filter((m) => m.text === null).map((m) => m.id),
+  );
+  const messages = [...byId.values()].map((m) =>
+    m.replyTo && m.replyTo.text !== null && unsent.has(m.replyTo.id)
+      ? { ...m, replyTo: { ...m.replyTo, text: null } }
+      : m,
+  );
+  return order(messages);
 }
 
 export function dmReducer(state: DmState, action: DmAction): DmState {

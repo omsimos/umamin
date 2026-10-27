@@ -109,6 +109,19 @@ describe("dmReducer", () => {
     expect(s.messages.map((m) => m.id)).toEqual(["3", "4", "5", "6"]);
   });
 
+  it("scrubs the quoted text from replies when their target is unsent", () => {
+    const state = synced([
+      msg(1, false, { text: "secret" }),
+      msg(2, true, { replyTo: { id: "1", mine: false, text: "secret" } }),
+    ]);
+    const next = dmReducer(state, {
+      type: "msgs",
+      messages: [msg(1, false, { text: null })],
+    });
+    expect(next.messages.find((m) => m.id === "2")?.replyTo?.text).toBeNull();
+    expect(JSON.stringify(next.messages)).not.toContain("secret");
+  });
+
   it("marks a failed send and back to sending on retry", () => {
     let s = synced([]);
     s = dmReducer(s, {
