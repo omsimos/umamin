@@ -15,7 +15,7 @@ import {
 } from "@umamin/ui/components/popover";
 import { cn } from "@umamin/ui/lib/utils";
 import { CopyIcon, FlagIcon, ReplyIcon, Undo2Icon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { UiDmMessage } from "@/lib/dm/client-state";
 import { ReactionPicker } from "../-umamin-chat/components/chat/reaction-picker";
@@ -86,6 +86,10 @@ export function DmMessageBubble({
     fn();
     setOpen(false);
   };
+  // The report drawer hides everything outside it, so opening it while focus
+  // is still inside this closing popover hides the focused button from
+  // assistive tech. It opens once focus has returned to the bubble instead.
+  const afterClose = useRef<(() => void) | null>(null);
 
   if (message.text === null) {
     return (
@@ -166,6 +170,11 @@ export function DmMessageBubble({
                 sideOffset={8}
                 collisionPadding={{ top: 72, bottom: 16, left: 12, right: 12 }}
                 className="bg-popover/95 w-auto rounded-3xl border p-1 shadow-lg backdrop-blur"
+                onCloseAutoFocus={() => {
+                  const next = afterClose.current;
+                  afterClose.current = null;
+                  next?.();
+                }}
               >
                 {canInteract && (
                   <div className="flex items-center gap-0.5">
@@ -204,7 +213,10 @@ export function DmMessageBubble({
                       icon={<FlagIcon className="size-4" />}
                       label="Report"
                       destructive
-                      onClick={close(onReport)}
+                      onClick={() => {
+                        afterClose.current = onReport;
+                        setOpen(false);
+                      }}
                     />
                   )}
                 </div>
