@@ -53,7 +53,9 @@ export function ReportDrawer({
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    // Vaul leaves focus on the trigger by default, which is the message
+    // bubble behind the drawer's aria-hidden backdrop.
+    <Drawer open={open} onOpenChange={onOpenChange} autoFocus>
       <DrawerContent className="pb-[env(safe-area-inset-bottom)]">
         <DrawerHeader className="text-left">
           <DrawerTitle>Report message</DrawerTitle>
