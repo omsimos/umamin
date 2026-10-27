@@ -28,8 +28,11 @@ export default defineConfig({
         },
         // RL_CHAT_CONNECT is left unset: checkRateLimit fails open.
         bindings: {
-          FLAGS_FORCE_ON: "umamin-chat",
+          FLAGS_FORCE_ON: "umamin-chat,umamin-dm",
           APP_URL: "https://chat.test",
+          // Never queried: the session resolver only builds the client, and
+          // the DM socket tests stop at a missing cookie.
+          TURSO_CONNECTION_URL: "http://turso.invalid",
         },
         // Workers forbids runtime Wasm compilation (WebAssembly.compile(bytes)).
         // The only supported path is a precompiled module: this rule makes a

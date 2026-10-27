@@ -1,8 +1,10 @@
-// Worker `main` for the chat and DM workers tests. It mounts only the chat socket
+// Worker `main` for the chat and DM workers tests. It mounts only the socket
 // routes behind the real security-headers middleware: the full src/server.ts
 // pulls in TanStack Start, which doesn't load in the vitest pool.
 import { Hono } from "hono";
 import { chatSocketApp } from "../src/api/chat-socket";
+import { dmSocketApp } from "../src/api/dm-socket";
+import { sessionContext } from "../src/server-lib/context";
 import type { AppEnv } from "../src/server-lib/env";
 import { securityHeadersMiddleware } from "../src/server-lib/middleware";
 
@@ -12,7 +14,9 @@ export { DmRoom } from "../src/server-lib/dm/room";
 
 const app = new Hono<{ Bindings: AppEnv }>()
   .use("*", securityHeadersMiddleware())
-  .route("/api", chatSocketApp);
+  .use("/api/*", sessionContext())
+  .route("/api", chatSocketApp)
+  .route("/api", dmSocketApp);
 
 export default {
   fetch: (request: Request, env: AppEnv, ctx: ExecutionContext) =>

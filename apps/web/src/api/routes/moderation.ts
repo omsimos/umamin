@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { AppBindings } from "../../server-lib/context";
+import { getOpenDmReports } from "../../server-lib/dm/threads";
 import { NOT_FOUND_ERROR } from "../../server-lib/errors";
 import { isModerationEnforced } from "../../server-lib/flags";
 import { listDeniedIps } from "../../server-lib/ip-denylist";
@@ -25,6 +26,16 @@ export const moderationRoutes = new Hono<AppBindings>()
       return c.req.query("kind") === "drama"
         ? getDramaReviewPage(db, enforce)
         : getSevereReviewPage(db, c.req.query("cursor") ?? null, enforce);
+    }),
+  )
+  .get(
+    "/moderation/dm-reports",
+    withPrivateRead("fetching dm reports", async (c) => {
+      const { user } = await getSessionFrom(c);
+      if (!isModerator(user, c.env.MODERATOR_USERS)) {
+        return Response.json({ error: NOT_FOUND_ERROR }, { status: 404 });
+      }
+      return { data: await getOpenDmReports(resolveDb(c.env)) };
     }),
   )
   .get(

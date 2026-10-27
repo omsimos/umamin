@@ -3,6 +3,7 @@ import { sessionTable } from "@umamin/db/schema/user";
 import { lt } from "drizzle-orm";
 import { retryUnclassifiedContent } from "./content-retry";
 import { getDb } from "./db";
+import { drainDmPurge } from "./dm/lifecycle";
 import type { AppEnv } from "./env";
 import { recomputeHotFeed as recomputeHotFeedRanking } from "./feed-rank";
 import { isModerationEnforced } from "./flags";
@@ -68,4 +69,11 @@ export async function retryUnclassified(
       `[cron] moderation retry: classified ${classified}/${attempted}`,
     );
   }
+}
+
+// */5 * * * * — wipes the Durable Object storage of conversations whose
+// participant deleted their account (queued in the delete transaction).
+export async function purgeDeletedDms(env: AppEnv): Promise<void> {
+  const purged = await drainDmPurge(env);
+  if (purged > 0) console.log(`[cron] dm purge: wiped ${purged} rooms`);
 }

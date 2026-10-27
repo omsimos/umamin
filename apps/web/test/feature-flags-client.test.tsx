@@ -32,6 +32,7 @@ describe("useFeatureFlags", () => {
       pro: false,
       contentModeration: false,
       chat: false,
+      dm: false,
     });
   });
 
@@ -45,6 +46,7 @@ describe("useFeatureFlags", () => {
       pro: false,
       contentModeration: false,
       chat: false,
+      dm: false,
     });
   });
 
@@ -53,6 +55,7 @@ describe("useFeatureFlags", () => {
       pro: true,
       contentModeration: true,
       chat: true,
+      dm: true,
     });
     const { result } = renderHook(() => useFeatureFlags(), { wrapper });
     await waitFor(() => {
@@ -60,6 +63,7 @@ describe("useFeatureFlags", () => {
         pro: true,
         contentModeration: true,
         chat: true,
+        dm: true,
       });
     });
   });
@@ -75,6 +79,7 @@ describe("loadFeatureFlags", () => {
       pro: false,
       contentModeration: false,
       chat: false,
+      dm: false,
     });
   });
 });

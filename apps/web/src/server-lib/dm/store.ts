@@ -1,5 +1,9 @@
 import { dmReportTable, dmThreadTable } from "@umamin/db/schema/dm";
-import { userBlockTable, userFollowTable } from "@umamin/db/schema/user";
+import {
+  userBlockTable,
+  userFollowTable,
+  userTable,
+} from "@umamin/db/schema/user";
 import { aesEncrypt } from "@umamin/encryption";
 import { sql } from "drizzle-orm";
 import type { ThreadSnapshot } from "../../lib/dm/engine";
@@ -31,30 +35,44 @@ export interface DmStore {
   pushMessage(recipientId: string, senderId: string): Promise<void>;
 }
 
-/** One round trip: both follow edges (two unique-index seeks) and the block
- *  check (two more). */
+/** One round trip: both follow edges (two unique-index seeks), the block
+ *  check (two more) and that neither account is banned. */
 export async function canMessage(
   db: Db,
   a: string,
   b: string,
 ): Promise<boolean> {
-  const rows = await db.all<{ follows: number; blocks: number }>(sql`
+  const rows = await db.all<{
+    follows: number;
+    blocks: number;
+    active: number;
+  }>(sql`
     SELECT
       (SELECT COUNT(*) FROM ${userFollowTable}
         WHERE (${userFollowTable.followerId} = ${a} AND ${userFollowTable.followingId} = ${b})
            OR (${userFollowTable.followerId} = ${b} AND ${userFollowTable.followingId} = ${a})) AS follows,
       (SELECT COUNT(*) FROM ${userBlockTable}
         WHERE (${userBlockTable.blockerId} = ${a} AND ${userBlockTable.blockedId} = ${b})
-           OR (${userBlockTable.blockerId} = ${b} AND ${userBlockTable.blockedId} = ${a})) AS blocks
+           OR (${userBlockTable.blockerId} = ${b} AND ${userBlockTable.blockedId} = ${a})) AS blocks,
+      (SELECT COUNT(*) FROM ${userTable}
+        WHERE ${userTable.id} IN (${a}, ${b}) AND ${userTable.bannedAt} IS NULL) AS active
   `);
   const row = rows[0];
-  return !!row && Number(row.follows) === 2 && Number(row.blocks) === 0;
+  return (
+    !!row &&
+    Number(row.follows) === 2 &&
+    Number(row.blocks) === 0 &&
+    Number(row.active) === 2
+  );
 }
 
-export function tursoDmStore(env: AppEnv): DmStore {
+export function tursoDmStore(
+  env: AppEnv,
+  makeDb: () => Db = () => getDb(env),
+): DmStore {
   let db: Db | null = null;
   const conn = () => {
-    db ??= getDb(env);
+    db ??= makeDb();
     return db;
   };
 
