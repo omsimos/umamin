@@ -9,8 +9,10 @@ vi.mock("../src/server-lib/argon2", () => ({
 
 import { notificationTable } from "@umamin/db/schema/notification";
 import {
+  postCommentLikeTable,
   postCommentTable,
   postLikeTable,
+  postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
 import { userBlockTable, userTable } from "@umamin/db/schema/user";
@@ -102,22 +104,35 @@ describe("post actions (real libSQL)", () => {
     expect(await points(db, "author")).toBe(0);
   });
 
-  // The batched award resolves the author by subquery, so the block probe
-  // correlates on the row being updated rather than a JS-side literal.
-  it("a like from a blocked user counts but awards no aura", async () => {
-    await db
-      .insert(userBlockTable)
-      .values({ blockerId: "author", blockedId: "viewer" });
-    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
-    const { json } = await callJson(app, "addLikeAction", { postId: "p1" });
+  // The block gate lives inside the batched insert, so it correlates on the
+  // post row rather than a JS-side literal.
+  it.each([
+    ["author blocked the viewer", "author", "viewer"],
+    ["viewer blocked the author", "viewer", "author"],
+  ])(
+    "a like across a block (%s) is refused and writes nothing",
+    async (_label, blockerId, blockedId) => {
+      await db.insert(userBlockTable).values({ blockerId, blockedId });
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      const { json } = await callJson(app, "addLikeAction", { postId: "p1" });
 
-    expect(json).toEqual({ success: true });
-    const [post] = await db
-      .select({ likeCount: postTable.likeCount })
-      .from(postTable)
-      .where(eq(postTable.id, "p1"));
-    expect(post.likeCount).toBe(1);
-    expect(await points(db, "author")).toBe(0);
+      expect(json).toEqual({ error: "Post not found" });
+      const [post] = await db
+        .select({ likeCount: postTable.likeCount })
+        .from(postTable)
+        .where(eq(postTable.id, "p1"));
+      expect(post.likeCount).toBe(0);
+      expect(await db.select().from(postLikeTable)).toHaveLength(0);
+      expect(await db.select().from(notificationTable)).toHaveLength(0);
+      expect(await points(db, "author")).toBe(0);
+    },
+  );
+
+  it("liking a post that doesn't exist is reported as not found", async () => {
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+    const { json } = await callJson(app, "addLikeAction", { postId: "nope" });
+
+    expect(json).toEqual({ error: "Post not found" });
   });
 
   it("a like from an under-age actor counts but awards no aura", async () => {
@@ -200,26 +215,130 @@ describe("post actions (real libSQL)", () => {
     expect(await db.select().from(notificationTable)).toHaveLength(0);
   });
 
-  it("a like from a blocked user counts but creates no notification", async () => {
-    await db
-      .insert(userBlockTable)
-      .values({ blockerId: "author", blockedId: "viewer" });
-    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
-    await callJson(app, "addLikeAction", { postId: "p1" });
-
-    const [post] = await db
-      .select({ likeCount: postTable.likeCount })
-      .from(postTable)
-      .where(eq(postTable.id, "p1"));
-    expect(post.likeCount).toBe(1);
-    expect(await db.select().from(notificationTable)).toHaveLength(0);
-  });
-
   it("a like from a non-blocked user still notifies the author", async () => {
     const app = buildApp(db, authed("viewer", { createdAt: OLD }));
     await callJson(app, "addLikeAction", { postId: "p1" });
 
     expect(await db.select().from(notificationTable)).toHaveLength(1);
+  });
+
+  // Aura is reversed without a block check, so an engagement row written across
+  // a block (no award) must never exist: block → engage → unblock → undo would
+  // otherwise subtract aura the author was never granted.
+  describe("aura drain across block → engage → unblock → undo", () => {
+    beforeEach(async () => {
+      await db
+        .update(userTable)
+        .set({ points: 100 })
+        .where(eq(userTable.id, "author"));
+    });
+
+    async function block() {
+      await db
+        .insert(userBlockTable)
+        .values({ blockerId: "author", blockedId: "viewer" });
+    }
+    async function unblock() {
+      await db.delete(userBlockTable);
+    }
+
+    it("like", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await block();
+      const add = await callJson(app, "addLikeAction", { postId: "p1" });
+      expect(add.json).toHaveProperty("error");
+      await unblock();
+      await callJson(app, "removeLikeAction", { postId: "p1" });
+
+      expect(await points(db, "author")).toBe(100);
+    });
+
+    it("repost", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await block();
+      const add = await callJson(app, "addRepostAction", { postId: "p1" });
+      expect(add.json).toEqual({ error: "Post not found" });
+      expect(await db.select().from(postRepostTable)).toHaveLength(0);
+      await unblock();
+      await callJson(app, "removeRepostAction", { postId: "p1" });
+
+      expect(await points(db, "author")).toBe(100);
+    });
+
+    it("comment like", async () => {
+      await db
+        .insert(postCommentTable)
+        .values({ id: "c1", postId: "p1", authorId: "author", content: "hi" });
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await block();
+      const add = await callJson(app, "addCommentLikeAction", {
+        commentId: "c1",
+      });
+      expect(add.json).toEqual({ error: "Comment not found" });
+      expect(await db.select().from(postCommentLikeTable)).toHaveLength(0);
+      await unblock();
+      await callJson(app, "removeCommentLikeAction", { commentId: "c1" });
+
+      expect(await points(db, "author")).toBe(100);
+    });
+
+    it("quote", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await block();
+      const { json } = await callJson(app, "createPostAction", {
+        content: "q",
+        quotedPostId: "p1",
+      });
+
+      expect(json).toEqual({
+        error: "The post you're quoting is no longer available.",
+      });
+      const posts = await db.select({ id: postTable.id }).from(postTable);
+      expect(posts).toEqual([{ id: "p1" }]);
+      const [post] = await db
+        .select({ repostCount: postTable.repostCount })
+        .from(postTable)
+        .where(eq(postTable.id, "p1"));
+      expect(post.repostCount).toBe(0);
+      expect(await points(db, "author")).toBe(100);
+    });
+
+    it("an unblocked like → unlike still nets out to zero", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await callJson(app, "addLikeAction", { postId: "p1" });
+      expect(await points(db, "author")).toBe(102);
+      await callJson(app, "removeLikeAction", { postId: "p1" });
+
+      expect(await points(db, "author")).toBe(100);
+    });
+
+    it("a repeat repost and a repeat comment like stay no-ops", async () => {
+      await db
+        .insert(postCommentTable)
+        .values({ id: "c1", postId: "p1", authorId: "author", content: "hi" });
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await callJson(app, "addRepostAction", { postId: "p1" });
+      await callJson(app, "addCommentLikeAction", { commentId: "c1" });
+      const repost = await callJson(app, "addRepostAction", { postId: "p1" });
+      const like = await callJson(app, "addCommentLikeAction", {
+        commentId: "c1",
+      });
+
+      expect(repost.json).toEqual({ success: true, alreadyReposted: true });
+      expect(like.json).toEqual({ success: true, alreadyLiked: true });
+      expect(await points(db, "author")).toBe(104);
+    });
+
+    it("a missing post or comment is reported as not found", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      const repost = await callJson(app, "addRepostAction", { postId: "nope" });
+      const like = await callJson(app, "addCommentLikeAction", {
+        commentId: "nope",
+      });
+
+      expect(repost.json).toEqual({ error: "Post not found" });
+      expect(like.json).toEqual({ error: "Comment not found" });
+    });
   });
 
   it("deletePostAction refuses a non-owner non-moderator", async () => {
