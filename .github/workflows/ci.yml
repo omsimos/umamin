@@ -63,6 +63,13 @@ jobs:
           TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
         run: pnpm build
 
+      # pnpm build runs apps/web's staging mode. Production config
+      # (.env.production, the production wrangler block) is otherwise first
+      # built by Workers Builds after the merge. No POSTHOG_CLI_* secrets exist
+      # here, so the source-map upload no-ops.
+      - name: Build apps/web for production
+        run: pnpm --filter=web build:production
+
   # Typecheck and tests share one job: both are fast turbo tasks, so splitting
   # them paid for a second checkout + pnpm + Node + install to save a few
   # seconds of wall clock.
