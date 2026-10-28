@@ -78,19 +78,16 @@ describe("service worker", () => {
     expect(all.filter((u) => !publicFileExists(u))).toEqual([]);
   });
 
-  it("treats the manifest start_url as a dynamic navigation", () => {
-    // Otherwise an offline launch of the installed app would be served the
-    // browser's error page instead of offline.html.
-    const prefixes = sw.match(
-      /const DYNAMIC_NAVIGATION_PREFIXES = \[([^\]]+)\]/,
+  it("never caches the manifest start_url (offline launch gets offline.html)", () => {
+    // A cached start_url would be private HTML kept for the shared device;
+    // keeping it off the allowlist sends an offline launch of the installed
+    // app to offline.html instead of the browser's error page.
+    const paths = sw.match(
+      /const CACHEABLE_NAVIGATION_PATHS = new Set\(\[([^\]]+)\]\)/,
     )?.[1];
-    const list = [...(prefixes ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-    expect(
-      list.some(
-        (p) =>
-          manifest.start_url === p || manifest.start_url.startsWith(`${p}/`),
-      ),
-    ).toBe(true);
+    const list = [...(paths ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    expect(list.length).toBeGreaterThan(0);
+    expect(list).not.toContain(manifest.start_url);
   });
 });
 

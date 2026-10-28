@@ -4,7 +4,9 @@
 // Without this an installed/PWA user can be stuck on stale assets after a deploy.
 const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
 const STATIC_CACHE = `umamin-static-${VERSION}`;
-const PAGE_CACHE = `umamin-pages-${VERSION}`;
+// v2: entries cached under the old denylist (which let private pages in) are
+// purged on activate.
+const PAGE_CACHE = `umamin-pages-v2-${VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
 // Only real static files here. caches.addAll() rejects the whole batch if any
@@ -12,21 +14,20 @@ const OFFLINE_URL = "/offline.html";
 // support — keep this list to files guaranteed present in public/.
 const PRECACHE_URLS = [OFFLINE_URL, "/icon-192x192.png", "/icon-512x512.png"];
 
-// Auth-gated or per-user/per-post dynamic routes: never cache their HTML, so one
-// viewer's page can't be served to another and authed content never goes stale.
-// They still get the offline page when the network is gone — /feed is the
-// manifest start_url, so this is what an installed user sees on launch offline.
-const DYNAMIC_NAVIGATION_PREFIXES = [
-  "/feed",
-  "/groups",
-  "/inbox",
-  "/notes",
-  "/notifications",
-  "/post",
-  "/settings",
-  "/to",
-  "/user",
-];
+// Only these static public pages may be stored for offline use. Everything
+// else (private, per-viewer, flag-gated or redirecting pages) goes to the
+// network and falls back to the offline page, so a new route is never cached
+// by default. Exact paths only: their HTML carries no viewer data.
+const CACHEABLE_NAVIGATION_PATHS = new Set([
+  "/",
+  "/about",
+  "/changelog",
+  "/login",
+  "/register",
+  "/terms",
+  "/privacy",
+  "/child-safety",
+]);
 
 // Only a real, same-origin success may be stored. A 404 for a hashed chunk
 // (a request landing mid-deploy) or a 500 page would otherwise be pinned for
@@ -35,10 +36,8 @@ function isCacheable(response) {
   return response.ok && response.type === "basic";
 }
 
-function isDynamicNavigation(pathname) {
-  return DYNAMIC_NAVIGATION_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
+function isCacheableNavigation(pathname) {
+  return CACHEABLE_NAVIGATION_PATHS.has(pathname);
 }
 
 // No skipWaiting() here: a new worker waits until the page opts in (the
@@ -84,7 +83,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    if (isDynamicNavigation(url.pathname)) {
+    if (!isCacheableNavigation(url.pathname)) {
       event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
       return;
     }
@@ -92,7 +91,9 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (isCacheable(response)) {
+          // A redirected navigation would store another page's HTML under
+          // this URL.
+          if (isCacheable(response) && !response.redirected) {
             const responseClone = response.clone();
             event.waitUntil(
               caches
