@@ -286,6 +286,9 @@ export function UserProfile({ username, initialUser }: Props) {
           );
           patchProfileCaches({ isFollowing: false });
         }
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.dmPeerRoot(),
+        });
         toast.success("Unfollowed.");
         return;
       }
@@ -307,6 +310,7 @@ export function UserProfile({ username, initialUser }: Props) {
         return;
       }
 
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dmPeerRoot() });
       toast.success("Following.");
     },
   });
@@ -403,6 +407,9 @@ export function UserProfile({ username, initialUser }: Props) {
         // Settings' blocked-users list has stable refetch options — it only
         // updates via explicit invalidation.
         queryClient.invalidateQueries({ queryKey: queryKeys.blockedUsers() });
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.dmPeerRoot(),
+        });
         toast.success("Unblocked.");
         return;
       }
@@ -432,6 +439,7 @@ export function UserProfile({ username, initialUser }: Props) {
         queryKey: queryKeys.receivedMessages(),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.blockedUsers() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dmPeerRoot() });
       toast.success("User blocked.");
     },
   });

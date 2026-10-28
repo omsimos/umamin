@@ -380,6 +380,7 @@ function FollowUserRow({
       void queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       void queryClient.invalidateQueries({ queryKey: ["user-profile-viewer"] });
       void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dmPeerRoot() });
     },
   });
 

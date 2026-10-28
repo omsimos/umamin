@@ -48,6 +48,7 @@ export const queryKeys = {
   dmThreads: () => ["dm-threads"] as const,
   dmUnread: () => ["dm-unread"] as const,
   dmPeer: (username: string) => ["dm-peer", username] as const,
+  dmPeerRoot: () => ["dm-peer"] as const,
 };
 
 export const infiniteQueryDefaults = {
