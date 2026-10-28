@@ -8,7 +8,7 @@ import { originMatchesHost } from "../server-lib/csrf";
 import type { AppEnv } from "../server-lib/env";
 import { NOT_FOUND_ERROR } from "../server-lib/errors";
 import { isUmaminChatEnabled } from "../server-lib/flags";
-import { canonicalizeIp, extractClientIp } from "../server-lib/ip";
+import { extractClientIp, rateLimitKeyForIp } from "../server-lib/ip";
 import { checkRateLimit } from "../server-lib/ratelimit";
 import { withPublicRead } from "../server-lib/read-route";
 
@@ -48,14 +48,15 @@ async function upgrade(c: Context<AppBindings>, stub: () => Stub) {
   // without this any site could open a chat socket from a visitor's browser.
   if (!originMatchesHost(c)) return c.json({ error: "Forbidden" }, 403);
   if (!(await isUmaminChatEnabled(c.env))) return refuse(CLOSE.GONE, "gone");
-  const ip = canonicalizeIp(extractClientIp((name) => c.req.header(name)));
-  if (!(await checkRateLimit(c.env, "chat-connect", `chatconn:${ip}`))) {
+  const key = rateLimitKeyForIp(extractClientIp((name) => c.req.header(name)));
+  if (!(await checkRateLimit(c.env, "chat-connect", `chatconn:${key}`))) {
     return refuse(CLOSE.TOO_MANY, "too many");
   }
   const headers = new Headers(c.req.raw.headers);
   // A hash, not the address: the lobby only needs a per-IP bucket key, and it
   // keeps it in socket attachments.
-  headers.set("x-umamin-ip", (await hashSecret(ip)).slice(0, 16));
+  headers.set("x-umamin-ip", (await hashSecret(key)).slice(0, 16));
+  headers.set("x-umamin-ip-kind", key.includes(":") ? "v6" : "v4");
   return stub().fetch(new Request(c.req.raw, { headers }));
 }
 
