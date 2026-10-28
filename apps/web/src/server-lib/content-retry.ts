@@ -7,7 +7,7 @@ import {
 import {
   and,
   asc,
-  desc,
+  count,
   eq,
   gte,
   inArray,
@@ -17,7 +17,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { classifyContent } from "./content-classifier";
+import { classifyContentWithOutcome } from "./content-classifier";
 import { getEarlierComments, postClassifierText } from "./content-context";
 import { reviewableScoreColumns } from "./content-label";
 import type { Db } from "./db";
@@ -32,13 +32,49 @@ const RETRY_WINDOW_MS = 6 * 60 * 60 * 1000;
 // once would likely fail the same way.
 const RETRY_MIN_AGE_MS = 60 * 1000;
 const RETRY_BATCH = 10;
-// post_comment has no created_at index, so its window is the newest rows by
-// rowid (insertion order): a primary-key range instead of a full scan.
-const COMMENT_SCAN_ROWS = 200;
+// Read more candidates than one batch so rows that already gave up don't fill it.
+const RETRY_CANDIDATES = RETRY_BATCH * 3;
 const RETRY_CONCURRENCY = 4;
 const RETRY_TIMEOUT_MS = 8000;
+// A row the Gateway keeps rejecting for good (not a timeout or a 5xx) would be
+// re-sent every 5 minutes for the whole window and starve the rows behind it.
+// The counter lives in KV, expires just after the window, and is a no-op
+// without the binding.
+const MAX_PERMANENT_ATTEMPTS = 3;
+const ATTEMPT_TTL_SECONDS = 7 * 60 * 60;
+// The unclassified count at which the cron reports a backlog.
+export const BACKLOG_ALERT = 100;
 
 type Defer = (promise: Promise<unknown>) => void;
+type Kind = "post" | "comment" | "note";
+
+const attemptKey = (kind: Kind, id: string) => `clsretry:${kind}:${id}`;
+
+async function readAttempts(env: AppEnv, kind: Kind, id: string) {
+  if (!env.KV) return 0;
+  try {
+    return Number(await env.KV.get(attemptKey(kind, id))) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+// Drops rows that already gave up, then keeps the oldest batch of the rest.
+async function withAttempts<T extends { id: string }>(
+  env: AppEnv,
+  kind: Kind,
+  rows: T[],
+) {
+  const counted = await Promise.all(
+    rows.map(async (row) => ({
+      row,
+      attempts: await readAttempts(env, kind, row.id),
+    })),
+  );
+  return counted
+    .filter(({ attempts }) => attempts < MAX_PERMANENT_ATTEMPTS)
+    .slice(0, RETRY_BATCH);
+}
 
 async function runPool(tasks: (() => Promise<boolean>)[]) {
   let next = 0;
@@ -61,75 +97,86 @@ export async function retryUnclassifiedContent(
   db: Db,
   env: AppEnv,
   defer?: Defer,
-): Promise<{ attempted: number; classified: number }> {
-  if (!env.AI_GATEWAY_API_KEY) return { attempted: 0, classified: 0 };
+): Promise<{ attempted: number; classified: number; backlog: number }> {
+  if (!env.AI_GATEWAY_API_KEY)
+    return { attempted: 0, classified: 0, backlog: 0 };
 
   const now = Date.now();
   const from = new Date(now - RETRY_WINDOW_MS);
   const to = new Date(now - RETRY_MIN_AGE_MS);
   const quoted = alias(postTable, "quoted");
-  const commentRowid = sql`${postCommentTable}.rowid`;
+
+  // Oldest first, so rows nearest the window's edge are tried before they age
+  // out. Each query rides its table's partial unclassified index.
+  const [candidatePosts, candidateComments, candidateNotes] = await Promise.all(
+    [
+      db
+        .select({
+          id: postTable.id,
+          content: postTable.content,
+          pollEndsAt: postTable.pollEndsAt,
+          quotedContent: quoted.content,
+        })
+        .from(postTable)
+        .leftJoin(quoted, eq(quoted.id, postTable.quotedPostId))
+        .where(
+          and(
+            gte(postTable.createdAt, from),
+            lte(postTable.createdAt, to),
+            isNull(postTable.modSevere),
+          ),
+        )
+        .orderBy(asc(postTable.createdAt))
+        .limit(RETRY_CANDIDATES),
+      db
+        .select({
+          id: postCommentTable.id,
+          content: postCommentTable.content,
+          postId: postCommentTable.postId,
+          authorId: postCommentTable.authorId,
+          createdAt: postCommentTable.createdAt,
+          postContent: postTable.content,
+        })
+        .from(postCommentTable)
+        .innerJoin(postTable, eq(postTable.id, postCommentTable.postId))
+        .where(
+          and(
+            gte(postCommentTable.createdAt, from),
+            lte(postCommentTable.createdAt, to),
+            isNull(postCommentTable.modSevere),
+          ),
+        )
+        .orderBy(asc(postCommentTable.createdAt))
+        .limit(RETRY_CANDIDATES),
+      db
+        .select({
+          id: noteTable.id,
+          content: noteTable.content,
+          updatedAt: noteTable.updatedAt,
+        })
+        .from(noteTable)
+        .where(
+          and(
+            gte(noteTable.updatedAt, from),
+            lte(noteTable.updatedAt, to),
+            isNull(noteTable.modSevere),
+            ne(noteTable.content, ""),
+          ),
+        )
+        .orderBy(asc(noteTable.updatedAt))
+        .limit(RETRY_CANDIDATES),
+    ],
+  );
 
   const [posts, comments, notes] = await Promise.all([
-    db
-      .select({
-        id: postTable.id,
-        content: postTable.content,
-        pollEndsAt: postTable.pollEndsAt,
-        quotedContent: quoted.content,
-      })
-      .from(postTable)
-      .leftJoin(quoted, eq(quoted.id, postTable.quotedPostId))
-      .where(
-        and(
-          gte(postTable.createdAt, from),
-          lte(postTable.createdAt, to),
-          isNull(postTable.modSevere),
-        ),
-      )
-      .orderBy(desc(postTable.createdAt))
-      .limit(RETRY_BATCH),
-    db
-      .select({
-        id: postCommentTable.id,
-        content: postCommentTable.content,
-        postId: postCommentTable.postId,
-        authorId: postCommentTable.authorId,
-        createdAt: postCommentTable.createdAt,
-        postContent: postTable.content,
-      })
-      .from(postCommentTable)
-      .innerJoin(postTable, eq(postTable.id, postCommentTable.postId))
-      .where(
-        and(
-          sql`${commentRowid} > (SELECT max(rowid) FROM ${postCommentTable}) - ${sql.raw(String(COMMENT_SCAN_ROWS))}`,
-          gte(postCommentTable.createdAt, from),
-          lte(postCommentTable.createdAt, to),
-          isNull(postCommentTable.modSevere),
-        ),
-      )
-      .orderBy(desc(commentRowid))
-      .limit(RETRY_BATCH),
-    db
-      .select({
-        id: noteTable.id,
-        content: noteTable.content,
-        updatedAt: noteTable.updatedAt,
-      })
-      .from(noteTable)
-      .where(
-        and(
-          gte(noteTable.updatedAt, from),
-          lte(noteTable.updatedAt, to),
-          isNull(noteTable.modSevere),
-          ne(noteTable.content, ""),
-        ),
-      )
-      .orderBy(desc(noteTable.updatedAt))
-      .limit(RETRY_BATCH),
+    withAttempts(env, "post", candidatePosts),
+    withAttempts(env, "comment", candidateComments),
+    withAttempts(env, "note", candidateNotes),
   ]);
 
-  const pollPostIds = posts.filter((p) => p.pollEndsAt).map((p) => p.id);
+  const pollPostIds = posts
+    .filter(({ row }) => row.pollEndsAt)
+    .map(({ row }) => row.id);
   const pollLabels = new Map<string, string[]>();
   if (pollPostIds.length > 0) {
     const options = await db
@@ -144,8 +191,31 @@ export async function retryUnclassifiedContent(
     }
   }
 
-  const classify = (input: Parameters<typeof classifyContent>[1]) =>
-    classifyContent(env, input, { defer, timeoutMs: RETRY_TIMEOUT_MS });
+  // Only a permanent failure counts toward giving up; a transient one is
+  // bounded by the window. The first attempt reports a failure, the rest only
+  // log it, so one bad row is one report instead of one per cron run.
+  const classify = async (
+    kind: Kind,
+    id: string,
+    attempts: number,
+    input: Parameters<typeof classifyContentWithOutcome>[1],
+  ) => {
+    const { scores, failure } = await classifyContentWithOutcome(env, input, {
+      defer,
+      timeoutMs: RETRY_TIMEOUT_MS,
+      report: attempts === 0,
+    });
+    if (failure === "permanent" && env.KV) {
+      try {
+        await env.KV.put(attemptKey(kind, id), String(attempts + 1), {
+          expirationTtl: ATTEMPT_TTL_SECONDS,
+        });
+      } catch {
+        // A KV error must not fail the cron.
+      }
+    }
+    return scores;
+  };
   const landed = (result: { rowsAffected?: number }) =>
     (result.rowsAffected ?? 0) > 0;
 
@@ -154,8 +224,8 @@ export async function retryUnclassifiedContent(
   // $onUpdate would otherwise restamp it, and a note's updated_at is both its
   // feed position and that staleness guard.
   const tasks: (() => Promise<boolean>)[] = [
-    ...posts.map((post) => async () => {
-      const scores = await classify({
+    ...posts.map(({ row: post, attempts }) => async () => {
+      const scores = await classify("post", post.id, attempts, {
         kind: "post",
         text: postClassifierText(post.content, pollLabels.get(post.id)),
         context: post.quotedContent,
@@ -177,13 +247,13 @@ export async function retryUnclassifiedContent(
           ),
       );
     }),
-    ...comments.map((comment) => async () => {
+    ...comments.map(({ row: comment, attempts }) => async () => {
       const thread = await getEarlierComments(db, {
         postId: comment.postId,
         authorId: comment.authorId,
         before: { id: comment.id, createdAt: comment.createdAt },
       });
-      const scores = await classify({
+      const scores = await classify("comment", comment.id, attempts, {
         kind: "comment",
         text: comment.content,
         context: comment.postContent,
@@ -206,10 +276,13 @@ export async function retryUnclassifiedContent(
           ),
       );
     }),
-    ...notes.map((note) => async () => {
+    ...notes.map(({ row: note, attempts }) => async () => {
       const { updatedAt } = note;
       if (!updatedAt) return false;
-      const scores = await classify({ kind: "note", text: note.content });
+      const scores = await classify("note", note.id, attempts, {
+        kind: "note",
+        text: note.content,
+      });
       if (!scores) return false;
       return landed(
         await db
@@ -231,5 +304,32 @@ export async function retryUnclassifiedContent(
   ];
 
   const classified = await runPool(tasks);
-  return { attempted: tasks.length, classified };
+
+  // One count per table over the same window; each rides the partial
+  // unclassified index, so a clean window reads ~0 rows.
+  const unclassifiedSince = (
+    table: typeof postTable | typeof postCommentTable,
+  ) =>
+    db
+      .select({ n: count() })
+      .from(table)
+      .where(and(gte(table.createdAt, from), isNull(table.modSevere)));
+  const [[postCount], [commentCount], [noteCount]] = await Promise.all([
+    unclassifiedSince(postTable),
+    unclassifiedSince(postCommentTable),
+    db
+      .select({ n: count() })
+      .from(noteTable)
+      .where(
+        and(
+          gte(noteTable.updatedAt, from),
+          isNull(noteTable.modSevere),
+          ne(noteTable.content, ""),
+        ),
+      ),
+  ]);
+  const backlog =
+    (postCount?.n ?? 0) + (commentCount?.n ?? 0) + (noteCount?.n ?? 0);
+
+  return { attempted: tasks.length, classified, backlog };
 }

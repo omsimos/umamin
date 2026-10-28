@@ -1,12 +1,13 @@
 import { notificationTable } from "@umamin/db/schema/notification";
 import { sessionTable } from "@umamin/db/schema/user";
 import { lt } from "drizzle-orm";
-import { retryUnclassifiedContent } from "./content-retry";
+import { BACKLOG_ALERT, retryUnclassifiedContent } from "./content-retry";
 import { getDb } from "./db";
 import { drainDmPurge } from "./dm/lifecycle";
 import type { AppEnv } from "./env";
 import { recomputeHotFeed as recomputeHotFeedRanking } from "./feed-rank";
 import { isModerationEnforced } from "./flags";
+import { captureServerException } from "./posthog";
 
 // Scheduled-handler bodies. Kept as named functions so server.ts's scheduled()
 // dispatch is declarative and each job is unit-testable in isolation.
@@ -59,14 +60,24 @@ export async function retryUnclassified(
   env: AppEnv,
   defer?: (promise: Promise<unknown>) => void,
 ): Promise<void> {
-  const { attempted, classified } = await retryUnclassifiedContent(
+  const { attempted, classified, backlog } = await retryUnclassifiedContent(
     getDb(env),
     env,
     defer,
   );
-  if (attempted > 0) {
+  if (attempted > 0 || backlog > 0) {
     console.log(
-      `[cron] moderation retry: classified ${classified}/${attempted}`,
+      `[cron] moderation retry: classified ${classified}/${attempted}, backlog ${backlog}`,
+    );
+  }
+  // Unclassified content reads as clean, so a growing backlog is content
+  // escaping its label.
+  if (backlog >= BACKLOG_ALERT) {
+    captureServerException(
+      env,
+      defer,
+      new Error("unclassified content backlog"),
+      { properties: { backlog } },
     );
   }
 }

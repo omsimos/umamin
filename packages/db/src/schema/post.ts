@@ -59,9 +59,18 @@ export const postTable = sqliteTable(
   (t) => [
     index("post_created_at_id_idx").on(t.createdAt, t.id),
     index("post_author_created_at_idx").on(t.authorId, t.createdAt, t.id),
-    index("post_mod_flagged_idx")
-      .on(t.modFlaggedAt)
-      .where(sql`${t.modFlaggedAt} IS NOT NULL`),
+    // Backs the classifier retry cron and its backlog count: unclassified rows
+    // only, so a clean window costs ~0 rows scanned.
+    index("post_unclassified_created_idx")
+      .on(t.createdAt)
+      .where(sql`${t.modSevere} IS NULL`),
+    // The severe review queue: flags no moderator has handled yet. Replaces
+    // post_mod_flagged_idx, which kept every handled flag forever.
+    index("post_mod_pending_idx")
+      .on(t.modFlaggedAt, t.id)
+      .where(
+        sql`${t.modFlaggedAt} IS NOT NULL AND ${t.modClearedAt} IS NULL AND ${t.modReviewedAt} IS NULL`,
+      ),
   ],
 );
 
@@ -138,9 +147,14 @@ export const postCommentTable = sqliteTable(
   },
   (t) => [
     index("post_comment_post_created_idx").on(t.postId, t.createdAt, t.id),
-    index("post_comment_mod_flagged_idx")
-      .on(t.modFlaggedAt)
-      .where(sql`${t.modFlaggedAt} IS NOT NULL`),
+    index("post_comment_unclassified_created_idx")
+      .on(t.createdAt)
+      .where(sql`${t.modSevere} IS NULL`),
+    index("post_comment_mod_pending_idx")
+      .on(t.modFlaggedAt, t.id)
+      .where(
+        sql`${t.modFlaggedAt} IS NOT NULL AND ${t.modClearedAt} IS NULL AND ${t.modReviewedAt} IS NULL`,
+      ),
     index("post_comment_author_created_idx").on(t.authorId, t.createdAt, t.id),
     // Backs the aura first-comment-per-post existence checks (createComment /
     // deleteComment): an exact (post, author) two-column seek instead of

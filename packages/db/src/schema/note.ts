@@ -45,9 +45,14 @@ export const noteTable = sqliteTable(
   },
   (t) => [
     index("updated_at_id_idx").on(t.updatedAt, t.id),
-    index("note_mod_flagged_idx")
-      .on(t.modFlaggedAt)
-      .where(sql`${t.modFlaggedAt} IS NOT NULL`),
+    index("note_unclassified_updated_idx")
+      .on(t.updatedAt)
+      .where(sql`${t.modSevere} IS NULL`),
+    index("note_mod_pending_idx")
+      .on(t.modFlaggedAt, t.id)
+      .where(
+        sql`${t.modFlaggedAt} IS NOT NULL AND ${t.modClearedAt} IS NULL AND ${t.modReviewedAt} IS NULL`,
+      ),
   ],
 );
 

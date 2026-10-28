@@ -258,26 +258,62 @@ function buildState(input: ClassifyInput, text: string) {
   };
 }
 
+// Why a classification produced no scores. "unavailable": no key, or the
+// per-user budget refused the call. "transient": our timeout, a rate limit or a
+// 5xx, which a later attempt may well clear. "permanent": anything else, such
+// as a rejected request, which resending won't fix.
+export type ClassifyOutcome = {
+  scores: ContentScores | null;
+  failure: null | "transient" | "permanent" | "unavailable";
+};
+
+function hasServerErrorStatus(err: unknown): boolean {
+  let current = err;
+  for (let depth = 0; depth < 5; depth++) {
+    if (typeof current !== "object" || current === null) return false;
+    const { statusCode, cause } = current as {
+      statusCode?: unknown;
+      cause?: unknown;
+    };
+    if (typeof statusCode === "number" && statusCode >= 500) return true;
+    current = cause;
+  }
+  return false;
+}
+
+type ClassifyOptions = {
+  // Test seam; production resolves Jev through the Gateway.
+  model?: Experimental_EvaluationModel;
+  defer?: (promise: Promise<unknown>) => void;
+  // A background retry has no user waiting on it.
+  timeoutMs?: number;
+  // A user id: shares one `write` limiter key across every kind, so one
+  // account can't multiply classifier spend by spreading writes over posts,
+  // comments and notes.
+  limitKey?: string;
+  // false logs a failure without reporting it, for callers that retry the same
+  // content and would otherwise report it on every attempt.
+  report?: boolean;
+};
+
 export async function classifyContent(
   env: AppEnv,
   input: ClassifyInput,
-  opts: {
-    // Test seam; production resolves Jev through the Gateway.
-    model?: Experimental_EvaluationModel;
-    defer?: (promise: Promise<unknown>) => void;
-    // A background retry has no user waiting on it.
-    timeoutMs?: number;
-    // A user id: shares one `write` limiter key across every kind, so one
-    // account can't multiply classifier spend by spreading writes over posts,
-    // comments and notes.
-    limitKey?: string;
-  } = {},
+  opts: ClassifyOptions = {},
 ): Promise<ContentScores | null> {
+  return (await classifyContentWithOutcome(env, input, opts)).scores;
+}
+
+export async function classifyContentWithOutcome(
+  env: AppEnv,
+  input: ClassifyInput,
+  opts: ClassifyOptions = {},
+): Promise<ClassifyOutcome> {
   const text = input.text.trim();
-  if (text.length < MIN_TEXT_LENGTH) return CLEAN;
+  if (text.length < MIN_TEXT_LENGTH) return { scores: CLEAN, failure: null };
 
   const apiKey = env.AI_GATEWAY_API_KEY;
-  if (!opts.model && !apiKey) return null;
+  if (!opts.model && !apiKey) return { scores: null, failure: "unavailable" };
 
   if (
     opts.limitKey &&
@@ -288,7 +324,7 @@ export async function classifyContent(
       kind: input.kind,
       error: "rate_limited",
     });
-    return null;
+    return { scores: null, failure: "unavailable" };
   }
 
   const controller = new AbortController();
@@ -308,7 +344,10 @@ export async function classifyContent(
       maxRetries: 0,
       abortSignal: controller.signal,
     });
-    return scoreAnswers(result.answers, text, input.kind);
+    return {
+      scores: scoreAnswers(result.answers, text, input.kind),
+      failure: null,
+    };
   } catch (err) {
     const expected = expectedFailureName(err);
     if (expected) {
@@ -319,11 +358,17 @@ export async function classifyContent(
       });
     } else {
       console.error("content classification failed", err);
-      captureServerException(env, opts.defer, err, {
-        properties: { classifier: input.kind },
-      });
+      if (opts.report !== false) {
+        captureServerException(env, opts.defer, err, {
+          properties: { classifier: input.kind },
+        });
+      }
     }
-    return null;
+    return {
+      scores: null,
+      failure:
+        expected || hasServerErrorStatus(err) ? "transient" : "permanent",
+    };
   } finally {
     clearTimeout(timeout);
   }

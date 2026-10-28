@@ -8,6 +8,7 @@ vi.mock("../src/server-lib/posthog", () => ({
 import {
   type ClassifierAnswers,
   classifyContent,
+  classifyContentWithOutcome,
   scoreAnswers,
 } from "../src/server-lib/content-classifier";
 import { contentLabel } from "../src/server-lib/content-label";
@@ -277,6 +278,64 @@ describe("classifyContent", () => {
         { model: mockModel(answers()), limitKey: "u1" },
       ),
     ).toEqual({ severe: 1, drama: 1, reason: null });
+  });
+
+  describe("classifyContentWithOutcome", () => {
+    const failing = (err: Error) =>
+      new Experimental_EvaluationMockModelV4({
+        doEvaluate: async () => {
+          throw err;
+        },
+      });
+    const run = (model: Experimental_EvaluationMockModelV4, report?: boolean) =>
+      classifyContentWithOutcome(
+        env,
+        { kind: "post", text: "anything" },
+        { model, report },
+      );
+
+    it("calls an unexplained provider error permanent", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      expect(await run(failing(new Error("bad request")))).toEqual({
+        scores: null,
+        failure: "permanent",
+      });
+      vi.restoreAllMocks();
+    });
+
+    it("calls a rate limit, a timeout and a 5xx transient", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(console, "warn").mockImplementation(() => {});
+      const withStatus = (statusCode: number) =>
+        Object.assign(new Error("upstream"), { statusCode });
+      for (const err of [
+        withStatus(429),
+        withStatus(503),
+        Object.assign(new Error("slow"), { cause: withStatus(502) }),
+        new DOMException("aborted", "AbortError"),
+      ]) {
+        expect((await run(failing(err))).failure).toBe("transient");
+      }
+      vi.restoreAllMocks();
+    });
+
+    it("calls a missing key unavailable and a success clean", async () => {
+      expect(
+        await classifyContentWithOutcome({} as AppEnv, {
+          kind: "post",
+          text: "hello",
+        }),
+      ).toEqual({ scores: null, failure: "unavailable" });
+      expect((await run(mockModel(answers()))).failure).toBeNull();
+    });
+
+    it("logs a failure without reporting it when report is false", async () => {
+      vi.mocked(captureServerException).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      await run(failing(new Error("bad request")), false);
+      expect(captureServerException).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
   });
 
   it("fails open on a provider error and reports it", async () => {
