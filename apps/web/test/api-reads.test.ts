@@ -9,6 +9,7 @@ import { readsApp } from "../src/api/routes";
 import { __setReadDb } from "../src/api/routes/_shared";
 import type { Db } from "../src/server-lib/db";
 import type { AppEnv } from "../src/server-lib/env";
+import { NOT_FOUND_ERROR } from "../src/server-lib/errors";
 import { __clearFlagCache } from "../src/server-lib/flags";
 import {
   __clearSessionCache,
@@ -433,6 +434,91 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
       const res = await fetchApp("/public/user/nobody");
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({ error: "Not found" });
+    });
+  });
+
+  describe("moderation reads", () => {
+    const MOD_ENV = { MODERATOR_USERS: "u_mod" };
+    const SNAPSHOT_TEXT = "private words in a report";
+    const PATHS = [
+      "/moderation/review",
+      "/moderation/dm-reports",
+      "/moderation/ip-denylist",
+    ];
+    let modToken: string;
+    let eveToken: string;
+
+    beforeEach(async () => {
+      process.env.AES_256_GCM_KEY = Buffer.from(new Uint8Array(32)).toString(
+        "base64",
+      );
+      await db.insert(userTable).values([
+        { id: "mod", username: "u_mod" },
+        { id: "eve", username: "u_eve" },
+        { id: "pal", username: "u_pal" },
+      ]);
+      modToken = generateSessionToken();
+      eveToken = generateSessionToken();
+      await createSession(db, modToken, "mod");
+      await createSession(db, eveToken, "eve");
+
+      const { tursoDmStore } = await import("../src/server-lib/dm/store");
+      await tursoDmStore({} as AppEnv, () => db).insertReport({
+        reporterId: "eve",
+        reportedId: "pal",
+        threadId: "eve:pal",
+        messageSeq: 1,
+        reason: "spam",
+        entries: [
+          { seq: 1, fromReporter: false, text: SNAPSHOT_TEXT, createdAt: 1 },
+        ],
+      });
+    });
+
+    it.each(PATHS)(
+      "%s hides itself from a signed-in non-moderator",
+      async (path) => {
+        const res = await fetchApp(
+          path,
+          { headers: { cookie: `session=${eveToken}` } },
+          MOD_ENV,
+        );
+        const text = await res.text();
+
+        expect(res.status).toBe(404);
+        expect(JSON.parse(text)).toEqual({ error: NOT_FOUND_ERROR });
+        expect(text).not.toContain(SNAPSHOT_TEXT);
+      },
+    );
+
+    it.each(PATHS)("%s hides itself from anonymous callers", async (path) => {
+      const res = await fetchApp(path, {}, MOD_ENV);
+
+      expect(res.status).toBe(404);
+      expect(await res.text()).not.toContain(SNAPSHOT_TEXT);
+    });
+
+    it.each(PATHS)("%s answers a moderator", async (path) => {
+      const res = await fetchApp(
+        path,
+        { headers: { cookie: `session=${modToken}` } },
+        MOD_ENV,
+      );
+
+      expect(res.status).toBe(200);
+    });
+
+    it("hands a moderator the decrypted report snapshot", async () => {
+      const res = await fetchApp(
+        "/moderation/dm-reports",
+        { headers: { cookie: `session=${modToken}` } },
+        MOD_ENV,
+      );
+      const body = (await res.json()) as {
+        data: { snapshot: { text: string }[] }[];
+      };
+
+      expect(body.data[0]?.snapshot[0]?.text).toBe(SNAPSHOT_TEXT);
     });
   });
 
