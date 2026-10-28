@@ -139,9 +139,13 @@ class FakeStore implements DmStore {
   pushes: [string, string][] = [];
   reports: Parameters<DmStore["insertReport"]>[0][] = [];
   allowed = true;
+  blocked = false;
 
   async canMessage() {
     return this.allowed;
+  }
+  async isBlocked() {
+    return this.blocked;
   }
   async writeThread(_pair: unknown, s: ThreadSnapshot) {
     this.writes.push(structuredClone(s));
@@ -510,6 +514,49 @@ describe("DmRoom access changes", () => {
     c.send({ t: "send", id: "late", text: "still there?" });
     expect((await c.next("err", (f) => f.id === "late")).code).toBe("closed");
     expect(c.closed).toBeNull();
+  });
+
+  it("closes the conversation for both sides when the recheck finds a block", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    store.allowed = false;
+    store.blocked = true;
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        const att = ws.deserializeAttachment() as Record<
+          string,
+          unknown
+        > | null;
+        if (att) ws.serializeAttachment({ ...att, checkedAt: 0 });
+      }
+    });
+    ca.send({ t: "send", id: "late", text: "after" });
+    expect(await ca.closeCode()).toBe(DM_CLOSED);
+    expect(await cb.closeCode()).toBe(DM_CLOSED);
+  });
+
+  it("sends no typing or presence to a read-only socket and forwards none from it", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    await runInDurableObject(stub, (instance: DmRoom) =>
+      instance.sever("unfollow"),
+    );
+    await ca.next("meta", (f) => !f.meta.canSend);
+    const cb = await join(stub, pair.threadId, b);
+    // b coming online still pushes a meta frame, but a, now read-only, must
+    // not learn that b is there.
+    await eventually(() => ca.count("meta") >= 2, "meta after peer joins");
+    expect(ca.frames.every((f) => f.t !== "meta" || !f.meta.peerOnline)).toBe(
+      true,
+    );
+    cb.send({ t: "typing", on: true });
+    ca.send({ t: "typing", on: true });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(ca.count("typing")).toBe(0);
+    expect(cb.count("typing")).toBe(0);
   });
 
   it("refuses sends once the recheck finds access gone, and tells both sides", async () => {

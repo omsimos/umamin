@@ -325,6 +325,8 @@ export class DmRoom extends DurableObject<AppEnv> {
     const now = Date.now();
     switch (frame.t) {
       case "typing":
+        // A read-only side exchanges no presence.
+        if (!att.canSend) return;
         // A trailing "off" always goes through so the indicator can't stick.
         if (
           frame.on &&
@@ -333,7 +335,9 @@ export class DmRoom extends DurableObject<AppEnv> {
           return;
         }
         for (const peer of this.socketsFor(otherDmSide(att.side))) {
-          this.sendTo(peer, { t: "typing", on: frame.on });
+          if (this.attachment(peer)?.canSend) {
+            this.sendTo(peer, { t: "typing", on: frame.on });
+          }
         }
         return;
       case "read":
@@ -508,6 +512,10 @@ export class DmRoom extends DurableObject<AppEnv> {
     const pair = parseThreadId(att.threadId);
     if (!pair) return false;
     const canSend = await this.store().canMessage(pair);
+    if (!canSend && (await this.store().isBlocked(pair))) {
+      await this.sever("block");
+      return false;
+    }
     for (const socket of this.ctx.getWebSockets()) {
       const a = socket === ws ? att : this.attachment(socket);
       if (!a) continue;
@@ -837,7 +845,7 @@ export class DmRoom extends DurableObject<AppEnv> {
   private metaFor(att: Attachment): DmMeta {
     const peer = otherDmSide(att.side);
     return {
-      peerOnline: this.liveSockets(peer).length > 0,
+      peerOnline: att.canSend && this.liveSockets(peer).length > 0,
       peerReadSeq: this.loadState()?.read[peer] ?? 0,
       canSend: att.canSend,
     };

@@ -22,6 +22,9 @@ import { sendPushForNotification } from "../notification-push";
 export interface DmStore {
   /** Mutual follow and no block in either direction. */
   canMessage(pair: DmPair): Promise<boolean>;
+  /** A block either way. Asked only after canMessage says no, to tell a
+   *  block (close) from an unfollow (read-only). */
+  isBlocked(pair: DmPair): Promise<boolean>;
   writeThread(pair: DmPair, snapshot: ThreadSnapshot): Promise<void>;
   /** False when this reporter already reported this message. */
   insertReport(input: {
@@ -66,6 +69,21 @@ export async function canMessage(
   );
 }
 
+/** A block in either direction: two unique-index seeks. */
+export async function isBlocked(
+  db: Db,
+  a: string,
+  b: string,
+): Promise<boolean> {
+  const rows = await db.all<{ blocked: number }>(sql`
+    SELECT 1 AS blocked FROM ${userBlockTable}
+      WHERE (${userBlockTable.blockerId} = ${a} AND ${userBlockTable.blockedId} = ${b})
+         OR (${userBlockTable.blockerId} = ${b} AND ${userBlockTable.blockedId} = ${a})
+      LIMIT 1
+  `);
+  return rows.length > 0;
+}
+
 export function tursoDmStore(
   env: AppEnv,
   makeDb: () => Db = () => getDb(env),
@@ -78,6 +96,8 @@ export function tursoDmStore(
 
   return {
     canMessage: (pair) => canMessage(conn(), pair.lowId, pair.highId),
+
+    isBlocked: (pair) => isBlocked(conn(), pair.lowId, pair.highId),
 
     async writeThread(pair, s) {
       const values = {

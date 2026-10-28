@@ -150,6 +150,16 @@ describe("tursoDmStore", () => {
     expect(await store.canMessage(pair)).toBe(false);
   });
 
+  it("tells a block in either direction from an unfollow", async () => {
+    const store = tursoDmStore(env, () => db);
+    const pair = dmPair("me", "pal");
+    expect(await store.isBlocked(pair)).toBe(false);
+    await db
+      .insert(userBlockTable)
+      .values({ blockerId: pair.highId, blockedId: pair.lowId });
+    expect(await store.isBlocked(pair)).toBe(true);
+  });
+
   it("upserts the thread row with an encrypted preview", async () => {
     const store = tursoDmStore(env, () => db);
     const pair = dmPair("me", "pal");
