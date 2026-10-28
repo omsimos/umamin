@@ -19,6 +19,8 @@ import {
   AUTH_DEADLINE_MS,
   MAX_FRAME_CHARS,
   MAX_QUEUE_WAIT_MS,
+  MAX_SOCKETS_PER_IPV4,
+  MAX_SOCKETS_PER_IPV6_64,
   MAX_TRACKED_MATCH_MS,
   SECOND,
 } from "../../lib/chat/constants";
@@ -52,9 +54,6 @@ import { hashesEqual, hashSecret } from "./secret";
 /** Room objects are created where this hints. Most users are in the
  *  Philippines; the hint only applies when an object is first created. */
 export const CHAT_LOCATION_HINT: DurableObjectLocationHint = "apac-se";
-
-/** Waiting sockets allowed per client IP. Loose because of shared NAT. */
-const MAX_SOCKETS_PER_IP = 5;
 
 interface QueuedSeat {
   waiter: Waiter;
@@ -124,10 +123,23 @@ export class ChatLobby extends DurableObject<AppEnv> {
       ipKey,
       connectedAt: now,
     } satisfies LobbyAttachment);
+    // A missing header (an older Worker mid-deploy) falls back to the looser
+    // IPv4 cap.
+    const cap =
+      request.headers.get("x-umamin-ip-kind") === "v6"
+        ? MAX_SOCKETS_PER_IPV6_64
+        : MAX_SOCKETS_PER_IPV4;
+    // Sockets already closing still sit in getWebSockets() until the runtime
+    // finishes the close, so count only open ones.
     const fromIp = this.ctx
       .getWebSockets()
-      .filter((ws) => ws !== server && this.attachment(ws)?.ipKey === ipKey);
-    if (fromIp.length >= MAX_SOCKETS_PER_IP) {
+      .filter(
+        (ws) =>
+          ws !== server &&
+          ws.readyState === WebSocket.OPEN &&
+          this.attachment(ws)?.ipKey === ipKey,
+      );
+    if (fromIp.length >= cap) {
       server.close(CLOSE.TOO_MANY, "too many");
     }
     return new Response(null, { status: 101, webSocket: client });

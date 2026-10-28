@@ -5,7 +5,11 @@ import {
   runInDurableObject,
 } from "cloudflare:test";
 import { afterEach, describe, expect, it } from "vitest";
-import { MAX_ROOM_SOCKETS } from "../src/lib/chat/constants";
+import {
+  MAX_ROOM_SOCKETS,
+  MAX_SOCKETS_PER_IPV4,
+  MAX_SOCKETS_PER_IPV6_64,
+} from "../src/lib/chat/constants";
 import { inviteCodeFor } from "../src/lib/chat/invite";
 import { LIMITS } from "../src/lib/chat/limits";
 import {
@@ -13,6 +17,7 @@ import {
   PROTOCOL_VERSION,
   type ServerFrame,
 } from "../src/lib/chat/protocol";
+import type { ChatLobby } from "../src/server-lib/chat/lobby";
 import type { ChatRoom } from "../src/server-lib/chat/room";
 import { hashSecret } from "../src/server-lib/chat/secret";
 
@@ -142,12 +147,17 @@ const joinFrame = (p: Identity, extra: object = {}) => ({
 /** A private lobby per test, so leftover waiters never pair across tests. */
 const newLobby = () => env.CHAT_LOBBY.getByName(`test-${uid()}`);
 
-async function connectLobby(stub: DurableObjectStub, ip: string = uid()) {
-  return new Client(
-    await stub.fetch("https://chat.test/", {
-      headers: { Upgrade: "websocket", "x-umamin-ip": ip },
-    }),
-  );
+async function connectLobby(
+  stub: DurableObjectStub,
+  ip: string = uid(),
+  kind?: "v4" | "v6",
+) {
+  const headers: Record<string, string> = {
+    Upgrade: "websocket",
+    "x-umamin-ip": ip,
+  };
+  if (kind) headers["x-umamin-ip-kind"] = kind;
+  return new Client(await stub.fetch("https://chat.test/", { headers }));
 }
 
 async function joinLobby(stub: DurableObjectStub, p: Identity, extra = {}) {
@@ -326,11 +336,55 @@ describe("ChatLobby", () => {
     expect(await c.closeCode()).toBe(CLOSE.VERSION);
   });
 
-  it("caps sockets per IP", async () => {
+  it("caps sockets per IPv4 address", async () => {
     const lobby = newLobby();
-    for (let i = 0; i < 5; i += 1) await connectLobby(lobby, "shared-ip");
-    const sixth = await connectLobby(lobby, "shared-ip");
-    expect(await sixth.closeCode()).toBe(CLOSE.TOO_MANY);
+    const kept: Client[] = [];
+    for (let i = 0; i < MAX_SOCKETS_PER_IPV4; i += 1) {
+      kept.push(await connectLobby(lobby, "shared-ip"));
+    }
+    const over = await connectLobby(lobby, "shared-ip");
+    expect(await over.closeCode()).toBe(CLOSE.TOO_MANY);
+    expect(kept.every((c) => c.closed === null)).toBe(true);
+  });
+
+  it("caps sockets per IPv6 /64 lower than per IPv4 address", async () => {
+    const lobby = newLobby();
+    for (let i = 0; i < MAX_SOCKETS_PER_IPV6_64; i += 1) {
+      await connectLobby(lobby, "shared-v6", "v6");
+    }
+    const over = await connectLobby(lobby, "shared-v6", "v6");
+    expect(await over.closeCode()).toBe(CLOSE.TOO_MANY);
+  });
+
+  it("doesn't count sockets that already closed toward the cap", async () => {
+    const lobby = newLobby();
+    const first: Client[] = [];
+    for (let i = 0; i < MAX_SOCKETS_PER_IPV6_64; i += 1) {
+      first.push(await connectLobby(lobby, "churn-v6", "v6"));
+    }
+    expect(first).toHaveLength(MAX_SOCKETS_PER_IPV6_64);
+    // Closing from the lobby's side leaves the socket in getWebSockets() as
+    // CLOSING until the peer answers, which is the window the cap must ignore.
+    const newcomerOpen = await runInDurableObject(
+      lobby,
+      async (instance: ChatLobby, state) => {
+        const [victim] = state.getWebSockets();
+        victim.close(1000, "bye");
+        const before = new Set(state.getWebSockets());
+        await instance.fetch(
+          new Request("https://chat.test/", {
+            headers: {
+              Upgrade: "websocket",
+              "x-umamin-ip": "churn-v6",
+              "x-umamin-ip-kind": "v6",
+            },
+          }),
+        );
+        const added = state.getWebSockets().find((ws) => !before.has(ws));
+        return added?.readyState === WebSocket.OPEN;
+      },
+    );
+    expect(newcomerOpen).toBe(true);
   });
 
   it("aborts the room and requeues the survivor when a side drops mid-creation", async () => {

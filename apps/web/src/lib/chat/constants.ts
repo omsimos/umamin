@@ -36,6 +36,11 @@ export const CHAT_STATS_MAX_AGE = 30;
 export const MIN_ONLINE_SHOWN = 3;
 /** Sockets one room accepts (both sides, all tabs). */
 export const MAX_ROOM_SOCKETS = 8;
+/** Waiting sockets per IPv4 address. Loose: mobile carriers put many people
+ *  behind one address (CGNAT). */
+export const MAX_SOCKETS_PER_IPV4 = 20;
+/** Per IPv6 /64, which is one household or device, not a carrier pool. */
+export const MAX_SOCKETS_PER_IPV6_64 = 5;
 /** Client keepalive cadence. Answered by the runtime's auto-response, so it
  *  never wakes (or bills) the object. */
 export const PING_INTERVAL_MS = 25 * SECOND;
