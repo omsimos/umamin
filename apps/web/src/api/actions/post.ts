@@ -18,6 +18,7 @@ import {
   postImageInputSchema,
 } from "../../lib/post-images";
 import { action } from "../../server-lib/action";
+import { PREV_CHANGED } from "../../server-lib/batch";
 import { noBlockBetween } from "../../server-lib/blocks";
 import { hasPlusPerks } from "../../server-lib/content";
 import { classifyContent } from "../../server-lib/content-classifier";
@@ -59,12 +60,6 @@ import { ctxDb, defer } from "./_shared";
 // reads hit Turso directly (read-your-writes), public reads cache at route level.
 // Per-write hot-feed rank refresh is likewise a no-op now — the */5 cron
 // recomputes the ranking (≤5min lag accepted, plan feed-rank note).
-
-// Runs the statement only if the PREVIOUS statement of the same db.batch
-// changed a row: changes() reads the preceding statement's count on the shared
-// connection, which is how a batch replaces an interactive transaction's
-// JS-side branching. test/batch-changes.test.ts pins those semantics.
-const PREV_CHANGED = sql`(SELECT changes()) > 0`;
 
 const createPostSchema = z
   .object({
