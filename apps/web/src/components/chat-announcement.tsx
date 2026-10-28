@@ -76,7 +76,7 @@ export function ChatAnnouncement({
       <Button
         variant="ghost"
         size="icon"
-        className="size-7 shrink-0 text-muted-foreground"
+        className="relative size-7 shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-['']"
         aria-label="Dismiss announcement"
         onClick={dismiss}
       >

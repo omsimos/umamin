@@ -3,6 +3,7 @@ import {
   BubbleContent,
   BubbleReactions,
 } from "@umamin/ui/components/bubble";
+import { Button } from "@umamin/ui/components/button";
 import {
   Message,
   MessageAvatar,
@@ -98,13 +99,15 @@ function WhisperCountdown({ viewedAt }: { viewedAt: number }) {
 
 function RetryButton({ onRetry }: { onRetry?: () => void }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="link"
+      size="sm"
       onClick={onRetry}
-      className="focus-visible:ring-ring/50 text-destructive rounded-sm outline-none focus-visible:ring-[3px]"
+      className="text-destructive relative h-auto rounded-sm p-0 text-xs font-normal after:absolute after:-inset-x-2 after:-inset-y-3 after:content-['']"
     >
       Not delivered · Tap to retry
-    </button>
+    </Button>
   );
 }
 
@@ -404,7 +407,7 @@ function TextBody({
               // Keyed by the reaction signature, so a new or changed reaction
               // remounts the chip and it pops for both sides.
               key={groups.map((g) => `${g.emoji}${g.count}`).join("|")}
-              className="animate-chat-pop-in focus-visible:ring-ring/50 flex items-center gap-1 rounded-full px-1.5 py-0.5 text-sm leading-none outline-none focus-visible:ring-[3px] active:scale-95 motion-reduce:animate-none"
+              className="animate-chat-pop-in focus-visible:ring-ring/50 relative flex items-center gap-1 rounded-full px-1.5 py-0.5 text-sm leading-none outline-none after:absolute after:-inset-2 after:content-[''] focus-visible:ring-[3px] active:scale-95 motion-reduce:animate-none"
             >
               {groups.map((group) => (
                 <span key={group.emoji} className="flex items-center gap-0.5">

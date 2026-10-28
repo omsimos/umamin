@@ -42,4 +42,27 @@ describe("DmMessageBubble", () => {
     await waitFor(() => expect(onReport).toHaveBeenCalledTimes(1));
     expect(menuOpenAtReport).toBe(false);
   });
+
+  it("offers a named retry button on a failed send", () => {
+    const onRetry = vi.fn();
+    render(
+      <DmMessageBubble
+        message={{ ...message, mine: true, delivery: "failed" }}
+        peerName="bob"
+        highlighted={false}
+        seen={false}
+        canInteract
+        onReact={vi.fn()}
+        onReply={vi.fn()}
+        onUnsend={vi.fn()}
+        onReport={vi.fn()}
+        onJumpTo={vi.fn()}
+        onRetry={onRetry}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Not delivered · Tap to retry" }),
+    );
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
 });

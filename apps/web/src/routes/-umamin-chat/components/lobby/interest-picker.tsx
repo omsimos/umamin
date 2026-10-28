@@ -19,7 +19,7 @@ export function InterestPicker({
             aria-pressed={on}
             onClick={() => onToggle(interest.id)}
             className={cn(
-              "h-9 rounded-full border px-3.5 text-sm transition-[color,background-color,border-color,transform] active:scale-95",
+              "h-11 rounded-full border px-3.5 text-sm transition-[color,background-color,border-color,transform] active:scale-95",
               "focus-visible:border-ring focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
               on
                 ? "border-primary/60 bg-primary/10 text-foreground font-medium"
