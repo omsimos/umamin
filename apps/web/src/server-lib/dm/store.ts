@@ -12,6 +12,7 @@ import type { DmReportReason, DmReportSnapshotEntry } from "../../lib/dm/types";
 import type { Db } from "../db";
 import { getDb } from "../db";
 import type { AppEnv } from "../env";
+import { isForeignKeyConstraintViolation } from "../errors";
 import { getMutedIds } from "../mutes";
 import { sendPushForNotification } from "../notification-push";
 
@@ -110,15 +111,22 @@ export function tursoDmStore(
         lowHiddenSeq: s.hiddenSeq[0],
         highHiddenSeq: s.hiddenSeq[1],
       };
-      await conn()
-        .insert(dmThreadTable)
-        .values({
-          id: pair.threadId,
-          userLowId: pair.lowId,
-          userHighId: pair.highId,
-          ...values,
-        })
-        .onConflictDoUpdate({ target: dmThreadTable.id, set: values });
+      try {
+        await conn()
+          .insert(dmThreadTable)
+          .values({
+            id: pair.threadId,
+            userLowId: pair.lowId,
+            userHighId: pair.highId,
+            ...values,
+          })
+          .onConflictDoUpdate({ target: dmThreadTable.id, set: values });
+      } catch (err) {
+        // A participant deleted their account and the cascade removed the
+        // row; the purge cron wipes this room soon. Retrying can't succeed.
+        if (isForeignKeyConstraintViolation(err)) return;
+        throw err;
+      }
     },
 
     async insertReport(input) {

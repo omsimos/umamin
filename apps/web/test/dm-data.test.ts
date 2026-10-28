@@ -181,6 +181,22 @@ describe("tursoDmStore", () => {
     expect(await aesDecrypt(rows[0]?.lastPreview ?? "")).toBe("second");
   });
 
+  it("treats a thread write for a deleted account as a no-op", async () => {
+    const store = tursoDmStore(env, () => db);
+    const snap = {
+      lastSeq: 1,
+      lastAt: 5_000,
+      lastSender: 0 as const,
+      preview: "bye",
+      readSeq: [0, 0] as [number, number],
+      hiddenSeq: [0, 0] as [number, number],
+    };
+    await expect(
+      store.writeThread(dmPair("me", "ghost"), snap),
+    ).resolves.toBeUndefined();
+    expect(await db.select().from(dmThreadTable)).toHaveLength(0);
+  });
+
   it("stores one report per reporter and message", async () => {
     const store = tursoDmStore(env, () => db);
     const input = {
