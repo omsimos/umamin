@@ -2,6 +2,7 @@ import { Button } from "@umamin/ui/components/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -263,9 +264,9 @@ export function ImageCropDialog({
             />
           </div>
 
-          <p className="text-center text-xs text-muted-foreground">
+          <DialogDescription className="text-center text-xs">
             Drag to reposition, scroll or use the slider to zoom.
-          </p>
+          </DialogDescription>
         </div>
 
         <DialogFooter>
