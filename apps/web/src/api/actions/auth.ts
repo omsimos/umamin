@@ -167,6 +167,16 @@ export async function signupHandler(c: AppContext): Promise<Response> {
     return c.json({ error: "Invalid input" });
   }
 
+  const ip = extractClientIp((n) => c.req.header(n));
+  if (await isIpDenied(c.env.KV, ip)) {
+    return c.json({ error: ACCESS_BLOCKED_ERROR });
+  }
+  if (!(await checkRateLimit(c.env, "auth", `signup:${ip}`))) {
+    return c.json({ error: RATE_LIMIT_ERROR });
+  }
+
+  // After the limiter, so the private moderator roster can't be probed past
+  // the per-IP budget.
   if (
     isReservedModeratorName(
       validatedFields.data.username,
@@ -174,14 +184,6 @@ export async function signupHandler(c: AppContext): Promise<Response> {
     )
   ) {
     return c.json({ error: USERNAME_TAKEN_ERROR });
-  }
-
-  const ip = extractClientIp((n) => c.req.header(n));
-  if (await isIpDenied(c.env.KV, ip)) {
-    return c.json({ error: ACCESS_BLOCKED_ERROR });
-  }
-  if (!(await checkRateLimit(c.env, "auth", `signup:${ip}`))) {
-    return c.json({ error: RATE_LIMIT_ERROR });
   }
 
   const passwordHash = await hash(validatedFields.data.password);

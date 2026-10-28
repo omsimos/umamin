@@ -28,6 +28,7 @@ import { userTable } from "@umamin/db/schema/user";
 import { hash } from "../src/server-lib/argon2";
 import type { Db } from "../src/server-lib/db";
 import { accountSuspendedMessage } from "../src/server-lib/errors";
+import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
 import { __clearSessionCache } from "../src/server-lib/session";
 import { ANON, buildApp, call, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
@@ -171,6 +172,22 @@ describe("auth flows (real libSQL)", () => {
     );
     expect(json).toEqual({ error: "Username already exists" });
     expect(await db.select().from(userTable)).toHaveLength(0);
+  });
+
+  it("rate-limits a reserved-name probe like any other signup", async () => {
+    const app = buildApp(db, ANON);
+    const refuse = { limit: async () => ({ success: false }) };
+    const { json } = await callJson(
+      app,
+      "signup",
+      {
+        username: "modname",
+        password: "password123",
+        confirmPassword: "password123",
+      },
+      { MODERATOR_USERS: "modname", RL_AUTH: refuse } as never,
+    );
+    expect(json).toEqual({ error: RATE_LIMIT_ERROR });
   });
 
   // Signup is mounted outside action(), so its catch is the only chokepoint an
