@@ -453,6 +453,30 @@ describe("DmRoom thread index", () => {
     expect(store.writes[1]?.readSeq).toEqual([0, Number(seq)]);
   });
 
+  describe("live exchange", () => {
+    it("a live exchange costs one index write per debounce window", async () => {
+      const { stub, pair, a, b, store, install } = setup();
+      await install();
+      const ca = await join(stub, pair.threadId, a);
+      const cb = await join(stub, pair.threadId, b);
+
+      const seq1 = await sendText(ca, "m1");
+      await eventually(() => store.writes.length === 1, "first write");
+      cb.send({ t: "read", upTo: seq1 });
+      await eventually(() => store.writes.length === 2, "read write");
+
+      const seq2 = await sendText(ca, "m2");
+      cb.send({ t: "read", upTo: seq2 });
+      await ca.next("meta", (f) => f.meta.peerReadSeq === Number(seq2));
+      expect(store.writes).toHaveLength(2);
+
+      expect(await runDurableObjectAlarm(stub)).toBe(true);
+      expect(store.writes).toHaveLength(3);
+      expect(store.writes[2]).toMatchObject({ lastSeq: 2, preview: "m2" });
+      expect(store.writes[2]?.readSeq).toEqual([0, 2]);
+    });
+  });
+
   it("hides history for one side only", async () => {
     const { stub, pair, a, b, store, install } = setup();
     await install();

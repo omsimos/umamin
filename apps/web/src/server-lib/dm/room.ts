@@ -572,7 +572,10 @@ export class DmRoom extends DurableObject<AppEnv> {
       const st = this.loadState();
       if (!st) return;
       const next = await this.snapshot(st);
-      const urgency = engine.threadSyncUrgency(st.synced, next);
+      const urgency = engine.threadSyncUrgency(st.synced, next, [
+        this.liveSockets(0).length > 0,
+        this.liveSockets(1).length > 0,
+      ]);
       if (urgency === "none") return;
       if (urgency === "later" && !force) {
         await this.armSync();

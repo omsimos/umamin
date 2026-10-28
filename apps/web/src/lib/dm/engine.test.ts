@@ -242,6 +242,35 @@ describe("threadSyncUrgency", () => {
     expect(threadSyncUrgency(synced, next)).toBe("now");
   });
 
+  describe("with a live recipient", () => {
+    const synced = snap({ lastSeq: 1, lastSender: 0, readSeq: [1, 1] });
+    const unread = snap({ lastSeq: 2, lastSender: 0, readSeq: [2, 1] });
+
+    it("debounces an unread flip while the recipient is live", () => {
+      expect(threadSyncUrgency(synced, unread, [false, true])).toBe("later");
+    });
+
+    it("still writes at once when the recipient is offline", () => {
+      expect(threadSyncUrgency(synced, unread, [false, false])).toBe("now");
+    });
+
+    it("still writes at once when the SENDER is the only live side", () => {
+      expect(threadSyncUrgency(synced, unread, [true, false])).toBe("now");
+    });
+
+    it("still writes at once when a side reads, even while live", () => {
+      const before = snap({ lastSeq: 3, lastSender: 0, readSeq: [3, 1] });
+      const read = snap({ lastSeq: 3, lastSender: 0, readSeq: [3, 3] });
+      expect(threadSyncUrgency(before, read, [true, true])).toBe("now");
+    });
+
+    it("still writes at once when a side hides the chat, even while live", () => {
+      expect(
+        threadSyncUrgency(snap(), snap({ hiddenSeq: [0, 1] }), [true, true]),
+      ).toBe("now");
+    });
+  });
+
   it("writes at once when a side hides the chat", () => {
     const synced = snap();
     expect(threadSyncUrgency(synced, snap({ hiddenSeq: [1, 0] }))).toBe("now");
