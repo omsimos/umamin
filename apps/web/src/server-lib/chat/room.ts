@@ -25,6 +25,7 @@ import {
   IDLE_MATCH_MS,
   MATCH_START_GRACE_MS,
   MAX_FRAME_CHARS,
+  MAX_PENDING_ROOM_SOCKETS,
   MAX_ROOM_SOCKETS,
   MESSAGE_CAP,
   SEND_DEDUPE_WINDOW,
@@ -217,9 +218,19 @@ export class ChatRoom extends DurableObject<AppEnv> {
       return new Response("Expected WebSocket", { status: 426 });
     }
     const { 0: client, 1: server } = new WebSocketPair();
-    const crowded = this.ctx.getWebSockets().length >= MAX_ROOM_SOCKETS;
+    const now = Date.now();
+    this.closeExpiredPending(now);
+    let authed = 0;
+    let pending = 0;
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws.readyState !== WebSocket.OPEN) continue;
+      if (this.attachment(ws).side) authed += 1;
+      else pending += 1;
+    }
+    const crowded =
+      authed >= MAX_ROOM_SOCKETS || pending >= MAX_PENDING_ROOM_SOCKETS;
     this.ctx.acceptWebSocket(server);
-    const attachment: Attachment = { side: null, connectedAt: Date.now() };
+    const attachment: Attachment = { side: null, connectedAt: now };
     server.serializeAttachment(attachment);
     // Unknown or purged room: close right away, without touching storage.
     if (!this.loadCreds()) server.close(CLOSE.GONE, "gone");
@@ -373,6 +384,18 @@ export class ChatRoom extends DurableObject<AppEnv> {
     this.setTimer("away", SIDE_REF[side], Date.now() + AWAY_GRACE_MS, true);
     await this.syncAlarm();
     this.broadcastMeta(engine.otherSide(side), ws);
+  }
+
+  /** Mirrors the lobby's: a socket that never authenticated is dropped before
+   *  it can hold a seat. */
+  private closeExpiredPending(now: number) {
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws.readyState !== WebSocket.OPEN) continue;
+      const { side, connectedAt } = this.attachment(ws);
+      if (!side && now - connectedAt > AUTH_DEADLINE_MS) {
+        ws.close(CLOSE.UNAUTHORIZED, "auth timeout");
+      }
+    }
   }
 
   /** Closes half-open sockets (no auto-response pong recently) and sockets

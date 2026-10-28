@@ -36,6 +36,9 @@ export const CHAT_STATS_MAX_AGE = 30;
 export const MIN_ONLINE_SHOWN = 3;
 /** Sockets one room accepts (both sides, all tabs). */
 export const MAX_ROOM_SOCKETS = 8;
+/** Unauthenticated sockets a room holds at once. A partner knows the matchId,
+ *  so these must not be able to lock the other side out. */
+export const MAX_PENDING_ROOM_SOCKETS = 4;
 /** Waiting sockets per IPv4 address. Loose: mobile carriers put many people
  *  behind one address (CGNAT). */
 export const MAX_SOCKETS_PER_IPV4 = 20;

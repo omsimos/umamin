@@ -6,6 +6,7 @@ import {
 } from "cloudflare:test";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  MAX_PENDING_ROOM_SOCKETS,
   MAX_ROOM_SOCKETS,
   MAX_SOCKETS_PER_IPV4,
   MAX_SOCKETS_PER_IPV6_64,
@@ -921,10 +922,38 @@ describe("ChatRoom", () => {
   });
 
   it("refuses sockets past the per-room cap", async () => {
-    const { stub } = await newRoom();
-    for (let i = 0; i < MAX_ROOM_SOCKETS; i += 1) await connectRoom(stub);
+    const { stub, ana } = await newRoom();
+    for (let i = 0; i < MAX_ROOM_SOCKETS; i += 1) {
+      const tab = await authRoom(stub, ana);
+      await tab.next("sync");
+    }
     const extra = await connectRoom(stub);
     expect(await extra.closeCode()).toBe(CLOSE.TOO_MANY);
+  });
+
+  it("refuses unauthenticated sockets past the pending cap", async () => {
+    const { stub } = await newRoom();
+    const parked: Client[] = [];
+    for (let i = 0; i < MAX_PENDING_ROOM_SOCKETS; i += 1) {
+      parked.push(await connectRoom(stub));
+    }
+    const extra = await connectRoom(stub);
+    expect(await extra.closeCode()).toBe(CLOSE.TOO_MANY);
+    expect(parked.every((c) => c.closed === null)).toBe(true);
+  });
+
+  it("pending sockets can't fill the room: expired ones are reaped for a real side", async () => {
+    const { stub, ana } = await newRoom();
+    // Well past the cap, so most are refused and the rest sit unauthenticated.
+    for (let i = 0; i < MAX_ROOM_SOCKETS + 2; i += 1) await connectRoom(stub);
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        ws.serializeAttachment({ side: null, connectedAt: 0 });
+      }
+    });
+    const a = await authRoom(stub, ana);
+    expect((await a.next("sync")).meta.self.alias).toBe(ana.alias);
+    expect(a.closed).toBeNull();
   });
 
   it("closes a socket that floods frames with 4429", async () => {
