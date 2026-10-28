@@ -123,6 +123,7 @@ export class DmRoom extends DurableObject<AppEnv> {
   // Caches, rebuilt lazily after hibernation.
   private state: RoomState | null | undefined;
   private alarmAt: number | null | undefined;
+  private purged = false;
   private storeImpl: DmStore | null = null;
   /** Thread-row writes run one at a time, each with the latest snapshot. */
   private syncChain: Promise<void> = Promise.resolve();
@@ -299,6 +300,7 @@ export class DmRoom extends DurableObject<AppEnv> {
 
   /** A participant deleted their account: drop everything. */
   async purge(): Promise<void> {
+    this.purged = true;
     for (const ws of this.ctx.getWebSockets()) {
       this.closeQuietly(ws, DM_CLOSED, "closed");
     }
@@ -627,6 +629,9 @@ export class DmRoom extends DurableObject<AppEnv> {
   }
 
   private ensureSchema(threadId: string) {
+    // purge() can run while an op awaits Turso; that op must not bring the
+    // tables back after the account's data was wiped.
+    if (this.purged) throw new Error("dm room was purged");
     if (this.loadState()) return;
     const pair = parseThreadId(threadId);
     if (!pair) throw new Error("dm room has no valid thread id");

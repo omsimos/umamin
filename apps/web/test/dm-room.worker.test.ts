@@ -665,6 +665,34 @@ describe("DmRoom access changes", () => {
     expect(await c.closeCode()).toBe(DM_CLOSED);
     expect(await tableCount(stub)).toBe(0);
   });
+
+  it("keeps a purged room empty when an in-flight op lands afterwards", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    await sendText(c, "gone soon");
+    await runInDurableObject(stub, (instance: DmRoom) => instance.purge());
+    await runInDurableObject(stub, async (instance: DmRoom) => {
+      const room = instance as unknown as {
+        insertRow(t: string, m: object, c: string | null): Promise<unknown>;
+      };
+      await expect(
+        room.insertRow(
+          pair.threadId,
+          {
+            author: 0,
+            text: "late",
+            replyTo: null,
+            reactionLow: null,
+            reactionHigh: null,
+            createdAt: 1,
+          },
+          null,
+        ),
+      ).rejects.toThrow("purged");
+    });
+    expect(await tableCount(stub)).toBe(0);
+  });
 });
 
 describe("DmRoom reports", () => {
