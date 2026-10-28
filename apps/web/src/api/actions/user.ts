@@ -263,32 +263,34 @@ export const followUserHandler = action(
       return { error: "You cannot follow yourself." };
     }
 
-    const [target] = await db
-      .select({ id: userTable.id, username: userTable.username })
-      .from(userTable)
-      .where(eq(userTable.id, userId))
-      .limit(1);
+    // Independent reads: one round trip instead of two.
+    const [[target], [blockExists]] = await Promise.all([
+      db
+        .select({ id: userTable.id, username: userTable.username })
+        .from(userTable)
+        .where(eq(userTable.id, userId))
+        .limit(1),
+      db
+        .select({ id: userBlockTable.id })
+        .from(userBlockTable)
+        .where(
+          or(
+            and(
+              eq(userBlockTable.blockerId, session.userId),
+              eq(userBlockTable.blockedId, userId),
+            ),
+            and(
+              eq(userBlockTable.blockerId, userId),
+              eq(userBlockTable.blockedId, session.userId),
+            ),
+          ),
+        )
+        .limit(1),
+    ]);
 
     if (!target) {
       return { error: "User not found." };
     }
-
-    const [blockExists] = await db
-      .select({ id: userBlockTable.id })
-      .from(userBlockTable)
-      .where(
-        or(
-          and(
-            eq(userBlockTable.blockerId, session.userId),
-            eq(userBlockTable.blockedId, userId),
-          ),
-          and(
-            eq(userBlockTable.blockerId, userId),
-            eq(userBlockTable.blockedId, session.userId),
-          ),
-        ),
-      )
-      .limit(1);
 
     if (blockExists) {
       return { error: "You can't follow this user." };
