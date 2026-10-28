@@ -9,6 +9,8 @@ vi.mock("../src/server-lib/argon2", () => ({
 
 import { notificationTable } from "@umamin/db/schema/notification";
 import {
+  pollOptionTable,
+  pollVoteTable,
   postCommentLikeTable,
   postCommentTable,
   postLikeTable,
@@ -193,6 +195,118 @@ describe("post actions (real libSQL)", () => {
       .where(eq(postTable.id, "p1"));
     expect(post.commentCount).toBe(1);
     expect(await points(db, "author")).toBe(5);
+  });
+
+  it("only the first comment on a post awards aura", async () => {
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+    await callJson(app, "createCommentAction", {
+      postId: "p1",
+      content: "first",
+    });
+    const { json } = await callJson<{ success: boolean }>(
+      app,
+      "createCommentAction",
+      { postId: "p1", content: "second" },
+    );
+
+    expect(json.success).toBe(true);
+    const [post] = await db
+      .select({ commentCount: postTable.commentCount })
+      .from(postTable)
+      .where(eq(postTable.id, "p1"));
+    expect(post.commentCount).toBe(2);
+    expect(await points(db, "author")).toBe(5);
+    expect(await db.select().from(notificationTable)).toHaveLength(1);
+  });
+
+  it("a comment on a missing post is reported as not found", async () => {
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+    const { json } = await callJson(app, "createCommentAction", {
+      postId: "nope",
+      content: "hi",
+    });
+
+    expect(json).toEqual({ error: "Post not found" });
+  });
+
+  describe("poll votes", () => {
+    beforeEach(async () => {
+      await db
+        .update(postTable)
+        .set({ pollEndsAt: new Date(Date.now() + 60 * 60 * 1000) })
+        .where(eq(postTable.id, "p1"));
+      await db.insert(pollOptionTable).values([
+        { id: "o1", postId: "p1", idx: 0, label: "yes" },
+        { id: "o2", postId: "p1", idx: 1, label: "no" },
+      ]);
+    });
+
+    async function counts() {
+      const options = await db
+        .select({
+          id: pollOptionTable.id,
+          voteCount: pollOptionTable.voteCount,
+        })
+        .from(pollOptionTable);
+      const [post] = await db
+        .select({ pollVoteCount: postTable.pollVoteCount })
+        .from(postTable)
+        .where(eq(postTable.id, "p1"));
+      return {
+        o1: options.find((o) => o.id === "o1")?.voteCount,
+        o2: options.find((o) => o.id === "o2")?.voteCount,
+        total: post.pollVoteCount,
+      };
+    }
+
+    it("votePollAction counts the vote, awards aura and notifies", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      const { json } = await callJson(app, "votePollAction", {
+        optionId: "o1",
+      });
+
+      expect(json).toEqual({ success: true, votedOptionId: "o1" });
+      expect(await counts()).toEqual({ o1: 1, o2: 0, total: 1 });
+      expect(await points(db, "author")).toBe(1);
+      expect(await db.select().from(notificationTable)).toHaveLength(1);
+    });
+
+    it("a second vote returns the original choice and counts nothing", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await callJson(app, "votePollAction", { optionId: "o1" });
+      const { json } = await callJson(app, "votePollAction", {
+        optionId: "o2",
+      });
+
+      expect(json).toEqual({
+        success: true,
+        alreadyVoted: true,
+        votedOptionId: "o1",
+      });
+      expect(await counts()).toEqual({ o1: 1, o2: 0, total: 1 });
+      expect(await points(db, "author")).toBe(1);
+      expect(await db.select().from(pollVoteTable)).toHaveLength(1);
+    });
+
+    it("a self vote counts but awards no aura", async () => {
+      const app = buildApp(db, authed("author", { createdAt: OLD }));
+      await callJson(app, "votePollAction", { optionId: "o1" });
+
+      expect(await counts()).toEqual({ o1: 1, o2: 0, total: 1 });
+      expect(await points(db, "author")).toBe(0);
+    });
+
+    it("a vote across a block still counts but awards no aura or notification", async () => {
+      await db
+        .insert(userBlockTable)
+        .values({ blockerId: "author", blockedId: "viewer" });
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await callJson(app, "votePollAction", { optionId: "o1" });
+
+      expect(await counts()).toEqual({ o1: 1, o2: 0, total: 1 });
+      expect(await points(db, "author")).toBe(0);
+      expect(await db.select().from(notificationTable)).toHaveLength(0);
+    });
   });
 
   it("a comment from a blocked user is rejected as not found and writes nothing", async () => {

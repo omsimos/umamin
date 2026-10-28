@@ -8,7 +8,7 @@ import {
   postTable,
 } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import * as z from "zod";
 import {
@@ -411,50 +411,51 @@ export const createCommentHandler = action(
       isModerationEnforced(c.env),
     ]);
 
-    await db.transaction(async (tx) => {
-      const [comment] = await tx
+    // One round trip instead of five (BEGIN+insert, bump, prior-comment read,
+    // award, COMMIT); see addLikeHandler. The award fires only for the actor's
+    // FIRST comment on the post, so it also gates on no other comment of theirs
+    // existing, which needs the new row's id up front. Nothing may sit between
+    // these statements.
+    const commentId = nanoid();
+    const award = auraAwardStatement(
+      db,
+      {
+        beneficiary: { userId: target.authorId },
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.comment,
+      },
+      sql`${PREV_CHANGED} AND NOT EXISTS (
+        SELECT 1 FROM ${postCommentTable}
+        WHERE ${postCommentTable.authorId} = ${session.userId}
+          AND ${postCommentTable.postId} = ${postId}
+          AND ${postCommentTable.id} <> ${commentId}
+      )`,
+    );
+    const statements = [
+      db
         .insert(postCommentTable)
         .values({
+          id: commentId,
           postId,
           content: formatted,
           authorId: session.userId,
           ...reviewableScoreColumns(scores),
         })
-        .returning();
-
-      createdComment = comment;
-
-      const [updated] = await tx
+        .returning(),
+      db
         .update(postTable)
         .set({ commentCount: sql`${postTable.commentCount} + 1` })
-        .where(eq(postTable.id, postId))
-        .returning({ authorId: postTable.authorId });
+        .where(and(eq(postTable.id, postId), PREV_CHANGED))
+        .returning({ authorId: postTable.authorId }),
+    ] as const;
 
-      postAuthorId = updated?.authorId;
+    const [[comment], [updated]] = award
+      ? await db.batch([...statements, award])
+      : await db.batch(statements);
 
-      if (updated?.authorId && comment) {
-        const prior = await tx
-          .select({ id: postCommentTable.id })
-          .from(postCommentTable)
-          .where(
-            and(
-              eq(postCommentTable.authorId, session.userId),
-              eq(postCommentTable.postId, postId),
-              ne(postCommentTable.id, comment.id),
-            ),
-          )
-          .limit(1);
-
-        if (prior.length === 0) {
-          await awardAura(tx, {
-            beneficiaryId: updated.authorId,
-            actorId: session.userId,
-            actorCreatedAt: user?.createdAt,
-            delta: AURA_POINTS.comment,
-          });
-        }
-      }
-    });
+    createdComment = comment;
+    postAuthorId = updated?.authorId;
 
     if (postAuthorId && createdComment) {
       await notify(
@@ -690,53 +691,60 @@ export const votePollHandler = action(
 
     const postId = target.postId;
 
-    const result = await db.transaction(async (tx) => {
-      const inserted = await tx
-        .insert(pollVoteTable)
-        .values({ postId, optionId, userId: session.userId })
-        .onConflictDoNothing()
-        .returning({ id: pollVoteTable.id });
-
-      if (inserted.length === 0) {
-        const [existing] = await tx
-          .select({ optionId: pollVoteTable.optionId })
-          .from(pollVoteTable)
-          .where(
-            and(
-              eq(pollVoteTable.postId, postId),
-              eq(pollVoteTable.userId, session.userId),
-            ),
-          )
-          .limit(1);
-
-        return {
-          success: true,
-          alreadyVoted: true,
-          votedOptionId: existing?.optionId,
-        } as const;
-      }
-
-      await tx
-        .update(pollOptionTable)
-        .set({ voteCount: sql`${pollOptionTable.voteCount} + 1` })
-        .where(eq(pollOptionTable.id, optionId));
-
-      await tx
-        .update(postTable)
-        .set({ pollVoteCount: sql`${postTable.pollVoteCount} + 1` })
-        .where(eq(postTable.id, postId));
-
-      await awardAura(tx, {
-        beneficiaryId: target.authorId,
+    // One round trip instead of five (BEGIN+insert, two bumps, award, COMMIT);
+    // see addLikeHandler. Nothing may sit between these statements.
+    const award = auraAwardStatement(
+      db,
+      {
+        beneficiary: { userId: target.authorId },
         actorId: session.userId,
         actorCreatedAt: user?.createdAt,
         delta: AURA_POINTS.pollVote,
-      });
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
+        .insert(pollVoteTable)
+        .values({ postId, optionId, userId: session.userId })
+        .onConflictDoNothing()
+        .returning({ id: pollVoteTable.id }),
+      db
+        .update(pollOptionTable)
+        .set({ voteCount: sql`${pollOptionTable.voteCount} + 1` })
+        .where(and(eq(pollOptionTable.id, optionId), PREV_CHANGED)),
+      db
+        .update(postTable)
+        .set({ pollVoteCount: sql`${postTable.pollVoteCount} + 1` })
+        .where(and(eq(postTable.id, postId), PREV_CHANGED)),
+    ] as const;
 
-      return { success: true, votedOptionId: optionId } as const;
-    });
+    const [inserted] = award
+      ? await db.batch([...statements, award])
+      : await db.batch(statements);
 
-    if (!("alreadyVoted" in result) && target.blocked === 0) {
+    if (inserted.length === 0) {
+      // Only on this path: the vote that already exists. The happy path costs
+      // nothing extra.
+      const [existing] = await db
+        .select({ optionId: pollVoteTable.optionId })
+        .from(pollVoteTable)
+        .where(
+          and(
+            eq(pollVoteTable.postId, postId),
+            eq(pollVoteTable.userId, session.userId),
+          ),
+        )
+        .limit(1);
+
+      return {
+        success: true,
+        alreadyVoted: true,
+        votedOptionId: existing?.optionId,
+      } as const;
+    }
+
+    if (target.blocked === 0) {
       await notify(
         { db, env: c.env, defer: defer(c) },
         {
@@ -750,7 +758,7 @@ export const votePollHandler = action(
       );
     }
 
-    return result;
+    return { success: true, votedOptionId: optionId } as const;
   },
 );
 
