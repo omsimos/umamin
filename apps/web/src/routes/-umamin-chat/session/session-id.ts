@@ -39,10 +39,9 @@ export function uuid(): string {
   });
 }
 
-// Per-tab fallback when localStorage is unavailable (private mode / disabled /
-// quota). getSessionCredentials() runs at module load in __root.tsx, before
-// React and the route error boundary mount, so an uncaught throw here
-// white-screens the whole app — hence the try/catch.
+// Per-tab fallback when localStorage is unavailable (private mode, disabled,
+// quota). Callers run inside effects, but a throw here would still break the
+// chat session, hence the try/catch.
 let memoryId: string | null = null;
 let memorySecret: string | null = null;
 

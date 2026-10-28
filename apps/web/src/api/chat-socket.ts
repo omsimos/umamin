@@ -53,8 +53,8 @@ async function upgrade(c: Context<AppBindings>, stub: () => Stub) {
     return refuse(CLOSE.TOO_MANY, "too many");
   }
   const headers = new Headers(c.req.raw.headers);
-  // A hash, not the address: the lobby only needs a per-IP bucket key, and it
-  // keeps it in socket attachments.
+  // The lobby only needs a per-IP bucket key. This is not anonymization: an
+  // IPv4 hash can be reversed by brute force, so never log it.
   headers.set("x-umamin-ip", (await hashSecret(key)).slice(0, 16));
   headers.set("x-umamin-ip-kind", key.includes(":") ? "v6" : "v4");
   return stub().fetch(new Request(c.req.raw, { headers }));
