@@ -595,6 +595,45 @@ describe("content moderation (real libSQL)", () => {
       expect(await queueIds()).toEqual(["anon-note"]);
     });
 
+    // updated_at is a note's position in the public /notes feed, and Drizzle's
+    // $onUpdate restamps it on any update that doesn't set it.
+    it("keeps a labelled note's feed position through every review action", async () => {
+      await db.insert(userTable).values({ id: "mod", username: "u_mod" });
+      const savedAt = new Date(
+        Math.floor((Date.now() - 60 * 60 * 1000) / 1000) * 1000,
+      );
+      await db.insert(noteTable).values({
+        id: "labelled",
+        userId: "author",
+        content: "mean words",
+        isAnonymous: false,
+        updatedAt: savedAt,
+        ...SEVERE,
+      });
+      const updatedAt = async () =>
+        (
+          await db
+            .select({ updatedAt: noteTable.updatedAt })
+            .from(noteTable)
+            .where(eq(noteTable.id, "labelled"))
+        )[0]?.updatedAt;
+      const act = async (action: string, user: string) => {
+        const { json } = await callJson<{ success?: boolean }>(
+          asUser(user),
+          action,
+          { kind: "note", id: "labelled" },
+          MOD_ENV,
+        );
+        expect(json.success).toBe(true);
+        expect(await updatedAt()).toEqual(savedAt);
+      };
+
+      await act("disputeContentLabelAction", "viewer");
+      await act("appealContentLabelAction", "author");
+      await act("keepContentFlagAction", "mod");
+      await act("clearContentFlagAction", "mod");
+    });
+
     it("queues a folded post when its author asks for review, once", async () => {
       await db.insert(postTable).values({
         id: "sad",

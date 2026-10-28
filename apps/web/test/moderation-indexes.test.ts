@@ -72,6 +72,15 @@ describe("moderation indexes", () => {
     },
   );
 
+  it("walks the drama view's comments by rowid, joined to their author", async () => {
+    const detail = await plan(
+      db,
+      `SELECT c.id FROM post_comment c INNER JOIN user u ON c.author_id = u.id ORDER BY c.rowid DESC LIMIT 200`,
+    );
+    // A rowid-ordered SCAN stops after LIMIT rows; the cost was the temp sort.
+    expect(detail).not.toContain("TEMP B-TREE");
+  });
+
   it("walks the newest comments by rowid without a sort", async () => {
     const detail = await plan(
       db,

@@ -12,6 +12,7 @@ import {
   isNull,
   lt,
   or,
+  sql,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type {
@@ -188,7 +189,9 @@ export async function getDramaReviewPage(
       })
       .from(postCommentTable)
       .innerJoin(userTable, eq(postCommentTable.authorId, userTable.id))
-      .orderBy(desc(postCommentTable.createdAt), desc(postCommentTable.id))
+      // post_comment has no created_at index; the newest rows by rowid
+      // (insertion order) are a primary-key walk instead of a full sort.
+      .orderBy(desc(sql`${postCommentTable}.rowid`))
       .limit(DRAMA_WINDOW),
     db
       .select({
