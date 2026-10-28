@@ -146,6 +146,7 @@ the write landed where the running worker will see it.
 | `VAPID_SUBJECT` | **not set** | **not set** |
 | `R2_*` (5) | set | set |
 | `MODERATOR_USERS` | set | set |
+| `AI_GATEWAY_API_KEY` | ? | ? |
 | `LEMONSQUEEZY_*` (4) | set | **not set** |
 
 ## Build-only secrets
@@ -162,5 +163,8 @@ emits no maps.
 ## Known gaps
 
 - `VAPID_SUBJECT` is typed in `Secrets` and documented, but set nowhere.
+- Without `AI_GATEWAY_API_KEY` the content classifier returns no scores, so new
+  posts, comments and notes stay unclassified. It logs no error, so check the
+  secret list to confirm each environment holds the key.
 - `LEMONSQUEEZY_*` is unset in production, so Pro checkout there cannot work.
   Consistent with `umamin-pro` sitting at 0% rollout.
