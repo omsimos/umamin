@@ -30,6 +30,7 @@ import {
 } from "../../server-lib/content-label";
 import { getPostById, withModeration } from "../../server-lib/data";
 import { isModerationEnforced } from "../../server-lib/flags";
+import { extractClientIp } from "../../server-lib/ip";
 import { isModerator } from "../../server-lib/moderation";
 import { notify } from "../../server-lib/notifications";
 import {
@@ -94,7 +95,15 @@ const createPostSchema = z
 
 // ── plain reads embedded in the action file (imperative queryFn callers) ─────
 export const getPostHandler = action(
-  { schema: z.object({ id: idSchema }), auth: "none" },
+  {
+    schema: z.object({ id: idSchema }),
+    auth: "none",
+    // Anonymous, uncached, Turso-backed: share the GET routes' per-IP budget.
+    rateLimit: {
+      name: "read",
+      key: ({ c }) => `read:${extractClientIp((n) => c.req.header(n))}`,
+    },
+  },
   async ({ id }, { session, c }) =>
     getPostById(ctxDb(c), {
       postId: id,
@@ -104,7 +113,15 @@ export const getPostHandler = action(
 );
 
 export const getPostPublicHandler = action(
-  { schema: z.object({ id: idSchema }), auth: "none" },
+  {
+    schema: z.object({ id: idSchema }),
+    auth: "none",
+    // Anonymous, uncached, Turso-backed: share the GET routes' per-IP budget.
+    rateLimit: {
+      name: "read",
+      key: ({ c }) => `read:${extractClientIp((n) => c.req.header(n))}`,
+    },
+  },
   async ({ id }, { c }) =>
     getPostById(ctxDb(c), {
       postId: id,

@@ -27,12 +27,13 @@ import { sessionTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import { hash } from "../src/server-lib/argon2";
 import type { Db } from "../src/server-lib/db";
+import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
 import {
   __clearSessionCache,
   createSession,
   sessionIdFromToken,
 } from "../src/server-lib/session";
-import { authed, buildApp, call, callJson } from "./helpers/actions";
+import { ANON, authed, buildApp, call, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
 
 const SETTINGS = { question: "ask me", bio: "", displayName: "" };
@@ -58,6 +59,18 @@ describe("user actions (real libSQL)", () => {
       username: "u_user1",
       passwordHash: await hash(OLD_PASSWORD),
     });
+  });
+
+  it("getUserProfileAction is rate-limited per IP", async () => {
+    const app = buildApp(db, ANON);
+    const refuse = { limit: async () => ({ success: false }) };
+    const { json } = await callJson(
+      app,
+      "getUserProfileAction",
+      { username: "u_user1" },
+      { RL_READ: refuse } as never,
+    );
+    expect(json).toEqual({ error: RATE_LIMIT_ERROR });
   });
 
   it("refuses to rename onto a moderator roster name", async () => {

@@ -16,8 +16,9 @@ import {
 import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import type { Db } from "../src/server-lib/db";
+import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
 import { __clearSessionCache } from "../src/server-lib/session";
-import { authed, buildApp, callJson } from "./helpers/actions";
+import { ANON, authed, buildApp, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
 
 // Aura is only awarded from an actor whose account is older than the 3-day gate.
@@ -53,6 +54,18 @@ describe("post actions (real libSQL)", () => {
     await seedUser(db, "viewer");
     await seedPost(db, "p1", "author");
   });
+
+  it.each(["getPostAction", "getPostPublicAction"])(
+    "%s is rate-limited per IP",
+    async (name) => {
+      const app = buildApp(db, ANON);
+      const refuse = { limit: async () => ({ success: false }) };
+      const { json } = await callJson(app, name, { id: "p1" }, {
+        RL_READ: refuse,
+      } as never);
+      expect(json).toEqual({ error: RATE_LIMIT_ERROR });
+    },
+  );
 
   it("addLikeAction increments likeCount and awards aura to the author", async () => {
     const app = buildApp(db, authed("viewer", { createdAt: OLD }));

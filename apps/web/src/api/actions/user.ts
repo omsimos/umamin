@@ -22,6 +22,7 @@ import {
   isUniqueConstraintViolation,
   USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
+import { extractClientIp } from "../../server-lib/ip";
 import { isReservedModeratorName } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { MAX_MUTES } from "../../server-lib/mutes";
@@ -88,7 +89,15 @@ export const getCurrentUserHandler = action({}, (_input, { session, c }) =>
 
 // Plain read embedded in the action file — session optional (viewer overlay).
 export const getUserProfileHandler = action(
-  { schema: z.object({ username: z.string().min(1).max(64) }), auth: "none" },
+  {
+    schema: z.object({ username: z.string().min(1).max(64) }),
+    auth: "none",
+    // Anonymous, uncached, Turso-backed: share the GET routes' per-IP budget.
+    rateLimit: {
+      name: "read",
+      key: ({ c }) => `read:${extractClientIp((n) => c.req.header(n))}`,
+    },
+  },
   async ({ username }, { session, c }) => {
     try {
       return await getUserProfileData(ctxDb(c), username, session?.userId);
