@@ -256,6 +256,19 @@ export class DmRoom extends DurableObject<AppEnv> {
     }
   }
 
+  /** The user's sessions were revoked (password change): close their side's
+   *  sockets reconnectably, so each must pass the upgrade route's session
+   *  check again. The peer's sockets are untouched. */
+  async revoke(userId: string): Promise<void> {
+    for (const ws of this.ctx.getWebSockets()) {
+      const att = this.attachment(ws);
+      const pair = att ? parseThreadId(att.threadId) : null;
+      if (!att || !pair || userAt(pair, att.side) !== userId) continue;
+      this.closeQuietly(ws, CLOSE.NORMAL, "revoked");
+      this.onSocketGone(ws);
+    }
+  }
+
   /** "Delete chat" for one side: hides everything so far from that side only
    *  and marks it read. A later message shows the thread again. */
   async hide(userId: string): Promise<void> {

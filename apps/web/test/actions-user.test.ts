@@ -23,8 +23,10 @@ vi.mock("../src/server-lib/posthog", () => ({
   captureServerException,
 }));
 
+import { dmThreadTable } from "@umamin/db/schema/dm";
 import { sessionTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
+import { dmPair } from "../src/lib/dm/pair";
 import { hash } from "../src/server-lib/argon2";
 import type { Db } from "../src/server-lib/db";
 import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
@@ -168,5 +170,45 @@ describe("user actions (real libSQL)", () => {
     expect(row.passwordHash).not.toContain(
       Buffer.from(OLD_PASSWORD).toString("base64"),
     );
+  });
+
+  it("changing the password closes the user's open DM sockets", async () => {
+    await db.insert(userTable).values({ id: "user2", username: "u_user2" });
+    const pair = dmPair("user1", "user2");
+    await db.insert(dmThreadTable).values({
+      id: pair.threadId,
+      userLowId: pair.lowId,
+      userHighId: pair.highId,
+      lastMessageAt: new Date(1_000),
+      lastSeq: 1,
+      lastSenderId: "user2",
+      lastPreview: null,
+    });
+    const revoked: [string, string][] = [];
+    const DM_ROOM = {
+      idFromName: (name: string) => name,
+      get: (name: string) => ({
+        revoke: async (userId: string) => {
+          revoked.push([name, userId]);
+        },
+      }),
+    };
+    const app = buildApp(
+      db,
+      authed("user1", { passwordHash: await hash(OLD_PASSWORD) }),
+    );
+    const res = await call(
+      app,
+      "updatePasswordAction",
+      {
+        currentPassword: OLD_PASSWORD,
+        newPassword: "new-password-456",
+        confirmPassword: "new-password-456",
+      },
+      { DM_ROOM } as never,
+    );
+    expect(res.status).toBe(200);
+    await vi.waitFor(() => expect(revoked).toHaveLength(1));
+    expect(revoked[0]).toEqual([`dm:v1:${pair.threadId}`, "user1"]);
   });
 });

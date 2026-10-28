@@ -512,6 +512,17 @@ describe("DmRoom access changes", () => {
     expect(ca.count("err")).toBe(0);
   });
 
+  it("closes only the revoked user's sockets", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    await runInDurableObject(stub, (instance: DmRoom) => instance.revoke(a));
+    expect(await ca.closeCode()).toBe(CLOSE.NORMAL);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(cb.closed).toBeNull();
+  });
+
   it("closes a socket past the age cap so it reconnects through the session check", async () => {
     const { stub, pair, a, b, install } = setup();
     await install();

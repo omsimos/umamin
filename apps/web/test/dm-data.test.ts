@@ -22,6 +22,7 @@ import { DM_THREADS_PAGE_SIZE } from "../src/lib/dm/constants";
 import { dmPair } from "../src/lib/dm/pair";
 import type { Db } from "../src/server-lib/db";
 import { resolveDmPeer } from "../src/server-lib/dm/access";
+import { revokeDmSockets } from "../src/server-lib/dm/lifecycle";
 import { tursoDmStore } from "../src/server-lib/dm/store";
 import {
   getDmThreadsPage,
@@ -300,6 +301,7 @@ describe("DM reports for moderators", () => {
 describe("block and unfollow close the DM room", () => {
   let db: Db;
   const severed: [string, string][] = [];
+  const revoked: [string, string][] = [];
   const env = {
     DM_ROOM: {
       idFromName: (name: string) => name,
@@ -307,12 +309,16 @@ describe("block and unfollow close the DM room", () => {
         sever: async (kind: string) => {
           severed.push([name, kind]);
         },
+        revoke: async (userId: string) => {
+          revoked.push([name, userId]);
+        },
       }),
     },
   } as unknown as Partial<AppEnv>;
 
   beforeEach(async () => {
     severed.length = 0;
+    revoked.length = 0;
     db = await makeTestDb();
     await users(db, "me", "pal");
     await mutual(db, "me", "pal");
@@ -332,6 +338,14 @@ describe("block and unfollow close the DM room", () => {
     const app = buildApp(db, authed("me"));
     await callJson(app, "blockUserAction", { userId: "pal" }, env);
     await vi.waitFor(() => expect(severed.map((s) => s[1])).toEqual(["block"]));
+  });
+
+  it("revokes the user's side of every thread they are in", async () => {
+    await users(db, "other");
+    await thread(db, "me", "pal", { sender: "pal" });
+    await thread(db, "pal", "other", { sender: "pal" });
+    await revokeDmSockets(db, env as AppEnv, "me");
+    expect(revoked).toEqual([[`dm:v1:${dmPair("me", "pal").threadId}`, "me"]]);
   });
 
   it("does nothing when the unfollow changed nothing", async () => {

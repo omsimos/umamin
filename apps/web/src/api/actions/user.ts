@@ -16,7 +16,7 @@ import { sanitizeBlockedWords } from "../../server-lib/blocked-words";
 import { formatContent } from "../../server-lib/content";
 import { getCurrentUserData, getUserProfileData } from "../../server-lib/data";
 import type { Db } from "../../server-lib/db";
-import { severDm } from "../../server-lib/dm/lifecycle";
+import { revokeDmSockets, severDm } from "../../server-lib/dm/lifecycle";
 import {
   formatErrorChain,
   isUniqueConstraintViolation,
@@ -236,6 +236,14 @@ export const updatePasswordHandler = action(
     });
     clearSessionCache();
     setSessionCookie(c, token, new Date(newSession.expiresAt));
+    // Revoked sessions don't close sockets that are already open.
+    defer(c)(
+      revokeDmSockets(db, c.env, user.id).catch((err) =>
+        captureRequestException(c, err, {
+          properties: { action: "password-dm" },
+        }),
+      ),
+    );
 
     return { success: true };
   },
