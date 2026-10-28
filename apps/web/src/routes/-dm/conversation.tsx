@@ -1,3 +1,4 @@
+import { useCanGoBack, useRouter } from "@tanstack/react-router";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,12 +65,20 @@ function PeerAvatar({ peer, className }: { peer: Peer; className?: string }) {
   );
 }
 
-function BackToChats() {
+export function BackToChats() {
   const navigate = useAppNavigate();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
   return (
+    // Going back (not pushing the list again) keeps system back from
+    // reopening this conversation.
     <SessionBackButton
       label="Back to chats"
-      onClick={() => navigate("/inbox?tab=chats")}
+      onClick={() =>
+        canGoBack
+          ? router.history.back()
+          : navigate("/inbox?tab=chats", { replace: true })
+      }
     />
   );
 }
