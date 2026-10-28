@@ -79,12 +79,13 @@ export function DmUnavailable({
   reason,
 }: {
   username: string;
-  reason: "missing" | "not-mutual" | "closed";
+  reason: "missing" | "not-mutual" | "closed" | "busy";
 }) {
   const copy = {
     missing: "This chat isn't available.",
     "not-mutual": `You can message @${username} once you follow each other.`,
     closed: "This chat is no longer available.",
+    busy: "This chat is open in too many tabs. Close one and try again.",
   }[reason];
   return (
     <SessionFrame
@@ -126,6 +127,9 @@ export function DmConversationScreen({
 
   useEffect(() => onLeave, [onLeave]);
 
+  if (state.status === "busy") {
+    return <DmUnavailable username={peer.username} reason="busy" />;
+  }
   if (state.status === "unavailable") {
     return <DmUnavailable username={peer.username} reason="closed" />;
   }

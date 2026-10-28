@@ -94,6 +94,7 @@ export function useDmConversation(
   }, []);
 
   useEffect(() => {
+    let tooMany = 0;
     const settle = (id: string, result: OpResult) => {
       waiters.current.get(id)?.(result);
       waiters.current.delete(id);
@@ -108,6 +109,7 @@ export function useDmConversation(
       }
       switch (frame.t) {
         case "sync":
+          tooMany = 0;
           dispatch({
             type: "sync",
             messages: frame.messages,
@@ -169,6 +171,12 @@ export function useDmConversation(
         onClose: (code, willReconnect) => {
           for (const id of waiters.current.keys()) {
             settle(id, { ok: false, code: "offline" });
+          }
+          if (code === CLOSE.TOO_MANY && ++tooMany >= 5) {
+            socketRef.current?.close();
+            socketRef.current = null;
+            dispatch({ type: "status", status: "busy" });
+            return;
           }
           if (code === CLOSE.VERSION) {
             reloadForVersion();

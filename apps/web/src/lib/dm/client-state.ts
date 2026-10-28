@@ -17,7 +17,9 @@ export type DmStatus =
   | "open"
   | "reconnecting"
   /** Blocked, unknown user, or flag off: the screen explains, no retry. */
-  | "unavailable";
+  | "unavailable"
+  /** Refused repeatedly for too many open sockets: the screen explains, no retry. */
+  | "busy";
 
 export interface DmState {
   status: DmStatus;
