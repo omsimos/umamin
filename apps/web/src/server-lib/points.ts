@@ -1,4 +1,4 @@
-import { postTable } from "@umamin/db/schema/post";
+import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userBlockTable, userTable } from "@umamin/db/schema/user";
 import { and, eq, ne, type SQL, sql } from "drizzle-orm";
 import type { Db } from "./db";
@@ -121,10 +121,13 @@ export async function reverseAura(
 
 type PointsDb = Pick<Db, "update">;
 
-// A post's author is only knowable SQL-side when the award rides in a db.batch:
-// a batched statement cannot read a sibling's RETURNING, so the beneficiary is
-// resolved by subquery and the self-guard moves into the WHERE.
-type AuraBeneficiary = { userId: string } | { postId: string };
+// A post's or comment's author is only knowable SQL-side when the award rides
+// in a db.batch: a batched statement cannot read a sibling's RETURNING, so the
+// beneficiary is resolved by subquery and the self-guard moves into the WHERE.
+type AuraBeneficiary =
+  | { userId: string }
+  | { postId: string }
+  | { commentId: string };
 
 type StatementArgs = {
   beneficiary: AuraBeneficiary;
@@ -135,6 +138,9 @@ type StatementArgs = {
 
 function beneficiaryWhere(beneficiary: AuraBeneficiary): SQL {
   if ("userId" in beneficiary) return eq(userTable.id, beneficiary.userId);
+  if ("commentId" in beneficiary) {
+    return sql`${userTable.id} = (SELECT ${postCommentTable.authorId} FROM ${postCommentTable} WHERE ${postCommentTable.id} = ${beneficiary.commentId})`;
+  }
   return sql`${userTable.id} = (SELECT ${postTable.authorId} FROM ${postTable} WHERE ${postTable.id} = ${beneficiary.postId})`;
 }
 

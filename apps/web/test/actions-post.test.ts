@@ -341,6 +341,158 @@ describe("post actions (real libSQL)", () => {
     });
   });
 
+  describe("reposts and comment likes", () => {
+    async function repostCount() {
+      const [row] = await db
+        .select({ repostCount: postTable.repostCount })
+        .from(postTable)
+        .where(eq(postTable.id, "p1"));
+      return row.repostCount;
+    }
+
+    async function commentLikeCount() {
+      const [row] = await db
+        .select({ likeCount: postCommentTable.likeCount })
+        .from(postCommentTable)
+        .where(eq(postCommentTable.id, "c1"));
+      return row.likeCount;
+    }
+
+    async function seedComment(authorId: string) {
+      await db
+        .insert(postCommentTable)
+        .values({ id: "c1", postId: "p1", authorId, content: "hi" });
+    }
+
+    it("addRepostAction bumps repostCount and awards repost aura", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      const { json } = await callJson<{ success: true; repost: unknown }>(
+        app,
+        "addRepostAction",
+        { postId: "p1" },
+      );
+
+      expect(json).toMatchObject({
+        success: true,
+        repost: { postId: "p1", userId: "viewer" },
+      });
+      expect(await repostCount()).toBe(1);
+      expect(await points(db, "author")).toBe(3);
+    });
+
+    it("a duplicate repost is a no-op", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await callJson(app, "addRepostAction", { postId: "p1" });
+      const { json } = await callJson(app, "addRepostAction", {
+        postId: "p1",
+      });
+
+      expect(json).toEqual({ success: true, alreadyReposted: true });
+      expect(await repostCount()).toBe(1);
+      expect(await points(db, "author")).toBe(3);
+    });
+
+    it("a self repost counts but awards nothing", async () => {
+      const app = buildApp(db, authed("author", { createdAt: OLD }));
+      await callJson(app, "addRepostAction", { postId: "p1" });
+
+      expect(await repostCount()).toBe(1);
+      expect(await points(db, "author")).toBe(0);
+    });
+
+    it("removeRepostAction reverses the count and aura", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await callJson(app, "addRepostAction", { postId: "p1" });
+      const { json } = await callJson(app, "removeRepostAction", {
+        postId: "p1",
+      });
+
+      expect(json).toEqual({ success: true });
+      expect(await repostCount()).toBe(0);
+      expect(await points(db, "author")).toBe(0);
+      expect(await db.select().from(postRepostTable)).toHaveLength(0);
+    });
+
+    it("removing a repost that never existed leaves the count alone", async () => {
+      await db
+        .update(postTable)
+        .set({ repostCount: 5 })
+        .where(eq(postTable.id, "p1"));
+      await db
+        .update(userTable)
+        .set({ points: 10 })
+        .where(eq(userTable.id, "author"));
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      const { json } = await callJson(app, "removeRepostAction", {
+        postId: "p1",
+      });
+
+      expect(json).toEqual({ success: true, alreadyRemoved: true });
+      expect(await repostCount()).toBe(5);
+      expect(await points(db, "author")).toBe(10);
+    });
+
+    it("addCommentLikeAction awards the COMMENT author, not the post author", async () => {
+      await seedUser(db, "commenter");
+      await seedComment("commenter");
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      const { json } = await callJson(app, "addCommentLikeAction", {
+        commentId: "c1",
+      });
+
+      expect(json).toEqual({ success: true });
+      expect(await commentLikeCount()).toBe(1);
+      expect(await points(db, "commenter")).toBe(1);
+      expect(await points(db, "author")).toBe(0);
+    });
+
+    it("a self comment-like counts but awards nothing", async () => {
+      await seedUser(db, "commenter");
+      await seedComment("commenter");
+      const app = buildApp(db, authed("commenter", { createdAt: OLD }));
+      await callJson(app, "addCommentLikeAction", { commentId: "c1" });
+
+      expect(await commentLikeCount()).toBe(1);
+      expect(await points(db, "commenter")).toBe(0);
+    });
+
+    it("removeCommentLikeAction reverses the count and aura", async () => {
+      await seedUser(db, "commenter");
+      await seedComment("commenter");
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      await callJson(app, "addCommentLikeAction", { commentId: "c1" });
+      const { json } = await callJson(app, "removeCommentLikeAction", {
+        commentId: "c1",
+      });
+
+      expect(json).toEqual({ success: true });
+      expect(await commentLikeCount()).toBe(0);
+      expect(await points(db, "commenter")).toBe(0);
+      expect(await db.select().from(postCommentLikeTable)).toHaveLength(0);
+    });
+
+    it("unliking a comment the viewer never liked leaves the count alone", async () => {
+      await seedUser(db, "commenter");
+      await seedComment("commenter");
+      await db
+        .update(postCommentTable)
+        .set({ likeCount: 3 })
+        .where(eq(postCommentTable.id, "c1"));
+      await db
+        .update(userTable)
+        .set({ points: 10 })
+        .where(eq(userTable.id, "commenter"));
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      const { json } = await callJson(app, "removeCommentLikeAction", {
+        commentId: "c1",
+      });
+
+      expect(json).toEqual({ success: true, alreadyRemoved: true });
+      expect(await commentLikeCount()).toBe(3);
+      expect(await points(db, "commenter")).toBe(10);
+    });
+  });
+
   it("deletePostAction refuses a non-owner non-moderator", async () => {
     const app = buildApp(db, authed("viewer", { createdAt: OLD }));
     const { json } = await callJson(app, "deletePostAction", { postId: "p1" });
