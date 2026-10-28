@@ -19,7 +19,7 @@ per environment; secrets are never in a `.env.*` file.
 ```bash
 pnpm --filter=web check-types
 pnpm --filter=web test          # jsdom + node suites
-pnpm --filter=web test:workers  # workerd suites — KV, Cache API, argon2 wasm
+pnpm --filter=web test:workers  # workerd suites: KV, Cache API, Durable Objects, argon2 wasm
 pnpm --filter=web run build     # staging build; build:production for prod
 ```
 
@@ -28,7 +28,7 @@ pnpm --filter=web run build     # staging build; build:production for prod
 | Path              | What lives there                                                        |
 | ----------------- | ------------------------------------------------------------------------ |
 | `src/server.ts`   | Worker entry — the Hono app, middleware chain, and `scheduled()` crons  |
-| `src/api/`        | `routes/` (cached GETs) and `actions/` (mutations), typed for `hc` client |
+| `src/api/`        | `routes/` (cached GETs) and `actions/` (mutations, through `action()`) |
 | `src/server-lib/` | Platform layer: session, rate limits, caching, KV, R2, push, data access  |
 | `src/routes/`     | File-based TanStack Router pages                                          |
 | `wrangler.jsonc`  | Bindings, vars, and cron triggers, split per environment                  |
