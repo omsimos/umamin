@@ -174,7 +174,7 @@ function ChatComposerInput({
       className={cn(
         // min-h matches ChatComposerSend so the two stay aligned, and clears
         // the 3rem floor that useDynamicTextarea's auto-grow resets to.
-        "max-h-32 min-h-12 flex-1 resize-none rounded-2xl border bg-muted/40 px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        "max-h-32 min-h-12 flex-1 resize-none rounded-2xl border bg-muted/40 px-4 py-3 text-base md:text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         className,
       )}
       {...props}
