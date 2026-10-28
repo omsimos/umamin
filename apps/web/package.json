@@ -56,7 +56,7 @@
     "react-dom": "^19.3.0",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.8",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.62.3",
