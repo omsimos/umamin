@@ -1,8 +1,8 @@
 import type { Context, MiddlewareHandler } from "hono";
-import type { AppBindings } from "../../server-lib/context";
+import { type AppBindings, sessionContext } from "../../server-lib/context";
 import { type Db, getDb } from "../../server-lib/db";
 import type { AppEnv } from "../../server-lib/env";
-import { type ResolvedSession, resolveSession } from "../../server-lib/session";
+import type { ResolvedSession } from "../../server-lib/session";
 
 // ── DB seam ──────────────────────────────────────────────────────────────────
 // Read handlers resolve the Turso client through this indirection instead of
@@ -21,21 +21,10 @@ export function __setReadDb(factory: ((env: AppEnv) => Db) | null): void {
 }
 
 // ── Session ──────────────────────────────────────────────────────────────────
-// Mirrors server-lib/context.sessionContext but resolves the db through the
-// seam above so a test db flows into both session validation and data reads.
+// sessionContext bound to the test seam, so a test db reaches session validation too.
 // Mounted once on readsApp; the memoized resolver is shared by every handler.
 export function readsSessionContext(): MiddlewareHandler<AppBindings> {
-  return async (c, next) => {
-    let cached: Promise<ResolvedSession> | undefined;
-    c.set("getSession", () => {
-      cached ??= resolveSession(c, resolveDb(c.env)).then((resolved) => {
-        if (resolved.session) c.set("resolvedUserId", resolved.session.userId);
-        return resolved;
-      });
-      return cached;
-    });
-    await next();
-  };
+  return sessionContext(resolveDb);
 }
 
 // read-route types its handler context with bindings only (no Variables), so
