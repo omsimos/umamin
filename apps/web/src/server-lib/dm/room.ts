@@ -174,6 +174,9 @@ export class DmRoom extends DurableObject<AppEnv> {
       checkedAt: now,
       connectedAt: now,
     } satisfies Attachment);
+    // Dead sockets from network switches count as OPEN until swept; with the
+    // peer offline nothing else would sweep them and the cap locks the user out.
+    this.closeStaleSockets(now);
     if (this.socketsFor(side, server).length >= MAX_SOCKETS_PER_SIDE) {
       server.close(CLOSE.TOO_MANY, "too many");
     }

@@ -5,7 +5,12 @@ import {
   runInDurableObject,
 } from "cloudflare:test";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import { DM_MAX_SOCKET_AGE_MS, DM_PAGE_SIZE } from "../src/lib/dm/constants";
+import {
+  DM_MAX_SOCKET_AGE_MS,
+  DM_PAGE_SIZE,
+  DM_STALE_SOCKET_MS,
+  MAX_SOCKETS_PER_SIDE,
+} from "../src/lib/dm/constants";
 import type { ThreadSnapshot } from "../src/lib/dm/engine";
 import { dmPair, dmRoomName } from "../src/lib/dm/pair";
 import {
@@ -260,6 +265,34 @@ describe("DmRoom sockets", () => {
     const other = dmPair(a, "zzz-other");
     const intruder = await connect(stub, other.threadId, a);
     expect(await intruder.closeCode()).toBe(CLOSE.UNAUTHORIZED);
+  });
+});
+
+describe("DmRoom socket cap", () => {
+  it("sweeps half-open sockets before refusing a new one for the cap", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const old: Client[] = [];
+    for (let i = 0; i < MAX_SOCKETS_PER_SIDE; i += 1) {
+      old.push(await join(stub, pair.threadId, a));
+    }
+    // No pongs were sent, so backdating the connect time makes them stale.
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        const att = ws.deserializeAttachment() as {
+          connectedAt: number;
+        } | null;
+        if (att) {
+          ws.serializeAttachment({
+            ...att,
+            connectedAt: Date.now() - DM_STALE_SOCKET_MS - 1,
+          });
+        }
+      }
+    });
+    const fresh = await join(stub, pair.threadId, a);
+    expect(fresh.closed).toBeNull();
+    for (const c of old) expect(await c.closeCode()).toBe(CLOSE.NORMAL);
   });
 });
 
