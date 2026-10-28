@@ -83,7 +83,7 @@ export function ProfileSong({ user }: { user: UserWithAccount }) {
 
   return (
     <section>
-      <Label>Profile Song</Label>
+      <Label>Profile song</Label>
       <div className="mt-2 space-y-3 rounded-lg border p-4">
         <p className="text-xs text-muted-foreground">
           Pin a song from Spotify, Apple Music, SoundCloud, or YouTube Music to

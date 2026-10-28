@@ -40,9 +40,9 @@ describe("PasswordForm", () => {
       wrapper: wrapper(client),
     });
 
-    await user.type(screen.getByLabelText("New Password"), "sup3rsecret!");
+    await user.type(screen.getByLabelText("New password"), "sup3rsecret!");
     await user.type(
-      screen.getByLabelText("Confirm New Password"),
+      screen.getByLabelText("Confirm new password"),
       "sup3rsecret!",
     );
     await user.click(screen.getByRole("button", { name: /set password/i }));
@@ -65,9 +65,9 @@ describe("PasswordForm", () => {
       wrapper: wrapper(client),
     });
 
-    await user.type(screen.getByLabelText("New Password"), "sup3rsecret!");
+    await user.type(screen.getByLabelText("New password"), "sup3rsecret!");
     await user.type(
-      screen.getByLabelText("Confirm New Password"),
+      screen.getByLabelText("Confirm new password"),
       "different99",
     );
     await user.click(screen.getByRole("button", { name: /set password/i }));
@@ -76,5 +76,27 @@ describe("PasswordForm", () => {
       expect(screen.getByText("Passwords do not match")).toBeInTheDocument();
     });
     expect(callAction).not.toHaveBeenCalled();
+  });
+
+  it("announces the mismatch and links it to the confirm field", async () => {
+    const client = new QueryClient();
+    const user = userEvent.setup();
+
+    render(<PasswordForm hasPassword={false} />, {
+      wrapper: wrapper(client),
+    });
+
+    await user.type(screen.getByLabelText("New password"), "sup3rsecret!");
+    await user.type(
+      screen.getByLabelText("Confirm new password"),
+      "different99",
+    );
+    await user.click(screen.getByRole("button", { name: /set password/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Passwords do not match");
+    const confirm = screen.getByLabelText("Confirm new password");
+    expect(confirm).toHaveAttribute("aria-invalid", "true");
+    expect(confirm).toHaveAttribute("aria-describedby", alert.id);
   });
 });

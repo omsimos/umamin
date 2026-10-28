@@ -82,7 +82,7 @@ export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
     <form className="space-y-4" onSubmit={onSubmit}>
       {hasPassword && (
         <div className="space-y-1">
-          <Label htmlFor="currentPassword">Current Password</Label>
+          <Label htmlFor="currentPassword">Current password</Label>
           <Input
             id="currentPassword"
             type="password"
@@ -90,15 +90,25 @@ export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
             value={fields.currentPassword}
             disabled={mutation.isPending}
             onChange={(e) => set("currentPassword", e.target.value)}
+            aria-invalid={errors.currentPassword ? true : undefined}
+            aria-describedby={
+              errors.currentPassword ? "currentPassword-error" : undefined
+            }
           />
           {errors.currentPassword && (
-            <p className="text-sm text-destructive">{errors.currentPassword}</p>
+            <p
+              id="currentPassword-error"
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {errors.currentPassword}
+            </p>
           )}
         </div>
       )}
 
       <div className="space-y-1">
-        <Label htmlFor="newPassword">New Password</Label>
+        <Label htmlFor="newPassword">New password</Label>
         <Input
           id="newPassword"
           type="password"
@@ -106,14 +116,24 @@ export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
           value={fields.newPassword}
           disabled={mutation.isPending}
           onChange={(e) => set("newPassword", e.target.value)}
+          aria-invalid={errors.newPassword ? true : undefined}
+          aria-describedby={
+            errors.newPassword ? "newPassword-error" : undefined
+          }
         />
         {errors.newPassword && (
-          <p className="text-sm text-destructive">{errors.newPassword}</p>
+          <p
+            id="newPassword-error"
+            role="alert"
+            className="text-sm text-destructive"
+          >
+            {errors.newPassword}
+          </p>
         )}
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+        <Label htmlFor="confirmPassword">Confirm new password</Label>
         <Input
           id="confirmPassword"
           type="password"
@@ -121,9 +141,19 @@ export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
           value={fields.confirmPassword}
           disabled={mutation.isPending}
           onChange={(e) => set("confirmPassword", e.target.value)}
+          aria-invalid={errors.confirmPassword ? true : undefined}
+          aria-describedby={
+            errors.confirmPassword ? "confirmPassword-error" : undefined
+          }
         />
         {errors.confirmPassword && (
-          <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+          <p
+            id="confirmPassword-error"
+            role="alert"
+            className="text-sm text-destructive"
+          >
+            {errors.confirmPassword}
+          </p>
         )}
       </div>
 

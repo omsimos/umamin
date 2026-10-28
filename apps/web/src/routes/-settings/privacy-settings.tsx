@@ -136,7 +136,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
   return (
     <div className="space-y-8">
       <section>
-        <Label>Update Preferences</Label>
+        <Label>Update preferences</Label>
         <div className="flex items-center space-x-4 rounded-md border p-4 mt-2">
           <MessageCircleOffIcon className="size-6" />
           <div className="flex-1 space-y-1">

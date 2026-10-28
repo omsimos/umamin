@@ -227,7 +227,7 @@ export function ProfileMedia({ user }: { user: UserWithAccount }) {
   return (
     <div className="space-y-8">
       <section>
-        <Label>Profile Photo</Label>
+        <Label>Profile photo</Label>
         <div className="mt-2 space-y-4 rounded-lg border p-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
