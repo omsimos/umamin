@@ -139,7 +139,7 @@ export function NoteList({
           <MessageCircleDashedIcon />
           <AlertTitle>nothing here yet</AlertTitle>
           <AlertDescription>
-            say something into the void — it'll land right here.
+            say something into the void, it'll land right here.
           </AlertDescription>
         </Alert>
       )}

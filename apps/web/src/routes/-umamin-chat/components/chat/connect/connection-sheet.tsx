@@ -118,7 +118,7 @@ function ConnectionBody({
       <p className="text-muted-foreground text-center text-sm">
         {reveal.partner.submitted
           ? `${partner.alias} has already shared. Add yours to reveal both.`
-          : "Shown only if you BOTH share. Never on receipts."}
+          : "Shown only if you both share. Never on receipts."}
       </p>
       <Input
         value={draft}

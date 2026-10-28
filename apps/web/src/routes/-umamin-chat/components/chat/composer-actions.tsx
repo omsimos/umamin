@@ -44,8 +44,7 @@ const PLAYS: { id: PlayChoice; emoji: string; label: string; hint: string }[] =
     },
   ];
 
-const sectionLabel =
-  "text-muted-foreground px-1 text-[10px] font-semibold tracking-wider uppercase";
+const sectionLabel = "text-muted-foreground px-1 text-xs font-medium";
 
 function ActionsBody({
   mode,

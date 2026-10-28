@@ -527,7 +527,7 @@ export function GroupPageClient({
           ) : (
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">
-                Ask to join — the owner will review your request.
+                Ask to join. The owner will review your request.
               </p>
               <Button
                 disabled={requestMutation.isPending}

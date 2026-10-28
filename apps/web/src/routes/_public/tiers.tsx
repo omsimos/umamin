@@ -7,7 +7,7 @@ import { TiersView } from "./-tiers/tiers-view";
 const PRO_SEO = {
   title: "Umamin — Plus & Pro",
   description:
-    "What you unlock on Free, Plus, and Pro. Plus is free at one year; Pro is a one-time purchase — no subscription.",
+    "What you unlock on Free, Plus, and Pro. Plus is free at one year; Pro is a one-time purchase, no subscription.",
 };
 const PLUS_ONLY_SEO = {
   title: "Umamin — Plus",

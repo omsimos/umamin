@@ -87,7 +87,7 @@ function SongForm({
     // Unavailable on insecure contexts / older browsers — tell the user rather
     // than silently no-op so they fall back to a manual paste.
     if (!navigator.clipboard?.readText) {
-      toast.error("Your browser blocks clipboard access — paste manually.");
+      toast.error("Your browser blocks clipboard access. Paste manually.");
       return;
     }
     try {
@@ -96,7 +96,7 @@ function SongForm({
         setDraft(text.trim());
       }
     } catch {
-      toast.error("Couldn't read your clipboard — paste the link manually.");
+      toast.error("Couldn't read your clipboard. Paste the link manually.");
     }
   };
 

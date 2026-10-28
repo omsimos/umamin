@@ -82,7 +82,7 @@ export function DemoChat() {
           }`}
         >
           <FlameIcon className="size-3 text-violet-400" />
-          chat ended — nothing was saved, anywhere
+          chat ended, nothing was saved, anywhere
         </p>
       </div>
     </div>

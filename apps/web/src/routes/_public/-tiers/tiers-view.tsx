@@ -112,7 +112,7 @@ const PRO_PERKS: Perk[] = [
   {
     icon: ImagePlusIcon,
     title: "Post images right away",
-    detail: `No waiting for ${MIN_AURA_FOR_IMAGES} aura — attach photos from day one.`,
+    detail: `No waiting for ${MIN_AURA_FOR_IMAGES} aura. Attach photos from day one.`,
   },
   {
     icon: RocketIcon,
@@ -234,7 +234,7 @@ export function TiersView() {
           </div>
           <PerkList perks={PLUS_PERKS} />
           <p className="text-xs text-muted-foreground">
-            Plus is always free — early access to new features once your account
+            Plus is always free. Early access to new features once your account
             is a year old.
           </p>
         </TabsContent>
@@ -253,8 +253,8 @@ export function TiersView() {
 
             {pro === "success" && !isPro && (
               <div className="rounded-xl border bg-muted/30 p-3 text-sm">
-                Payment received — Pro unlocks as soon as the order is
-                confirmed, usually within a minute. Check back shortly.
+                Payment received. Pro unlocks as soon as the order is confirmed,
+                usually within a minute. Check back shortly.
               </div>
             )}
 
@@ -267,7 +267,7 @@ export function TiersView() {
                   </span>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  That's around ₱{PRO_PER_MONTH_PHP} a month. One-time payment —
+                  That's around ₱{PRO_PER_MONTH_PHP} a month. One-time payment.
                   not a subscription, nothing to cancel.
                 </p>
               </div>
@@ -280,8 +280,8 @@ export function TiersView() {
                 >
                   {checkingOut && <Loader2Icon className="animate-spin" />}
                   {isPro
-                    ? `Add ${PRO_TERM_MONTHS} more months — ₱${PRO_PRICE_PHP}`
-                    : `Get Pro — ₱${PRO_PRICE_PHP}`}
+                    ? `Add ${PRO_TERM_MONTHS} more months: ₱${PRO_PRICE_PHP}`
+                    : `Get Pro: ₱${PRO_PRICE_PHP}`}
                 </Button>
               ) : (
                 <Button className="w-full" asChild>
