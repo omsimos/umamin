@@ -149,6 +149,7 @@ const MENTION = /(?:^|[^\w@])@[\w-]{2,}/;
 export function scoreAnswers(
   answers: ClassifierAnswers,
   text = "",
+  kind?: ContentKind,
 ): ContentScores {
   const severe: Record<(typeof SEVERE_KEYS)[number], number> = {
     hate: answers.hate.probability,
@@ -160,7 +161,12 @@ export function scoreAnswers(
     harassment: answers.harassment.probability,
   };
 
-  const political = answers.political.probability >= 0.5 && !MENTION.test(text);
+  // A message is always aimed at its recipient, the case the exemption must
+  // never cover (same reason as an @handle).
+  const political =
+    kind !== "message" &&
+    answers.political.probability >= 0.5 &&
+    !MENTION.test(text);
   if (political) severe.harassment = 0;
 
   const noneProbability =
@@ -285,7 +291,7 @@ export async function classifyContent(
       maxRetries: 0,
       abortSignal: controller.signal,
     });
-    return scoreAnswers(result.answers, text);
+    return scoreAnswers(result.answers, text, input.kind);
   } catch (err) {
     const expected = expectedFailureName(err);
     if (expected) {

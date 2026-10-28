@@ -118,6 +118,22 @@ describe("scoreAnswers", () => {
     ).toBeLessThan(10);
   });
 
+  it("never exempts political-framed abuse in a private message", () => {
+    const abuse = answers(
+      { harassment: 0.9, political: 0.9 },
+      { choice: "callout", none: 0.05 },
+    );
+    expect(scoreAnswers(abuse, "DDS ka kasi kaya bobo ka", "message")).toEqual({
+      severe: 90,
+      drama: 95,
+      reason: "harassment",
+    });
+    // Posts keep the exemption.
+    expect(
+      scoreAnswers(abuse, "DDS ka kasi kaya bobo ka", "post").severe,
+    ).toBeLessThan(10);
+  });
+
   it("names the drama kind when nothing severe stands out", () => {
     expect(
       scoreAnswers(answers({}, { choice: "indirect", none: 0.02 })),
@@ -137,6 +153,17 @@ describe("classifyContent", () => {
         },
       ),
     ).toMatchObject({ severe: 93, reason: "threat" });
+  });
+
+  it("forwards the content kind so messages get no political exemption", async () => {
+    const model = mockModel(answers({ harassment: 0.9, political: 0.9 }));
+    expect(
+      await classifyContent(
+        env,
+        { kind: "message", text: "DDS ka kasi kaya bobo ka" },
+        { model },
+      ),
+    ).toMatchObject({ severe: 90, reason: "harassment" });
   });
 
   it("sends the parent post apart from the author's own text", async () => {
