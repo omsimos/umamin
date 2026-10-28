@@ -28,6 +28,7 @@ import { SideLimiter } from "../../lib/chat/limits";
 import {
   ACCESS_RECHECK_MS,
   DM_DEDUPE_WINDOW,
+  DM_MAX_SOCKET_AGE_MS,
   DM_PAGE_SIZE,
   DM_STALE_SOCKET_MS,
   MAX_DM_FRAME_CHARS,
@@ -199,9 +200,11 @@ export class DmRoom extends DurableObject<AppEnv> {
         ws.close(CLOSE.UNAUTHORIZED, "unauthorized");
         return;
       }
-      await this.handleFrame(ws, att, frame);
-      // The object is awake anyway, so closing half-open sockets here is free.
+      // Sweep first, so a broadcast below never reaches an expired or dead
+      // socket. The object is awake anyway, so this is free.
       this.closeStaleSockets(Date.now());
+      if (ws.readyState !== WebSocket.OPEN) return;
+      await this.handleFrame(ws, att, frame);
     } catch (err) {
       this.report(err, "message");
     }
@@ -855,8 +858,10 @@ export class DmRoom extends DurableObject<AppEnv> {
   private closeStaleSockets(now: number) {
     for (const ws of this.ctx.getWebSockets()) {
       if (ws.readyState !== WebSocket.OPEN) continue;
-      if (!this.isFresh(ws, now)) {
-        this.closeQuietly(ws, CLOSE.NORMAL, "stale");
+      const att = this.attachment(ws);
+      const expired = !!att && now - att.connectedAt >= DM_MAX_SOCKET_AGE_MS;
+      if (expired || !this.isFresh(ws, now)) {
+        this.closeQuietly(ws, CLOSE.NORMAL, expired ? "expired" : "stale");
         this.onSocketGone(ws);
       }
     }

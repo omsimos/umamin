@@ -5,7 +5,7 @@ import {
   runInDurableObject,
 } from "cloudflare:test";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import { DM_PAGE_SIZE } from "../src/lib/dm/constants";
+import { DM_MAX_SOCKET_AGE_MS, DM_PAGE_SIZE } from "../src/lib/dm/constants";
 import type { ThreadSnapshot } from "../src/lib/dm/engine";
 import { dmPair, dmRoomName } from "../src/lib/dm/pair";
 import {
@@ -13,6 +13,8 @@ import {
   DM_CLOSED,
   DM_PROTOCOL_VERSION,
   type DmServerFrame,
+  PING,
+  PONG,
 } from "../src/lib/dm/protocol";
 import { DM_HEADERS, type DmRoom } from "../src/server-lib/dm/room";
 import type { DmStore } from "../src/server-lib/dm/store";
@@ -57,11 +59,17 @@ class Client {
   }
 
   get frames(): DmServerFrame[] {
-    return this.raw.map((r) => JSON.parse(r) as DmServerFrame);
+    return this.raw
+      .filter((r) => r !== PONG)
+      .map((r) => JSON.parse(r) as DmServerFrame);
   }
 
   send(frame: object) {
     this.ws.send(JSON.stringify(frame));
+  }
+
+  sendRaw(data: string) {
+    this.ws.send(data);
   }
 
   close() {
@@ -502,6 +510,33 @@ describe("DmRoom access changes", () => {
     store.allowed = false;
     await sendText(ca, "still ok");
     expect(ca.count("err")).toBe(0);
+  });
+
+  it("closes a socket past the age cap so it reconnects through the session check", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    // A recent pong keeps the socket "fresh"; only its age should close it.
+    ca.sendRaw(PING);
+    await eventually(() => ca.raw.includes(PONG), "pong");
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        const att = ws.deserializeAttachment() as {
+          side: number;
+          connectedAt: number;
+        } | null;
+        if (att?.side === 0) {
+          ws.serializeAttachment({
+            ...att,
+            connectedAt: Date.now() - DM_MAX_SOCKET_AGE_MS - 1,
+          });
+        }
+      }
+    });
+    await sendText(cb, "after expiry");
+    expect(await ca.closeCode()).toBe(CLOSE.NORMAL);
+    expect(ca.frames.some((f) => f.t === "msgs")).toBe(false);
   });
 
   it("wipes all storage on purge", async () => {
