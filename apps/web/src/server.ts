@@ -8,6 +8,7 @@ import { googleAuthApp } from "./api/auth";
 import {
   cleanupNotifications,
   cleanupSessions,
+  purgeDeletedDms,
   recomputeHotFeed,
   retryUnclassified,
 } from "./server-lib/cron";
@@ -109,6 +110,7 @@ const scheduled: ExportedHandlerScheduledHandler<AppEnv> = async (
     case "*/5 * * * *":
       ctx.waitUntil(report(recomputeHotFeed(env)));
       ctx.waitUntil(report(retryUnclassified(env, (p) => ctx.waitUntil(p))));
+      ctx.waitUntil(report(purgeDeletedDms(env)));
       break;
     default:
       console.log(`[cron] unhandled: ${event.cron}`);
@@ -124,3 +126,4 @@ export default {
 // bind them (wrangler.jsonc "exports" + durable_objects.bindings).
 export { ChatLobby } from "./server-lib/chat/lobby";
 export { ChatRoom } from "./server-lib/chat/room";
+export { DmRoom } from "./server-lib/dm/room";

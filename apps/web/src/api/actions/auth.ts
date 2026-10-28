@@ -22,6 +22,7 @@ import { nanoid } from "nanoid";
 import { hash, verify } from "../../server-lib/argon2";
 import { generateUsernameId } from "../../server-lib/content";
 import { passesCsrf } from "../../server-lib/csrf";
+import { queueDmPurge } from "../../server-lib/dm/threads";
 import {
   ACCESS_BLOCKED_ERROR,
   ACCOUNT_DELETE_FAILED_ERROR,
@@ -473,6 +474,8 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
       await tx.delete(messageTable).where(eq(messageTable.receiverId, uid));
       await tx.delete(accountTable).where(eq(accountTable.userId, uid));
       await tx.delete(noteTable).where(eq(noteTable.userId, uid));
+      // Before the cascade drops the dm_thread rows that name the rooms.
+      await queueDmPurge(tx, uid);
       await tx.delete(userTable).where(eq(userTable.id, uid));
     });
   } catch (err) {

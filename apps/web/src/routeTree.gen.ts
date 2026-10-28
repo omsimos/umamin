@@ -41,6 +41,7 @@ import { Route as SocialToUsernameRouteImport } from './routes/_social/to.$usern
 import { Route as SocialUserUsernameRouteImport } from './routes/_social/user.$username'
 import { Route as GroupsTagIndexRouteImport } from './routes/groups.$tag.index'
 import { Route as GroupsTagChatRouteImport } from './routes/groups.$tag.chat'
+import { Route as PrivateInboxChatsUsernameRouteImport } from './routes/_private.inbox_.chats.$username'
 
 const MarketingRoute = MarketingRouteImport.update({
   id: '/_marketing',
@@ -198,6 +199,12 @@ const GroupsTagChatRoute = GroupsTagChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => GroupsTagRoute,
 } as any)
+const PrivateInboxChatsUsernameRoute =
+  PrivateInboxChatsUsernameRouteImport.update({
+    id: '/inbox_/chats/$username',
+    path: '/inbox/chats/$username',
+    getParentRoute: () => PrivateRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof MarketingIndexRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/user/$username': typeof SocialUserUsernameRoute
   '/groups/$tag/chat': typeof GroupsTagChatRoute
   '/groups/$tag/': typeof GroupsTagIndexRoute
+  '/inbox/chats/$username': typeof PrivateInboxChatsUsernameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof MarketingIndexRoute
@@ -256,6 +264,7 @@ export interface FileRoutesByTo {
   '/user/$username': typeof SocialUserUsernameRoute
   '/groups/$tag/chat': typeof GroupsTagChatRoute
   '/groups/$tag': typeof GroupsTagIndexRoute
+  '/inbox/chats/$username': typeof PrivateInboxChatsUsernameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -291,6 +300,7 @@ export interface FileRoutesById {
   '/_social/user/$username': typeof SocialUserUsernameRoute
   '/groups/$tag/chat': typeof GroupsTagChatRoute
   '/groups/$tag/': typeof GroupsTagIndexRoute
+  '/_private/inbox_/chats/$username': typeof PrivateInboxChatsUsernameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -323,6 +333,7 @@ export interface FileRouteTypes {
     | '/user/$username'
     | '/groups/$tag/chat'
     | '/groups/$tag/'
+    | '/inbox/chats/$username'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -351,6 +362,7 @@ export interface FileRouteTypes {
     | '/user/$username'
     | '/groups/$tag/chat'
     | '/groups/$tag'
+    | '/inbox/chats/$username'
   id:
     | '__root__'
     | '/_marketing'
@@ -385,6 +397,7 @@ export interface FileRouteTypes {
     | '/_social/user/$username'
     | '/groups/$tag/chat'
     | '/groups/$tag/'
+    | '/_private/inbox_/chats/$username'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -622,6 +635,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsTagChatRouteImport
       parentRoute: typeof GroupsTagRoute
     }
+    '/_private/inbox_/chats/$username': {
+      id: '/_private/inbox_/chats/$username'
+      path: '/inbox/chats/$username'
+      fullPath: '/inbox/chats/$username'
+      preLoaderRoute: typeof PrivateInboxChatsUsernameRouteImport
+      parentRoute: typeof PrivateRoute
+    }
   }
 }
 
@@ -648,6 +668,7 @@ interface PrivateRouteChildren {
   PrivateNotificationsRoute: typeof PrivateNotificationsRoute
   PrivateSettingsRoute: typeof PrivateSettingsRoute
   PrivateInboxMessageIdRoute: typeof PrivateInboxMessageIdRoute
+  PrivateInboxChatsUsernameRoute: typeof PrivateInboxChatsUsernameRoute
 }
 
 const PrivateRouteChildren: PrivateRouteChildren = {
@@ -657,6 +678,7 @@ const PrivateRouteChildren: PrivateRouteChildren = {
   PrivateNotificationsRoute: PrivateNotificationsRoute,
   PrivateSettingsRoute: PrivateSettingsRoute,
   PrivateInboxMessageIdRoute: PrivateInboxMessageIdRoute,
+  PrivateInboxChatsUsernameRoute: PrivateInboxChatsUsernameRoute,
 }
 
 const PrivateRouteWithChildren =

@@ -7,13 +7,15 @@ import * as z from "zod";
 import { action } from "../../server-lib/action";
 import { contentLabel } from "../../server-lib/content-label";
 import type { Db } from "../../server-lib/db";
+import { severAllDms } from "../../server-lib/dm/lifecycle";
 import { isModerationEnforced } from "../../server-lib/flags";
 import { canonicalizeIp, extractClientIp } from "../../server-lib/ip";
 import { allowIp, denyIp } from "../../server-lib/ip-denylist";
 import { isModerator } from "../../server-lib/moderation";
+import { captureRequestException } from "../../server-lib/posthog";
 import { idSchema } from "../../server-lib/schema";
 import { invalidateUserSessions } from "../../server-lib/session";
-import { ctxDb } from "./_shared";
+import { ctxDb, defer } from "./_shared";
 
 // A non-moderator caller gets the same generic "not found" as a missing target,
 // so the action never leaks who is a moderator or whether a username exists.
@@ -73,6 +75,12 @@ export const banUserHandler = action(
     // Force-logout: delete sessions + bust the session cache so the ban takes
     // effect immediately. validateSessionToken is the standing backstop after.
     await invalidateUserSessions(db, target.id);
+    // Sessions don't cover sockets that are already open.
+    defer(c)(
+      severAllDms(db, c.env, target.id).catch((err) =>
+        captureRequestException(c, err, { properties: { action: "ban-dm" } }),
+      ),
+    );
 
     return { success: true };
   },

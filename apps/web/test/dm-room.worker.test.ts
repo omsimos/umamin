@@ -1,0 +1,527 @@
+import {
+  env,
+  evictDurableObject,
+  runDurableObjectAlarm,
+  runInDurableObject,
+} from "cloudflare:test";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { DM_PAGE_SIZE } from "../src/lib/dm/constants";
+import type { ThreadSnapshot } from "../src/lib/dm/engine";
+import { dmPair, dmRoomName } from "../src/lib/dm/pair";
+import {
+  CLOSE,
+  DM_CLOSED,
+  DM_PROTOCOL_VERSION,
+  type DmServerFrame,
+} from "../src/lib/dm/protocol";
+import { DM_HEADERS, type DmRoom } from "../src/server-lib/dm/room";
+import type { DmStore } from "../src/server-lib/dm/store";
+
+type FrameOf<T extends DmServerFrame["t"]> = Extract<DmServerFrame, { t: T }>;
+
+beforeAll(async () => {
+  const key = await crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"],
+  );
+  const raw = await crypto.subtle.exportKey("raw", key);
+  process.env.AES_256_GCM_KEY = Buffer.from(new Uint8Array(raw)).toString(
+    "base64",
+  );
+});
+
+const live: Client[] = [];
+
+class Client {
+  readonly raw: string[] = [];
+  closed: { code: number; reason: string } | null = null;
+  private readonly ws: WebSocket;
+  private wake = new Set<() => void>();
+
+  constructor(res: Response) {
+    if (res.status !== 101 || !res.webSocket) {
+      throw new Error(`expected an upgrade, got ${res.status}`);
+    }
+    this.ws = res.webSocket;
+    this.ws.addEventListener("message", (e) => {
+      this.raw.push(e.data as string);
+      for (const fn of this.wake) fn();
+    });
+    this.ws.addEventListener("close", (e) => {
+      this.closed = { code: e.code, reason: e.reason };
+      for (const fn of this.wake) fn();
+    });
+    this.ws.accept();
+    live.push(this);
+  }
+
+  get frames(): DmServerFrame[] {
+    return this.raw.map((r) => JSON.parse(r) as DmServerFrame);
+  }
+
+  send(frame: object) {
+    this.ws.send(JSON.stringify(frame));
+  }
+
+  close() {
+    try {
+      this.ws.close(1000, "bye");
+    } catch {
+      // Already closed.
+    }
+  }
+
+  private until<R>(check: () => R | undefined, label: string): Promise<R> {
+    return new Promise((resolve, reject) => {
+      const tryNow = () => {
+        const hit = check();
+        if (hit === undefined) return false;
+        clearTimeout(timer);
+        this.wake.delete(onWake);
+        resolve(hit);
+        return true;
+      };
+      const onWake = () => void tryNow();
+      const timer = setTimeout(() => {
+        this.wake.delete(onWake);
+        reject(
+          new Error(
+            `timed out waiting for ${label}; got ${JSON.stringify(this.raw)}, closed ${JSON.stringify(this.closed)}`,
+          ),
+        );
+      }, 2000);
+      if (!tryNow()) this.wake.add(onWake);
+    });
+  }
+
+  next<T extends DmServerFrame["t"]>(
+    t: T,
+    pred: (f: FrameOf<T>) => boolean = () => true,
+  ): Promise<FrameOf<T>> {
+    return this.until(
+      () =>
+        this.frames.find(
+          (f): f is FrameOf<T> => f.t === t && pred(f as FrameOf<T>),
+        ),
+      t,
+    );
+  }
+
+  count(t: DmServerFrame["t"]) {
+    return this.frames.filter((f) => f.t === t).length;
+  }
+
+  closeCode(): Promise<number> {
+    return this.until(() => this.closed?.code, "close");
+  }
+}
+
+afterEach(() => {
+  for (const c of live.splice(0)) c.close();
+});
+
+class FakeStore implements DmStore {
+  writes: ThreadSnapshot[] = [];
+  pushes: [string, string][] = [];
+  reports: Parameters<DmStore["insertReport"]>[0][] = [];
+  allowed = true;
+
+  async canMessage() {
+    return this.allowed;
+  }
+  async writeThread(_pair: unknown, s: ThreadSnapshot) {
+    this.writes.push(structuredClone(s));
+  }
+  async insertReport(input: Parameters<DmStore["insertReport"]>[0]) {
+    const dup = this.reports.some(
+      (r) =>
+        r.reporterId === input.reporterId && r.messageSeq === input.messageSeq,
+    );
+    if (dup) return false;
+    this.reports.push(input);
+    return true;
+  }
+  async pushMessage(recipientId: string, senderId: string) {
+    this.pushes.push([recipientId, senderId]);
+  }
+}
+
+/** A fresh pair and room per test. "a" sorts low, "b" high. */
+function setup() {
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const a = `a-${suffix}`;
+  const b = `b-${suffix}`;
+  const pair = dmPair(a, b);
+  const stub = env.DM_ROOM.getByName(dmRoomName(pair.threadId));
+  const store = new FakeStore();
+  const install = () =>
+    runInDurableObject(stub, (instance: DmRoom) => instance.__setStore(store));
+  return { a, b, pair, stub, store, install };
+}
+
+async function connect(
+  stub: DurableObjectStub,
+  threadId: string,
+  userId: string,
+  canSend = true,
+) {
+  const c = new Client(
+    await stub.fetch("https://dm.test/", {
+      headers: {
+        Upgrade: "websocket",
+        [DM_HEADERS.thread]: threadId,
+        [DM_HEADERS.user]: userId,
+        [DM_HEADERS.canSend]: canSend ? "1" : "0",
+      },
+    }),
+  );
+  return c;
+}
+
+async function join(
+  stub: DurableObjectStub,
+  threadId: string,
+  userId: string,
+  canSend = true,
+) {
+  const c = await connect(stub, threadId, userId, canSend);
+  c.send({ t: "hi", v: DM_PROTOCOL_VERSION });
+  await c.next("sync");
+  return c;
+}
+
+let opSeq = 0;
+const op = () => `op-${++opSeq}`;
+
+async function sendText(c: Client, text: string, extra: object = {}) {
+  const id = op();
+  c.send({ t: "send", id, text, ...extra });
+  const ack = await c.next("ack", (f) => f.id === id);
+  return ack.messageId as string;
+}
+
+function tableCount(stub: DurableObjectStub) {
+  return runInDurableObject(
+    stub,
+    (_i, state) =>
+      state.storage.sql
+        .exec<{ n: number }>("SELECT COUNT(*) AS n FROM sqlite_master")
+        .one().n,
+  );
+}
+
+async function eventually(
+  check: () => boolean | Promise<boolean>,
+  label: string,
+) {
+  for (let i = 0; i < 200; i += 1) {
+    if (await check()) return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error(`never became true: ${label}`);
+}
+
+describe("DmRoom sockets", () => {
+  it("rejects a user who isn't part of the pair", async () => {
+    const { stub, pair } = setup();
+    const c = await connect(stub, pair.threadId, "intruder");
+    expect(await c.closeCode()).toBe(CLOSE.UNAUTHORIZED);
+  });
+
+  it("rejects an old protocol version", async () => {
+    const { stub, pair, a } = setup();
+    const c = await connect(stub, pair.threadId, a);
+    c.send({ t: "hi", v: DM_PROTOCOL_VERSION + 1 });
+    expect(await c.closeCode()).toBe(CLOSE.VERSION);
+  });
+
+  it("writes no storage when a conversation is only opened", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    expect((await c.next("sync")).messages).toEqual([]);
+    expect(await tableCount(stub)).toBe(0);
+  });
+
+  it("serves only the pair it was created for", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    await sendText(c, "hello");
+    const other = dmPair(a, "zzz-other");
+    const intruder = await connect(stub, other.threadId, a);
+    expect(await intruder.closeCode()).toBe(CLOSE.UNAUTHORIZED);
+  });
+});
+
+describe("DmRoom messages", () => {
+  it("delivers to both sides and echoes the client id only to the sender", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    const id = op();
+    ca.send({ t: "send", id, text: "  hi bob  " });
+    const forA = await ca.next("msgs");
+    const forB = await cb.next("msgs");
+    expect(forA.messages[0]).toMatchObject({
+      text: "hi bob",
+      mine: true,
+      clientId: id,
+    });
+    expect(forB.messages[0]).toMatchObject({ text: "hi bob", mine: false });
+    expect(forB.messages[0]?.clientId).toBeUndefined();
+  });
+
+  it("stores the text encrypted", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    await sendText(c, "secret words");
+    const body = await runInDurableObject(
+      stub,
+      (_i, state) =>
+        state.storage.sql
+          .exec<{ body: string }>("SELECT body FROM messages")
+          .one().body,
+    );
+    expect(body).not.toContain("secret");
+  });
+
+  it("does not store a retried send twice", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    c.send({ t: "send", id: "same", text: "once" });
+    c.send({ t: "send", id: "same", text: "once" });
+    await eventually(() => c.count("ack") === 2, "two acks");
+    const acks = c.frames.filter((f): f is FrameOf<"ack"> => f.t === "ack");
+    expect(acks[0]?.messageId).toBe(acks[1]?.messageId);
+  });
+
+  it("refuses sends without access but still allows unsend", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const open = await join(stub, pair.threadId, a);
+    const seq = await sendText(open, "before");
+    open.close();
+
+    const closed = await join(stub, pair.threadId, a, false);
+    expect((await closed.next("sync")).meta.canSend).toBe(false);
+    closed.send({ t: "send", id: "x", text: "after" });
+    expect((await closed.next("err", (f) => f.id === "x")).code).toBe("closed");
+    closed.send({ t: "unsend", id: "u", messageId: seq });
+    await closed.next("ack", (f) => f.id === "u");
+    const msgs = await closed.next("msgs");
+    expect(msgs.messages[0]?.text).toBeNull();
+  });
+
+  it("keeps history across eviction", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    await sendText(c, "remember me");
+    c.close();
+    await evictDurableObject(stub);
+    await install();
+    const cb = await join(stub, pair.threadId, b);
+    expect((await cb.next("sync")).messages.map((m) => m.text)).toEqual([
+      "remember me",
+    ]);
+  });
+
+  it("pages history oldest first", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const total = DM_PAGE_SIZE + 5;
+    await runInDurableObject(stub, async (instance: DmRoom) => {
+      const room = instance as unknown as {
+        insertRow(t: string, m: object, c: string | null): Promise<unknown>;
+      };
+      for (let i = 1; i <= total; i += 1) {
+        await room.insertRow(
+          pair.threadId,
+          {
+            author: i % 2,
+            text: `m${i}`,
+            replyTo: null,
+            reactionLow: null,
+            reactionHigh: null,
+            createdAt: i,
+          },
+          null,
+        );
+      }
+    });
+    const c = await join(stub, pair.threadId, b);
+    const sync = await c.next("sync");
+    expect(sync.hasMore).toBe(true);
+    expect(sync.messages).toHaveLength(DM_PAGE_SIZE);
+    expect(sync.messages.at(-1)?.text).toBe(`m${total}`);
+    c.send({ t: "history", id: "h", before: sync.messages[0]?.id });
+    const page = await c.next("history", (f) => f.id === "h");
+    expect(page.hasMore).toBe(false);
+    expect(page.messages.map((m) => m.text)).toEqual([
+      "m1",
+      "m2",
+      "m3",
+      "m4",
+      "m5",
+    ]);
+    void a;
+  });
+});
+
+describe("DmRoom thread index", () => {
+  it("writes the first message at once and coalesces the rest into one alarm write", async () => {
+    const { stub, pair, a, store, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    await sendText(c, "one");
+    await eventually(() => store.writes.length === 1, "first write");
+    expect(store.writes[0]).toMatchObject({
+      lastSeq: 1,
+      lastSender: 0,
+      preview: "one",
+    });
+
+    await sendText(c, "two");
+    await sendText(c, "three");
+    expect(store.writes).toHaveLength(1);
+
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+    expect(store.writes).toHaveLength(2);
+    expect(store.writes[1]).toMatchObject({ lastSeq: 3, preview: "three" });
+  });
+
+  it("writes at once when the recipient reads, and tells the sender", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    const seq = await sendText(ca, "read me");
+    await eventually(() => store.writes.length === 1, "first write");
+    cb.send({ t: "read", upTo: seq });
+    await ca.next("meta", (f) => f.meta.peerReadSeq === Number(seq));
+    await eventually(() => store.writes.length === 2, "read write");
+    expect(store.writes[1]?.readSeq).toEqual([0, Number(seq)]);
+  });
+
+  it("hides history for one side only", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    await sendText(ca, "old");
+    await runInDurableObject(stub, (instance: DmRoom) => instance.hide(b));
+    expect(store.writes.at(-1)?.hiddenSeq).toEqual([0, 1]);
+    const cb = await join(stub, pair.threadId, b);
+    expect((await cb.next("sync")).messages).toEqual([]);
+    ca.close();
+    const ca2 = await join(stub, pair.threadId, a);
+    expect((await ca2.next("sync")).messages).toHaveLength(1);
+  });
+});
+
+describe("DmRoom push", () => {
+  it("pushes an offline recipient once per cooldown", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    await sendText(ca, "you there?");
+    await sendText(ca, "hello?");
+    await eventually(() => store.pushes.length === 1, "one push");
+    expect(store.pushes[0]).toEqual([b, a]);
+  });
+
+  it("does not push a recipient who has the conversation open", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    await join(stub, pair.threadId, b);
+    await sendText(ca, "hi");
+    await new Promise((r) => setTimeout(r, 50));
+    expect(store.pushes).toEqual([]);
+  });
+});
+
+describe("DmRoom access changes", () => {
+  it("closes every socket on a block", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    await runInDurableObject(stub, (instance: DmRoom) =>
+      instance.sever("block"),
+    );
+    expect(await ca.closeCode()).toBe(DM_CLOSED);
+    expect(await cb.closeCode()).toBe(DM_CLOSED);
+  });
+
+  it("stops sending but keeps the socket on an unfollow", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    await runInDurableObject(stub, (instance: DmRoom) =>
+      instance.sever("unfollow"),
+    );
+    await c.next("meta", (f) => !f.meta.canSend);
+    c.send({ t: "send", id: "late", text: "still there?" });
+    expect((await c.next("err", (f) => f.id === "late")).code).toBe("closed");
+    expect(c.closed).toBeNull();
+  });
+
+  it("wipes all storage on purge", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    await sendText(c, "gone soon");
+    await runInDurableObject(stub, (instance: DmRoom) => instance.purge());
+    expect(await c.closeCode()).toBe(DM_CLOSED);
+    expect(await tableCount(stub)).toBe(0);
+  });
+});
+
+describe("DmRoom reports", () => {
+  it("snapshots the reported message with the context before it", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    await sendText(ca, "hey");
+    await sendText(cb, "hi");
+    const bad = await sendText(cb, "something awful");
+    ca.send({ t: "report", id: "r1", messageId: bad, reason: "harassment" });
+    await ca.next("ack", (f) => f.id === "r1");
+    expect(store.reports[0]).toMatchObject({
+      reporterId: a,
+      reportedId: b,
+      reason: "harassment",
+    });
+    expect(
+      store.reports[0]?.entries.map((e) => [e.text, e.fromReporter]),
+    ).toEqual([
+      ["hey", true],
+      ["hi", false],
+      ["something awful", false],
+    ]);
+  });
+
+  it("refuses to report your own message and limits repeat reports", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    const own = await sendText(ca, "mine");
+    ca.send({ t: "report", id: "r1", messageId: own, reason: "spam" });
+    expect((await ca.next("err", (f) => f.id === "r1")).code).toBe("invalid");
+    const theirs = await sendText(cb, "theirs");
+    ca.send({ t: "report", id: "r2", messageId: theirs, reason: "spam" });
+    await ca.next("ack", (f) => f.id === "r2");
+    const more = await sendText(cb, "more");
+    ca.send({ t: "report", id: "r3", messageId: more, reason: "spam" });
+    expect((await ca.next("err", (f) => f.id === "r3")).code).toBe(
+      "rate_limited",
+    );
+  });
+});

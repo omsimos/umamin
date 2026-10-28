@@ -1,5 +1,6 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { pageSeo } from "@/lib/seo";
+import { DmReportQueue } from "./-moderation/dm-report-queue";
 import { IpDenylistManager } from "./-moderation/ip-denylist-manager";
 import { ReviewQueue } from "./-moderation/review-queue";
 
@@ -29,6 +30,17 @@ function ModerationPage() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Review</h2>
         <ReviewQueue />
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Chat reports</h2>
+          <p className="text-sm text-muted-foreground">
+            Reported chat messages with the ones just before them. The reported
+            message is highlighted.
+          </p>
+        </div>
+        <DmReportQueue />
       </section>
 
       <section className="space-y-3">

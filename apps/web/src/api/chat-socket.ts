@@ -28,7 +28,7 @@ const lobbyStub = (env: AppEnv) =>
 /** A browser can't read the status of a refused upgrade (it only sees 1006),
  *  so refusals the client must act on are delivered as a close code on an
  *  accepted socket instead. */
-function refuse(code: number, reason: string) {
+export function refuse(code: number, reason: string) {
   const { 0: client, 1: server } = new WebSocketPair();
   server.accept();
   server.close(code, reason);

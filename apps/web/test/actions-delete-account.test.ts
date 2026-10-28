@@ -20,6 +20,7 @@ vi.mock("../src/server-lib/posthog", () => ({
   captureServerException,
 }));
 
+import { dmPurgeTable, dmThreadTable } from "@umamin/db/schema/dm";
 import { groupMemberTable, groupTable } from "@umamin/db/schema/group";
 import {
   pollOptionTable,
@@ -197,5 +198,28 @@ describe("deleteAccount (real libSQL)", () => {
     expect(
       await db.select().from(userTable).where(eq(userTable.id, "leaver")),
     ).toHaveLength(1);
+  });
+
+  it("queues the user's conversations for a Durable Object purge", async () => {
+    await db.insert(dmThreadTable).values({
+      id: "leaver:stayer",
+      userLowId: "leaver",
+      userHighId: "stayer",
+      lastSenderId: "stayer",
+      lastSeq: 3,
+    });
+    const app = buildApp(db, authed("leaver"));
+    await callJson(
+      app,
+      "deleteAccount",
+      { confirmation: CONFIRM },
+      {},
+      { cookie },
+    );
+
+    expect(await db.select().from(dmThreadTable)).toHaveLength(0);
+    expect(
+      (await db.select().from(dmPurgeTable)).map((r) => r.threadId),
+    ).toEqual(["leaver:stayer"]);
   });
 });

@@ -241,6 +241,30 @@ Durable Objects with hibernatable WebSockets.
 - Adding a Durable Object class blocks dashboard rollbacks to Worker versions
   from before that class existed.
 
+**Chats (DMs)** (`/inbox/chats/$username`, `/inbox?tab=chats`, flag
+`umamin-dm`). Private one-on-one chat between mutual followers, on the same
+Durable Object stack as Umamin Chat.
+
+- One `DmRoom` per pair, named `dm:v1:${low}:${high}` from `lib/dm/pair.ts`.
+  Its SQLite is the message store, one row per message, text encrypted with
+  `@umamin/encryption`. Rules are pure functions in `lib/dm/engine.ts`.
+- Turso holds only an index, `dm_thread`, for the Chats list and the unread
+  dot. The room writes it at once when unread or hidden state changes and
+  otherwise through a 10 second debounce alarm. Never read message text from
+  Turso; `last_preview` is the only copy there.
+- Access is `canMessage` in `server-lib/dm/store.ts`: both follow each other,
+  no block, neither banned. The socket checks it on connect and the room
+  re-checks every 5 minutes. Unfollow and block call `severDm`, a ban calls
+  `severAllDms`; both are best effort, so the re-check is the backstop.
+- Account deletion queues `dm_purge` inside the delete transaction, and the
+  `*/5` cron drains it. Don't call the room from the delete action.
+- Push goes out only when the recipient has no live socket, at most once per
+  5 minutes per side.
+- Reports snapshot the reported message and up to 10 before it into
+  `dm_report` (encrypted). Moderators work them from `/moderation`.
+- Worker tests: `test/dm-room.worker.test.ts` and
+  `test/dm-socket.worker.test.ts`. Turso-side tests: `test/dm-data.test.ts`.
+
 **Groups.** Caps in `lib/group.ts`: 50 members per group, 1 owned and 5 joined
 per user. Creation needs Umamin Plus (`hasUmaminPlus`); joining is free and
 re-checked on the server. The 4-character tag has a confusable-folded `tagNorm`

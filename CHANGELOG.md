@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.16.0] - 2026-10-28
+
+### Added
+
+- Chats let two people who follow each other message privately. Open one from the chat button on a profile, and find all of them in the new Chats tab in your inbox. You'll see when the other person is typing and when they've read your message. You can react, reply, unsend your own messages, and report a message to our moderators. Profile shows a dot when you have unread chats. To meet someone new, the Chats tab links to Umamin Chat.
+
 ## [7.15.0] - 2026-10-27
 
 ### Added
@@ -1157,6 +1163,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.16.0]: https://github.com/omsimos/umamin/compare/v7.15.0...v7.16.0
 [7.15.0]: https://github.com/omsimos/umamin/compare/v7.14.0...v7.15.0
 [7.14.0]: https://github.com/omsimos/umamin/compare/v7.13.0...v7.14.0
 [7.13.0]: https://github.com/omsimos/umamin/compare/v7.12.0...v7.13.0

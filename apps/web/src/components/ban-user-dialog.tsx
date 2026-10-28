@@ -24,6 +24,7 @@ type BanUserDialogProps = {
   banned: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 };
 
 export function BanUserDialog({
@@ -31,6 +32,7 @@ export function BanUserDialog({
   banned,
   open,
   onOpenChange,
+  onSuccess,
 }: BanUserDialogProps) {
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("");
@@ -57,6 +59,7 @@ export function BanUserDialog({
       toast.success(banned ? "User unbanned." : "User banned.");
       setReason("");
       onOpenChange(false);
+      onSuccess?.();
     },
     onError: (err) => {
       console.error(err);

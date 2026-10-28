@@ -118,3 +118,14 @@ export function presignPostImagesAction(
     input,
   ) as Promise<PresignResult>;
 }
+
+export function hideDmThreadAction(input: { username: string }) {
+  return callAction<{ success?: boolean }>("hideDmThreadAction", input);
+}
+
+export function resolveDmReportAction(input: {
+  id: string;
+  resolution: "dismissed" | "actioned";
+}) {
+  return callAction<{ success?: boolean }>("resolveDmReportAction", input);
+}

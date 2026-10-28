@@ -77,7 +77,7 @@ describe("wrangler feature-flag vars", () => {
 
 // durable_objects bindings are NOT inheritable: an env block without them
 // deploys a Worker whose chat routes throw on `env.CHAT_ROOM`.
-describe("wrangler Umamin Chat bindings", () => {
+describe("wrangler Durable Object bindings", () => {
   const chatBindings = (env: string) =>
     Object.fromEntries(
       (config.env[env]?.durable_objects?.bindings ?? []).map((b) => [
@@ -86,16 +86,18 @@ describe("wrangler Umamin Chat bindings", () => {
       ]),
     );
 
-  it.each(["staging", "production"])("binds both chat objects in %s", (env) => {
+  it.each(["staging", "production"])("binds every object in %s", (env) => {
     expect(chatBindings(env)).toMatchObject({
       CHAT_LOBBY: "ChatLobby",
       CHAT_ROOM: "ChatRoom",
+      DM_ROOM: "DmRoom",
     });
   });
 
-  it("declares both classes as SQLite-backed exports", () => {
+  it("declares every class as a SQLite-backed export", () => {
     expect(config.exports?.ChatLobby).toMatchObject({ storage: "sqlite" });
     expect(config.exports?.ChatRoom).toMatchObject({ storage: "sqlite" });
+    expect(config.exports?.DmRoom).toMatchObject({ storage: "sqlite" });
   });
 
   // Rate-limit namespace ids are account-global; sharing one would let staging

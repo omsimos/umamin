@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  CircleUserRoundIcon,
   LayoutDashboardIcon,
   LogInIcon,
   MessagesSquareIcon,
@@ -13,6 +12,7 @@ import { ChatPromo } from "./chat-promo";
 import { MenubarLink } from "./menubar-link";
 import { NavGroups } from "./nav-groups";
 import { NavNotifications } from "./nav-notifications";
+import { NavProfile } from "./nav-profile";
 
 // Was an RSC that awaited getSession(); under TanStack Start the session is read
 // through the shared current-user query (hydrated by the route loader in Phase
@@ -38,13 +38,7 @@ export function Menubar() {
 
       {user?.username ? (
         // Lands on the profile's Posts tab; Received/Sent are one tap away.
-        <MenubarLink
-          href={`/user/${user.username}`}
-          ariaLabel="Your profile"
-          title="Profile"
-        >
-          <CircleUserRoundIcon className="h-6 w-6" />
-        </MenubarLink>
+        <NavProfile username={user.username} />
       ) : (
         <Link href="/login" aria-label="Login" title="Login">
           <LayoutDashboardIcon />

@@ -6,24 +6,37 @@ import { UmaminChatLink } from "@/components/umamin-chat-link";
 
 const DISMISSED_KEY = "umamin:chat-announcement-dismissed";
 
-export function ChatAnnouncement({ className }: { className?: string }) {
+export function ChatAnnouncement({
+  className,
+  title = "Umamin Chat is here",
+  description = "Anonymous chats, matched by your interests.",
+  utm = "announcement",
+  dismissKey = DISMISSED_KEY,
+}: {
+  className?: string;
+  title?: string;
+  description?: string;
+  utm?: string;
+  /** Each placement keeps its own dismissal. */
+  dismissKey?: string;
+}) {
   // Hidden until mounted so a prior dismissal never flashes the banner.
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     try {
-      if (!localStorage.getItem(DISMISSED_KEY)) setVisible(true);
+      if (!localStorage.getItem(dismissKey)) setVisible(true);
     } catch {
       setVisible(true);
     }
-  }, []);
+  }, [dismissKey]);
 
   if (!visible) return null;
 
   const dismiss = () => {
     setVisible(false);
     try {
-      localStorage.setItem(DISMISSED_KEY, "1");
+      localStorage.setItem(dismissKey, "1");
     } catch {
       // Storage unavailable — the dismissal lasts for this visit only.
     }
@@ -45,9 +58,9 @@ export function ChatAnnouncement({ className }: { className?: string }) {
         className="mt-0.5 size-8 shrink-0 rounded-md sm:mt-0 sm:size-9"
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">Umamin Chat is here</p>
+        <p className="truncate text-sm font-semibold">{title}</p>
         <p className="text-sm text-muted-foreground sm:truncate">
-          Anonymous chats, matched by your interests.
+          {description}
         </p>
       </div>
       <Button
@@ -55,7 +68,7 @@ export function ChatAnnouncement({ className }: { className?: string }) {
         size="sm"
         className="order-last w-full shrink-0 rounded-full sm:order-none sm:w-auto"
       >
-        <UmaminChatLink utm="announcement">
+        <UmaminChatLink utm={utm}>
           Try it
           <ArrowRightIcon />
         </UmaminChatLink>

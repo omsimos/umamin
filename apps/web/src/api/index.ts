@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { type AppBindings, sessionContext } from "../server-lib/context";
 import { actionsApp } from "./actions";
 import { chatSocketApp } from "./chat-socket";
+import { dmSocketApp } from "./dm-socket";
 import { readsApp } from "./routes";
 import { webhooksApp } from "./webhooks";
 
@@ -11,6 +12,7 @@ export const apiApp = new Hono<AppBindings>()
   .use("*", sessionContext())
   .get("/health", (c) => c.json({ ok: true }))
   .route("/", chatSocketApp)
+  .route("/", dmSocketApp)
   .route("/", readsApp)
   .route("/", actionsApp)
   .route("/", webhooksApp);

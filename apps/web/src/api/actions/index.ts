@@ -6,6 +6,7 @@ import {
   logoutHandler,
   signupHandler,
 } from "./auth";
+import { hideDmThreadHandler, resolveDmReportHandler } from "./dm";
 import {
   cancelJoinRequestHandler,
   createGroupHandler,
@@ -196,6 +197,9 @@ export const actionsApp = new Hono<AppBindings>()
   .post("/actions/presignAvatarUploadAction", presignAvatarUploadHandler)
   .post("/actions/presignBannerUploadAction", presignBannerUploadHandler)
   // moderation
+  // direct messages
+  .post("/actions/hideDmThreadAction", hideDmThreadHandler)
+  .post("/actions/resolveDmReportAction", resolveDmReportHandler)
   .post("/actions/banUserAction", banUserHandler)
   .post("/actions/unbanUserAction", unbanUserHandler)
   .post("/actions/denyIpAction", denyIpHandler)

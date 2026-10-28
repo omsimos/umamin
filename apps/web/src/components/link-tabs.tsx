@@ -5,6 +5,8 @@ type LinkTab = {
   label: string;
   href: string;
   active: boolean;
+  /** An unread count shown next to the label; hidden at 0. */
+  badge?: number;
 };
 
 export function LinkTabs({
@@ -29,6 +31,12 @@ export function LinkTabs({
           )}
         >
           {t.label}
+          {t.badge ? (
+            <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 align-[1px] text-[10px] font-medium leading-none text-primary-foreground">
+              {t.badge > 20 ? "20+" : t.badge}
+              <span className="sr-only"> unread</span>
+            </span>
+          ) : null}
         </Link>
       ))}
     </nav>

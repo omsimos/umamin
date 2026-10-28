@@ -16,6 +16,7 @@ import { sanitizeBlockedWords } from "../../server-lib/blocked-words";
 import { formatContent } from "../../server-lib/content";
 import { getCurrentUserData, getUserProfileData } from "../../server-lib/data";
 import type { Db } from "../../server-lib/db";
+import { severDm } from "../../server-lib/dm/lifecycle";
 import {
   formatErrorChain,
   isUniqueConstraintViolation,
@@ -347,7 +348,7 @@ export const unfollowUserHandler = action(
       return { error: "User not found." };
     }
 
-    return db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const removed = await tx
         .delete(userFollowTable)
         .where(
@@ -385,6 +386,11 @@ export const unfollowUserHandler = action(
 
       return { success: true };
     });
+
+    if (!("alreadyRemoved" in result)) {
+      defer(c)(severDm(c.env, session.userId, userId, "unfollow"));
+    }
+    return result;
   },
 );
 
@@ -416,7 +422,7 @@ export const blockUserHandler = action(
       return { error: "User not found." };
     }
 
-    return db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const insertedBlock = await tx
         .insert(userBlockTable)
         .values({ blockerId: session.userId, blockedId: userId })
@@ -495,6 +501,11 @@ export const blockUserHandler = action(
 
       return { success: true };
     });
+
+    if (!("alreadyBlocked" in result)) {
+      defer(c)(severDm(c.env, session.userId, userId, "block"));
+    }
+    return result;
   },
 );
 

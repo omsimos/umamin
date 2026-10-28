@@ -1,4 +1,9 @@
 import type { ChatStats } from "@/lib/chat/types";
+import type {
+  DmPeerResponse,
+  DmThreadsResponse,
+  DmUnreadResponse,
+} from "@/lib/dm/types";
 import type { FeedSort } from "@/lib/feed-sort";
 import type {
   BlockedUsersResponse,
@@ -197,6 +202,25 @@ export async function fetchMutedUsersPage(cursor: string | null) {
   return fetchJson<MutedUsersResponse>(
     appendCursor("/api/muted-users", cursor),
   );
+}
+
+export async function fetchDmThreadsPage(cursor: string | null) {
+  return fetchJson<DmThreadsResponse>(appendCursor("/api/dm/threads", cursor));
+}
+
+export async function fetchDmUnread() {
+  return fetchJson<DmUnreadResponse>("/api/dm/unread");
+}
+
+/** Null for an unknown, blocked or banned user (404). */
+export async function fetchDmPeer(
+  username: string,
+): Promise<DmPeerResponse | null> {
+  const url = `/api/dm/peer/${encodeURIComponent(username)}`;
+  const response = await fetch(url, { credentials: "include" });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Request failed for ${url}`);
+  return (await response.json()) as DmPeerResponse;
 }
 
 export async function fetchNotificationBadge() {
