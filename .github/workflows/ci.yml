@@ -89,6 +89,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # drizzle-kit generate diffs src/schema against migrations/meta offline. A
+      # schema edit committed without its migration otherwise passes typecheck
+      # and fails at runtime after the deploy.
+      - name: Check migrations match the schema
+        run: |
+          pnpm --filter=@umamin/db generate
+          pnpm --filter=@umamin/org-db generate
+          git diff --exit-code -- packages/db/migrations packages/org-db/migrations
+          test -z "$(git status --porcelain -- packages/db/migrations packages/org-db/migrations)"
+
       - name: Run typecheck
         run: pnpm check-types
 
