@@ -140,6 +140,7 @@ class FakeStore implements DmStore {
   reports: Parameters<DmStore["insertReport"]>[0][] = [];
   allowed = true;
   blocked = false;
+  failReports = false;
 
   async canMessage() {
     return this.allowed;
@@ -151,6 +152,7 @@ class FakeStore implements DmStore {
     this.writes.push(structuredClone(s));
   }
   async insertReport(input: Parameters<DmStore["insertReport"]>[0]) {
+    if (this.failReports) throw new Error("turso down");
     const dup = this.reports.some(
       (r) =>
         r.reporterId === input.reporterId && r.messageSeq === input.messageSeq,
@@ -705,6 +707,19 @@ describe("DmRoom reports", () => {
     ca.send({ t: "report", id: "r3", messageId: more, reason: "spam" });
     expect((await ca.next("err", (f) => f.id === "r3")).code).toBe(
       "rate_limited",
+    );
+  });
+
+  it("answers a report that failed inside the room with an err frame", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    const bad = await sendText(cb, "something awful");
+    store.failReports = true;
+    ca.send({ t: "report", id: "r-fail", messageId: bad, reason: "spam" });
+    expect((await ca.next("err", (f) => f.id === "r-fail")).code).toBe(
+      "unavailable",
     );
   });
 });

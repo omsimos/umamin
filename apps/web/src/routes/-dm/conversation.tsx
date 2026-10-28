@@ -48,6 +48,7 @@ const ERROR_TOASTS: Partial<Record<DmErrorCode | "offline", string>> = {
   rate_limited: "You're sending too fast. Wait a moment and try again.",
   closed: "You can't send messages in this chat right now.",
   offline: "Reconnecting. Try that again in a moment.",
+  unavailable: "Something went wrong on our side. Try again in a moment.",
 };
 
 function toastFor(code: DmErrorCode | "offline") {

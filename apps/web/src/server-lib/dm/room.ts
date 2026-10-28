@@ -184,6 +184,7 @@ export class DmRoom extends DurableObject<AppEnv> {
   }
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer) {
+    let opId: string | undefined;
     try {
       const att = this.attachment(ws);
       if (!att) {
@@ -195,6 +196,7 @@ export class DmRoom extends DurableObject<AppEnv> {
         ws.close(CLOSE.BAD_FRAME, "bad frame");
         return;
       }
+      if ("id" in frame) opId = frame.id;
       if (frame.t === "hi") {
         await this.handleHi(ws, att, frame.v);
         return;
@@ -210,6 +212,8 @@ export class DmRoom extends DurableObject<AppEnv> {
       await this.handleFrame(ws, att, frame);
     } catch (err) {
       this.report(err, "message");
+      // Without an answer the client's request waits forever.
+      if (opId) this.sendTo(ws, { t: "err", id: opId, code: "unavailable" });
     }
   }
 
