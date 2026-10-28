@@ -4,17 +4,7 @@ import { hasUmaminPro } from "../lib/pro";
 // Server-safe subset of apps/www/lib/utils.ts (the DOM/toast/date-fns bits stay
 // in the frontend port). Pure string helpers the action layer needs.
 
-export function formatContent(content: string) {
-  return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n").trim();
-}
-
-export function formatUsername(username: string) {
-  const formattedUsername = username.startsWith("%40")
-    ? username.split("%40").at(1)
-    : username;
-
-  return formattedUsername ?? "";
-}
+export { formatContent, formatUsername } from "../lib/format";
 
 /**
  * Functional Plus perks (polls, group creation): account age OR an active Pro
