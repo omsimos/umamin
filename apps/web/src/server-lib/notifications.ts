@@ -8,6 +8,16 @@ import { captureServerException } from "./posthog";
 
 const PREVIEW_MAX_LENGTH = 80;
 
+// Types a user can undo and redo (unlike, unfollow). A repeat by the same
+// person inside this window changes nothing and sends no push; real repeats
+// (another comment, another reply) still resurface the row.
+const TOGGLE_TYPES: ReadonlySet<NotificationType> = new Set([
+  "like",
+  "vote",
+  "follow",
+]);
+const REPEAT_WINDOW_SECONDS = 300;
+
 type NotifyParams = {
   recipientId: string;
   type: NotificationType;
@@ -92,16 +102,24 @@ export async function notify(
   }
   const where = guards.length > 0 ? sql.join(guards, sql` AND `) : sql`1`;
 
+  const throttle = TOGGLE_TYPES.has(type)
+    ? sql` WHERE notification.actor_id IS NOT excluded.actor_id OR notification.updated_at < unixepoch() - ${REPEAT_WINDOW_SECONDS}`
+    : sql``;
+
   try {
     const result = await deps.db.run(sql`
       INSERT INTO notification (id, recipient_id, type, target_id, actor_id, preview, updated_at)
       SELECT ${nanoid()}, ${recipientId}, ${type}, ${targetId}, ${actorId}, ${trimmedPreview}, unixepoch()
       WHERE ${where}
       ON CONFLICT (recipient_id, type, target_id) DO UPDATE SET
-        count = notification.count + 1,
+        count = CASE
+          WHEN excluded.actor_id IS NOT NULL AND notification.actor_id = excluded.actor_id
+            THEN notification.count
+          ELSE notification.count + 1
+        END,
         actor_id = excluded.actor_id,
         preview = excluded.preview,
-        updated_at = unixepoch()
+        updated_at = unixepoch()${throttle}
     `);
 
     // Nothing written: suppressed by a block or mute, or a throttled repeat.
