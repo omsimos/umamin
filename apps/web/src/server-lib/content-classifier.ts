@@ -1,5 +1,6 @@
 import type { createGateway, Experimental_EvaluationModel } from "ai";
 import type { AppEnv } from "./env";
+import { formatErrorChain } from "./errors";
 import { captureServerException } from "./posthog";
 import { checkRateLimit } from "./ratelimit";
 
@@ -267,6 +268,19 @@ export type ClassifyOutcome = {
   failure: null | "transient" | "permanent" | "unavailable";
 };
 
+// "<name> <statusCode>" from the top-level error only, so nothing derived from
+// the request (or the provider's message) reaches a report.
+function errorName(err: unknown): string {
+  if (typeof err !== "object" || err === null) return "failed";
+  const { name, statusCode } = err as { name?: unknown; statusCode?: unknown };
+  return [
+    typeof name === "string" ? name : "Error",
+    typeof statusCode === "number" ? statusCode : null,
+  ]
+    .filter((part) => part !== null)
+    .join(" ");
+}
+
 function hasServerErrorStatus(err: unknown): boolean {
   let current = err;
   for (let depth = 0; depth < 5; depth++) {
@@ -357,11 +371,21 @@ export async function classifyContentWithOutcome(
         error: expected,
       });
     } else {
-      console.error("content classification failed", err);
+      console.error("content classification failed", {
+        kind: input.kind,
+        error: formatErrorChain(err),
+      });
       if (opts.report !== false) {
-        captureServerException(env, opts.defer, err, {
-          properties: { classifier: input.kind },
-        });
+        // A message is private: report its failure without the SDK error,
+        // whose request fields can carry the text.
+        captureServerException(
+          env,
+          opts.defer,
+          input.kind === "message"
+            ? new Error(`classifier ${errorName(err)}`)
+            : err,
+          { properties: { classifier: input.kind } },
+        );
       }
     }
     return {

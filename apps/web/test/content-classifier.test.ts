@@ -338,6 +338,64 @@ describe("classifyContent", () => {
     });
   });
 
+  it("reports a private message's failure without the SDK error", async () => {
+    vi.mocked(captureServerException).mockClear();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const failure = Object.assign(new Error("provider said no"), {
+      name: "AI_APICallError",
+      statusCode: 400,
+      requestBodyValues: { text: "secret words" },
+    });
+    const model = new Experimental_EvaluationMockModelV4({
+      doEvaluate: async () => {
+        throw failure;
+      },
+    });
+
+    await classifyContent(
+      env,
+      { kind: "message", text: "secret words" },
+      { model },
+    );
+    expect(captureServerException).toHaveBeenCalledTimes(1);
+    const reported = vi.mocked(captureServerException).mock.calls[0]?.[2];
+    expect(reported).not.toBe(failure);
+    expect((reported as Error).message).toBe("classifier AI_APICallError 400");
+    expect(
+      JSON.stringify(vi.mocked(captureServerException).mock.calls),
+    ).not.toContain("secret words");
+
+    // Every other kind still reports the original error.
+    vi.mocked(captureServerException).mockClear();
+    await classifyContent(env, { kind: "post", text: "anything" }, { model });
+    expect(vi.mocked(captureServerException).mock.calls[0]?.[2]).toBe(failure);
+    vi.restoreAllMocks();
+  });
+
+  it("logs a failure as a flattened chain, not the raw error", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const model = new Experimental_EvaluationMockModelV4({
+      doEvaluate: async () => {
+        throw Object.assign(new Error("provider said no"), {
+          requestBodyValues: { text: "secret words" },
+        });
+      },
+    });
+    await classifyContent(
+      env,
+      { kind: "comment", text: "secret words" },
+      { model },
+    );
+    const [label, detail] = error.mock.calls[0] ?? [];
+    expect(label).toBe("content classification failed");
+    expect(detail).toEqual({
+      kind: "comment",
+      error: expect.stringContaining("provider said no"),
+    });
+    expect(JSON.stringify(error.mock.calls)).not.toContain("secret words");
+    vi.restoreAllMocks();
+  });
+
   it("fails open on a provider error and reports it", async () => {
     const model = new Experimental_EvaluationMockModelV4({
       doEvaluate: async () => {
