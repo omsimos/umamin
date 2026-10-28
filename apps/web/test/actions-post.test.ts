@@ -713,4 +713,22 @@ describe("post actions (real libSQL)", () => {
       expect(await db.select().from(moderationDisputeTable)).toHaveLength(0);
     });
   });
+
+  it("commenting on a post deleted mid-request returns not found", async () => {
+    // The classifier await is the window between the existence read and the
+    // insert; delete the post inside it.
+    classifyContent.mockImplementationOnce(async () => {
+      await db.delete(postTable).where(eq(postTable.id, "p1"));
+      return null;
+    });
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+
+    const { json } = await callJson(app, "createCommentAction", {
+      postId: "p1",
+      content: "too late",
+    });
+
+    expect(json).toEqual({ error: "Post not found" });
+    expect(await db.select().from(postCommentTable)).toHaveLength(0);
+  });
 });

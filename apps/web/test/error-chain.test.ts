@@ -88,6 +88,20 @@ describe("constraint violation matchers", () => {
     ).toBe(true);
   });
 
+  it("recognizes a FOREIGN KEY failure thrown by a batch, with no drizzle wrapper", () => {
+    const batch = new LibsqlErrorLike(
+      "SQLITE_CONSTRAINT: SQLITE_CONSTRAINT: FOREIGN KEY constraint failed",
+      "SQLITE_CONSTRAINT",
+    );
+    batch.cause = new LibsqlErrorLike(
+      "FOREIGN KEY constraint failed",
+      "SQLITE_CONSTRAINT_FOREIGNKEY",
+    );
+
+    expect(isForeignKeyConstraintViolation(batch)).toBe(true);
+    expect(isUniqueConstraintViolation(batch, "user.username")).toBe(false);
+  });
+
   it("does not confuse a unique violation for a foreign-key one", () => {
     const unique = constraintError(
       "SQLITE_CONSTRAINT: SQLite error: UNIQUE constraint failed: user.username",

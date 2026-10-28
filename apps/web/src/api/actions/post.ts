@@ -31,6 +31,7 @@ import {
   reviewableScoreColumns,
 } from "../../server-lib/content-label";
 import { getPostById, withModeration } from "../../server-lib/data";
+import { isForeignKeyConstraintViolation } from "../../server-lib/errors";
 import { isModerationEnforced } from "../../server-lib/flags";
 import { extractClientIp } from "../../server-lib/ip";
 import { isModerator } from "../../server-lib/moderation";
@@ -368,6 +369,14 @@ export const createCommentHandler = action(
       name: "write",
       key: ({ session }) => `comment:${session.userId}`,
     },
+    // The classifier await sits between the existence read and the insert, so a
+    // delete in that window fails the insert's FK: a lost race, not a fault.
+    // The like and repost batches insert from a SELECT on the target row and
+    // cannot hit this.
+    onError: (err) =>
+      isForeignKeyConstraintViolation(err)
+        ? { error: "Post not found" }
+        : undefined,
   },
   async ({ content, postId }, { session, user, c }) => {
     const db = ctxDb(c);
