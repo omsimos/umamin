@@ -10,6 +10,7 @@ import {
   MessageCircleDashedIcon,
   PinIcon,
 } from "lucide-react";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -53,6 +54,8 @@ export function ProfilePostList({
     hasNextPage,
     isFetching,
     isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
   } = useInfiniteQuery<FeedResponse>({
     queryKey: queryKeys.userPosts(username),
     queryFn: ({ pageParam }) =>
@@ -86,7 +89,7 @@ export function ProfilePostList({
     onLoadMore: fetchNextPage,
   });
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="w-full mx-auto mt-6">
         <Alert variant="destructive">
@@ -129,6 +132,12 @@ export function ProfilePostList({
         showDivider ? "mt-6 border-t pt-6" : "mt-4",
       )}
     >
+      {error && (
+        <RefetchErrorAlert
+          onRetry={() => (isFetchNextPageError ? fetchNextPage() : refetch())}
+          retrying={isFetching}
+        />
+      )}
       {allItems.map((item) => {
         if (item.type !== "post") return null;
         return (

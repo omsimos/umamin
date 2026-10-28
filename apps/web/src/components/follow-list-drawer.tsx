@@ -43,6 +43,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupBadge } from "@/components/group-badge";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { followUserAction, unfollowUserAction } from "@/lib/actions";
 import { ExpectedError } from "@/lib/expected-error";
@@ -188,7 +189,10 @@ function FollowList({
     isLoading,
     fetchNextPage,
     hasNextPage,
+    isFetching,
     isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
   } = useInfiniteQuery<FollowListResponse>({
     queryKey,
     queryFn: ({ pageParam }) =>
@@ -220,7 +224,9 @@ function FollowList({
   useEffect(() => {
     const root = scrollRef.current;
     const target = sentinelRef.current;
-    if (!root || !target || !hasNextPage) return;
+    // Stay quiet after a failed page: the sentinel is still mounted, so it
+    // would re-fire on every failure. The retry button takes over.
+    if (!root || !target || !hasNextPage || isFetchNextPageError) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -233,9 +239,9 @@ function FollowList({
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
 
-  if (error) {
+  if (error && !data) {
     return (
       <Alert variant="destructive">
         <AlertCircleIcon className="h-4 w-4" />
@@ -277,6 +283,12 @@ function FollowList({
 
   return (
     <div ref={scrollRef} className="max-h-[55vh] overflow-y-auto">
+      {error && (
+        <RefetchErrorAlert
+          onRetry={() => (isFetchNextPageError ? fetchNextPage() : refetch())}
+          retrying={isFetching}
+        />
+      )}
       <div className="divide-y">
         {users.map((user) => (
           <FollowUserRow

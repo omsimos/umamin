@@ -5,6 +5,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BanUserDialog } from "@/components/ban-user-dialog";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { TimeAgo } from "@/components/time-ago";
 import { resolveDmReportAction } from "@/lib/actions";
 import type { DmReportItem } from "@/lib/dm/types";
@@ -30,7 +31,7 @@ type Resolution = "dismissed" | "actioned";
 export function DmReportQueue() {
   const queryClient = useQueryClient();
   const [banTarget, setBanTarget] = useState<DmReportItem | null>(null);
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, isFetching, refetch } = useQuery({
     queryKey,
     queryFn: fetchDmReports,
   });
@@ -60,7 +61,7 @@ export function DmReportQueue() {
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
-  if (error) {
+  if (error && !data) {
     return (
       <p className="text-sm text-muted-foreground">
         Couldn't load chat reports. Try again later.
@@ -73,6 +74,9 @@ export function DmReportQueue() {
 
   return (
     <>
+      {error && (
+        <RefetchErrorAlert onRetry={() => refetch()} retrying={isFetching} />
+      )}
       <ul className="divide-y rounded-lg border">
         {data.map((report) => {
           const busy =

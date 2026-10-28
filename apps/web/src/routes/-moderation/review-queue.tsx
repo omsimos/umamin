@@ -14,6 +14,7 @@ import {
 } from "@umamin/ui/components/tabs";
 import { useState } from "react";
 import { toast } from "sonner";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { TimeAgo } from "@/components/time-ago";
 import { callAction } from "@/lib/api";
 import { ExpectedError } from "@/lib/expected-error";
@@ -116,7 +117,10 @@ function ReviewList({ kind }: { kind: QueueKind }) {
     error,
     hasNextPage,
     fetchNextPage,
+    isFetching,
     isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
   } = useInfiniteQuery({
     queryKey: queryKey(kind),
     queryFn: ({ pageParam }) => fetchReview(kind, pageParam),
@@ -174,7 +178,7 @@ function ReviewList({ kind }: { kind: QueueKind }) {
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
-  if (error) {
+  if (error && !data) {
     return (
       <p className="text-sm text-muted-foreground">
         Couldn't load the queue. Try again later.
@@ -193,6 +197,12 @@ function ReviewList({ kind }: { kind: QueueKind }) {
 
   return (
     <>
+      {error && (
+        <RefetchErrorAlert
+          onRetry={() => (isFetchNextPageError ? fetchNextPage() : refetch())}
+          retrying={isFetching}
+        />
+      )}
       <ul className="divide-y rounded-lg border">
         {items.map((item) => {
           const key = `${item.kind}:${item.id}`;

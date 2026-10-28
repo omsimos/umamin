@@ -8,6 +8,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { Fragment, useMemo } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { shouldShowInFeedAd } from "@/lib/ad-placements";
 import type { FeedSort } from "@/lib/feed-sort";
 import { Link } from "@/lib/navigation";
@@ -42,6 +43,8 @@ export function PostList({
     hasNextPage,
     isFetching,
     isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
   } = useInfiniteQuery<FeedResponse>({
     queryKey: queryKeys.posts(sort, viewerKey),
     enabled: sort !== "following" || isAuthenticated,
@@ -84,7 +87,7 @@ export function PostList({
     onLoadMore: fetchNextPage,
   });
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="w-full mx-auto">
         <Alert variant="destructive">
@@ -142,6 +145,13 @@ export function PostList({
           );
         })}
       </nav>
+
+      {error && (
+        <RefetchErrorAlert
+          onRetry={() => (isFetchNextPageError ? fetchNextPage() : refetch())}
+          retrying={isFetching}
+        />
+      )}
 
       {hasResolvedData && allItems.length === 0 && !isFetching && (
         <Alert>
