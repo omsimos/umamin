@@ -712,6 +712,29 @@ describe("post actions (real libSQL)", () => {
 
       expect(await db.select().from(moderationDisputeTable)).toHaveLength(0);
     });
+
+    it("a moderator removing a note removes its disputes", async () => {
+      const authorApp = buildApp(db, authed("author", { createdAt: OLD }));
+      await callJson(authorApp, "createNoteAction", { content: "hello" });
+      const [note] = await noteRows("author");
+      await db.insert(moderationDisputeTable).values({
+        kind: "note",
+        targetId: note.id,
+        userId: "viewer",
+      });
+
+      const modApp = buildApp(db, authed("mod", { createdAt: OLD }));
+      const { json } = await callJson(
+        modApp,
+        "removeNoteAction",
+        { noteId: note.id },
+        { MODERATOR_USERS: "u_mod" },
+      );
+
+      expect(json).toEqual({ success: true });
+      expect(await noteRows("author")).toHaveLength(0);
+      expect(await db.select().from(moderationDisputeTable)).toHaveLength(0);
+    });
   });
 
   it("commenting on a post deleted mid-request returns not found", async () => {
@@ -730,5 +753,41 @@ describe("post actions (real libSQL)", () => {
 
     expect(json).toEqual({ error: "Post not found" });
     expect(await db.select().from(postCommentTable)).toHaveLength(0);
+  });
+
+  describe("disputes follow their content", () => {
+    beforeEach(async () => {
+      await db.insert(postCommentTable).values({
+        id: "c1",
+        postId: "p1",
+        content: "a comment",
+        authorId: "viewer",
+      });
+      await db.insert(moderationDisputeTable).values([
+        { kind: "post", targetId: "p1", userId: "viewer" },
+        { kind: "comment", targetId: "c1", userId: "author" },
+      ]);
+    });
+
+    it("deleting a post removes disputes on the post and its comments", async () => {
+      const app = buildApp(db, authed("author", { createdAt: OLD }));
+      const { json } = await callJson(app, "deletePostAction", {
+        postId: "p1",
+      });
+
+      expect(json).toEqual({ success: true });
+      expect(await db.select().from(moderationDisputeTable)).toHaveLength(0);
+    });
+
+    it("deleting a comment removes its disputes and leaves the post's", async () => {
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+      const { json } = await callJson(app, "deleteCommentAction", {
+        commentId: "c1",
+      });
+
+      expect(json).toMatchObject({ success: true });
+      const rest = await db.select().from(moderationDisputeTable);
+      expect(rest.map((r) => `${r.kind}:${r.targetId}`)).toEqual(["post:p1"]);
+    });
   });
 });

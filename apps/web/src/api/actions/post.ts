@@ -35,6 +35,7 @@ import { isForeignKeyConstraintViolation } from "../../server-lib/errors";
 import { isModerationEnforced } from "../../server-lib/flags";
 import { extractClientIp } from "../../server-lib/ip";
 import { isModerator } from "../../server-lib/moderation";
+import { deleteDisputes } from "../../server-lib/moderation-review";
 import { notify } from "../../server-lib/notifications";
 import {
   AURA_POINTS,
@@ -317,6 +318,17 @@ export const deletePostHandler = action(
     const ownerId = post.authorId;
 
     await db.transaction(async (tx) => {
+      // Before the post goes: its comments cascade away and their ids are
+      // needed to find their disputes.
+      await deleteDisputes(
+        tx,
+        "comment",
+        tx
+          .select({ id: postCommentTable.id })
+          .from(postCommentTable)
+          .where(eq(postCommentTable.postId, postId)),
+      );
+      await deleteDisputes(tx, "post", postId);
       await tx.delete(postTable).where(eq(postTable.id, postId));
 
       if (post.quotedPostId) {
@@ -524,6 +536,8 @@ export const deleteCommentHandler = action(
         .returning({ id: postCommentTable.id });
 
       if (removed.length === 0) return;
+
+      await deleteDisputes(tx, "comment", commentId);
 
       const [updated] = await tx
         .update(postTable)

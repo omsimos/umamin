@@ -1,4 +1,3 @@
-import { moderationDisputeTable } from "@umamin/db/schema/moderation-dispute";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import { and, eq, sql } from "drizzle-orm";
 import * as z from "zod";
@@ -15,6 +14,7 @@ import {
 } from "../../server-lib/errors";
 import { isModerationEnforced } from "../../server-lib/flags";
 import { isModerator } from "../../server-lib/moderation";
+import { deleteDisputes } from "../../server-lib/moderation-review";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { idSchema } from "../../server-lib/schema";
 import { ctxDb, defer } from "./_shared";
@@ -169,14 +169,7 @@ export const clearNoteHandler = action(
 
 // Disputes were about the old text.
 function clearNoteDisputes(tx: Pick<Db, "delete">, noteId: string) {
-  return tx
-    .delete(moderationDisputeTable)
-    .where(
-      and(
-        eq(moderationDisputeTable.kind, "note"),
-        eq(moderationDisputeTable.targetId, noteId),
-      ),
-    );
+  return deleteDisputes(tx, "note", noteId);
 }
 
 export const removeNoteHandler = action(
@@ -210,6 +203,7 @@ export const removeNoteHandler = action(
         .delete(noteReactionTable)
         .where(eq(noteReactionTable.noteId, noteId));
       await tx.delete(noteTable).where(eq(noteTable.id, noteId));
+      await deleteDisputes(tx, "note", noteId);
     });
 
     return { success: true };
