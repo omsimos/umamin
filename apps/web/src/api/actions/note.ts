@@ -62,7 +62,7 @@ export const createNoteHandler = action(
         classifyContent(
           c.env,
           { kind: "note", text: formattedContent },
-          { defer: defer(c) },
+          { defer: defer(c), limitKey: session.userId },
         ),
       ]);
     // A note is one row per user, rewritten on every save: the scores (and

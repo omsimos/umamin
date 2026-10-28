@@ -239,6 +239,46 @@ describe("classifyContent", () => {
     expect(doEvaluate).not.toHaveBeenCalled();
   });
 
+  it("skips the call once the user's classifier budget is spent", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const doEvaluate = vi.fn();
+    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const limited = {
+      AI_GATEWAY_API_KEY: "test-key",
+      RL_WRITE: { limit },
+    } as unknown as AppEnv;
+
+    expect(
+      await classifyContent(
+        limited,
+        { kind: "post", text: "hello there" },
+        { model, limitKey: "u1" },
+      ),
+    ).toBeNull();
+    expect(doEvaluate).not.toHaveBeenCalled();
+    expect(limit).toHaveBeenCalledWith({ key: "classify:u1" });
+    expect(warn).toHaveBeenCalledWith("content classification skipped", {
+      kind: "post",
+      error: "rate_limited",
+    });
+    warn.mockRestore();
+  });
+
+  it("classifies while the user's classifier budget lasts", async () => {
+    const limited = {
+      AI_GATEWAY_API_KEY: "test-key",
+      RL_WRITE: { limit: vi.fn().mockResolvedValue({ success: true }) },
+    } as unknown as AppEnv;
+    expect(
+      await classifyContent(
+        limited,
+        { kind: "post", text: "hello there" },
+        { model: mockModel(answers()), limitKey: "u1" },
+      ),
+    ).toEqual({ severe: 1, drama: 1, reason: null });
+  });
+
   it("fails open on a provider error and reports it", async () => {
     const model = new Experimental_EvaluationMockModelV4({
       doEvaluate: async () => {

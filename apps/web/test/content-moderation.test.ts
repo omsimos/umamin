@@ -19,6 +19,7 @@ import { notificationTable } from "@umamin/db/schema/notification";
 import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
+import { IMAGE_AURA_REQUIRED_ERROR } from "../src/lib/post-images";
 import {
   getCurrentNoteData,
   getMessagesPage,
@@ -37,6 +38,16 @@ import {
 } from "../src/server-lib/moderation-review";
 import { ANON, authed, buildApp, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
+
+// createR2 returns a client for well-formed credentials (it presigns locally,
+// no network), which the image gate needs before it checks the author's aura.
+const R2_ENV = {
+  R2_ACCOUNT_ID: "a".repeat(32),
+  R2_ACCESS_KEY_ID: "b".repeat(32),
+  R2_SECRET_ACCESS_KEY: "c".repeat(64),
+  R2_BUCKET: "umamin",
+  R2_PUBLIC_URL: "https://cdn.example.com",
+};
 
 const SEVERE = { modSevere: 95, modDrama: 99, modReason: "harassment" };
 const DRAMA = { modSevere: 40, modDrama: 98, modReason: "indirect" };
@@ -333,8 +344,42 @@ describe("content moderation (real libSQL)", () => {
           context: "my exam results",
           thread: ["si @x nangopya", "true yan", "kawawa naman"],
         },
-        expect.anything(),
+        expect.objectContaining({ limitKey: "author" }),
       );
+    });
+
+    // One account's posts, comments and notes share a classifier budget, which
+    // only works if every kind is keyed by the same user id.
+    it("budgets a post's and a note's classifier calls per author", async () => {
+      classifyContent.mockResolvedValue({ severe: 1, drama: 1, reason: null });
+      const app = buildApp(db, authed("author"));
+      await callJson(app, "createPostAction", { content: "hello world" });
+      await callJson(app, "createNoteAction", {
+        content: "a note",
+        isAnonymous: false,
+      });
+      expect(classifyContent).toHaveBeenCalledTimes(2);
+      for (const call of classifyContent.mock.calls) {
+        expect(call[2]).toEqual(
+          expect.objectContaining({ limitKey: "author" }),
+        );
+      }
+    });
+
+    it("doesn't classify a post its author may not attach images to", async () => {
+      classifyContent.mockResolvedValue({ severe: 1, drama: 1, reason: null });
+      const app = buildApp(db, authed("author", { points: 0 }));
+      const { json } = await callJson<{ error?: string }>(
+        app,
+        "createPostAction",
+        {
+          content: "look",
+          images: [{ key: "staging/author/a.webp", width: 10, height: 10 }],
+        },
+        R2_ENV,
+      );
+      expect(json.error).toBe(IMAGE_AURA_REQUIRED_ERROR);
+      expect(classifyContent).not.toHaveBeenCalled();
     });
 
     it("classifies a poll's options with its question but stores only the question", async () => {

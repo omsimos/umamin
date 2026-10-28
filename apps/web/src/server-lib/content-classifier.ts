@@ -1,6 +1,7 @@
 import type { createGateway, Experimental_EvaluationModel } from "ai";
 import type { AppEnv } from "./env";
 import { captureServerException } from "./posthog";
+import { checkRateLimit } from "./ratelimit";
 
 // Classifies user-written text with TypeSafe's Jev through the Vercel AI
 // Gateway. Every failure (no key, timeout, rate limit, refusal, bad response)
@@ -266,6 +267,10 @@ export async function classifyContent(
     defer?: (promise: Promise<unknown>) => void;
     // A background retry has no user waiting on it.
     timeoutMs?: number;
+    // A user id: shares one `write` limiter key across every kind, so one
+    // account can't multiply classifier spend by spreading writes over posts,
+    // comments and notes.
+    limitKey?: string;
   } = {},
 ): Promise<ContentScores | null> {
   const text = input.text.trim();
@@ -273,6 +278,18 @@ export async function classifyContent(
 
   const apiKey = env.AI_GATEWAY_API_KEY;
   if (!opts.model && !apiKey) return null;
+
+  if (
+    opts.limitKey &&
+    !(await checkRateLimit(env, "write", `classify:${opts.limitKey}`))
+  ) {
+    // Left unclassified; the retry cron picks it up within its own global bound.
+    console.warn("content classification skipped", {
+      kind: input.kind,
+      error: "rate_limited",
+    });
+    return null;
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(

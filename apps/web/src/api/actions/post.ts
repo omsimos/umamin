@@ -176,23 +176,7 @@ export const createPostHandler = action(
       quotedContent = quoted.content;
     }
 
-    // Runs alongside the image claim below; it never rejects (fails open to
-    // null), so an early return leaves nothing dangling.
-    const classifying = classifyContent(
-      c.env,
-      {
-        kind: "post",
-        text: postClassifierText(formattedContent, pollLabels),
-        context: quotedContent,
-      },
-      { defer: defer(c) },
-    );
-
     const r2 = createR2(c.env);
-    let claimedImages: Awaited<
-      ReturnType<NonNullable<typeof r2>["claimStagedImages"]>
-    > = null;
-
     if (images?.length) {
       if (!r2) {
         return { error: "Image uploads aren't available right now." };
@@ -200,6 +184,26 @@ export const createPostHandler = action(
       if (!canPostImages(user)) {
         return { error: IMAGE_AURA_REQUIRED_ERROR };
       }
+    }
+
+    // Started only once the write can no longer be refused for its images, so a
+    // rejected post never bills a call. Runs alongside the claim below; it never
+    // rejects (fails open to null), so an early return leaves nothing dangling.
+    const classifying = classifyContent(
+      c.env,
+      {
+        kind: "post",
+        text: postClassifierText(formattedContent, pollLabels),
+        context: quotedContent,
+      },
+      { defer: defer(c), limitKey: session.userId },
+    );
+
+    let claimedImages: Awaited<
+      ReturnType<NonNullable<typeof r2>["claimStagedImages"]>
+    > = null;
+
+    if (images?.length && r2) {
       claimedImages = await r2.claimStagedImages(session.userId, images);
       if (!claimedImages) {
         return { error: "Couldn't attach images. Please try again." };
@@ -407,7 +411,7 @@ export const createCommentHandler = action(
           context: target.content,
           thread,
         },
-        { defer: defer(c) },
+        { defer: defer(c), limitKey: session.userId },
       ),
       isModerationEnforced(c.env),
     ]);
