@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const evaluateFlags = vi.fn();
 const construct = vi.fn();
@@ -18,7 +18,9 @@ vi.mock("@/server-lib/posthog", () => ({
   captureRequestException: vi.fn(),
 }));
 
-const { FLAG_UMAMIN_PRO } = await import("@/lib/flags");
+const { FLAG_CONTENT_MODERATION, FLAG_UMAMIN_PRO } = await import(
+  "@/lib/flags"
+);
 const { __clearFlagCache, isFlagEnabled, resolveFlags } = await import(
   "@/server-lib/flags"
 );
@@ -29,10 +31,14 @@ const ENV = {
   // biome-ignore lint/suspicious/noExplicitAny: partial env stub
 } as any;
 
-// `evaluateFlags` returns a snapshot object, not a plain map — the wrapper reads
-// it via isEnabled(), which is also what makes an unknown key resolve to false.
+// `evaluateFlags` returns a snapshot object, not a plain map. isEnabled() is
+// false for an absent key, so the wrapper uses getFlag() (undefined when absent)
+// to tell "PostHog said off" from "PostHog said nothing".
 function snapshot(flags: Record<string, boolean>) {
-  return { isEnabled: (key: string) => flags[key] ?? false };
+  return {
+    isEnabled: (key: string) => flags[key] ?? false,
+    getFlag: (key: string) => (key in flags ? flags[key] : undefined),
+  };
 }
 
 beforeEach(() => {
@@ -143,5 +149,96 @@ describe("resolveFlags", () => {
   it("resolves an unknown flag key to false", async () => {
     evaluateFlags.mockResolvedValue(snapshot({}));
     expect(await isFlagEnabled(ENV, "user_1", "not-a-real-flag")).toBe(false);
+  });
+
+  it("passes a short timeout and no retries to the client", async () => {
+    await resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO]);
+    expect(construct.mock.calls[0][1]).toMatchObject({
+      featureFlagsRequestTimeoutMs: 1000,
+      featureFlagsRequestMaxRetries: 0,
+    });
+  });
+
+  describe("when PostHog gives no answer", () => {
+    function at(ms: number) {
+      return vi.spyOn(Date, "now").mockReturnValue(ms);
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    // Off uncovers severe content in shared caches and the Hot ranking, so an
+    // outage must not be what turns moderation off.
+    it("keeps content moderation ON when PostHog throws", async () => {
+      evaluateFlags.mockRejectedValue(new Error("flags down"));
+      expect(await isFlagEnabled(ENV, null, FLAG_CONTENT_MODERATION)).toBe(
+        true,
+      );
+    });
+
+    // posthog-node swallows a failed fetch into an empty snapshot; reading it as
+    // "off" is how moderation used to switch itself off for a minute.
+    it("treats an empty snapshot as no answer, not as off", async () => {
+      evaluateFlags.mockResolvedValue(snapshot({}));
+      const flags = await resolveFlags(ENV, null, [
+        FLAG_CONTENT_MODERATION,
+        FLAG_UMAMIN_PRO,
+      ]);
+      expect(flags[FLAG_CONTENT_MODERATION]).toBe(true);
+      expect(flags[FLAG_UMAMIN_PRO]).toBe(false);
+      expect(captureServerException).toHaveBeenCalledTimes(1);
+    });
+
+    it("still honours an explicit off answer", async () => {
+      evaluateFlags.mockResolvedValue(
+        snapshot({ [FLAG_CONTENT_MODERATION]: false }),
+      );
+      expect(await isFlagEnabled(ENV, null, FLAG_CONTENT_MODERATION)).toBe(
+        false,
+      );
+      expect(captureServerException).not.toHaveBeenCalled();
+    });
+
+    it("prefers the last real answer during an outage", async () => {
+      const now = at(1_000_000);
+      evaluateFlags.mockResolvedValueOnce(
+        snapshot({ [FLAG_CONTENT_MODERATION]: false }),
+      );
+      expect(await isFlagEnabled(ENV, null, FLAG_CONTENT_MODERATION)).toBe(
+        false,
+      );
+
+      now.mockReturnValue(1_000_000 + 61_000);
+      evaluateFlags.mockResolvedValueOnce(snapshot({}));
+      expect(await isFlagEnabled(ENV, null, FLAG_CONTENT_MODERATION)).toBe(
+        false,
+      );
+    });
+
+    it("caches a missing answer for 10 seconds only", async () => {
+      const now = at(1_000_000);
+      evaluateFlags.mockResolvedValue(snapshot({}));
+      await isFlagEnabled(ENV, null, FLAG_CONTENT_MODERATION);
+
+      now.mockReturnValue(1_000_000 + 5_000);
+      await isFlagEnabled(ENV, null, FLAG_CONTENT_MODERATION);
+      expect(evaluateFlags).toHaveBeenCalledTimes(1);
+
+      now.mockReturnValue(1_000_000 + 11_000);
+      await isFlagEnabled(ENV, null, FLAG_CONTENT_MODERATION);
+      expect(evaluateFlags).toHaveBeenCalledTimes(2);
+    });
+
+    it("lets FLAGS_FORCE_ON win over a fallback", async () => {
+      evaluateFlags.mockRejectedValue(new Error("flags down"));
+      const flags = await resolveFlags(
+        // biome-ignore lint/suspicious/noExplicitAny: partial env stub
+        { ...ENV, FLAGS_FORCE_ON: FLAG_UMAMIN_PRO } as any,
+        null,
+        [FLAG_UMAMIN_PRO, FLAG_CONTENT_MODERATION],
+      );
+      expect(flags[FLAG_UMAMIN_PRO]).toBe(true);
+    });
   });
 });

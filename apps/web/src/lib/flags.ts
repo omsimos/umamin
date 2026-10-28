@@ -24,7 +24,7 @@ export const FLAG_CONTENT_MODERATION = "content-moderation";
  * Umamin Chat on this app (/chat, the Durable Object rooms). A GLOBAL switch
  * resolved with no viewer, like content moderation: chat is anonymous, so
  * there is no stable viewer to bucket. It gates the routes and the socket
- * upgrades, so the surface stays unreachable in production until launch.
+ * upgrades, so it doubles as a kill switch.
  */
 export const FLAG_UMAMIN_CHAT = "umamin-chat";
 

@@ -191,8 +191,12 @@ Use these for all new code.
   `isEnabled`, not `isFeatureEnabled`.
 - `/api/flags` must stay `withPrivateRead`; a shared cached response would hand
   one viewer's rollout to everyone.
-- Flags fail closed, and a failure is not cached. Client defaults are hidden.
-  Routes that gate a surface prefetch in the loader with `lib/loader-flags.ts`.
+- When PostHog gives no answer (outage, timeout, quota), a flag falls back to
+  its last known value in the isolate, else its `FLAG_FALLBACK` default in
+  `server-lib/flags.ts`: `false` for surfaces, `true` for `content-moderation`.
+  A missing answer is cached for 10 s and reported. Turn moderation off with a
+  0% rollout, never by deleting the flag. Client defaults are hidden. Routes
+  that gate a surface prefetch in the loader with `lib/loader-flags.ts`.
 - The staging env forces flags on with `FLAGS_FORCE_ON` in `wrangler.jsonc`.
   Production sets nothing on purpose; copying staging's vars into production
   launches every listed flag. `test/wrangler-flags.test.ts` pins both halves.
