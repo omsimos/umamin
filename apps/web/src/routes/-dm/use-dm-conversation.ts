@@ -24,6 +24,9 @@ import {
 
 /** A peer's typing indicator clears after this long without a refresh. */
 const TYPING_STALE_MS = 8_000;
+/** A request the room never answers settles after this long. Keep it above
+ *  the room's worst-case op latency. */
+const REQUEST_TIMEOUT_MS = 10_000;
 /** Codes after which reconnecting can't help. */
 const FINAL_CODES = new Set<number>([
   DM_CLOSED,
@@ -129,6 +132,7 @@ export function useDmConversation(
             messages: frame.messages,
             hasMore: frame.hasMore,
           });
+          settle(frame.id, { ok: true });
           return;
         case "meta":
           dispatch({ type: "meta", meta: frame.meta });
@@ -193,6 +197,10 @@ export function useDmConversation(
     };
 
     const close = () => {
+      // close() suppresses onClose, which is what normally settles these.
+      for (const id of [...waiters.current.keys()]) {
+        settle(id, { ok: false, code: "offline" });
+      }
       socketRef.current?.close();
       socketRef.current = null;
     };
@@ -267,7 +275,16 @@ export function useDmConversation(
       if (!sendFrame(frame)) {
         return Promise.resolve({ ok: false, code: "offline" });
       }
-      return new Promise((resolve) => waiters.current.set(frame.id, resolve));
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          waiters.current.delete(frame.id);
+          resolve({ ok: false, code: "unavailable" });
+        }, REQUEST_TIMEOUT_MS);
+        waiters.current.set(frame.id, (r) => {
+          clearTimeout(timer);
+          resolve(r);
+        });
+      });
     },
     [sendFrame],
   );
@@ -290,7 +307,13 @@ export function useDmConversation(
       const oldest = state.messages.find((m) => !m.id.startsWith("local:"));
       if (!oldest || state.loadingOlder || !state.hasMore) return;
       dispatch({ type: "loadOlder" });
-      sendFrame({ t: "history", id: crypto.randomUUID(), before: oldest.id });
+      void request({
+        t: "history",
+        id: crypto.randomUUID(),
+        before: oldest.id,
+      }).then((r) => {
+        if (!r.ok) dispatch({ type: "loadOlderFailed" });
+      });
     },
   };
 }

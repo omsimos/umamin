@@ -48,6 +48,7 @@ export type DmAction =
   | { type: "meta"; meta: DmMeta }
   | { type: "typing"; on: boolean; at: number }
   | { type: "loadOlder" }
+  | { type: "loadOlderFailed" }
   | {
       type: "send";
       clientId: string;
@@ -137,6 +138,8 @@ export function dmReducer(state: DmState, action: DmAction): DmState {
       return { ...state, peerTypingAt: action.on ? action.at : null };
     case "loadOlder":
       return { ...state, loadingOlder: true };
+    case "loadOlderFailed":
+      return { ...state, loadingOlder: false };
     case "send":
       return {
         ...state,
