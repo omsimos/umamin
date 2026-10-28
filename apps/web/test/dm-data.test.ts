@@ -232,6 +232,16 @@ describe("Chats list and unread count", () => {
     expect(await getDmUnreadCount(db, "me")).toBe(0);
   });
 
+  it("leaves a banned peer out of both the list and the unread count", async () => {
+    await thread(db, "me", "amy", { sender: "amy" });
+    await db
+      .update(userTable)
+      .set({ bannedAt: new Date() })
+      .where(eq(userTable.id, "amy"));
+    expect((await getDmThreadsPage(db, "me", null)).data).toEqual([]);
+    expect(await getDmUnreadCount(db, "me")).toBe(0);
+  });
+
   it("shows a hidden conversation again once a newer message arrives", async () => {
     await thread(db, "me", "amy", {
       sender: "amy",

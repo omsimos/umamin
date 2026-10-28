@@ -169,7 +169,8 @@ export async function getDmUnreadCount(
         peerId: sql<string>`${c.peer}`.as("peer_id"),
       })
       .from(dmThreadTable)
-      .where(eq(c.me, viewerId))
+      .innerJoin(userTable, eq(userTable.id, c.peer))
+      .where(and(eq(c.me, viewerId), isNull(userTable.bannedAt)))
       .orderBy(desc(dmThreadTable.lastMessageAt))
       .limit(UNREAD_SCAN_WINDOW)
       .as("recent");
