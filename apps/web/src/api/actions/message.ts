@@ -70,7 +70,7 @@ export const openMessageHandler = action(
 export const createReplyHandler = action(
   {
     schema: z.object({
-      messageId: z.string().min(1),
+      messageId: idSchema,
       content: z
         .string()
         .trim()
@@ -322,7 +322,7 @@ export const markThreadReadHandler = action(
 const sendMessageSchema = z.object({
   question: z.string().trim().min(1).max(500),
   content: z.string().trim().min(1).max(2000),
-  receiverId: z.string().min(1),
+  receiverId: idSchema,
 });
 
 export const sendMessageHandler = action(

@@ -330,7 +330,7 @@ export const deletePostHandler = action(
 );
 
 const createCommentSchema = z.object({
-  postId: z.string(),
+  postId: idSchema,
   content: z
     .string()
     .trim()

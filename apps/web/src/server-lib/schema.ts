@@ -2,7 +2,7 @@ import * as z from "zod";
 
 // Shared micro-schema for single-id action args (was re-declared per file).
 // Ported verbatim from apps/www/lib/schema.ts.
-export const idSchema = z.string().min(1);
+export const idSchema = z.string().min(1).max(128);
 
 export const registerSchema = z
   .object({

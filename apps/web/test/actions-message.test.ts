@@ -147,6 +147,17 @@ describe("message actions (real libSQL)", () => {
     expect(row.question).toBe("ask me");
   });
 
+  it("rejects an oversized receiver id without writing a row", async () => {
+    const app = buildApp(db, ANON);
+    const { json } = await callJson(app, "sendMessageAction", {
+      question: "ask me",
+      content: "hi",
+      receiverId: "x".repeat(200),
+    });
+    expect(json).toHaveProperty("error");
+    expect(await db.select().from(messageTable)).toHaveLength(0);
+  });
+
   it("silently drops a message to a quiet-mode receiver (no row written)", async () => {
     await db
       .update(userTable)

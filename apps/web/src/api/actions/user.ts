@@ -88,7 +88,7 @@ export const getCurrentUserHandler = action({}, (_input, { session, c }) =>
 
 // Plain read embedded in the action file — session optional (viewer overlay).
 export const getUserProfileHandler = action(
-  { schema: z.object({ username: z.string().min(1) }), auth: "none" },
+  { schema: z.object({ username: z.string().min(1).max(64) }), auth: "none" },
   async ({ username }, { session, c }) => {
     try {
       return await getUserProfileData(ctxDb(c), username, session?.userId);
