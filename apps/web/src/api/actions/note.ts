@@ -152,29 +152,15 @@ export const clearNoteHandler = action(
   async (_input, { session, c }) => {
     const db = ctxDb(c);
     await db.transaction(async (tx) => {
+      // Deleting (not blanking) keeps a cleared note out of the /notes feed,
+      // which orders by updated_at. Reactions cascade with the row; disputes
+      // are a soft reference.
       const [row] = await tx
-        .update(noteTable)
-        .set({
-          content: "",
-          reactionCount: 0,
-          musicProvider: null,
-          musicId: null,
-          musicTitle: null,
-          musicThumbnail: null,
-          spotifyTrackId: null,
-          spotifyTitle: null,
-          spotifyThumbnail: null,
-          ...reviewableScoreColumns(null),
-        })
+        .delete(noteTable)
         .where(eq(noteTable.userId, session.userId))
         .returning({ id: noteTable.id });
 
-      if (row) {
-        await tx
-          .delete(noteReactionTable)
-          .where(eq(noteReactionTable.noteId, row.id));
-        await clearNoteDisputes(tx, row.id);
-      }
+      if (row) await clearNoteDisputes(tx, row.id);
     });
 
     return { success: true };

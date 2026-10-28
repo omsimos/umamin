@@ -7,6 +7,18 @@ vi.mock("../src/server-lib/argon2", () => ({
   verify: async () => false,
 }));
 
+// Real classifier by default (no AI key, so it fails open); a test can swap in
+// an implementation to act during the classifier await.
+const { classifyContent } = vi.hoisted(() => ({ classifyContent: vi.fn() }));
+vi.mock("../src/server-lib/content-classifier", async (importActual) => {
+  const actual =
+    await importActual<typeof import("../src/server-lib/content-classifier")>();
+  classifyContent.mockImplementation(actual.classifyContent);
+  return { ...actual, classifyContent };
+});
+
+import { moderationDisputeTable } from "@umamin/db/schema/moderation-dispute";
+import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import { notificationTable } from "@umamin/db/schema/notification";
 import {
   pollOptionTable,
@@ -653,5 +665,52 @@ describe("post actions (real libSQL)", () => {
       body: JSON.stringify({ postId: "p1" }),
     });
     expect(res.status).toBe(403);
+  });
+
+  describe("note actions", () => {
+    async function noteRows(userId: string) {
+      return db.select().from(noteTable).where(eq(noteTable.userId, userId));
+    }
+
+    it("clearNoteAction removes the note row instead of blanking it", async () => {
+      const app = buildApp(db, authed("author", { createdAt: OLD }));
+      await callJson(app, "createNoteAction", { content: "hello" });
+      const [note] = await noteRows("author");
+      await db
+        .insert(noteReactionTable)
+        .values({ noteId: note.id, userId: "viewer" });
+
+      const { json } = await callJson(app, "clearNoteAction");
+
+      expect(json).toEqual({ success: true });
+      expect(await noteRows("author")).toHaveLength(0);
+      expect(await db.select().from(noteReactionTable)).toHaveLength(0);
+    });
+
+    it("a note can be written again after clearing", async () => {
+      const app = buildApp(db, authed("author", { createdAt: OLD }));
+      await callJson(app, "createNoteAction", { content: "hello" });
+      await callJson(app, "clearNoteAction");
+      await callJson(app, "createNoteAction", { content: "again" });
+
+      const rows = await noteRows("author");
+      expect(rows).toHaveLength(1);
+      expect(rows[0].content).toBe("again");
+    });
+
+    it("clearNoteAction removes disputes on the cleared note", async () => {
+      const app = buildApp(db, authed("author", { createdAt: OLD }));
+      await callJson(app, "createNoteAction", { content: "hello" });
+      const [note] = await noteRows("author");
+      await db.insert(moderationDisputeTable).values({
+        kind: "note",
+        targetId: note.id,
+        userId: "viewer",
+      });
+
+      await callJson(app, "clearNoteAction");
+
+      expect(await db.select().from(moderationDisputeTable)).toHaveLength(0);
+    });
   });
 });
