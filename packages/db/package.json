@@ -39,7 +39,7 @@
     "drizzle-kit": "^0.31.11",
     "drizzle-seed": "^0.3.1",
     "tsdown": "^0.23.0",
-    "tsx": "^4.23.15",
+    "tsx": "catalog:",
     "typescript": "^7.0.2"
   }
 }
