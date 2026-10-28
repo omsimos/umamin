@@ -160,11 +160,17 @@ export const createPostHandler = action(
     let quotedContent: string | null = null;
     if (quotedPostId) {
       const [quoted] = await db
-        .select({ id: postTable.id, content: postTable.content })
+        .select({
+          id: postTable.id,
+          content: postTable.content,
+          // A quote across a block would land without an award, and deleting it
+          // would then subtract aura that was never granted.
+          blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+        })
         .from(postTable)
         .where(eq(postTable.id, quotedPostId))
         .limit(1);
-      if (!quoted) {
+      if (!quoted || quoted.blocked === 1) {
         return { error: "The post you're quoting is no longer available." };
       }
       quotedContent = quoted.content;
@@ -814,11 +820,41 @@ export const addCommentLikeHandler = action(
     return db.transaction(async (tx) => {
       const inserted = await tx
         .insert(postCommentLikeTable)
-        .values({ commentId, userId: session.userId })
+        .select(
+          tx
+            .select({
+              id: sql<string>`${nanoid()}`.as("id"),
+              commentId: postCommentTable.id,
+              userId: sql<string>`${session.userId}`.as("user_id"),
+              // drizzle requires every table column, in table order.
+              createdAt: sql<Date>`unixepoch()`.as("created_at"),
+            })
+            .from(postCommentTable)
+            .where(
+              and(
+                eq(postCommentTable.id, commentId),
+                // A like across a block would land without an award, and its
+                // unlike would then subtract aura that was never granted.
+                noBlockBetween(postCommentTable.authorId, session.userId),
+              ),
+            ),
+        )
         .onConflictDoNothing()
         .returning({ id: postCommentLikeTable.id });
 
       if (inserted.length === 0) {
+        // Only on this path: tell a missing or blocked comment apart from a
+        // repeat like, so the happy path costs nothing extra.
+        const [target] = await tx
+          .select({
+            blocked: sql<number>`CASE WHEN ${noBlockBetween(postCommentTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+          })
+          .from(postCommentTable)
+          .where(eq(postCommentTable.id, commentId))
+          .limit(1);
+        if (!target || target.blocked === 1) {
+          return { error: "Comment not found" };
+        }
         return { success: true, alreadyLiked: true };
       }
 
@@ -891,7 +927,7 @@ export const removeCommentLikeHandler = action(
 
 export const addRepostHandler = action(
   {
-    schema: z.object({ postId: z.string() }),
+    schema: z.object({ postId: idSchema }),
     rateLimit: {
       name: "write",
       key: ({ session }) => `repost:${session.userId}`,
@@ -902,11 +938,42 @@ export const addRepostHandler = action(
     return db.transaction(async (tx) => {
       const [repost] = await tx
         .insert(postRepostTable)
-        .values({ postId, userId: session.userId })
+        .select(
+          tx
+            .select({
+              id: sql<string>`${nanoid()}`.as("id"),
+              postId: postTable.id,
+              userId: sql<string>`${session.userId}`.as("user_id"),
+              // drizzle requires every table column, in table order.
+              createdAt: sql<Date>`unixepoch()`.as("created_at"),
+              updatedAt: sql<Date>`unixepoch()`.as("updated_at"),
+            })
+            .from(postTable)
+            .where(
+              and(
+                eq(postTable.id, postId),
+                // A repost across a block would land without an award, and
+                // undoing it would then subtract aura that was never granted.
+                noBlockBetween(postTable.authorId, session.userId),
+              ),
+            ),
+        )
         .onConflictDoNothing()
         .returning();
 
       if (!repost) {
+        // Only on this path: tell a missing or blocked post apart from a
+        // repeat repost, so the happy path costs nothing extra.
+        const [target] = await tx
+          .select({
+            blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+          })
+          .from(postTable)
+          .where(eq(postTable.id, postId))
+          .limit(1);
+        if (!target || target.blocked === 1) {
+          return { error: "Post not found" };
+        }
         return { success: true, alreadyReposted: true };
       }
 
