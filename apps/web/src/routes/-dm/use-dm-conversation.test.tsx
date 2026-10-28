@@ -87,6 +87,46 @@ describe("useDmConversation requests", () => {
     Reflect.deleteProperty(document, "visibilityState");
   });
 
+  it("keeps its action identities across incoming frames", () => {
+    const { result, socket } = mountOpen();
+    const before = { ...result.current, state: undefined };
+    act(() => {
+      socket.serverSend({ t: "typing", on: true });
+      socket.serverSend({ t: "msgs", messages: [{ ...message, id: "6" }] });
+    });
+    expect(result.current.state.messages).toHaveLength(2);
+    for (const key of [
+      "send",
+      "retry",
+      "react",
+      "unsend",
+      "report",
+      "setTyping",
+      "loadOlder",
+    ] as const) {
+      expect(result.current[key]).toBe(before[key]);
+    }
+  });
+
+  it("loads older from the latest messages after a re-render", () => {
+    const { result } = renderHook(() => useDmConversation("pal"));
+    const firstRender = result.current.loadOlder;
+    const socket = FakeWebSocket.instances[0];
+    if (!socket) throw new Error("no socket opened");
+    act(() => {
+      socket.serverOpen();
+      socket.serverSend({
+        t: "sync",
+        meta,
+        messages: [message],
+        hasMore: true,
+      });
+    });
+    // The identity from before any messages existed must still see them.
+    act(() => firstRender());
+    expect(socket.sentFrames("history")).toHaveLength(1);
+  });
+
   it("settles a pending report when the tab hides", async () => {
     const { result } = mountOpen();
     let pending!: ReturnType<typeof result.current.report>;

@@ -289,31 +289,61 @@ export function useDmConversation(
     [sendFrame],
   );
 
+  const react = useCallback(
+    (messageId: string, emoji: string) =>
+      request({ t: "react", id: crypto.randomUUID(), messageId, emoji }),
+    [request],
+  );
+
+  const unsend = useCallback(
+    (messageId: string) =>
+      request({ t: "unsend", id: crypto.randomUUID(), messageId }),
+    [request],
+  );
+
+  const report = useCallback(
+    (messageId: string, reason: DmReportReason) =>
+      request({ t: "report", id: crypto.randomUUID(), messageId, reason }),
+    [request],
+  );
+
+  // Without the React Compiler, a fresh setTyping per frame would re-run the
+  // composer's cleanup and send typing:off mid-sentence.
+  const setTyping = useCallback(
+    (on: boolean) => {
+      sendFrame({ t: "typing", on });
+    },
+    [sendFrame],
+  );
+
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
+
+  const loadOlder = useCallback(() => {
+    const current = stateRef.current;
+    const oldest = current.messages.find((m) => !m.id.startsWith("local:"));
+    if (!oldest || current.loadingOlder || !current.hasMore) return;
+    dispatch({ type: "loadOlder" });
+    void request({
+      t: "history",
+      id: crypto.randomUUID(),
+      before: oldest.id,
+    }).then((r) => {
+      if (!r.ok) dispatch({ type: "loadOlderFailed" });
+    });
+  }, [request]);
+
   return {
     state,
     peerTyping,
     send,
     retry,
-    react: (messageId, emoji) =>
-      request({ t: "react", id: crypto.randomUUID(), messageId, emoji }),
-    unsend: (messageId) =>
-      request({ t: "unsend", id: crypto.randomUUID(), messageId }),
-    report: (messageId, reason) =>
-      request({ t: "report", id: crypto.randomUUID(), messageId, reason }),
-    setTyping: (on) => {
-      sendFrame({ t: "typing", on });
-    },
-    loadOlder: () => {
-      const oldest = state.messages.find((m) => !m.id.startsWith("local:"));
-      if (!oldest || state.loadingOlder || !state.hasMore) return;
-      dispatch({ type: "loadOlder" });
-      void request({
-        t: "history",
-        id: crypto.randomUUID(),
-        before: oldest.id,
-      }).then((r) => {
-        if (!r.ok) dispatch({ type: "loadOlderFailed" });
-      });
-    },
+    react,
+    unsend,
+    report,
+    setTyping,
+    loadOlder,
   };
 }
