@@ -471,6 +471,39 @@ describe("DmRoom access changes", () => {
     expect(c.closed).toBeNull();
   });
 
+  it("refuses sends once the recheck finds access gone, and tells both sides", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    await sendText(ca, "while allowed");
+    store.allowed = false;
+    // Pretend the last check was long ago instead of waiting 5 minutes.
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        const att = ws.deserializeAttachment() as Record<
+          string,
+          unknown
+        > | null;
+        if (att) ws.serializeAttachment({ ...att, checkedAt: 0 });
+      }
+    });
+    ca.send({ t: "send", id: "late", text: "after" });
+    expect((await ca.next("err", (f) => f.id === "late")).code).toBe("closed");
+    await cb.next("meta", (f) => !f.meta.canSend);
+  });
+
+  it("does not ask the store again inside the recheck window", async () => {
+    const { stub, pair, a, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    // The store would now refuse, but the check at connect time is fresh, so
+    // the cached answer stands and the send still goes through.
+    store.allowed = false;
+    await sendText(ca, "still ok");
+    expect(ca.count("err")).toBe(0);
+  });
+
   it("wipes all storage on purge", async () => {
     const { stub, pair, a, install } = setup();
     await install();
