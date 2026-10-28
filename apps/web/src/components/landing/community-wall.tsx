@@ -1,3 +1,4 @@
+import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { blobatarUri } from "blobatar/uri";
 import {
@@ -8,9 +9,12 @@ import {
   MailIcon,
   MessageCircleIcon,
   MusicIcon,
+  PauseIcon,
+  PlayIcon,
   Repeat2Icon,
   SparklesIcon,
 } from "lucide-react";
+import { useState } from "react";
 
 type Tag = { tag: string; Icon: LucideIcon; accent: string };
 
@@ -255,39 +259,56 @@ function WallCard({ card }: { card: Card }) {
 /**
  * Slow vertical columns of example posts, notes, polls and messages. Each
  * column renders its cards twice so the -50% scroll loops seamlessly; hovering
- * pauses it, and reduced motion leaves it still.
+ * or the pause button stops it, and reduced motion leaves it still. The button
+ * sits outside the masked section so the bottom fade doesn't hide it.
  */
 export function CommunityWall() {
+  const [paused, setPaused] = useState(false);
+
   return (
-    <section
-      aria-label="Example posts"
-      className="relative h-[34rem] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)] md:h-[40rem]"
-    >
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
-        {COLUMNS.map((column, i) => (
-          <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: fixed columns
-            key={i}
-            className={cn(
-              "flex animate-scroll-up flex-col gap-3 hover:[animation-play-state:paused] motion-reduce:animate-none md:gap-4",
-              i === 1 && "[animation-duration:75s]",
-              i === 2 && "hidden [animation-duration:68s] md:flex",
-            )}
-          >
-            {[0, 1].map((copy) =>
-              column.map((card, j) => (
-                <div
-                  // biome-ignore lint/suspicious/noArrayIndexKey: static, duplicated on purpose for the loop
-                  key={`${copy}-${j}`}
-                  aria-hidden={copy === 1 || undefined}
-                >
-                  <WallCard card={card} />
-                </div>
-              )),
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
+    <div className="relative">
+      <section
+        aria-label="Example posts"
+        className="relative h-[34rem] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)] md:h-[40rem]"
+      >
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+          {COLUMNS.map((column, i) => (
+            <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: fixed columns
+              key={i}
+              className={cn(
+                "flex animate-scroll-up flex-col gap-3 hover:[animation-play-state:paused] motion-reduce:animate-none md:gap-4",
+                paused && "[animation-play-state:paused]",
+                i === 1 && "[animation-duration:75s]",
+                i === 2 && "hidden [animation-duration:68s] md:flex",
+              )}
+            >
+              {[0, 1].map((copy) =>
+                column.map((card, j) => (
+                  <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static, duplicated on purpose for the loop
+                    key={`${copy}-${j}`}
+                    aria-hidden={copy === 1 || undefined}
+                  >
+                    <WallCard card={card} />
+                  </div>
+                )),
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+      <Button
+        type="button"
+        variant="secondary"
+        size="icon"
+        className="absolute right-2 bottom-2 z-10 motion-reduce:hidden"
+        aria-pressed={paused}
+        aria-label={paused ? "Play example posts" : "Pause example posts"}
+        onClick={() => setPaused((p) => !p)}
+      >
+        {paused ? <PlayIcon aria-hidden /> : <PauseIcon aria-hidden />}
+      </Button>
+    </div>
   );
 }
