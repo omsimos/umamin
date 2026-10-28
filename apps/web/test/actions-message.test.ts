@@ -97,7 +97,7 @@ describe("message actions (real libSQL)", () => {
       id: "n1",
       userId: "recv",
       content: "my note",
-      isAnonymous: true,
+      isAnonymous: false,
     });
 
     const app = buildApp(db, ANON);
@@ -118,6 +118,33 @@ describe("message actions (real libSQL)", () => {
       "ask me",
       "my note",
     ]);
+  });
+
+  it("never stores an anonymous note's text as the question", async () => {
+    await db
+      .update(userTable)
+      .set({ question: "ask me" })
+      .where(eq(userTable.id, "recv"));
+    await db.insert(noteTable).values({
+      id: "n1",
+      userId: "recv",
+      content: "secret note",
+      isAnonymous: true,
+    });
+
+    const app = buildApp(db, authed("sender"));
+    const { json } = await callJson(app, "sendMessageAction", {
+      question: "secret note",
+      content: "hi",
+      receiverId: "recv",
+    });
+
+    expect(json).toEqual({ success: true });
+    const [row] = await db
+      .select({ question: messageTable.question })
+      .from(messageTable)
+      .where(eq(messageTable.receiverId, "recv"));
+    expect(row.question).toBe("ask me");
   });
 
   it("silently drops a message to a quiet-mode receiver (no row written)", async () => {
