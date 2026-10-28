@@ -23,6 +23,15 @@ export const LIMITS = {
   revealSubmit: { rate: 4, periodMs: MINUTE, capacity: 3 },
 } as const satisfies Record<string, BucketConfig>;
 
+/** Every frame a room socket sends, valid or not. Far above a real client
+ *  (5 sends per 10 s plus typing and reactions); exists so a script can't
+ *  keep the object awake at line rate. */
+export const FRAME_BUDGET = {
+  rate: 20,
+  periodMs: SECOND,
+  capacity: 40,
+} as const satisfies BucketConfig;
+
 export type LimiterName = keyof typeof LIMITS;
 
 export interface BucketState {

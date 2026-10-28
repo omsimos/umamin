@@ -11,7 +11,7 @@ import {
   MAX_SOCKETS_PER_IPV6_64,
 } from "../src/lib/chat/constants";
 import { inviteCodeFor } from "../src/lib/chat/invite";
-import { LIMITS } from "../src/lib/chat/limits";
+import { FRAME_BUDGET, LIMITS } from "../src/lib/chat/limits";
 import {
   CLOSE,
   PROTOCOL_VERSION,
@@ -832,6 +832,29 @@ describe("ChatRoom", () => {
     for (let i = 0; i < MAX_ROOM_SOCKETS; i += 1) await connectRoom(stub);
     const extra = await connectRoom(stub);
     expect(await extra.closeCode()).toBe(CLOSE.TOO_MANY);
+  });
+
+  it("closes a socket that floods frames with 4429", async () => {
+    const { a, b } = await liveRoom();
+    for (let i = 0; i < FRAME_BUDGET.capacity + 20; i += 1) {
+      a.send({ t: "typing", on: false });
+    }
+    expect(await a.closeCode()).toBe(CLOSE.TOO_MANY);
+    expect((await barrier(b)).t).toBe("ack");
+    expect(b.closed).toBeNull();
+  });
+
+  it("answers a repeated auth on the same socket with nothing", async () => {
+    const { ana, a } = await liveRoom();
+    expect(a.frames.filter((f) => f.t === "sync")).toHaveLength(1);
+    a.send({
+      t: "auth",
+      v: PROTOCOL_VERSION,
+      sessionId: ana.sessionId,
+      secret: ana.secret,
+    });
+    expect((await barrier(a)).t).toBe("ack");
+    expect(a.frames.filter((f) => f.t === "sync")).toHaveLength(1);
   });
 
   it("tells the leaver self-ended and the partner partner-left", async () => {

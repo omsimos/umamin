@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { type BucketConfig, LIMITS, SideLimiter, takeToken } from "./limits";
+import {
+  type BucketConfig,
+  type BucketState,
+  FRAME_BUDGET,
+  LIMITS,
+  SideLimiter,
+  takeToken,
+} from "./limits";
 
 const config: BucketConfig = { rate: 2, periodMs: 1000, capacity: 3 };
 
@@ -36,6 +43,36 @@ describe("takeToken", () => {
 
   it("a clock running backwards adds nothing", () => {
     expect(takeToken({ tokens: 0.5, updatedAt: 1000 }, config, 0)).toBeNull();
+  });
+});
+
+describe("FRAME_BUDGET", () => {
+  function take(count: number, state: BucketState | undefined, now: number) {
+    let taken = 0;
+    let current = state;
+    for (let i = 0; i < count; i++) {
+      const next = takeToken(current, FRAME_BUDGET, now);
+      if (!next) break;
+      current = next;
+      taken += 1;
+    }
+    return { taken, state: current };
+  }
+
+  it("allows a burst of capacity frames, then refuses the next", () => {
+    const burst = take(FRAME_BUDGET.capacity, undefined, 0);
+    expect(burst.taken).toBe(FRAME_BUDGET.capacity);
+    expect(takeToken(burst.state, FRAME_BUDGET, 0)).toBeNull();
+  });
+
+  it("refills a period's worth of frames after one period", () => {
+    const burst = take(FRAME_BUDGET.capacity, undefined, 0);
+    const later = take(
+      FRAME_BUDGET.rate + 1,
+      burst.state,
+      FRAME_BUDGET.periodMs,
+    );
+    expect(later.taken).toBe(FRAME_BUDGET.rate);
   });
 });
 
