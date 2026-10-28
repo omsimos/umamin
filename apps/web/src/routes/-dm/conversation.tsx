@@ -24,7 +24,7 @@ import {
   MessageSquareXIcon,
   Trash2Icon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { blockUserAction, hideDmThreadAction } from "@/lib/actions";
@@ -125,6 +125,17 @@ export function DmConversationScreen({
   const [reporting, setReporting] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"delete" | "block" | null>(null);
   const peerName = peer.displayName ?? peer.username;
+  // A stable object: the composer pulls focus whenever this identity changes.
+  const composerReply = useMemo(
+    () =>
+      replyTarget && replyTarget.text !== null
+        ? {
+            authorLabel: replyTarget.mine ? "yourself" : peerName,
+            text: replyTarget.text,
+          }
+        : null,
+    [replyTarget, peerName],
+  );
 
   useEffect(() => onLeave, [onLeave]);
 
@@ -279,14 +290,7 @@ export function DmConversationScreen({
             setReplyTarget(null);
           }}
           onTyping={convo.setTyping}
-          replyTo={
-            replyPreview
-              ? {
-                  authorLabel: replyPreview.mine ? "yourself" : peerName,
-                  text: replyPreview.text ?? "",
-                }
-              : null
-          }
+          replyTo={composerReply}
           onCancelReply={() => setReplyTarget(null)}
         />
       ) : (
