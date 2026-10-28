@@ -720,18 +720,21 @@ async function hydrateHotPostIds(
   ids: string[],
   enforce: boolean,
 ): Promise<FeedItem[]> {
-  const posts =
+  // One joined query instead of posts then authors: a chained hop on the
+  // default feed's cache miss. Projected with feedAuthorColumns, never a
+  // relational author include, which would select passwordHash.
+  const rows =
     ids.length > 0
-      ? await db.select().from(postTable).where(inArray(postTable.id, ids))
-      : [];
-  const authorIds = Array.from(new Set(posts.map((post) => post.authorId)));
-  const users =
-    authorIds.length > 0
       ? await db
-          .select(feedAuthorColumns)
-          .from(userTable)
-          .where(inArray(userTable.id, authorIds))
+          .select({ post: postTable, author: feedAuthorColumns })
+          .from(postTable)
+          .innerJoin(userTable, eq(postTable.authorId, userTable.id))
+          .where(inArray(postTable.id, ids))
       : [];
+  const posts = rows.map((row) => row.post);
+  const users = Array.from(
+    new Map(rows.map((row) => [row.author.id, row.author] as const)).values(),
+  );
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
     getQuotedPostMap(db, posts, enforce),
