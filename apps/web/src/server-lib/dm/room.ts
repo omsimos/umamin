@@ -316,6 +316,14 @@ export class DmRoom extends DurableObject<AppEnv> {
       ws.close(CLOSE.VERSION, "version");
       return;
     }
+    // A first `hi` is never limited; a repeat on a ready socket re-sends
+    // 30 decrypted rows, so it shares the history bucket.
+    if (
+      att.ready &&
+      !this.limiter.take(LIMITER_KEY[att.side], "resync", Date.now())
+    ) {
+      return;
+    }
     const wasOnline = this.liveSockets(att.side, ws).length > 0;
     const next = { ...att, ready: true };
     ws.serializeAttachment(next);
@@ -350,6 +358,10 @@ export class DmRoom extends DurableObject<AppEnv> {
         await this.handleRead(att.side, Number(frame.upTo));
         return;
       case "history":
+        if (!this.limiter.take(LIMITER_KEY[att.side], "resync", now)) {
+          this.sendTo(ws, { t: "err", id: frame.id, code: "rate_limited" });
+          return;
+        }
         await this.handleHistory(ws, att.side, frame.id, Number(frame.before));
         return;
       case "report":

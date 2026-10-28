@@ -18,6 +18,7 @@ export const LIMITS = {
   sendMessage: { rate: 5, periodMs: 10 * SECOND, capacity: 5 },
   react: { rate: 20, periodMs: 10 * SECOND, capacity: 10 },
   typing: { rate: 30, periodMs: 10 * SECOND, capacity: 10 },
+  resync: { rate: 10, periodMs: 10 * SECOND, capacity: 10 },
   gameDeal: { rate: 6, periodMs: MINUTE, capacity: 3 },
   gameAnswer: { rate: 15, periodMs: MINUTE, capacity: 5 },
   revealSubmit: { rate: 4, periodMs: MINUTE, capacity: 3 },

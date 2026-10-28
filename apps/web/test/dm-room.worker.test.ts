@@ -418,6 +418,32 @@ describe("DmRoom messages", () => {
     ]);
     void a;
   });
+
+  it("throttles history pages and tells the client", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    for (let i = 0; i < 12; i += 1) {
+      c.send({ t: "history", id: `h${i}`, before: "9" });
+    }
+    expect((await c.next("err", (f) => f.id === "h11")).code).toBe(
+      "rate_limited",
+    );
+    expect(c.count("history")).toBe(10);
+  });
+
+  it("does not resend a full sync for every repeated hi", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    for (let i = 0; i < 12; i += 1) {
+      c.send({ t: "hi", v: DM_PROTOCOL_VERSION });
+    }
+    // The same bucket is empty now, so this answer is the barrier.
+    c.send({ t: "history", id: "after", before: "9" });
+    await c.next("err", (f) => f.id === "after");
+    expect(c.count("sync")).toBe(11);
+  });
 });
 
 describe("DmRoom thread index", () => {
