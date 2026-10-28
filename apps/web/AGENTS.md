@@ -176,9 +176,14 @@ Use these for all new code.
   scope and adds about 260 KB to the Worker bundle.
 - The Worker client (`server-lib/posthog.ts`) uses `flushAt: 1` and hands every
   send to `waitUntil`, gated on `NODE_ENV === "production"`.
-- Four report points, which don't overlap: `action()`'s unmapped catch, both
-  read wrappers' catches, `app.onError` in `server.ts`, and each cron. Reporting
-  must never throw.
+- Server code reports through `captureServerException` or
+  `captureRequestException` from `server-lib/posthog.ts`. The main points are
+  `action()`'s unmapped catch, both read wrappers' catches, `app.onError` in
+  `server.ts` and each cron. The Durable Objects, flag evaluation, the content
+  classifier, notifications, push and the Lemon Squeezy webhook report too.
+  Find every site with
+  `grep -rln "captureServerException(\|captureRequestException(" src`.
+  Reporting must never throw.
 - Source maps upload post-build through `@posthog/cli`
   (`scripts/posthog-sourcemaps.mjs`), not a bundler plugin. Rolldown minifies
   after plugin hooks, so a plugin's comment marker never reaches the client
@@ -257,9 +262,15 @@ Durable Object stack as Umamin Chat.
   otherwise through a 10 second debounce alarm. Never read message text from
   Turso; `last_preview` is the only copy there.
 - Access is `canMessage` in `server-lib/dm/store.ts`: both follow each other,
-  no block, neither banned. The socket checks it on connect and the room
-  re-checks every 5 minutes. Unfollow and block call `severDm`, a ban calls
-  `severAllDms`; both are best effort, so the re-check is the backstop.
+  no block, neither banned. The socket checks it on connect. The room
+  re-checks it on the next send or reaction once 5 minutes
+  (`ACCESS_RECHECK_MS`) have passed since the last check. No timer drives the
+  re-check. A failed re-check stops sending and leaves the sockets open, except
+  that a block closes the room for both sides. Unfollow and block call
+  `severDm`, a ban calls `severAllDms`. Both are best effort, and the re-check
+  is the backstop. A socket closes after 1 hour (`DM_MAX_SOCKET_AGE_MS`) and
+  reconnects through the upgrade route's session check, and a password change
+  closes that user's sockets through the room's `revoke` RPC.
 - Account deletion queues `dm_purge` inside the delete transaction, and the
   `*/5` cron drains it. Don't call the room from the delete action.
 - Push goes out only when the recipient has no live socket, at most once per
@@ -301,15 +312,21 @@ presigned URL with curl to see the real R2 error.
 **Moderation.** `isModerator(user)` reads the server-only `MODERATOR_USERS`
 env. Bans have one chokepoint: `validateSessionToken` returns no session when
 `user.bannedAt` is set. Ban fields are server-only and never in a projection.
-The IP denylist (`server-lib/ip-denylist.ts`, KV, fail-open) applies at the
-anonymous entry points only, and IPs are canonicalized on store and compare.
+The IP denylist (`server-lib/ip-denylist.ts`, KV, fail-open) runs on every
+non-static request through `ipDenylist()` in `server-lib/middleware.ts`,
+mounted first in `server.ts`. Login, signup, anonymous messages and the Google
+OAuth callback check it again in the handler. IPs are canonicalized on store
+and compare.
 
 **Content classification.** Posts, comments and notes are scored by the
 classifier in `server-lib/content-classifier.ts` through the AI Gateway, behind
 the `content-moderation` flag. The `ai` package is dynamically imported to keep
 it out of the Worker's startup bundle. After changing prompts or thresholds,
-run `pnpm --filter=web eval:moderation check`; it replays
-`scripts/moderation-cases.json` and is deterministic.
+run `pnpm --filter=web eval:moderation check`. It sends every case in
+`scripts/moderation-cases.json` to the live model through the AI Gateway, so it
+needs `AI_GATEWAY_API_KEY` (from the shell or `.dev.vars`) and costs a little
+money. It is not part of CI. It retries a case once when the first call times
+out, and exits 1 on any mismatch.
 
 **Notes song embeds.** `lib/music.ts` is the single source of truth. The stored
 id is a validated token, never a raw URL, and every embed URL is rebuilt and
