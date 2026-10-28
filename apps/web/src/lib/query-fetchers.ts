@@ -45,43 +45,6 @@ function appendCursor(baseUrl: string, cursor: string | null) {
   return cursor ? `${baseUrl}?cursor=${cursor}` : baseUrl;
 }
 
-// ── SSR fetcher seam (Phase 3b loaders) ──────────────────────────────────────
-// The browser fetchers below issue *relative* requests (`/api/...`) with
-// `credentials: "include"` — the page origin and the httpOnly session cookie are
-// supplied by the browser. Inside a TanStack Start loader those two facts are
-// absent: SSR runs in the Worker where a relative URL has no origin, and there
-// is no ambient cookie jar. The seam is deliberately additive so the browser
-// fetchers stay byte-identical to apps/www.
-//
-// Phase 3b usage: a loader reads Start's request context
-// (`getRequest()`/`getWebRequest()` from `@tanstack/react-start/server`),
-// derives `{ origin, cookie }`, and passes it to `serverFetchJson` — either
-// directly or through thin per-resource wrappers that mirror the browser
-// fetchers below. Because one Worker serves both pages and `/api`, the loader
-// can also short-circuit to a direct in-process call later; the HTTP seam is the
-// framework-agnostic interim that works today under Start RC.
-export type ServerFetchContext = {
-  // Absolute origin, e.g. "https://dev.umamin.link" (no trailing slash).
-  origin: string;
-  // Forwarded request cookie so the API sees the caller's session.
-  cookie?: string;
-};
-
-export async function serverFetchJson<T>(
-  ctx: ServerFetchContext,
-  path: string,
-): Promise<T> {
-  const response = await fetch(`${ctx.origin}${path}`, {
-    headers: ctx.cookie ? { cookie: ctx.cookie } : undefined,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed for ${path}`);
-  }
-
-  return (await response.json()) as T;
-}
-
 export async function fetchPostsPage(
   cursor: string | null,
   isAuthenticated: boolean,
