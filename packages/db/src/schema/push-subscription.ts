@@ -28,11 +28,10 @@ export const pushSubscriptionTable = sqliteTable(
     // RFC 8291 subscription keys (PushSubscription.keys.p256dh / .auth).
     p256dh: text("p256dh").notNull(),
     auth: text("auth").notNull(),
-    // Bumped on transient (5xx/timeout) sends; a cleanup cron prunes rows past a
-    // threshold — belt-and-suspenders alongside the inline 404/410 delete.
+    // Unused: nothing increments it. Dead endpoints are deleted inline on
+    // 404/410 in notification-push.ts.
     failureCount: integer("failure_count").notNull().default(0),
-    // Set after a successful send; supports a per-(user) send cooldown without
-    // Redis (Phase 2). Swept/compared, so partial-indexed below.
+    // Unused: nothing reads or writes it yet. The partial index below covers it.
     lastNotifiedAt: integer("last_notified_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
