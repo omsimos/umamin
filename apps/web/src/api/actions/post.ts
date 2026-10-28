@@ -7,8 +7,9 @@ import {
   postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
-import { userBlockTable, userTable } from "@umamin/db/schema/user";
-import { and, eq, ne, or, sql } from "drizzle-orm";
+import { userTable } from "@umamin/db/schema/user";
+import { and, eq, ne, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import * as z from "zod";
 import {
   canPostImages,
@@ -572,7 +573,25 @@ export const addLikeHandler = action(
     const statements = [
       db
         .insert(postLikeTable)
-        .values({ postId, userId: session.userId })
+        .select(
+          db
+            .select({
+              id: sql<string>`${nanoid()}`.as("id"),
+              postId: postTable.id,
+              userId: sql<string>`${session.userId}`.as("user_id"),
+              // drizzle requires every table column, in table order.
+              createdAt: sql<Date>`unixepoch()`.as("created_at"),
+            })
+            .from(postTable)
+            .where(
+              and(
+                eq(postTable.id, postId),
+                // A like across a block would land without an award, and its
+                // unlike would then subtract aura that was never granted.
+                noBlockBetween(postTable.authorId, session.userId),
+              ),
+            ),
+        )
         .onConflictDoNothing()
         .returning({ id: postLikeTable.id }),
       db
@@ -587,39 +606,37 @@ export const addLikeHandler = action(
 
     // Rides in the same batch, so the like costs no extra round trip. It must
     // be the LAST statement: PREV_CHANGED reads changes() from the statement
-    // directly before it, so nothing may separate insert → bump → award.
-    const blockProbe = db
-      .select({ id: userBlockTable.id })
-      .from(userBlockTable)
-      .innerJoin(postTable, eq(postTable.id, postId))
-      .where(
-        or(
-          and(
-            eq(userBlockTable.blockerId, postTable.authorId),
-            eq(userBlockTable.blockedId, session.userId),
-          ),
-          and(
-            eq(userBlockTable.blockerId, session.userId),
-            eq(userBlockTable.blockedId, postTable.authorId),
-          ),
-        ),
-      )
+    // directly before it, so nothing may separate insert → bump → award. It
+    // tells a missing or blocked post apart from an already-liked one, since
+    // the vetoed insert returns no row in all three cases.
+    const targetProbe = db
+      .select({
+        blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+      })
+      .from(postTable)
+      .where(eq(postTable.id, postId))
       .limit(1);
 
     const results = award
-      ? await db.batch([...statements, award, blockProbe])
-      : await db.batch([...statements, blockProbe]);
+      ? await db.batch([...statements, award, targetProbe])
+      : await db.batch([...statements, targetProbe]);
 
     const [inserted, bumped] = results;
-    const blockedRows = results[results.length - 1];
+    // The award statement is optional, so the tuple's last slot is a union;
+    // the probe is always last.
+    const [target] = results[results.length - 1] as { blocked: number }[];
 
+    if (!target || target.blocked === 1) {
+      // Same outcome as a bad id, like comments.
+      return { error: "Post not found" };
+    }
     if (inserted.length === 0) {
       return { success: true, alreadyLiked: true } as const;
     }
 
     const likedPost = bumped[0];
 
-    if (likedPost && blockedRows.length === 0) {
+    if (likedPost) {
       await notify(
         { db, env: c.env, defer: defer(c) },
         {
