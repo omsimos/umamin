@@ -441,6 +441,99 @@ describe("ChatLobby", () => {
     ]);
     expect(ms.matchId).toBe(mn.matchId);
   });
+
+  it("requeues the survivor even when aborting the half-created room throws", async () => {
+    const lobby = newLobby();
+    const host = person(["abort-throws"]);
+    const h = await waitingIn(lobby, host);
+    await runInDurableObject(lobby, (instance, state) => {
+      const real = (instance as unknown as { env: typeof env }).env;
+      const ns = real.CHAT_ROOM;
+      const CHAT_ROOM = {
+        idFromName: (name: string) => ns.idFromName(name),
+        get: (
+          id: DurableObjectId,
+          opts?: DurableObjectNamespaceGetDurableObjectOptions,
+        ) => {
+          const room = ns.get(id, opts);
+          return {
+            init: async (input: Parameters<ChatRoom["init"]>[0]) => {
+              await room.init(input);
+              for (const ws of state.getWebSockets()) {
+                const att = ws.deserializeAttachment() as {
+                  waiter?: { sessionId: string };
+                };
+                if (att.waiter?.sessionId === host.sessionId) ws.close(1000);
+              }
+            },
+            abort: async () => {
+              throw new Error("abort failed");
+            },
+          };
+        },
+      };
+      Object.assign(instance, { env: { ...real, CHAT_ROOM } });
+    });
+
+    const survivor = await joinLobby(lobby, person(["abort-throws"]));
+    await h.closeCode();
+    await survivor.next("waiting");
+
+    // Stuck in "pairing", the survivor would never be offered a partner.
+    const next = await joinLobby(lobby, person(["abort-throws"]));
+    const [ms, mn] = await Promise.all([
+      survivor.next("matched"),
+      next.next("matched"),
+    ]);
+    expect(ms.matchId).toBe(mn.matchId);
+  });
+
+  it("aborts a room whose init threw after writing and requeues both sides", async () => {
+    const lobby = newLobby();
+    const first = person(["init-throws"]);
+    const h = await waitingIn(lobby, first);
+    let matchId = "";
+    await runInDurableObject(lobby, (instance) => {
+      const real = (instance as unknown as { env: typeof env }).env;
+      const ns = real.CHAT_ROOM;
+      const CHAT_ROOM = {
+        idFromName: (name: string) => {
+          matchId = name;
+          return ns.idFromName(name);
+        },
+        get: (
+          id: DurableObjectId,
+          opts?: DurableObjectNamespaceGetDurableObjectOptions,
+        ) => {
+          const room = ns.get(id, opts);
+          return {
+            init: async (input: Parameters<ChatRoom["init"]>[0]) => {
+              await room.init(input);
+              throw new Error("init failed after writing");
+            },
+            abort: () => room.abort(),
+          };
+        },
+      };
+      Object.assign(instance, { env: { ...real, CHAT_ROOM } });
+    });
+
+    const g = await joinLobby(lobby, person(["init-throws"]));
+    await eventually(
+      async () =>
+        matchId !== "" && (await userTables(roomStub(matchId))).length === 0,
+      "the half-initialized room was purged",
+    );
+    // Each side is told it is waiting again: the host a second time, the
+    // joiner for the first.
+    await eventually(
+      async () => h.frames.filter((f) => f.t === "waiting").length === 2,
+      "host requeued",
+    );
+    await g.next("waiting");
+    expect(h.frames.some((f) => f.t === "matched")).toBe(false);
+    expect(g.frames.some((f) => f.t === "matched")).toBe(false);
+  });
 });
 
 describe("ChatLobby headcount", () => {

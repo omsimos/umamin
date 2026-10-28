@@ -328,6 +328,7 @@ export class ChatLobby extends DurableObject<AppEnv> {
         locationHint: CHAT_LOCATION_HINT,
       },
     );
+    let created = false;
     try {
       await room.init({
         matchId,
@@ -335,19 +336,25 @@ export class ChatLobby extends DurableObject<AppEnv> {
         b: second.seat,
         lobbyId: this.ctx.id.toString(),
       });
+      created = true;
     } catch (err) {
       this.report(err, "room-init");
-      setState(first, "waiting");
-      setState(second, "waiting");
-      return;
     }
     const bothOpen =
       first.ws.readyState === WebSocket.OPEN &&
       second.ws.readyState === WebSocket.OPEN;
-    if (!bothOpen) {
-      await room.abort();
-      setState(first, "waiting");
-      setState(second, "waiting");
+    if (!created || !bothOpen) {
+      // A failed init may have written rows before throwing; abort purges
+      // them. Both sides must leave "pairing" even if the abort throws, or
+      // neither is ever timed out or re-paired.
+      try {
+        await room.abort();
+      } catch (err) {
+        this.report(err, "room-abort");
+      } finally {
+        setState(first, "waiting");
+        setState(second, "waiting");
+      }
       return;
     }
     this.recordRoom(matchId, Date.now());
