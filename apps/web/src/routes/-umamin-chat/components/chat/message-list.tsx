@@ -127,9 +127,14 @@ function Thread({
             key={m.id}
             messageId={m.id}
             className={cn(
+              // The item is paint-contained (content-visibility), which clips
+              // the focus ring and jump highlight a bubble draws outside its
+              // box. 4px of padding cancelled by a negative margin gives them
+              // room; the margins below are the old mt-1/mt-4 minus that 4px.
+              "-mx-1 -mb-1 p-1",
+              i === 0 ? "-mt-1" : sameRun(prev, m) ? "mt-0" : "mt-3",
               // Optimistic sends animate once: the acked message replaces the
               // bubble under a new id and must not pop in twice.
-              i > 0 && (sameRun(prev, m) ? "mt-1" : "mt-4"),
               fresh && "animate-chat-bubble-in motion-reduce:animate-none",
               m.author === "self"
                 ? "origin-bottom-right"

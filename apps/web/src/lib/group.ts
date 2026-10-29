@@ -10,7 +10,7 @@ export const OWNED_GROUPS_CAP = 1;
 export const JOINED_GROUPS_CAP = 5;
 
 export const GROUP_PLUS_REQUIRED_ERROR =
-  "Creating a group is an Umamin+ perk — free once your account is a year old, or included with Umamin Pro.";
+  "Creating a group is an Umamin+ perk: free once your account is a year old, or included with Umamin Pro.";
 // Reserved tags surface as "taken" too — exposing a tag as specifically
 // reserved just invites people to probe the blocklist.
 export const GROUP_TAG_TAKEN_ERROR = "That tag is taken.";
@@ -21,7 +21,7 @@ export const GROUP_JOINED_CAP_ERROR = `You can be in up to ${JOINED_GROUPS_CAP} 
 export const GROUP_TARGET_CAPPED_ERROR =
   "That person is already in the maximum number of groups.";
 export const GROUP_OWNER_CANNOT_LEAVE_ERROR =
-  "Group owners can't leave — delete the group instead.";
+  "Group owners can't leave. Delete the group instead.";
 export const GROUP_USER_NOT_FOUND_ERROR = "We couldn't find that user.";
 export const GROUP_CANNOT_INVITE_SELF_ERROR = "You can't invite yourself.";
 export const GROUP_ALREADY_MEMBER_ERROR = "Already a member of this group.";

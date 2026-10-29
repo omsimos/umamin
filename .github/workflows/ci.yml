@@ -59,9 +59,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build project
-        env:
-          TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
         run: pnpm build
+
+      # pnpm build runs apps/web's staging mode. Production config
+      # (.env.production, the production wrangler block) is otherwise first
+      # built by Workers Builds after the merge. No POSTHOG_CLI_* secrets exist
+      # here, so the source-map upload no-ops.
+      - name: Build apps/web for production
+        run: pnpm --filter=web build:production
 
   # Typecheck and tests share one job: both are fast turbo tasks, so splitting
   # them paid for a second checkout + pnpm + Node + install to save a few
@@ -89,6 +94,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # drizzle-kit generate diffs src/schema against migrations/meta offline. A
+      # schema edit committed without its migration otherwise passes typecheck
+      # and fails at runtime after the deploy.
+      - name: Check migrations match the schema
+        run: |
+          pnpm --filter=@umamin/db generate
+          pnpm --filter=@umamin/org-db generate
+          git diff --exit-code -- packages/db/migrations packages/org-db/migrations
+          test -z "$(git status --porcelain -- packages/db/migrations packages/org-db/migrations)"
+
       - name: Run typecheck
         run: pnpm check-types
 
@@ -113,8 +128,6 @@ jobs:
 
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
-        with:
-          version: 2.5.15
 
       - name: Run Biome
         run: biome ci .

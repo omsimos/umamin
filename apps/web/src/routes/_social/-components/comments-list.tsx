@@ -6,6 +6,7 @@ import {
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
 import { useMemo } from "react";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -38,6 +39,8 @@ export function CommentsList({
     hasNextPage,
     isFetchingNextPage,
     isFetching,
+    isFetchNextPageError,
+    refetch,
   } = useInfiniteQuery<CommentsResponse>({
     queryKey: queryKeys.postComments(postId),
     queryFn: ({ pageParam }) =>
@@ -73,7 +76,7 @@ export function CommentsList({
     onLoadMore: fetchNextPage,
   });
 
-  if (error) {
+  if (error && !data) {
     return (
       <Alert variant="destructive">
         <AlertCircleIcon className="h-4 w-4" />
@@ -109,6 +112,12 @@ export function CommentsList({
 
   return (
     <div className="w-full [--list-row-height:180px]">
+      {error && (
+        <RefetchErrorAlert
+          onRetry={() => (isFetchNextPageError ? fetchNextPage() : refetch())}
+          retrying={isFetching}
+        />
+      )}
       {comments.map((comment) => {
         const card = (
           <PostCard

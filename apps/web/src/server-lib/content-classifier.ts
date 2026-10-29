@@ -1,6 +1,8 @@
 import type { createGateway, Experimental_EvaluationModel } from "ai";
 import type { AppEnv } from "./env";
+import { formatErrorChain } from "./errors";
 import { captureServerException } from "./posthog";
+import { checkRateLimit } from "./ratelimit";
 
 // Classifies user-written text with TypeSafe's Jev through the Vercel AI
 // Gateway. Every failure (no key, timeout, rate limit, refusal, bad response)
@@ -149,6 +151,7 @@ const MENTION = /(?:^|[^\w@])@[\w-]{2,}/;
 export function scoreAnswers(
   answers: ClassifierAnswers,
   text = "",
+  kind?: ContentKind,
 ): ContentScores {
   const severe: Record<(typeof SEVERE_KEYS)[number], number> = {
     hate: answers.hate.probability,
@@ -160,7 +163,12 @@ export function scoreAnswers(
     harassment: answers.harassment.probability,
   };
 
-  const political = answers.political.probability >= 0.5 && !MENTION.test(text);
+  // A message is always aimed at its recipient, the case the exemption must
+  // never cover (same reason as an @handle).
+  const political =
+    kind !== "message" &&
+    answers.political.probability >= 0.5 &&
+    !MENTION.test(text);
   if (political) severe.harassment = 0;
 
   const noneProbability =
@@ -251,22 +259,87 @@ function buildState(input: ClassifyInput, text: string) {
   };
 }
 
+// Why a classification produced no scores. "unavailable": no key, or the
+// per-user budget refused the call. "transient": our timeout, a rate limit or a
+// 5xx, which a later attempt may well clear. "permanent": anything else, such
+// as a rejected request, which resending won't fix.
+export type ClassifyOutcome = {
+  scores: ContentScores | null;
+  failure: null | "transient" | "permanent" | "unavailable";
+};
+
+// "<name> <statusCode>" from the top-level error only, so nothing derived from
+// the request (or the provider's message) reaches a report.
+function errorName(err: unknown): string {
+  if (typeof err !== "object" || err === null) return "failed";
+  const { name, statusCode } = err as { name?: unknown; statusCode?: unknown };
+  return [
+    typeof name === "string" ? name : "Error",
+    typeof statusCode === "number" ? statusCode : null,
+  ]
+    .filter((part) => part !== null)
+    .join(" ");
+}
+
+function hasServerErrorStatus(err: unknown): boolean {
+  let current = err;
+  for (let depth = 0; depth < 5; depth++) {
+    if (typeof current !== "object" || current === null) return false;
+    const { statusCode, cause } = current as {
+      statusCode?: unknown;
+      cause?: unknown;
+    };
+    if (typeof statusCode === "number" && statusCode >= 500) return true;
+    current = cause;
+  }
+  return false;
+}
+
+type ClassifyOptions = {
+  // Test seam; production resolves Jev through the Gateway.
+  model?: Experimental_EvaluationModel;
+  defer?: (promise: Promise<unknown>) => void;
+  // A background retry has no user waiting on it.
+  timeoutMs?: number;
+  // A user id: shares one `write` limiter key across every kind, so one
+  // account can't multiply classifier spend by spreading writes over posts,
+  // comments and notes.
+  limitKey?: string;
+  // false logs a failure without reporting it, for callers that retry the same
+  // content and would otherwise report it on every attempt.
+  report?: boolean;
+};
+
 export async function classifyContent(
   env: AppEnv,
   input: ClassifyInput,
-  opts: {
-    // Test seam; production resolves Jev through the Gateway.
-    model?: Experimental_EvaluationModel;
-    defer?: (promise: Promise<unknown>) => void;
-    // A background retry has no user waiting on it.
-    timeoutMs?: number;
-  } = {},
+  opts: ClassifyOptions = {},
 ): Promise<ContentScores | null> {
+  return (await classifyContentWithOutcome(env, input, opts)).scores;
+}
+
+export async function classifyContentWithOutcome(
+  env: AppEnv,
+  input: ClassifyInput,
+  opts: ClassifyOptions = {},
+): Promise<ClassifyOutcome> {
   const text = input.text.trim();
-  if (text.length < MIN_TEXT_LENGTH) return CLEAN;
+  if (text.length < MIN_TEXT_LENGTH) return { scores: CLEAN, failure: null };
 
   const apiKey = env.AI_GATEWAY_API_KEY;
-  if (!opts.model && !apiKey) return null;
+  if (!opts.model && !apiKey) return { scores: null, failure: "unavailable" };
+
+  if (
+    opts.limitKey &&
+    !(await checkRateLimit(env, "write", `classify:${opts.limitKey}`))
+  ) {
+    // Left unclassified; the retry cron picks it up within its own global bound.
+    console.warn("content classification skipped", {
+      kind: input.kind,
+      error: "rate_limited",
+    });
+    return { scores: null, failure: "unavailable" };
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(
@@ -285,7 +358,10 @@ export async function classifyContent(
       maxRetries: 0,
       abortSignal: controller.signal,
     });
-    return scoreAnswers(result.answers, text);
+    return {
+      scores: scoreAnswers(result.answers, text, input.kind),
+      failure: null,
+    };
   } catch (err) {
     const expected = expectedFailureName(err);
     if (expected) {
@@ -295,12 +371,28 @@ export async function classifyContent(
         error: expected,
       });
     } else {
-      console.error("content classification failed", err);
-      captureServerException(env, opts.defer, err, {
-        properties: { classifier: input.kind },
+      console.error("content classification failed", {
+        kind: input.kind,
+        error: formatErrorChain(err),
       });
+      if (opts.report !== false) {
+        // A message is private: report its failure without the SDK error,
+        // whose request fields can carry the text.
+        captureServerException(
+          env,
+          opts.defer,
+          input.kind === "message"
+            ? new Error(`classifier ${errorName(err)}`)
+            : err,
+          { properties: { classifier: input.kind } },
+        );
+      }
     }
-    return null;
+    return {
+      scores: null,
+      failure:
+        expected || hasServerErrorStatus(err) ? "transient" : "permanent",
+    };
   } finally {
     clearTimeout(timeout);
   }

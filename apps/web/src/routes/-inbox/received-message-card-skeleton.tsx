@@ -1,11 +1,11 @@
 import { Skeleton } from "@umamin/ui/components/skeleton";
-import { Icons } from "@/lib/icons";
+import { EllipsisVerticalIcon } from "lucide-react";
 
 export function ReceivedMessageCardSkeleton() {
   return (
     <div className="min-w-2 w-full group relative bg-card p-6 rounded-xl border">
       <div className="absolute top-4 right-4 text-muted-foreground">
-        <Icons.elipsisVertical className="h-4 w-4" />
+        <EllipsisVerticalIcon className="h-4 w-4" />
       </div>
 
       <div className="font-bold text-center leading-normal text-lg min-w-0 break-words mb-4">

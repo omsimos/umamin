@@ -197,15 +197,24 @@ function sameSnapshot(a: ThreadSnapshot, b: ThreadSnapshot): boolean {
  * those change what a Chats list or badge shows. Everything else (a newer
  * message in a thread that is already unread, an unsend) waits for the
  * debounce.
+ *
+ * `live` says which sides have a connected socket. A side that turns unread
+ * while live is about to read within seconds, so that flip waits for the
+ * debounce too and a live exchange costs one write per window instead of two
+ * per message. Turning READ and hiding stay "now" so a badge still clears at
+ * once.
  */
 export function threadSyncUrgency(
   synced: ThreadSnapshot | null,
   next: ThreadSnapshot,
+  live: readonly [boolean, boolean] = [false, false],
 ): "none" | "now" | "later" {
   if (!synced) return next.lastSeq > 0 ? "now" : "none";
   if (sameSnapshot(synced, next)) return "none";
   for (const side of [0, 1] as const) {
-    if (unreadFor(synced, side) !== unreadFor(next, side)) return "now";
+    const was = unreadFor(synced, side);
+    const is = unreadFor(next, side);
+    if (was !== is && !(is && live[side])) return "now";
     if (synced.hiddenSeq[side] !== next.hiddenSeq[side]) return "now";
   }
   return "later";

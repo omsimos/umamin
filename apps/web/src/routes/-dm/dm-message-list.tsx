@@ -116,7 +116,12 @@ function Thread({
             key={m.id}
             messageId={m.id}
             className={cn(
-              i > 0 && (prev?.mine === m.mine ? "mt-1" : "mt-4"),
+              // The item is paint-contained (content-visibility), which clips
+              // the focus ring and jump highlight a bubble draws outside its
+              // box. 4px of padding cancelled by a negative margin gives them
+              // room; the margins below are the old mt-1/mt-4 minus that 4px.
+              "-mx-1 -mb-1 p-1",
+              i === 0 ? "-mt-1" : prev?.mine === m.mine ? "mt-0" : "mt-3",
               fresh && "animate-chat-bubble-in motion-reduce:animate-none",
               m.mine ? "origin-bottom-right" : "origin-bottom-left",
             )}

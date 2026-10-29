@@ -8,6 +8,7 @@ vi.mock("../src/server-lib/posthog", () => ({
 import {
   type ClassifierAnswers,
   classifyContent,
+  classifyContentWithOutcome,
   scoreAnswers,
 } from "../src/server-lib/content-classifier";
 import { contentLabel } from "../src/server-lib/content-label";
@@ -118,6 +119,22 @@ describe("scoreAnswers", () => {
     ).toBeLessThan(10);
   });
 
+  it("never exempts political-framed abuse in a private message", () => {
+    const abuse = answers(
+      { harassment: 0.9, political: 0.9 },
+      { choice: "callout", none: 0.05 },
+    );
+    expect(scoreAnswers(abuse, "DDS ka kasi kaya bobo ka", "message")).toEqual({
+      severe: 90,
+      drama: 95,
+      reason: "harassment",
+    });
+    // Posts keep the exemption.
+    expect(
+      scoreAnswers(abuse, "DDS ka kasi kaya bobo ka", "post").severe,
+    ).toBeLessThan(10);
+  });
+
   it("names the drama kind when nothing severe stands out", () => {
     expect(
       scoreAnswers(answers({}, { choice: "indirect", none: 0.02 })),
@@ -137,6 +154,17 @@ describe("classifyContent", () => {
         },
       ),
     ).toMatchObject({ severe: 93, reason: "threat" });
+  });
+
+  it("forwards the content kind so messages get no political exemption", async () => {
+    const model = mockModel(answers({ harassment: 0.9, political: 0.9 }));
+    expect(
+      await classifyContent(
+        env,
+        { kind: "message", text: "DDS ka kasi kaya bobo ka" },
+        { model },
+      ),
+    ).toMatchObject({ severe: 90, reason: "harassment" });
   });
 
   it("sends the parent post apart from the author's own text", async () => {
@@ -210,6 +238,162 @@ describe("classifyContent", () => {
       await classifyContent(env, { kind: "comment", text: " ok " }, { model }),
     ).toEqual({ severe: 0, drama: 0, reason: null });
     expect(doEvaluate).not.toHaveBeenCalled();
+  });
+
+  it("skips the call once the user's classifier budget is spent", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const doEvaluate = vi.fn();
+    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const limited = {
+      AI_GATEWAY_API_KEY: "test-key",
+      RL_WRITE: { limit },
+    } as unknown as AppEnv;
+
+    expect(
+      await classifyContent(
+        limited,
+        { kind: "post", text: "hello there" },
+        { model, limitKey: "u1" },
+      ),
+    ).toBeNull();
+    expect(doEvaluate).not.toHaveBeenCalled();
+    expect(limit).toHaveBeenCalledWith({ key: "classify:u1" });
+    expect(warn).toHaveBeenCalledWith("content classification skipped", {
+      kind: "post",
+      error: "rate_limited",
+    });
+    warn.mockRestore();
+  });
+
+  it("classifies while the user's classifier budget lasts", async () => {
+    const limited = {
+      AI_GATEWAY_API_KEY: "test-key",
+      RL_WRITE: { limit: vi.fn().mockResolvedValue({ success: true }) },
+    } as unknown as AppEnv;
+    expect(
+      await classifyContent(
+        limited,
+        { kind: "post", text: "hello there" },
+        { model: mockModel(answers()), limitKey: "u1" },
+      ),
+    ).toEqual({ severe: 1, drama: 1, reason: null });
+  });
+
+  describe("classifyContentWithOutcome", () => {
+    const failing = (err: Error) =>
+      new Experimental_EvaluationMockModelV4({
+        doEvaluate: async () => {
+          throw err;
+        },
+      });
+    const run = (model: Experimental_EvaluationMockModelV4, report?: boolean) =>
+      classifyContentWithOutcome(
+        env,
+        { kind: "post", text: "anything" },
+        { model, report },
+      );
+
+    it("calls an unexplained provider error permanent", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      expect(await run(failing(new Error("bad request")))).toEqual({
+        scores: null,
+        failure: "permanent",
+      });
+      vi.restoreAllMocks();
+    });
+
+    it("calls a rate limit, a timeout and a 5xx transient", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(console, "warn").mockImplementation(() => {});
+      const withStatus = (statusCode: number) =>
+        Object.assign(new Error("upstream"), { statusCode });
+      for (const err of [
+        withStatus(429),
+        withStatus(503),
+        Object.assign(new Error("slow"), { cause: withStatus(502) }),
+        new DOMException("aborted", "AbortError"),
+      ]) {
+        expect((await run(failing(err))).failure).toBe("transient");
+      }
+      vi.restoreAllMocks();
+    });
+
+    it("calls a missing key unavailable and a success clean", async () => {
+      expect(
+        await classifyContentWithOutcome({} as AppEnv, {
+          kind: "post",
+          text: "hello",
+        }),
+      ).toEqual({ scores: null, failure: "unavailable" });
+      expect((await run(mockModel(answers()))).failure).toBeNull();
+    });
+
+    it("logs a failure without reporting it when report is false", async () => {
+      vi.mocked(captureServerException).mockClear();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      await run(failing(new Error("bad request")), false);
+      expect(captureServerException).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
+  });
+
+  it("reports a private message's failure without the SDK error", async () => {
+    vi.mocked(captureServerException).mockClear();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const failure = Object.assign(new Error("provider said no"), {
+      name: "AI_APICallError",
+      statusCode: 400,
+      requestBodyValues: { text: "secret words" },
+    });
+    const model = new Experimental_EvaluationMockModelV4({
+      doEvaluate: async () => {
+        throw failure;
+      },
+    });
+
+    await classifyContent(
+      env,
+      { kind: "message", text: "secret words" },
+      { model },
+    );
+    expect(captureServerException).toHaveBeenCalledTimes(1);
+    const reported = vi.mocked(captureServerException).mock.calls[0]?.[2];
+    expect(reported).not.toBe(failure);
+    expect((reported as Error).message).toBe("classifier AI_APICallError 400");
+    expect(
+      JSON.stringify(vi.mocked(captureServerException).mock.calls),
+    ).not.toContain("secret words");
+
+    // Every other kind still reports the original error.
+    vi.mocked(captureServerException).mockClear();
+    await classifyContent(env, { kind: "post", text: "anything" }, { model });
+    expect(vi.mocked(captureServerException).mock.calls[0]?.[2]).toBe(failure);
+    vi.restoreAllMocks();
+  });
+
+  it("logs a failure as a flattened chain, not the raw error", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const model = new Experimental_EvaluationMockModelV4({
+      doEvaluate: async () => {
+        throw Object.assign(new Error("provider said no"), {
+          requestBodyValues: { text: "secret words" },
+        });
+      },
+    });
+    await classifyContent(
+      env,
+      { kind: "comment", text: "secret words" },
+      { model },
+    );
+    const [label, detail] = error.mock.calls[0] ?? [];
+    expect(label).toBe("content classification failed");
+    expect(detail).toEqual({
+      kind: "comment",
+      error: expect.stringContaining("provider said no"),
+    });
+    expect(JSON.stringify(error.mock.calls)).not.toContain("secret words");
+    vi.restoreAllMocks();
   });
 
   it("fails open on a provider error and reports it", async () => {

@@ -1,22 +1,11 @@
 {
   "$schema": "https://v2-10-12.turborepo.dev/schema.json",
-  "globalDependencies": [".env"],
   "globalEnv": ["NODE_ENV"],
   "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "dist"],
-      "env": [
-        "TURSO_*",
-        "GOOGLE_*",
-        "KV_REST_API_*",
-        "CRON_SECRET",
-        "AES_256_GCM_KEY",
-        "R2_*",
-        "NEXT_PUBLIC_APP_URL"
-      ]
+      "outputs": ["dist/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]

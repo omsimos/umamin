@@ -34,8 +34,8 @@ interface GeneratedCard {
 const TITLE = "Your profile card";
 const DESCRIPTION =
   "Post it to your story, then copy your link and add it with a link " +
-  "sticker where the dashed guide shows. The guide is only in this preview " +
-  "— the shared image keeps that spot clean.";
+  "sticker where the dashed guide shows. The guide is only in this preview. " +
+  "The shared image keeps that spot clean.";
 
 function PreviewBody({
   card,
@@ -69,7 +69,7 @@ function PreviewBody({
           onClick={() => {
             void sharePng(card.blob, filename).then((result) => {
               if (result === "downloaded") {
-                toast.success("Saved — share it anywhere.");
+                toast.success("Saved. Share it anywhere.");
               }
             });
           }}
@@ -98,7 +98,7 @@ function PreviewBody({
             void navigator.clipboard
               .writeText(`${window.location.origin}/to/${username}`)
               .then(() =>
-                toast.success("Link copied — add it with a link sticker."),
+                toast.success("Link copied. Add it with a link sticker."),
               )
               .catch((err: unknown) => {
                 if (err instanceof DOMException && err.name === "AbortError") {
@@ -146,7 +146,7 @@ export function ProfileCardShare({
         setCard({ blob: share, url });
       } catch {
         if (!alive) return;
-        toast.error("Couldn't generate the image — try again.");
+        toast.error("Couldn't generate the image. Try again.");
         onOpenChange(false);
       }
     })();

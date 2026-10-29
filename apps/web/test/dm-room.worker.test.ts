@@ -5,7 +5,12 @@ import {
   runInDurableObject,
 } from "cloudflare:test";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import { DM_PAGE_SIZE } from "../src/lib/dm/constants";
+import {
+  DM_MAX_SOCKET_AGE_MS,
+  DM_PAGE_SIZE,
+  DM_STALE_SOCKET_MS,
+  MAX_SOCKETS_PER_SIDE,
+} from "../src/lib/dm/constants";
 import type { ThreadSnapshot } from "../src/lib/dm/engine";
 import { dmPair, dmRoomName } from "../src/lib/dm/pair";
 import {
@@ -13,6 +18,8 @@ import {
   DM_CLOSED,
   DM_PROTOCOL_VERSION,
   type DmServerFrame,
+  PING,
+  PONG,
 } from "../src/lib/dm/protocol";
 import { DM_HEADERS, type DmRoom } from "../src/server-lib/dm/room";
 import type { DmStore } from "../src/server-lib/dm/store";
@@ -57,11 +64,17 @@ class Client {
   }
 
   get frames(): DmServerFrame[] {
-    return this.raw.map((r) => JSON.parse(r) as DmServerFrame);
+    return this.raw
+      .filter((r) => r !== PONG)
+      .map((r) => JSON.parse(r) as DmServerFrame);
   }
 
   send(frame: object) {
     this.ws.send(JSON.stringify(frame));
+  }
+
+  sendRaw(data: string) {
+    this.ws.send(data);
   }
 
   close() {
@@ -126,14 +139,20 @@ class FakeStore implements DmStore {
   pushes: [string, string][] = [];
   reports: Parameters<DmStore["insertReport"]>[0][] = [];
   allowed = true;
+  blocked = false;
+  failReports = false;
 
   async canMessage() {
     return this.allowed;
+  }
+  async isBlocked() {
+    return this.blocked;
   }
   async writeThread(_pair: unknown, s: ThreadSnapshot) {
     this.writes.push(structuredClone(s));
   }
   async insertReport(input: Parameters<DmStore["insertReport"]>[0]) {
+    if (this.failReports) throw new Error("turso down");
     const dup = this.reports.some(
       (r) =>
         r.reporterId === input.reporterId && r.messageSeq === input.messageSeq,
@@ -255,6 +274,34 @@ describe("DmRoom sockets", () => {
   });
 });
 
+describe("DmRoom socket cap", () => {
+  it("sweeps half-open sockets before refusing a new one for the cap", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const old: Client[] = [];
+    for (let i = 0; i < MAX_SOCKETS_PER_SIDE; i += 1) {
+      old.push(await join(stub, pair.threadId, a));
+    }
+    // No pongs were sent, so backdating the connect time makes them stale.
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        const att = ws.deserializeAttachment() as {
+          connectedAt: number;
+        } | null;
+        if (att) {
+          ws.serializeAttachment({
+            ...att,
+            connectedAt: Date.now() - DM_STALE_SOCKET_MS - 1,
+          });
+        }
+      }
+    });
+    const fresh = await join(stub, pair.threadId, a);
+    expect(fresh.closed).toBeNull();
+    for (const c of old) expect(await c.closeCode()).toBe(CLOSE.NORMAL);
+  });
+});
+
 describe("DmRoom messages", () => {
   it("delivers to both sides and echoes the client id only to the sender", async () => {
     const { stub, pair, a, b, install } = setup();
@@ -371,6 +418,32 @@ describe("DmRoom messages", () => {
     ]);
     void a;
   });
+
+  it("throttles history pages and tells the client", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    for (let i = 0; i < 12; i += 1) {
+      c.send({ t: "history", id: `h${i}`, before: "9" });
+    }
+    expect((await c.next("err", (f) => f.id === "h11")).code).toBe(
+      "rate_limited",
+    );
+    expect(c.count("history")).toBe(10);
+  });
+
+  it("does not resend a full sync for every repeated hi", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    for (let i = 0; i < 12; i += 1) {
+      c.send({ t: "hi", v: DM_PROTOCOL_VERSION });
+    }
+    // The same bucket is empty now, so this answer is the barrier.
+    c.send({ t: "history", id: "after", before: "9" });
+    await c.next("err", (f) => f.id === "after");
+    expect(c.count("sync")).toBe(11);
+  });
 });
 
 describe("DmRoom thread index", () => {
@@ -406,6 +479,30 @@ describe("DmRoom thread index", () => {
     await ca.next("meta", (f) => f.meta.peerReadSeq === Number(seq));
     await eventually(() => store.writes.length === 2, "read write");
     expect(store.writes[1]?.readSeq).toEqual([0, Number(seq)]);
+  });
+
+  describe("live exchange", () => {
+    it("a live exchange costs one index write per debounce window", async () => {
+      const { stub, pair, a, b, store, install } = setup();
+      await install();
+      const ca = await join(stub, pair.threadId, a);
+      const cb = await join(stub, pair.threadId, b);
+
+      const seq1 = await sendText(ca, "m1");
+      await eventually(() => store.writes.length === 1, "first write");
+      cb.send({ t: "read", upTo: seq1 });
+      await eventually(() => store.writes.length === 2, "read write");
+
+      const seq2 = await sendText(ca, "m2");
+      cb.send({ t: "read", upTo: seq2 });
+      await ca.next("meta", (f) => f.meta.peerReadSeq === Number(seq2));
+      expect(store.writes).toHaveLength(2);
+
+      expect(await runDurableObjectAlarm(stub)).toBe(true);
+      expect(store.writes).toHaveLength(3);
+      expect(store.writes[2]).toMatchObject({ lastSeq: 2, preview: "m2" });
+      expect(store.writes[2]?.readSeq).toEqual([0, 2]);
+    });
   });
 
   it("hides history for one side only", async () => {
@@ -471,6 +568,120 @@ describe("DmRoom access changes", () => {
     expect(c.closed).toBeNull();
   });
 
+  it("closes the conversation for both sides when the recheck finds a block", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    store.allowed = false;
+    store.blocked = true;
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        const att = ws.deserializeAttachment() as Record<
+          string,
+          unknown
+        > | null;
+        if (att) ws.serializeAttachment({ ...att, checkedAt: 0 });
+      }
+    });
+    ca.send({ t: "send", id: "late", text: "after" });
+    expect(await ca.closeCode()).toBe(DM_CLOSED);
+    expect(await cb.closeCode()).toBe(DM_CLOSED);
+  });
+
+  it("sends no typing or presence to a read-only socket and forwards none from it", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    await runInDurableObject(stub, (instance: DmRoom) =>
+      instance.sever("unfollow"),
+    );
+    await ca.next("meta", (f) => !f.meta.canSend);
+    const cb = await join(stub, pair.threadId, b);
+    // b coming online still pushes a meta frame, but a, now read-only, must
+    // not learn that b is there.
+    await eventually(() => ca.count("meta") >= 2, "meta after peer joins");
+    expect(ca.frames.every((f) => f.t !== "meta" || !f.meta.peerOnline)).toBe(
+      true,
+    );
+    cb.send({ t: "typing", on: true });
+    ca.send({ t: "typing", on: true });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(ca.count("typing")).toBe(0);
+    expect(cb.count("typing")).toBe(0);
+  });
+
+  it("refuses sends once the recheck finds access gone, and tells both sides", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    await sendText(ca, "while allowed");
+    store.allowed = false;
+    // Pretend the last check was long ago instead of waiting 5 minutes.
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        const att = ws.deserializeAttachment() as Record<
+          string,
+          unknown
+        > | null;
+        if (att) ws.serializeAttachment({ ...att, checkedAt: 0 });
+      }
+    });
+    ca.send({ t: "send", id: "late", text: "after" });
+    expect((await ca.next("err", (f) => f.id === "late")).code).toBe("closed");
+    await cb.next("meta", (f) => !f.meta.canSend);
+  });
+
+  it("does not ask the store again inside the recheck window", async () => {
+    const { stub, pair, a, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    // The store would now refuse, but the check at connect time is fresh, so
+    // the cached answer stands and the send still goes through.
+    store.allowed = false;
+    await sendText(ca, "still ok");
+    expect(ca.count("err")).toBe(0);
+  });
+
+  it("closes only the revoked user's sockets", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    await runInDurableObject(stub, (instance: DmRoom) => instance.revoke(a));
+    expect(await ca.closeCode()).toBe(CLOSE.NORMAL);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(cb.closed).toBeNull();
+  });
+
+  it("closes a socket past the age cap so it reconnects through the session check", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    // A recent pong keeps the socket "fresh"; only its age should close it.
+    ca.sendRaw(PING);
+    await eventually(() => ca.raw.includes(PONG), "pong");
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        const att = ws.deserializeAttachment() as {
+          side: number;
+          connectedAt: number;
+        } | null;
+        if (att?.side === 0) {
+          ws.serializeAttachment({
+            ...att,
+            connectedAt: Date.now() - DM_MAX_SOCKET_AGE_MS - 1,
+          });
+        }
+      }
+    });
+    await sendText(cb, "after expiry");
+    expect(await ca.closeCode()).toBe(CLOSE.NORMAL);
+    expect(ca.frames.some((f) => f.t === "msgs")).toBe(false);
+  });
+
   it("wipes all storage on purge", async () => {
     const { stub, pair, a, install } = setup();
     await install();
@@ -478,6 +689,34 @@ describe("DmRoom access changes", () => {
     await sendText(c, "gone soon");
     await runInDurableObject(stub, (instance: DmRoom) => instance.purge());
     expect(await c.closeCode()).toBe(DM_CLOSED);
+    expect(await tableCount(stub)).toBe(0);
+  });
+
+  it("keeps a purged room empty when an in-flight op lands afterwards", async () => {
+    const { stub, pair, a, install } = setup();
+    await install();
+    const c = await join(stub, pair.threadId, a);
+    await sendText(c, "gone soon");
+    await runInDurableObject(stub, (instance: DmRoom) => instance.purge());
+    await runInDurableObject(stub, async (instance: DmRoom) => {
+      const room = instance as unknown as {
+        insertRow(t: string, m: object, c: string | null): Promise<unknown>;
+      };
+      await expect(
+        room.insertRow(
+          pair.threadId,
+          {
+            author: 0,
+            text: "late",
+            replyTo: null,
+            reactionLow: null,
+            reactionHigh: null,
+            createdAt: 1,
+          },
+          null,
+        ),
+      ).rejects.toThrow("purged");
+    });
     expect(await tableCount(stub)).toBe(0);
   });
 });
@@ -522,6 +761,19 @@ describe("DmRoom reports", () => {
     ca.send({ t: "report", id: "r3", messageId: more, reason: "spam" });
     expect((await ca.next("err", (f) => f.id === "r3")).code).toBe(
       "rate_limited",
+    );
+  });
+
+  it("answers a report that failed inside the room with an err frame", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    const bad = await sendText(cb, "something awful");
+    store.failReports = true;
+    ca.send({ t: "report", id: "r-fail", messageId: bad, reason: "spam" });
+    expect((await ca.next("err", (f) => f.id === "r-fail")).code).toBe(
+      "unavailable",
     );
   });
 });

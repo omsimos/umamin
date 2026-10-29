@@ -64,3 +64,17 @@ export function canonicalizeIp(ip: string): string {
   if (groups.length !== 8) return trimmed;
   return groups.map((g) => g.padStart(4, "0")).join(":");
 }
+
+// Rate-limit and bucket keys, not denylist keys. An IPv6 client usually holds
+// a whole /64, so keying on the full address lets it rotate past any per-IP
+// limit. IPv4, IPv4-mapped and unparseable values stay whole: truncating a
+// mapped address would merge every IPv4 client into one bucket.
+export function rateLimitKeyForIp(ip: string): string {
+  const canonical = canonicalizeIp(ip);
+  const groups = canonical.split(":");
+  if (groups.length !== 8) return canonical;
+  const mapped =
+    groups.slice(0, 5).every((g) => g === "0000") && groups[5] === "ffff";
+  if (mapped) return canonical;
+  return `${groups.slice(0, 4).join(":")}::/64`;
+}

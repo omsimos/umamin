@@ -57,7 +57,9 @@ export type DmErrorCode =
   | "closed"
   | "rate_limited"
   | "not_found"
-  | "reported";
+  | "reported"
+  /** The room failed while handling the op; safe to retry. */
+  | "unavailable";
 
 export type DmServerFrame =
   | { t: "sync"; meta: DmMeta; messages: DmMessage[]; hasMore: boolean }

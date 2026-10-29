@@ -1,8 +1,8 @@
 import type { Context, MiddlewareHandler } from "hono";
-import type { AppBindings } from "../../server-lib/context";
+import { type AppBindings, sessionContext } from "../../server-lib/context";
 import { type Db, getDb } from "../../server-lib/db";
 import type { AppEnv } from "../../server-lib/env";
-import { type ResolvedSession, resolveSession } from "../../server-lib/session";
+import type { ResolvedSession } from "../../server-lib/session";
 
 // ── DB seam ──────────────────────────────────────────────────────────────────
 // Read handlers resolve the Turso client through this indirection instead of
@@ -21,21 +21,10 @@ export function __setReadDb(factory: ((env: AppEnv) => Db) | null): void {
 }
 
 // ── Session ──────────────────────────────────────────────────────────────────
-// Mirrors server-lib/context.sessionContext but resolves the db through the
-// seam above so a test db flows into both session validation and data reads.
+// sessionContext bound to the test seam, so a test db reaches session validation too.
 // Mounted once on readsApp; the memoized resolver is shared by every handler.
 export function readsSessionContext(): MiddlewareHandler<AppBindings> {
-  return async (c, next) => {
-    let cached: Promise<ResolvedSession> | undefined;
-    c.set("getSession", () => {
-      cached ??= resolveSession(c, resolveDb(c.env)).then((resolved) => {
-        if (resolved.session) c.set("resolvedUserId", resolved.session.userId);
-        return resolved;
-      });
-      return cached;
-    });
-    await next();
-  };
+  return sessionContext(resolveDb);
 }
 
 // read-route types its handler context with bindings only (no Variables), so
@@ -45,13 +34,4 @@ export function getSessionFrom(c: Context): Promise<ResolvedSession> {
 }
 
 // ── URL helpers ────────────────────────────────────────────────────────────
-// The profile routes accept a `@`-prefixed username segment. apps/www only had
-// to strip the literal `%40` because Next hands route params RAW; Hono's
-// `c.req.param()` percent-DECODES, so `/user/%40josh` arrives here as `@josh`.
-// Both forms are stripped — a `@`-style shared or bookmarked profile URL would
-// otherwise miss the lookup and 404.
-export function formatUsername(username: string): string {
-  if (username.startsWith("%40")) return username.slice(3);
-  if (username.startsWith("@")) return username.slice(1);
-  return username;
-}
+export { formatUsername } from "../../lib/format";

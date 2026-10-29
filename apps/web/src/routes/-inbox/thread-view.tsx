@@ -17,6 +17,7 @@ import type { KeyboardEventHandler } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ContentCover } from "@/components/content-cover";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { Link } from "@/lib/navigation";
@@ -93,7 +94,7 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
   const endRef = useRef<HTMLDivElement | null>(null);
   const seenCountRef = useRef<number | null>(null);
 
-  const { data, isError } = useQuery({
+  const { data, isError, isFetching, refetch } = useQuery({
     queryKey: threadKey,
     queryFn: () => fetchMessageThread(messageId),
     staleTime: PRIVATE_STALE_TIME,
@@ -269,7 +270,7 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
     }
   };
 
-  if (isError) {
+  if (isError && !data) {
     return (
       <p className="mt-20 text-center text-muted-foreground text-sm">
         This conversation is no longer available.
@@ -293,6 +294,9 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
 
   return (
     <div className="flex flex-col">
+      {isError && (
+        <RefetchErrorAlert onRetry={() => refetch()} retrying={isFetching} />
+      )}
       <ThreadHeader data={data} />
 
       <div className="mt-5 rounded-xl border bg-muted/30 px-4 py-3 text-center">

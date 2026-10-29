@@ -5,6 +5,7 @@ import {
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -25,6 +26,8 @@ export function ReceivedMessages() {
     hasNextPage,
     isFetching,
     isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
   } = useInfiniteQuery<MessagesResponse>({
     queryKey: queryKeys.receivedMessages(),
     queryFn: ({ pageParam }) =>
@@ -37,12 +40,14 @@ export function ReceivedMessages() {
 
   const messages = data?.pages.flatMap((page) => page.messages) ?? [];
   const sentinelRef = useInfiniteScroll({
-    hasNextPage: Boolean(hasNextPage),
+    // The sentinel stays mounted under a failed page, so without this it would
+    // re-fire fetchNextPage on every failure; the retry button takes over.
+    hasNextPage: Boolean(hasNextPage) && !isFetchNextPageError,
     isFetchingNextPage,
     onLoadMore: fetchNextPage,
   });
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="w-full mx-auto">
         <Alert variant="destructive">
@@ -67,6 +72,12 @@ export function ReceivedMessages() {
 
   return (
     <div className="w-full">
+      {error && (
+        <RefetchErrorAlert
+          onRetry={() => (isFetchNextPageError ? fetchNextPage() : refetch())}
+          retrying={isFetching}
+        />
+      )}
       {messages.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />

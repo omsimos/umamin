@@ -79,6 +79,14 @@ export const MAX_QUEUED_SENDS = 20;
  *  gives up. A rejected upgrade (flag off, rate limited) looks exactly like a
  *  network failure to the browser, so without a bound it would retry forever. */
 export const MAX_FAILED_CONNECTS = 8;
+/** Consecutive 4429 closes before the lobby tells the user it's still trying. */
+export const TOO_MANY_NOTICE_AFTER = 3;
+/** Consecutive 4429 closes before the lobby gives up (about a minute of backoff). */
+export const TOO_MANY_GIVE_UP_AFTER = 12;
+export const BUSY_MESSAGE =
+  "Lots of people are searching from your network. Still trying.";
+export const BUSY_GIVE_UP_MESSAGE =
+  "Umamin Chat is busy on your network right now. Try again in a minute.";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -393,6 +401,9 @@ export function createWsTransport(
   function startLobby(self: SelfIdentity, findOptions?: FindMatchOptions) {
     const joinCode = findOptions?.joinCode;
     failedConnects = 0;
+    // A 4429 arrives on an accepted socket, so onOpen fires first and can't
+    // reset this; only a lobby frame proves the join was accepted.
+    let tooMany = 0;
     const socket = createReconnectingSocket({
       url: () => wsUrl("/api/chat/lobby"),
       WebSocketImpl: options.WebSocketImpl,
@@ -423,6 +434,7 @@ export function createWsTransport(
       onMessage: (data) => {
         if (mode.kind !== "lobby" || mode.socket !== socket) return;
         const frame = parse<LobbyServerFrame>(data);
+        if (frame) tooMany = 0;
         if (frame?.t === "stats") {
           lobbyStats = { waiting: frame.waiting, chatting: frame.chatting };
           commit();
@@ -435,6 +447,15 @@ export function createWsTransport(
       },
       onClose: (code, willReconnect) => {
         if (mode.kind !== "lobby" || mode.socket !== socket) return;
+        if (willReconnect && code === CLOSE.TOO_MANY) {
+          tooMany += 1;
+          if (tooMany === TOO_MANY_NOTICE_AFTER) onRateLimited(BUSY_MESSAGE);
+          if (tooMany < TOO_MANY_GIVE_UP_AFTER) return;
+          socket.close();
+          toIdle();
+          onError(BUSY_GIVE_UP_MESSAGE);
+          return;
+        }
         if (willReconnect) {
           failedConnects += 1;
           if (failedConnects < MAX_FAILED_CONNECTS) return;

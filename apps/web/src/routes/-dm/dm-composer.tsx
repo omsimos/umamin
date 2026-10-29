@@ -118,7 +118,7 @@ export function DmComposer({
             size="icon"
             aria-label="Cancel reply"
             onClick={onCancelReply}
-            className="size-7 shrink-0 rounded-full"
+            className="relative size-7 shrink-0 rounded-full after:absolute after:-inset-2 after:content-['']"
           >
             <XIcon />
           </Button>

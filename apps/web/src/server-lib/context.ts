@@ -23,11 +23,13 @@ export type AppVariables = {
 
 export type AppBindings = { Bindings: AppEnv; Variables: AppVariables };
 
-export function sessionContext(): MiddlewareHandler<AppBindings> {
+export function sessionContext(
+  dbFor: (env: AppEnv) => Db = getDb,
+): MiddlewareHandler<AppBindings> {
   return async (c, next) => {
     let cached: Promise<ResolvedSession> | undefined;
     c.set("getSession", () => {
-      cached ??= resolveSession(c, getDb(c.env)).then((resolved) => {
+      cached ??= resolveSession(c, dbFor(c.env)).then((resolved) => {
         if (resolved.session) c.set("resolvedUserId", resolved.session.userId);
         return resolved;
       });

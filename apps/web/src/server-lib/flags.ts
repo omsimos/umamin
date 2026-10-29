@@ -24,6 +24,13 @@ import { captureServerException } from "./posthog";
 // Long relative to a page load, short relative to a launch decision: flipping
 // the flag in PostHog takes effect within a minute on every warm isolate.
 const CACHE_TTL_MS = 60_000;
+// A flag check sits on the request path; a slow /flags must cost at most this,
+// once per isolate per minute (a missing answer is cached only briefly).
+const FLAGS_REQUEST_TIMEOUT_MS = 1000;
+// How long an answer PostHog failed to give is cached: long enough that an
+// outage doesn't turn every request into a /flags call, short enough to recover
+// quickly.
+const MISSING_TTL_MS = 10_000;
 // An isolate can live for hours and this is keyed per distinct id, so cap it.
 const CACHE_MAX_ENTRIES = 500;
 
@@ -32,7 +39,22 @@ const CACHE_MAX_ENTRIES = 500;
 // make a partial rollout look inconsistent between page loads.
 const ANONYMOUS_DISTINCT_ID = "anonymous";
 
-type Entry = { flags: Record<string, boolean>; cachedAt: number };
+type Entry = {
+  flags: Record<string, boolean>;
+  cachedAt: number;
+  ttl: number;
+};
+
+// What a flag resolves to when PostHog gave no answer (outage, timeout,
+// quota). Hiding an unlaunched surface is the safe default; for
+// content-moderation the safe direction is ON, because off uncovers severe
+// content in shared caches and the Hot ranking.
+const FLAG_FALLBACK: Readonly<Record<string, boolean>> = {
+  [FLAG_CONTENT_MODERATION]: true,
+};
+// Last answer PostHog actually gave, per distinct id and flag; preferred over
+// FLAG_FALLBACK so an outage keeps the current state.
+const lastKnown = new Map<string, boolean>();
 
 const cache = new Map<string, Entry>();
 // Concurrent resolvers for one distinct id share a single /flags request — the
@@ -41,7 +63,7 @@ const inflight = new Map<string, Promise<Record<string, boolean>>>();
 
 function prune(now: number): void {
   for (const [id, entry] of cache) {
-    if (now - entry.cachedAt >= CACHE_TTL_MS) cache.delete(id);
+    if (now - entry.cachedAt >= entry.ttl) cache.delete(id);
   }
   if (cache.size < CACHE_MAX_ENTRIES) return;
   const excess = cache.size - CACHE_MAX_ENTRIES + 1;
@@ -51,6 +73,22 @@ function prune(now: number): void {
     cache.delete(id);
     dropped += 1;
   }
+}
+
+function rememberAnswer(distinctId: string, key: string, value: boolean): void {
+  const id = `${distinctId}:${key}`;
+  // Re-insert so the oldest entry is always the first key.
+  lastKnown.delete(id);
+  lastKnown.set(id, value);
+  while (lastKnown.size > CACHE_MAX_ENTRIES) {
+    const oldest = lastKnown.keys().next().value;
+    if (oldest === undefined) break;
+    lastKnown.delete(oldest);
+  }
+}
+
+function fallbackFor(distinctId: string, key: string): boolean {
+  return lastKnown.get(`${distinctId}:${key}`) ?? FLAG_FALLBACK[key] ?? false;
 }
 
 // Comma-separated flag keys to resolve as enabled regardless of the PostHog
@@ -87,33 +125,45 @@ function getFlagsClient(env: AppEnv): PostHog {
         host,
         flushAt: 1,
         flushInterval: 0,
+        featureFlagsRequestTimeoutMs: FLAGS_REQUEST_TIMEOUT_MS,
+        featureFlagsRequestMaxRetries: 0,
       }),
     };
   }
   return flagsClient.client;
 }
 
+// posthog-node swallows a failed /flags fetch and returns a snapshot with no
+// records, so "PostHog said off" and "PostHog said nothing" only differ in
+// getFlag(): a real answer is a value, a missing one is undefined.
 async function evaluate(
   env: AppEnv,
   distinctId: string,
   keys: readonly string[],
-): Promise<Record<string, boolean>> {
+): Promise<{ answered: Record<string, boolean>; missing: string[] }> {
   const snapshot = await getFlagsClient(env).evaluateFlags(distinctId, {
     flagKeys: [...keys],
   });
 
-  const resolved: Record<string, boolean> = {};
-  for (const key of keys) resolved[key] = snapshot.isEnabled(key);
-  return resolved;
+  const answered: Record<string, boolean> = {};
+  const missing: string[] = [];
+  for (const key of keys) {
+    if (snapshot.getFlag(key) === undefined) missing.push(key);
+    else answered[key] = snapshot.isEnabled(key);
+  }
+  return { answered, missing };
 }
 
 /**
  * Resolves feature flags for one viewer.
  *
- * **Fails CLOSED.** No token, an unreachable PostHog, or an unknown key all
- * resolve to `false`. Every flag here gates a surface that is off by default, so
- * the safe direction is "stay hidden" — a PostHog outage must never be what
- * reveals an unlaunched product.
+ * When PostHog gives no answer (an outage, a timeout, quota, or a deleted
+ * flag), each flag falls back to its last known value in this isolate, else
+ * `FLAG_FALLBACK`: `false` for every surface and unknown key, so an outage never
+ * reveals an unlaunched product, and `true` for `content-moderation`, where off
+ * is the unsafe direction. A missing answer is cached for 10 s and reported; a
+ * thrown evaluation is reported and not cached. No project token resolves to
+ * `false` (only `FLAGS_FORCE_ON` keys are on).
  */
 export async function resolveFlags(
   env: AppEnv,
@@ -132,16 +182,37 @@ export async function resolveFlags(
   const now = Date.now();
 
   const hit = cache.get(cacheKey);
-  if (hit && now - hit.cachedAt < CACHE_TTL_MS) {
+  if (hit && now - hit.cachedAt < hit.ttl) {
     return { ...hit.flags, ...pickForced(forced, keys) };
   }
 
   let pending = inflight.get(cacheKey);
   if (!pending) {
     pending = evaluate(env, distinctId, keys)
-      .then((flags) => {
+      .then(({ answered, missing }) => {
+        const flags: Record<string, boolean> = { ...answered };
+        for (const [key, value] of Object.entries(answered)) {
+          rememberAnswer(distinctId, key, value);
+        }
+        for (const key of missing) flags[key] = fallbackFor(distinctId, key);
+
+        if (missing.length > 0) {
+          const list = [...missing].sort().join(",");
+          console.warn("flag evaluation returned no answer:", list);
+          captureServerException(
+            env,
+            undefined,
+            new Error("flag evaluation returned no answer"),
+            { distinctId, properties: { flags: list } },
+          );
+        }
+
         prune(Date.now());
-        cache.set(cacheKey, { flags, cachedAt: Date.now() });
+        cache.set(cacheKey, {
+          flags,
+          cachedAt: Date.now(),
+          ttl: missing.length > 0 ? MISSING_TTL_MS : CACHE_TTL_MS,
+        });
         return flags;
       })
       .finally(() => {
@@ -154,13 +225,16 @@ export async function resolveFlags(
     const flags = await pending;
     return { ...flags, ...pickForced(forced, keys) };
   } catch (err) {
-    // Not cached: a transient failure must not pin the surface off for the TTL.
+    // Not cached: a transient failure must not pin a flag for the TTL.
     console.error("flag evaluation failed:", formatErrorChain(err));
     captureServerException(env, undefined, err, {
       distinctId,
       properties: { flags: [...keys].sort().join(",") },
     });
-    return closed;
+    const fallback = Object.fromEntries(
+      keys.map((key) => [key, fallbackFor(distinctId, key)]),
+    ) as Record<string, boolean>;
+    return { ...fallback, ...pickForced(forced, keys) };
   }
 }
 
@@ -201,5 +275,6 @@ export function isDmEnabled(env: AppEnv): Promise<boolean> {
 export function __clearFlagCache(): void {
   cache.clear();
   inflight.clear();
+  lastKnown.clear();
   flagsClient = null;
 }

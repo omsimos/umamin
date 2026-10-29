@@ -24,3 +24,17 @@ supportedArchitectures:
   os: [current]
   cpu: [current]
   libc: [current, musl]
+
+# One version each, workspace-wide. Root AGENTS.md "Dependencies that must
+# move together" explains why: a split mounts two Reacts under Radix and
+# detaches jest-dom matchers from vitest. typescript is deliberately absent
+# (apps/org stays on TS 6).
+catalog:
+  react: 19.3.0
+  react-dom: 19.3.0
+  '@types/react': 19.2.15
+  '@types/react-dom': 19.2.3
+  vitest: ^4.1.11
+  jsdom: ^30.1.1
+  tsx: ^4.23.15
+  '@testing-library/jest-dom': ^7.0.1

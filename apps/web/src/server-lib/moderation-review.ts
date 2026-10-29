@@ -12,6 +12,8 @@ import {
   isNull,
   lt,
   or,
+  type SQLWrapper,
+  sql,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type {
@@ -188,7 +190,9 @@ export async function getDramaReviewPage(
       })
       .from(postCommentTable)
       .innerJoin(userTable, eq(postCommentTable.authorId, userTable.id))
-      .orderBy(desc(postCommentTable.createdAt), desc(postCommentTable.id))
+      // post_comment has no created_at index; the newest rows by rowid
+      // (insertion order) are a primary-key walk instead of a full sort.
+      .orderBy(desc(sql`${postCommentTable}.rowid`))
       .limit(DRAMA_WINDOW),
     db
       .select({
@@ -264,6 +268,26 @@ function toItem(
     appealed: !!row.appealedAt,
     disputes: 0,
   };
+}
+
+// A dispute's target_id is a soft reference, so every path that deletes a post,
+// comment or note must delete its disputes too. `target` is one id, or a
+// subquery of ids (the comments a post delete is about to cascade away).
+export function deleteDisputes(
+  tx: Pick<Db, "delete">,
+  kind: ReviewKind,
+  target: string | SQLWrapper,
+) {
+  return tx
+    .delete(moderationDisputeTable)
+    .where(
+      and(
+        eq(moderationDisputeTable.kind, kind),
+        typeof target === "string"
+          ? eq(moderationDisputeTable.targetId, target)
+          : inArray(moderationDisputeTable.targetId, target),
+      ),
+    );
 }
 
 // One grouped read over the page's ids (bounded by PAGE_SIZE).

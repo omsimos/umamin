@@ -17,7 +17,9 @@ export type DmStatus =
   | "open"
   | "reconnecting"
   /** Blocked, unknown user, or flag off: the screen explains, no retry. */
-  | "unavailable";
+  | "unavailable"
+  /** Refused repeatedly for too many open sockets: the screen explains, no retry. */
+  | "busy";
 
 export interface DmState {
   status: DmStatus;
@@ -46,6 +48,7 @@ export type DmAction =
   | { type: "meta"; meta: DmMeta }
   | { type: "typing"; on: boolean; at: number }
   | { type: "loadOlder" }
+  | { type: "loadOlderFailed" }
   | {
       type: "send";
       clientId: string;
@@ -135,6 +138,8 @@ export function dmReducer(state: DmState, action: DmAction): DmState {
       return { ...state, peerTypingAt: action.on ? action.at : null };
     case "loadOlder":
       return { ...state, loadingOlder: true };
+    case "loadOlderFailed":
+      return { ...state, loadingOlder: false };
     case "send":
       return {
         ...state,

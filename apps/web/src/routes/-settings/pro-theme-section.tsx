@@ -67,7 +67,7 @@ export function ProThemeSection({ user }: { user: UserWithAccount }) {
   if (!isPro) {
     return (
       <section>
-        <Label>Profile Theme</Label>
+        <Label>Profile theme</Label>
         <div className="mt-2 rounded-lg border bg-muted/40 p-4 text-sm">
           <p className="font-medium">An Umamin Pro perk</p>
           <p className="mt-1 text-muted-foreground">
@@ -86,7 +86,7 @@ export function ProThemeSection({ user }: { user: UserWithAccount }) {
 
   return (
     <section>
-      <Label>Profile Theme</Label>
+      <Label>Profile theme</Label>
       <div className="mt-2 rounded-lg border p-4">
         <div className="flex flex-wrap items-center gap-3">
           <button

@@ -10,6 +10,8 @@ import {
 } from "@/lib/chat/types";
 import type { WebSocketLike } from "@/lib/realtime/socket";
 import {
+  BUSY_GIVE_UP_MESSAGE,
+  BUSY_MESSAGE,
   createWsTransport,
   LEAVE_ACK_TIMEOUT_MS,
   MATCH_ID_KEY,
@@ -17,6 +19,8 @@ import {
   MAX_QUEUED_SENDS,
   QUEUE_TIMEOUT_MESSAGE,
   RATE_LIMITED_MESSAGE,
+  TOO_MANY_GIVE_UP_AFTER,
+  TOO_MANY_NOTICE_AFTER,
   TYPING_REFRESH_MS,
   TYPING_STALE_MS,
 } from "./ws-transport";
@@ -1022,18 +1026,51 @@ describe("wsTransport", () => {
       expect(ctx.onError).not.toHaveBeenCalled();
     });
 
-    it("keeps retrying past the give-up cap when refused with 4429", () => {
+    it("tells the user it is still trying after repeated 4429s", () => {
       const ctx = setup();
       ctx.t.findMatch(SELF);
-      for (let i = 0; i < MAX_FAILED_CONNECTS + 2; i++) {
+      for (let i = 0; i < TOO_MANY_NOTICE_AFTER; i++) {
         // Accepted, then closed: unlike a refused upgrade, it opened.
         ctx.last().open();
         ctx.last().serverClose(4429);
         vi.advanceTimersByTime(5_000);
       }
-      expect(FakeWebSocket.instances).toHaveLength(MAX_FAILED_CONNECTS + 3);
+      expect(ctx.onRateLimited).toHaveBeenCalledTimes(1);
+      expect(ctx.onRateLimited).toHaveBeenCalledWith(BUSY_MESSAGE);
       expect(ctx.t.getSnapshot().phase).toBe("matching");
       expect(ctx.onError).not.toHaveBeenCalled();
+    });
+
+    it("gives up after TOO_MANY_GIVE_UP_AFTER consecutive 4429s", () => {
+      const ctx = setup();
+      ctx.t.findMatch(SELF);
+      for (let i = 0; i < TOO_MANY_GIVE_UP_AFTER; i++) {
+        ctx.last().open();
+        ctx.last().serverClose(4429);
+        vi.advanceTimersByTime(5_000);
+      }
+      expect(ctx.t.getSnapshot()).toBe(IDLE_SNAPSHOT);
+      expect(ctx.onError).toHaveBeenCalledWith(BUSY_GIVE_UP_MESSAGE);
+      const count = FakeWebSocket.instances.length;
+      vi.advanceTimersByTime(60_000);
+      expect(FakeWebSocket.instances).toHaveLength(count);
+    });
+
+    it("a lobby frame in between resets the 4429 count", () => {
+      const ctx = setup();
+      ctx.t.findMatch(SELF);
+      for (let i = 0; i < TOO_MANY_NOTICE_AFTER - 1; i++) {
+        ctx.last().open();
+        ctx.last().serverClose(4429);
+        vi.advanceTimersByTime(5_000);
+      }
+      for (let i = 0; i < 2; i++) {
+        ctx.last().open();
+        ctx.last().push({ t: "stats", waiting: 1, chatting: 0 });
+        ctx.last().serverClose(4429);
+        vi.advanceTimersByTime(5_000);
+      }
+      expect(ctx.onRateLimited).not.toHaveBeenCalled();
     });
 
     it("goes idle without reconnecting on 4409", () => {

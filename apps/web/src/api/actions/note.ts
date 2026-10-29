@@ -1,4 +1,3 @@
-import { moderationDisputeTable } from "@umamin/db/schema/moderation-dispute";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import { and, eq, sql } from "drizzle-orm";
 import * as z from "zod";
@@ -15,6 +14,7 @@ import {
 } from "../../server-lib/errors";
 import { isModerationEnforced } from "../../server-lib/flags";
 import { isModerator } from "../../server-lib/moderation";
+import { deleteDisputes } from "../../server-lib/moderation-review";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { idSchema } from "../../server-lib/schema";
 import { ctxDb, defer } from "./_shared";
@@ -62,7 +62,7 @@ export const createNoteHandler = action(
         classifyContent(
           c.env,
           { kind: "note", text: formattedContent },
-          { defer: defer(c) },
+          { defer: defer(c), limitKey: session.userId },
         ),
       ]);
     // A note is one row per user, rewritten on every save: the scores (and
@@ -152,29 +152,15 @@ export const clearNoteHandler = action(
   async (_input, { session, c }) => {
     const db = ctxDb(c);
     await db.transaction(async (tx) => {
+      // Deleting (not blanking) keeps a cleared note out of the /notes feed,
+      // which orders by updated_at. Reactions cascade with the row; disputes
+      // are a soft reference.
       const [row] = await tx
-        .update(noteTable)
-        .set({
-          content: "",
-          reactionCount: 0,
-          musicProvider: null,
-          musicId: null,
-          musicTitle: null,
-          musicThumbnail: null,
-          spotifyTrackId: null,
-          spotifyTitle: null,
-          spotifyThumbnail: null,
-          ...reviewableScoreColumns(null),
-        })
+        .delete(noteTable)
         .where(eq(noteTable.userId, session.userId))
         .returning({ id: noteTable.id });
 
-      if (row) {
-        await tx
-          .delete(noteReactionTable)
-          .where(eq(noteReactionTable.noteId, row.id));
-        await clearNoteDisputes(tx, row.id);
-      }
+      if (row) await clearNoteDisputes(tx, row.id);
     });
 
     return { success: true };
@@ -183,14 +169,7 @@ export const clearNoteHandler = action(
 
 // Disputes were about the old text.
 function clearNoteDisputes(tx: Pick<Db, "delete">, noteId: string) {
-  return tx
-    .delete(moderationDisputeTable)
-    .where(
-      and(
-        eq(moderationDisputeTable.kind, "note"),
-        eq(moderationDisputeTable.targetId, noteId),
-      ),
-    );
+  return deleteDisputes(tx, "note", noteId);
 }
 
 export const removeNoteHandler = action(
@@ -224,6 +203,7 @@ export const removeNoteHandler = action(
         .delete(noteReactionTable)
         .where(eq(noteReactionTable.noteId, noteId));
       await tx.delete(noteTable).where(eq(noteTable.id, noteId));
+      await deleteDisputes(tx, "note", noteId);
     });
 
     return { success: true };

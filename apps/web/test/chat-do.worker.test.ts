@@ -5,14 +5,20 @@ import {
   runInDurableObject,
 } from "cloudflare:test";
 import { afterEach, describe, expect, it } from "vitest";
-import { MAX_ROOM_SOCKETS } from "../src/lib/chat/constants";
+import {
+  MAX_PENDING_ROOM_SOCKETS,
+  MAX_ROOM_SOCKETS,
+  MAX_SOCKETS_PER_IPV4,
+  MAX_SOCKETS_PER_IPV6_64,
+} from "../src/lib/chat/constants";
 import { inviteCodeFor } from "../src/lib/chat/invite";
-import { LIMITS } from "../src/lib/chat/limits";
+import { FRAME_BUDGET, LIMITS } from "../src/lib/chat/limits";
 import {
   CLOSE,
   PROTOCOL_VERSION,
   type ServerFrame,
 } from "../src/lib/chat/protocol";
+import type { ChatLobby } from "../src/server-lib/chat/lobby";
 import type { ChatRoom } from "../src/server-lib/chat/room";
 import { hashSecret } from "../src/server-lib/chat/secret";
 
@@ -142,12 +148,17 @@ const joinFrame = (p: Identity, extra: object = {}) => ({
 /** A private lobby per test, so leftover waiters never pair across tests. */
 const newLobby = () => env.CHAT_LOBBY.getByName(`test-${uid()}`);
 
-async function connectLobby(stub: DurableObjectStub, ip: string = uid()) {
-  return new Client(
-    await stub.fetch("https://chat.test/", {
-      headers: { Upgrade: "websocket", "x-umamin-ip": ip },
-    }),
-  );
+async function connectLobby(
+  stub: DurableObjectStub,
+  ip: string = uid(),
+  kind?: "v4" | "v6",
+) {
+  const headers: Record<string, string> = {
+    Upgrade: "websocket",
+    "x-umamin-ip": ip,
+  };
+  if (kind) headers["x-umamin-ip-kind"] = kind;
+  return new Client(await stub.fetch("https://chat.test/", { headers }));
 }
 
 async function joinLobby(stub: DurableObjectStub, p: Identity, extra = {}) {
@@ -326,11 +337,55 @@ describe("ChatLobby", () => {
     expect(await c.closeCode()).toBe(CLOSE.VERSION);
   });
 
-  it("caps sockets per IP", async () => {
+  it("caps sockets per IPv4 address", async () => {
     const lobby = newLobby();
-    for (let i = 0; i < 5; i += 1) await connectLobby(lobby, "shared-ip");
-    const sixth = await connectLobby(lobby, "shared-ip");
-    expect(await sixth.closeCode()).toBe(CLOSE.TOO_MANY);
+    const kept: Client[] = [];
+    for (let i = 0; i < MAX_SOCKETS_PER_IPV4; i += 1) {
+      kept.push(await connectLobby(lobby, "shared-ip"));
+    }
+    const over = await connectLobby(lobby, "shared-ip");
+    expect(await over.closeCode()).toBe(CLOSE.TOO_MANY);
+    expect(kept.every((c) => c.closed === null)).toBe(true);
+  });
+
+  it("caps sockets per IPv6 /64 lower than per IPv4 address", async () => {
+    const lobby = newLobby();
+    for (let i = 0; i < MAX_SOCKETS_PER_IPV6_64; i += 1) {
+      await connectLobby(lobby, "shared-v6", "v6");
+    }
+    const over = await connectLobby(lobby, "shared-v6", "v6");
+    expect(await over.closeCode()).toBe(CLOSE.TOO_MANY);
+  });
+
+  it("doesn't count sockets that already closed toward the cap", async () => {
+    const lobby = newLobby();
+    const first: Client[] = [];
+    for (let i = 0; i < MAX_SOCKETS_PER_IPV6_64; i += 1) {
+      first.push(await connectLobby(lobby, "churn-v6", "v6"));
+    }
+    expect(first).toHaveLength(MAX_SOCKETS_PER_IPV6_64);
+    // Closing from the lobby's side leaves the socket in getWebSockets() as
+    // CLOSING until the peer answers, which is the window the cap must ignore.
+    const newcomerOpen = await runInDurableObject(
+      lobby,
+      async (instance: ChatLobby, state) => {
+        const [victim] = state.getWebSockets();
+        victim.close(1000, "bye");
+        const before = new Set(state.getWebSockets());
+        await instance.fetch(
+          new Request("https://chat.test/", {
+            headers: {
+              Upgrade: "websocket",
+              "x-umamin-ip": "churn-v6",
+              "x-umamin-ip-kind": "v6",
+            },
+          }),
+        );
+        const added = state.getWebSockets().find((ws) => !before.has(ws));
+        return added?.readyState === WebSocket.OPEN;
+      },
+    );
+    expect(newcomerOpen).toBe(true);
   });
 
   it("aborts the room and requeues the survivor when a side drops mid-creation", async () => {
@@ -386,6 +441,99 @@ describe("ChatLobby", () => {
       next.next("matched"),
     ]);
     expect(ms.matchId).toBe(mn.matchId);
+  });
+
+  it("requeues the survivor even when aborting the half-created room throws", async () => {
+    const lobby = newLobby();
+    const host = person(["abort-throws"]);
+    const h = await waitingIn(lobby, host);
+    await runInDurableObject(lobby, (instance, state) => {
+      const real = (instance as unknown as { env: typeof env }).env;
+      const ns = real.CHAT_ROOM;
+      const CHAT_ROOM = {
+        idFromName: (name: string) => ns.idFromName(name),
+        get: (
+          id: DurableObjectId,
+          opts?: DurableObjectNamespaceGetDurableObjectOptions,
+        ) => {
+          const room = ns.get(id, opts);
+          return {
+            init: async (input: Parameters<ChatRoom["init"]>[0]) => {
+              await room.init(input);
+              for (const ws of state.getWebSockets()) {
+                const att = ws.deserializeAttachment() as {
+                  waiter?: { sessionId: string };
+                };
+                if (att.waiter?.sessionId === host.sessionId) ws.close(1000);
+              }
+            },
+            abort: async () => {
+              throw new Error("abort failed");
+            },
+          };
+        },
+      };
+      Object.assign(instance, { env: { ...real, CHAT_ROOM } });
+    });
+
+    const survivor = await joinLobby(lobby, person(["abort-throws"]));
+    await h.closeCode();
+    await survivor.next("waiting");
+
+    // Stuck in "pairing", the survivor would never be offered a partner.
+    const next = await joinLobby(lobby, person(["abort-throws"]));
+    const [ms, mn] = await Promise.all([
+      survivor.next("matched"),
+      next.next("matched"),
+    ]);
+    expect(ms.matchId).toBe(mn.matchId);
+  });
+
+  it("aborts a room whose init threw after writing and requeues both sides", async () => {
+    const lobby = newLobby();
+    const first = person(["init-throws"]);
+    const h = await waitingIn(lobby, first);
+    let matchId = "";
+    await runInDurableObject(lobby, (instance) => {
+      const real = (instance as unknown as { env: typeof env }).env;
+      const ns = real.CHAT_ROOM;
+      const CHAT_ROOM = {
+        idFromName: (name: string) => {
+          matchId = name;
+          return ns.idFromName(name);
+        },
+        get: (
+          id: DurableObjectId,
+          opts?: DurableObjectNamespaceGetDurableObjectOptions,
+        ) => {
+          const room = ns.get(id, opts);
+          return {
+            init: async (input: Parameters<ChatRoom["init"]>[0]) => {
+              await room.init(input);
+              throw new Error("init failed after writing");
+            },
+            abort: () => room.abort(),
+          };
+        },
+      };
+      Object.assign(instance, { env: { ...real, CHAT_ROOM } });
+    });
+
+    const g = await joinLobby(lobby, person(["init-throws"]));
+    await eventually(
+      async () =>
+        matchId !== "" && (await userTables(roomStub(matchId))).length === 0,
+      "the half-initialized room was purged",
+    );
+    // Each side is told it is waiting again: the host a second time, the
+    // joiner for the first.
+    await eventually(
+      async () => h.frames.filter((f) => f.t === "waiting").length === 2,
+      "host requeued",
+    );
+    await g.next("waiting");
+    expect(h.frames.some((f) => f.t === "matched")).toBe(false);
+    expect(g.frames.some((f) => f.t === "matched")).toBe(false);
   });
 });
 
@@ -774,10 +922,61 @@ describe("ChatRoom", () => {
   });
 
   it("refuses sockets past the per-room cap", async () => {
-    const { stub } = await newRoom();
-    for (let i = 0; i < MAX_ROOM_SOCKETS; i += 1) await connectRoom(stub);
+    const { stub, ana } = await newRoom();
+    for (let i = 0; i < MAX_ROOM_SOCKETS; i += 1) {
+      const tab = await authRoom(stub, ana);
+      await tab.next("sync");
+    }
     const extra = await connectRoom(stub);
     expect(await extra.closeCode()).toBe(CLOSE.TOO_MANY);
+  });
+
+  it("refuses unauthenticated sockets past the pending cap", async () => {
+    const { stub } = await newRoom();
+    const parked: Client[] = [];
+    for (let i = 0; i < MAX_PENDING_ROOM_SOCKETS; i += 1) {
+      parked.push(await connectRoom(stub));
+    }
+    const extra = await connectRoom(stub);
+    expect(await extra.closeCode()).toBe(CLOSE.TOO_MANY);
+    expect(parked.every((c) => c.closed === null)).toBe(true);
+  });
+
+  it("pending sockets can't fill the room: expired ones are reaped for a real side", async () => {
+    const { stub, ana } = await newRoom();
+    // Well past the cap, so most are refused and the rest sit unauthenticated.
+    for (let i = 0; i < MAX_ROOM_SOCKETS + 2; i += 1) await connectRoom(stub);
+    await runInDurableObject(stub, (_i, state) => {
+      for (const ws of state.getWebSockets()) {
+        ws.serializeAttachment({ side: null, connectedAt: 0 });
+      }
+    });
+    const a = await authRoom(stub, ana);
+    expect((await a.next("sync")).meta.self.alias).toBe(ana.alias);
+    expect(a.closed).toBeNull();
+  });
+
+  it("closes a socket that floods frames with 4429", async () => {
+    const { a, b } = await liveRoom();
+    for (let i = 0; i < FRAME_BUDGET.capacity + 20; i += 1) {
+      a.send({ t: "typing", on: false });
+    }
+    expect(await a.closeCode()).toBe(CLOSE.TOO_MANY);
+    expect((await barrier(b)).t).toBe("ack");
+    expect(b.closed).toBeNull();
+  });
+
+  it("answers a repeated auth on the same socket with nothing", async () => {
+    const { ana, a } = await liveRoom();
+    expect(a.frames.filter((f) => f.t === "sync")).toHaveLength(1);
+    a.send({
+      t: "auth",
+      v: PROTOCOL_VERSION,
+      sessionId: ana.sessionId,
+      secret: ana.secret,
+    });
+    expect((await barrier(a)).t).toBe("ack");
+    expect(a.frames.filter((f) => f.t === "sync")).toHaveLength(1);
   });
 
   it("tells the leaver self-ended and the partner partner-left", async () => {

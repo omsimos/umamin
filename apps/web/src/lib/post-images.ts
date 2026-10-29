@@ -50,7 +50,7 @@ export type UploadContentType = (typeof UPLOAD_CONTENT_TYPES)[number];
 // account-age guard, so it can't be self-farmed.
 export const MIN_AURA_FOR_IMAGES = 50;
 
-export const IMAGE_AURA_REQUIRED_ERROR = `Posting images unlocks at ${MIN_AURA_FOR_IMAGES} aura — keep engaging to get there, or get it now with Umamin Pro.`;
+export const IMAGE_AURA_REQUIRED_ERROR = `Posting images unlocks at ${MIN_AURA_FOR_IMAGES} aura. Keep engaging to get there, or get it now with Umamin Pro.`;
 
 export function hasImagePostingAura(points: number | null | undefined) {
   return (points ?? 0) >= MIN_AURA_FOR_IMAGES;

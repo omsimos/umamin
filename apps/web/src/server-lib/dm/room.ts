@@ -28,6 +28,7 @@ import { SideLimiter } from "../../lib/chat/limits";
 import {
   ACCESS_RECHECK_MS,
   DM_DEDUPE_WINDOW,
+  DM_MAX_SOCKET_AGE_MS,
   DM_PAGE_SIZE,
   DM_STALE_SOCKET_MS,
   MAX_DM_FRAME_CHARS,
@@ -122,6 +123,7 @@ export class DmRoom extends DurableObject<AppEnv> {
   // Caches, rebuilt lazily after hibernation.
   private state: RoomState | null | undefined;
   private alarmAt: number | null | undefined;
+  private purged = false;
   private storeImpl: DmStore | null = null;
   /** Thread-row writes run one at a time, each with the latest snapshot. */
   private syncChain: Promise<void> = Promise.resolve();
@@ -173,6 +175,9 @@ export class DmRoom extends DurableObject<AppEnv> {
       checkedAt: now,
       connectedAt: now,
     } satisfies Attachment);
+    // Dead sockets from network switches count as OPEN until swept; with the
+    // peer offline nothing else would sweep them and the cap locks the user out.
+    this.closeStaleSockets(now);
     if (this.socketsFor(side, server).length >= MAX_SOCKETS_PER_SIDE) {
       server.close(CLOSE.TOO_MANY, "too many");
     }
@@ -180,6 +185,7 @@ export class DmRoom extends DurableObject<AppEnv> {
   }
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer) {
+    let opId: string | undefined;
     try {
       const att = this.attachment(ws);
       if (!att) {
@@ -191,6 +197,7 @@ export class DmRoom extends DurableObject<AppEnv> {
         ws.close(CLOSE.BAD_FRAME, "bad frame");
         return;
       }
+      if ("id" in frame) opId = frame.id;
       if (frame.t === "hi") {
         await this.handleHi(ws, att, frame.v);
         return;
@@ -199,11 +206,15 @@ export class DmRoom extends DurableObject<AppEnv> {
         ws.close(CLOSE.UNAUTHORIZED, "unauthorized");
         return;
       }
-      await this.handleFrame(ws, att, frame);
-      // The object is awake anyway, so closing half-open sockets here is free.
+      // Sweep first, so a broadcast below never reaches an expired or dead
+      // socket. The object is awake anyway, so this is free.
       this.closeStaleSockets(Date.now());
+      if (ws.readyState !== WebSocket.OPEN) return;
+      await this.handleFrame(ws, att, frame);
     } catch (err) {
       this.report(err, "message");
+      // Without an answer the client's request waits forever.
+      if (opId) this.sendTo(ws, { t: "err", id: opId, code: "unavailable" });
     }
   }
 
@@ -253,6 +264,19 @@ export class DmRoom extends DurableObject<AppEnv> {
     }
   }
 
+  /** The user's sessions were revoked (password change): close their side's
+   *  sockets reconnectably, so each must pass the upgrade route's session
+   *  check again. The peer's sockets are untouched. */
+  async revoke(userId: string): Promise<void> {
+    for (const ws of this.ctx.getWebSockets()) {
+      const att = this.attachment(ws);
+      const pair = att ? parseThreadId(att.threadId) : null;
+      if (!att || !pair || userAt(pair, att.side) !== userId) continue;
+      this.closeQuietly(ws, CLOSE.NORMAL, "revoked");
+      this.onSocketGone(ws);
+    }
+  }
+
   /** "Delete chat" for one side: hides everything so far from that side only
    *  and marks it read. A later message shows the thread again. */
   async hide(userId: string): Promise<void> {
@@ -276,6 +300,7 @@ export class DmRoom extends DurableObject<AppEnv> {
 
   /** A participant deleted their account: drop everything. */
   async purge(): Promise<void> {
+    this.purged = true;
     for (const ws of this.ctx.getWebSockets()) {
       this.closeQuietly(ws, DM_CLOSED, "closed");
     }
@@ -289,6 +314,14 @@ export class DmRoom extends DurableObject<AppEnv> {
   private async handleHi(ws: WebSocket, att: Attachment, version: number) {
     if (version !== DM_PROTOCOL_VERSION) {
       ws.close(CLOSE.VERSION, "version");
+      return;
+    }
+    // A first `hi` is never limited; a repeat on a ready socket re-sends
+    // 30 decrypted rows, so it shares the history bucket.
+    if (
+      att.ready &&
+      !this.limiter.take(LIMITER_KEY[att.side], "resync", Date.now())
+    ) {
       return;
     }
     const wasOnline = this.liveSockets(att.side, ws).length > 0;
@@ -306,6 +339,8 @@ export class DmRoom extends DurableObject<AppEnv> {
     const now = Date.now();
     switch (frame.t) {
       case "typing":
+        // A read-only side exchanges no presence.
+        if (!att.canSend) return;
         // A trailing "off" always goes through so the indicator can't stick.
         if (
           frame.on &&
@@ -314,13 +349,19 @@ export class DmRoom extends DurableObject<AppEnv> {
           return;
         }
         for (const peer of this.socketsFor(otherDmSide(att.side))) {
-          this.sendTo(peer, { t: "typing", on: frame.on });
+          if (this.attachment(peer)?.canSend) {
+            this.sendTo(peer, { t: "typing", on: frame.on });
+          }
         }
         return;
       case "read":
         await this.handleRead(att.side, Number(frame.upTo));
         return;
       case "history":
+        if (!this.limiter.take(LIMITER_KEY[att.side], "resync", now)) {
+          this.sendTo(ws, { t: "err", id: frame.id, code: "rate_limited" });
+          return;
+        }
         await this.handleHistory(ws, att.side, frame.id, Number(frame.before));
         return;
       case "report":
@@ -489,6 +530,10 @@ export class DmRoom extends DurableObject<AppEnv> {
     const pair = parseThreadId(att.threadId);
     if (!pair) return false;
     const canSend = await this.store().canMessage(pair);
+    if (!canSend && (await this.store().isBlocked(pair))) {
+      await this.sever("block");
+      return false;
+    }
     for (const socket of this.ctx.getWebSockets()) {
       const a = socket === ws ? att : this.attachment(socket);
       if (!a) continue;
@@ -545,7 +590,10 @@ export class DmRoom extends DurableObject<AppEnv> {
       const st = this.loadState();
       if (!st) return;
       const next = await this.snapshot(st);
-      const urgency = engine.threadSyncUrgency(st.synced, next);
+      const urgency = engine.threadSyncUrgency(st.synced, next, [
+        this.liveSockets(0).length > 0,
+        this.liveSockets(1).length > 0,
+      ]);
       if (urgency === "none") return;
       if (urgency === "later" && !force) {
         await this.armSync();
@@ -593,6 +641,9 @@ export class DmRoom extends DurableObject<AppEnv> {
   }
 
   private ensureSchema(threadId: string) {
+    // purge() can run while an op awaits Turso; that op must not bring the
+    // tables back after the account's data was wiped.
+    if (this.purged) throw new Error("dm room was purged");
     if (this.loadState()) return;
     const pair = parseThreadId(threadId);
     if (!pair) throw new Error("dm room has no valid thread id");
@@ -818,7 +869,7 @@ export class DmRoom extends DurableObject<AppEnv> {
   private metaFor(att: Attachment): DmMeta {
     const peer = otherDmSide(att.side);
     return {
-      peerOnline: this.liveSockets(peer).length > 0,
+      peerOnline: att.canSend && this.liveSockets(peer).length > 0,
       peerReadSeq: this.loadState()?.read[peer] ?? 0,
       canSend: att.canSend,
     };
@@ -855,8 +906,10 @@ export class DmRoom extends DurableObject<AppEnv> {
   private closeStaleSockets(now: number) {
     for (const ws of this.ctx.getWebSockets()) {
       if (ws.readyState !== WebSocket.OPEN) continue;
-      if (!this.isFresh(ws, now)) {
-        this.closeQuietly(ws, CLOSE.NORMAL, "stale");
+      const att = this.attachment(ws);
+      const expired = !!att && now - att.connectedAt >= DM_MAX_SOCKET_AGE_MS;
+      if (expired || !this.isFresh(ws, now)) {
+        this.closeQuietly(ws, CLOSE.NORMAL, expired ? "expired" : "stale");
         this.onSocketGone(ws);
       }
     }

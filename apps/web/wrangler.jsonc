@@ -5,7 +5,7 @@
   //   staging    → worker "umamin-web" (kept: it already holds dev.umamin.link
   //                and the dev secrets) — Turso umamin-dev, staging KV.
   //   production → worker "umamin-web-production" — Turso umamin-db, own KV;
-  //                umamin.link is attached at cutover.
+  //                umamin.link and www.umamin.link are attached as custom domains in the dashboard.
   // Local dev/preview pick an env via CLOUDFLARE_ENV (package.json scripts).
   "name": "umamin-web-dev",
   "main": "./src/server.ts",
@@ -78,7 +78,7 @@
         ]
       },
       // Workers Rate Limiting bindings (unsafe). period is 10 or 60 only;
-      // group-edit (2/day) moves to Turso. namespace_ids are account-global —
+      // group-edit (2/day) lives on KV (server-lib/group-edit.ts). namespace_ids are account-global —
       // staging uses the 1000s, production the 2000s, so the two environments
       // never share limiter counters (same IP hitting both must not drain one
       // budget).
@@ -117,6 +117,7 @@
           {
             // Umamin Chat socket upgrades, per IP. Generous for shared NAT
             // (schools, offices, CGNAT); reconnects after deploys land here too.
+            // DM socket upgrades share it, keyed per user (api/dm-socket.ts).
             "name": "RL_CHAT_CONNECT",
             "type": "ratelimit",
             "namespace_id": "1008",
@@ -125,7 +126,7 @@
         ]
       },
       "triggers": {
-        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry
+        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry + DM purge
         "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
       },
       "vars": {
@@ -175,10 +176,9 @@
         "enabled": true,
         "traces": { "enabled": true, "head_sampling_rate": 0.1 }
       },
-      // Dark until cutover: no public workers.dev URL in front of the prod DB.
-      // Flip to true briefly if a pre-cutover prod smoke test is needed.
+      // No public workers.dev URL in front of the production database.
       "workers_dev": false,
-      // umamin.link is attached at cutover (Phase 6):
+      // The custom domains are attached in the dashboard. Uncommenting these makes the next production deploy assert them, so confirm the dashboard state first.
       // "routes": [
       //   { "pattern": "umamin.link", "custom_domain": true },
       //   { "pattern": "www.umamin.link", "custom_domain": true }
@@ -231,6 +231,7 @@
           {
             // Umamin Chat socket upgrades, per IP. Generous for shared NAT
             // (schools, offices, CGNAT); reconnects after deploys land here too.
+            // DM socket upgrades share it, keyed per user (api/dm-socket.ts).
             "name": "RL_CHAT_CONNECT",
             "type": "ratelimit",
             "namespace_id": "2008",
@@ -239,6 +240,7 @@
         ]
       },
       "triggers": {
+        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry + DM purge
         "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
       },
       "vars": {

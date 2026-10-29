@@ -12,21 +12,28 @@ import { publicImageUrl } from "../../lib/post-images";
 import { generalSettingsSchema, passwordFormSchema } from "../../lib/types";
 import { action } from "../../server-lib/action";
 import { hash, verify } from "../../server-lib/argon2";
+import { PREV_CHANGED } from "../../server-lib/batch";
 import { sanitizeBlockedWords } from "../../server-lib/blocked-words";
 import { formatContent } from "../../server-lib/content";
 import { getCurrentUserData, getUserProfileData } from "../../server-lib/data";
 import type { Db } from "../../server-lib/db";
-import { severDm } from "../../server-lib/dm/lifecycle";
+import { revokeDmSockets, severDm } from "../../server-lib/dm/lifecycle";
 import {
   formatErrorChain,
   isUniqueConstraintViolation,
   USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
+import { extractClientIp } from "../../server-lib/ip";
 import { isReservedModeratorName } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { MAX_MUTES } from "../../server-lib/mutes";
 import { notify } from "../../server-lib/notifications";
-import { AURA_POINTS, awardAura, reverseAura } from "../../server-lib/points";
+import {
+  AURA_POINTS,
+  auraAwardStatement,
+  auraReverseStatement,
+  reverseAura,
+} from "../../server-lib/points";
 import { captureRequestException } from "../../server-lib/posthog";
 import { createR2 } from "../../server-lib/r2";
 import { idSchema } from "../../server-lib/schema";
@@ -88,7 +95,15 @@ export const getCurrentUserHandler = action({}, (_input, { session, c }) =>
 
 // Plain read embedded in the action file — session optional (viewer overlay).
 export const getUserProfileHandler = action(
-  { schema: z.object({ username: z.string().min(1) }), auth: "none" },
+  {
+    schema: z.object({ username: z.string().min(1).max(64) }),
+    auth: "none",
+    // Anonymous, uncached, Turso-backed: share the GET routes' per-IP budget.
+    rateLimit: {
+      name: "read",
+      key: ({ c }) => `read:${extractClientIp((n) => c.req.header(n))}`,
+    },
+  },
   async ({ username }, { session, c }) => {
     try {
       return await getUserProfileData(ctxDb(c), username, session?.userId);
@@ -227,6 +242,14 @@ export const updatePasswordHandler = action(
     });
     clearSessionCache();
     setSessionCookie(c, token, new Date(newSession.expiresAt));
+    // Revoked sessions don't close sockets that are already open.
+    defer(c)(
+      revokeDmSockets(db, c.env, user.id).catch((err) =>
+        captureRequestException(c, err, {
+          properties: { action: "password-dm" },
+        }),
+      ),
+    );
 
     return { success: true };
   },
@@ -246,81 +269,88 @@ export const followUserHandler = action(
       return { error: "You cannot follow yourself." };
     }
 
-    const [target] = await db
-      .select({ id: userTable.id, username: userTable.username })
-      .from(userTable)
-      .where(eq(userTable.id, userId))
-      .limit(1);
+    // Independent reads: one round trip instead of two.
+    const [[target], [blockExists]] = await Promise.all([
+      db
+        .select({ id: userTable.id, username: userTable.username })
+        .from(userTable)
+        .where(eq(userTable.id, userId))
+        .limit(1),
+      db
+        .select({ id: userBlockTable.id })
+        .from(userBlockTable)
+        .where(
+          or(
+            and(
+              eq(userBlockTable.blockerId, session.userId),
+              eq(userBlockTable.blockedId, userId),
+            ),
+            and(
+              eq(userBlockTable.blockerId, userId),
+              eq(userBlockTable.blockedId, session.userId),
+            ),
+          ),
+        )
+        .limit(1),
+    ]);
 
     if (!target) {
       return { error: "User not found." };
     }
 
-    const [blockExists] = await db
-      .select({ id: userBlockTable.id })
-      .from(userBlockTable)
-      .where(
-        or(
-          and(
-            eq(userBlockTable.blockerId, session.userId),
-            eq(userBlockTable.blockedId, userId),
-          ),
-          and(
-            eq(userBlockTable.blockerId, userId),
-            eq(userBlockTable.blockedId, session.userId),
-          ),
-        ),
-      )
-      .limit(1);
-
     if (blockExists) {
       return { error: "You can't follow this user." };
     }
 
-    const result = await db.transaction(async (tx) => {
-      const inserted = await tx
-        .insert(userFollowTable)
-        .values({ followerId: session.userId, followingId: userId })
-        .onConflictDoNothing()
-        .returning({ id: userFollowTable.id });
-
-      if (inserted.length === 0) {
-        return { success: true, alreadyFollowing: true };
-      }
-
-      await tx
-        .update(userTable)
-        .set({ followingCount: sql`${userTable.followingCount} + 1` })
-        .where(eq(userTable.id, session.userId));
-
-      await tx
-        .update(userTable)
-        .set({ followerCount: sql`${userTable.followerCount} + 1` })
-        .where(eq(userTable.id, userId));
-
-      await awardAura(tx, {
-        beneficiaryId: userId,
+    // One round trip instead of five (BEGIN+insert, two counters, award,
+    // COMMIT): each statement gates on PREV_CHANGED, so the counters move only
+    // when the follow row was really inserted and the award only after the
+    // target's counter landed. Nothing may sit between these statements.
+    const award = auraAwardStatement(
+      db,
+      {
+        beneficiary: { userId },
         actorId: session.userId,
         actorCreatedAt: user?.createdAt,
         delta: AURA_POINTS.follow,
-      });
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
+        .insert(userFollowTable)
+        .values({ followerId: session.userId, followingId: userId })
+        .onConflictDoNothing()
+        .returning({ id: userFollowTable.id }),
+      db
+        .update(userTable)
+        .set({ followingCount: sql`${userTable.followingCount} + 1` })
+        .where(and(eq(userTable.id, session.userId), PREV_CHANGED)),
+      db
+        .update(userTable)
+        .set({ followerCount: sql`${userTable.followerCount} + 1` })
+        .where(and(eq(userTable.id, userId), PREV_CHANGED)),
+    ] as const;
 
-      return { success: true };
-    });
+    const [inserted] = award
+      ? await db.batch([...statements, award])
+      : await db.batch(statements);
 
-    if (!("alreadyFollowing" in result)) {
-      await notify(
-        { db, env: c.env, defer: defer(c) },
-        {
-          recipientId: userId,
-          type: "follow",
-          actorId: session.userId,
-          blockChecked: true,
-        },
-      );
+    if (inserted.length === 0) {
+      return { success: true, alreadyFollowing: true } as const;
     }
 
-    return result;
+    await notify(
+      { db, env: c.env, defer: defer(c) },
+      {
+        recipientId: userId,
+        type: "follow",
+        actorId: session.userId,
+        blockChecked: true,
+      },
+    );
+
+    return { success: true } as const;
   },
 );
 
@@ -348,8 +378,18 @@ export const unfollowUserHandler = action(
       return { error: "User not found." };
     }
 
-    const result = await db.transaction(async (tx) => {
-      const removed = await tx
+    const reverse = auraReverseStatement(
+      db,
+      {
+        beneficiary: { userId },
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.follow,
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
         .delete(userFollowTable)
         .where(
           and(
@@ -357,40 +397,31 @@ export const unfollowUserHandler = action(
             eq(userFollowTable.followingId, userId),
           ),
         )
-        .returning({ id: userFollowTable.id });
-
-      if (removed.length === 0) {
-        return { success: true, alreadyRemoved: true };
-      }
-
-      await tx
+        .returning({ id: userFollowTable.id }),
+      db
         .update(userTable)
         .set({
           followingCount: sql`CASE WHEN ${userTable.followingCount} > 0 THEN ${userTable.followingCount} - 1 ELSE 0 END`,
         })
-        .where(eq(userTable.id, session.userId));
-
-      await tx
+        .where(and(eq(userTable.id, session.userId), PREV_CHANGED)),
+      db
         .update(userTable)
         .set({
           followerCount: sql`CASE WHEN ${userTable.followerCount} > 0 THEN ${userTable.followerCount} - 1 ELSE 0 END`,
         })
-        .where(eq(userTable.id, userId));
+        .where(and(eq(userTable.id, userId), PREV_CHANGED)),
+    ] as const;
 
-      await reverseAura(tx, {
-        beneficiaryId: userId,
-        actorId: session.userId,
-        actorCreatedAt: user?.createdAt,
-        delta: AURA_POINTS.follow,
-      });
+    const [removed] = reverse
+      ? await db.batch([...statements, reverse])
+      : await db.batch(statements);
 
-      return { success: true };
-    });
-
-    if (!("alreadyRemoved" in result)) {
-      defer(c)(severDm(c.env, session.userId, userId, "unfollow"));
+    if (removed.length === 0) {
+      return { success: true, alreadyRemoved: true } as const;
     }
-    return result;
+
+    defer(c)(severDm(c.env, session.userId, userId, "unfollow"));
+    return { success: true } as const;
   },
 );
 

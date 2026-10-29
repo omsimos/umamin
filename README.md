@@ -32,6 +32,7 @@ If you like this project, please consider giving it a star! ✨ If you wish to s
 | App         | Description                                                                          |
 | ----------- | ------------------------------------------------------------------------------------ |
 | `apps/web`  | **Umamin** — anonymous messaging platform & landing page (TanStack Start + Hono, Cloudflare Workers) |
+| `apps/org`  | **Umamin for Organizations**: invite-only anonymous messaging (Next.js on Vercel) |
 
 > `apps/web` is the app that serves [www.umamin.link](https://www.umamin.link). It replaced the original Next.js build in v7.0.0, which has since been removed — see the `legacy/www-final` tag for its final state. Umamin Chat's original Vite + Convex app (`apps/chat`) was folded into `apps/web` the same way; its final state is the `legacy/chat-final` tag.
 
@@ -40,6 +41,7 @@ If you like this project, please consider giving it a star! ✨ If you wish to s
 | Package              | Description                                                              |
 | -------------------- | ------------------------------------------------------------------------ |
 | `@umamin/db`         | Database schema & migrations using Drizzle ORM + Turso/libSQL            |
+| `@umamin/org-db`     | Database schema & migrations for `apps/org`                              |
 | `@umamin/encryption` | AES-GCM encryption/decryption utilities (uses `AES_256_GCM_KEY`)         |
 | `@umamin/ui`         | Shared UI components and styling (used by every app)                     |
 
@@ -47,7 +49,7 @@ If you like this project, please consider giving it a star! ✨ If you wish to s
 
 - [`Turso CLI`](https://docs.turso.tech/cli/installation) — local libSQL server for **web**
 - `Node.js` >= 24 or [`nvm`](https://github.com/nvm-sh/nvm)
-- `pnpm` >= 10
+- `pnpm` 12, the version pinned in `package.json` (`corepack enable` installs it)
 
 > **Umamin (web)** runs on Cloudflare Workers via `wrangler`, which is already a dev dependency — no global install and no Cloudflare account are needed for local development. Workers KV and the rate-limit bindings are emulated locally by Miniflare.
 

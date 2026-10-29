@@ -145,6 +145,11 @@ workspace breaks another with errors that never name the cause. Update them in
 every workspace in the same change, then run `pnpm check-types --force`,
 `pnpm test --force` and `pnpm --filter=web test:workers`.
 
+The versions live in the `catalog:` block of `pnpm-workspace.yaml`, and each
+workspace manifest points at it with `"catalog:"`. A bump means editing that
+block, then running `pnpm install`. Don't run `pnpm up` inside a workspace for
+these packages, since it rewrites the manifest away from `catalog:`.
+
 - `@types/react` and `@types/react-dom`: pinned exact (no `^` or `~`) at
   `19.2.x`. 19.3 breaks `next-themes` children typing and TanStack's inline
   `errorComponent` props in every app. pnpm rewrites `~` to `^`, which lets

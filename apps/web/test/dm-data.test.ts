@@ -22,6 +22,7 @@ import { DM_THREADS_PAGE_SIZE } from "../src/lib/dm/constants";
 import { dmPair } from "../src/lib/dm/pair";
 import type { Db } from "../src/server-lib/db";
 import { resolveDmPeer } from "../src/server-lib/dm/access";
+import { revokeDmSockets } from "../src/server-lib/dm/lifecycle";
 import { tursoDmStore } from "../src/server-lib/dm/store";
 import {
   getDmThreadsPage,
@@ -149,6 +150,16 @@ describe("tursoDmStore", () => {
     expect(await store.canMessage(pair)).toBe(false);
   });
 
+  it("tells a block in either direction from an unfollow", async () => {
+    const store = tursoDmStore(env, () => db);
+    const pair = dmPair("me", "pal");
+    expect(await store.isBlocked(pair)).toBe(false);
+    await db
+      .insert(userBlockTable)
+      .values({ blockerId: pair.highId, blockedId: pair.lowId });
+    expect(await store.isBlocked(pair)).toBe(true);
+  });
+
   it("upserts the thread row with an encrypted preview", async () => {
     const store = tursoDmStore(env, () => db);
     const pair = dmPair("me", "pal");
@@ -168,6 +179,22 @@ describe("tursoDmStore", () => {
     expect(rows[0]?.lastSenderId).toBe(pair.lowId);
     expect(rows[0]?.lastPreview).not.toContain("second");
     expect(await aesDecrypt(rows[0]?.lastPreview ?? "")).toBe("second");
+  });
+
+  it("treats a thread write for a deleted account as a no-op", async () => {
+    const store = tursoDmStore(env, () => db);
+    const snap = {
+      lastSeq: 1,
+      lastAt: 5_000,
+      lastSender: 0 as const,
+      preview: "bye",
+      readSeq: [0, 0] as [number, number],
+      hiddenSeq: [0, 0] as [number, number],
+    };
+    await expect(
+      store.writeThread(dmPair("me", "ghost"), snap),
+    ).resolves.toBeUndefined();
+    expect(await db.select().from(dmThreadTable)).toHaveLength(0);
   });
 
   it("stores one report per reporter and message", async () => {
@@ -217,6 +244,16 @@ describe("Chats list and unread count", () => {
     await db
       .insert(userBlockTable)
       .values({ blockerId: "me", blockedId: "bob" });
+    expect((await getDmThreadsPage(db, "me", null)).data).toEqual([]);
+    expect(await getDmUnreadCount(db, "me")).toBe(0);
+  });
+
+  it("leaves a banned peer out of both the list and the unread count", async () => {
+    await thread(db, "me", "amy", { sender: "amy" });
+    await db
+      .update(userTable)
+      .set({ bannedAt: new Date() })
+      .where(eq(userTable.id, "amy"));
     expect((await getDmThreadsPage(db, "me", null)).data).toEqual([]);
     expect(await getDmUnreadCount(db, "me")).toBe(0);
   });
@@ -300,6 +337,7 @@ describe("DM reports for moderators", () => {
 describe("block and unfollow close the DM room", () => {
   let db: Db;
   const severed: [string, string][] = [];
+  const revoked: [string, string][] = [];
   const env = {
     DM_ROOM: {
       idFromName: (name: string) => name,
@@ -307,12 +345,16 @@ describe("block and unfollow close the DM room", () => {
         sever: async (kind: string) => {
           severed.push([name, kind]);
         },
+        revoke: async (userId: string) => {
+          revoked.push([name, userId]);
+        },
       }),
     },
   } as unknown as Partial<AppEnv>;
 
   beforeEach(async () => {
     severed.length = 0;
+    revoked.length = 0;
     db = await makeTestDb();
     await users(db, "me", "pal");
     await mutual(db, "me", "pal");
@@ -332,6 +374,14 @@ describe("block and unfollow close the DM room", () => {
     const app = buildApp(db, authed("me"));
     await callJson(app, "blockUserAction", { userId: "pal" }, env);
     await vi.waitFor(() => expect(severed.map((s) => s[1])).toEqual(["block"]));
+  });
+
+  it("revokes the user's side of every thread they are in", async () => {
+    await users(db, "other");
+    await thread(db, "me", "pal", { sender: "pal" });
+    await thread(db, "pal", "other", { sender: "pal" });
+    await revokeDmSockets(db, env as AppEnv, "me");
+    expect(revoked).toEqual([[`dm:v1:${dmPair("me", "pal").threadId}`, "me"]]);
   });
 
   it("does nothing when the unfollow changed nothing", async () => {

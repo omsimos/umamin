@@ -39,7 +39,6 @@ export const groupTable = sqliteTable(
     // check and the page header never COUNT(*) the roster.
     memberCount: integer("member_count").notNull().default(1),
     // Unused since group chat was removed; dropped with the group chat tables.
-    // Bumped in the same path as a message insert.
     lastMessageAt: integer("last_message_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()

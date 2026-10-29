@@ -14,7 +14,7 @@ import { pageSeo } from "@/lib/seo";
 
 const title = "Umamin — About";
 const description =
-  "The story of Umamin — an open-source anonymous platform founded in July 2022 that reached over 700,000 users in its first week, now a broader social space for self-expression, community, and meaningful conversations.";
+  "The story of Umamin, an open-source anonymous platform founded in July 2022 that reached over 700,000 users in its first week, now a broader social space for self-expression, community, and meaningful conversations.";
 
 export const Route = createFileRoute("/_marketing/about")({
   head: () => pageSeo({ title, description, path: "/about" }),
@@ -41,7 +41,7 @@ function AboutPage() {
           </h1>
           <p className="max-w-2xl animate-rise pt-6 text-muted-foreground [animation-delay:200ms] md:text-lg">
             An open-source anonymous platform that went from a weekend project
-            to hundreds of thousands of people in a matter of days — and never
+            to hundreds of thousands of people in a matter of days, and never
             stopped growing.
           </p>
           <p className="animate-rise pt-6 font-mono text-xs text-muted-foreground [animation-delay:300ms]">
@@ -84,7 +84,7 @@ function AboutPage() {
             <em className="text-primary">inside</em>.
           </h2>
           <p className="pt-3 text-muted-foreground">
-            Four days in July 2022 — the week Umamin spread across the
+            Four days in July 2022: the week Umamin spread across the
             Philippines.
           </p>
         </div>
@@ -115,7 +115,7 @@ function AboutPage() {
             />
           </div>
           <figcaption className="pt-4 text-center font-mono text-xs text-muted-foreground">
-            Umamin's first week — Jul 28–31, 2022
+            Umamin's first week, Jul 28–31, 2022
           </figcaption>
         </figure>
       </section>
@@ -134,7 +134,7 @@ function AboutPage() {
               Omsimos Developer Collective
             </a>
             , an initiative focused on building open-source projects, including
-            Umamin — an anonymous platform originally created for sending and
+            Umamin, an anonymous platform originally created for sending and
             receiving anonymous messages.
           </p>
         </div>
@@ -174,7 +174,7 @@ function AboutPage() {
               cta={{ label: "Claim your link", href: "/register" }}
             >
               <p className="text-sm leading-relaxed text-muted-foreground">
-                The original — a personal link where anyone can send you an
+                The original: a personal link where anyone can send you an
                 encrypted anonymous message.
               </p>
             </ProductCard>
@@ -201,7 +201,7 @@ function AboutPage() {
               cta={{ label: "Open the feed", href: "/feed" }}
             >
               <p className="text-sm leading-relaxed text-muted-foreground">
-                A feed of anonymous posts and hot takes — react and join the
+                A feed of anonymous posts and hot takes. React and join the
                 conversation without a name attached.
               </p>
             </ProductCard>

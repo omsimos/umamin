@@ -6,7 +6,7 @@ export type ExternalUrlInfo = {
 };
 
 export const RISK_LABELS: Record<LinkRisk, string> = {
-  shortener: "Shortened link — the real destination is hidden",
+  shortener: "Shortened link. The real destination is hidden",
   insecure: "Not a secure (HTTPS) connection",
   ip: "Points to a raw IP address instead of a domain",
   punycode: "Look-alike characters that can mimic a real site",

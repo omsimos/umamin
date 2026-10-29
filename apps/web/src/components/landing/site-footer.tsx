@@ -98,7 +98,7 @@ export function SiteFooter() {
               href="/to/umamin"
               className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-dashed px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
             >
-              say it anonymously — even to us
+              say it anonymously, even to us
               <ArrowUpRightIcon className="size-3" />
             </Link>
           </div>

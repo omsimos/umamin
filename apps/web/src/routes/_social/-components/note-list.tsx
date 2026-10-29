@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { shouldShowInFeedAd } from "@/lib/ad-placements";
 import {
   infiniteQueryDefaults,
@@ -44,6 +45,8 @@ export function NoteList({
     hasNextPage,
     isFetching,
     isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
   } = useInfiniteQuery<NotesResponse>({
     queryKey: queryKeys.notes(viewerKey),
     queryFn: ({ pageParam }) =>
@@ -109,7 +112,7 @@ export function NoteList({
     highlightTimer.current = setTimeout(() => setHighlightedId(null), 2000);
   };
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="w-full mx-auto">
         <Alert variant="destructive">
@@ -134,12 +137,18 @@ export function NoteList({
 
   return (
     <div className="w-full">
+      {error && (
+        <RefetchErrorAlert
+          onRetry={() => (isFetchNextPageError ? fetchNextPage() : refetch())}
+          retrying={isFetching}
+        />
+      )}
       {hasResolvedData && allPosts.length === 0 && !isFetching && (
         <Alert>
           <MessageCircleDashedIcon />
           <AlertTitle>nothing here yet</AlertTitle>
           <AlertDescription>
-            say something into the void — it'll land right here.
+            say something into the void, it'll land right here.
           </AlertDescription>
         </Alert>
       )}

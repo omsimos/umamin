@@ -9,6 +9,7 @@ import {
   fetchUserProfileViewer,
 } from "@/lib/query-fetchers";
 import type { CurrentUserResponse, PublicUserWithBadge } from "@/lib/types";
+import { followUserAction } from "../-lib/actions";
 import { UserProfile } from "./user-profile";
 
 const navigate = vi.fn();
@@ -104,11 +105,14 @@ function renderProfile(seed?: (queryClient: QueryClient) => void) {
   });
   seed?.(queryClient);
 
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <UserProfile username="alice" initialUser={profile} />
-    </QueryClientProvider>,
-  );
+  return {
+    queryClient,
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <UserProfile username="alice" initialUser={profile} />
+      </QueryClientProvider>,
+    ),
+  };
 }
 
 describe("UserProfile", () => {
@@ -202,5 +206,37 @@ describe("UserProfile", () => {
         screen.queryByRole("button", { name: "Chat with @alice" }),
       ).toBeNull();
     });
+  });
+
+  it("refreshes the cached chat gate after a follow", async () => {
+    const viewer = {
+      currentUserId: "viewer-1",
+      isAuthenticated: true,
+      isFollowing: false,
+      isBlocked: false,
+      isBlockedBy: false,
+      isMuted: false,
+      isBanned: false,
+    };
+    vi.mocked(fetchUserProfileViewer).mockResolvedValue(viewer);
+    vi.mocked(followUserAction).mockResolvedValue({});
+    const currentUser = await fetchCurrentUserOptional();
+    const { queryClient } = renderProfile((client) => {
+      client.setQueryData(queryKeys.currentUser(), currentUser);
+      client.setQueryData(queryKeys.userProfileViewer("alice"), viewer);
+      client.setQueryData(queryKeys.dmPeer("alice"), {
+        canMessage: false,
+        hasThread: false,
+      });
+    });
+    const gate = () =>
+      queryClient.getQueryState(queryKeys.dmPeer("alice"))?.isInvalidated;
+    expect(gate()).toBe(false);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Follow" }),
+    );
+
+    await waitFor(() => expect(gate()).toBe(true));
   });
 });

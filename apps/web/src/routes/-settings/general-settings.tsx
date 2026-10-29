@@ -138,7 +138,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
 
       <form className="space-y-6 w-full" onSubmit={onSubmit}>
         <div className="space-y-1">
-          <Label htmlFor="displayName">Display Name</Label>
+          <Label htmlFor="displayName">Display name</Label>
           <Input
             id="displayName"
             placeholder="Umamin"
@@ -146,9 +146,19 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
             disabled={mutation.isPending}
             maxLength={20}
             onChange={(e) => set("displayName", e.target.value)}
+            aria-invalid={errors.displayName ? true : undefined}
+            aria-describedby={
+              errors.displayName ? "displayName-error" : undefined
+            }
           />
           {errors.displayName && (
-            <p className="text-sm text-destructive">{errors.displayName}</p>
+            <p
+              id="displayName-error"
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {errors.displayName}
+            </p>
           )}
         </div>
 
@@ -164,9 +174,17 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
               disabled={!user.account || mutation.isPending}
               maxLength={20}
               onChange={(e) => set("username", e.target.value.toLowerCase())}
+              aria-invalid={errors.username ? true : undefined}
+              aria-describedby={errors.username ? "username-error" : undefined}
             />
             {errors.username && (
-              <p className="text-sm text-destructive">{errors.username}</p>
+              <p
+                id="username-error"
+                role="alert"
+                className="text-sm text-destructive"
+              >
+                {errors.username}
+              </p>
             )}
           </div>
           {user.account ? (
@@ -183,7 +201,7 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
 
         <div className="space-y-1">
           <Label htmlFor="question">
-            Custom Message<span className="text-destructive">*</span>
+            Custom message<span className="text-destructive">*</span>
           </Label>
           <Textarea
             id="question"
@@ -193,6 +211,8 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
             disabled={mutation.isPending}
             maxLength={150}
             onChange={(e) => set("question", e.target.value)}
+            aria-invalid={errors.question ? true : undefined}
+            aria-describedby={errors.question ? "question-error" : undefined}
           />
           {fields.question.length >= 120 && (
             <p className="text-right text-muted-foreground text-xs tabular-nums">
@@ -200,7 +220,13 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
             </p>
           )}
           {errors.question && (
-            <p className="text-sm text-destructive">{errors.question}</p>
+            <p
+              id="question-error"
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {errors.question}
+            </p>
           )}
         </div>
 
@@ -214,6 +240,8 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
             disabled={mutation.isPending}
             maxLength={150}
             onChange={(e) => set("bio", e.target.value)}
+            aria-invalid={errors.bio ? true : undefined}
+            aria-describedby={errors.bio ? "bio-error" : undefined}
           />
           {fields.bio.length >= 120 && (
             <p className="text-right text-muted-foreground text-xs tabular-nums">
@@ -221,7 +249,9 @@ export function GeneralSettings({ user }: { user: UserWithAccount }) {
             </p>
           )}
           {errors.bio && (
-            <p className="text-sm text-destructive">{errors.bio}</p>
+            <p id="bio-error" role="alert" className="text-sm text-destructive">
+              {errors.bio}
+            </p>
           )}
         </div>
 

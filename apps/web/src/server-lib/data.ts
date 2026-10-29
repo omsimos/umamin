@@ -100,10 +100,8 @@ import { isModerator } from "./moderation";
 import { getMutedIds } from "./mutes";
 import { countUnseen } from "./notifications";
 
-// 180s (was 120s): public reads are eventually-consistent and every surface
-// busts its per-entity tag on write, so this only governs passive-staleness /
-// cold-cache recompute frequency — widening it trims function CPU at no
-// freshness cost (the feed's "new posts" pill covers perceived latency).
+// Public reads are cached by the Worker's Cache API for this long. There is no
+// purge, so a write shows up on public surfaces within this window.
 const PUBLIC_REVALIDATE_SECONDS = 180;
 // 20 matches comments/messages and the virtualized above-the-fold (overscan 5);
 // 40 over-fetched ~2x the rows + payload per page on a per-row-billed DB.
@@ -186,9 +184,9 @@ export const feedAuthorColumns = {
 /**
  * Resolves the equipped group badges for a page of already-fetched users: one
  * bounded inArray on the group PK, only when someone on the page wears a
- * badge (usually far fewer distinct groups than authors). Runs INSIDE the
- * callers' "use cache" boundaries so the badge ships in the cached payload —
- * never a join on the feed union, never per-row lookups.
+ * badge (usually far fewer distinct groups than authors). Runs inside the
+ * callers' page query, so the badge ships in the same payload the read route
+ * caches. Never a join on the feed union, never per-row lookups.
  */
 async function getGroupBadgeMap(
   db: Db,
@@ -434,8 +432,9 @@ function getHotFeedNextCursor(
 }
 
 // No longer a scoring input (the Hot score is static — see hot-score.ts):
-// rankedAtMs survives purely as the per-120s "use cache" key for the first
-// page, then rides the cursor so later pages reuse the same cache window.
+// rankedAtMs survives as the first page's time bucket (one
+// PUBLIC_REVALIDATE_SECONDS window), then rides the cursor so later pages rank
+// against the same snapshot.
 function getHotFeedRankedAtMs(cursor: string | null) {
   const parsedCursor = parseHotFeedCursor(cursor);
 
@@ -721,18 +720,21 @@ async function hydrateHotPostIds(
   ids: string[],
   enforce: boolean,
 ): Promise<FeedItem[]> {
-  const posts =
+  // One joined query instead of posts then authors: a chained hop on the
+  // default feed's cache miss. Projected with feedAuthorColumns, never a
+  // relational author include, which would select passwordHash.
+  const rows =
     ids.length > 0
-      ? await db.select().from(postTable).where(inArray(postTable.id, ids))
-      : [];
-  const authorIds = Array.from(new Set(posts.map((post) => post.authorId)));
-  const users =
-    authorIds.length > 0
       ? await db
-          .select(feedAuthorColumns)
-          .from(userTable)
-          .where(inArray(userTable.id, authorIds))
+          .select({ post: postTable, author: feedAuthorColumns })
+          .from(postTable)
+          .innerJoin(userTable, eq(postTable.authorId, userTable.id))
+          .where(inArray(postTable.id, ids))
       : [];
+  const posts = rows.map((row) => row.post);
+  const users = Array.from(
+    new Map(rows.map((row) => [row.author.id, row.author] as const)).values(),
+  );
 
   const [quotedMap, pollMap, badgeMap] = await Promise.all([
     getQuotedPostMap(db, posts, enforce),
@@ -3066,10 +3068,9 @@ export async function getNotificationsPage(
 }
 
 /**
- * Badge data for a single group, cached under its own tag so a group edit or
- * delete refreshes it instantly (updateTag) — for surfaces whose own cache
- * outlives the group, like the 7-day profile page that only stores the
- * equippedGroupId pointer.
+ * Badge data for a single group. A plain query with no cache of its own:
+ * callers that embed it in a cached payload, like the profile, show an edit or
+ * delete after that payload's TTL.
  */
 export async function getGroupBadge(
   db: Db,

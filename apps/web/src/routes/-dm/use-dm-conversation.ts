@@ -24,6 +24,9 @@ import {
 
 /** A peer's typing indicator clears after this long without a refresh. */
 const TYPING_STALE_MS = 8_000;
+/** A request the room never answers settles after this long. Keep it above
+ *  the room's worst-case op latency. */
+const REQUEST_TIMEOUT_MS = 10_000;
 /** Codes after which reconnecting can't help. */
 const FINAL_CODES = new Set<number>([
   DM_CLOSED,
@@ -94,6 +97,7 @@ export function useDmConversation(
   }, []);
 
   useEffect(() => {
+    let tooMany = 0;
     const settle = (id: string, result: OpResult) => {
       waiters.current.get(id)?.(result);
       waiters.current.delete(id);
@@ -108,6 +112,7 @@ export function useDmConversation(
       }
       switch (frame.t) {
         case "sync":
+          tooMany = 0;
           dispatch({
             type: "sync",
             messages: frame.messages,
@@ -127,6 +132,7 @@ export function useDmConversation(
             messages: frame.messages,
             hasMore: frame.hasMore,
           });
+          settle(frame.id, { ok: true });
           return;
         case "meta":
           dispatch({ type: "meta", meta: frame.meta });
@@ -170,6 +176,12 @@ export function useDmConversation(
           for (const id of waiters.current.keys()) {
             settle(id, { ok: false, code: "offline" });
           }
+          if (code === CLOSE.TOO_MANY && ++tooMany >= 5) {
+            socketRef.current?.close();
+            socketRef.current = null;
+            dispatch({ type: "status", status: "busy" });
+            return;
+          }
           if (code === CLOSE.VERSION) {
             reloadForVersion();
             return;
@@ -185,6 +197,10 @@ export function useDmConversation(
     };
 
     const close = () => {
+      // close() suppresses onClose, which is what normally settles these.
+      for (const id of [...waiters.current.keys()]) {
+        settle(id, { ok: false, code: "offline" });
+      }
       socketRef.current?.close();
       socketRef.current = null;
     };
@@ -259,30 +275,75 @@ export function useDmConversation(
       if (!sendFrame(frame)) {
         return Promise.resolve({ ok: false, code: "offline" });
       }
-      return new Promise((resolve) => waiters.current.set(frame.id, resolve));
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          waiters.current.delete(frame.id);
+          resolve({ ok: false, code: "unavailable" });
+        }, REQUEST_TIMEOUT_MS);
+        waiters.current.set(frame.id, (r) => {
+          clearTimeout(timer);
+          resolve(r);
+        });
+      });
     },
     [sendFrame],
   );
+
+  const react = useCallback(
+    (messageId: string, emoji: string) =>
+      request({ t: "react", id: crypto.randomUUID(), messageId, emoji }),
+    [request],
+  );
+
+  const unsend = useCallback(
+    (messageId: string) =>
+      request({ t: "unsend", id: crypto.randomUUID(), messageId }),
+    [request],
+  );
+
+  const report = useCallback(
+    (messageId: string, reason: DmReportReason) =>
+      request({ t: "report", id: crypto.randomUUID(), messageId, reason }),
+    [request],
+  );
+
+  // Without the React Compiler, a fresh setTyping per frame would re-run the
+  // composer's cleanup and send typing:off mid-sentence.
+  const setTyping = useCallback(
+    (on: boolean) => {
+      sendFrame({ t: "typing", on });
+    },
+    [sendFrame],
+  );
+
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
+
+  const loadOlder = useCallback(() => {
+    const current = stateRef.current;
+    const oldest = current.messages.find((m) => !m.id.startsWith("local:"));
+    if (!oldest || current.loadingOlder || !current.hasMore) return;
+    dispatch({ type: "loadOlder" });
+    void request({
+      t: "history",
+      id: crypto.randomUUID(),
+      before: oldest.id,
+    }).then((r) => {
+      if (!r.ok) dispatch({ type: "loadOlderFailed" });
+    });
+  }, [request]);
 
   return {
     state,
     peerTyping,
     send,
     retry,
-    react: (messageId, emoji) =>
-      request({ t: "react", id: crypto.randomUUID(), messageId, emoji }),
-    unsend: (messageId) =>
-      request({ t: "unsend", id: crypto.randomUUID(), messageId }),
-    report: (messageId, reason) =>
-      request({ t: "report", id: crypto.randomUUID(), messageId, reason }),
-    setTyping: (on) => {
-      sendFrame({ t: "typing", on });
-    },
-    loadOlder: () => {
-      const oldest = state.messages.find((m) => !m.id.startsWith("local:"));
-      if (!oldest || state.loadingOlder || !state.hasMore) return;
-      dispatch({ type: "loadOlder" });
-      sendFrame({ t: "history", id: crypto.randomUUID(), before: oldest.id });
-    },
+    react,
+    unsend,
+    report,
+    setTyping,
+    loadOlder,
   };
 }

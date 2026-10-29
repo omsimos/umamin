@@ -8,6 +8,7 @@ import {
 import { Button } from "@umamin/ui/components/button";
 import { AlertCircleIcon, BellOffIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { callAction } from "@/lib/api";
 import {
   infiniteQueryDefaults,
@@ -34,6 +35,8 @@ export function NotificationsList() {
     hasNextPage,
     isFetching,
     isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
   } = useInfiniteQuery<NotificationsResponse>({
     queryKey: queryKeys.notifications(),
     queryFn: ({ pageParam }) =>
@@ -85,7 +88,7 @@ export function NotificationsList() {
       .catch(() => {});
   }, [seenThroughMs, queryClient]);
 
-  if (error) {
+  if (error && !data) {
     return (
       <Alert variant="destructive">
         <AlertCircleIcon className="h-4 w-4" />
@@ -116,6 +119,12 @@ export function NotificationsList() {
 
   return (
     <div>
+      {error && (
+        <RefetchErrorAlert
+          onRetry={() => (isFetchNextPageError ? fetchNextPage() : refetch())}
+          retrying={isFetching}
+        />
+      )}
       <ul className="divide-y">
         {notifications.map((notification) => (
           <li key={notification.id}>

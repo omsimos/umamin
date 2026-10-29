@@ -107,7 +107,9 @@ function Lobby() {
   // queue), not stranded here while a partner waits.
   useEffect(() => {
     if (snapshot.phase === "active" || snapshot.phase === "matching") {
-      navigate({ to: "/chat/session" });
+      // A replace, so back from the session doesn't land on a lobby that
+      // immediately pushes the session again.
+      navigate({ to: "/chat/session", replace: true });
     }
   }, [snapshot.phase, navigate]);
 

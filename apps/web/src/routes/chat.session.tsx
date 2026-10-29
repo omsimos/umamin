@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cardById, drawCard, type PlayChoice } from "@/lib/chat/decks";
 import { visibleOnline } from "@/lib/chat/stats";
@@ -78,6 +78,20 @@ function Session() {
   const [iceBreakerDismissed, setIceBreakerDismissed] = useState(false);
   const [celebrationDismissed, setCelebrationDismissed] = useState(false);
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
+  // A stable object: the composer pulls focus whenever this identity changes.
+  const composerReply = useMemo(
+    () =>
+      replyTarget
+        ? {
+            authorLabel:
+              replyTarget.author === "self"
+                ? "yourself"
+                : (partner?.alias ?? "your match"),
+            text: replyTarget.text,
+          }
+        : null,
+    [replyTarget, partner?.alias],
+  );
   const [connectOpen, setConnectOpen] = useState(false);
   const [revealOverlayOpen, setRevealOverlayOpen] = useState(false);
   const [warmupPrompt, setWarmupPrompt] = useState<string | null>(null);
@@ -323,17 +337,7 @@ function Session() {
             onSend={sendWithMode}
             onTyping={setTyping}
             onPlay={play}
-            replyTo={
-              replyTarget
-                ? {
-                    authorLabel:
-                      replyTarget.author === "self"
-                        ? "yourself"
-                        : partner.alias,
-                    text: replyTarget.text,
-                  }
-                : null
-            }
+            replyTo={composerReply}
             onCancelReply={() => setReplyTarget(null)}
           />
         </>

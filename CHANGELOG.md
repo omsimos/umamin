@@ -18,6 +18,62 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.17.0] - 2026-10-29
+
+### Added
+
+- The scrolling example posts on the home page have a pause button.
+
+### Changed
+
+- Clearing your note now removes it from the notes feed instead of leaving an empty note behind.
+- Liking, voting or following the same person again within a few minutes no longer sends them another notification, and a notification counts people instead of repeat actions.
+- Back now leaves a live Umamin Chat or a chat conversation instead of bouncing you into it again.
+- Chat conversations open full screen, without the app's navigation behind them.
+
+### Fixed
+
+- Chats no longer hang when the connection drops or the server doesn't answer. Loading older messages shows an error you can retry, and a failed action tells you so.
+- The unread chats dot no longer counts chats with banned accounts.
+- Following someone back unlocks chatting with them right away instead of after a reload.
+- If a chat keeps refusing to connect because you have too many tabs open, it now says so instead of retrying forever.
+- Umamin Chat tells you when your network is busy and stops retrying after about a minute instead of searching silently.
+- A match that fails to start puts both people back in the queue instead of leaving them stuck.
+- The typing indicator in chats no longer flickers off while the other person is still typing, and the message box no longer grabs focus on every new message.
+- Typing in a chat on iPhone no longer zooms the page.
+- Lists keep showing what was already loaded when a background refresh fails, with a button to try again.
+- Signing out now tells you when it fails instead of sending you to the login page while still signed in.
+- Commenting on a post that was just deleted says the post is gone instead of showing a generic error.
+- Deleting a post, comment or note also removes any open disputes about it.
+- Moderator decisions on a note no longer move it in the notes feed.
+
+### Performance & Cost
+
+- Following, reposting, liking a comment, voting in a poll and commenting each take one trip to the database instead of several.
+- The Hot feed loads its posts and their authors in one query.
+- Notifications check blocks and mutes in the same step that saves them.
+- Posts with images that fail the image checks are no longer sent to the content classifier, and each account has a cap on how often its content is classified.
+
+### Security & Privacy
+
+- Replying to someone's note can no longer reveal whether they wrote an anonymous note.
+- Anonymous messages that insult the recipient are no longer let through because they mention politics.
+- Blocking someone now stops them from liking, reposting, quoting or liking the comments of the person who blocked them, so they can't take that person's aura by undoing those actions later.
+- Changing your password closes your open chat connections, and a chat connection reconnects at least once an hour so it can't outlive a signed-out session.
+- Someone you've unfollowed or blocked no longer sees whether you're online or typing.
+- Content covers stay on if our feature flag service is unreachable.
+- Umamin Chat limits connections per network more accurately for IPv6, gives shared mobile networks more room, and closes connections that send too many messages.
+- The installed app only stores public pages like the home page and About for offline use. Signed-in pages are never saved on the device.
+- Viewing posts and profiles without signing in is rate limited.
+- Updated a dependency with a known security issue.
+
+### Accessibility
+
+- Settings forms announce errors to screen readers and link each error to its field.
+- Animations stop when your device asks for reduced motion.
+- Small buttons in chats are easier to tap, and chat messages show their full focus outline.
+- The image crop dialog describes what it's for to screen readers.
+
 ## [7.16.0] - 2026-10-28
 
 ### Added
@@ -1163,6 +1219,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.17.0]: https://github.com/omsimos/umamin/compare/v7.16.0...v7.17.0
 [7.16.0]: https://github.com/omsimos/umamin/compare/v7.15.0...v7.16.0
 [7.15.0]: https://github.com/omsimos/umamin/compare/v7.14.0...v7.15.0
 [7.14.0]: https://github.com/omsimos/umamin/compare/v7.13.0...v7.14.0

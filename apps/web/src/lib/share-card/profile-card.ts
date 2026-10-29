@@ -362,7 +362,7 @@ export async function renderProfileCard(
   ctx.fillStyle = MUTED;
   ctx.font = `400 36px ${sans}`;
   ctx.fillText(
-    "say anything — I'll never know it was you.",
+    "say anything. I'll never know it was you.",
     PAD,
     quoteY - chosen.lineH + 90,
     contentW,

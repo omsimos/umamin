@@ -110,7 +110,7 @@ export function GroupsHub() {
         <div className="rounded-lg border bg-muted/40 p-4">
           <p className="font-medium">Create your own group with Umamin+</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Group creation is an Umamin+ perk — free once your account is a year
+            Group creation is an Umamin+ perk: free once your account is a year
             old, or included with Umamin Pro. You can still join groups you're
             invited to and wear their tag.
           </p>

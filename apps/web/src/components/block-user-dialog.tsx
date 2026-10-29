@@ -48,6 +48,7 @@ export function BlockUserDialog({
       // profile-viewer entry is removed (not invalidated) because resolveViewer
       // short-circuits on getQueryData and the query is enabled: false.
       queryClient.invalidateQueries({ queryKey: queryKeys.blockedUsers() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dmPeerRoot() });
       queryClient.invalidateQueries({
         queryKey: queryKeys.receivedMessages(),
       });

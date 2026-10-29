@@ -16,7 +16,12 @@ const ORIGIN = "https://www.umamin.link";
 
 type Listener = (event: Record<string, unknown>) => unknown;
 
-type FakeResponse = { ok: boolean; type: string; clone: () => FakeResponse };
+type FakeResponse = {
+  ok: boolean;
+  type: string;
+  redirected?: boolean;
+  clone: () => FakeResponse;
+};
 
 function response(ok = true, type = "basic"): FakeResponse {
   const r: FakeResponse = { ok, type, clone: () => r };
@@ -163,6 +168,17 @@ describe("service worker lifecycle", () => {
     expect(w.clients.claim).toHaveBeenCalled();
   });
 
+  it("purges the page cache stored under the old name at the same version", async () => {
+    await w.install();
+    await (await w.caches.open("umamin-pages-1.2.3")).put(
+      request("/moderation"),
+      response(),
+    );
+    await w.activate();
+    expect(w.caches.delete).toHaveBeenCalledWith("umamin-pages-1.2.3");
+    expect(w.caches.delete).not.toHaveBeenCalledWith("umamin-static-1.2.3");
+  });
+
   it("waits for the page's opt-in before taking over", async () => {
     await w.install();
     expect(w.self.skipWaiting).not.toHaveBeenCalled();
@@ -187,16 +203,41 @@ describe("navigation requests", () => {
 
   it("never stores a dynamic route's HTML", async () => {
     w.fetch.mockResolvedValue(response());
-    await w.fetchEvent(request("/inbox", { mode: "navigate" }));
-    expect(w.stored("umamin-pages-1.2.3", "/inbox")).toBeUndefined();
-    await w.fetchEvent(request("/user/alice", { mode: "navigate" }));
-    expect(w.stored("umamin-pages-1.2.3", "/user/alice")).toBeUndefined();
+    for (const path of [
+      "/inbox",
+      "/user/alice",
+      "/moderation",
+      "/chat",
+      "/chat/session",
+      "/tiers",
+      "/social",
+      "/some-future-private-route",
+    ]) {
+      await w.fetchEvent(request(path, { mode: "navigate" }));
+      expect(w.stored("umamin-pages-v2-1.2.3", path), path).toBeUndefined();
+    }
+  });
+
+  it("serves the offline page for a non-allowlisted route when the network is down", async () => {
+    w.fetch.mockRejectedValue(new TypeError("Failed to fetch"));
+    const { result } = await w.fetchEvent(
+      request("/moderation", { mode: "navigate" }),
+    );
+    expect(result).toBe(w.stored("umamin-static-1.2.3", "/offline.html"));
+  });
+
+  it("does not store a redirected response for an allowlisted page", async () => {
+    const redirected = { ...response(), redirected: true };
+    redirected.clone = () => redirected;
+    w.fetch.mockResolvedValueOnce(redirected);
+    await w.fetchEvent(request("/about", { mode: "navigate" }));
+    expect(w.stored("umamin-pages-v2-1.2.3", "/about")).toBeUndefined();
   });
 
   it("caches a public page and falls back to it offline", async () => {
     w.fetch.mockResolvedValueOnce(response());
     await w.fetchEvent(request("/about", { mode: "navigate" }));
-    const cached = w.stored("umamin-pages-1.2.3", "/about");
+    const cached = w.stored("umamin-pages-v2-1.2.3", "/about");
     expect(cached).toBeDefined();
 
     w.fetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
@@ -209,7 +250,7 @@ describe("navigation requests", () => {
   it("does not pin an error page for the whole version", async () => {
     w.fetch.mockResolvedValueOnce(response(false));
     await w.fetchEvent(request("/about", { mode: "navigate" }));
-    expect(w.stored("umamin-pages-1.2.3", "/about")).toBeUndefined();
+    expect(w.stored("umamin-pages-v2-1.2.3", "/about")).toBeUndefined();
   });
 });
 

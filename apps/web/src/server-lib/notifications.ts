@@ -1,16 +1,22 @@
-import {
-  type NotificationType,
-  notificationTable,
-} from "@umamin/db/schema/notification";
+import type { NotificationType } from "@umamin/db/schema/notification";
 import { sql } from "drizzle-orm";
-import { hasBlockBetween } from "./blocks";
+import { nanoid } from "nanoid";
 import type { Db } from "./db";
 import type { AppEnv } from "./env";
-import { getMutedIds } from "./mutes";
 import { sendPushForNotification } from "./notification-push";
 import { captureServerException } from "./posthog";
 
 const PREVIEW_MAX_LENGTH = 80;
+
+// Types a user can undo and redo (unlike, unfollow). A repeat by the same
+// person inside this window changes nothing and sends no push; real repeats
+// (another comment, another reply) still resurface the row.
+const TOGGLE_TYPES: ReadonlySet<NotificationType> = new Set([
+  "like",
+  "vote",
+  "follow",
+]);
+const REPEAT_WINDOW_SECONDS = 300;
 
 type NotifyParams = {
   recipientId: string;
@@ -53,10 +59,16 @@ export function countUnseen(
  * The Next.js `updateTag` cache busts are gone (authed reads are direct Turso
  * now → read-your-writes); the best-effort Web Push runs off the response's
  * critical path via `deps.defer` (ctx.waitUntil).
- * Suppressed when a block exists in either direction between actor and
- * recipient, or when the recipient has muted the actor; the push fan-out sits
- * behind the same guard. Mute is checked here rather than on read so an
- * aggregated row isn't hidden just because its latest actor is muted.
+ * The block and mute checks ride in the insert itself (INSERT ... SELECT ...
+ * WHERE NOT EXISTS), so suppression costs no extra round trip: a block in
+ * either direction or a recipient-side mute inserts nothing and sends no push.
+ * Mute is checked here rather than on read so an aggregated row isn't hidden
+ * just because its latest actor is muted.
+ *
+ * `count` approximates people, not events: it only grows when the latest actor
+ * differs from the previous one. Toggle types (like, vote, follow) also leave
+ * the row untouched and send no push when the same person repeats inside
+ * REPEAT_WINDOW_SECONDS.
  */
 export async function notify(
   deps: NotifyDeps,
@@ -73,53 +85,47 @@ export async function notify(
     return;
   }
 
-  if (actorId) {
-    try {
-      const [blocked, mutedIds] = await Promise.all([
-        blockChecked ? false : hasBlockBetween(deps.db, recipientId, actorId),
-        getMutedIds(deps.db, recipientId, [actorId]),
-      ]);
-      if (blocked || mutedIds.size > 0) {
-        return;
-      }
-    } catch (err) {
-      // Best-effort like the insert below: a failed probe drops the
-      // notification rather than risking one that a block should suppress.
-      console.error("notify block probe failed", err);
-      captureServerException(deps.env, deps.defer, err, {
-        properties: { notify: type, recipientId },
-      });
-      return;
-    }
-  }
-
   const trimmedPreview = preview ? preview.slice(0, PREVIEW_MAX_LENGTH) : null;
 
+  // SQLite needs a WHERE on an INSERT ... SELECT that is followed by an
+  // upsert, so the anonymous path uses a constant one.
+  const guards = [];
+  if (actorId) {
+    guards.push(
+      sql`NOT EXISTS (SELECT 1 FROM user_mute WHERE muter_id = ${recipientId} AND muted_id = ${actorId})`,
+    );
+    if (!blockChecked) {
+      guards.push(
+        sql`NOT EXISTS (SELECT 1 FROM user_block WHERE (blocker_id = ${recipientId} AND blocked_id = ${actorId}) OR (blocker_id = ${actorId} AND blocked_id = ${recipientId}))`,
+      );
+    }
+  }
+  const where = guards.length > 0 ? sql.join(guards, sql` AND `) : sql`1`;
+
+  const throttle = TOGGLE_TYPES.has(type)
+    ? sql` WHERE notification.actor_id IS NOT excluded.actor_id OR notification.updated_at < unixepoch() - ${REPEAT_WINDOW_SECONDS}`
+    : sql``;
+
   try {
-    await deps.db
-      .insert(notificationTable)
-      .values({
-        recipientId,
-        type,
-        targetId,
-        actorId,
-        preview: trimmedPreview,
-        updatedAt: sql`(unixepoch())`,
-      })
-      .onConflictDoUpdate({
-        target: [
-          notificationTable.recipientId,
-          notificationTable.type,
-          notificationTable.targetId,
-        ],
-        set: {
-          count: sql`${notificationTable.count} + 1`,
-          actorId,
-          preview: trimmedPreview,
-          // $onUpdate doesn't fire inside DO UPDATE — set explicitly.
-          updatedAt: sql`(unixepoch())`,
-        },
-      });
+    const result = await deps.db.run(sql`
+      INSERT INTO notification (id, recipient_id, type, target_id, actor_id, preview, updated_at)
+      SELECT ${nanoid()}, ${recipientId}, ${type}, ${targetId}, ${actorId}, ${trimmedPreview}, unixepoch()
+      WHERE ${where}
+      ON CONFLICT (recipient_id, type, target_id) DO UPDATE SET
+        count = CASE
+          WHEN excluded.actor_id IS NOT NULL AND notification.actor_id = excluded.actor_id
+            THEN notification.count
+          ELSE notification.count + 1
+        END,
+        actor_id = excluded.actor_id,
+        preview = excluded.preview,
+        updated_at = unixepoch()${throttle}
+    `);
+
+    // Nothing written: suppressed by a block or mute, or a throttled repeat.
+    if (result.rowsAffected === 0) {
+      return;
+    }
 
     // Fire a best-effort Web Push. It must never throw into the parent action —
     // hence the inner .catch and the defer isolation.

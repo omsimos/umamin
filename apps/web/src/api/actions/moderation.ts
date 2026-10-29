@@ -191,7 +191,9 @@ export const clearContentFlagHandler = action(
     const table = REVIEW_TABLES[kind];
     await ctxDb(c)
       .update(table)
-      .set({ modClearedAt: new Date() })
+      // Pinned: $onUpdate would restamp updated_at, which is a note's position
+      // in /notes; a review decision or a viewer's dispute must not bump it.
+      .set({ modClearedAt: new Date(), updatedAt: sql`${table.updatedAt}` })
       .where(eq(table.id, id));
     return { success: true };
   },
@@ -217,7 +219,7 @@ export const keepContentFlagHandler = action(
     const table = REVIEW_TABLES[kind];
     await ctxDb(c)
       .update(table)
-      .set({ modReviewedAt: new Date() })
+      .set({ modReviewedAt: new Date(), updatedAt: sql`${table.updatedAt}` })
       .where(eq(table.id, id));
     return { success: true };
   },
@@ -281,6 +283,7 @@ export const appealContentLabelHandler = action(
       .set({
         modAppealedAt: sql`coalesce(${table.modAppealedAt}, unixepoch())`,
         modFlaggedAt: sql`coalesce(${table.modFlaggedAt}, unixepoch())`,
+        updatedAt: sql`${table.updatedAt}`,
       })
       .where(eq(table.id, id));
     return { success: true };
@@ -319,6 +322,7 @@ export const disputeContentLabelHandler = action(
         .update(table)
         .set({
           modFlaggedAt: sql`coalesce(${table.modFlaggedAt}, unixepoch())`,
+          updatedAt: sql`${table.updatedAt}`,
         })
         .where(and(eq(table.id, id), isNull(table.modReviewedAt))),
     ]);

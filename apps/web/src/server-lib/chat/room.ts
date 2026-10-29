@@ -25,6 +25,7 @@ import {
   IDLE_MATCH_MS,
   MATCH_START_GRACE_MS,
   MAX_FRAME_CHARS,
+  MAX_PENDING_ROOM_SOCKETS,
   MAX_ROOM_SOCKETS,
   MESSAGE_CAP,
   SEND_DEDUPE_WINDOW,
@@ -42,7 +43,12 @@ import type {
   Side,
 } from "../../lib/chat/engine";
 import * as engine from "../../lib/chat/engine";
-import { SideLimiter } from "../../lib/chat/limits";
+import {
+  type BucketState,
+  FRAME_BUDGET,
+  SideLimiter,
+  takeToken,
+} from "../../lib/chat/limits";
 import { projectMessage, projectMeta } from "../../lib/chat/project";
 import {
   CLOSE,
@@ -138,6 +144,9 @@ function toMessage(row: MessageRowSql): MessageRow {
 export class ChatRoom extends DurableObject<AppEnv> {
   private readonly sql: SqlStorage;
   private readonly limiter = new SideLimiter();
+  // Per socket, not per side: it bounds frames from one connection, and a
+  // reconnect gets a fresh bucket like the op limiter after hibernation.
+  private readonly frameBuckets = new WeakMap<WebSocket, BucketState>();
   // Caches, rebuilt lazily after hibernation.
   private creds: Credentials | null | undefined;
   private match: MatchState | undefined;
@@ -209,9 +218,19 @@ export class ChatRoom extends DurableObject<AppEnv> {
       return new Response("Expected WebSocket", { status: 426 });
     }
     const { 0: client, 1: server } = new WebSocketPair();
-    const crowded = this.ctx.getWebSockets().length >= MAX_ROOM_SOCKETS;
+    const now = Date.now();
+    this.closeExpiredPending(now);
+    let authed = 0;
+    let pending = 0;
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws.readyState !== WebSocket.OPEN) continue;
+      if (this.attachment(ws).side) authed += 1;
+      else pending += 1;
+    }
+    const crowded =
+      authed >= MAX_ROOM_SOCKETS || pending >= MAX_PENDING_ROOM_SOCKETS;
     this.ctx.acceptWebSocket(server);
-    const attachment: Attachment = { side: null, connectedAt: Date.now() };
+    const attachment: Attachment = { side: null, connectedAt: now };
     server.serializeAttachment(attachment);
     // Unknown or purged room: close right away, without touching storage.
     if (!this.loadCreds()) server.close(CLOSE.GONE, "gone");
@@ -221,6 +240,18 @@ export class ChatRoom extends DurableObject<AppEnv> {
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer) {
     try {
+      // Before parsing: every frame wakes the object and is billed, including
+      // the ones that turn out invalid.
+      const next = takeToken(
+        this.frameBuckets.get(ws),
+        FRAME_BUDGET,
+        Date.now(),
+      );
+      if (!next) {
+        ws.close(CLOSE.TOO_MANY, "too many");
+        return;
+      }
+      this.frameBuckets.set(ws, next);
       const frame = parseFrame<RoomFrame>(
         roomFrameSchema,
         raw,
@@ -291,6 +322,9 @@ export class ChatRoom extends DurableObject<AppEnv> {
     ws: WebSocket,
     frame: Extract<RoomFrame, { t: "auth" }>,
   ) {
+    // The client sends one auth per socket. Answering a repeat would re-send
+    // the whole sync on every frame.
+    if (this.attachment(ws).side) return;
     if (frame.v !== PROTOCOL_VERSION) {
       ws.close(CLOSE.VERSION, "version");
       return;
@@ -350,6 +384,18 @@ export class ChatRoom extends DurableObject<AppEnv> {
     this.setTimer("away", SIDE_REF[side], Date.now() + AWAY_GRACE_MS, true);
     await this.syncAlarm();
     this.broadcastMeta(engine.otherSide(side), ws);
+  }
+
+  /** Mirrors the lobby's: a socket that never authenticated is dropped before
+   *  it can hold a seat. */
+  private closeExpiredPending(now: number) {
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws.readyState !== WebSocket.OPEN) continue;
+      const { side, connectedAt } = this.attachment(ws);
+      if (!side && now - connectedAt > AUTH_DEADLINE_MS) {
+        ws.close(CLOSE.UNAUTHORIZED, "auth timeout");
+      }
+    }
   }
 
   /** Closes half-open sockets (no auto-response pong recently) and sockets

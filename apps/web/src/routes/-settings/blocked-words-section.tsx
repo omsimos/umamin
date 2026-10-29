@@ -75,7 +75,7 @@ export function BlockedWordsSection({ user }: { user: UserWithAccount }) {
 
   return (
     <section>
-      <Label htmlFor="blocked-word-input">Blocked Words</Label>
+      <Label htmlFor="blocked-word-input">Blocked words</Label>
       <div className="space-y-4 rounded-md border p-4 mt-2">
         <p className="text-sm text-muted-foreground">
           Messages containing these words or phrases will be discarded. Senders

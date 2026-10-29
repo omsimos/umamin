@@ -3,6 +3,7 @@ import {
   BubbleContent,
   BubbleReactions,
 } from "@umamin/ui/components/bubble";
+import { Button } from "@umamin/ui/components/button";
 import {
   Message,
   MessageContent,
@@ -34,17 +35,18 @@ function MenuAction({
   destructive?: boolean;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={onClick}
       className={cn(
-        "hover:bg-accent focus-visible:ring-ring/60 flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium outline-none focus-visible:ring-2",
-        destructive && "text-destructive",
+        "h-11 gap-1.5 rounded-full px-3 text-xs",
+        destructive && "text-destructive hover:text-destructive",
       )}
     >
       {icon}
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -248,13 +250,15 @@ export function DmMessageBubble({
         </Bubble>
         {delivery === "failed" ? (
           <MessageFooter className="px-1 font-normal">
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
               onClick={onRetry}
-              className="focus-visible:ring-ring/50 text-destructive rounded-sm outline-none focus-visible:ring-[3px]"
+              className="text-destructive relative h-auto rounded-sm p-0 text-xs font-normal after:absolute after:-inset-x-2 after:-inset-y-3 after:content-['']"
             >
               Not delivered · Tap to retry
-            </button>
+            </Button>
           </MessageFooter>
         ) : (
           seen && (

@@ -134,4 +134,27 @@ describe("MessageComposer", () => {
     await userEvent.keyboard("{Escape}");
     expect(onCancelReply).toHaveBeenCalledTimes(1);
   });
+
+  it("pulls focus once per reply target, not on every re-render", async () => {
+    const reply = { authorLabel: "Blue Fox", text: "earlier" };
+    const { rerender } = render(
+      <MessageComposer onSend={() => {}} replyTo={reply} />,
+    );
+    const textbox = screen.getByRole("textbox");
+    expect(textbox).toHaveFocus();
+
+    await userEvent.tab();
+    expect(textbox).not.toHaveFocus();
+
+    rerender(<MessageComposer onSend={() => {}} replyTo={reply} />);
+    expect(textbox).not.toHaveFocus();
+
+    rerender(
+      <MessageComposer
+        onSend={() => {}}
+        replyTo={{ authorLabel: "Blue Fox", text: "another" }}
+      />,
+    );
+    expect(textbox).toHaveFocus();
+  });
 });

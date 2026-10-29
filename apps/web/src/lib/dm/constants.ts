@@ -27,6 +27,9 @@ export const ACCESS_RECHECK_MS = 5 * MINUTE;
 export const PUSH_COOLDOWN_MS = 5 * MINUTE;
 /** A half-open socket is closed once its last pong is older than this. */
 export const DM_STALE_SOCKET_MS = 75 * SECOND;
+/** An open socket is closed (reconnectably) after this long, so the upgrade
+ *  route re-checks the session. Bounds how long a revoked session can read. */
+export const DM_MAX_SOCKET_AGE_MS = 60 * MINUTE;
 /** Characters of the latest message kept (encrypted) for the Chats list. */
 export const DM_PREVIEW_MAX = 80;
 /** Messages before the reported one that go into a report snapshot. */

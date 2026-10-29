@@ -10,6 +10,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { AlertCircleIcon, MessagesSquareIcon } from "lucide-react";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ChatAnnouncement } from "@/components/chat-announcement";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { TimeAgo } from "@/components/time-ago";
 import type { DmThreadItem, DmThreadsResponse } from "@/lib/dm/types";
 import { Link } from "@/lib/navigation";
@@ -105,7 +106,10 @@ export function ChatsList() {
     error,
     fetchNextPage,
     hasNextPage,
+    isFetching,
     isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
   } = useInfiniteQuery<DmThreadsResponse>({
     queryKey: queryKeys.dmThreads(),
     queryFn: ({ pageParam }) =>
@@ -122,12 +126,14 @@ export function ChatsList() {
 
   const threads = data?.pages.flatMap((page) => page.data) ?? [];
   const sentinelRef = useInfiniteScroll({
-    hasNextPage: Boolean(hasNextPage),
+    // The sentinel stays mounted under a failed page, so without this it would
+    // re-fire fetchNextPage on every failure; the retry button takes over.
+    hasNextPage: Boolean(hasNextPage) && !isFetchNextPageError,
     isFetchingNextPage,
     onLoadMore: fetchNextPage,
   });
 
-  if (error) {
+  if (error && !data) {
     return (
       <Alert variant="destructive">
         <AlertCircleIcon className="h-4 w-4" />
@@ -166,6 +172,12 @@ export function ChatsList() {
 
   return (
     <div className="space-y-1 mb-8">
+      {error && (
+        <RefetchErrorAlert
+          onRetry={() => (isFetchNextPageError ? fetchNextPage() : refetch())}
+          retrying={isFetching}
+        />
+      )}
       {threads.map((t) => (
         <ThreadRow key={t.threadId} thread={t} />
       ))}

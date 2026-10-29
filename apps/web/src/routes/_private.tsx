@@ -1,4 +1,9 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useMatch,
+} from "@tanstack/react-router";
 import { Suspense } from "react";
 import { Footer } from "@/components/footer";
 import { Menubar } from "@/components/menu-bar";
@@ -24,6 +29,14 @@ export const Route = createFileRoute("/_private")({
 });
 
 function PrivateLayout() {
+  // The DM conversation draws its own full-screen frame. Behind a fixed
+  // overlay the shell stays focusable and is still read by screen readers.
+  const fullScreen = useMatch({
+    from: "/_private/inbox_/chats/$username",
+    shouldThrow: false,
+  });
+  if (fullScreen) return <Outlet />;
+
   return (
     <>
       <Suspense>

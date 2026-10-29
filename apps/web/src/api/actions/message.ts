@@ -70,7 +70,7 @@ export const openMessageHandler = action(
 export const createReplyHandler = action(
   {
     schema: z.object({
-      messageId: z.string().min(1),
+      messageId: idSchema,
       content: z
         .string()
         .trim()
@@ -322,7 +322,7 @@ export const markThreadReadHandler = action(
 const sendMessageSchema = z.object({
   question: z.string().trim().min(1).max(500),
   content: z.string().trim().min(1).max(2000),
-  receiverId: z.string().min(1),
+  receiverId: idSchema,
 });
 
 export const sendMessageHandler = action(
@@ -378,7 +378,7 @@ export const sendMessageHandler = action(
         .from(userTable)
         .where(eq(userTable.id, receiverId))
         .limit(1),
-      // A note reply carries the receiver's note as its question.
+      // A reply to a non-anonymous note carries that note as its question.
       db
         .select({ id: noteTable.id })
         .from(noteTable)
@@ -386,6 +386,11 @@ export const sendMessageHandler = action(
           and(
             eq(noteTable.userId, receiverId),
             eq(noteTable.content, question),
+            // An anonymous note's text must never act as the receiver's
+            // question: the sender's Sent list shows whether it was kept,
+            // which would confirm who wrote it. The UI only offers replies
+            // to non-anonymous notes.
+            eq(noteTable.isAnonymous, false),
           ),
         )
         .limit(1),

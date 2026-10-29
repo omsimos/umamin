@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { classifyContent } = vi.hoisted(() => ({ classifyContent: vi.fn() }));
-vi.mock("../src/server-lib/content-classifier", () => ({ classifyContent }));
+const { classifyContentWithOutcome } = vi.hoisted(() => ({
+  classifyContentWithOutcome: vi.fn(),
+}));
+vi.mock("../src/server-lib/content-classifier", () => ({
+  classifyContentWithOutcome,
+}));
 
 import { noteTable } from "@umamin/db/schema/note";
 import {
@@ -25,8 +29,11 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
   let db: Db;
 
   beforeEach(async () => {
-    classifyContent.mockReset();
-    classifyContent.mockResolvedValue(SCORES);
+    classifyContentWithOutcome.mockReset();
+    classifyContentWithOutcome.mockResolvedValue({
+      scores: SCORES,
+      failure: null,
+    });
     db = await makeTestDb();
     await db.insert(userTable).values([
       { id: "a", username: "u_a" },
@@ -134,7 +141,9 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
 
     const result = await retryUnclassifiedContent(db, env);
 
-    const inputs = classifyContent.mock.calls.map(([, input]) => input);
+    const inputs = classifyContentWithOutcome.mock.calls.map(
+      ([, input]) => input,
+    );
     expect(inputs).toHaveLength(4);
     expect(inputs).toEqual(
       expect.arrayContaining([
@@ -153,7 +162,8 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
         { kind: "note", text: "a note" },
       ]),
     );
-    expect(result).toEqual({ attempted: 4, classified: 4 });
+    // Only "fresh" (inside the minimum age) is still unclassified.
+    expect(result).toEqual({ attempted: 4, classified: 4, backlog: 1 });
 
     const severe = async (table: typeof postTable, id: string) =>
       (await db.select().from(table).where(eq(table.id, id)))[0];
@@ -182,17 +192,17 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
       isAnonymous: false,
       updatedAt: savedAt,
     });
-    classifyContent.mockImplementation(async () => {
+    classifyContentWithOutcome.mockImplementation(async () => {
       await db
         .update(noteTable)
         .set({ content: "new text", updatedAt: new Date() })
         .where(eq(noteTable.id, "n1"));
-      return SCORES;
+      return { scores: SCORES, failure: null };
     });
 
     const result = await retryUnclassifiedContent(db, env);
 
-    expect(result).toEqual({ attempted: 1, classified: 0 });
+    expect(result).toMatchObject({ attempted: 1, classified: 0 });
     const [row] = await db.select().from(noteTable);
     expect(row).toMatchObject({ content: "new text", modSevere: null });
   });
@@ -224,6 +234,155 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
       createdAt: minutesAgo(10),
     });
     await retryUnclassifiedContent(db, {} as AppEnv);
-    expect(classifyContent).not.toHaveBeenCalled();
+    expect(classifyContentWithOutcome).not.toHaveBeenCalled();
+  });
+
+  // Oldest first, so rows near the window's edge are tried before they age out.
+  it("retries the oldest rows first", async () => {
+    await db.insert(postTable).values(
+      Array.from({ length: 12 }, (_, i) => ({
+        id: `p${i + 1}`,
+        content: `missed ${i + 1}`,
+        authorId: "a",
+        createdAt: minutesAgo((i + 1) * 10),
+      })),
+    );
+
+    await retryUnclassifiedContent(db, env);
+
+    const texts = classifyContentWithOutcome.mock.calls
+      .map(([, input]) => input.text as string)
+      .sort();
+    // p1 and p2 are the two newest (10 and 20 minutes ago); the rest are tried.
+    expect(texts).toHaveLength(10);
+    expect(texts).not.toContain("missed 1");
+    expect(texts).not.toContain("missed 2");
+    expect(texts).toContain("missed 12");
+  });
+
+  it("finds an unclassified comment older than the newest 200 comments", async () => {
+    await db
+      .insert(postTable)
+      .values({ id: "p", content: "parent", authorId: "b", modSevere: 1 });
+    await db.insert(postCommentTable).values({
+      id: "missed",
+      postId: "p",
+      authorId: "a",
+      content: "slipped through",
+      createdAt: minutesAgo(30),
+    });
+    await db.insert(postCommentTable).values(
+      Array.from({ length: 210 }, (_, i) => ({
+        id: `done${i}`,
+        postId: "p",
+        authorId: "c",
+        content: `later ${i}`,
+        modSevere: 1,
+        createdAt: minutesAgo(20),
+      })),
+    );
+
+    await retryUnclassifiedContent(db, env);
+
+    const [row] = await db
+      .select()
+      .from(postCommentTable)
+      .where(eq(postCommentTable.id, "missed"));
+    expect(row?.modSevere).toBe(91);
+  });
+
+  describe("permanent failures", () => {
+    const store = new Map<string, string>();
+    const kv = {
+      get: vi.fn(async (key: string) => store.get(key) ?? null),
+      put: vi.fn(async (key: string, value: string) => {
+        store.set(key, value);
+      }),
+    };
+    const kvEnv = {
+      AI_GATEWAY_API_KEY: "test-key",
+      KV: kv,
+    } as unknown as AppEnv;
+
+    beforeEach(async () => {
+      store.clear();
+      kv.get.mockClear();
+      kv.put.mockClear();
+      await db.insert(postTable).values({
+        id: "bad",
+        content: "the gateway refuses this",
+        authorId: "a",
+        createdAt: minutesAgo(10),
+      });
+    });
+
+    it("stops after three permanent failures and reports only the first", async () => {
+      classifyContentWithOutcome.mockResolvedValue({
+        scores: null,
+        failure: "permanent",
+      });
+
+      for (let run = 0; run < 4; run++) {
+        await retryUnclassifiedContent(db, kvEnv);
+      }
+
+      expect(classifyContentWithOutcome).toHaveBeenCalledTimes(3);
+      const reports = classifyContentWithOutcome.mock.calls.map(
+        ([, , opts]) => opts.report,
+      );
+      expect(reports).toEqual([true, false, false]);
+      expect(store.get("clsretry:post:bad")).toBe("3");
+    });
+
+    it("doesn't count transient failures", async () => {
+      classifyContentWithOutcome.mockResolvedValue({
+        scores: null,
+        failure: "transient",
+      });
+
+      for (let run = 0; run < 4; run++) {
+        await retryUnclassifiedContent(db, kvEnv);
+      }
+
+      expect(classifyContentWithOutcome).toHaveBeenCalledTimes(4);
+      expect(kv.put).not.toHaveBeenCalled();
+    });
+
+    it("keeps retrying when KV fails", async () => {
+      classifyContentWithOutcome.mockResolvedValue({
+        scores: null,
+        failure: "permanent",
+      });
+      kv.get.mockRejectedValueOnce(new Error("kv down"));
+      kv.put.mockRejectedValueOnce(new Error("kv down"));
+
+      await expect(retryUnclassifiedContent(db, kvEnv)).resolves.toMatchObject({
+        attempted: 1,
+      });
+    });
+  });
+
+  it("returns the unclassified backlog", async () => {
+    classifyContentWithOutcome.mockResolvedValue({
+      scores: null,
+      failure: "transient",
+    });
+    await db.insert(postTable).values({
+      id: "p1",
+      content: "missed",
+      authorId: "a",
+      createdAt: minutesAgo(10),
+    });
+    await db.insert(noteTable).values({
+      id: "n1",
+      userId: "a",
+      content: "a note",
+      isAnonymous: false,
+      updatedAt: minutesAgo(10),
+    });
+
+    const result = await retryUnclassifiedContent(db, env);
+
+    expect(result).toEqual({ attempted: 2, classified: 0, backlog: 2 });
   });
 });

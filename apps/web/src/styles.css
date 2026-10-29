@@ -272,6 +272,24 @@
   ::view-transition-new(*) {
     animation: none;
   }
+  /* Entrance and attention animations. Their end state is the element's
+     normal style, so dropping the animation leaves content visible. */
+  .animate-rise,
+  .animate-reveal-pop,
+  .animate-heart-pop,
+  .animate-ping,
+  .animate-pulse {
+    animation: none;
+  }
+  /* Entrance and attention animations. Their end state is the element's
+     normal style, so dropping the animation leaves content visible. */
+  .animate-rise,
+  .animate-reveal-pop,
+  .animate-heart-pop,
+  .animate-ping,
+  .animate-pulse {
+    animation: none;
+  }
 }
 
 /* Uma (components/uma.tsx). The body stays light in dark mode so the

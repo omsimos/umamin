@@ -19,6 +19,7 @@ import { notificationTable } from "@umamin/db/schema/notification";
 import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
+import { IMAGE_AURA_REQUIRED_ERROR } from "../src/lib/post-images";
 import {
   getCurrentNoteData,
   getMessagesPage,
@@ -37,6 +38,16 @@ import {
 } from "../src/server-lib/moderation-review";
 import { ANON, authed, buildApp, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
+
+// createR2 returns a client for well-formed credentials (it presigns locally,
+// no network), which the image gate needs before it checks the author's aura.
+const R2_ENV = {
+  R2_ACCOUNT_ID: "a".repeat(32),
+  R2_ACCESS_KEY_ID: "b".repeat(32),
+  R2_SECRET_ACCESS_KEY: "c".repeat(64),
+  R2_BUCKET: "umamin",
+  R2_PUBLIC_URL: "https://cdn.example.com",
+};
 
 const SEVERE = { modSevere: 95, modDrama: 99, modReason: "harassment" };
 const DRAMA = { modSevere: 40, modDrama: 98, modReason: "indirect" };
@@ -333,8 +344,42 @@ describe("content moderation (real libSQL)", () => {
           context: "my exam results",
           thread: ["si @x nangopya", "true yan", "kawawa naman"],
         },
-        expect.anything(),
+        expect.objectContaining({ limitKey: "author" }),
       );
+    });
+
+    // One account's posts, comments and notes share a classifier budget, which
+    // only works if every kind is keyed by the same user id.
+    it("budgets a post's and a note's classifier calls per author", async () => {
+      classifyContent.mockResolvedValue({ severe: 1, drama: 1, reason: null });
+      const app = buildApp(db, authed("author"));
+      await callJson(app, "createPostAction", { content: "hello world" });
+      await callJson(app, "createNoteAction", {
+        content: "a note",
+        isAnonymous: false,
+      });
+      expect(classifyContent).toHaveBeenCalledTimes(2);
+      for (const call of classifyContent.mock.calls) {
+        expect(call[2]).toEqual(
+          expect.objectContaining({ limitKey: "author" }),
+        );
+      }
+    });
+
+    it("doesn't classify a post its author may not attach images to", async () => {
+      classifyContent.mockResolvedValue({ severe: 1, drama: 1, reason: null });
+      const app = buildApp(db, authed("author", { points: 0 }));
+      const { json } = await callJson<{ error?: string }>(
+        app,
+        "createPostAction",
+        {
+          content: "look",
+          images: [{ key: "staging/author/a.webp", width: 10, height: 10 }],
+        },
+        R2_ENV,
+      );
+      expect(json.error).toBe(IMAGE_AURA_REQUIRED_ERROR);
+      expect(classifyContent).not.toHaveBeenCalled();
     });
 
     it("classifies a poll's options with its question but stores only the question", async () => {
@@ -548,6 +593,45 @@ describe("content moderation (real libSQL)", () => {
         ).json,
       ).toEqual({ error: "A moderator already reviewed this." });
       expect(await queueIds()).toEqual(["anon-note"]);
+    });
+
+    // updated_at is a note's position in the public /notes feed, and Drizzle's
+    // $onUpdate restamps it on any update that doesn't set it.
+    it("keeps a labelled note's feed position through every review action", async () => {
+      await db.insert(userTable).values({ id: "mod", username: "u_mod" });
+      const savedAt = new Date(
+        Math.floor((Date.now() - 60 * 60 * 1000) / 1000) * 1000,
+      );
+      await db.insert(noteTable).values({
+        id: "labelled",
+        userId: "author",
+        content: "mean words",
+        isAnonymous: false,
+        updatedAt: savedAt,
+        ...SEVERE,
+      });
+      const updatedAt = async () =>
+        (
+          await db
+            .select({ updatedAt: noteTable.updatedAt })
+            .from(noteTable)
+            .where(eq(noteTable.id, "labelled"))
+        )[0]?.updatedAt;
+      const act = async (action: string, user: string) => {
+        const { json } = await callJson<{ success?: boolean }>(
+          asUser(user),
+          action,
+          { kind: "note", id: "labelled" },
+          MOD_ENV,
+        );
+        expect(json.success).toBe(true);
+        expect(await updatedAt()).toEqual(savedAt);
+      };
+
+      await act("disputeContentLabelAction", "viewer");
+      await act("appealContentLabelAction", "author");
+      await act("keepContentFlagAction", "mod");
+      await act("clearContentFlagAction", "mod");
     });
 
     it("queues a folded post when its author asks for review, once", async () => {

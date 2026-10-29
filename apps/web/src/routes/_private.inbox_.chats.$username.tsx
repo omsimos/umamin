@@ -8,6 +8,9 @@ import { fetchDmPeer } from "@/lib/query-fetchers";
 import { pageSeo } from "@/lib/seo";
 import { DmConversationScreen, DmUnavailable } from "./-dm/conversation";
 
+// Follow state changes on the other person's device, so always revalidate.
+const dmPeerDefaults = { ...privateQueryDefaults, staleTime: 0 };
+
 export const Route = createFileRoute("/_private/inbox_/chats/$username")({
   loader: async ({ context, params }) => {
     const flags = await loadFeatureFlags(context.queryClient);
@@ -21,7 +24,8 @@ export const Route = createFileRoute("/_private/inbox_/chats/$username")({
           null,
           [401, 404],
         ),
-      ...privateQueryDefaults,
+      ...dmPeerDefaults,
+      revalidateIfStale: true,
     });
   },
   head: ({ params }) =>
@@ -39,7 +43,7 @@ function ChatPage() {
   const { data: peer } = useQuery({
     queryKey: queryKeys.dmPeer(username),
     queryFn: () => fetchDmPeer(username),
-    ...privateQueryDefaults,
+    ...dmPeerDefaults,
   });
 
   if (!peer) return <DmUnavailable username={username} reason="missing" />;

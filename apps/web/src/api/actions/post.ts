@@ -7,8 +7,9 @@ import {
   postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
-import { userBlockTable, userTable } from "@umamin/db/schema/user";
-import { and, eq, ne, or, sql } from "drizzle-orm";
+import { userTable } from "@umamin/db/schema/user";
+import { and, eq, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import * as z from "zod";
 import {
   canPostImages,
@@ -17,6 +18,7 @@ import {
   postImageInputSchema,
 } from "../../lib/post-images";
 import { action } from "../../server-lib/action";
+import { PREV_CHANGED } from "../../server-lib/batch";
 import { noBlockBetween } from "../../server-lib/blocks";
 import { hasPlusPerks } from "../../server-lib/content";
 import { classifyContent } from "../../server-lib/content-classifier";
@@ -29,8 +31,11 @@ import {
   reviewableScoreColumns,
 } from "../../server-lib/content-label";
 import { getPostById, withModeration } from "../../server-lib/data";
+import { isForeignKeyConstraintViolation } from "../../server-lib/errors";
 import { isModerationEnforced } from "../../server-lib/flags";
+import { extractClientIp } from "../../server-lib/ip";
 import { isModerator } from "../../server-lib/moderation";
+import { deleteDisputes } from "../../server-lib/moderation-review";
 import { notify } from "../../server-lib/notifications";
 import {
   AURA_POINTS,
@@ -57,12 +62,6 @@ import { ctxDb, defer } from "./_shared";
 // reads hit Turso directly (read-your-writes), public reads cache at route level.
 // Per-write hot-feed rank refresh is likewise a no-op now — the */5 cron
 // recomputes the ranking (≤5min lag accepted, plan feed-rank note).
-
-// Runs the statement only if the PREVIOUS statement of the same db.batch
-// changed a row: changes() reads the preceding statement's count on the shared
-// connection, which is how a batch replaces an interactive transaction's
-// JS-side branching. test/batch-changes.test.ts pins those semantics.
-const PREV_CHANGED = sql`(SELECT changes()) > 0`;
 
 const createPostSchema = z
   .object({
@@ -94,7 +93,15 @@ const createPostSchema = z
 
 // ── plain reads embedded in the action file (imperative queryFn callers) ─────
 export const getPostHandler = action(
-  { schema: z.object({ id: idSchema }), auth: "none" },
+  {
+    schema: z.object({ id: idSchema }),
+    auth: "none",
+    // Anonymous, uncached, Turso-backed: share the GET routes' per-IP budget.
+    rateLimit: {
+      name: "read",
+      key: ({ c }) => `read:${extractClientIp((n) => c.req.header(n))}`,
+    },
+  },
   async ({ id }, { session, c }) =>
     getPostById(ctxDb(c), {
       postId: id,
@@ -104,7 +111,15 @@ export const getPostHandler = action(
 );
 
 export const getPostPublicHandler = action(
-  { schema: z.object({ id: idSchema }), auth: "none" },
+  {
+    schema: z.object({ id: idSchema }),
+    auth: "none",
+    // Anonymous, uncached, Turso-backed: share the GET routes' per-IP budget.
+    rateLimit: {
+      name: "read",
+      key: ({ c }) => `read:${extractClientIp((n) => c.req.header(n))}`,
+    },
+  },
   async ({ id }, { c }) =>
     getPostById(ctxDb(c), {
       postId: id,
@@ -142,33 +157,23 @@ export const createPostHandler = action(
     let quotedContent: string | null = null;
     if (quotedPostId) {
       const [quoted] = await db
-        .select({ id: postTable.id, content: postTable.content })
+        .select({
+          id: postTable.id,
+          content: postTable.content,
+          // A quote across a block would land without an award, and deleting it
+          // would then subtract aura that was never granted.
+          blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+        })
         .from(postTable)
         .where(eq(postTable.id, quotedPostId))
         .limit(1);
-      if (!quoted) {
+      if (!quoted || quoted.blocked === 1) {
         return { error: "The post you're quoting is no longer available." };
       }
       quotedContent = quoted.content;
     }
 
-    // Runs alongside the image claim below; it never rejects (fails open to
-    // null), so an early return leaves nothing dangling.
-    const classifying = classifyContent(
-      c.env,
-      {
-        kind: "post",
-        text: postClassifierText(formattedContent, pollLabels),
-        context: quotedContent,
-      },
-      { defer: defer(c) },
-    );
-
     const r2 = createR2(c.env);
-    let claimedImages: Awaited<
-      ReturnType<NonNullable<typeof r2>["claimStagedImages"]>
-    > = null;
-
     if (images?.length) {
       if (!r2) {
         return { error: "Image uploads aren't available right now." };
@@ -176,6 +181,26 @@ export const createPostHandler = action(
       if (!canPostImages(user)) {
         return { error: IMAGE_AURA_REQUIRED_ERROR };
       }
+    }
+
+    // Started only once the write can no longer be refused for its images, so a
+    // rejected post never bills a call. Runs alongside the claim below; it never
+    // rejects (fails open to null), so an early return leaves nothing dangling.
+    const classifying = classifyContent(
+      c.env,
+      {
+        kind: "post",
+        text: postClassifierText(formattedContent, pollLabels),
+        context: quotedContent,
+      },
+      { defer: defer(c), limitKey: session.userId },
+    );
+
+    let claimedImages: Awaited<
+      ReturnType<NonNullable<typeof r2>["claimStagedImages"]>
+    > = null;
+
+    if (images?.length && r2) {
       claimedImages = await r2.claimStagedImages(session.userId, images);
       if (!claimedImages) {
         return { error: "Couldn't attach images. Please try again." };
@@ -293,6 +318,17 @@ export const deletePostHandler = action(
     const ownerId = post.authorId;
 
     await db.transaction(async (tx) => {
+      // Before the post goes: its comments cascade away and their ids are
+      // needed to find their disputes.
+      await deleteDisputes(
+        tx,
+        "comment",
+        tx
+          .select({ id: postCommentTable.id })
+          .from(postCommentTable)
+          .where(eq(postCommentTable.postId, postId)),
+      );
+      await deleteDisputes(tx, "post", postId);
       await tx.delete(postTable).where(eq(postTable.id, postId));
 
       if (post.quotedPostId) {
@@ -330,7 +366,7 @@ export const deletePostHandler = action(
 );
 
 const createCommentSchema = z.object({
-  postId: z.string(),
+  postId: idSchema,
   content: z
     .string()
     .trim()
@@ -345,6 +381,14 @@ export const createCommentHandler = action(
       name: "write",
       key: ({ session }) => `comment:${session.userId}`,
     },
+    // The classifier await sits between the existence read and the insert, so a
+    // delete in that window fails the insert's FK: a lost race, not a fault.
+    // The like and repost batches insert from a SELECT on the target row and
+    // cannot hit this.
+    onError: (err) =>
+      isForeignKeyConstraintViolation(err)
+        ? { error: "Post not found" }
+        : undefined,
   },
   async ({ content, postId }, { session, user, c }) => {
     const db = ctxDb(c);
@@ -383,55 +427,56 @@ export const createCommentHandler = action(
           context: target.content,
           thread,
         },
-        { defer: defer(c) },
+        { defer: defer(c), limitKey: session.userId },
       ),
       isModerationEnforced(c.env),
     ]);
 
-    await db.transaction(async (tx) => {
-      const [comment] = await tx
+    // One round trip instead of five (BEGIN+insert, bump, prior-comment read,
+    // award, COMMIT); see addLikeHandler. The award fires only for the actor's
+    // FIRST comment on the post, so it also gates on no other comment of theirs
+    // existing, which needs the new row's id up front. Nothing may sit between
+    // these statements.
+    const commentId = nanoid();
+    const award = auraAwardStatement(
+      db,
+      {
+        beneficiary: { userId: target.authorId },
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.comment,
+      },
+      sql`${PREV_CHANGED} AND NOT EXISTS (
+        SELECT 1 FROM ${postCommentTable}
+        WHERE ${postCommentTable.authorId} = ${session.userId}
+          AND ${postCommentTable.postId} = ${postId}
+          AND ${postCommentTable.id} <> ${commentId}
+      )`,
+    );
+    const statements = [
+      db
         .insert(postCommentTable)
         .values({
+          id: commentId,
           postId,
           content: formatted,
           authorId: session.userId,
           ...reviewableScoreColumns(scores),
         })
-        .returning();
-
-      createdComment = comment;
-
-      const [updated] = await tx
+        .returning(),
+      db
         .update(postTable)
         .set({ commentCount: sql`${postTable.commentCount} + 1` })
-        .where(eq(postTable.id, postId))
-        .returning({ authorId: postTable.authorId });
+        .where(and(eq(postTable.id, postId), PREV_CHANGED))
+        .returning({ authorId: postTable.authorId }),
+    ] as const;
 
-      postAuthorId = updated?.authorId;
+    const [[comment], [updated]] = award
+      ? await db.batch([...statements, award])
+      : await db.batch(statements);
 
-      if (updated?.authorId && comment) {
-        const prior = await tx
-          .select({ id: postCommentTable.id })
-          .from(postCommentTable)
-          .where(
-            and(
-              eq(postCommentTable.authorId, session.userId),
-              eq(postCommentTable.postId, postId),
-              ne(postCommentTable.id, comment.id),
-            ),
-          )
-          .limit(1);
-
-        if (prior.length === 0) {
-          await awardAura(tx, {
-            beneficiaryId: updated.authorId,
-            actorId: session.userId,
-            actorCreatedAt: user?.createdAt,
-            delta: AURA_POINTS.comment,
-          });
-        }
-      }
-    });
+    createdComment = comment;
+    postAuthorId = updated?.authorId;
 
     if (postAuthorId && createdComment) {
       await notify(
@@ -491,6 +536,8 @@ export const deleteCommentHandler = action(
         .returning({ id: postCommentTable.id });
 
       if (removed.length === 0) return;
+
+      await deleteDisputes(tx, "comment", commentId);
 
       const [updated] = await tx
         .update(postTable)
@@ -555,7 +602,25 @@ export const addLikeHandler = action(
     const statements = [
       db
         .insert(postLikeTable)
-        .values({ postId, userId: session.userId })
+        .select(
+          db
+            .select({
+              id: sql<string>`${nanoid()}`.as("id"),
+              postId: postTable.id,
+              userId: sql<string>`${session.userId}`.as("user_id"),
+              // drizzle requires every table column, in table order.
+              createdAt: sql<Date>`unixepoch()`.as("created_at"),
+            })
+            .from(postTable)
+            .where(
+              and(
+                eq(postTable.id, postId),
+                // A like across a block would land without an award, and its
+                // unlike would then subtract aura that was never granted.
+                noBlockBetween(postTable.authorId, session.userId),
+              ),
+            ),
+        )
         .onConflictDoNothing()
         .returning({ id: postLikeTable.id }),
       db
@@ -570,39 +635,37 @@ export const addLikeHandler = action(
 
     // Rides in the same batch, so the like costs no extra round trip. It must
     // be the LAST statement: PREV_CHANGED reads changes() from the statement
-    // directly before it, so nothing may separate insert → bump → award.
-    const blockProbe = db
-      .select({ id: userBlockTable.id })
-      .from(userBlockTable)
-      .innerJoin(postTable, eq(postTable.id, postId))
-      .where(
-        or(
-          and(
-            eq(userBlockTable.blockerId, postTable.authorId),
-            eq(userBlockTable.blockedId, session.userId),
-          ),
-          and(
-            eq(userBlockTable.blockerId, session.userId),
-            eq(userBlockTable.blockedId, postTable.authorId),
-          ),
-        ),
-      )
+    // directly before it, so nothing may separate insert → bump → award. It
+    // tells a missing or blocked post apart from an already-liked one, since
+    // the vetoed insert returns no row in all three cases.
+    const targetProbe = db
+      .select({
+        blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+      })
+      .from(postTable)
+      .where(eq(postTable.id, postId))
       .limit(1);
 
     const results = award
-      ? await db.batch([...statements, award, blockProbe])
-      : await db.batch([...statements, blockProbe]);
+      ? await db.batch([...statements, award, targetProbe])
+      : await db.batch([...statements, targetProbe]);
 
     const [inserted, bumped] = results;
-    const blockedRows = results[results.length - 1];
+    // The award statement is optional, so the tuple's last slot is a union;
+    // the probe is always last.
+    const [target] = results[results.length - 1] as { blocked: number }[];
 
+    if (!target || target.blocked === 1) {
+      // Same outcome as a bad id, like comments.
+      return { error: "Post not found" };
+    }
     if (inserted.length === 0) {
       return { success: true, alreadyLiked: true } as const;
     }
 
     const likedPost = bumped[0];
 
-    if (likedPost && blockedRows.length === 0) {
+    if (likedPost) {
       await notify(
         { db, env: c.env, defer: defer(c) },
         {
@@ -651,53 +714,60 @@ export const votePollHandler = action(
 
     const postId = target.postId;
 
-    const result = await db.transaction(async (tx) => {
-      const inserted = await tx
-        .insert(pollVoteTable)
-        .values({ postId, optionId, userId: session.userId })
-        .onConflictDoNothing()
-        .returning({ id: pollVoteTable.id });
-
-      if (inserted.length === 0) {
-        const [existing] = await tx
-          .select({ optionId: pollVoteTable.optionId })
-          .from(pollVoteTable)
-          .where(
-            and(
-              eq(pollVoteTable.postId, postId),
-              eq(pollVoteTable.userId, session.userId),
-            ),
-          )
-          .limit(1);
-
-        return {
-          success: true,
-          alreadyVoted: true,
-          votedOptionId: existing?.optionId,
-        } as const;
-      }
-
-      await tx
-        .update(pollOptionTable)
-        .set({ voteCount: sql`${pollOptionTable.voteCount} + 1` })
-        .where(eq(pollOptionTable.id, optionId));
-
-      await tx
-        .update(postTable)
-        .set({ pollVoteCount: sql`${postTable.pollVoteCount} + 1` })
-        .where(eq(postTable.id, postId));
-
-      await awardAura(tx, {
-        beneficiaryId: target.authorId,
+    // One round trip instead of five (BEGIN+insert, two bumps, award, COMMIT);
+    // see addLikeHandler. Nothing may sit between these statements.
+    const award = auraAwardStatement(
+      db,
+      {
+        beneficiary: { userId: target.authorId },
         actorId: session.userId,
         actorCreatedAt: user?.createdAt,
         delta: AURA_POINTS.pollVote,
-      });
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
+        .insert(pollVoteTable)
+        .values({ postId, optionId, userId: session.userId })
+        .onConflictDoNothing()
+        .returning({ id: pollVoteTable.id }),
+      db
+        .update(pollOptionTable)
+        .set({ voteCount: sql`${pollOptionTable.voteCount} + 1` })
+        .where(and(eq(pollOptionTable.id, optionId), PREV_CHANGED)),
+      db
+        .update(postTable)
+        .set({ pollVoteCount: sql`${postTable.pollVoteCount} + 1` })
+        .where(and(eq(postTable.id, postId), PREV_CHANGED)),
+    ] as const;
 
-      return { success: true, votedOptionId: optionId } as const;
-    });
+    const [inserted] = award
+      ? await db.batch([...statements, award])
+      : await db.batch(statements);
 
-    if (!("alreadyVoted" in result) && target.blocked === 0) {
+    if (inserted.length === 0) {
+      // Only on this path: the vote that already exists. The happy path costs
+      // nothing extra.
+      const [existing] = await db
+        .select({ optionId: pollVoteTable.optionId })
+        .from(pollVoteTable)
+        .where(
+          and(
+            eq(pollVoteTable.postId, postId),
+            eq(pollVoteTable.userId, session.userId),
+          ),
+        )
+        .limit(1);
+
+      return {
+        success: true,
+        alreadyVoted: true,
+        votedOptionId: existing?.optionId,
+      } as const;
+    }
+
+    if (target.blocked === 0) {
       await notify(
         { db, env: c.env, defer: defer(c) },
         {
@@ -711,7 +781,7 @@ export const votePollHandler = action(
       );
     }
 
-    return result;
+    return { success: true, votedOptionId: optionId } as const;
   },
 );
 
@@ -777,34 +847,74 @@ export const addCommentLikeHandler = action(
   },
   async ({ commentId }, { session, user, c }) => {
     const db = ctxDb(c);
-    return db.transaction(async (tx) => {
-      const inserted = await tx
+
+    // One round trip instead of four (BEGIN+insert, bump, award, COMMIT):
+    // each statement gates on PREV_CHANGED, so the count bump lands only when
+    // the like row was really inserted and the award only when the bump landed.
+    // The block refusal stays inside the insert, so a vetoed insert reports
+    // changes() = 0 and the bump and award skip. Nothing may sit between these
+    // statements.
+    const award = auraAwardStatement(
+      db,
+      {
+        beneficiary: { commentId },
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.commentLike,
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
         .insert(postCommentLikeTable)
-        .values({ commentId, userId: session.userId })
+        .select(
+          db
+            .select({
+              id: sql<string>`${nanoid()}`.as("id"),
+              commentId: postCommentTable.id,
+              userId: sql<string>`${session.userId}`.as("user_id"),
+              // drizzle requires every table column, in table order.
+              createdAt: sql<Date>`unixepoch()`.as("created_at"),
+            })
+            .from(postCommentTable)
+            .where(
+              and(
+                eq(postCommentTable.id, commentId),
+                // A like across a block would land without an award, and its
+                // unlike would then subtract aura that was never granted.
+                noBlockBetween(postCommentTable.authorId, session.userId),
+              ),
+            ),
+        )
         .onConflictDoNothing()
-        .returning({ id: postCommentLikeTable.id });
-
-      if (inserted.length === 0) {
-        return { success: true, alreadyLiked: true };
-      }
-
-      const [updated] = await tx
+        .returning({ id: postCommentLikeTable.id }),
+      db
         .update(postCommentTable)
         .set({ likeCount: sql`${postCommentTable.likeCount} + 1` })
+        .where(and(eq(postCommentTable.id, commentId), PREV_CHANGED)),
+    ] as const;
+
+    const [inserted] = award
+      ? await db.batch([...statements, award])
+      : await db.batch(statements);
+
+    if (inserted.length === 0) {
+      // Only on this path: tell a missing or blocked comment apart from a
+      // repeat like, so the happy path costs nothing extra.
+      const [target] = await db
+        .select({
+          blocked: sql<number>`CASE WHEN ${noBlockBetween(postCommentTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+        })
+        .from(postCommentTable)
         .where(eq(postCommentTable.id, commentId))
-        .returning({ authorId: postCommentTable.authorId });
-
-      if (updated) {
-        await awardAura(tx, {
-          beneficiaryId: updated.authorId,
-          actorId: session.userId,
-          actorCreatedAt: user?.createdAt,
-          delta: AURA_POINTS.commentLike,
-        });
+        .limit(1);
+      if (!target || target.blocked === 1) {
+        return { error: "Comment not found" };
       }
+      return { success: true, alreadyLiked: true };
+    }
 
-      return { success: true };
-    });
+    return { success: true };
   },
 );
 
@@ -818,8 +928,19 @@ export const removeCommentLikeHandler = action(
   },
   async ({ commentId }, { session, user, c }) => {
     const db = ctxDb(c);
-    return db.transaction(async (tx) => {
-      const removed = await tx
+
+    const reverse = auraReverseStatement(
+      db,
+      {
+        beneficiary: { commentId },
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.commentLike,
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
         .delete(postCommentLikeTable)
         .where(
           and(
@@ -827,37 +948,30 @@ export const removeCommentLikeHandler = action(
             eq(postCommentLikeTable.userId, session.userId),
           ),
         )
-        .returning({ id: postCommentLikeTable.id });
-
-      if (removed.length === 0) {
-        return { success: true, alreadyRemoved: true };
-      }
-
-      const [updated] = await tx
+        .returning({ id: postCommentLikeTable.id }),
+      db
         .update(postCommentTable)
         .set({
           likeCount: sql`CASE WHEN ${postCommentTable.likeCount} > 0 THEN ${postCommentTable.likeCount} - 1 ELSE 0 END`,
         })
-        .where(eq(postCommentTable.id, commentId))
-        .returning({ authorId: postCommentTable.authorId });
+        .where(and(eq(postCommentTable.id, commentId), PREV_CHANGED)),
+    ] as const;
 
-      if (updated) {
-        await reverseAura(tx, {
-          beneficiaryId: updated.authorId,
-          actorId: session.userId,
-          actorCreatedAt: user?.createdAt,
-          delta: AURA_POINTS.commentLike,
-        });
-      }
+    const [removed] = reverse
+      ? await db.batch([...statements, reverse])
+      : await db.batch(statements);
 
-      return { success: true };
-    });
+    if (removed.length === 0) {
+      return { success: true, alreadyRemoved: true };
+    }
+
+    return { success: true };
   },
 );
 
 export const addRepostHandler = action(
   {
-    schema: z.object({ postId: z.string() }),
+    schema: z.object({ postId: idSchema }),
     rateLimit: {
       name: "write",
       key: ({ session }) => `repost:${session.userId}`,
@@ -865,34 +979,71 @@ export const addRepostHandler = action(
   },
   async ({ postId }, { session, user, c }) => {
     const db = ctxDb(c);
-    return db.transaction(async (tx) => {
-      const [repost] = await tx
+
+    // Same single-round-trip shape as addLikeHandler; see the comment there.
+    const award = auraAwardStatement(
+      db,
+      {
+        beneficiary: { postId },
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.repost,
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
         .insert(postRepostTable)
-        .values({ postId, userId: session.userId })
+        .select(
+          db
+            .select({
+              id: sql<string>`${nanoid()}`.as("id"),
+              postId: postTable.id,
+              userId: sql<string>`${session.userId}`.as("user_id"),
+              // drizzle requires every table column, in table order.
+              createdAt: sql<Date>`unixepoch()`.as("created_at"),
+              updatedAt: sql<Date>`unixepoch()`.as("updated_at"),
+            })
+            .from(postTable)
+            .where(
+              and(
+                eq(postTable.id, postId),
+                // A repost across a block would land without an award, and
+                // undoing it would then subtract aura that was never granted.
+                noBlockBetween(postTable.authorId, session.userId),
+              ),
+            ),
+        )
         .onConflictDoNothing()
-        .returning();
-
-      if (!repost) {
-        return { success: true, alreadyReposted: true };
-      }
-
-      const [updated] = await tx
+        .returning(),
+      db
         .update(postTable)
         .set({ repostCount: sql`${postTable.repostCount} + 1` })
+        .where(and(eq(postTable.id, postId), PREV_CHANGED)),
+    ] as const;
+
+    const [inserted] = award
+      ? await db.batch([...statements, award])
+      : await db.batch(statements);
+    const [repost] = inserted;
+
+    if (!repost) {
+      // Only on this path: tell a missing or blocked post apart from a
+      // repeat repost, so the happy path costs nothing extra.
+      const [target] = await db
+        .select({
+          blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+        })
+        .from(postTable)
         .where(eq(postTable.id, postId))
-        .returning({ authorId: postTable.authorId });
-
-      if (updated) {
-        await awardAura(tx, {
-          beneficiaryId: updated.authorId,
-          actorId: session.userId,
-          actorCreatedAt: user?.createdAt,
-          delta: AURA_POINTS.repost,
-        });
+        .limit(1);
+      if (!target || target.blocked === 1) {
+        return { error: "Post not found" };
       }
+      return { success: true, alreadyReposted: true };
+    }
 
-      return { success: true, repost };
-    });
+    return { success: true, repost };
   },
 );
 
@@ -906,8 +1057,19 @@ export const removeRepostHandler = action(
   },
   async ({ postId }, { session, user, c }) => {
     const db = ctxDb(c);
-    return db.transaction(async (tx) => {
-      const removed = await tx
+
+    const reverse = auraReverseStatement(
+      db,
+      {
+        beneficiary: { postId },
+        actorId: session.userId,
+        actorCreatedAt: user?.createdAt,
+        delta: AURA_POINTS.repost,
+      },
+      PREV_CHANGED,
+    );
+    const statements = [
+      db
         .delete(postRepostTable)
         .where(
           and(
@@ -915,31 +1077,24 @@ export const removeRepostHandler = action(
             eq(postRepostTable.userId, session.userId),
           ),
         )
-        .returning({ id: postRepostTable.id });
-
-      if (removed.length === 0) {
-        return { success: true, alreadyRemoved: true };
-      }
-
-      const [updated] = await tx
+        .returning({ id: postRepostTable.id }),
+      db
         .update(postTable)
         .set({
           repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
         })
-        .where(eq(postTable.id, postId))
-        .returning({ authorId: postTable.authorId });
+        .where(and(eq(postTable.id, postId), PREV_CHANGED)),
+    ] as const;
 
-      if (updated) {
-        await reverseAura(tx, {
-          beneficiaryId: updated.authorId,
-          actorId: session.userId,
-          actorCreatedAt: user?.createdAt,
-          delta: AURA_POINTS.repost,
-        });
-      }
+    const [removed] = reverse
+      ? await db.batch([...statements, reverse])
+      : await db.batch(statements);
 
-      return { success: true };
-    });
+    if (removed.length === 0) {
+      return { success: true, alreadyRemoved: true };
+    }
+
+    return { success: true };
   },
 );
 

@@ -211,6 +211,13 @@
       "when": 1793077622588,
       "tag": "0029_quiet_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1793213507246,
+      "tag": "0030_young_blindfold",
+      "breakpoints": true
     }
   ]
 }

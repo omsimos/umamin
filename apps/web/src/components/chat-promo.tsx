@@ -24,7 +24,7 @@ import { UmaminChatLink } from "./umamin-chat-link";
 const SEEN_KEY = "umamin:chat-promo-seen";
 
 const DESCRIPTION =
-  "Get matched with a stranger who shares your interests for an anonymous, one-on-one chat. No sign-up, no history — nothing is saved.";
+  "Get matched with a stranger who shares your interests for an anonymous, one-on-one chat. No sign-up, no history. Nothing is saved.";
 
 export function ChatPromo() {
   const isDesktop = useMediaQuery("(min-width: 768px)");

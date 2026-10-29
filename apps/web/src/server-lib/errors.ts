@@ -33,7 +33,7 @@ export function accountSuspendedMessage(reason?: string | null): string {
 export const DELETE_CONFIRMATION_ERROR =
   'Type "delete my account" exactly to confirm.';
 export const ACCOUNT_DELETE_FAILED_ERROR =
-  "We couldn't delete your account. Nothing was removed — please try again.";
+  "We couldn't delete your account. Nothing was removed. Please try again.";
 
 // Also returned for a name reserved by the moderator roster, so a reserved name
 // is indistinguishable from a taken one (the roster must not be probeable).
@@ -44,11 +44,15 @@ export const USERNAME_TAKEN_ERROR = "Username already exists";
 function constraintCause(
   err: unknown,
 ): { code?: string; message?: string } | null {
-  if (
-    !(err instanceof Error) ||
-    typeof err.cause !== "object" ||
-    err.cause === null
-  ) {
+  if (!(err instanceof Error)) return null;
+
+  // `db.batch` rethrows the driver's own LibsqlBatchError without a drizzle
+  // wrapper: the constraint class and message are on the error itself, and its
+  // cause is the raw sqlite error with an extended code.
+  const own = err as { code?: string; message?: string };
+  if (own.code === "SQLITE_CONSTRAINT") return own;
+
+  if (typeof err.cause !== "object" || err.cause === null) {
     return null;
   }
 

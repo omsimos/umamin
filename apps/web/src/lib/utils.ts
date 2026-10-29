@@ -93,17 +93,7 @@ export function shortTimeUntil(date: Date | string) {
   return distance;
 }
 
-export function formatUsername(username: string) {
-  const formattedUsername = username.startsWith("%40")
-    ? username.split("%40").at(1)
-    : username;
-
-  return formattedUsername ?? "";
-}
-
-export function formatContent(content: string) {
-  return content.replace(/(\r\n|\n|\r){2,}/g, "\n\n").trim();
-}
+export { formatContent, formatUsername } from "./format";
 
 // iPadOS 13+ masquerades as desktop Safari ("Macintosh") — the touch-points
 // probe is what tells an iPad apart from an actual Mac.

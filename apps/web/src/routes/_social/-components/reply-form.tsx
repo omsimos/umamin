@@ -160,7 +160,7 @@ export default function ReplyForm({ user, postId }: Props) {
         }}
         maxLength={500}
         placeholder="Leave a reply..."
-        className="focus-visible:ring-transparent text-sm resize-none min-h-10 max-h-20 bg-muted/50 caret-pink-300"
+        className="focus-visible:ring-transparent resize-none min-h-10 max-h-20 bg-muted/50 caret-pink-300"
         autoComplete="off"
       />
       <Button

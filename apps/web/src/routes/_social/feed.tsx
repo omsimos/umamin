@@ -73,7 +73,7 @@ export const Route = createFileRoute("/_social/feed")({
     pageSeo({
       title: "Umamin — Feed",
       description:
-        "The Umamin feed — anonymous posts, notes, and conversations from the community.",
+        "The Umamin feed: anonymous posts, notes, and conversations from the community.",
       path: "/feed",
     }),
   pendingComponent: FeedPending,

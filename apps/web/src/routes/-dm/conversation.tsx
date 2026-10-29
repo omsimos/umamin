@@ -1,3 +1,4 @@
+import { useCanGoBack, useRouter } from "@tanstack/react-router";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +25,7 @@ import {
   MessageSquareXIcon,
   Trash2Icon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { blockUserAction, hideDmThreadAction } from "@/lib/actions";
@@ -48,6 +49,7 @@ const ERROR_TOASTS: Partial<Record<DmErrorCode | "offline", string>> = {
   rate_limited: "You're sending too fast. Wait a moment and try again.",
   closed: "You can't send messages in this chat right now.",
   offline: "Reconnecting. Try that again in a moment.",
+  unavailable: "Something went wrong on our side. Try again in a moment.",
 };
 
 function toastFor(code: DmErrorCode | "offline") {
@@ -63,12 +65,20 @@ function PeerAvatar({ peer, className }: { peer: Peer; className?: string }) {
   );
 }
 
-function BackToChats() {
+export function BackToChats() {
   const navigate = useAppNavigate();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
   return (
+    // Going back (not pushing the list again) keeps system back from
+    // reopening this conversation.
     <SessionBackButton
       label="Back to chats"
-      onClick={() => navigate("/inbox?tab=chats")}
+      onClick={() =>
+        canGoBack
+          ? router.history.back()
+          : navigate("/inbox?tab=chats", { replace: true })
+      }
     />
   );
 }
@@ -79,12 +89,13 @@ export function DmUnavailable({
   reason,
 }: {
   username: string;
-  reason: "missing" | "not-mutual" | "closed";
+  reason: "missing" | "not-mutual" | "closed" | "busy";
 }) {
   const copy = {
     missing: "This chat isn't available.",
     "not-mutual": `You can message @${username} once you follow each other.`,
     closed: "This chat is no longer available.",
+    busy: "This chat is open in too many tabs. Close one and try again.",
   }[reason];
   return (
     <SessionFrame
@@ -123,9 +134,23 @@ export function DmConversationScreen({
   const [reporting, setReporting] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"delete" | "block" | null>(null);
   const peerName = peer.displayName ?? peer.username;
+  // A stable object: the composer pulls focus whenever this identity changes.
+  const composerReply = useMemo(
+    () =>
+      replyTarget && replyTarget.text !== null
+        ? {
+            authorLabel: replyTarget.mine ? "yourself" : peerName,
+            text: replyTarget.text,
+          }
+        : null,
+    [replyTarget, peerName],
+  );
 
   useEffect(() => onLeave, [onLeave]);
 
+  if (state.status === "busy") {
+    return <DmUnavailable username={peer.username} reason="busy" />;
+  }
   if (state.status === "unavailable") {
     return <DmUnavailable username={peer.username} reason="closed" />;
   }
@@ -274,14 +299,7 @@ export function DmConversationScreen({
             setReplyTarget(null);
           }}
           onTyping={convo.setTyping}
-          replyTo={
-            replyPreview
-              ? {
-                  authorLabel: replyPreview.mine ? "yourself" : peerName,
-                  text: replyPreview.text ?? "",
-                }
-              : null
-          }
+          replyTo={composerReply}
           onCancelReply={() => setReplyTarget(null)}
         />
       ) : (

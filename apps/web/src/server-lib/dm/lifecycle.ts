@@ -56,6 +56,28 @@ export async function severAllDms(
   await Promise.allSettled(rows.map((r) => roomStub(env, r.id).sever("block")));
 }
 
+/** Password change: every session is gone, but open sockets aren't sessions.
+ *  Closing them reconnectably makes each pass the route's session check
+ *  again. */
+export async function revokeDmSockets(
+  db: Db,
+  env: AppEnv,
+  userId: string,
+): Promise<void> {
+  if (!env.DM_ROOM) return;
+  const rows = await db
+    .select({ id: dmThreadTable.id })
+    .from(dmThreadTable)
+    .where(
+      or(
+        eq(dmThreadTable.userLowId, userId),
+        eq(dmThreadTable.userHighId, userId),
+      ),
+    )
+    .limit(BAN_SEVER_LIMIT);
+  await Promise.allSettled(rows.map((r) => roomStub(env, r.id).revoke(userId)));
+}
+
 /** Cron: wipes the rooms queued by account deletion. A room that fails stays
  *  queued for the next run. */
 export async function drainDmPurge(env: AppEnv): Promise<number> {
