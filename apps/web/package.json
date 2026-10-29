@@ -21,8 +21,7 @@
     "clean": "rm -rf dist .turbo .wrangler node_modules"
   },
   "dependencies": {
-    "@dicebear/collection": "^9.4.2",
-    "@dicebear/core": "^9.4.3",
+    "@blobatar/react": "^2.7.0",
     "@fontsource-variable/archivo": "^5.3.0",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",

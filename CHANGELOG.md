@@ -30,6 +30,7 @@ any that are empty.
 - Liking, voting or following the same person again within a few minutes no longer sends them another notification, and a notification counts people instead of repeat actions.
 - Back now leaves a live Umamin Chat or a chat conversation instead of bouncing you into it again.
 - Chat conversations open full screen, without the app's navigation behind them.
+- Umamin Chat avatars are now the same blob creatures you see across Umamin. Your match's avatar shows a dot for online, away or left, and looks thoughtful while they type.
 
 ### Fixed
 
