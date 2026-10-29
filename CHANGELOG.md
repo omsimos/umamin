@@ -18,6 +18,13 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.18.0] - 2026-10-30
+
+### Changed
+
+- Umamin Chat avatars are now the same blob creatures you see across Umamin. Your match's avatar shows a dot for online, away or left, and looks thoughtful while they type.
+- In Chats, the list shows how many unread messages each conversation has, and a conversation shows a dot on the other person's picture while they're online.
+
 ## [7.17.0] - 2026-10-29
 
 ### Added
@@ -1219,6 +1226,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.18.0]: https://github.com/omsimos/umamin/compare/v7.17.0...v7.18.0
 [7.17.0]: https://github.com/omsimos/umamin/compare/v7.16.0...v7.17.0
 [7.16.0]: https://github.com/omsimos/umamin/compare/v7.15.0...v7.16.0
 [7.15.0]: https://github.com/omsimos/umamin/compare/v7.14.0...v7.15.0

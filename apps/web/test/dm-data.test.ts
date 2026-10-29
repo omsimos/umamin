@@ -221,19 +221,28 @@ describe("Chats list and unread count", () => {
     await users(db, "me", "amy", "bob", "cat", "dan");
   });
 
-  it("lists newest first with decrypted previews and unread flags", async () => {
-    await thread(db, "me", "amy", { sender: "amy", at: 2_000, preview: "hey" });
+  it("lists newest first with decrypted previews and unread counts", async () => {
+    // Amy sent seqs 3 to 5 after I read seq 2; my reply to Bob is the last
+    // message there, so it reads as nothing new however far I'd read.
+    await thread(db, "me", "amy", {
+      sender: "amy",
+      at: 2_000,
+      preview: "hey",
+      lastSeq: 5,
+      readBy: { me: 2 },
+    });
     await thread(db, "me", "bob", {
       sender: "me",
       at: 3_000,
       preview: "sup",
+      lastSeq: 4,
     });
     const page = await getDmThreadsPage(db, "me", null);
     expect(
       page.data.map((t) => [t.peer.username, t.preview, t.unread]),
     ).toEqual([
-      ["u_bob", "sup", false],
-      ["u_amy", "hey", true],
+      ["u_bob", "sup", 0],
+      ["u_amy", "hey", 3],
     ]);
     expect(page.data[0]?.lastFromMe).toBe(true);
   });

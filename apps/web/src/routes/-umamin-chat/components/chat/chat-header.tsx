@@ -26,7 +26,7 @@ import {
 import { useState } from "react";
 import { interestById } from "@/lib/chat/content";
 import type { GameStreak, Partner } from "@/lib/chat/types";
-import { SeedAvatar } from "../seed-avatar";
+import { PresenceAvatar } from "../presence-avatar";
 import { SessionBackButton, SessionHeader } from "../shell/session-frame";
 
 const STATUS_LABEL = {
@@ -34,13 +34,6 @@ const STATUS_LABEL = {
   typing: "typing…",
   away: "away",
   left: "left",
-} as const;
-
-const STATUS_DOT = {
-  online: "bg-emerald-500",
-  typing: "bg-emerald-500",
-  away: "bg-amber-500",
-  left: "bg-muted-foreground",
 } as const;
 
 export function ChatHeader({
@@ -76,9 +69,10 @@ export function ChatHeader({
       <SessionBackButton label="End chat" onClick={() => setConfirmEnd(true)} />
 
       <div className="flex min-w-0 flex-1 items-center gap-2.5 px-1 py-0.5">
-        <SeedAvatar
+        <PresenceAvatar
           seed={partner.avatarSeed}
           alias={partner.alias}
+          status={status}
           className="size-8"
         />
         <span className="min-w-0">
@@ -86,13 +80,6 @@ export function ChatHeader({
             {partner.alias}
           </span>
           <span className="text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs">
-            <span
-              aria-hidden
-              className={cn(
-                "size-1.5 shrink-0 rounded-full transition-colors",
-                STATUS_DOT[status],
-              )}
-            />
             <span className="shrink-0">{STATUS_LABEL[status]}</span>
             {shared && (
               <span className="truncate">

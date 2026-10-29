@@ -9,6 +9,7 @@ import {
   useMessageScroller,
 } from "@umamin/ui/components/message-scroller";
 import { cn } from "@umamin/ui/lib/utils";
+import { thinking } from "blobatar/expression";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { ChatMessage, PartnerStatus } from "@/lib/chat/types";
 import { SeedAvatar } from "../seed-avatar";
@@ -180,6 +181,7 @@ function Thread({
               <SeedAvatar
                 seed={partner.avatarSeed}
                 alias={partner.alias}
+                expression={thinking}
                 className="size-8"
               />
             </MessageAvatar>

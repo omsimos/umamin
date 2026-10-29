@@ -45,7 +45,9 @@ export interface DmThreadItem {
   preview: string | null;
   lastFromMe: boolean;
   lastMessageAt: number;
-  unread: boolean;
+  /** Messages from the peer since the viewer last read (unsent ones too);
+   *  0 when read. */
+  unread: number;
 }
 
 export interface DmThreadsResponse {
