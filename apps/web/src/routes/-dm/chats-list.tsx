@@ -24,6 +24,7 @@ import { useInfiniteScroll } from "../-shared/use-infinite-scroll";
 
 function ThreadRow({ thread }: { thread: DmThreadItem }) {
   const name = thread.peer.displayName ?? thread.peer.username;
+  const unread = thread.unread;
   const preview =
     thread.preview === null
       ? "Message unsent"
@@ -33,16 +34,26 @@ function ThreadRow({ thread }: { thread: DmThreadItem }) {
       href={`/inbox/chats/${thread.peer.username}`}
       className="hover:bg-muted/60 focus-visible:ring-ring/50 flex items-center gap-3 rounded-xl px-2 py-2.5 outline-none focus-visible:ring-[3px]"
     >
-      <Avatar className="size-12">
-        <AvatarImage src={thread.peer.imageUrl ?? ""} alt="" />
-        <BlobatarFallback seed={thread.peer.id} />
-      </Avatar>
+      <span className="relative shrink-0">
+        <Avatar className="size-12">
+          <AvatarImage src={thread.peer.imageUrl ?? ""} alt="" />
+          <BlobatarFallback seed={thread.peer.id} />
+        </Avatar>
+        {unread > 0 && (
+          <span
+            aria-hidden
+            className="bg-primary text-primary-foreground ring-background absolute -right-1 -bottom-1 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[0.65rem] leading-none font-semibold tabular-nums ring-2"
+          >
+            {unread > 99 ? "99+" : unread}
+          </span>
+        )}
+      </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline gap-2">
           <span
             className={cn(
               "truncate text-sm",
-              thread.unread ? "font-bold" : "font-semibold",
+              unread > 0 ? "font-bold" : "font-semibold",
             )}
           >
             {name}
@@ -55,7 +66,7 @@ function ThreadRow({ thread }: { thread: DmThreadItem }) {
         <span
           className={cn(
             "block truncate text-sm",
-            thread.unread
+            unread > 0
               ? "text-foreground font-medium"
               : "text-muted-foreground",
           )}
@@ -63,13 +74,7 @@ function ThreadRow({ thread }: { thread: DmThreadItem }) {
           {preview}
         </span>
       </span>
-      {thread.unread && (
-        <span
-          role="img"
-          aria-label="Unread"
-          className="bg-primary size-2.5 shrink-0 rounded-full"
-        />
-      )}
+      {unread > 0 && <span className="sr-only">, {unread} unread</span>}
     </Link>
   );
 }

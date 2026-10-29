@@ -33,7 +33,7 @@ function thread(over: Partial<DmThreadItem>): DmThreadItem {
     preview: "hi",
     lastFromMe: false,
     lastMessageAt: Date.now() - 60_000,
-    unread: false,
+    unread: 0,
     ...over,
   };
 }
@@ -67,7 +67,7 @@ describe("ChatsList", () => {
             imageUrl: null,
           },
           preview: null,
-          unread: true,
+          unread: 128,
         }),
       ],
       nextCursor: null,
@@ -78,14 +78,14 @@ describe("ChatsList", () => {
     const own = await screen.findByRole("link", { name: /bob/ });
     expect(own).toHaveAttribute("href", "/inbox/chats/bob");
     expect(within(own).getByText("You: see you")).toBeInTheDocument();
-    expect(within(own).queryByRole("img", { name: "Unread" })).toBeNull();
+    expect(within(own).queryByText(/unread/)).toBeNull();
 
     const unsent = screen.getByRole("link", { name: /Cara/ });
     expect(unsent).toHaveAttribute("href", "/inbox/chats/cara");
     expect(within(unsent).getByText("Message unsent")).toBeInTheDocument();
-    expect(
-      within(unsent).getByRole("img", { name: "Unread" }),
-    ).toBeInTheDocument();
+    // Past two digits the badge is "lots"; the link still says the number.
+    expect(within(unsent).getByText("99+")).toBeInTheDocument();
+    expect(unsent).toHaveAccessibleName(/128 unread/);
   });
 
   it("explains how to start a chat when there are none", async () => {
@@ -134,7 +134,7 @@ describe("ChatsList", () => {
     await screen.findByText("old news");
 
     vi.mocked(fetchDmThreadsPage).mockResolvedValue({
-      data: [thread({ preview: "fresh", unread: true })],
+      data: [thread({ preview: "fresh", unread: 1 })],
       nextCursor: null,
     });
     // Past the stale window, as after the app sat in the background.

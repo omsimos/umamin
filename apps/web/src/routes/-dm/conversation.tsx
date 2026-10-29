@@ -1,3 +1,4 @@
+import { Blobatar } from "@blobatar/react";
 import { useCanGoBack, useRouter } from "@tanstack/react-router";
 import {
   AlertDialog,
@@ -9,7 +10,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@umamin/ui/components/alert-dialog";
-import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
 import {
   DropdownMenu,
@@ -18,6 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@umamin/ui/components/dropdown-menu";
+import { cn } from "@umamin/ui/lib/utils";
 import {
   CircleUserRoundIcon,
   EllipsisVerticalIcon,
@@ -25,6 +31,8 @@ import {
   MessageSquareXIcon,
   Trash2Icon,
 } from "lucide-react";
+import "blobatar/motion.css";
+import { thinking } from "blobatar/expression";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
@@ -56,12 +64,42 @@ function toastFor(code: DmErrorCode | "offline") {
   toast.error(ERROR_TOASTS[code] ?? "Something went wrong. Please try again.");
 }
 
-function PeerAvatar({ peer, className }: { peer: Peer; className?: string }) {
+function PeerAvatar({
+  peer,
+  presence = null,
+  className,
+}: {
+  peer: Peer;
+  /** Header only: a dot while they're connected, and a thinking face while
+   *  they type when there's no photo to cover it. */
+  presence?: "online" | "typing" | null;
+  className?: string;
+}) {
   return (
-    <Avatar className={className}>
-      <AvatarImage src={peer.imageUrl ?? ""} alt="" />
-      <BlobatarFallback seed={peer.id} />
-    </Avatar>
+    <span className={cn("relative inline-flex shrink-0", className)}>
+      <Avatar className="size-full">
+        <AvatarImage src={peer.imageUrl ?? ""} alt="" />
+        {presence === "typing" && !peer.imageUrl ? (
+          <AvatarFallback>
+            <Blobatar
+              name={peer.id}
+              animate="always"
+              expression={thinking}
+              aria-hidden="true"
+              className="size-full"
+            />
+          </AvatarFallback>
+        ) : (
+          <BlobatarFallback seed={peer.id} />
+        )}
+      </Avatar>
+      {presence && (
+        <span
+          aria-hidden
+          className="ring-background absolute top-0 right-0 size-[28%] rounded-full bg-emerald-500 ring-2"
+        />
+      )}
+    </span>
   );
 }
 
@@ -200,7 +238,19 @@ export function DmConversationScreen({
             href={`/user/${peer.username}`}
             className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-1"
           >
-            <PeerAvatar peer={peer} className="size-9" />
+            <PeerAvatar
+              peer={peer}
+              presence={
+                state.status !== "open"
+                  ? null
+                  : convo.peerTyping
+                    ? "typing"
+                    : meta?.peerOnline
+                      ? "online"
+                      : null
+              }
+              className="size-9"
+            />
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold">
                 {peerName}

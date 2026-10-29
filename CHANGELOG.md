@@ -31,6 +31,7 @@ any that are empty.
 - Back now leaves a live Umamin Chat or a chat conversation instead of bouncing you into it again.
 - Chat conversations open full screen, without the app's navigation behind them.
 - Umamin Chat avatars are now the same blob creatures you see across Umamin. Your match's avatar shows a dot for online, away or left, and looks thoughtful while they type.
+- In Chats, the list shows how many unread messages each conversation has, and a conversation shows a dot on the other person's picture while they're online.
 
 ### Fixed
 
