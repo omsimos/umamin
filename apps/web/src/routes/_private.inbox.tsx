@@ -54,7 +54,7 @@ export const Route = createFileRoute("/_private/inbox")({
   },
   head: () =>
     pageSeo({
-      title: "Umamin — Inbox",
+      title: "Inbox | Umamin",
       description:
         "Read the encrypted anonymous messages sent to you on Umamin.",
       robots: "noindex, nofollow",

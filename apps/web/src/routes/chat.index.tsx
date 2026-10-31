@@ -11,7 +11,7 @@ import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import { PublicMenubar } from "@/components/public-menu-bar";
 import { MAX_INVITE_CODE_LEN } from "@/lib/chat/constants";
-import { absoluteUrl, pageSeo } from "@/lib/seo";
+import { absoluteUrl, jsonLdScript, orgRef, pageSeo } from "@/lib/seo";
 import { IdentityCard } from "./-umamin-chat/components/lobby/identity-card";
 import { InterestPicker } from "./-umamin-chat/components/lobby/interest-picker";
 import { InviteBanner } from "./-umamin-chat/components/lobby/invite-banner";
@@ -23,7 +23,7 @@ import { buildInviteCard } from "./-umamin-chat/lib/share-card/invite-template";
 import { useOnlineCount } from "./-umamin-chat/lib/use-online-count";
 import { useChatSession } from "./-umamin-chat/session/chat-context";
 
-const TITLE = "Umamin Chat — Anonymous conversations with unexpected people";
+const TITLE = "Umamin Chat: anonymous conversations with unexpected people";
 const DESCRIPTION =
   "Get matched with a stranger who shares your interests and start a real-time, anonymous chat. No sign-up, no history, nothing saved.";
 
@@ -55,25 +55,17 @@ export const Route = createFileRoute("/chat/")({
         },
       ],
       scripts: [
-        {
-          type: "application/ld+json",
-          children: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebApplication",
-            name: "Umamin Chat",
-            url: absoluteUrl("/chat"),
-            applicationCategory: "CommunicationApplication",
-            operatingSystem: "Web",
-            browserRequirements: "Requires JavaScript",
-            description: DESCRIPTION,
-            offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-            publisher: {
-              "@type": "Organization",
-              name: "Umamin",
-              url: "https://www.umamin.link",
-            },
-          }),
-        },
+        jsonLdScript({
+          "@type": "WebApplication",
+          name: "Umamin Chat",
+          url: absoluteUrl("/chat"),
+          applicationCategory: "CommunicationApplication",
+          operatingSystem: "Web",
+          browserRequirements: "Requires JavaScript",
+          description: DESCRIPTION,
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          publisher: orgRef(),
+        }),
       ],
     };
   },

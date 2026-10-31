@@ -36,7 +36,7 @@ export const Route = createFileRoute("/_social/notes")({
   },
   head: () => {
     const seo = pageSeo({
-      title: "Umamin — Notes",
+      title: "Anonymous notes | Umamin",
       description:
         "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages. Send your messages anonymously and discover what others have to share.",
       path: "/notes",

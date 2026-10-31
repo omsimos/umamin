@@ -1,11 +1,12 @@
-# Ported from apps/www app/robots.ts
+# Cloudflare prepends its managed AI-crawler rules to this file at the edge.
+# Disallow is a prefix match, so "/inbox" covers /inbox and everything under it.
 User-Agent: *
 Allow: /
-Disallow: /api/*
-Disallow: /auth/*
-Disallow: /inbox/*
-Disallow: /settings/*
+Disallow: /api/
+Disallow: /auth/
+Disallow: /inbox
+Disallow: /settings
+Disallow: /notifications
 Disallow: /chat/session
 
-Host: https://www.umamin.link
 Sitemap: https://www.umamin.link/sitemap.xml

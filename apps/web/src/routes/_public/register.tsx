@@ -5,7 +5,7 @@ import { pageSeo } from "@/lib/seo";
 import { RegisterForm } from "./-auth/register-form";
 import { useRedirectIfAuthed } from "./-auth/use-redirect-if-authed";
 
-const title = "Umamin — Register";
+const title = "Register | Umamin";
 const description =
   "Create an account on Umamin to start sending and receiving encrypted anonymous messages. Join our secure platform and ensure your privacy today.";
 

@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_private/moderation")({
   },
   head: () =>
     pageSeo({
-      title: "Moderation — Umamin",
+      title: "Moderation | Umamin",
       description: "Moderation tools.",
       robots: "noindex, nofollow",
     }),

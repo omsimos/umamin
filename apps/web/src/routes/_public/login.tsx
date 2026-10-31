@@ -11,7 +11,7 @@ import { pageSeo } from "@/lib/seo";
 import { LoginForm } from "./-auth/login-form";
 import { useRedirectIfAuthed } from "./-auth/use-redirect-if-authed";
 
-const title = "Umamin — Login";
+const title = "Login | Umamin";
 const description =
   "Log in to Umamin to send and receive encrypted anonymous messages. Secure your privacy and communicate freely.";
 

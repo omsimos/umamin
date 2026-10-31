@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { pageSeo } from "@/lib/seo";
 import TermsOfService from "@/markdown/terms.mdx";
 
-const title = "Umamin — Terms of Service";
+const title = "Terms of Service | Umamin";
 const description =
   "Understand the terms and conditions for using Umamin, an open-source platform for sending and receiving encrypted anonymous messages.";
 
