@@ -9,7 +9,7 @@ import { ShareButton } from "@/components/share-button";
 import { Link } from "@/lib/navigation";
 import { pageSeo } from "@/lib/seo";
 import type { PublicUserWithBadge } from "@/lib/types";
-import { formatUsername } from "@/lib/utils";
+import { cleanDisplayName, formatUsername } from "@/lib/utils";
 import { ChatForm } from "./-components/chat-form";
 import { ChatFormSkeleton } from "./-components/chat-form-skeleton";
 import { loaderFetchUserProfile } from "./-lib/loader-queries";
@@ -30,7 +30,14 @@ export const Route = createFileRoute("/_social/to/$username")({
     const title = `Send Encrypted Anonymous Message to @${username} | Umamin`;
     const description = `Send an encrypted anonymous message to @${username} on Umamin. Protect your identity while communicating securely and privately.`;
 
-    return pageSeo({ title, description, path: `/to/${username}` });
+    // A send form with about a dozen words, repeated for every handle. The
+    // profile at /user/<name> is the page that should rank for a person.
+    return pageSeo({
+      title,
+      description,
+      path: `/to/${username}`,
+      robots: "noindex, follow",
+    });
   },
   pendingComponent: SendMessagePending,
   errorComponent: (props) => (
@@ -69,7 +76,7 @@ function SendMessage() {
               href={`/user/${user.username}`}
               className="font-semibold text-sm hover:underline"
             >
-              {user?.displayName ? user?.displayName : user?.username}
+              {cleanDisplayName(user.displayName) || user.username}
             </Link>
             {import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(
               user.username,

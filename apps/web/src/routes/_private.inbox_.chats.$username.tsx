@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_private/inbox_/chats/$username")({
   },
   head: ({ params }) =>
     pageSeo({
-      title: `Umamin — Chat with @${params.username}`,
+      title: `Chat with @${params.username} | Umamin`,
       description: "A private conversation on Umamin.",
       robots: "noindex, nofollow",
     }),

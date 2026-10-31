@@ -8,6 +8,10 @@
 // www.umamin.link host robots.txt + sitemap.xml advertise — mixing hosts across
 // canonical/og/sitemap reads as duplicate content).
 
+export const SITE_TITLE = "Umamin | Get anonymous messages with your own link";
+export const SITE_DESCRIPTION =
+  "Share your Umamin link and get anonymous messages from friends. Messages are encrypted before they're stored. Free and open source, made in the Philippines.";
+
 export const OG_IMAGE = "/opengraph-image.png";
 export const TWITTER_IMAGE = "/twitter-image.png";
 
@@ -27,6 +31,11 @@ const SHARE_IMAGES = {
 
 export type ShareImage = keyof typeof SHARE_IMAGES;
 
+/** Cuts text to `max` characters, ending in an ellipsis when it was cut. */
+export function truncate(text: string, max = 160): string {
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}
+
 // Read per call rather than at module load: Vite still inlines the literal, and
 // tests can stub the env.
 function siteOrigin(): string {
@@ -43,6 +52,10 @@ export function absoluteUrl(path: string): string {
 
 type MetaTag = Record<string, string>;
 
+export type JsonLd = Record<string, unknown>;
+
+type HeadScript = { type: string; children: string };
+
 type PageSeoInput = {
   title: string;
   description: string;
@@ -56,6 +69,8 @@ type PageSeoInput = {
   /** A page-specific share image, used for og:image and twitter:image.
    *  Omitted → the site-wide images. */
   image?: ShareImage;
+  /** Schema.org nodes, emitted as one JSON-LD script. */
+  jsonLd?: JsonLd | JsonLd[];
 };
 
 /**
@@ -75,7 +90,12 @@ export function pageSeo({
   twitterCard = "summary_large_image",
   robots,
   image,
-}: PageSeoInput): { meta: MetaTag[]; links: { rel: string; href: string }[] } {
+  jsonLd,
+}: PageSeoInput): {
+  meta: MetaTag[];
+  links: { rel: string; href: string }[];
+  scripts: HeadScript[];
+} {
   const meta: MetaTag[] = [
     { title },
     { name: "description", content: description },
@@ -116,7 +136,81 @@ export function pageSeo({
     // Canonical is per-page only: links are concatenated (not deduped by rel),
     // so a root-level canonical would stack a second one on every route.
     links: path ? [{ rel: "canonical", href: absoluteUrl(path) }] : [],
+    scripts: jsonLd ? [jsonLdScript(jsonLd)] : [],
   };
+}
+
+/**
+ * A JSON-LD `<script>` for `head().scripts`. Bios and post text are user input,
+ * so `<` is escaped: a literal `</script>` in them would otherwise close the tag.
+ */
+export function jsonLdScript(data: JsonLd | JsonLd[]): HeadScript {
+  const body = Array.isArray(data)
+    ? { "@context": "https://schema.org", "@graph": data }
+    : { "@context": "https://schema.org", ...data };
+  return {
+    type: "application/ld+json",
+    children: JSON.stringify(body).replace(/</g, "\\u003c"),
+  };
+}
+
+// Stable @ids let every page point at the same Organization and WebSite nodes
+// instead of each one describing a separate publisher.
+export const orgId = () => absoluteUrl("/#organization");
+export const websiteId = () => absoluteUrl("/#website");
+
+/** A reference to the site's Organization node, for publisher/about fields. */
+export function orgRef(): JsonLd {
+  return {
+    "@type": "Organization",
+    "@id": orgId(),
+    name: "Umamin",
+    url: absoluteUrl("/"),
+  };
+}
+
+/** Organization, WebSite and WebApplication nodes for the homepage. */
+export function siteGraph(description: string): JsonLd[] {
+  return [
+    {
+      ...orgRef(),
+      logo: {
+        "@type": "ImageObject",
+        url: absoluteUrl("/icon-512x512.png"),
+        width: 512,
+        height: 512,
+      },
+      description,
+      foundingDate: "2022-07",
+      foundingLocation: { "@type": "Place", name: "Philippines" },
+      parentOrganization: {
+        "@type": "Organization",
+        name: "Omsimos Collective",
+        url: "https://github.com/omsimos",
+      },
+      sameAs: ["https://github.com/omsimos/umamin"],
+    },
+    {
+      "@type": "WebSite",
+      "@id": websiteId(),
+      name: "Umamin",
+      url: absoluteUrl("/"),
+      description,
+      inLanguage: "en",
+      publisher: { "@id": orgId() },
+    },
+    {
+      "@type": "WebApplication",
+      name: "Umamin",
+      url: absoluteUrl("/"),
+      applicationCategory: "SocialNetworkingApplication",
+      operatingSystem: "Web",
+      browserRequirements: "Requires JavaScript",
+      isAccessibleForFree: true,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      publisher: { "@id": orgId() },
+    },
+  ];
 }
 
 // iOS standalone launch screens (portrait — the manifest locks orientation),

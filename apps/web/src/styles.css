@@ -60,6 +60,19 @@
     }
   }
 
+  /* Rise without the fade, for a page's largest text. The browser only records
+     LCP once an element is painted visibly, so an opacity-0 start delays LCP
+     until the animation runs. */
+  --animate-rise-motion: rise-motion 0.6s ease-out both;
+  @keyframes rise-motion {
+    from {
+      transform: translateY(14px);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
   /* Opacity/transform only — the revealed card is taller than the sealed one
      and the virtualizer must remeasure the snapped height, not an animated one. */
   --animate-scroll-up: scroll-up 60s linear infinite;
@@ -275,15 +288,7 @@
   /* Entrance and attention animations. Their end state is the element's
      normal style, so dropping the animation leaves content visible. */
   .animate-rise,
-  .animate-reveal-pop,
-  .animate-heart-pop,
-  .animate-ping,
-  .animate-pulse {
-    animation: none;
-  }
-  /* Entrance and attention animations. Their end state is the element's
-     normal style, so dropping the animation leaves content visible. */
-  .animate-rise,
+  .animate-rise-motion,
   .animate-reveal-pop,
   .animate-heart-pop,
   .animate-ping,

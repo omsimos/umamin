@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_private/inbox_/$messageId")({
   },
   head: () =>
     pageSeo({
-      title: "Umamin — Conversation",
+      title: "Conversation | Umamin",
       description: "Continue an anonymous conversation on Umamin.",
       robots: "noindex, nofollow",
     }),

@@ -16,7 +16,7 @@ import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
 import { activeProTheme } from "@/lib/pro";
 import type { PublicUserWithBadge } from "@/lib/types";
-import { hasPlusFeatures } from "@/lib/utils";
+import { cleanDisplayName, hasPlusFeatures } from "@/lib/utils";
 import CopyLink from "./copy-link";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { GroupBadge } from "./group-badge";
@@ -112,9 +112,9 @@ export function UserCard({
 
       <section className={primaryAction ? "mt-3" : "mt-11"}>
         <div className="flex items-center space-x-1">
-          <p className="font-semibold md:text-xl">
-            {user.displayName ? user.displayName : user.username}
-          </p>
+          <h1 className="font-semibold md:text-xl">
+            {cleanDisplayName(user.displayName) || user.username}
+          </h1>
           {import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(
             user.username,
           ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}

@@ -314,6 +314,15 @@ export function hasPlusFeatures(
   return hasUmaminPlus(user?.createdAt) || hasUmaminPro(user?.proUntil);
 }
 
+// Zero-width and bidi marks render as nothing, so a display name made only of
+// them would show a blank name and a title that starts with an invisible char.
+const INVISIBLE_CHARS = /[​-‏‪-‮⁠﻿]/g;
+
+/** The display name with invisible characters removed; "" when nothing is left. */
+export function cleanDisplayName(name?: string | null): string {
+  return (name ?? "").replace(INVISIBLE_CHARS, "").trim();
+}
+
 /**
  * Extracts a server-action error message from a result, if present. Mutations
  * return `{ error: string }` on failure (incl. rate limiting / validation) WITHOUT

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { pageSeo } from "@/lib/seo";
 import Privacy from "@/markdown/privacy.mdx";
 
-const title = "Umamin — Privacy Policy";
+const title = "Privacy Policy | Umamin";
 const description =
   "Learn how Umamin, an open-source platform for sending and receiving encrypted anonymous messages, collects, uses, and protects your personal information.";
 

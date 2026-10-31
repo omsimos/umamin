@@ -7,7 +7,7 @@ import { pageSeo } from "@/lib/seo";
 export const Route = createFileRoute("/_public/banned")({
   head: () =>
     pageSeo({
-      title: "Account suspended — Umamin",
+      title: "Account suspended | Umamin",
       description: "This account has been suspended.",
       robots: "noindex, nofollow",
     }),

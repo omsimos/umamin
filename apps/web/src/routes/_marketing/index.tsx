@@ -9,17 +9,17 @@ import { UmaShowcase } from "@/components/landing/uma-showcase";
 import { PwaRedirect } from "@/components/pwa-redirect";
 import { Uma } from "@/components/uma";
 import { Link } from "@/lib/navigation";
-import { pageSeo } from "@/lib/seo";
+import { pageSeo, SITE_DESCRIPTION, SITE_TITLE, siteGraph } from "@/lib/seo";
 
 export const Route = createFileRoute("/_marketing/")({
   // Landing page keeps the root's site-wide title/description; pageSeo re-emits
   // them here so the canonical + OG card are self-referential and absolute.
   head: () =>
     pageSeo({
-      title: "Umamin — The Platform for Anonymity",
-      description:
-        "Umamin is an open-source social platform for sending and receiving encrypted anonymous messages. Ensure your privacy and share your thoughts freely without revealing your identity.",
+      title: SITE_TITLE,
+      description: SITE_DESCRIPTION,
       path: "/",
+      jsonLd: siteGraph(SITE_DESCRIPTION),
     }),
   component: Home,
 });
@@ -39,7 +39,7 @@ function Home() {
       <section className="relative px-6 pb-16 pt-32 md:pb-24 md:pt-40">
         <div className="mx-auto grid grid-cols-1 max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-16">
           <div>
-            <h1 className="animate-rise font-display text-5xl font-extrabold leading-[0.95] tracking-tighter [animation-delay:100ms] sm:text-7xl xl:text-8xl">
+            <h1 className="animate-rise-motion font-display text-5xl font-extrabold leading-[0.95] tracking-tighter sm:text-7xl xl:text-8xl">
               Say what you
               <br />
               <em className="text-primary">actually</em>{" "}

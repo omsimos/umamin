@@ -82,13 +82,13 @@ export const Route = createFileRoute("/groups/$tag/")({
     const group = loaderData?.group;
     if (!group) {
       return pageSeo({
-        title: "Umamin — Group",
+        title: "Group | Umamin",
         description: "Groups on Umamin.",
         robots: "noindex, nofollow",
       });
     }
     return pageSeo({
-      title: `${group.name} (${group.tag}) — Umamin`,
+      title: `${group.name} (${group.tag}) | Umamin`,
       description: `${group.name} is a group on Umamin with ${group.memberCount} members.`,
       robots: "noindex, nofollow",
     });

@@ -5,12 +5,12 @@ import { pageSeo } from "@/lib/seo";
 import { TiersView } from "./-tiers/tiers-view";
 
 const PRO_SEO = {
-  title: "Umamin — Plus & Pro",
+  title: "Plus & Pro | Umamin",
   description:
     "What you unlock on Free, Plus, and Pro. Plus is free at one year; Pro is a one-time purchase, no subscription.",
 };
 const PLUS_ONLY_SEO = {
-  title: "Umamin — Plus",
+  title: "Plus | Umamin",
   description:
     "What you unlock on Free and Plus. Plus is free once your account is a year old.",
 };

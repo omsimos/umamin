@@ -64,14 +64,21 @@ export function CipherText({
   return (
     <span className={className}>
       <span className="relative inline-block whitespace-nowrap text-left">
-        {/* Invisible sizer pins the slot to the longest word so the headline
-            doesn't reflow on every cycle. */}
-        <span aria-hidden="true" className="invisible">
-          {longest}
-        </span>
-        <span aria-hidden="true" className="absolute inset-0">
-          {display}
-        </span>
+        {/* The sizer and the scrambling word render through ::before so they
+            stay out of the DOM text. Crawlers and copy-paste then read the one
+            real word in the sr-only span instead of all three. The invisible
+            sizer pins the slot to the longest word so the headline doesn't
+            reflow on every cycle. */}
+        <span
+          aria-hidden="true"
+          data-text={longest}
+          className="invisible before:content-[attr(data-text)]"
+        />
+        <span
+          aria-hidden="true"
+          data-text={display}
+          className="absolute inset-0 before:content-[attr(data-text)]"
+        />
         <span className="sr-only">{words[index]}</span>
       </span>
     </span>

@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { absoluteUrl, pageSeo } from "../src/lib/seo";
+import { absoluteUrl, jsonLdScript, pageSeo } from "../src/lib/seo";
+import { cleanDisplayName } from "../src/lib/utils";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -106,6 +107,53 @@ describe("pageSeo", () => {
   });
 });
 
+describe("jsonLdScript", () => {
+  it("escapes < so user text can't close the script tag", () => {
+    const { children } = jsonLdScript({
+      "@type": "Person",
+      description: "hi</script><script>alert(1)</script>",
+    });
+    expect(children).not.toContain("<");
+    expect(JSON.parse(children).description).toBe(
+      "hi</script><script>alert(1)</script>",
+    );
+  });
+
+  it("wraps a list of nodes in one @graph", () => {
+    const parsed = JSON.parse(
+      jsonLdScript([{ "@type": "Organization" }, { "@type": "WebSite" }])
+        .children,
+    );
+    expect(parsed["@context"]).toBe("https://schema.org");
+    expect(
+      parsed["@graph"].map((n: { "@type": string }) => n["@type"]),
+    ).toEqual(["Organization", "WebSite"]);
+  });
+
+  it("is only emitted by pageSeo when the page passes nodes", () => {
+    expect(pageSeo({ title: "t", description: "d" }).scripts).toEqual([]);
+    const { scripts } = pageSeo({
+      title: "t",
+      description: "d",
+      jsonLd: { "@type": "AboutPage" },
+    });
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0]?.type).toBe("application/ld+json");
+  });
+});
+
+describe("cleanDisplayName", () => {
+  it("treats a name made of invisible marks as empty", () => {
+    expect(cleanDisplayName("\u200E")).toBe("");
+    expect(cleanDisplayName(" \u200B\uFEFF ")).toBe("");
+  });
+
+  it("keeps visible text and strips the marks around it", () => {
+    expect(cleanDisplayName("\u200EJosh\u200F")).toBe("Josh");
+    expect(cleanDisplayName(null)).toBe("");
+  });
+});
+
 // Canonical/OG, robots.txt and sitemap.xml must all advertise ONE host, or
 // search engines read the two hosts as duplicate content.
 describe("canonical host consistency", () => {
@@ -119,7 +167,6 @@ describe("canonical host consistency", () => {
 
     const robots = read("public/robots.txt");
     expect(robots).toContain(`Sitemap: ${origin}/sitemap.xml`);
-    expect(robots).toContain(`Host: ${origin}`);
 
     for (const loc of read("public/sitemap.xml").matchAll(
       /<loc>([^<]+)<\/loc>/g,

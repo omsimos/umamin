@@ -5,9 +5,9 @@ import { RouteSegmentError } from "@/components/route-segment-error";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
 import { loadViewer } from "@/lib/loader-viewer";
 import { queryKeys } from "@/lib/query";
-import { pageSeo } from "@/lib/seo";
+import { absoluteUrl, pageSeo, truncate, websiteId } from "@/lib/seo";
 import type { PublicUserWithBadge } from "@/lib/types";
-import { formatUsername } from "@/lib/utils";
+import { cleanDisplayName, formatUsername } from "@/lib/utils";
 import { UserProfile } from "./-components/user-profile";
 import { loaderFetchUserProfile } from "./-lib/loader-queries";
 
@@ -36,24 +36,56 @@ export const Route = createFileRoute("/_social/user/$username")({
     const username = loaderData?.username;
     if (!username) {
       return pageSeo({
-        title: "Umamin — User not found",
+        title: "User not found | Umamin",
         description: "This user does not exist on Umamin.",
         robots: "noindex",
       });
     }
 
-    const displayName = loaderData?.user?.displayName?.trim();
+    const user = loaderData.user;
+    const displayName = cleanDisplayName(user.displayName);
+    const bio = user.bio?.trim();
+    const path = `/user/${username}`;
     const title = displayName
       ? `${displayName} (@${username}) on Umamin`
       : `@${username} on Umamin`;
-    const description = `Profile of @${username} on Umamin. Join Umamin to connect with @${username} and engage in anonymous messaging.`;
+    const description = bio
+      ? truncate(bio, 160)
+      : `Profile of @${username} on Umamin. Join Umamin to connect with @${username} and engage in anonymous messaging.`;
+    // A profile with no bio and no followers is the same boilerplate page for
+    // every handle. Keep those out of the index until there is something on
+    // them, so they don't read as thin duplicates of each other.
+    const indexable =
+      !!bio ||
+      user.followerCount > 0 ||
+      !!import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(username);
 
     return pageSeo({
       title,
       description,
-      path: `/user/${username}`,
+      path,
       ogType: "profile",
       twitterCard: "summary",
+      robots: indexable ? undefined : "noindex, follow",
+      jsonLd: {
+        "@type": "ProfilePage",
+        url: absoluteUrl(path),
+        dateCreated: new Date(user.createdAt).toISOString(),
+        isPartOf: { "@id": websiteId() },
+        mainEntity: {
+          "@type": "Person",
+          name: displayName || username,
+          alternateName: `@${username}`,
+          url: absoluteUrl(path),
+          ...(user.imageUrl ? { image: user.imageUrl } : {}),
+          ...(bio ? { description: bio } : {}),
+          interactionStatistic: {
+            "@type": "InteractionCounter",
+            interactionType: "https://schema.org/FollowAction",
+            userInteractionCount: user.followerCount,
+          },
+        },
+      },
     });
   },
   pendingComponent: UserPending,

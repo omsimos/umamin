@@ -4,8 +4,9 @@ import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { loadViewer } from "@/lib/loader-viewer";
 import { PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
-import { pageSeo } from "@/lib/seo";
+import { absoluteUrl, pageSeo, truncate, websiteId } from "@/lib/seo";
 import type { CommentsResponse, PostData } from "@/lib/types";
+import { cleanDisplayName } from "@/lib/utils";
 import { CommentsList } from "./-components/comments-list";
 import { PostCardMain } from "./-components/post-card-main";
 import { PostCardSkeleton } from "./-components/post-card-skeleton";
@@ -15,9 +16,6 @@ import {
   loaderFetchPost,
   loaderFetchPostCommentsPage,
 } from "./-lib/loader-queries";
-
-const truncate = (text: string, max = 160) =>
-  text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 
 export const Route = createFileRoute("/_social/post/$id")({
   loader: async ({ context, params }) => {
@@ -71,7 +69,9 @@ export const Route = createFileRoute("/_social/post/$id")({
     }
 
     const authorName =
-      post.author?.displayName ?? post.author?.username ?? "User";
+      cleanDisplayName(post.author?.displayName) ||
+      post.author?.username ||
+      "User";
 
     // The page covers labelled text, so its tab title, link previews and the
     // search index must not show it either.
@@ -88,13 +88,40 @@ export const Route = createFileRoute("/_social/post/$id")({
 
     const description = truncate(post.content, 160);
     const title = truncate(`${authorName}: ${post.content}`, 70);
+    const path = `/post/${loaderData.id}`;
 
     return pageSeo({
       title,
       description,
-      path: `/post/${loaderData.id}`,
+      path,
       ogType: "article",
       twitterCard: "summary",
+      jsonLd: {
+        "@type": "SocialMediaPosting",
+        url: absoluteUrl(path),
+        headline: truncate(post.content, 110),
+        text: post.content,
+        datePublished: new Date(post.createdAt).toISOString(),
+        dateModified: new Date(post.updatedAt).toISOString(),
+        isPartOf: { "@id": websiteId() },
+        author: {
+          "@type": "Person",
+          name: authorName,
+          url: absoluteUrl(`/user/${post.author.username}`),
+        },
+        interactionStatistic: [
+          {
+            "@type": "InteractionCounter",
+            interactionType: "https://schema.org/LikeAction",
+            userInteractionCount: post.likeCount,
+          },
+          {
+            "@type": "InteractionCounter",
+            interactionType: "https://schema.org/CommentAction",
+            userInteractionCount: post.commentCount,
+          },
+        ],
+      },
     });
   },
   pendingComponent: PostPending,

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { pageSeo } from "@/lib/seo";
 import ChildSafety from "@/markdown/child-safety.mdx";
 
-const title = "Umamin — Child Safety Standards";
+const title = "Child Safety Standards | Umamin";
 const description =
   "Umamin's standards against child sexual abuse and exploitation (CSAE): what is prohibited, how we prevent and respond to it, how to report, and our child safety point of contact.";
 
