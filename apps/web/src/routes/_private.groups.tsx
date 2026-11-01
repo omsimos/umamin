@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_private/groups")({
   },
   head: () =>
     pageSeo({
-      title: "Umamin — Groups",
+      title: "Groups | Umamin",
       description: "Your groups on Umamin.",
       robots: "noindex, nofollow",
     }),

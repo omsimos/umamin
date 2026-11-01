@@ -71,7 +71,7 @@ export const Route = createFileRoute("/_social/feed")({
   },
   head: () =>
     pageSeo({
-      title: "Umamin — Feed",
+      title: "Feed | Umamin",
       description:
         "The Umamin feed: anonymous posts, notes, and conversations from the community.",
       path: "/feed",

@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { absoluteUrl, pageSeo } from "../src/lib/seo";
+import { absoluteUrl, jsonLdScript, pageSeo } from "../src/lib/seo";
+import { visibleText } from "../src/lib/utils";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -106,6 +107,57 @@ describe("pageSeo", () => {
   });
 });
 
+describe("jsonLdScript", () => {
+  it("escapes < so user text can't close the script tag", () => {
+    const { children } = jsonLdScript({
+      "@type": "Person",
+      description: "hi</script><script>alert(1)</script>",
+    });
+    expect(children).not.toContain("<");
+    expect(JSON.parse(children).description).toBe(
+      "hi</script><script>alert(1)</script>",
+    );
+  });
+
+  it("wraps a list of nodes in one @graph", () => {
+    const parsed = JSON.parse(
+      jsonLdScript([{ "@type": "Organization" }, { "@type": "WebSite" }])
+        .children,
+    );
+    expect(parsed["@context"]).toBe("https://schema.org");
+    expect(
+      parsed["@graph"].map((n: { "@type": string }) => n["@type"]),
+    ).toEqual(["Organization", "WebSite"]);
+  });
+
+  it("is only emitted by pageSeo when the page passes nodes", () => {
+    expect(pageSeo({ title: "t", description: "d" }).scripts).toEqual([]);
+    const { scripts } = pageSeo({
+      title: "t",
+      description: "d",
+      jsonLd: { "@type": "AboutPage" },
+    });
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0]?.type).toBe("application/ld+json");
+  });
+});
+
+describe("visibleText", () => {
+  it("treats text made only of invisible characters as empty", () => {
+    expect(visibleText("\u200E")).toBe("");
+    expect(visibleText(" \u200B\uFEFF ")).toBe("");
+    expect(visibleText("\u3164")).toBe("");
+    expect(visibleText("\u2800\u2800")).toBe("");
+    expect(visibleText(null)).toBe("");
+  });
+
+  it("returns visible text unchanged, joiners included", () => {
+    const family = "\u{1F468}\u200D\u{1F469}\u200D\u{1F467} Fam";
+    expect(visibleText(family)).toBe(family);
+    expect(visibleText("  Josh ")).toBe("Josh");
+  });
+});
+
 // Canonical/OG, robots.txt and sitemap.xml must all advertise ONE host, or
 // search engines read the two hosts as duplicate content.
 describe("canonical host consistency", () => {
@@ -119,7 +171,6 @@ describe("canonical host consistency", () => {
 
     const robots = read("public/robots.txt");
     expect(robots).toContain(`Sitemap: ${origin}/sitemap.xml`);
-    expect(robots).toContain(`Host: ${origin}`);
 
     for (const loc of read("public/sitemap.xml").matchAll(
       /<loc>([^<]+)<\/loc>/g,

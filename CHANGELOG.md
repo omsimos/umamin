@@ -18,6 +18,32 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.19.0] - 2026-10-31
+
+### Added
+
+- After you send an anonymous message without an account, the page offers to set up your own link.
+
+### Changed
+
+- The home page headline appears right away instead of fading in, so the page shows its text sooner.
+
+### Security & Privacy
+
+- The privacy policy now covers ads and advertising cookies, how IP addresses are used to stop abuse, push notification data, and the services that process data for Umamin.
+
+### Accessibility
+
+- The anonymous message box has a label for screen readers.
+- A profile's name is now the page heading, and a display name made only of invisible characters falls back to the username.
+
+### SEO
+
+- Page titles lead with the page's topic, and the home page title and description say what Umamin does.
+- The home, about, profile, post and Umamin Chat pages describe themselves to search engines with structured data.
+- Send-a-message pages, and profiles with no bio and no followers, are no longer indexed, so search results point to profiles with something on them.
+- Search engines read the home page headline once instead of every rotating word.
+
 ## [7.18.0] - 2026-10-30
 
 ### Changed
@@ -1226,6 +1252,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.19.0]: https://github.com/omsimos/umamin/compare/v7.18.0...v7.19.0
 [7.18.0]: https://github.com/omsimos/umamin/compare/v7.17.0...v7.18.0
 [7.17.0]: https://github.com/omsimos/umamin/compare/v7.16.0...v7.17.0
 [7.16.0]: https://github.com/omsimos/umamin/compare/v7.15.0...v7.16.0

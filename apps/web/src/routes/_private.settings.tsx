@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_private/settings")({
   },
   head: () =>
     pageSeo({
-      title: "Umamin — Settings",
+      title: "Settings | Umamin",
       description:
         "Manage your preferences and account settings on Umamin. Customize your profile, adjust privacy settings, and control how you interact anonymously.",
       robots: "noindex, nofollow",

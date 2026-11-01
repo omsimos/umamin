@@ -9,7 +9,7 @@ import {
 import { pageSeo } from "@/lib/seo";
 import changelogMarkdown from "../../../../../CHANGELOG.md?raw";
 
-const title = "Umamin — Changelog";
+const title = "Changelog | Umamin";
 const description =
   "Every Umamin release, newest first: new features, changes, fixes, and privacy and security improvements.";
 

@@ -637,6 +637,7 @@ export function UserProfile({ username, initialUser }: Props) {
 
       <UserCard
         user={profile}
+        nameAs="h1"
         isSelf={isSelf}
         headerActions={isSelf ? undefined : headerActions}
         primaryAction={isSelf ? undefined : primaryAction}

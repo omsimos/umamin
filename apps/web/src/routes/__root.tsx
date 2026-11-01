@@ -24,11 +24,13 @@ import { Providers } from "@/components/providers";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { THEME_COLOR } from "@/components/theme-color";
 import { getGtmInlineScript } from "@/lib/gtm";
-import { appleSplashLinks, pageSeo } from "@/lib/seo";
+import {
+  appleSplashLinks,
+  pageSeo,
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+} from "@/lib/seo";
 import appCss from "../styles.css?url";
-
-const SITE_DESCRIPTION =
-  "Umamin is an open-source social platform for sending and receiving encrypted anonymous messages. Ensure your privacy and share your thoughts freely without revealing your identity.";
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -71,7 +73,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       // route winning, so any page's own head() overrides these (no canonical
       // here on purpose — links stack rather than dedupe).
       ...pageSeo({
-        title: "Umamin — The Platform for Anonymity",
+        title: SITE_TITLE,
         description: SITE_DESCRIPTION,
         robots:
           "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",

@@ -10,14 +10,27 @@ import {
 import { ProductCard } from "@/components/landing/product-card";
 import { useChatLink } from "@/hooks/use-chat-link";
 import { Link } from "@/lib/navigation";
-import { pageSeo } from "@/lib/seo";
+import { absoluteUrl, orgRef, pageSeo, websiteId } from "@/lib/seo";
 
-const title = "Umamin — About";
+const title = "About Umamin";
 const description =
   "The story of Umamin, an open-source anonymous platform founded in July 2022 that reached over 700,000 users in its first week, now a broader social space for self-expression, community, and meaningful conversations.";
 
 export const Route = createFileRoute("/_marketing/about")({
-  head: () => pageSeo({ title, description, path: "/about" }),
+  head: () =>
+    pageSeo({
+      title,
+      description,
+      path: "/about",
+      jsonLd: {
+        "@type": "AboutPage",
+        url: absoluteUrl("/about"),
+        name: title,
+        description,
+        isPartOf: { "@id": websiteId() },
+        about: orgRef(),
+      },
+    }),
   component: AboutPage,
 });
 
@@ -36,7 +49,7 @@ function AboutPage() {
     <main className="overflow-x-clip pb-16">
       <section className="relative px-6 pb-14 pt-36 md:pt-44">
         <div className="mx-auto max-w-5xl">
-          <h1 className="animate-rise font-display text-5xl font-extrabold leading-[0.95] tracking-tighter [animation-delay:100ms] sm:text-6xl md:text-7xl">
+          <h1 className="animate-rise-motion font-display text-5xl font-extrabold leading-[0.95] tracking-tighter sm:text-6xl md:text-7xl">
             The story of <em className="text-primary">Umamin</em>.
           </h1>
           <p className="max-w-2xl animate-rise pt-6 text-muted-foreground [animation-delay:200ms] md:text-lg">

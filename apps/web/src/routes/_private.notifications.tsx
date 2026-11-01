@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_private/notifications")({
   },
   head: () =>
     pageSeo({
-      title: "Umamin — Notifications",
+      title: "Notifications | Umamin",
       description: "Your Umamin notifications.",
       robots: "noindex, nofollow",
     }),

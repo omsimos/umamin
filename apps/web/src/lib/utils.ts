@@ -314,6 +314,19 @@ export function hasPlusFeatures(
   return hasUmaminPlus(user?.createdAt) || hasUmaminPro(user?.proUntil);
 }
 
+// Characters that render as nothing: zero-width and bidi marks, plus the
+// Hangul and Braille fillers people use to make a name look blank. They are
+// only stripped for the emptiness test. Joiners stay in visible text, so emoji
+// sequences and scripts that need ZWNJ keep rendering correctly.
+const INVISIBLE_CHARS =
+  /[\u00AD\u115F\u1160\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\u2800\u3164\uFEFF\uFFA0]/g;
+
+/** The trimmed text, or "" when it has no visible characters. */
+export function visibleText(text?: string | null): string {
+  const trimmed = (text ?? "").trim();
+  return trimmed.replace(INVISIBLE_CHARS, "").trim() ? trimmed : "";
+}
+
 /**
  * Extracts a server-action error message from a result, if present. Mutations
  * return `{ error: string }` on failure (incl. rate limiting / validation) WITHOUT

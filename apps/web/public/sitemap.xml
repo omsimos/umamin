@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Rendered from apps/www app/sitemap.ts (static list; /login + /register
-     dropped as noindex utility pages). No lastmod: a static file can't keep it
-     accurate. No changefreq/priority: Google ignores both. Each loc must match
+<!-- Static list of the public pages. /login and /register are left out as
+     noindex utility pages, and profiles and posts are left out on purpose.
+     No lastmod: a static file can't keep it accurate. No changefreq/priority: Google ignores both. Each loc must match
      the page's canonical URL exactly, including the trailing slash on the root. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://www.umamin.link/</loc></url>

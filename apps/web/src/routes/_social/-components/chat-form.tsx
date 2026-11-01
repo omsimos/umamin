@@ -11,6 +11,7 @@ import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
+import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { PublicUser } from "@/lib/types";
@@ -22,6 +23,9 @@ export function ChatForm({ user }: { user: PublicUser }) {
   const [message, setMessage] = useState("");
   const [showUnauthenticatedDialog, setShowUnauthenticatedDialog] =
     useState(false);
+  // Senders without an account are the people most likely to want a link of
+  // their own, so they get a sign-up prompt after the message goes through.
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
 
   const inputRef = useDynamicTextarea(content);
   const sendMessage = useSingleFlightAction(sendMessageAction);
@@ -58,6 +62,7 @@ export function ChatForm({ user }: { user: PublicUser }) {
         return;
       }
 
+      setShowSignupPrompt(false);
       mutation.mutate();
     } catch (error) {
       captureException(error, { source: "send message session" });
@@ -106,6 +111,7 @@ export function ChatForm({ user }: { user: PublicUser }) {
                 setContent(e.target.value);
               }}
               maxLength={2000}
+              aria-label="Anonymous message"
               placeholder="Type your anonymous message..."
               className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
               autoComplete="off"
@@ -122,13 +128,27 @@ export function ChatForm({ user }: { user: PublicUser }) {
         )}
       </div>
 
+      {showSignupPrompt && (
+        <div className="mx-5 mb-6 rounded-lg border bg-background p-4 text-sm sm:mx-7">
+          <p className="font-medium">Want anonymous messages too?</p>
+          <p className="mt-1 text-muted-foreground">
+            Create a profile to get your own link, then share it on your story.
+          </p>
+          <Button asChild size="sm" className="mt-3 rounded-full">
+            <Link href="/register">Get your link</Link>
+          </Button>
+        </div>
+      )}
+
       <UnauthenticatedDialog
         open={showUnauthenticatedDialog}
         onOpenChange={setShowUnauthenticatedDialog}
         isPending={mutation.isPending}
         onConfirm={() => {
           setShowUnauthenticatedDialog(false);
-          mutation.mutate();
+          mutation.mutate(undefined, {
+            onSuccess: () => setShowSignupPrompt(true),
+          });
         }}
       />
     </>

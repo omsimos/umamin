@@ -16,7 +16,7 @@ import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
 import { activeProTheme } from "@/lib/pro";
 import type { PublicUserWithBadge } from "@/lib/types";
-import { hasPlusFeatures } from "@/lib/utils";
+import { hasPlusFeatures, visibleText } from "@/lib/utils";
 import CopyLink from "./copy-link";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { GroupBadge } from "./group-badge";
@@ -29,6 +29,7 @@ export function UserCard({
   isSelf,
   headerActions,
   primaryAction,
+  nameAs: Name = "p",
 }: {
   user: PublicUserWithBadge;
   isSelf?: boolean;
@@ -38,6 +39,9 @@ export function UserCard({
   // Right-aligned action just below the banner — the Follow button on other
   // profiles.
   primaryAction?: ReactNode;
+  // The profile page makes the name its h1. Elsewhere, such as the inbox, the
+  // card sits under the page's own heading.
+  nameAs?: "h1" | "p";
 }) {
   return (
     <div>
@@ -112,9 +116,9 @@ export function UserCard({
 
       <section className={primaryAction ? "mt-3" : "mt-11"}>
         <div className="flex items-center space-x-1">
-          <p className="font-semibold md:text-xl">
-            {user.displayName ? user.displayName : user.username}
-          </p>
+          <Name className="font-semibold md:text-xl">
+            {visibleText(user.displayName) || user.username}
+          </Name>
           {import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(
             user.username,
           ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
