@@ -4,7 +4,7 @@ import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { cn } from "@umamin/ui/lib/utils";
 import { Loader2Icon, MoonIcon, SendIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { ChatList } from "@/components/chat-list";
 import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
@@ -25,7 +25,6 @@ export function ChatForm({ user }: { user: PublicUser }) {
     useState(false);
   // Senders without an account are the people most likely to want a link of
   // their own, so they get a sign-up prompt after the message goes through.
-  const sendingAsGuest = useRef(false);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
 
   const inputRef = useDynamicTextarea(content);
@@ -47,7 +46,6 @@ export function ChatForm({ user }: { user: PublicUser }) {
       setMessage(formatContent(content));
       toast.success("Message sent.");
       setContent("");
-      if (sendingAsGuest.current) setShowSignupPrompt(true);
     },
     onError: (err) => {
       captureException(err, { source: "send message" });
@@ -58,13 +56,13 @@ export function ChatForm({ user }: { user: PublicUser }) {
   const submitMessage = async () => {
     try {
       const currentUser = await fetchCurrentUserOptional();
-      sendingAsGuest.current = !currentUser.user;
 
       if (!currentUser.user) {
         setShowUnauthenticatedDialog(true);
         return;
       }
 
+      setShowSignupPrompt(false);
       mutation.mutate();
     } catch (error) {
       captureException(error, { source: "send message session" });
@@ -148,7 +146,9 @@ export function ChatForm({ user }: { user: PublicUser }) {
         isPending={mutation.isPending}
         onConfirm={() => {
           setShowUnauthenticatedDialog(false);
-          mutation.mutate();
+          mutation.mutate(undefined, {
+            onSuccess: () => setShowSignupPrompt(true),
+          });
         }}
       />
     </>

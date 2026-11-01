@@ -314,13 +314,17 @@ export function hasPlusFeatures(
   return hasUmaminPlus(user?.createdAt) || hasUmaminPro(user?.proUntil);
 }
 
-// Zero-width and bidi marks render as nothing, so a display name made only of
-// them would show a blank name and a title that starts with an invisible char.
-const INVISIBLE_CHARS = /[​-‏‪-‮⁠﻿]/g;
+// Characters that render as nothing: zero-width and bidi marks, plus the
+// Hangul and Braille fillers people use to make a name look blank. They are
+// only stripped for the emptiness test. Joiners stay in visible text, so emoji
+// sequences and scripts that need ZWNJ keep rendering correctly.
+const INVISIBLE_CHARS =
+  /[\u00AD\u115F\u1160\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\u2800\u3164\uFEFF\uFFA0]/g;
 
-/** The display name with invisible characters removed; "" when nothing is left. */
-export function cleanDisplayName(name?: string | null): string {
-  return (name ?? "").replace(INVISIBLE_CHARS, "").trim();
+/** The trimmed text, or "" when it has no visible characters. */
+export function visibleText(text?: string | null): string {
+  const trimmed = (text ?? "").trim();
+  return trimmed.replace(INVISIBLE_CHARS, "").trim() ? trimmed : "";
 }
 
 /**

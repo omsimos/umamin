@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { absoluteUrl, jsonLdScript, pageSeo } from "../src/lib/seo";
-import { cleanDisplayName } from "../src/lib/utils";
+import { visibleText } from "../src/lib/utils";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -142,15 +142,19 @@ describe("jsonLdScript", () => {
   });
 });
 
-describe("cleanDisplayName", () => {
-  it("treats a name made of invisible marks as empty", () => {
-    expect(cleanDisplayName("\u200E")).toBe("");
-    expect(cleanDisplayName(" \u200B\uFEFF ")).toBe("");
+describe("visibleText", () => {
+  it("treats text made only of invisible characters as empty", () => {
+    expect(visibleText("\u200E")).toBe("");
+    expect(visibleText(" \u200B\uFEFF ")).toBe("");
+    expect(visibleText("\u3164")).toBe("");
+    expect(visibleText("\u2800\u2800")).toBe("");
+    expect(visibleText(null)).toBe("");
   });
 
-  it("keeps visible text and strips the marks around it", () => {
-    expect(cleanDisplayName("\u200EJosh\u200F")).toBe("Josh");
-    expect(cleanDisplayName(null)).toBe("");
+  it("returns visible text unchanged, joiners included", () => {
+    const family = "\u{1F468}\u200D\u{1F469}\u200D\u{1F467} Fam";
+    expect(visibleText(family)).toBe(family);
+    expect(visibleText("  Josh ")).toBe("Josh");
   });
 });
 

@@ -11,7 +11,7 @@ import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import { PublicMenubar } from "@/components/public-menu-bar";
 import { MAX_INVITE_CODE_LEN } from "@/lib/chat/constants";
-import { absoluteUrl, jsonLdScript, orgRef, pageSeo } from "@/lib/seo";
+import { absoluteUrl, orgRef, pageSeo } from "@/lib/seo";
 import { IdentityCard } from "./-umamin-chat/components/lobby/identity-card";
 import { InterestPicker } from "./-umamin-chat/components/lobby/interest-picker";
 import { InviteBanner } from "./-umamin-chat/components/lobby/invite-banner";
@@ -43,6 +43,17 @@ export const Route = createFileRoute("/chat/")({
       description: DESCRIPTION,
       path: "/chat",
       image: "/chat-opengraph.png",
+      jsonLd: {
+        "@type": "WebApplication",
+        name: "Umamin Chat",
+        url: absoluteUrl("/chat"),
+        applicationCategory: "CommunicationApplication",
+        operatingSystem: "Web",
+        browserRequirements: "Requires JavaScript",
+        description: DESCRIPTION,
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        publisher: orgRef(),
+      },
     });
     return {
       ...seo,
@@ -53,19 +64,6 @@ export const Route = createFileRoute("/chat/")({
           content:
             "anonymous chat, talk to strangers, random chat, interest-based chat, anonymous messaging, umamin",
         },
-      ],
-      scripts: [
-        jsonLdScript({
-          "@type": "WebApplication",
-          name: "Umamin Chat",
-          url: absoluteUrl("/chat"),
-          applicationCategory: "CommunicationApplication",
-          operatingSystem: "Web",
-          browserRequirements: "Requires JavaScript",
-          description: DESCRIPTION,
-          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-          publisher: orgRef(),
-        }),
       ],
     };
   },

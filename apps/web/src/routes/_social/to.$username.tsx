@@ -9,7 +9,7 @@ import { ShareButton } from "@/components/share-button";
 import { Link } from "@/lib/navigation";
 import { pageSeo } from "@/lib/seo";
 import type { PublicUserWithBadge } from "@/lib/types";
-import { cleanDisplayName, formatUsername } from "@/lib/utils";
+import { formatUsername, visibleText } from "@/lib/utils";
 import { ChatForm } from "./-components/chat-form";
 import { ChatFormSkeleton } from "./-components/chat-form-skeleton";
 import { loaderFetchUserProfile } from "./-lib/loader-queries";
@@ -76,7 +76,7 @@ function SendMessage() {
               href={`/user/${user.username}`}
               className="font-semibold text-sm hover:underline"
             >
-              {cleanDisplayName(user.displayName) || user.username}
+              {visibleText(user.displayName) || user.username}
             </Link>
             {import.meta.env.VITE_VERIFIED_USERS?.split(",").includes(
               user.username,

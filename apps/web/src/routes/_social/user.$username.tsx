@@ -5,9 +5,9 @@ import { RouteSegmentError } from "@/components/route-segment-error";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
 import { loadViewer } from "@/lib/loader-viewer";
 import { queryKeys } from "@/lib/query";
-import { absoluteUrl, pageSeo, truncate, websiteId } from "@/lib/seo";
+import { absoluteUrl, pageSeo, websiteId } from "@/lib/seo";
 import type { PublicUserWithBadge } from "@/lib/types";
-import { cleanDisplayName, formatUsername } from "@/lib/utils";
+import { formatUsername, visibleText } from "@/lib/utils";
 import { UserProfile } from "./-components/user-profile";
 import { loaderFetchUserProfile } from "./-lib/loader-queries";
 
@@ -43,14 +43,15 @@ export const Route = createFileRoute("/_social/user/$username")({
     }
 
     const user = loaderData.user;
-    const displayName = cleanDisplayName(user.displayName);
-    const bio = user.bio?.trim();
+    const displayName = visibleText(user.displayName);
+    const bio = visibleText(user.bio);
     const path = `/user/${username}`;
     const title = displayName
       ? `${displayName} (@${username}) on Umamin`
       : `@${username} on Umamin`;
+    // The bio schema caps it at 150 characters, so it fits a description.
     const description = bio
-      ? truncate(bio, 160)
+      ? bio
       : `Profile of @${username} on Umamin. Join Umamin to connect with @${username} and engage in anonymous messaging.`;
     // A profile with no bio and no followers is the same boilerplate page for
     // every handle. Keep those out of the index until there is something on

@@ -6,7 +6,7 @@ import { loadViewer } from "@/lib/loader-viewer";
 import { PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
 import { absoluteUrl, pageSeo, truncate, websiteId } from "@/lib/seo";
 import type { CommentsResponse, PostData } from "@/lib/types";
-import { cleanDisplayName } from "@/lib/utils";
+import { visibleText } from "@/lib/utils";
 import { CommentsList } from "./-components/comments-list";
 import { PostCardMain } from "./-components/post-card-main";
 import { PostCardSkeleton } from "./-components/post-card-skeleton";
@@ -69,9 +69,7 @@ export const Route = createFileRoute("/_social/post/$id")({
     }
 
     const authorName =
-      cleanDisplayName(post.author?.displayName) ||
-      post.author?.username ||
-      "User";
+      visibleText(post.author?.displayName) || post.author?.username || "User";
 
     // The page covers labelled text, so its tab title, link previews and the
     // search index must not show it either.
@@ -107,7 +105,9 @@ export const Route = createFileRoute("/_social/post/$id")({
         author: {
           "@type": "Person",
           name: authorName,
-          url: absoluteUrl(`/user/${post.author.username}`),
+          ...(post.author?.username
+            ? { url: absoluteUrl(`/user/${post.author.username}`) }
+            : {}),
         },
         interactionStatistic: [
           {
