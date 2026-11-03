@@ -95,6 +95,14 @@ export const userTable = sqliteTable(
     musicId: text("music_id"),
     musicTitle: text("music_title"),
     musicThumbnail: text("music_thumbnail"),
+    // Note streak: consecutive Manila calendar days with a non-anonymous note
+    // save. Lives here, not on the note row, because clearing a note deletes
+    // that row. noteStreakDay is the Manila day number of the last counted
+    // save; readers derive the live streak from it, so cached payloads expire
+    // a broken streak on their own. See apps/web lib/streak.ts.
+    noteStreak: integer("note_streak").notNull().default(0),
+    noteStreakBest: integer("note_streak_best").notNull().default(0),
+    noteStreakDay: integer("note_streak_day"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
