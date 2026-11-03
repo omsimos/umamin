@@ -15,12 +15,14 @@ import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { Link } from "@/lib/navigation";
 import { activeProTheme } from "@/lib/pro";
+import { displayNoteStreak } from "@/lib/streak";
 import type { PublicUserWithBadge } from "@/lib/types";
 import { hasPlusFeatures, visibleText } from "@/lib/utils";
 import CopyLink from "./copy-link";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { GroupBadge } from "./group-badge";
 import { MusicEmbed } from "./music-embed";
+import { NoteStreakIcon } from "./note-streak";
 import { ProBadge } from "./pro-flair";
 import { ProfileShareMenu } from "./share-button";
 
@@ -43,6 +45,8 @@ export function UserCard({
   // card sits under the page's own heading.
   nameAs?: "h1" | "p";
 }) {
+  const noteStreak = displayNoteStreak(user);
+
   return (
     <div>
       <div className="relative">
@@ -154,6 +158,18 @@ export function UserCard({
                 aura points
               </span>
             </div>
+
+            {noteStreak > 0 && (
+              <div className="text-muted-foreground text-sm flex items-center gap-2">
+                <NoteStreakIcon className="size-4" />
+                <span>
+                  <span className="font-medium text-foreground">
+                    {noteStreak}
+                  </span>
+                  -day note streak
+                </span>
+              </div>
+            )}
 
             {user.quietMode && (
               <div className="flex items-center gap-2 text-muted-foreground text-sm">

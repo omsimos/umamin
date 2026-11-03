@@ -143,15 +143,21 @@ export function clearNoteAction() {
 }
 
 // note is the freshly-upserted row; typed loosely and re-cast where consumed.
+// streak is the new streak state, or null when the save didn't change it.
+type CreateNoteResult = ErrorResult & {
+  note?: Record<string, unknown>;
+  streak?: { noteStreak: number; noteStreakDay: number } | null;
+};
+
 export function createNoteAction(input: {
   content?: string;
   isAnonymous?: boolean;
   musicUrl?: string;
 }) {
-  return callAction<ErrorResult & { note?: Record<string, unknown> }>(
+  return callAction<CreateNoteResult>(
     "createNoteAction",
     input,
-  ) as Promise<ErrorResult & { note?: Record<string, unknown> }>;
+  ) as Promise<CreateNoteResult>;
 }
 
 // ── message ──────────────────────────────────────────────────────────────────

@@ -12,12 +12,30 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { NoteStreakIcon } from "@/components/note-streak";
 import { SongAttachDialog } from "@/components/song-attach-dialog";
 import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
-import { patchNote, upsertNote } from "@/lib/query-cache";
-import type { NoteItem, NotesResponse, PublicUser } from "@/lib/types";
+import {
+  patchCurrentUser,
+  patchNote,
+  patchUserProfile,
+  upsertNote,
+} from "@/lib/query-cache";
+import {
+  activeNoteStreak,
+  isNoteStreakAtRisk,
+  NOTE_STREAK_MIN_DISPLAY,
+  streakDay,
+} from "@/lib/streak";
+import type {
+  CurrentUserResponse,
+  NoteItem,
+  NotesResponse,
+  PublicUser,
+  UserProfileResponse,
+} from "@/lib/types";
 import { createNoteAction } from "../-lib/actions";
 
 const PROMPTS = [
@@ -123,6 +141,19 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         return;
       }
 
+      const streak = data?.streak ?? null;
+      if (streak) {
+        queryClient.setQueryData<CurrentUserResponse>(
+          queryKeys.currentUser(),
+          (current) => patchCurrentUser(current, (u) => ({ ...u, ...streak })),
+        );
+        queryClient.setQueryData<UserProfileResponse>(
+          queryKeys.userProfile(currentUser.username),
+          (current) => patchUserProfile(current, (u) => ({ ...u, ...streak })),
+        );
+      }
+      const author = streak ? { ...currentUser, ...streak } : currentUser;
+
       if (data && "note" in data && data.note) {
         const note = data.note as unknown as NoteItem;
         queryClient.setQueryData<NoteItem | null>(
@@ -141,13 +172,17 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
                 : current,
               {
                 ...note,
-                user: note.isAnonymous ? undefined : currentUser,
+                user: note.isAnonymous ? undefined : author,
               },
             ),
         );
       }
 
-      toast.success("Note's out there.");
+      toast.success(
+        streak && streak.noteStreak >= NOTE_STREAK_MIN_DISPLAY
+          ? `Note's out there. ${streak.noteStreak}-day streak.`
+          : "Note's out there.",
+      );
 
       setContent("");
       setMusicUrl("");
@@ -267,6 +302,40 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
           </Button>
         </div>
       </div>
+
+      <StreakStatus user={currentUser} isAnonymous={isAnonymous} />
     </section>
+  );
+}
+
+function StreakStatus({
+  user,
+  isAnonymous,
+}: {
+  user: PublicUser;
+  isAnonymous: boolean;
+}) {
+  const today = streakDay();
+  const streak = activeNoteStreak(user, today);
+  if (!streak) return null;
+
+  if (isNoteStreakAtRisk(user, today)) {
+    return (
+      <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+        <NoteStreakIcon className="size-4 shrink-0" />
+        {isAnonymous
+          ? `Anonymous notes don't count toward your ${streak}-day streak.`
+          : `${streak}-day streak. Share a note today to keep it going.`}
+      </p>
+    );
+  }
+
+  if (streak < NOTE_STREAK_MIN_DISPLAY) return null;
+
+  return (
+    <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+      <NoteStreakIcon className="size-4 shrink-0" />
+      {streak}-day streak. See you tomorrow.
+    </p>
   );
 }

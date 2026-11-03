@@ -42,6 +42,7 @@ import { ContentCover } from "@/components/content-cover";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
+import { NoteStreakChip } from "@/components/note-streak";
 import { PostBody } from "@/components/post-body";
 import { TimeAgo } from "@/components/time-ago";
 import {
@@ -327,6 +328,7 @@ export function NoteCard({
                           )}
                       </Link>
                       <GroupBadge badge={user?.groupBadge} />
+                      <NoteStreakChip state={user} />
                     </div>
                   )}
 

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { streakDay } from "@/lib/streak";
 import type { NoteItem } from "@/lib/types";
 import { NoteCard } from "./note-card";
 
@@ -263,5 +264,39 @@ describe("NoteCard moderation cover", () => {
       screen.getByText(/overthinking about tests/).closest("[aria-hidden]"),
     ).not.toBeNull();
     expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
+  });
+});
+
+describe("NoteCard streak", () => {
+  const author = {
+    id: "author-1",
+    username: "alice",
+    displayName: null,
+    imageUrl: null,
+    quietMode: false,
+    equippedGroupId: null,
+    points: 0,
+    proUntil: null,
+    createdAt: new Date("2026-06-01T00:00:00Z"),
+  };
+
+  it("shows the author's live streak on a shared note", () => {
+    renderCard(
+      makeNote({
+        isAnonymous: false,
+        user: { ...author, noteStreak: 6, noteStreakDay: streakDay() - 1 },
+      }),
+    );
+    expect(screen.getByTitle("6-day note streak")).toBeInTheDocument();
+  });
+
+  it("hides a streak that broke after the page was cached", () => {
+    renderCard(
+      makeNote({
+        isAnonymous: false,
+        user: { ...author, noteStreak: 6, noteStreakDay: streakDay() - 2 },
+      }),
+    );
+    expect(screen.queryByText(/note streak/)).not.toBeInTheDocument();
   });
 });
