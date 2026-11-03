@@ -59,6 +59,8 @@ export type PublicUser = Omit<
   // Pro profile theme is profile-surface-only, like bannerImageUrl — re-added
   // on PublicUserWithBadge, never on the per-author list payloads.
   | "profileTheme"
+  // Unused until a "best streak" surface exists.
+  | "noteStreakBest"
 >;
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
@@ -89,6 +91,9 @@ export type FeedAuthor = Omit<
   | "followingCount"
   | "updatedAt"
   | "pinnedPostId"
+  // Notes-feed-only; added back on NoteItem.user.
+  | "noteStreak"
+  | "noteStreakDay"
 >;
 
 export type FeedAuthorWithBadge = FeedAuthor & {
@@ -135,6 +140,7 @@ export function toPublicUser(user: SelectUser): PublicUser {
     banReason: _banReason,
     bannedBy: _bannedBy,
     profileTheme: _profileTheme,
+    noteStreakBest: _noteStreakBest,
     ...rest
   } = user;
   return rest;
@@ -314,7 +320,8 @@ export type NoteItem = Omit<
   | ModerationColumn
 > &
   Moderated & {
-    user?: FeedAuthorWithBadge;
+    user?: FeedAuthorWithBadge &
+      Pick<PublicUser, "noteStreak" | "noteStreakDay">;
     isReacted?: boolean;
     music: MusicAttachment | null;
   };

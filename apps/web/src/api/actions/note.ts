@@ -16,6 +16,10 @@ import { isModerationEnforced } from "../../server-lib/flags";
 import { isModerator } from "../../server-lib/moderation";
 import { deleteDisputes } from "../../server-lib/moderation-review";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
+import {
+  type NoteStreak,
+  recordNoteStreak,
+} from "../../server-lib/note-streak";
 import { idSchema } from "../../server-lib/schema";
 import { ctxDb, defer } from "./_shared";
 
@@ -78,6 +82,7 @@ export const createNoteHandler = action(
       spotifyThumbnail: null,
     };
 
+    let streak: NoteStreak | null = null;
     await db.transaction(async (tx) => {
       const [row] = await tx
         .insert(noteTable)
@@ -117,10 +122,18 @@ export const createNoteHandler = action(
           .where(eq(noteReactionTable.noteId, row.id));
         await clearNoteDisputes(tx, row.id);
       }
+
+      // Anonymous saves don't count: a streak ticking up as an anonymous note
+      // lands would point at its author.
+      if (!isAnonymous) {
+        streak = await recordNoteStreak(tx, session.userId);
+      }
     });
 
     return {
       success: true,
+      // Null when nothing changed (anonymous, or today already counted).
+      streak,
       note: await getCurrentNoteData(
         db,
         session.userId,

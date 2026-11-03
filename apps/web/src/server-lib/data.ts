@@ -157,6 +157,10 @@ const publicUserColumns = {
   followingCount: userTable.followingCount,
   points: userTable.points,
   proUntil: userTable.proUntil,
+  // Raw streak state; renderers derive the live streak (lib/streak.ts) so a
+  // cached profile drops a broken streak without a refetch.
+  noteStreak: userTable.noteStreak,
+  noteStreakDay: userTable.noteStreakDay,
   createdAt: userTable.createdAt,
   updatedAt: userTable.updatedAt,
 };
@@ -1850,7 +1854,13 @@ async function getPublicNotesPage(
   const baseQuery = db
     .select({
       note: noteTable,
-      user: feedAuthorColumns,
+      // Streak rides only the notes feed, not the shared feedAuthorColumns
+      // that posts, comments and messages also select.
+      user: {
+        ...feedAuthorColumns,
+        noteStreak: userTable.noteStreak,
+        noteStreakDay: userTable.noteStreakDay,
+      },
     })
     .from(noteTable)
     .leftJoin(userTable, eq(noteTable.userId, userTable.id))
@@ -2135,6 +2145,8 @@ export async function getPublicUserProfileData(
       points: userTable.points,
       proUntil: userTable.proUntil,
       profileTheme: userTable.profileTheme,
+      noteStreak: userTable.noteStreak,
+      noteStreakDay: userTable.noteStreakDay,
       createdAt: userTable.createdAt,
       updatedAt: userTable.updatedAt,
       musicProvider: userTable.musicProvider,
