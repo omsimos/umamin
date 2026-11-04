@@ -40,6 +40,8 @@
 //       the listed statuses to `emptyValue` on the server, so the SSR pass can
 //       redirect/notFound instead of crashing the loader.
 
+import { RequestFailedError } from "@/lib/request-error";
+
 // Fallback when the server entry stamped no real context (the unit runner).
 // waitUntil outlives the synthetic request; swallow rejections so a background
 // cache.put failure can't crash the SSR pass.
@@ -162,7 +164,7 @@ export function cookieHeaderHasAny(
 export async function loaderFetchJson<T>(path: string): Promise<T> {
   const response = await fetchResponse(path);
   if (!response.ok) {
-    throw new Error(`Request failed for ${path}`);
+    throw new RequestFailedError(path, response.status);
   }
   return (await response.json()) as T;
 }
@@ -177,7 +179,7 @@ export async function loaderFetchJsonOrNull<T>(
     return null;
   }
   if (!response.ok) {
-    throw new Error(`Request failed for ${path}`);
+    throw new RequestFailedError(path, response.status);
   }
   return (await response.json()) as T;
 }
@@ -192,6 +194,6 @@ export async function loaderFetchOptional<T>(
 
   const response = await ssrDispatch(path);
   if (nullStatuses.includes(response.status)) return emptyValue;
-  if (!response.ok) throw new Error(`Request failed for ${path}`);
+  if (!response.ok) throw new RequestFailedError(path, response.status);
   return (await response.json()) as T;
 }
