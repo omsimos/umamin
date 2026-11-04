@@ -26,7 +26,7 @@ export function NoteStreakChip({ state }: { state?: NoteStreakState }) {
     >
       <NoteStreakIcon className="size-3.5" />
       {streak}
-      <span className="sr-only">-day note streak</span>
+      <span className="sr-only"> day note streak</span>
     </span>
   );
 }
