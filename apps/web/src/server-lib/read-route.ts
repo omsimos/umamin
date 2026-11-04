@@ -4,7 +4,13 @@ import type { AppEnv } from "./env";
 import { formatErrorChain, INTERNAL_SERVER_ERROR } from "./errors";
 import { extractClientIp } from "./ip";
 import { captureRequestException } from "./posthog";
-import { checkReadRateLimit, RATE_LIMIT_ERROR } from "./ratelimit";
+import {
+  checkReadRateLimit,
+  checkSharedIpReadRateLimit,
+  checkUserReadRateLimit,
+  RATE_LIMIT_ERROR,
+} from "./ratelimit";
+import { hasSessionCredential } from "./session";
 
 // ── JSON envelope helpers (ported from apps/www lib/private-json + public-json) ─
 
@@ -67,6 +73,12 @@ function viewerIdFrom(c: Context): string | undefined {
   return (c as Context<AppBindings>).var.resolvedUserId;
 }
 
+function sessionResolverFrom(
+  c: Context,
+): AppBindings["Variables"]["getSession"] | undefined {
+  return (c as Context<AppBindings>).var.getSession;
+}
+
 // Private handlers get the FULL context (may resolve the viewer session).
 // `null` is a valid body (missing entity) — it still gets the private envelope.
 type PrivateReadHandler = (c: AppContext) => Promise<Response | object | null>;
@@ -79,16 +91,31 @@ type PublicReadHandler = (
   env: AppEnv,
 ) => Promise<Response | object>;
 
+// Anonymous requests and invalid tokens are limited per IP. A valid session is
+// limited per user, behind a looser per-IP ceiling. The session lookup is
+// memoized on the context, so the handler reuses it without another round trip.
+async function privateReadAllowed(c: AppContext): Promise<boolean> {
+  const ip = extractClientIp((name) => c.req.header(name));
+  const getSession = sessionResolverFrom(c);
+  if (!getSession || !hasSessionCredential(c)) {
+    return checkReadRateLimit(c.env, ip);
+  }
+  if (!(await checkSharedIpReadRateLimit(c.env, ip))) return false;
+  const { session } = await getSession();
+  return session
+    ? checkUserReadRateLimit(c.env, session.userId)
+    : checkReadRateLimit(c.env, ip);
+}
+
 /**
- * Per-viewer GET scaffold: IP read rate limit → handler → privateJson envelope
+ * Per-viewer GET scaffold: read rate limit → handler → privateJson envelope
  * (no-store + Vary: Cookie). Never enters the Cache API. `label` keeps each
  * route's log prefix ("Error <label>:").
  */
 export function withPrivateRead(label: string, handler: PrivateReadHandler) {
   return async (c: AppContext): Promise<Response> => {
     try {
-      const ip = extractClientIp((name) => c.req.header(name));
-      if (!(await checkReadRateLimit(c.env, ip))) {
+      if (!(await privateReadAllowed(c))) {
         return privateJson({ error: RATE_LIMIT_ERROR }, 429);
       }
       const result = await handler(c);

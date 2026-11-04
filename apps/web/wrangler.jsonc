@@ -115,6 +115,15 @@
             "simple": { "limit": 100, "period": 60 }
           },
           {
+            // Per-IP ceiling for signed-in reads, which are otherwise limited
+            // per user (server-lib/read-route.ts). Loose because a mobile
+            // carrier puts many phones behind one public IP.
+            "name": "RL_READ_SHARED",
+            "type": "ratelimit",
+            "namespace_id": "1009",
+            "simple": { "limit": 600, "period": 60 }
+          },
+          {
             // Umamin Chat socket upgrades, per IP. Generous for shared NAT
             // (schools, offices, CGNAT); reconnects after deploys land here too.
             // DM socket upgrades share it, keyed per user (api/dm-socket.ts).
@@ -227,6 +236,15 @@
             "type": "ratelimit",
             "namespace_id": "2005",
             "simple": { "limit": 100, "period": 60 }
+          },
+          {
+            // Per-IP ceiling for signed-in reads, which are otherwise limited
+            // per user (server-lib/read-route.ts). Loose because a mobile
+            // carrier puts many phones behind one public IP.
+            "name": "RL_READ_SHARED",
+            "type": "ratelimit",
+            "namespace_id": "2009",
+            "simple": { "limit": 600, "period": 60 }
           },
           {
             // Umamin Chat socket upgrades, per IP. Generous for shared NAT

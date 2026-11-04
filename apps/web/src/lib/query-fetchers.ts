@@ -5,6 +5,7 @@ import type {
   DmUnreadResponse,
 } from "@/lib/dm/types";
 import type { FeedSort } from "@/lib/feed-sort";
+import { RequestFailedError } from "@/lib/request-error";
 import type {
   BlockedUsersResponse,
   CommentsResponse,
@@ -35,7 +36,7 @@ async function fetchJson<T>(input: string): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed for ${input}`);
+    throw new RequestFailedError(input, response.status);
   }
 
   return (await response.json()) as T;
@@ -125,7 +126,7 @@ export async function fetchCurrentUserOptional() {
   }
 
   if (!response.ok) {
-    throw new Error("Request failed for /api/me");
+    throw new RequestFailedError("/api/me", response.status);
   }
 
   return (await response.json()) as CurrentUserResponse;
@@ -182,7 +183,7 @@ export async function fetchDmPeer(
   const url = `/api/dm/peer/${encodeURIComponent(username)}`;
   const response = await fetch(url, { credentials: "include" });
   if (response.status === 404) return null;
-  if (!response.ok) throw new Error(`Request failed for ${url}`);
+  if (!response.ok) throw new RequestFailedError(url, response.status);
   return (await response.json()) as DmPeerResponse;
 }
 
@@ -226,7 +227,7 @@ export async function fetchGroup(tagOrId: string) {
     return null;
   }
   if (!response.ok) {
-    throw new Error(`Request failed for /api/groups/${tagOrId}`);
+    throw new RequestFailedError(`/api/groups/${tagOrId}`, response.status);
   }
 
   return (await response.json()) as GroupPageData | null;
@@ -249,7 +250,7 @@ export async function fetchGroupMembersPage(
     return { data: [], nextCursor: null };
   }
   if (!response.ok) {
-    throw new Error(`Request failed for ${url}`);
+    throw new RequestFailedError(url, response.status);
   }
 
   return (await response.json()) as GroupMembersResponse;
@@ -266,7 +267,7 @@ export async function fetchGroupRequestsPage(
     return { data: [], nextCursor: null };
   }
   if (!response.ok) {
-    throw new Error(`Request failed for ${url}`);
+    throw new RequestFailedError(url, response.status);
   }
 
   return (await response.json()) as GroupRequestsResponse;

@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.20.1] - 2026-11-05
+
+### Fixed
+
+- Signed-in people on mobile data no longer get "Too many requests" errors because others on the same network are using Umamin at the same time.
+
 ## [7.20.0] - 2026-11-05
 
 ### Added
@@ -1259,6 +1265,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.20.1]: https://github.com/omsimos/umamin/compare/v7.20.0...v7.20.1
 [7.20.0]: https://github.com/omsimos/umamin/compare/v7.19.0...v7.20.0
 [7.19.0]: https://github.com/omsimos/umamin/compare/v7.18.0...v7.19.0
 [7.18.0]: https://github.com/omsimos/umamin/compare/v7.17.0...v7.18.0
