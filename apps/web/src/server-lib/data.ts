@@ -49,6 +49,7 @@ import {
   resolveMusicAttachment,
   safeMusicThumbnail,
 } from "../lib/music";
+import { publicNoteStreak } from "../lib/streak";
 import type {
   BlockedUsersResponse,
   CommentData,
@@ -1883,7 +1884,9 @@ async function getPublicNotesPage(
     note.isAnonymous
       ? toNoteItem(note, enforce)
       : toNoteItem(note, enforce, {
-          user: user ? withGroupBadge(user, badgeMap) : undefined,
+          user: user
+            ? withGroupBadge({ ...user, ...publicNoteStreak(user) }, badgeMap)
+            : undefined,
         }),
   );
 
@@ -2167,6 +2170,7 @@ export async function getPublicUserProfileData(
   const { musicProvider, musicId, musicTitle, musicThumbnail, ...rest } = user;
   return {
     ...rest,
+    ...publicNoteStreak(user),
     music: resolveMusicAttachment({
       musicProvider,
       musicId,

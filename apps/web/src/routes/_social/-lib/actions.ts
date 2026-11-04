@@ -1,4 +1,5 @@
 import { callAction } from "@/lib/api";
+import type { NoteStreak } from "@/lib/streak";
 
 // Colocated action wrappers for the social pages, mirroring the apps/www
 // `@/app/actions/*` named exports so the ported component call sites — and their
@@ -146,7 +147,7 @@ export function clearNoteAction() {
 // streak is the new streak state, or null when the save didn't change it.
 type CreateNoteResult = ErrorResult & {
   note?: Record<string, unknown>;
-  streak?: { noteStreak: number; noteStreakDay: number } | null;
+  streak?: NoteStreak | null;
 };
 
 export function createNoteAction(input: {

@@ -4,8 +4,11 @@
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// A 1-day streak only means "posted today", so it isn't worth a flame.
+// A 1-day streak only means "posted today", so it isn't shown publicly.
 export const NOTE_STREAK_MIN_DISPLAY = 2;
+
+// What a save that changed the streak returns to the client.
+export type NoteStreak = { noteStreak: number; noteStreakDay: number };
 
 export type NoteStreakState = {
   noteStreak?: number | null;
@@ -49,4 +52,21 @@ export function displayNoteStreak(
 ): number {
   const streak = activeNoteStreak(state, today);
   return streak >= NOTE_STREAK_MIN_DISPLAY ? streak : 0;
+}
+
+/**
+ * The streak fields a public payload may carry. A hidden streak (under the
+ * display threshold, or broken) ships as empty, so the payload doesn't reveal
+ * the day of someone's last shared note. Owner reads keep the raw values.
+ */
+export function publicNoteStreak(
+  state: NoteStreakState,
+  today = streakDay(),
+): { noteStreak: number; noteStreakDay: number | null } {
+  return displayNoteStreak(state, today) > 0
+    ? {
+        noteStreak: state.noteStreak ?? 0,
+        noteStreakDay: state.noteStreakDay ?? null,
+      }
+    : { noteStreak: 0, noteStreakDay: null };
 }

@@ -1,11 +1,7 @@
 import { userTable } from "@umamin/db/schema/user";
 import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
-import { streakDay } from "../lib/streak";
+import { type NoteStreak, streakDay } from "../lib/streak";
 import type { Db } from "./db";
-
-type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
-
-export type NoteStreak = { noteStreak: number; noteStreakDay: number };
 
 /**
  * Counts a note save toward the user's streak in one PK update with no prior
@@ -14,14 +10,14 @@ export type NoteStreak = { noteStreak: number; noteStreakDay: number };
  * WHERE skips the row, so a same-day re-save writes nothing).
  */
 export async function recordNoteStreak(
-  tx: Pick<Tx, "update">,
+  db: Pick<Db, "update">,
   userId: string,
   today = streakDay(),
 ): Promise<NoteStreak | null> {
   const next = sql`CASE WHEN ${userTable.noteStreakDay} = ${today - 1}
     THEN ${userTable.noteStreak} + 1 ELSE 1 END`;
 
-  const [row] = await tx
+  const [row] = await db
     .update(userTable)
     .set({
       noteStreak: next,
@@ -39,10 +35,7 @@ export async function recordNoteStreak(
         or(isNull(userTable.noteStreakDay), ne(userTable.noteStreakDay, today)),
       ),
     )
-    .returning({
-      noteStreak: userTable.noteStreak,
-      noteStreakDay: userTable.noteStreakDay,
-    });
+    .returning({ noteStreak: userTable.noteStreak });
 
   return row ? { noteStreak: row.noteStreak, noteStreakDay: today } : null;
 }

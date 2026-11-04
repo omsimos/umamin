@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { streakDay } from "@/lib/streak";
 import type { PublicUserWithBadge } from "@/lib/types";
@@ -64,5 +65,17 @@ describe("UserCard note streak", () => {
       />,
     );
     expect(screen.queryByText("-day note streak")).toBeNull();
+  });
+
+  it("leaves a live streak out of the server render", () => {
+    // The server and device clocks can disagree on the day, so the streak
+    // only renders after hydration.
+    const html = renderToString(
+      <UserCard
+        user={{ ...user, noteStreak: 12, noteStreakDay: streakDay() }}
+      />,
+    );
+    expect(html).toContain("aura points");
+    expect(html).not.toContain("note streak");
   });
 });

@@ -1,5 +1,6 @@
 import { cn } from "@umamin/ui/lib/utils";
 import { ZapIcon } from "lucide-react";
+import { useStreakToday } from "@/hooks/use-streak-today";
 import { displayNoteStreak, type NoteStreakState } from "@/lib/streak";
 
 // A bolt, not a flame: the flame already means "reacted" on note cards.
@@ -14,7 +15,8 @@ export function NoteStreakIcon({ className }: { className?: string }) {
 
 /** Compact streak count for a note card's author row. */
 export function NoteStreakChip({ state }: { state?: NoteStreakState }) {
-  const streak = state ? displayNoteStreak(state) : 0;
+  const today = useStreakToday();
+  const streak = state && today !== null ? displayNoteStreak(state, today) : 0;
   if (!streak) return null;
 
   return (

@@ -7,14 +7,17 @@ vi.mock("../src/server-lib/argon2", () => ({
   verify: async () => false,
 }));
 
+import { noteTable } from "@umamin/db/schema/note";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import {
   activeNoteStreak,
   displayNoteStreak,
   isNoteStreakAtRisk,
+  publicNoteStreak,
   streakDay,
 } from "../src/lib/streak";
+import { getNotesPage, getPublicUserProfileData } from "../src/server-lib/data";
 import type { Db } from "../src/server-lib/db";
 import { recordNoteStreak } from "../src/server-lib/note-streak";
 import { __clearSessionCache } from "../src/server-lib/session";
@@ -207,6 +210,74 @@ describe("createNoteAction streaks (real libSQL)", () => {
     expect(await streak()).toEqual({
       noteStreak: 4,
       noteStreakDay: streakDay() - 1,
+    });
+  });
+});
+
+describe("publicNoteStreak", () => {
+  const today = 20_000;
+
+  it("keeps a displayed streak", () => {
+    expect(
+      publicNoteStreak({ noteStreak: 3, noteStreakDay: today - 1 }, today),
+    ).toEqual({ noteStreak: 3, noteStreakDay: today - 1 });
+  });
+
+  it("empties a hidden streak so its day doesn't leak", () => {
+    expect(
+      publicNoteStreak({ noteStreak: 1, noteStreakDay: today }, today),
+    ).toEqual({ noteStreak: 0, noteStreakDay: null });
+    expect(
+      publicNoteStreak({ noteStreak: 8, noteStreakDay: today - 2 }, today),
+    ).toEqual({ noteStreak: 0, noteStreakDay: null });
+  });
+});
+
+describe("public reads hide the day of a hidden streak (real libSQL)", () => {
+  let db: Db;
+
+  beforeEach(async () => {
+    db = await makeTestDb();
+    await db.insert(userTable).values([
+      {
+        id: "solo",
+        username: "u_solo",
+        noteStreak: 1,
+        noteStreakDay: streakDay(),
+      },
+      {
+        id: "long",
+        username: "u_long",
+        noteStreak: 5,
+        noteStreakDay: streakDay(),
+      },
+    ]);
+    await db.insert(noteTable).values([
+      { userId: "solo", content: "one", isAnonymous: false },
+      { userId: "long", content: "five", isAnonymous: false },
+    ]);
+  });
+
+  it("on the profile", async () => {
+    expect(await getPublicUserProfileData(db, "u_solo")).toMatchObject({
+      noteStreak: 0,
+      noteStreakDay: null,
+    });
+    expect(await getPublicUserProfileData(db, "u_long")).toMatchObject({
+      noteStreak: 5,
+      noteStreakDay: streakDay(),
+    });
+  });
+
+  it("on notes feed authors", async () => {
+    const page = await getNotesPage(db, {});
+    const byUser = Object.fromEntries(
+      page.data.map((n) => [n.user?.username, n.user]),
+    );
+    expect(byUser.u_solo).toMatchObject({ noteStreak: 0, noteStreakDay: null });
+    expect(byUser.u_long).toMatchObject({
+      noteStreak: 5,
+      noteStreakDay: streakDay(),
     });
   });
 });

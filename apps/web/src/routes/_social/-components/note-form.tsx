@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { NoteStreakIcon } from "@/components/note-streak";
 import { SongAttachDialog } from "@/components/song-attach-dialog";
+import { useStreakToday } from "@/hooks/use-streak-today";
 import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
@@ -27,7 +28,6 @@ import {
   activeNoteStreak,
   isNoteStreakAtRisk,
   NOTE_STREAK_MIN_DISPLAY,
-  streakDay,
 } from "@/lib/streak";
 import type {
   CurrentUserResponse,
@@ -315,9 +315,9 @@ function StreakStatus({
   user: PublicUser;
   isAnonymous: boolean;
 }) {
-  const today = streakDay();
-  const streak = activeNoteStreak(user, today);
-  if (!streak) return null;
+  const today = useStreakToday();
+  const streak = today === null ? 0 : activeNoteStreak(user, today);
+  if (today === null || !streak) return null;
 
   if (isNoteStreakAtRisk(user, today)) {
     return (

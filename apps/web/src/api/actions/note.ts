@@ -16,10 +16,8 @@ import { isModerationEnforced } from "../../server-lib/flags";
 import { isModerator } from "../../server-lib/moderation";
 import { deleteDisputes } from "../../server-lib/moderation-review";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
-import {
-  type NoteStreak,
-  recordNoteStreak,
-} from "../../server-lib/note-streak";
+import { recordNoteStreak } from "../../server-lib/note-streak";
+import { captureRequestException } from "../../server-lib/posthog";
 import { idSchema } from "../../server-lib/schema";
 import { ctxDb, defer } from "./_shared";
 
@@ -82,7 +80,6 @@ export const createNoteHandler = action(
       spotifyThumbnail: null,
     };
 
-    let streak: NoteStreak | null = null;
     await db.transaction(async (tx) => {
       const [row] = await tx
         .insert(noteTable)
@@ -122,23 +119,33 @@ export const createNoteHandler = action(
           .where(eq(noteReactionTable.noteId, row.id));
         await clearNoteDisputes(tx, row.id);
       }
-
-      // Anonymous saves don't count: a streak ticking up as an anonymous note
-      // lands would point at its author.
-      if (!isAnonymous) {
-        streak = await recordNoteStreak(tx, session.userId);
-      }
     });
+
+    // Outside the transaction so it adds no round trip to the save: it runs
+    // alongside the note re-read. Anonymous saves don't count, since a streak
+    // ticking up as an anonymous note lands would point at its author.
+    const [streak, note] = await Promise.all([
+      isAnonymous
+        ? null
+        : recordNoteStreak(db, session.userId).catch((err) => {
+            // The note is already saved; a missed streak day isn't worth
+            // failing the save over.
+            captureRequestException(c, err, {
+              distinctId: session.userId,
+              properties: { source: "note streak" },
+            });
+            return null;
+          }),
+      isModerationEnforced(c.env).then((enforce) =>
+        getCurrentNoteData(db, session.userId, enforce),
+      ),
+    ]);
 
     return {
       success: true,
       // Null when nothing changed (anonymous, or today already counted).
       streak,
-      note: await getCurrentNoteData(
-        db,
-        session.userId,
-        await isModerationEnforced(c.env),
-      ),
+      note,
     };
   },
 );

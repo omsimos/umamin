@@ -13,6 +13,7 @@ import {
 import type { ReactNode } from "react";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
+import { useStreakToday } from "@/hooks/use-streak-today";
 import { Link } from "@/lib/navigation";
 import { activeProTheme } from "@/lib/pro";
 import { displayNoteStreak } from "@/lib/streak";
@@ -45,7 +46,8 @@ export function UserCard({
   // card sits under the page's own heading.
   nameAs?: "h1" | "p";
 }) {
-  const noteStreak = displayNoteStreak(user);
+  const today = useStreakToday();
+  const noteStreak = today === null ? 0 : displayNoteStreak(user, today);
 
   return (
     <div>
