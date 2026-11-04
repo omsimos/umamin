@@ -18,12 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
-## [7.20.0] - 2026-11-04
+## [7.20.0] - 2026-11-05
 
 ### Added
 
-- Note streaks. Share a note on consecutive days, counted in Philippine time, to build a streak. Streaks of 2 days or more show on your profile and next to your name in the notes feed.
-- The note box shows your current streak and reminds you to share a note on the last day you can keep it going. Anonymous notes don't count toward a streak.
+- Streaks. Publish a post or share a note on consecutive days, counted in Philippine time, to build a streak. Streaks of 2 days or more show on your profile and next to your name on your posts and notes.
+- The note box and the post composer show your current streak and remind you to post on the last day you can keep it going. Anonymous notes and comments don't count toward a streak.
 
 ## [7.19.0] - 2026-10-31
 
