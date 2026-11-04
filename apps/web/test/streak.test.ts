@@ -14,7 +14,6 @@ import {
   activeStreak,
   displayStreak,
   isStreakAtRisk,
-  publicStreak,
   toStreakDay,
 } from "../src/lib/streak";
 import { getNotesPage, getPublicUserProfileData } from "../src/server-lib/data";
@@ -143,7 +142,7 @@ describe("recordStreak (real libSQL)", () => {
   });
 });
 
-describe("createNoteAction streaks (real libSQL)", () => {
+describe("save actions count toward streaks (real libSQL)", () => {
   let db: Db;
 
   async function streak() {
@@ -183,6 +182,31 @@ describe("createNoteAction streaks (real libSQL)", () => {
     });
   });
 
+  it("extends the streak on a post and returns it", async () => {
+    const app = buildApp(db, authed("u1"));
+    const { json } = await callJson<{
+      success: boolean;
+      streakUpdate: unknown;
+    }>(app, "createPostAction", { content: "QA post" });
+
+    expect(json.success).toBe(true);
+    expect(json.streakUpdate).toEqual({ streak: 5, streakDay: toStreakDay() });
+    expect(await streak()).toEqual({ streak: 5, streakDay: toStreakDay() });
+  });
+
+  it("counts a post and a note on the same day once", async () => {
+    const app = buildApp(db, authed("u1"));
+    await callJson(app, "createPostAction", { content: "QA post" });
+    const { json } = await callJson<{ streakUpdate: unknown }>(
+      app,
+      "createNoteAction",
+      { content: "hello" },
+    );
+
+    expect(json.streakUpdate).toBeNull();
+    expect((await streak()).streak).toBe(5);
+  });
+
   it("doesn't count an anonymous note", async () => {
     const app = buildApp(db, authed("u1"));
     const { json } = await callJson<{
@@ -195,28 +219,6 @@ describe("createNoteAction streaks (real libSQL)", () => {
     expect(await streak()).toEqual({
       streak: 4,
       streakDay: toStreakDay() - 1,
-    });
-  });
-});
-
-describe("publicStreak", () => {
-  const today = 20_000;
-
-  it("keeps a displayed streak", () => {
-    expect(publicStreak({ streak: 3, streakDay: today - 1 }, today)).toEqual({
-      streak: 3,
-      streakDay: today - 1,
-    });
-  });
-
-  it("empties a hidden streak so its day doesn't leak", () => {
-    expect(publicStreak({ streak: 1, streakDay: today }, today)).toEqual({
-      streak: 0,
-      streakDay: null,
-    });
-    expect(publicStreak({ streak: 8, streakDay: today - 2 }, today)).toEqual({
-      streak: 0,
-      streakDay: null,
     });
   });
 });
@@ -239,6 +241,12 @@ describe("public reads hide the day of a hidden streak (real libSQL)", () => {
         streak: 5,
         streakDay: toStreakDay(),
       },
+      {
+        id: "lapsed",
+        username: "u_lapsed",
+        streak: 9,
+        streakDay: toStreakDay() - 2,
+      },
     ]);
     await db.insert(noteTable).values([
       { userId: "solo", content: "one", isAnonymous: false },
@@ -248,6 +256,10 @@ describe("public reads hide the day of a hidden streak (real libSQL)", () => {
 
   it("on the profile", async () => {
     expect(await getPublicUserProfileData(db, "u_solo")).toMatchObject({
+      streak: 0,
+      streakDay: null,
+    });
+    expect(await getPublicUserProfileData(db, "u_lapsed")).toMatchObject({
       streak: 0,
       streakDay: null,
     });

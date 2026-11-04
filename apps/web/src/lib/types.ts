@@ -91,9 +91,6 @@ export type FeedAuthor = Omit<
   | "followingCount"
   | "updatedAt"
   | "pinnedPostId"
-  // Notes-feed-only; added back on NoteItem.user.
-  | "streak"
-  | "streakDay"
 >;
 
 export type FeedAuthorWithBadge = FeedAuthor & {
@@ -320,7 +317,7 @@ export type NoteItem = Omit<
   | ModerationColumn
 > &
   Moderated & {
-    user?: FeedAuthorWithBadge & Pick<PublicUser, "streak" | "streakDay">;
+    user?: FeedAuthorWithBadge;
     isReacted?: boolean;
     music: MusicAttachment | null;
   };

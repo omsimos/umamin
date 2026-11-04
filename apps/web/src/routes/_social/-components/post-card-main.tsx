@@ -25,6 +25,7 @@ import { PollCard } from "@/components/poll-card";
 import { PostBody } from "@/components/post-body";
 import { PostImages } from "@/components/post-images";
 import { QuotedPostCard } from "@/components/quoted-post-card";
+import { StreakChip } from "@/components/streak";
 import { TimeAgo } from "@/components/time-ago";
 import {
   BURST_ACTION_REJECT_MESSAGE,
@@ -234,6 +235,7 @@ export function PostCardMain({
                 author.username,
               ) && <BadgeCheckIcon className="w-4 h-4 text-pink-500" />}
             <GroupBadge badge={author.groupBadge} />
+            <StreakChip state={author} />
             <Link
               href={`/user/${author.username}`}
               className="truncate text-muted-foreground hover:underline"

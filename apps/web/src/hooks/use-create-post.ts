@@ -12,10 +12,12 @@ import {
 import { clientImageUrl, type PostImageInput } from "@/lib/post-images";
 import { queryKeys } from "@/lib/query";
 import {
+  applyStreakUpdate,
   patchPostAcrossFeed,
   prependFeedItem,
   replaceFeedItem,
 } from "@/lib/query-cache";
+import { streakToast } from "@/lib/streak";
 import type {
   FeedItem,
   FeedResponse,
@@ -161,6 +163,9 @@ export function useCreatePost(user: PublicUser | null) {
         return;
       }
 
+      const update = res?.streakUpdate ?? null;
+      if (user && update) applyStreakUpdate(queryClient, user.username, update);
+
       if (user && res && "post" in res && res.post && ctx?.optimisticId) {
         const nextItem: FeedItem = {
           type: "post",
@@ -178,7 +183,7 @@ export function useCreatePost(user: PublicUser | null) {
             // Real option ids from the action — without them the fresh poll
             // would be unvotable until a hard reload (no refetch-on-mount).
             poll: res.poll ? { ...res.poll, myVoteOptionId: null } : undefined,
-            author: user,
+            author: update ? { ...user, ...update } : user,
             isLiked: false,
             isReposted: false,
           },
@@ -209,7 +214,7 @@ export function useCreatePost(user: PublicUser | null) {
         }
       }
 
-      toast.success("Post published.");
+      toast.success(streakToast("Post published.", update));
     },
   });
 

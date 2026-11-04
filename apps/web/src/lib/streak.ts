@@ -52,19 +52,9 @@ export function displayStreak(
   return streak >= STREAK_MIN_DISPLAY ? streak : 0;
 }
 
-/**
- * The streak fields a public payload may carry. A hidden streak (under the
- * display threshold, or broken) ships as empty, so the payload doesn't reveal
- * the day someone last posted or shared a note. Owner reads keep the raw values.
- */
-export function publicStreak(
-  state: StreakState,
-  today = toStreakDay(),
-): { streak: number; streakDay: number | null } {
-  return displayStreak(state, today) > 0
-    ? {
-        streak: state.streak ?? 0,
-        streakDay: state.streakDay ?? null,
-      }
-    : { streak: 0, streakDay: null };
+/** A save's success toast, with the streak count once it's worth showing. */
+export function streakToast(message: string, update?: StreakUpdate | null) {
+  return update && update.streak >= STREAK_MIN_DISPLAY
+    ? `${message} ${update.streak}-day streak.`
+    : message;
 }

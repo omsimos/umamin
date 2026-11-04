@@ -49,7 +49,7 @@ import {
   resolveMusicAttachment,
   safeMusicThumbnail,
 } from "../lib/music";
-import { publicStreak } from "../lib/streak";
+import { STREAK_MIN_DISPLAY } from "../lib/streak";
 import type {
   BlockedUsersResponse,
   CommentData,
@@ -173,7 +173,26 @@ const publicUserColumns = {
 // isPro flag so TTL-cached entries self-correct at render when Pro expires;
 // equippedGroupId feeds withGroupBadge; points kept for forward-compat. The
 // FULL publicUserColumns stays on the current-user + profile reads (which
-// render bio/counts). Must match the FeedAuthor type in lib/types.ts (9 keys).
+// render bio/counts). Must match the FeedAuthor type in lib/types.ts (11 keys).
+
+// Manila day number (UTC+8), the same math as lib/streak.ts toStreakDay.
+const MANILA_TODAY = sql`((unixepoch() + 28800) / 86400)`;
+const STREAK_SHOWN = sql`(${userTable.streak} >= ${STREAK_MIN_DISPLAY} AND ${userTable.streakDay} >= ${MANILA_TODAY} - 1)`;
+
+// Public streak fields. A streak the UI would hide (under the display
+// threshold, or broken) goes out as 0 and null, so a public payload never
+// reveals the day someone last posted or shared a note. Owner reads
+// (publicUserColumns) keep the raw values for the composer reminder.
+const publicStreakColumns = {
+  streak:
+    sql<number>`CASE WHEN ${STREAK_SHOWN} THEN ${userTable.streak} ELSE 0 END`.mapWith(
+      Number,
+    ),
+  streakDay: sql<
+    number | null
+  >`CASE WHEN ${STREAK_SHOWN} THEN ${userTable.streakDay} END`,
+};
+
 export const feedAuthorColumns = {
   id: userTable.id,
   username: userTable.username,
@@ -183,6 +202,7 @@ export const feedAuthorColumns = {
   equippedGroupId: userTable.equippedGroupId,
   points: userTable.points,
   proUntil: userTable.proUntil,
+  ...publicStreakColumns,
   createdAt: userTable.createdAt,
 };
 
@@ -1855,13 +1875,7 @@ async function getPublicNotesPage(
   const baseQuery = db
     .select({
       note: noteTable,
-      // Streak rides only the notes feed, not the shared feedAuthorColumns
-      // that posts, comments and messages also select.
-      user: {
-        ...feedAuthorColumns,
-        streak: userTable.streak,
-        streakDay: userTable.streakDay,
-      },
+      user: feedAuthorColumns,
     })
     .from(noteTable)
     .leftJoin(userTable, eq(noteTable.userId, userTable.id))
@@ -1884,9 +1898,7 @@ async function getPublicNotesPage(
     note.isAnonymous
       ? toNoteItem(note, enforce)
       : toNoteItem(note, enforce, {
-          user: user
-            ? withGroupBadge({ ...user, ...publicStreak(user) }, badgeMap)
-            : undefined,
+          user: user ? withGroupBadge(user, badgeMap) : undefined,
         }),
   );
 
@@ -2148,8 +2160,7 @@ export async function getPublicUserProfileData(
       points: userTable.points,
       proUntil: userTable.proUntil,
       profileTheme: userTable.profileTheme,
-      streak: userTable.streak,
-      streakDay: userTable.streakDay,
+      ...publicStreakColumns,
       createdAt: userTable.createdAt,
       updatedAt: userTable.updatedAt,
       musicProvider: userTable.musicProvider,
@@ -2170,7 +2181,6 @@ export async function getPublicUserProfileData(
   const { musicProvider, musicId, musicTitle, musicThumbnail, ...rest } = user;
   return {
     ...rest,
-    ...publicStreak(user),
     music: resolveMusicAttachment({
       musicProvider,
       musicId,

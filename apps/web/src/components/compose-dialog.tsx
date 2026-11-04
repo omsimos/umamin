@@ -27,6 +27,7 @@ import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ComposerImages } from "@/components/composer-images";
 import { PollComposer } from "@/components/poll-composer";
 import { QuotedPostCard } from "@/components/quoted-post-card";
+import { StreakReminder } from "@/components/streak";
 import { useCreatePost } from "@/hooks/use-create-post";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useImageAttachments } from "@/hooks/use-image-attachments";
@@ -318,6 +319,8 @@ export function ComposeDialog({
               )}
             </div>
           </div>
+
+          {user && <StreakReminder state={user} className="px-4 pb-3" />}
 
           <footer
             className="flex items-center gap-1 border-t px-3 py-2"
