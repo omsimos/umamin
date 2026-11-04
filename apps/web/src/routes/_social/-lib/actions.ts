@@ -1,4 +1,5 @@
 import { callAction } from "@/lib/api";
+import type { StreakUpdate } from "@/lib/streak";
 
 // Colocated action wrappers for the social pages, mirroring the apps/www
 // `@/app/actions/*` named exports so the ported component call sites — and their
@@ -143,15 +144,21 @@ export function clearNoteAction() {
 }
 
 // note is the freshly-upserted row; typed loosely and re-cast where consumed.
+// streakUpdate is the new streak state, or null when the save didn't change it.
+type CreateNoteResult = ErrorResult & {
+  note?: Record<string, unknown>;
+  streakUpdate?: StreakUpdate | null;
+};
+
 export function createNoteAction(input: {
   content?: string;
   isAnonymous?: boolean;
   musicUrl?: string;
 }) {
-  return callAction<ErrorResult & { note?: Record<string, unknown> }>(
+  return callAction<CreateNoteResult>(
     "createNoteAction",
     input,
-  ) as Promise<ErrorResult & { note?: Record<string, unknown> }>;
+  ) as Promise<CreateNoteResult>;
 }
 
 // ── message ──────────────────────────────────────────────────────────────────

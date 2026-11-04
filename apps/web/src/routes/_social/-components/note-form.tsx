@@ -13,10 +13,12 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SongAttachDialog } from "@/components/song-attach-dialog";
+import { StreakReminder } from "@/components/streak";
 import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
-import { patchNote, upsertNote } from "@/lib/query-cache";
+import { applyStreakUpdate, patchNote, upsertNote } from "@/lib/query-cache";
+import { streakToast } from "@/lib/streak";
 import type { NoteItem, NotesResponse, PublicUser } from "@/lib/types";
 import { createNoteAction } from "../-lib/actions";
 
@@ -123,6 +125,10 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         return;
       }
 
+      const update = data?.streakUpdate ?? null;
+      if (update) applyStreakUpdate(queryClient, currentUser.username, update);
+      const author = update ? { ...currentUser, ...update } : currentUser;
+
       if (data && "note" in data && data.note) {
         const note = data.note as unknown as NoteItem;
         queryClient.setQueryData<NoteItem | null>(
@@ -141,13 +147,13 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
                 : current,
               {
                 ...note,
-                user: note.isAnonymous ? undefined : currentUser,
+                user: note.isAnonymous ? undefined : author,
               },
             ),
         );
       }
 
-      toast.success("Note's out there.");
+      toast.success(streakToast("Note's out there.", update));
 
       setContent("");
       setMusicUrl("");
@@ -168,6 +174,11 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
 
   return (
     <section>
+      <StreakReminder
+        state={currentUser}
+        anonymousNote={isAnonymous}
+        className="mb-2"
+      />
       <Textarea
         disabled={updateNoteMutation.isPending}
         value={content}

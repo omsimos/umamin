@@ -1,5 +1,6 @@
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query";
+import type { StreakUpdate } from "@/lib/streak";
 import type {
   CommentData,
   CommentsResponse,
@@ -362,4 +363,23 @@ export function patchFollowListUser(
       ),
     })),
   };
+}
+
+/**
+ * Applies a save's new streak to the caches that render it for the author:
+ * the current user (composer reminders) and their own profile.
+ */
+export function applyStreakUpdate(
+  queryClient: QueryClient,
+  username: string,
+  update: StreakUpdate,
+) {
+  queryClient.setQueryData<CurrentUserResponse>(
+    queryKeys.currentUser(),
+    (current) => patchCurrentUser(current, (u) => ({ ...u, ...update })),
+  );
+  queryClient.setQueryData<UserProfileResponse>(
+    queryKeys.userProfile(username),
+    (current) => patchUserProfile(current, (u) => ({ ...u, ...update })),
+  );
 }

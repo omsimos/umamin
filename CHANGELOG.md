@@ -18,6 +18,13 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.20.0] - 2026-11-05
+
+### Added
+
+- Streaks. Publish a post or share a note on consecutive days, counted in Philippine time, to build a streak. Streaks of 2 days or more show on your profile and next to your name on your posts and notes.
+- The note box and the post composer show your current streak and remind you to post on the last day you can keep it going. Anonymous notes and comments don't count toward a streak.
+
 ## [7.19.0] - 2026-10-31
 
 ### Added
@@ -1252,6 +1259,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.20.0]: https://github.com/omsimos/umamin/compare/v7.19.0...v7.20.0
 [7.19.0]: https://github.com/omsimos/umamin/compare/v7.18.0...v7.19.0
 [7.18.0]: https://github.com/omsimos/umamin/compare/v7.17.0...v7.18.0
 [7.17.0]: https://github.com/omsimos/umamin/compare/v7.16.0...v7.17.0

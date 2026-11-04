@@ -3,6 +3,7 @@ import { callAction } from "@/lib/api";
 import type { createGroupSchema, updateGroupSchema } from "@/lib/group";
 import type { PollDuration } from "@/lib/poll";
 import type { PostImageInput } from "@/lib/post-images";
+import type { StreakUpdate } from "@/lib/streak";
 import type { PollData, PostData } from "@/lib/types";
 
 // Typed client wrappers over the ported Hono action endpoints
@@ -90,6 +91,8 @@ type CreatePostResult = {
   error?: string;
   post?: PostData;
   poll?: PollData | null;
+  // The new streak, or null when today was already counted.
+  streakUpdate?: StreakUpdate | null;
 };
 
 export function createPostAction(

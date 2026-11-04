@@ -59,6 +59,8 @@ export type PublicUser = Omit<
   // Pro profile theme is profile-surface-only, like bannerImageUrl — re-added
   // on PublicUserWithBadge, never on the per-author list payloads.
   | "profileTheme"
+  // Unused until a "best streak" surface exists.
+  | "streakBest"
 >;
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
@@ -135,6 +137,7 @@ export function toPublicUser(user: SelectUser): PublicUser {
     banReason: _banReason,
     bannedBy: _bannedBy,
     profileTheme: _profileTheme,
+    streakBest: _streakBest,
     ...rest
   } = user;
   return rest;

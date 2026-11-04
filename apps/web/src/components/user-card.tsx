@@ -13,8 +13,10 @@ import {
 import type { ReactNode } from "react";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
+import { useStreakToday } from "@/hooks/use-streak-today";
 import { Link } from "@/lib/navigation";
 import { activeProTheme } from "@/lib/pro";
+import { displayStreak } from "@/lib/streak";
 import type { PublicUserWithBadge } from "@/lib/types";
 import { hasPlusFeatures, visibleText } from "@/lib/utils";
 import CopyLink from "./copy-link";
@@ -23,6 +25,7 @@ import { GroupBadge } from "./group-badge";
 import { MusicEmbed } from "./music-embed";
 import { ProBadge } from "./pro-flair";
 import { ProfileShareMenu } from "./share-button";
+import { StreakIcon } from "./streak";
 
 export function UserCard({
   user,
@@ -43,6 +46,9 @@ export function UserCard({
   // card sits under the page's own heading.
   nameAs?: "h1" | "p";
 }) {
+  const today = useStreakToday();
+  const streak = today === null ? 0 : displayStreak(user, today);
+
   return (
     <div>
       <div className="relative">
@@ -154,6 +160,16 @@ export function UserCard({
                 aura points
               </span>
             </div>
+
+            {streak > 0 && (
+              <div className="text-muted-foreground text-sm flex items-center gap-2">
+                <StreakIcon className="size-4" />
+                <span>
+                  <span className="font-medium text-foreground">{streak}</span>
+                  -day streak
+                </span>
+              </div>
+            )}
 
             {user.quietMode && (
               <div className="flex items-center gap-2 text-muted-foreground text-sm">

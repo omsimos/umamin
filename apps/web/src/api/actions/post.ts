@@ -54,8 +54,10 @@ import {
   pollEndsAtFrom,
   sanitizePollOptions,
 } from "../../server-lib/poll";
+import { captureRequestException } from "../../server-lib/posthog";
 import { createR2 } from "../../server-lib/r2";
 import { idSchema } from "../../server-lib/schema";
+import { recordStreak } from "../../server-lib/streak";
 import { ctxDb, defer } from "./_shared";
 
 // Cache-tag fan-out (revalidateTag/updateTag) is GONE in the Worker port: authed
@@ -196,6 +198,17 @@ export const createPostHandler = action(
       { defer: defer(c), limitKey: session.userId },
     );
 
+    // Runs during the classifier call so it adds no round trip. It can't run
+    // beside the insert transaction, which holds the write lock. If the post
+    // then fails, the day still counts; that's cosmetic.
+    const streaking = recordStreak(db, session.userId).catch((err) => {
+      captureRequestException(c, err, {
+        distinctId: session.userId,
+        properties: { source: "streak" },
+      });
+      return null;
+    });
+
     let claimedImages: Awaited<
       ReturnType<NonNullable<typeof r2>["claimStagedImages"]>
     > = null;
@@ -207,7 +220,7 @@ export const createPostHandler = action(
       }
     }
 
-    const scores = await classifying;
+    const [scores, streakUpdate] = await Promise.all([classifying, streaking]);
 
     let createdPost: typeof postTable.$inferSelect;
     let createdPollOptions: (typeof pollOptionTable.$inferSelect)[] = [];
@@ -269,6 +282,8 @@ export const createPostHandler = action(
 
     return {
       success: true,
+      // Null when the streak didn't change (today was already counted).
+      streakUpdate,
       // The author's own copy: never labelled, and raw scores stay server-side.
       post: withModeration(createdPost, false),
       poll:

@@ -218,6 +218,20 @@
       "when": 1793213507246,
       "tag": "0030_young_blindfold",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1793739922556,
+      "tag": "0031_military_songbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1793817696881,
+      "tag": "0032_general_streak",
+      "breakpoints": true
     }
   ]
 }
