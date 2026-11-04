@@ -274,6 +274,7 @@ export function ComposeDialog({
             </Avatar>
 
             <div className="flex min-w-0 flex-1 flex-col gap-3">
+              {user && <StreakReminder state={user} className="mt-1" />}
               <Textarea
                 id="compose"
                 autoFocus
@@ -319,8 +320,6 @@ export function ComposeDialog({
               )}
             </div>
           </div>
-
-          {user && <StreakReminder state={user} className="px-4 pb-3" />}
 
           <footer
             className="flex items-center gap-1 border-t px-3 py-2"

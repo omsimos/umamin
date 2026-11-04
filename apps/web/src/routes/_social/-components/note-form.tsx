@@ -174,6 +174,11 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
 
   return (
     <section>
+      <StreakReminder
+        state={currentUser}
+        anonymousNote={isAnonymous}
+        className="mb-2"
+      />
       <Textarea
         disabled={updateNoteMutation.isPending}
         value={content}
@@ -273,12 +278,6 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
           </Button>
         </div>
       </div>
-
-      <StreakReminder
-        state={currentUser}
-        anonymousNote={isAnonymous}
-        className="mt-3"
-      />
     </section>
   );
 }

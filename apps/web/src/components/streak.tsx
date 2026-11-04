@@ -69,11 +69,11 @@ export function StreakReminder({
   return (
     <p
       className={cn(
-        "flex items-center gap-1.5 text-sm text-muted-foreground",
+        "flex items-center gap-1 text-xs text-muted-foreground",
         className,
       )}
     >
-      <StreakIcon className="size-4 shrink-0" />
+      <StreakIcon className="size-3.5 shrink-0" />
       {text}
     </p>
   );
