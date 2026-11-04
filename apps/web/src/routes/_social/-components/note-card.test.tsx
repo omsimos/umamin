@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { streakDay } from "@/lib/streak";
+import { toStreakDay } from "@/lib/streak";
 import type { NoteItem } from "@/lib/types";
 import { NoteCard } from "./note-card";
 
@@ -284,17 +284,17 @@ describe("NoteCard streak", () => {
     renderCard(
       makeNote({
         isAnonymous: false,
-        user: { ...author, noteStreak: 6, noteStreakDay: streakDay() - 1 },
+        user: { ...author, streak: 6, streakDay: toStreakDay() - 1 },
       }),
     );
-    expect(screen.getByTitle("6-day note streak")).toBeInTheDocument();
+    expect(screen.getByTitle("6-day streak")).toBeInTheDocument();
   });
 
   it("hides a streak that broke after the page was cached", () => {
     renderCard(
       makeNote({
         isAnonymous: false,
-        user: { ...author, noteStreak: 6, noteStreakDay: streakDay() - 2 },
+        user: { ...author, streak: 6, streakDay: toStreakDay() - 2 },
       }),
     );
     expect(screen.queryByText(/note streak/)).not.toBeInTheDocument();

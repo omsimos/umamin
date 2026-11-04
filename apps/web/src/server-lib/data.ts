@@ -49,7 +49,7 @@ import {
   resolveMusicAttachment,
   safeMusicThumbnail,
 } from "../lib/music";
-import { publicNoteStreak } from "../lib/streak";
+import { publicStreak } from "../lib/streak";
 import type {
   BlockedUsersResponse,
   CommentData,
@@ -160,8 +160,8 @@ const publicUserColumns = {
   proUntil: userTable.proUntil,
   // Raw streak state; renderers derive the live streak (lib/streak.ts) so a
   // cached profile drops a broken streak without a refetch.
-  noteStreak: userTable.noteStreak,
-  noteStreakDay: userTable.noteStreakDay,
+  streak: userTable.streak,
+  streakDay: userTable.streakDay,
   createdAt: userTable.createdAt,
   updatedAt: userTable.updatedAt,
 };
@@ -1859,8 +1859,8 @@ async function getPublicNotesPage(
       // that posts, comments and messages also select.
       user: {
         ...feedAuthorColumns,
-        noteStreak: userTable.noteStreak,
-        noteStreakDay: userTable.noteStreakDay,
+        streak: userTable.streak,
+        streakDay: userTable.streakDay,
       },
     })
     .from(noteTable)
@@ -1885,7 +1885,7 @@ async function getPublicNotesPage(
       ? toNoteItem(note, enforce)
       : toNoteItem(note, enforce, {
           user: user
-            ? withGroupBadge({ ...user, ...publicNoteStreak(user) }, badgeMap)
+            ? withGroupBadge({ ...user, ...publicStreak(user) }, badgeMap)
             : undefined,
         }),
   );
@@ -2148,8 +2148,8 @@ export async function getPublicUserProfileData(
       points: userTable.points,
       proUntil: userTable.proUntil,
       profileTheme: userTable.profileTheme,
-      noteStreak: userTable.noteStreak,
-      noteStreakDay: userTable.noteStreakDay,
+      streak: userTable.streak,
+      streakDay: userTable.streakDay,
       createdAt: userTable.createdAt,
       updatedAt: userTable.updatedAt,
       musicProvider: userTable.musicProvider,
@@ -2170,7 +2170,7 @@ export async function getPublicUserProfileData(
   const { musicProvider, musicId, musicTitle, musicThumbnail, ...rest } = user;
   return {
     ...rest,
-    ...publicNoteStreak(user),
+    ...publicStreak(user),
     music: resolveMusicAttachment({
       musicProvider,
       musicId,

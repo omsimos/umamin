@@ -11,84 +11,70 @@ import { noteTable } from "@umamin/db/schema/note";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import {
-  activeNoteStreak,
-  displayNoteStreak,
-  isNoteStreakAtRisk,
-  publicNoteStreak,
-  streakDay,
+  activeStreak,
+  displayStreak,
+  isStreakAtRisk,
+  publicStreak,
+  toStreakDay,
 } from "../src/lib/streak";
 import { getNotesPage, getPublicUserProfileData } from "../src/server-lib/data";
 import type { Db } from "../src/server-lib/db";
-import { recordNoteStreak } from "../src/server-lib/note-streak";
 import { __clearSessionCache } from "../src/server-lib/session";
+import { recordStreak } from "../src/server-lib/streak";
 import { authed, buildApp, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
 
 describe("streakDay", () => {
   it("rolls over at Manila midnight (16:00 UTC), not UTC midnight", () => {
-    const before = streakDay(new Date("2026-11-04T15:59:59Z"));
-    const after = streakDay(new Date("2026-11-04T16:00:00Z"));
+    const before = toStreakDay(new Date("2026-11-04T15:59:59Z"));
+    const after = toStreakDay(new Date("2026-11-04T16:00:00Z"));
     expect(after).toBe(before + 1);
     // UTC midnight falls mid-day in Manila.
-    expect(streakDay(new Date("2026-11-04T23:59:59Z"))).toBe(
-      streakDay(new Date("2026-11-05T00:00:01Z")),
+    expect(toStreakDay(new Date("2026-11-04T23:59:59Z"))).toBe(
+      toStreakDay(new Date("2026-11-05T00:00:01Z")),
     );
   });
 });
 
-describe("activeNoteStreak", () => {
+describe("activeStreak", () => {
   const today = 20_000;
 
   it("keeps a streak counted today or yesterday", () => {
-    expect(
-      activeNoteStreak({ noteStreak: 4, noteStreakDay: today }, today),
-    ).toBe(4);
-    expect(
-      activeNoteStreak({ noteStreak: 4, noteStreakDay: today - 1 }, today),
-    ).toBe(4);
+    expect(activeStreak({ streak: 4, streakDay: today }, today)).toBe(4);
+    expect(activeStreak({ streak: 4, streakDay: today - 1 }, today)).toBe(4);
   });
 
   it("drops a streak whose last counted day is older than yesterday", () => {
-    expect(
-      activeNoteStreak({ noteStreak: 9, noteStreakDay: today - 2 }, today),
-    ).toBe(0);
-    expect(
-      activeNoteStreak({ noteStreak: 9, noteStreakDay: null }, today),
-    ).toBe(0);
+    expect(activeStreak({ streak: 9, streakDay: today - 2 }, today)).toBe(0);
+    expect(activeStreak({ streak: 9, streakDay: null }, today)).toBe(0);
   });
 
   it("is at risk only when yesterday was the last counted day", () => {
-    expect(
-      isNoteStreakAtRisk({ noteStreak: 3, noteStreakDay: today - 1 }, today),
-    ).toBe(true);
-    expect(
-      isNoteStreakAtRisk({ noteStreak: 3, noteStreakDay: today }, today),
-    ).toBe(false);
-    expect(
-      isNoteStreakAtRisk({ noteStreak: 3, noteStreakDay: today - 2 }, today),
-    ).toBe(false);
+    expect(isStreakAtRisk({ streak: 3, streakDay: today - 1 }, today)).toBe(
+      true,
+    );
+    expect(isStreakAtRisk({ streak: 3, streakDay: today }, today)).toBe(false);
+    expect(isStreakAtRisk({ streak: 3, streakDay: today - 2 }, today)).toBe(
+      false,
+    );
   });
 
   it("hides a 1-day streak from display", () => {
-    expect(
-      displayNoteStreak({ noteStreak: 1, noteStreakDay: today }, today),
-    ).toBe(0);
-    expect(
-      displayNoteStreak({ noteStreak: 2, noteStreakDay: today }, today),
-    ).toBe(2);
+    expect(displayStreak({ streak: 1, streakDay: today }, today)).toBe(0);
+    expect(displayStreak({ streak: 2, streakDay: today }, today)).toBe(2);
   });
 });
 
-describe("recordNoteStreak (real libSQL)", () => {
+describe("recordStreak (real libSQL)", () => {
   let db: Db;
   const today = 20_000;
 
   async function state() {
     const [row] = await db
       .select({
-        noteStreak: userTable.noteStreak,
-        noteStreakBest: userTable.noteStreakBest,
-        noteStreakDay: userTable.noteStreakDay,
+        streak: userTable.streak,
+        streakBest: userTable.streakBest,
+        streakDay: userTable.streakDay,
       })
       .from(userTable)
       .where(eq(userTable.id, "u1"));
@@ -101,44 +87,44 @@ describe("recordNoteStreak (real libSQL)", () => {
   });
 
   it("starts a first streak at 1", async () => {
-    expect(await recordNoteStreak(db, "u1", today)).toEqual({
-      noteStreak: 1,
-      noteStreakDay: today,
+    expect(await recordStreak(db, "u1", today)).toEqual({
+      streak: 1,
+      streakDay: today,
     });
     expect(await state()).toEqual({
-      noteStreak: 1,
-      noteStreakBest: 1,
-      noteStreakDay: today,
+      streak: 1,
+      streakBest: 1,
+      streakDay: today,
     });
   });
 
   it("extends on the next day and tracks the best", async () => {
-    await recordNoteStreak(db, "u1", today);
-    await recordNoteStreak(db, "u1", today + 1);
-    const result = await recordNoteStreak(db, "u1", today + 2);
-    expect(result?.noteStreak).toBe(3);
+    await recordStreak(db, "u1", today);
+    await recordStreak(db, "u1", today + 1);
+    const result = await recordStreak(db, "u1", today + 2);
+    expect(result?.streak).toBe(3);
     expect(await state()).toEqual({
-      noteStreak: 3,
-      noteStreakBest: 3,
-      noteStreakDay: today + 2,
+      streak: 3,
+      streakBest: 3,
+      streakDay: today + 2,
     });
   });
 
   it("writes nothing on a second save the same day", async () => {
-    await recordNoteStreak(db, "u1", today);
-    await recordNoteStreak(db, "u1", today + 1);
-    expect(await recordNoteStreak(db, "u1", today + 1)).toBeNull();
-    expect((await state()).noteStreak).toBe(2);
+    await recordStreak(db, "u1", today);
+    await recordStreak(db, "u1", today + 1);
+    expect(await recordStreak(db, "u1", today + 1)).toBeNull();
+    expect((await state()).streak).toBe(2);
   });
 
   it("restarts at 1 after a missed day but keeps the best", async () => {
-    await recordNoteStreak(db, "u1", today);
-    await recordNoteStreak(db, "u1", today + 1);
-    await recordNoteStreak(db, "u1", today + 3);
+    await recordStreak(db, "u1", today);
+    await recordStreak(db, "u1", today + 1);
+    await recordStreak(db, "u1", today + 3);
     expect(await state()).toEqual({
-      noteStreak: 1,
-      noteStreakBest: 2,
-      noteStreakDay: today + 3,
+      streak: 1,
+      streakBest: 2,
+      streakDay: today + 3,
     });
   });
 
@@ -148,7 +134,7 @@ describe("recordNoteStreak (real libSQL)", () => {
       .update(userTable)
       .set({ updatedAt: stamp })
       .where(eq(userTable.id, "u1"));
-    await recordNoteStreak(db, "u1", today);
+    await recordStreak(db, "u1", today);
     const [row] = await db
       .select({ updatedAt: userTable.updatedAt })
       .from(userTable)
@@ -163,8 +149,8 @@ describe("createNoteAction streaks (real libSQL)", () => {
   async function streak() {
     const [row] = await db
       .select({
-        noteStreak: userTable.noteStreak,
-        noteStreakDay: userTable.noteStreakDay,
+        streak: userTable.streak,
+        streakDay: userTable.streakDay,
       })
       .from(userTable)
       .where(eq(userTable.id, "u1"));
@@ -177,59 +163,61 @@ describe("createNoteAction streaks (real libSQL)", () => {
     await db.insert(userTable).values({
       id: "u1",
       username: "u_u1",
-      noteStreak: 4,
-      noteStreakDay: streakDay() - 1,
+      streak: 4,
+      streakDay: toStreakDay() - 1,
     });
   });
 
   it("extends the streak on a shared note and returns it", async () => {
     const app = buildApp(db, authed("u1"));
-    const { json } = await callJson<{ streak: unknown }>(
+    const { json } = await callJson<{ streakUpdate: unknown }>(
       app,
       "createNoteAction",
       { content: "hello" },
     );
 
-    expect(json.streak).toEqual({ noteStreak: 5, noteStreakDay: streakDay() });
+    expect(json.streakUpdate).toEqual({ streak: 5, streakDay: toStreakDay() });
     expect(await streak()).toEqual({
-      noteStreak: 5,
-      noteStreakDay: streakDay(),
+      streak: 5,
+      streakDay: toStreakDay(),
     });
   });
 
   it("doesn't count an anonymous note", async () => {
     const app = buildApp(db, authed("u1"));
-    const { json } = await callJson<{ streak: unknown; success: boolean }>(
-      app,
-      "createNoteAction",
-      { content: "hello", isAnonymous: true },
-    );
+    const { json } = await callJson<{
+      streakUpdate: unknown;
+      success: boolean;
+    }>(app, "createNoteAction", { content: "hello", isAnonymous: true });
 
     expect(json.success).toBe(true);
-    expect(json.streak).toBeNull();
+    expect(json.streakUpdate).toBeNull();
     expect(await streak()).toEqual({
-      noteStreak: 4,
-      noteStreakDay: streakDay() - 1,
+      streak: 4,
+      streakDay: toStreakDay() - 1,
     });
   });
 });
 
-describe("publicNoteStreak", () => {
+describe("publicStreak", () => {
   const today = 20_000;
 
   it("keeps a displayed streak", () => {
-    expect(
-      publicNoteStreak({ noteStreak: 3, noteStreakDay: today - 1 }, today),
-    ).toEqual({ noteStreak: 3, noteStreakDay: today - 1 });
+    expect(publicStreak({ streak: 3, streakDay: today - 1 }, today)).toEqual({
+      streak: 3,
+      streakDay: today - 1,
+    });
   });
 
   it("empties a hidden streak so its day doesn't leak", () => {
-    expect(
-      publicNoteStreak({ noteStreak: 1, noteStreakDay: today }, today),
-    ).toEqual({ noteStreak: 0, noteStreakDay: null });
-    expect(
-      publicNoteStreak({ noteStreak: 8, noteStreakDay: today - 2 }, today),
-    ).toEqual({ noteStreak: 0, noteStreakDay: null });
+    expect(publicStreak({ streak: 1, streakDay: today }, today)).toEqual({
+      streak: 0,
+      streakDay: null,
+    });
+    expect(publicStreak({ streak: 8, streakDay: today - 2 }, today)).toEqual({
+      streak: 0,
+      streakDay: null,
+    });
   });
 });
 
@@ -242,14 +230,14 @@ describe("public reads hide the day of a hidden streak (real libSQL)", () => {
       {
         id: "solo",
         username: "u_solo",
-        noteStreak: 1,
-        noteStreakDay: streakDay(),
+        streak: 1,
+        streakDay: toStreakDay(),
       },
       {
         id: "long",
         username: "u_long",
-        noteStreak: 5,
-        noteStreakDay: streakDay(),
+        streak: 5,
+        streakDay: toStreakDay(),
       },
     ]);
     await db.insert(noteTable).values([
@@ -260,12 +248,12 @@ describe("public reads hide the day of a hidden streak (real libSQL)", () => {
 
   it("on the profile", async () => {
     expect(await getPublicUserProfileData(db, "u_solo")).toMatchObject({
-      noteStreak: 0,
-      noteStreakDay: null,
+      streak: 0,
+      streakDay: null,
     });
     expect(await getPublicUserProfileData(db, "u_long")).toMatchObject({
-      noteStreak: 5,
-      noteStreakDay: streakDay(),
+      streak: 5,
+      streakDay: toStreakDay(),
     });
   });
 
@@ -274,10 +262,10 @@ describe("public reads hide the day of a hidden streak (real libSQL)", () => {
     const byUser = Object.fromEntries(
       page.data.map((n) => [n.user?.username, n.user]),
     );
-    expect(byUser.u_solo).toMatchObject({ noteStreak: 0, noteStreakDay: null });
+    expect(byUser.u_solo).toMatchObject({ streak: 0, streakDay: null });
     expect(byUser.u_long).toMatchObject({
-      noteStreak: 5,
-      noteStreakDay: streakDay(),
+      streak: 5,
+      streakDay: toStreakDay(),
     });
   });
 });

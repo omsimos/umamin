@@ -1,10 +1,10 @@
 import { cn } from "@umamin/ui/lib/utils";
 import { ZapIcon } from "lucide-react";
 import { useStreakToday } from "@/hooks/use-streak-today";
-import { displayNoteStreak, type NoteStreakState } from "@/lib/streak";
+import { displayStreak, type StreakState } from "@/lib/streak";
 
 // A bolt, not a flame: the flame already means "reacted" on note cards.
-export function NoteStreakIcon({ className }: { className?: string }) {
+export function StreakIcon({ className }: { className?: string }) {
   return (
     <ZapIcon
       aria-hidden
@@ -13,20 +13,20 @@ export function NoteStreakIcon({ className }: { className?: string }) {
   );
 }
 
-/** Compact streak count for a note card's author row. */
-export function NoteStreakChip({ state }: { state?: NoteStreakState }) {
+/** Compact streak count for an author row on note and post cards. */
+export function StreakChip({ state }: { state?: StreakState }) {
   const today = useStreakToday();
-  const streak = state && today !== null ? displayNoteStreak(state, today) : 0;
+  const streak = state && today !== null ? displayStreak(state, today) : 0;
   if (!streak) return null;
 
   return (
     <span
       className="inline-flex items-center gap-0.5 text-xs font-semibold text-muted-foreground tabular-nums"
-      title={`${streak}-day note streak`}
+      title={`${streak}-day streak`}
     >
-      <NoteStreakIcon className="size-3.5" />
+      <StreakIcon className="size-3.5" />
       {streak}
-      <span className="sr-only"> day note streak</span>
+      <span className="sr-only"> day streak</span>
     </span>
   );
 }

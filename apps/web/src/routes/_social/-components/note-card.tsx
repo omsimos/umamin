@@ -42,8 +42,8 @@ import { ContentCover } from "@/components/content-cover";
 import { GroupBadge } from "@/components/group-badge";
 import { Menu } from "@/components/menu";
 import { MusicEmbed } from "@/components/music-embed";
-import { NoteStreakChip } from "@/components/note-streak";
 import { PostBody } from "@/components/post-body";
+import { StreakChip } from "@/components/streak";
 import { TimeAgo } from "@/components/time-ago";
 import {
   BURST_ACTION_REJECT_MESSAGE,
@@ -328,7 +328,7 @@ export function NoteCard({
                           )}
                       </Link>
                       <GroupBadge badge={user?.groupBadge} />
-                      <NoteStreakChip state={user} />
+                      <StreakChip state={user} />
                     </div>
                   )}
 

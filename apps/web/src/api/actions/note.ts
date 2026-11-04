@@ -16,9 +16,9 @@ import { isModerationEnforced } from "../../server-lib/flags";
 import { isModerator } from "../../server-lib/moderation";
 import { deleteDisputes } from "../../server-lib/moderation-review";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
-import { recordNoteStreak } from "../../server-lib/note-streak";
 import { captureRequestException } from "../../server-lib/posthog";
 import { idSchema } from "../../server-lib/schema";
+import { recordStreak } from "../../server-lib/streak";
 import { ctxDb, defer } from "./_shared";
 
 const NOTE_NOT_FOUND = "Note not found";
@@ -124,15 +124,15 @@ export const createNoteHandler = action(
     // Outside the transaction so it adds no round trip to the save: it runs
     // alongside the note re-read. Anonymous saves don't count, since a streak
     // ticking up as an anonymous note lands would point at its author.
-    const [streak, note] = await Promise.all([
+    const [streakUpdate, note] = await Promise.all([
       isAnonymous
         ? null
-        : recordNoteStreak(db, session.userId).catch((err) => {
+        : recordStreak(db, session.userId).catch((err) => {
             // The note is already saved; a missed streak day isn't worth
             // failing the save over.
             captureRequestException(c, err, {
               distinctId: session.userId,
-              properties: { source: "note streak" },
+              properties: { source: "streak" },
             });
             return null;
           }),
@@ -144,7 +144,7 @@ export const createNoteHandler = action(
     return {
       success: true,
       // Null when nothing changed (anonymous, or today already counted).
-      streak,
+      streakUpdate,
       note,
     };
   },

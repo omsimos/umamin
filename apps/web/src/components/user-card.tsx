@@ -16,16 +16,16 @@ import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import { useStreakToday } from "@/hooks/use-streak-today";
 import { Link } from "@/lib/navigation";
 import { activeProTheme } from "@/lib/pro";
-import { displayNoteStreak } from "@/lib/streak";
+import { displayStreak } from "@/lib/streak";
 import type { PublicUserWithBadge } from "@/lib/types";
 import { hasPlusFeatures, visibleText } from "@/lib/utils";
 import CopyLink from "./copy-link";
 import { FollowListDrawer } from "./follow-list-drawer";
 import { GroupBadge } from "./group-badge";
 import { MusicEmbed } from "./music-embed";
-import { NoteStreakIcon } from "./note-streak";
 import { ProBadge } from "./pro-flair";
 import { ProfileShareMenu } from "./share-button";
+import { StreakIcon } from "./streak";
 
 export function UserCard({
   user,
@@ -47,7 +47,7 @@ export function UserCard({
   nameAs?: "h1" | "p";
 }) {
   const today = useStreakToday();
-  const noteStreak = today === null ? 0 : displayNoteStreak(user, today);
+  const streak = today === null ? 0 : displayStreak(user, today);
 
   return (
     <div>
@@ -161,14 +161,12 @@ export function UserCard({
               </span>
             </div>
 
-            {noteStreak > 0 && (
+            {streak > 0 && (
               <div className="text-muted-foreground text-sm flex items-center gap-2">
-                <NoteStreakIcon className="size-4" />
+                <StreakIcon className="size-4" />
                 <span>
-                  <span className="font-medium text-foreground">
-                    {noteStreak}
-                  </span>
-                  -day note streak
+                  <span className="font-medium text-foreground">{streak}</span>
+                  -day streak
                 </span>
               </div>
             )}

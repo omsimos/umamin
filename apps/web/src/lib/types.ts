@@ -60,7 +60,7 @@ export type PublicUser = Omit<
   // on PublicUserWithBadge, never on the per-author list payloads.
   | "profileTheme"
   // Unused until a "best streak" surface exists.
-  | "noteStreakBest"
+  | "streakBest"
 >;
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
@@ -92,8 +92,8 @@ export type FeedAuthor = Omit<
   | "updatedAt"
   | "pinnedPostId"
   // Notes-feed-only; added back on NoteItem.user.
-  | "noteStreak"
-  | "noteStreakDay"
+  | "streak"
+  | "streakDay"
 >;
 
 export type FeedAuthorWithBadge = FeedAuthor & {
@@ -140,7 +140,7 @@ export function toPublicUser(user: SelectUser): PublicUser {
     banReason: _banReason,
     bannedBy: _bannedBy,
     profileTheme: _profileTheme,
-    noteStreakBest: _noteStreakBest,
+    streakBest: _streakBest,
     ...rest
   } = user;
   return rest;
@@ -320,8 +320,7 @@ export type NoteItem = Omit<
   | ModerationColumn
 > &
   Moderated & {
-    user?: FeedAuthorWithBadge &
-      Pick<PublicUser, "noteStreak" | "noteStreakDay">;
+    user?: FeedAuthorWithBadge & Pick<PublicUser, "streak" | "streakDay">;
     isReacted?: boolean;
     music: MusicAttachment | null;
   };

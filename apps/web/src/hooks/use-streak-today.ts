@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { streakDay } from "@/lib/streak";
+import { toStreakDay } from "@/lib/streak";
 
 const subscribe = () => () => {};
 const getServerSnapshot = () => null;
@@ -11,5 +11,5 @@ const getServerSnapshot = () => null;
  * clock), so streak UI renders only after hydration to avoid a mismatch.
  */
 export function useStreakToday(): number | null {
-  return useSyncExternalStore(subscribe, streakDay, getServerSnapshot);
+  return useSyncExternalStore(subscribe, toStreakDay, getServerSnapshot);
 }

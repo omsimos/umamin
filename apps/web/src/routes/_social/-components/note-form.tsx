@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { NoteStreakIcon } from "@/components/note-streak";
 import { SongAttachDialog } from "@/components/song-attach-dialog";
+import { StreakIcon } from "@/components/streak";
 import { useStreakToday } from "@/hooks/use-streak-today";
 import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 import { captureException } from "@/lib/posthog";
@@ -24,11 +24,7 @@ import {
   patchUserProfile,
   upsertNote,
 } from "@/lib/query-cache";
-import {
-  activeNoteStreak,
-  isNoteStreakAtRisk,
-  NOTE_STREAK_MIN_DISPLAY,
-} from "@/lib/streak";
+import { activeStreak, isStreakAtRisk, STREAK_MIN_DISPLAY } from "@/lib/streak";
 import type {
   CurrentUserResponse,
   NoteItem,
@@ -141,18 +137,18 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         return;
       }
 
-      const streak = data?.streak ?? null;
-      if (streak) {
+      const update = data?.streakUpdate ?? null;
+      if (update) {
         queryClient.setQueryData<CurrentUserResponse>(
           queryKeys.currentUser(),
-          (current) => patchCurrentUser(current, (u) => ({ ...u, ...streak })),
+          (current) => patchCurrentUser(current, (u) => ({ ...u, ...update })),
         );
         queryClient.setQueryData<UserProfileResponse>(
           queryKeys.userProfile(currentUser.username),
-          (current) => patchUserProfile(current, (u) => ({ ...u, ...streak })),
+          (current) => patchUserProfile(current, (u) => ({ ...u, ...update })),
         );
       }
-      const author = streak ? { ...currentUser, ...streak } : currentUser;
+      const author = update ? { ...currentUser, ...update } : currentUser;
 
       if (data && "note" in data && data.note) {
         const note = data.note as unknown as NoteItem;
@@ -179,8 +175,8 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
       }
 
       toast.success(
-        streak && streak.noteStreak >= NOTE_STREAK_MIN_DISPLAY
-          ? `Note's out there. ${streak.noteStreak}-day streak.`
+        update && update.streak >= STREAK_MIN_DISPLAY
+          ? `Note's out there. ${update.streak}-day streak.`
           : "Note's out there.",
       );
 
@@ -316,13 +312,13 @@ function StreakStatus({
   isAnonymous: boolean;
 }) {
   const today = useStreakToday();
-  const streak = today === null ? 0 : activeNoteStreak(user, today);
+  const streak = today === null ? 0 : activeStreak(user, today);
   if (today === null || !streak) return null;
 
-  if (isNoteStreakAtRisk(user, today)) {
+  if (isStreakAtRisk(user, today)) {
     return (
       <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <NoteStreakIcon className="size-4 shrink-0" />
+        <StreakIcon className="size-4 shrink-0" />
         {isAnonymous
           ? `Anonymous notes don't count toward your ${streak}-day streak.`
           : `${streak}-day streak. Share a note today to keep it going.`}
@@ -330,11 +326,11 @@ function StreakStatus({
     );
   }
 
-  if (streak < NOTE_STREAK_MIN_DISPLAY) return null;
+  if (streak < STREAK_MIN_DISPLAY) return null;
 
   return (
     <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-      <NoteStreakIcon className="size-4 shrink-0" />
+      <StreakIcon className="size-4 shrink-0" />
       {streak}-day streak. See you tomorrow.
     </p>
   );
