@@ -103,8 +103,10 @@ Use these for all new code.
   `server-lib/schema.ts`.
 - Rate limits are Workers Rate Limiting bindings (`RL_*` in `wrangler.jsonc`).
   The period can only be 10 or 60 seconds, and counters are per colo. The
-  shared `RL_READ` limiter is keyed per IP; a polled or per-user read needs a
-  per-user key or a school or office NAT throttles its own users. A cap the
+  shared `RL_READ` limiter is keyed per user for signed-in private reads and
+  per IP otherwise, with `RL_READ_SHARED` as a looser per-IP ceiling checked
+  before the session lookup. Mobile carriers put many phones behind one IP, so
+  any new per-IP limit on a signed-in path throttles unrelated users together. A cap the
   bindings can't express (for example 2 group edits a day) goes on KV, like
   `server-lib/group-edit.ts`.
 - Workers KV is eventually consistent (about 60 s) and allows 1 write per

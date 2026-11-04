@@ -224,20 +224,15 @@ const NO_SESSION: ResolvedSession = {
 // bearer token (native app) or the httpOnly session cookie (web). The source is
 // returned so CSRF can be skipped for bearer-authed requests (they carry no
 // Origin). Bearer wins when both are present (explicit API intent).
-export async function resolveSession(
+function readSessionCredential(
   c: Context,
-  db: Db,
-): Promise<ResolvedSession> {
+): { token: string; source: SessionSource } | null {
   const authHeader = c.req.header("authorization");
   const bearer =
     authHeader && /^bearer\s+/i.test(authHeader)
       ? authHeader.replace(/^bearer\s+/i, "").trim()
       : null;
-
-  if (bearer) {
-    const result = await validateSessionToken(db, bearer);
-    return { ...result, source: "bearer" };
-  }
+  if (bearer) return { token: bearer, source: "bearer" };
 
   const token =
     getCookie(c, SESSION_COOKIE_NAME) ??
@@ -245,11 +240,23 @@ export async function resolveSession(
       ? getCookie(c, LEGACY_SESSION_COOKIE_NAME)
       : undefined) ??
     null;
+  return token === null ? null : { token, source: "cookie" };
+}
 
-  if (token === null) return NO_SESSION;
+// True when the request carries a session token, valid or not. No DB read.
+export function hasSessionCredential(c: Context): boolean {
+  return readSessionCredential(c) !== null;
+}
 
-  const result = await validateSessionToken(db, token);
-  return { ...result, source: "cookie" };
+export async function resolveSession(
+  c: Context,
+  db: Db,
+): Promise<ResolvedSession> {
+  const credential = readSessionCredential(c);
+  if (credential === null) return NO_SESSION;
+
+  const result = await validateSessionToken(db, credential.token);
+  return { ...result, source: credential.source };
 }
 
 // Test-only: reset / inspect the in-isolate cache.

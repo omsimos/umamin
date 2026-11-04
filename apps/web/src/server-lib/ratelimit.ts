@@ -13,6 +13,7 @@ export type LimiterName =
   | "write"
   | "group-join"
   | "read"
+  | "read-shared"
   | "chat-connect";
 
 const BINDING: Record<LimiterName, keyof Env> = {
@@ -21,6 +22,7 @@ const BINDING: Record<LimiterName, keyof Env> = {
   write: "RL_WRITE",
   "group-join": "RL_GROUP_JOIN",
   read: "RL_READ",
+  "read-shared": "RL_READ_SHARED",
   "chat-connect": "RL_CHAT_CONNECT",
 };
 
@@ -51,4 +53,22 @@ export async function checkRateLimit(
 // scraping protection; CDN-cached hits never reach the handler.
 export function checkReadRateLimit(env: AppEnv, ip: string): Promise<boolean> {
   return checkRateLimit(env, "read", `read:${ip}`);
+}
+
+// Signed-in readers get their own budget so a mobile carrier's NAT, where many
+// phones share one public IP, doesn't throttle all of them as one client.
+export function checkUserReadRateLimit(
+  env: AppEnv,
+  userId: string,
+): Promise<boolean> {
+  return checkRateLimit(env, "read", `read:u:${userId}`);
+}
+
+// Coarse per-IP ceiling for requests that carry a session token, checked before
+// the session lookup so random tokens can't buy unlimited database reads.
+export function checkSharedIpReadRateLimit(
+  env: AppEnv,
+  ip: string,
+): Promise<boolean> {
+  return checkRateLimit(env, "read-shared", `readip:${ip}`);
 }
