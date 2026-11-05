@@ -16,16 +16,25 @@ import { pageSeo } from "@/lib/seo";
 import type { NotesResponse } from "@/lib/types";
 import { NoteCardSkeleton } from "./-components/note-card-skeleton";
 import { NotesClient } from "./-components/notes-client";
-import { loaderFetchNotesPage } from "./-lib/loader-queries";
+import { loaderFetchNotesPage, startSignedInRead } from "./-lib/loader-queries";
 
 export const Route = createFileRoute("/_social/notes")({
   loader: async ({ context }) => {
-    const viewerId = await loadViewerId(context.queryClient);
+    // Same split as /feed: the signed-in page 1 starts with the viewer lookup.
+    const [viewerId, signedInFirstPage] = await Promise.all([
+      loadViewerId(context.queryClient),
+      startSignedInRead(() => loaderFetchNotesPage(null, true)),
+    ]);
 
     await context.queryClient.ensureInfiniteQueryData({
       queryKey: queryKeys.notes(viewerId ?? "public"),
       queryFn: ({ pageParam }) =>
-        loaderFetchNotesPage((pageParam as string | null) ?? null, !!viewerId),
+        pageParam == null && viewerId && signedInFirstPage
+          ? signedInFirstPage.pending
+          : loaderFetchNotesPage(
+              (pageParam as string | null) ?? null,
+              !!viewerId,
+            ),
       initialPageParam: null as string | null,
       getNextPageParam: (lastPage: NotesResponse) =>
         lastPage.nextCursor ?? null,

@@ -18,7 +18,7 @@ import { pageSeo } from "@/lib/seo";
 import type { FeedResponse } from "@/lib/types";
 import { FeedClient } from "./-components/feed-client";
 import { PostCardSkeleton } from "./-components/post-card-skeleton";
-import { loaderFetchPostsPage } from "./-lib/loader-queries";
+import { loaderFetchPostsPage, startSignedInRead } from "./-lib/loader-queries";
 
 // `sort` is OPTIONAL and the default is deliberately NOT materialized here.
 // The router canonicalizes the URL to whatever validateSearch returns, so
@@ -45,13 +45,14 @@ export const Route = createFileRoute("/_social/feed")({
     }
 
     const { sort } = deps;
-    // Resolve the viewer first so page 1 is served under the correct
-    // viewer-keyed query — no wasted public page plus a second /api/posts.
+    // Page 1 is keyed by viewer, so it can't be cached until the viewer
+    // resolves, but a signed-in request doesn't have to wait for it.
     // Following redirects a signed-out viewer, so a failed /api/me must not
     // read as signed out there.
-    const viewerId = await loadViewerId(context.queryClient, {
-      strict: sort === "following",
-    });
+    const [viewerId, signedInFirstPage] = await Promise.all([
+      loadViewerId(context.queryClient, { strict: sort === "following" }),
+      startSignedInRead(() => loaderFetchPostsPage(null, true, sort)),
+    ]);
 
     // Following has nothing to show a signed-out viewer.
     if (sort === "following" && !viewerId) {
@@ -61,11 +62,13 @@ export const Route = createFileRoute("/_social/feed")({
     await context.queryClient.ensureInfiniteQueryData({
       queryKey: queryKeys.posts(sort, viewerId ?? "public"),
       queryFn: ({ pageParam }) =>
-        loaderFetchPostsPage(
-          (pageParam as string | null) ?? null,
-          !!viewerId,
-          sort,
-        ),
+        pageParam == null && viewerId && signedInFirstPage
+          ? signedInFirstPage.pending
+          : loaderFetchPostsPage(
+              (pageParam as string | null) ?? null,
+              !!viewerId,
+              sort,
+            ),
       initialPageParam: null as string | null,
       getNextPageParam: (lastPage: FeedResponse) => lastPage.nextCursor ?? null,
       staleTime: viewerId ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME,

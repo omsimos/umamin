@@ -1,34 +1,49 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { BackHeader } from "@/components/back-header";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
+import { ssrSessionCookiePresent } from "@/lib/loader-fetch";
 import { loadViewer } from "@/lib/loader-viewer";
-import { queryKeys } from "@/lib/query";
+import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
 import { absoluteUrl, pageSeo, websiteId } from "@/lib/seo";
-import type { PublicUserWithBadge } from "@/lib/types";
+import type {
+  CurrentUserResponse,
+  FeedResponse,
+  PublicUserWithBadge,
+} from "@/lib/types";
 import { formatUsername, visibleText } from "@/lib/utils";
 import { UserProfile } from "./-components/user-profile";
-import { loaderFetchUserProfile } from "./-lib/loader-queries";
+import {
+  loaderFetchUserPostsPage,
+  loaderFetchUserProfile,
+  loaderFetchUserProfileViewer,
+} from "./-lib/loader-queries";
 
 export const Route = createFileRoute("/_social/user/$username")({
-  loader: async ({ context, params }) => {
+  loader: async ({ context, params, preload }) => {
+    const { queryClient } = context;
     const username = formatUsername(params.username);
 
     // Resolve the viewer here too, like every other social route: without it
     // the shell SSRs signed-out and the nav swaps once /api/me lands on the
-    // client. The profile read is viewer-independent, so these share one round
-    // trip's latency instead of chaining.
+    // client. The profile, the first posts page and the viewer's follow state
+    // don't depend on each other, so they share one round trip's latency
+    // instead of the posts and the Follow button loading after hydration.
+    // A hover preload skips the follow state, a private uncached read.
     const [user] = await Promise.all([
       username ? loaderFetchUserProfile(username) : null,
-      loadViewer(context.queryClient),
+      loadViewer(queryClient),
+      username ? primeUserPosts(queryClient, username) : null,
+      username && !preload ? primeProfileViewer(queryClient, username) : null,
     ]);
 
     if (!user) {
       throw notFound();
     }
 
-    context.queryClient.setQueryData(queryKeys.userProfile(username), user);
+    queryClient.setQueryData(queryKeys.userProfile(username), user);
 
     return { username, user: user as PublicUserWithBadge };
   },
@@ -117,6 +132,45 @@ function UserShell({ children }: { children: React.ReactNode }) {
       </div>
     </>
   );
+}
+
+// Secondary reads: a failure leaves the query for the component to fetch, and
+// the page still renders with the profile.
+function primeUserPosts(queryClient: QueryClient, username: string) {
+  return queryClient
+    .ensureInfiniteQueryData({
+      queryKey: queryKeys.userPosts(username),
+      queryFn: ({ pageParam }) =>
+        loaderFetchUserPostsPage(
+          username,
+          (pageParam as string | null) ?? null,
+        ),
+      initialPageParam: null as string | null,
+      getNextPageParam: (lastPage: FeedResponse) => lastPage.nextCursor,
+      staleTime: PUBLIC_STALE_TIME,
+    })
+    .catch(() => undefined);
+}
+
+async function primeProfileViewer(queryClient: QueryClient, username: string) {
+  // SSR can only see whether a session cookie is present. The client sees the
+  // cached viewer, and skips its own profile, which never reads the overlay.
+  const sessionCookie = await ssrSessionCookiePresent();
+  if (sessionCookie === false) return;
+  if (sessionCookie === null) {
+    const viewer = queryClient.getQueryData<CurrentUserResponse>(
+      queryKeys.currentUser(),
+    )?.user;
+    if (!viewer || viewer.username === username) return;
+  }
+
+  await queryClient
+    .ensureQueryData({
+      queryKey: queryKeys.userProfileViewer(username),
+      queryFn: () => loaderFetchUserProfileViewer(username),
+      staleTime: PRIVATE_STALE_TIME,
+    })
+    .catch(() => undefined);
 }
 
 function User() {
