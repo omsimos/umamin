@@ -14,9 +14,8 @@ import "@fontsource-variable/geist-mono/index.css";
 // slightly expanded (styles.css), and the italic is real, not synthesized.
 import "@fontsource-variable/archivo/standard.css";
 import "@fontsource-variable/archivo/standard-italic.css";
-// Resolved to the same hashed URLs the stylesheets above reference, for the
-// preload links in `head` below.
-import archivoLatin from "@fontsource-variable/archivo/files/archivo-latin-standard-normal.woff2?url";
+// Resolved to the same hashed URL the Geist stylesheet references, for the
+// preload link in `head` below.
 import geistLatin from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url";
 import type { ReactNode } from "react";
 import { NotFoundPage } from "@/components/not-found-page";
@@ -83,20 +82,21 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: "stylesheet", href: appCss },
       // @font-face lives inside the stylesheet, so a font is only discovered
       // AFTER styles.css downloads and parses — html → css → woff2, three
-      // serial hops before text paints in the right face. Preloading the two
-      // latin faces used above the fold (body copy + headings) starts them
-      // alongside the CSS instead. Only `latin`: the other subsets are
-      // unicode-range gated and must stay lazy, or every visitor pays for
-      // bytes almost none of them render.
-      ...[geistLatin, archivoLatin].map((href) => ({
+      // serial hops before text paints in the right face. Preloading the latin
+      // body face starts it alongside the CSS instead. Only `latin`: the other
+      // subsets are unicode-range gated and must stay lazy. Archivo is not
+      // preloaded: its width axis makes the file 90 KB at high priority, the
+      // app routes barely use it, and a wght-only file would drop the 112%
+      // stretch on headings.
+      {
         rel: "preload",
         as: "font",
         type: "font/woff2",
-        href,
+        href: geistLatin,
         // Fonts are always fetched in CORS mode; without this the preload is
         // treated as a separate request and the file downloads twice.
         crossOrigin: "anonymous" as const,
-      })),
+      },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/apple-icon.png" },
       { rel: "icon", href: "/icon.png", type: "image/png" },
