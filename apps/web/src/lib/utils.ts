@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from "date-fns";
+import { formatDistance, formatDistanceToNow } from "date-fns";
 import { customAlphabet, nanoid } from "nanoid";
 import { toast } from "sonner";
 import { captureException } from "@/lib/posthog";
@@ -63,13 +63,13 @@ export function shortTimeAgo(date: Date | string) {
 
 // Future-distance twin of shortTimeAgo ("ends in 3h" footers). Returns "" for
 // invalid or already-past dates — callers render an ended state instead.
-export function shortTimeUntil(date: Date | string) {
+export function shortTimeUntil(date: Date | string, now = Date.now()) {
   const d = typeof date === "string" ? new Date(date) : date;
-  if (Number.isNaN(d.getTime()) || d.getTime() <= Date.now()) {
+  if (Number.isNaN(d.getTime()) || d.getTime() <= now) {
     return "";
   }
 
-  const distance = formatDistanceToNow(d);
+  const distance = formatDistance(d, now);
 
   if (distance === "less than a minute") {
     return "1m";

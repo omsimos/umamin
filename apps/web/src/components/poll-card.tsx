@@ -9,6 +9,7 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import { useClientNow } from "@/hooks/use-client-now";
 import { votePollAction } from "@/lib/actions";
 import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
@@ -60,14 +61,19 @@ export function PollCard({ postId, poll, isAuthenticated }: PollCardProps) {
     setCounts(countsKey.split(".").map(Number));
   }, [dataMyVote, countsKey]);
 
-  const ended = forceEnded || isPollEnded(poll.endsAt);
+  // Null during SSR and hydration. Until then the card can't know whether the
+  // poll has ended, so it renders inert options and no countdown, the same on
+  // both sides, and only a voter's own results.
+  const now = useClientNow();
+  const clockKnown = now !== null;
+  const ended = forceEnded || (clockKnown && isPollEnded(poll.endsAt, now));
   const hasVoted = myVote != null;
   const showResults = hasVoted || ended;
   const total = pollTotalVotes(counts.map((voteCount) => ({ voteCount })));
   const percentages = pollPercentages(
     counts.map((voteCount) => ({ voteCount })),
   );
-  const endsIn = shortTimeUntil(poll.endsAt);
+  const endsIn = clockKnown ? shortTimeUntil(poll.endsAt, now) : "";
 
   const syncPollCache = (nextVote: string | null, nextCounts: number[]) => {
     // Field-scoped: patches only the poll so concurrent like/repost writes
@@ -102,7 +108,7 @@ export function PollCard({ postId, poll, isAuthenticated }: PollCardProps) {
   );
 
   const handleVote = async (optionId: string) => {
-    if (!isAuthenticated || hasVoted || ended) return;
+    if (!isAuthenticated || !clockKnown || hasVoted || ended) return;
     // Optimistic posts carry placeholder option ids until the server swap.
     if (optionId.startsWith("optimistic-")) return;
 
@@ -200,7 +206,7 @@ export function PollCard({ postId, poll, isAuthenticated }: PollCardProps) {
               <Button
                 type="button"
                 variant="outline"
-                disabled={!isAuthenticated}
+                disabled={!isAuthenticated || !clockKnown}
                 onClick={() => handleVote(option.id)}
                 aria-label={`Vote for ${option.label}`}
                 // disabled:opacity-100 — same convention as the like/repost
@@ -216,7 +222,8 @@ export function PollCard({ postId, poll, isAuthenticated }: PollCardProps) {
 
       <p className="text-xs text-muted-foreground">
         {total} {total === 1 ? "vote" : "votes"}
-        {ended || !endsIn ? " · Final results" : ` · ends in ${endsIn}`}
+        {clockKnown &&
+          (ended || !endsIn ? " · Final results" : ` · ends in ${endsIn}`)}
       </p>
     </div>
   );
