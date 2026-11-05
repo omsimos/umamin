@@ -18,7 +18,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-const { callAction } = await import("@/lib/api");
+const { CONNECTION_ERROR, callAction } = await import("@/lib/api");
 const { shareProfile } = await import("@/components/share-button");
 
 beforeEach(() => {
@@ -42,7 +42,7 @@ describe("callAction transport failures", () => {
 
     const res = await callAction("likePostAction");
 
-    expect(res).toEqual({ error: "An error occurred" });
+    expect(res).toEqual({ error: CONNECTION_ERROR });
     expect(captureException).toHaveBeenCalledWith(
       expect.any(TypeError),
       expect.objectContaining({
@@ -62,6 +62,60 @@ describe("callAction transport failures", () => {
 
     expect(res).toEqual({ error: "An error occurred" });
     expect(captureException).not.toHaveBeenCalled();
+  });
+
+  // The Worker's onError answers "Internal Server Error" as text/plain after
+  // reporting it. Parsing that as JSON used to show "Unexpected token 'I'".
+  it("does not parse a plain-text 500 as JSON", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("Internal Server Error", {
+          status: 500,
+          headers: { "content-type": "text/plain;charset=UTF-8" },
+        }),
+      ),
+    );
+
+    const res = await callAction("likePostAction");
+
+    expect(res).toEqual({ error: "An error occurred" });
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  it("reports a non-JSON answer the server did not report", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("<html></html>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
+      ),
+    );
+
+    const res = await callAction("likePostAction");
+
+    expect(res).toEqual({ error: "An error occurred" });
+    expect(captureException).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 200 }),
+      expect.objectContaining({ action: "likePostAction" }),
+    );
+  });
+
+  it("returns the action's error envelope", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json({ error: "Invalid input" }, { status: 400 }),
+        ),
+    );
+
+    expect(await callAction("likePostAction")).toEqual({
+      error: "Invalid input",
+    });
   });
 });
 
