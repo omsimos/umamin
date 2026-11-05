@@ -22,6 +22,7 @@ import { NotFoundPage } from "@/components/not-found-page";
 import { Providers } from "@/components/providers";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { THEME_COLOR } from "@/components/theme-color";
+import { ANNOUNCEMENTS_PREPAINT_SCRIPT } from "@/lib/announcements";
 import { getGtmInlineScript } from "@/lib/gtm";
 import {
   appleSplashLinks,
@@ -105,8 +106,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     scripts: [
       // Pre-paint theme application (before React hydrates).
       { children: THEME_FOUC_SCRIPT },
+      { children: ANNOUNCEMENTS_PREPAINT_SCRIPT },
       // GTM loader — production only (mirrors apps/www root layout). AdSense
-      // is NOT loaded here; <AdsenseLoader /> requests it after hydration.
+      // is NOT loaded here; <AdsenseLoader /> requests it once the page is idle.
       ...(import.meta.env.PROD && GTM_ID
         ? [{ id: "gtm-loader", children: getGtmInlineScript(GTM_ID) }]
         : []),
