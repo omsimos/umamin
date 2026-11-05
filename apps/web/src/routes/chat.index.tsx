@@ -227,7 +227,7 @@ function OnlineCount({ count }: { count: number }) {
   return (
     <p className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-xs tabular-nums">
       <span aria-hidden className="size-2 rounded-full bg-emerald-500" />
-      {count.toLocaleString()} online
+      {count.toLocaleString("en-US")} online
     </p>
   );
 }
