@@ -1,4 +1,5 @@
 import type { CaptureResult, PostHog, PostHogConfig } from "posthog-js";
+import { bufferEarlyErrors, whenIdle } from "@/lib/early-errors";
 import { ExpectedError } from "@/lib/expected-error";
 
 // Browser-side error tracking (PostHog project "Umamin").
@@ -116,28 +117,50 @@ const OPTIONS: Partial<PostHogConfig> = {
   before_send: dropBenignExceptions,
 };
 
+const EARLY_ERROR_CAP = 10;
+// The SDK is ~96 KB gzipped, so it waits for an idle moment after first paint.
+const IDLE_LOAD_TIMEOUT_MS = 4_000;
+
 let pending: Promise<PostHog | null> | null = null;
+let earlyErrors: ReturnType<typeof bufferEarlyErrors> | null = null;
+let viewerId: string | null = null;
+
+function applyViewer(posthog: PostHog) {
+  if (viewerId) posthog.register({ user_id: viewerId });
+  else posthog.unregister("user_id");
+}
 
 function load(): Promise<PostHog | null> {
   pending ??= import("posthog-js")
     .then(({ default: posthog }) => {
       posthog.init(TOKEN as string, OPTIONS);
       posthog.register({ environment: import.meta.env.MODE });
+      applyViewer(posthog);
       return posthog;
     })
     // A blocked or failed SDK load must never surface to the user, and must not
     // be retried per call — the rejected promise is cached on purpose.
-    .catch(() => null);
+    .catch(() => null)
+    .then((posthog) => {
+      earlyErrors?.flush((event) =>
+        posthog?.captureException(event, { buffered: true }),
+      );
+      earlyErrors = null;
+      return posthog;
+    });
   return pending;
 }
 
 /**
- * Registers the unhandled-error/rejection handlers. Called once on mount, so
- * exceptions thrown before hydration completes are not covered.
+ * Starts error tracking. Called once on mount, so exceptions thrown before
+ * hydration completes are not covered. Errors between mount and the SDK's
+ * idle-time load are held and reported once it is up.
  */
 export function initErrorTracking(): void {
   if (!ERROR_TRACKING_ENABLED || typeof window === "undefined") return;
-  void load();
+  if (pending || earlyErrors) return;
+  earlyErrors = bufferEarlyErrors(EARLY_ERROR_CAP);
+  whenIdle(() => void load(), IDLE_LOAD_TIMEOUT_MS);
 }
 
 /**
@@ -162,9 +185,10 @@ export function captureException(
  */
 export function registerViewer(userId: string | null | undefined): void {
   if (!ERROR_TRACKING_ENABLED || typeof window === "undefined") return;
-  void load().then((posthog) => {
-    if (!posthog) return;
-    if (userId) posthog.register({ user_id: userId });
-    else posthog.unregister("user_id");
+  viewerId = userId ?? null;
+  // Before the SDK loads, load() applies the latest id itself. Calling load()
+  // from here would pull the SDK in on mount and undo the idle deferral.
+  void pending?.then((posthog) => {
+    if (posthog) applyViewer(posthog);
   });
 }
