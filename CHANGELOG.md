@@ -38,7 +38,7 @@ any that are empty.
 
 ### Performance & Cost
 
-- Feature flags no longer wait on an outside service during a request, which removes up to a second from feed, notes and chat loads.
+- The feed, notes and chat load up to a second faster when they aren't already cached.
 - The feed and notes no longer jump down when the ad and announcements appear.
 - Profiles load their posts and your follow status with the page, so the Follow button no longer flips after a moment.
 - Signed-in pages make fewer database calls before showing the feed.

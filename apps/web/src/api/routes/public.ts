@@ -35,7 +35,9 @@ export const PUBLIC_BROWSER_MAX_AGE = 60;
 // `isModerationEnforced` is awaited before each query rather than alongside
 // it: the flag decides what the query returns (Hot eligibility and ranking,
 // the labels baked into the shared entry). It reads the cron-refreshed flag
-// snapshot, so on a warm isolate the await costs nothing.
+// snapshot: one KV read per isolate per minute, or a live PostHog call of up to
+// a second when no fresh snapshot exists (before the first cron run, or after
+// the cron has stopped).
 export const publicRoutes = new Hono<AppBindings>()
   .get(
     "/public/posts",
