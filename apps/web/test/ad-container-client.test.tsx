@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ClientOnlyAdContainer } from "../src/components/ad-container-client";
 import { queryKeys } from "../src/lib/query";
@@ -12,16 +13,22 @@ import type { CurrentUserResponse } from "../src/lib/types";
 
 const DAY = 24 * 60 * 60 * 1000;
 
-function renderWithViewer(viewer: CurrentUserResponse) {
+function withViewer(viewer?: CurrentUserResponse) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
-  client.setQueryData<CurrentUserResponse>(queryKeys.currentUser(), viewer);
-  return render(
+  if (viewer) {
+    client.setQueryData<CurrentUserResponse>(queryKeys.currentUser(), viewer);
+  }
+  return (
     <QueryClientProvider client={client}>
       <ClientOnlyAdContainer placement="feed_top" />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+}
+
+function renderWithViewer(viewer: CurrentUserResponse) {
+  return render(withViewer(viewer));
 }
 
 const proViewer = (proUntil: Date) =>
@@ -50,5 +57,28 @@ describe("ClientOnlyAdContainer (Pro ad-free)", () => {
       user: { proUntil: null },
     } as CurrentUserResponse);
     expect(await screen.findByText("ad: feed_top")).toBeInTheDocument();
+  });
+});
+
+// The slot used to mount only after hydration and push the feed down by its
+// min-height. The server HTML has to carry the box, decided from the same
+// query cache the client's first render reads.
+describe("ClientOnlyAdContainer server render", () => {
+  it("reserves the slot when the server has no viewer", () => {
+    expect(renderToString(withViewer())).toContain("min-height:280px");
+  });
+
+  it("reserves the slot for a signed-in non-Pro viewer", () => {
+    expect(
+      renderToString(
+        withViewer({ user: { proUntil: null } } as CurrentUserResponse),
+      ),
+    ).toContain("min-height:280px");
+  });
+
+  it("renders nothing for an active Pro viewer", () => {
+    expect(
+      renderToString(withViewer(proViewer(new Date(Date.now() + DAY)))),
+    ).toBe("");
   });
 });
