@@ -142,8 +142,13 @@ export const Route = createFileRoute("/_social/post/$id")({
 });
 
 function Post() {
-  const { id, post, isAuthenticated, viewerId, currentUser } =
-    Route.useLoaderData();
+  // Reads the match without the invariant; see Feed in feed.tsx.
+  const data = Route.useMatch({
+    shouldThrow: false,
+    select: (match) => match.loaderData,
+  });
+  if (!data) return null;
+  const { id, post, isAuthenticated, viewerId, currentUser } = data;
   const imageId = `umamin-${post.id}`;
 
   return (

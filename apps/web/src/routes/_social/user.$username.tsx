@@ -120,7 +120,13 @@ function UserShell({ children }: { children: React.ReactNode }) {
 }
 
 function User() {
-  const { username, user } = Route.useLoaderData();
+  // Reads the match without the invariant; see Feed in feed.tsx.
+  const data = Route.useMatch({
+    shouldThrow: false,
+    select: (match) => match.loaderData,
+  });
+  if (!data) return null;
+  const { username, user } = data;
 
   return (
     <UserShell>

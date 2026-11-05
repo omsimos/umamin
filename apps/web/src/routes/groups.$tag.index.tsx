@@ -97,8 +97,18 @@ export const Route = createFileRoute("/groups/$tag/")({
 });
 
 function GroupPage() {
-  const { tag } = Route.useParams();
-  const { group } = Route.useLoaderData();
+  // A view-transition navigation can re-render this after the router has
+  // dropped the match, and useLoaderData throws an invariant there.
+  const data = Route.useMatch({
+    shouldThrow: false,
+    select: (match) =>
+      match.loaderData && {
+        tag: match.params.tag,
+        group: match.loaderData.group,
+      },
+  });
+  if (!data) return null;
+  const { tag, group } = data;
 
   return (
     <section className="mx-auto min-h-screen w-full max-w-lg container pb-24">

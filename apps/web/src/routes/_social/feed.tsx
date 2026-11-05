@@ -6,7 +6,7 @@ import { ChatAnnouncement } from "@/components/chat-announcement";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { UmaAnnouncement } from "@/components/uma-announcement";
-import { normalizeFeedSort } from "@/lib/feed-sort";
+import { type FeedSort, normalizeFeedSort } from "@/lib/feed-sort";
 import { loadViewerId } from "@/lib/loader-viewer";
 import {
   PRIVATE_STALE_TIME,
@@ -101,7 +101,24 @@ function FeedShell({ children }: { children: React.ReactNode }) {
 }
 
 function Feed() {
-  const { sort, viewerId, isAuthenticated } = Route.useLoaderData();
+  // A view-transition navigation can re-render this after the router has
+  // dropped the match, and useLoaderData throws an invariant there.
+  const data = Route.useMatch({
+    shouldThrow: false,
+    select: (match) => match.loaderData,
+  });
+  return data ? <FeedPage {...data} /> : null;
+}
+
+function FeedPage({
+  sort,
+  viewerId,
+  isAuthenticated,
+}: {
+  sort: FeedSort;
+  viewerId: string | null;
+  isAuthenticated: boolean;
+}) {
   const queryClient = useQueryClient();
 
   return (

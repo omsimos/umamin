@@ -72,7 +72,21 @@ function NotesShell({ children }: { children: React.ReactNode }) {
 }
 
 function Notes() {
-  const { viewerId, isAuthenticated } = Route.useLoaderData();
+  // Reads the match without the invariant; see Feed in feed.tsx.
+  const data = Route.useMatch({
+    shouldThrow: false,
+    select: (match) => match.loaderData,
+  });
+  return data ? <NotesPage {...data} /> : null;
+}
+
+function NotesPage({
+  viewerId,
+  isAuthenticated,
+}: {
+  viewerId: string | null;
+  isAuthenticated: boolean;
+}) {
   const queryClient = useQueryClient();
 
   return (

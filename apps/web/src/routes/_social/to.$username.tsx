@@ -57,7 +57,12 @@ export const Route = createFileRoute("/_social/to/$username")({
 });
 
 function SendMessage() {
-  const { user } = Route.useLoaderData();
+  // Reads the match without the invariant; see Feed in feed.tsx.
+  const user = Route.useMatch({
+    shouldThrow: false,
+    select: (match) => match.loaderData?.user,
+  });
+  if (!user) return null;
 
   return (
     // The recipient's Pro profile theme colors this page too (the send button
