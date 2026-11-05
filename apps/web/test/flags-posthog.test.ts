@@ -80,6 +80,41 @@ describe("flag evaluation against the real posthog-node", () => {
     ]);
   });
 
+  // flags.ts reads these off private SDK fields; this pins that the real SDK
+  // still sets them, so an upgrade can't quietly turn a partial answer into
+  // "switched off".
+  it("reports a quota-limited answer as a failed request", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({
+        flags: {},
+        errorsWhileComputingFlags: false,
+        quotaLimited: ["feature_flags"],
+        requestId: "r1",
+      }),
+    );
+    expect(await isUmaminChatEnabled(ENV)).toBe(false);
+    expect(reported()).toEqual([
+      { message: "flag evaluation request failed", reason: "quota limited" },
+    ]);
+  });
+
+  it("reports a partly computed answer as a failed request", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({
+        flags: {},
+        errorsWhileComputingFlags: true,
+        requestId: "r1",
+      }),
+    );
+    await isUmaminChatEnabled(ENV);
+    expect(reported()).toEqual([
+      {
+        message: "flag evaluation request failed",
+        reason: "errors while computing",
+      },
+    ]);
+  });
+
   it("reports an HTTP error as a failed request", async () => {
     fetchMock.mockResolvedValue(new Response("oops", { status: 500 }));
     expect(await isUmaminChatEnabled(ENV)).toBe(false);

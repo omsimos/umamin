@@ -68,6 +68,12 @@ export const SNAPSHOT_KV_KEY = "flags:anonymous:v1";
 // cron that stopped for good ages out to live evaluation instead of pinning
 // the flags forever.
 const SNAPSHOT_KV_TTL_SECONDS = 24 * 60 * 60;
+// Older than this, the cron has missed several runs, so readers evaluate live
+// instead. The live path still falls back to the last known value on failure.
+const SNAPSHOT_MAX_AGE_MS = 20 * 60_000;
+// A key that stays missing is re-reported this often, so a flag deleted hours
+// after a transient gap still reaches error tracking.
+const MISSING_REPORT_INTERVAL_MS = 60 * 60_000;
 
 type StoredSnapshot = { flags: Record<string, boolean>; refreshedAt: number };
 
@@ -102,10 +108,10 @@ let snapshotEntry: {
 } | null = null;
 let snapshotInflight: Promise<Record<string, boolean> | null> | null = null;
 
-// Flag keys PostHog answered a request without, already reported from this
-// isolate. Such a key stays missing on every evaluation, so reporting it each
-// time only buried real failures.
-const reportedMissing = new Set<string>();
+// When each missing flag key was last reported from this isolate. Such a key
+// stays missing on every evaluation, so reporting it each time only buried
+// real failures.
+const reportedMissing = new Map<string, number>();
 
 function prune(now: number): void {
   for (const [id, entry] of cache) {
@@ -137,6 +143,14 @@ function fallbackFor(distinctId: string, key: string): boolean {
   return lastKnown.get(`${distinctId}:${key}`) ?? FLAG_FALLBACK[key] ?? false;
 }
 
+// PostHog leaves out a flag that is switched off or deleted. That is a decision,
+// so it resolves to the default and forgets the last answer, or a switched-off
+// kill switch would stay on for the life of the isolate.
+function omittedValue(distinctId: string, key: string): boolean {
+  lastKnown.delete(`${distinctId}:${key}`);
+  return FLAG_FALLBACK[key] ?? false;
+}
+
 // Comma-separated flag keys to resolve as enabled regardless of the PostHog
 // rollout. This is how "flags gate production only" is expressed: the staging
 // wrangler env sets it (and local dev inherits that block), production
@@ -163,9 +177,10 @@ function forcedOn(env: AppEnv): Set<string> {
 const flagsClients = new Map<string, PostHog>();
 
 // posthog-node swallows a failed /flags request into an empty snapshot, which
-// looks the same as PostHog answering without the key. It does emit the
-// failure on the client's "error" event, synchronously inside the evaluation,
-// so the listener finds the evaluation it belongs to through this store.
+// looks the same as PostHog answering without the key. It emits the failure on
+// the client's "error" event from a promise callback inside the evaluation;
+// AsyncLocalStorage follows that continuation, so the listener finds the
+// evaluation it belongs to even with concurrent evaluations on one client.
 const pendingRequest = new AsyncLocalStorage<{ failure?: string }>();
 
 function describeRequestError(error: unknown): string {
@@ -205,9 +220,18 @@ function getFlagsClient(env: AppEnv, timeoutMs: number): PostHog {
   return client;
 }
 
+// The SDK keeps these on private fields with no public accessor;
+// test/flags-posthog.test.ts pins the names so an SDK upgrade can't silently
+// drop them.
+type EvaluationHealth = {
+  _errorsWhileComputing?: boolean;
+  _quotaLimited?: boolean;
+};
+
 // A real answer from getFlag() is a value, a missing one is undefined.
-// `failure` is set when the /flags request itself failed (timeout, network,
-// HTTP error). Without it, a missing key is one PostHog chose not to return:
+// `failure` is set when the /flags request failed (timeout, network, HTTP
+// error) or PostHog said its answer is incomplete (quota limited, errors while
+// computing). Without it, a missing key is one PostHog chose not to return:
 // deleted, or switched off rather than rolled out to 0%.
 async function evaluate(
   env: AppEnv,
@@ -232,7 +256,16 @@ async function evaluate(
     if (snapshot.getFlag(key) === undefined) missing.push(key);
     else answered[key] = snapshot.isEnabled(key);
   }
-  return { answered, missing, failure: request.failure };
+
+  const health = snapshot as unknown as EvaluationHealth;
+  const failure =
+    request.failure ??
+    (missing.length > 0 && health._quotaLimited
+      ? "quota limited"
+      : missing.length > 0 && health._errorsWhileComputing
+        ? "errors while computing"
+        : undefined);
+  return { answered, missing, failure };
 }
 
 function reportMissing(
@@ -241,9 +274,14 @@ function reportMissing(
   missing: readonly string[],
   defer?: (promise: Promise<unknown>) => void,
 ): void {
-  const fresh = missing.filter((key) => !reportedMissing.has(key));
+  const now = Date.now();
+  const fresh = missing.filter(
+    (key) =>
+      now - (reportedMissing.get(key) ?? -Infinity) >=
+      MISSING_REPORT_INTERVAL_MS,
+  );
   if (fresh.length === 0) return;
-  for (const key of fresh) reportedMissing.add(key);
+  for (const key of fresh) reportedMissing.set(key, now);
   const list = [...fresh].sort().join(",");
   console.warn("flag not returned by PostHog:", list);
   captureServerException(
@@ -255,8 +293,14 @@ function reportMissing(
 }
 
 function parseSnapshot(stored: unknown): Record<string, boolean> | null {
-  const flags = (stored as Partial<StoredSnapshot> | null)?.flags;
+  const { flags, refreshedAt } = (stored ?? {}) as Partial<StoredSnapshot>;
   if (!flags || typeof flags !== "object") return null;
+  if (
+    typeof refreshedAt !== "number" ||
+    Date.now() - refreshedAt > SNAPSHOT_MAX_AGE_MS
+  ) {
+    return null;
+  }
   const parsed: Record<string, boolean> = {};
   for (const [key, value] of Object.entries(flags)) {
     if (typeof value === "boolean") parsed[key] = value;
@@ -305,11 +349,11 @@ function readSnapshot(env: AppEnv): Promise<Record<string, boolean> | null> {
  * Re-evaluates the anonymous-bucket flags against PostHog and stores them as
  * the KV snapshot every isolate reads. Runs from the five-minute cron.
  *
- * Writes only when PostHog answered: a failed request throws for the cron to
- * report and leaves the previous snapshot in place. A key PostHog left out
- * keeps its previous snapshot value, else its `FLAG_FALLBACK`, the same
- * last-known rule the live path follows. No-ops without a KV binding or a
- * project token.
+ * Writes only when PostHog gave a complete answer: a failed or partial one
+ * throws for the cron to report and leaves the previous snapshot in place
+ * until it ages out. A key PostHog left out was switched off or deleted, so it
+ * is stored as its `FLAG_FALLBACK`. No-ops without a KV binding or a project
+ * token.
  */
 export async function refreshFlagSnapshot(
   env: AppEnv,
@@ -327,18 +371,9 @@ export async function refreshFlagSnapshot(
   if (missing.length > 0) {
     reportMissing(env, ANONYMOUS_DISTINCT_ID, missing, defer);
   }
-  // Nothing answered is a hollow response (quota limiting returns one), not a
-  // decision about any flag.
-  if (Object.keys(answered).length === 0) return;
 
-  const previous =
-    missing.length > 0
-      ? parseSnapshot(await env.KV.get<StoredSnapshot>(SNAPSHOT_KV_KEY, "json"))
-      : null;
   const flags: Record<string, boolean> = { ...answered };
-  for (const key of missing) {
-    flags[key] = previous?.[key] ?? FLAG_FALLBACK[key] ?? false;
-  }
+  for (const key of missing) flags[key] = FLAG_FALLBACK[key] ?? false;
 
   const stored: StoredSnapshot = { flags, refreshedAt: Date.now() };
   await env.KV.put(SNAPSHOT_KV_KEY, JSON.stringify(stored), {
@@ -353,12 +388,13 @@ export async function refreshFlagSnapshot(
  * refreshes, cached in the isolate for a minute. Without a snapshot, and for
  * every per-user lookup, the flags are evaluated live against PostHog.
  *
- * When a live evaluation gets no answer (an outage, a timeout, quota, or a
- * deleted flag), each flag falls back to its last known value in this isolate,
- * else `FLAG_FALLBACK`: `false` for every surface and unknown key, so an outage
- * never reveals an unlaunched product, and `true` for `content-moderation`,
- * where off is the unsafe direction. A failed request is cached for 10 s and
- * reported; a key PostHog left out is reported once per isolate; a thrown
+ * When a live evaluation fails (an outage, a timeout, quota), each flag falls
+ * back to its last known value in this isolate, else `FLAG_FALLBACK`: `false`
+ * for every surface and unknown key, so an outage never reveals an unlaunched
+ * product, and `true` for `content-moderation`, where off is the unsafe
+ * direction. A flag PostHog left out (switched off or deleted) resolves to
+ * `FLAG_FALLBACK` directly. A failed request is cached for 10 s and reported; a
+ * key PostHog left out is reported at most hourly per isolate; a thrown
  * evaluation is reported and not cached. No project token resolves to `false`
  * (only `FLAGS_FORCE_ON` keys are on).
  */
@@ -405,7 +441,11 @@ export async function resolveFlags(
         for (const [key, value] of Object.entries(answered)) {
           rememberAnswer(distinctId, key, value);
         }
-        for (const key of missing) flags[key] = fallbackFor(distinctId, key);
+        for (const key of missing) {
+          flags[key] = failure
+            ? fallbackFor(distinctId, key)
+            : omittedValue(distinctId, key);
+        }
 
         if (failure) {
           const list = [...keys].sort().join(",");

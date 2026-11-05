@@ -51,8 +51,12 @@ const ENV = {
 // `evaluateFlags` returns a snapshot object, not a plain map. isEnabled() is
 // false for an absent key, so the wrapper uses getFlag() (undefined when absent)
 // to tell "PostHog said off" from "PostHog said nothing".
-function snapshot(flags: Record<string, boolean>) {
+function snapshot(
+  flags: Record<string, boolean>,
+  health: { _quotaLimited?: boolean; _errorsWhileComputing?: boolean } = {},
+) {
   return {
+    ...health,
     isEnabled: (key: string) => flags[key] ?? false,
     getFlag: (key: string) => (key in flags ? flags[key] : undefined),
   };
@@ -271,10 +275,46 @@ describe("resolveFlags", () => {
       );
 
       now.mockReturnValue(1_000_000 + 61_000);
-      evaluateFlags.mockResolvedValueOnce(snapshot({}));
+      evaluateFlags.mockImplementationOnce(failedRequest);
       expect(await isFlagEnabled(ENV, null, FLAG_CONTENT_MODERATION)).toBe(
         false,
       );
+    });
+
+    // PostHog leaves a switched-off flag out of its answer. Treating that as
+    // an outage kept a kill switch on for the life of the isolate.
+    it("turns a switched-off flag off instead of keeping the last answer", async () => {
+      const now = at(1_000_000);
+      evaluateFlags.mockResolvedValueOnce(
+        snapshot({ [FLAG_UMAMIN_CHAT]: true }),
+      );
+      expect(await isFlagEnabled(ENV, null, FLAG_UMAMIN_CHAT)).toBe(true);
+
+      now.mockReturnValue(1_000_000 + 61_000);
+      evaluateFlags.mockResolvedValueOnce(snapshot({}));
+      expect(await isFlagEnabled(ENV, null, FLAG_UMAMIN_CHAT)).toBe(false);
+    });
+
+    it("treats a quota-limited answer as an outage, keeping the last answer", async () => {
+      const now = at(1_000_000);
+      evaluateFlags.mockResolvedValueOnce(
+        snapshot({ [FLAG_UMAMIN_CHAT]: true }),
+      );
+      await isFlagEnabled(ENV, null, FLAG_UMAMIN_CHAT);
+
+      now.mockReturnValue(1_000_000 + 61_000);
+      evaluateFlags.mockResolvedValueOnce(
+        snapshot({}, { _quotaLimited: true }),
+      );
+      expect(await isFlagEnabled(ENV, null, FLAG_UMAMIN_CHAT)).toBe(true);
+
+      // Cached as a failure (10 s), not as an answer (60 s).
+      now.mockReturnValue(1_000_000 + 61_000 + 11_000);
+      evaluateFlags.mockResolvedValueOnce(
+        snapshot({ [FLAG_UMAMIN_CHAT]: true }),
+      );
+      await isFlagEnabled(ENV, null, FLAG_UMAMIN_CHAT);
+      expect(evaluateFlags).toHaveBeenCalledTimes(3);
     });
 
     it("caches a failed request for 10 seconds only", async () => {
@@ -315,13 +355,18 @@ describe("resolveFlags", () => {
       });
     });
 
-    it("reports a key PostHog left out once per isolate", async () => {
+    it("reports a key PostHog left out at most once an hour", async () => {
+      const now = at(1_000_000);
       evaluateFlags.mockResolvedValue(snapshot({}));
       await isFlagEnabled(ENV, "user_1", FLAG_UMAMIN_PRO);
       await isFlagEnabled(ENV, "user_2", FLAG_UMAMIN_PRO);
       await isFlagEnabled(ENV, "user_3", FLAG_UMAMIN_PRO);
       expect(evaluateFlags).toHaveBeenCalledTimes(3);
       expect(captureServerException).toHaveBeenCalledTimes(1);
+
+      now.mockReturnValue(1_000_000 + 61 * 60_000);
+      await isFlagEnabled(ENV, "user_4", FLAG_UMAMIN_PRO);
+      expect(captureServerException).toHaveBeenCalledTimes(2);
       expect((captureServerException.mock.calls[0][2] as Error).message).toBe(
         "flag not returned by PostHog",
       );
@@ -349,8 +394,8 @@ describe("resolveFlags", () => {
   });
 });
 
-const stored = (flags: Record<string, boolean>) => ({
-  [SNAPSHOT_KV_KEY]: { flags, refreshedAt: 1 },
+const stored = (flags: Record<string, boolean>, refreshedAt = Date.now()) => ({
+  [SNAPSHOT_KV_KEY]: { flags, refreshedAt },
 });
 
 describe("global flag snapshot", () => {
@@ -396,6 +441,14 @@ describe("global flag snapshot", () => {
     expect(evaluateFlags).toHaveBeenCalledWith("anonymous", {
       flagKeys: [FLAG_UMAMIN_CHAT],
     });
+  });
+
+  // A cron that stopped must not pin the kill switches for the KV TTL.
+  it("evaluates live once the snapshot is older than 20 minutes", async () => {
+    const { kv } = memoryKv(stored({ ...ALL_ON }, Date.now() - 21 * 60_000));
+    evaluateFlags.mockResolvedValue(snapshot({ [FLAG_UMAMIN_CHAT]: false }));
+    expect(await isUmaminChatEnabled({ ...ENV, KV: kv })).toBe(false);
+    expect(evaluateFlags).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to live evaluation when the snapshot lacks the key", async () => {
@@ -491,14 +544,29 @@ describe("refreshFlagSnapshot", () => {
     expect(put).not.toHaveBeenCalled();
   });
 
-  it("does not write an answer with no flags in it", async () => {
-    const { kv, put } = memoryKv();
-    evaluateFlags.mockResolvedValue(snapshot({}));
-    await refreshFlagSnapshot({ ...ENV, KV: kv });
+  it("keeps the previous snapshot when PostHog is quota limited", async () => {
+    const { kv, put } = memoryKv(stored(ALL_ON));
+    evaluateFlags.mockResolvedValue(snapshot({}, { _quotaLimited: true }));
+    await expect(refreshFlagSnapshot({ ...ENV, KV: kv })).rejects.toThrow(
+      /quota limited/,
+    );
     expect(put).not.toHaveBeenCalled();
   });
 
-  it("keeps a left-out key at its previous value, else its fallback", async () => {
+  it("keeps the previous snapshot when PostHog answered only in part", async () => {
+    const { kv, put } = memoryKv(stored(ALL_ON));
+    evaluateFlags.mockResolvedValue(
+      snapshot({ [FLAG_UMAMIN_DM]: true }, { _errorsWhileComputing: true }),
+    );
+    await expect(refreshFlagSnapshot({ ...ENV, KV: kv })).rejects.toThrow(
+      /errors while computing/,
+    );
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  // A left-out key was switched off or deleted; keeping its previous value
+  // meant a kill switch could never be turned off.
+  it("stores a left-out key as its fallback, not its previous value", async () => {
     const { kv, read } = memoryKv(
       stored({ ...ALL_ON, [FLAG_CONTENT_MODERATION]: false }),
     );
@@ -507,8 +575,8 @@ describe("refreshFlagSnapshot", () => {
     );
     await refreshFlagSnapshot({ ...ENV, KV: kv });
     expect(read(SNAPSHOT_KV_KEY).flags).toEqual({
-      [FLAG_CONTENT_MODERATION]: false,
-      [FLAG_UMAMIN_CHAT]: true,
+      [FLAG_CONTENT_MODERATION]: true,
+      [FLAG_UMAMIN_CHAT]: false,
       [FLAG_UMAMIN_DM]: true,
       [FLAG_UMAMIN_PRO]: false,
     });

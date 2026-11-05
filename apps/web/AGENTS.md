@@ -200,14 +200,17 @@ Use these for all new code.
   one viewer's rollout to everyone.
 - Signed-out flag values come from a KV snapshot (`flags:anonymous:v1`) that
   the `*/5` cron refreshes, so no request waits on PostHog for them. A change
-  in PostHog takes up to about 7 minutes to reach every isolate. Signed-in
+  in PostHog takes up to about 7 minutes to reach every isolate. A snapshot
+  older than 20 minutes is ignored and the flag is evaluated live. Signed-in
   `umamin-pro` is still evaluated live per user.
-- When PostHog gives no answer (outage, timeout, quota), a flag falls back to
-  its last known value in the isolate, else the snapshot, else its
+- When PostHog fails (outage, timeout, quota, a partly computed answer), a
+  flag falls back to its last known value in the isolate, else its
   `FLAG_FALLBACK` default in `server-lib/flags.ts`: `false` for surfaces,
-  `true` for `content-moderation`. A failed request is cached for 10 s and
-  reported; a key PostHog leaves out is reported once per isolate. Turn
-  moderation off with a 0% rollout, never by deleting the flag. Client defaults are hidden. Routes
+  `true` for `content-moderation`. A flag PostHog leaves out of a complete
+  answer was switched off or deleted and goes straight to `FLAG_FALLBACK`. A
+  failed request is cached for 10 s and reported; a left-out key is reported
+  at most hourly per isolate. Turn moderation off with a 0% rollout, never by
+  switching off or deleting the flag, since its fallback is on. Client defaults are hidden. Routes
   that gate a surface prefetch in the loader with `lib/loader-flags.ts`.
 - The staging env forces flags on with `FLAGS_FORCE_ON` in `wrangler.jsonc`.
   Production sets nothing on purpose; copying staging's vars into production
