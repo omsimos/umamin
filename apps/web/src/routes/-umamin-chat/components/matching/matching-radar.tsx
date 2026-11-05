@@ -63,7 +63,7 @@ export function MatchingRadar({
           aria-live="off"
         >
           Searching · {formatElapsed(elapsed)}
-          {online !== null && ` · ${online.toLocaleString()} online`}
+          {online !== null && ` · ${online.toLocaleString("en-US")} online`}
         </p>
 
         <div className="mt-4 flex flex-wrap justify-center gap-1.5">

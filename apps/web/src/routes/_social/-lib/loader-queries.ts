@@ -1,5 +1,9 @@
 import type { FeedSort } from "@/lib/feed-sort";
-import { loaderFetchJson, loaderFetchJsonOrNull } from "@/lib/loader-fetch";
+import {
+  loaderFetchJson,
+  loaderFetchJsonOrNull,
+  ssrSessionCookiePresent,
+} from "@/lib/loader-fetch";
 import type {
   CommentsResponse,
   FeedResponse,
@@ -7,6 +11,7 @@ import type {
   NotesResponse,
   PostResponse,
   UserProfileResponse,
+  UserProfileViewerResponse,
 } from "@/lib/types";
 
 // Loader-side query fetchers: same URLs as the `@/lib/query-fetchers` browser
@@ -77,4 +82,31 @@ export function loaderFetchUserProfile(username: string) {
 
 export function loaderFetchCurrentNote() {
   return loaderFetchJson<NoteItem | null>("/api/notes/current");
+}
+
+export function loaderFetchUserProfileViewer(username: string) {
+  return loaderFetchJson<UserProfileViewerResponse>(
+    `/api/user/${username}/viewer`,
+  );
+}
+
+/**
+ * Starts a signed-in read on SSR without waiting for the viewer lookup, so a
+ * page doesn't chain its own data behind /api/me. The request validates the
+ * session itself, and the session single-flight shares that lookup with
+ * /api/me. Use the result only once the viewer has resolved: a stale cookie
+ * resolves no viewer, and then the read is dropped.
+ *
+ * Null without a session cookie, and always on the client, where the cookie is
+ * unreadable and the viewer is usually already cached.
+ */
+export async function startSignedInRead<T>(
+  read: () => Promise<T>,
+): Promise<{ pending: Promise<T> } | null> {
+  if (!(await ssrSessionCookiePresent())) return null;
+
+  const pending = read();
+  // A dropped read must not surface as an unhandled rejection.
+  pending.catch(() => {});
+  return { pending };
 }

@@ -54,8 +54,11 @@ function watchForUpdates(registration: ServiceWorkerRegistration) {
 // filename is gone from the asset manifest). Vite raises this event for a
 // failed dynamic import; one reload picks up the new HTML and its chunks. The
 // session guard stops a genuinely broken deploy from reload-looping.
-function onPreloadError(event: Event) {
-  event.preventDefault();
+//
+// Never preventDefault here: Vite then resolves the import to undefined, and
+// lazyRouteComponent crashes reading `default` off it. Inside the guard window
+// nothing reloads, so the original error has to reach the route's error UI.
+function onPreloadError() {
   try {
     const last = Number(sessionStorage.getItem(RELOAD_GUARD_KEY) ?? 0);
     if (Date.now() - last < 30_000) return;

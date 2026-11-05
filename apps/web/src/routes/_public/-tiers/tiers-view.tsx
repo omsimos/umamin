@@ -292,7 +292,8 @@ export function TiersView() {
               {isPro && user?.proUntil && (
                 <p className="text-xs text-muted-foreground">
                   Pro is active until{" "}
-                  {new Date(user.proUntil).toLocaleDateString(undefined, {
+                  {new Date(user.proUntil).toLocaleDateString("en-US", {
+                    timeZone: "Asia/Manila",
                     year: "numeric",
                     month: "long",
                     day: "numeric",

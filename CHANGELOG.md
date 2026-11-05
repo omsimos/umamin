@@ -18,6 +18,34 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.21.0] - 2026-11-05
+
+### Changed
+
+- Sending an anonymous message on a weak connection retries before it gives up, and the send button shows a spinner while it checks.
+- A dropped connection now says "Couldn't reach Umamin. Check your connection and try again." instead of a generic error.
+- Polls show their countdown once the page has loaded, and keep it up to date while the page stays open.
+
+### Fixed
+
+- Pages retry a failed load on mobile data before showing an error.
+- "Try again" on an error page now reloads the page's data instead of showing the same error.
+- A short database hiccup no longer shows an error page. Umamin retries the read once.
+- Profiles and other public pages still load when your account details fail to load for a moment.
+- After an update, a page left open reloads itself instead of breaking when you navigate.
+- Leaving the feed, notes or a profile while it was still loading no longer causes a stutter on Android.
+- Ads no longer try to fill the same slot over and over.
+
+### Performance & Cost
+
+- The feed, notes and chat load up to a second faster when they aren't already cached.
+- The feed and notes no longer jump down when the ad and announcements appear.
+- Profiles load their posts and your follow status with the page, so the Follow button no longer flips after a moment.
+- Signed-in pages make fewer database calls before showing the feed.
+- Signed-out visitors no longer make an extra account request on every page.
+- Error tracking and ads load after the page is ready, and the heading font no longer competes with the page for bandwidth.
+- The top and bottom bars use a lighter blur, which scrolls more smoothly on older phones.
+
 ## [7.20.1] - 2026-11-05
 
 ### Fixed
@@ -1265,6 +1293,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.21.0]: https://github.com/omsimos/umamin/compare/v7.20.1...v7.21.0
 [7.20.1]: https://github.com/omsimos/umamin/compare/v7.20.0...v7.20.1
 [7.20.0]: https://github.com/omsimos/umamin/compare/v7.19.0...v7.20.0
 [7.19.0]: https://github.com/omsimos/umamin/compare/v7.18.0...v7.19.0

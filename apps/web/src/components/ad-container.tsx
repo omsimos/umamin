@@ -27,7 +27,15 @@ const AdContainer = ({ placement, className }: Props) => {
   const adRef = useRef<HTMLModElement | null>(null);
   const pushedRef = useRef(false);
   const [isVisible, setIsVisible] = useState(!isLazy);
-  const shouldInitialize = isVisible || !import.meta.env.PROD;
+  // The box (with its min-height) is server-rendered so the slot's space is
+  // reserved before hydration; the <ins> only mounts in the browser, so
+  // AdSense never fills a node React hasn't hydrated.
+  const [mounted, setMounted] = useState(false);
+  const shouldInitialize = mounted && (isVisible || !import.meta.env.PROD);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     pushedRef.current = false;
@@ -70,49 +78,30 @@ const AdContainer = ({ placement, className }: Props) => {
       !config?.slotId ||
       !shouldInitialize ||
       !import.meta.env.PROD ||
-      typeof window === "undefined" ||
       window.location.hostname.includes("localhost")
     ) {
       return;
     }
 
-    let timeoutId: number | null = null;
-    let disposed = false;
+    const adElement = adRef.current;
+    if (
+      !adElement ||
+      pushedRef.current ||
+      adElement.hasAttribute("data-adsbygoogle-status")
+    ) {
+      return;
+    }
 
-    const initializeAd = () => {
-      if (disposed || pushedRef.current) {
-        return;
-      }
-
-      const adElement = adRef.current;
-      if (!adElement) {
-        timeoutId = window.setTimeout(initializeAd, 150);
-        return;
-      }
-
-      if (adElement.getAttribute("data-adsbygoogle-status") === "done") {
-        pushedRef.current = true;
-        return;
-      }
-
-      try {
-        // biome-ignore lint/suspicious/noAssignInExpressions: google
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        pushedRef.current = true;
-      } catch (err) {
-        captureException(err, { source: "ads" });
-        timeoutId = window.setTimeout(initializeAd, 250);
-      }
-    };
-
-    initializeAd();
-
-    return () => {
-      disposed = true;
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
-    };
+    // One push per <ins>, never retried: a push that throws has usually
+    // already claimed or failed this slot, and re-pushing only makes AdSense
+    // throw "All 'ins' elements already have ads" on every attempt.
+    pushedRef.current = true;
+    try {
+      // biome-ignore lint/suspicious/noAssignInExpressions: google
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      captureException(err, { source: "ads" });
+    }
   }, [config, shouldInitialize]);
 
   // Second guard behind ClientOnlyAdContainer's, after the hooks so their order

@@ -317,3 +317,11 @@
 .font-display {
   font-stretch: 112%;
 }
+
+/* Dismissed announcements (lib/announcements.ts). Unlayered, so it beats the
+   card's own `flex`. */
+html[data-dismissed~="chat"] [data-announcement="chat"],
+html[data-dismissed~="chats-tab"] [data-announcement="chats-tab"],
+html[data-dismissed~="uma"] [data-announcement="uma"] {
+  display: none;
+}

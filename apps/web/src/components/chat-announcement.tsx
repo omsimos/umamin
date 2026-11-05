@@ -1,50 +1,27 @@
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { ArrowRightIcon, XIcon } from "lucide-react";
-import { useEffect, useState } from "react";
 import { UmaminChatLink } from "@/components/umamin-chat-link";
-
-const DISMISSED_KEY = "umamin:chat-announcement-dismissed";
+import { type AnnouncementId, dismissAnnouncement } from "@/lib/announcements";
 
 export function ChatAnnouncement({
   className,
   title = "Umamin Chat is here",
   description = "Anonymous chats, matched by your interests.",
   utm = "announcement",
-  dismissKey = DISMISSED_KEY,
+  id = "chat",
 }: {
   className?: string;
   title?: string;
   description?: string;
   utm?: string;
   /** Each placement keeps its own dismissal. */
-  dismissKey?: string;
+  id?: AnnouncementId;
 }) {
-  // Hidden until mounted so a prior dismissal never flashes the banner.
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem(dismissKey)) setVisible(true);
-    } catch {
-      setVisible(true);
-    }
-  }, [dismissKey]);
-
-  if (!visible) return null;
-
-  const dismiss = () => {
-    setVisible(false);
-    try {
-      localStorage.setItem(dismissKey, "1");
-    } catch {
-      // Storage unavailable — the dismissal lasts for this visit only.
-    }
-  };
-
   return (
     <aside
       aria-label="Umamin Chat announcement"
+      data-announcement={id}
       className={cn(
         "flex flex-wrap items-start gap-3 rounded-lg border bg-card p-3 sm:flex-nowrap sm:items-center sm:p-4",
         className,
@@ -78,7 +55,7 @@ export function ChatAnnouncement({
         size="icon"
         className="relative size-7 shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-['']"
         aria-label="Dismiss announcement"
-        onClick={dismiss}
+        onClick={() => dismissAnnouncement(id)}
       >
         <XIcon />
       </Button>

@@ -2,6 +2,7 @@ import {
   createExecutionContext,
   waitOnExecutionContext,
 } from "cloudflare:test";
+import { LibsqlError } from "@libsql/client/web";
 import type { SelectUser } from "@umamin/db/schema/user";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
@@ -154,6 +155,24 @@ describe("action() factory (Hono)", () => {
     );
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "Username already exists" });
+  });
+
+  // A gateway error can arrive after the write committed, so retrying a
+  // mutation could apply it twice. Reads retry; actions must not.
+  it("never retries a mutation on a transient database error", async () => {
+    const handler = vi.fn(async () => {
+      throw new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR");
+    });
+    const app = new Hono<AppBindings>()
+      .use("*", async (c, next) => {
+        c.set("getSession", async () => AUTHED);
+        await next();
+      })
+      .post("/write", action({ errorMessage: "boom" }, handler));
+
+    const res = await call(app, "/write", postJson({}));
+    expect(res.status).toBe(500);
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it("rejects a cross-origin cookie mutation (CSRF) with 403", async () => {

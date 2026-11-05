@@ -135,7 +135,7 @@
         ]
       },
       "triggers": {
-        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry + DM purge
+        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry + DM purge + flag snapshot refresh
         "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
       },
       "vars": {
@@ -258,7 +258,7 @@
         ]
       },
       "triggers": {
-        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry + DM purge
+        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry + DM purge + flag snapshot refresh
         "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
       },
       "vars": {

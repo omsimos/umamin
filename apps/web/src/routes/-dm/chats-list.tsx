@@ -87,7 +87,7 @@ function StrangerChatPromo() {
       title="Want to meet someone new?"
       description="Umamin Chat matches you with a stranger who shares your interests."
       utm="inbox-chats"
-      dismissKey="umamin:chats-tab-promo-dismissed"
+      id="chats-tab"
     />
   );
 }

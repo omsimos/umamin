@@ -2073,8 +2073,16 @@ export async function getCurrentUserData(
           sql<number>`CASE WHEN ${userTable.passwordHash} IS NOT NULL THEN 1 ELSE 0 END`.as(
             "hasPassword",
           ),
+        // The equipped badge for the viewer's own surfaces (notes card, inbox
+        // card, composer), joined here because /api/me is on nearly every
+        // signed-in page and a separate lookup is one more round trip.
+        badgeId: groupTable.id,
+        badgeTag: groupTable.tag,
+        badgeIcon: groupTable.icon,
+        badgeAccent: groupTable.accent,
       })
       .from(userTable)
+      .leftJoin(groupTable, eq(groupTable.id, userTable.equippedGroupId))
       .where(eq(userTable.id, userId))
       .limit(1);
 
@@ -2082,19 +2090,26 @@ export async function getCurrentUserData(
       return userRecord;
     }
 
-    // Resolve the equipped badge from its own (cached) group row so the
-    // viewer's own surfaces (notes card, inbox card, composer) show it.
-    const groupBadge = userRecord.equippedGroupId
-      ? await getGroupBadge(db, userRecord.equippedGroupId)
-      : null;
-
-    // Drop the raw music_* columns and emit the lean `music` object (same
-    // contract as the public profile read).
-    const { musicProvider, musicId, musicTitle, musicThumbnail, ...rest } =
-      userRecord;
+    // Drop the raw music_* and badge columns and emit the lean `music` and
+    // `groupBadge` objects (same contract as the public profile read). A
+    // dangling equippedGroupId joins nothing and shows no badge.
+    const {
+      musicProvider,
+      musicId,
+      musicTitle,
+      musicThumbnail,
+      badgeId,
+      badgeTag,
+      badgeIcon,
+      badgeAccent,
+      ...rest
+    } = userRecord;
     return {
       ...rest,
-      groupBadge,
+      groupBadge:
+        badgeId !== null && badgeTag !== null && badgeIcon !== null
+          ? { id: badgeId, tag: badgeTag, icon: badgeIcon, accent: badgeAccent }
+          : null,
       music: resolveMusicAttachment({
         musicProvider,
         musicId,

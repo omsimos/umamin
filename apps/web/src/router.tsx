@@ -6,6 +6,7 @@ import {
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { captureException } from "@/lib/posthog";
+import { queryRetryDefaults } from "@/lib/query-retry";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
@@ -30,7 +31,10 @@ export function getRouter() {
       },
     }),
     defaultOptions: {
-      queries: { staleTime: 0 },
+      queries: {
+        staleTime: 0,
+        ...queryRetryDefaults(import.meta.env.SSR),
+      },
       dehydrate: {
         shouldDehydrateQuery: (query) =>
           defaultShouldDehydrateQuery(query) ||

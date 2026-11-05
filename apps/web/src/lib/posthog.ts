@@ -1,4 +1,5 @@
 import type { CaptureResult, PostHog, PostHogConfig } from "posthog-js";
+import { bufferEarlyErrors, whenIdle } from "@/lib/early-errors";
 import { ExpectedError } from "@/lib/expected-error";
 
 // Browser-side error tracking (PostHog project "Umamin").
@@ -28,17 +29,56 @@ export const ERROR_TRACKING_ENABLED = Boolean(import.meta.env.PROD && TOKEN);
 // second navigation, a viewport resize from the mobile URL bar or keyboard)
 // rejects the ViewTransition's promises, and the router discards the
 // transition object, so nothing can attach a handler; the navigation itself
-// still completes. The ResizeObserver loop notice is the spec's benign "a
-// frame skipped delivery" signal.
-const BENIGN_EXCEPTIONS: ReadonlyArray<{ type: string; value: RegExp }> = [
+// still completes. Safari words it differently ("Old view transition aborted
+// by new view transition", "View transition was skipped because document
+// visibility state is hidden"), so that rule ignores the type. The
+// ResizeObserver loop notice is the spec's benign "a frame skipped delivery"
+// signal.
+//
+// The rest come from outside the app: Facebook's Android in-app browser
+// ("Java object is gone" after its JS bridge is torn down), Outlook SafeLinks'
+// link scanner rejecting with "Object Not Found Matching Id", and a
+// cross-origin script's "Script error." that carries no stack to act on.
+type BenignRule = { type?: string; value: RegExp; withoutStack?: boolean };
+
+const BENIGN_EXCEPTIONS: ReadonlyArray<BenignRule> = [
   {
-    type: "DOMException",
-    value: /^(AbortError|InvalidStateError): Transition was (skipped|aborted)/,
+    value:
+      /^(AbortError|InvalidStateError): Transition was (skipped|aborted)|view transition/i,
   },
   { type: "Error", value: /^ResizeObserver loop/ },
+  { value: /Java object is gone/ },
+  { value: /Object Not Found Matching Id/ },
+  { value: /^Script error\.?$/, withoutStack: true },
 ];
 
-type ExceptionEntry = { type?: unknown; value?: unknown };
+type ExceptionEntry = {
+  type?: unknown;
+  value?: unknown;
+  mechanism?: { synthetic?: unknown };
+  stacktrace?: { frames?: unknown };
+};
+
+// An ErrorEvent with no error object gets a synthetic stack from the SDK.
+function hasRealStack(entry: ExceptionEntry): boolean {
+  const frames = entry.stacktrace?.frames;
+  return (
+    entry.mechanism?.synthetic !== true &&
+    Array.isArray(frames) &&
+    frames.length > 0
+  );
+}
+
+function isBenign(entry: ExceptionEntry): boolean {
+  const { type, value } = entry;
+  if (typeof value !== "string") return false;
+  return BENIGN_EXCEPTIONS.some(
+    (rule) =>
+      (rule.type === undefined || type === rule.type) &&
+      rule.value.test(value) &&
+      !(rule.withoutStack && hasRealStack(entry)),
+  );
+}
 
 export function dropBenignExceptions(
   event: CaptureResult | null,
@@ -48,15 +88,7 @@ export function dropBenignExceptions(
     | ExceptionEntry[]
     | undefined;
   if (!Array.isArray(list) || list.length === 0) return event;
-  const benign = list.every(({ type, value }) =>
-    BENIGN_EXCEPTIONS.some(
-      (rule) =>
-        type === rule.type &&
-        typeof value === "string" &&
-        rule.value.test(value),
-    ),
-  );
-  return benign ? null : event;
+  return list.every(isBenign) ? null : event;
 }
 
 const OPTIONS: Partial<PostHogConfig> = {
@@ -85,28 +117,50 @@ const OPTIONS: Partial<PostHogConfig> = {
   before_send: dropBenignExceptions,
 };
 
+const EARLY_ERROR_CAP = 10;
+// The SDK is ~96 KB gzipped, so it waits for an idle moment after first paint.
+const IDLE_LOAD_TIMEOUT_MS = 4_000;
+
 let pending: Promise<PostHog | null> | null = null;
+let earlyErrors: ReturnType<typeof bufferEarlyErrors> | null = null;
+let viewerId: string | null = null;
+
+function applyViewer(posthog: PostHog) {
+  if (viewerId) posthog.register({ user_id: viewerId });
+  else posthog.unregister("user_id");
+}
 
 function load(): Promise<PostHog | null> {
   pending ??= import("posthog-js")
     .then(({ default: posthog }) => {
       posthog.init(TOKEN as string, OPTIONS);
       posthog.register({ environment: import.meta.env.MODE });
+      applyViewer(posthog);
       return posthog;
     })
     // A blocked or failed SDK load must never surface to the user, and must not
     // be retried per call — the rejected promise is cached on purpose.
-    .catch(() => null);
+    .catch(() => null)
+    .then((posthog) => {
+      earlyErrors?.flush((event) =>
+        posthog?.captureException(event, { buffered: true }),
+      );
+      earlyErrors = null;
+      return posthog;
+    });
   return pending;
 }
 
 /**
- * Registers the unhandled-error/rejection handlers. Called once on mount, so
- * exceptions thrown before hydration completes are not covered.
+ * Starts error tracking. Called once on mount, so exceptions thrown before
+ * hydration completes are not covered. Errors between mount and the SDK's
+ * idle-time load are held and reported once it is up.
  */
 export function initErrorTracking(): void {
   if (!ERROR_TRACKING_ENABLED || typeof window === "undefined") return;
-  void load();
+  if (pending || earlyErrors) return;
+  earlyErrors = bufferEarlyErrors(EARLY_ERROR_CAP);
+  whenIdle(() => void load(), IDLE_LOAD_TIMEOUT_MS);
 }
 
 /**
@@ -131,9 +185,10 @@ export function captureException(
  */
 export function registerViewer(userId: string | null | undefined): void {
   if (!ERROR_TRACKING_ENABLED || typeof window === "undefined") return;
-  void load().then((posthog) => {
-    if (!posthog) return;
-    if (userId) posthog.register({ user_id: userId });
-    else posthog.unregister("user_id");
+  viewerId = userId ?? null;
+  // Before the SDK loads, load() applies the latest id itself. Calling load()
+  // from here would pull the SDK in on mount and undo the idle deferral.
+  void pending?.then((posthog) => {
+    if (posthog) applyViewer(posthog);
   });
 }

@@ -17,7 +17,9 @@ import { loadViewer } from "@/lib/loader-viewer";
 // descendant components that read it hydrate without a client round-trip.
 export const Route = createFileRoute("/_private")({
   beforeLoad: async ({ context }) => {
-    const data = await loadViewer(context.queryClient);
+    // Strict: a failed /api/me must not read as signed out and bounce a
+    // signed-in user to /login.
+    const data = await loadViewer(context.queryClient, { strict: true });
 
     if (!data?.user) {
       throw redirect({ to: "/login" });

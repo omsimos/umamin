@@ -14,6 +14,7 @@ import {
 } from "./server-lib/cron";
 import type { AppEnv } from "./server-lib/env";
 import { formatErrorChain } from "./server-lib/errors";
+import { refreshFlagSnapshot } from "./server-lib/flags";
 import {
   cookieRenewal,
   csrfOriginCheck,
@@ -111,6 +112,7 @@ const scheduled: ExportedHandlerScheduledHandler<AppEnv> = async (
       ctx.waitUntil(report(recomputeHotFeed(env)));
       ctx.waitUntil(report(retryUnclassified(env, (p) => ctx.waitUntil(p))));
       ctx.waitUntil(report(purgeDeletedDms(env)));
+      ctx.waitUntil(report(refreshFlagSnapshot(env, (p) => ctx.waitUntil(p))));
       break;
     default:
       console.log(`[cron] unhandled: ${event.cron}`);
