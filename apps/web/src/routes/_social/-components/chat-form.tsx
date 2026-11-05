@@ -1,19 +1,22 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@umamin/ui/components/badge";
 import { Button } from "@umamin/ui/components/button";
 import { Textarea } from "@umamin/ui/components/textarea";
 import { cn } from "@umamin/ui/lib/utils";
 import { Loader2Icon, MoonIcon, SendIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { ChatList } from "@/components/chat-list";
 import UnauthenticatedDialog from "@/components/unauthenticated-dialog";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
+import { CONNECTION_ERROR } from "@/lib/api";
 import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
+import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
+import { isNetworkError, queryRetryDefaults } from "@/lib/query-retry";
 import type { PublicUser } from "@/lib/types";
 import { formatContent } from "@/lib/utils";
 import { sendMessageAction } from "../-lib/actions";
@@ -27,6 +30,7 @@ export function ChatForm({ user }: { user: PublicUser }) {
   // their own, so they get a sign-up prompt after the message goes through.
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
 
+  const queryClient = useQueryClient();
   const inputRef = useDynamicTextarea(content);
   const sendMessage = useSingleFlightAction(sendMessageAction);
 
@@ -53,9 +57,25 @@ export function ChatForm({ user }: { user: PublicUser }) {
     },
   });
 
+  // The action accepts anonymous senders, so it can't tell the client to show
+  // the "not logged in" confirmation. The viewer has to be known up front.
+  const [checkingSession, setCheckingSession] = useState(false);
+  const checkingRef = useRef(false);
+
   const submitMessage = async () => {
+    if (checkingRef.current || mutation.isPending) return;
+    checkingRef.current = true;
+    setCheckingSession(true);
+
     try {
-      const currentUser = await fetchCurrentUserOptional();
+      // Through the query cache: a viewer the app already resolved costs no
+      // request, and a dropped one on mobile data is retried.
+      const currentUser = await queryClient.fetchQuery({
+        queryKey: queryKeys.currentUser(),
+        queryFn: fetchCurrentUserOptional,
+        staleTime: PRIVATE_STALE_TIME,
+        ...queryRetryDefaults(false),
+      });
 
       if (!currentUser.user) {
         setShowUnauthenticatedDialog(true);
@@ -65,10 +85,19 @@ export function ChatForm({ user }: { user: PublicUser }) {
       setShowSignupPrompt(false);
       mutation.mutate();
     } catch (error) {
+      if (isNetworkError(error)) {
+        toast.error(CONNECTION_ERROR);
+        return;
+      }
       captureException(error, { source: "send message session" });
       toast.error("Couldn't verify your session.");
+    } finally {
+      checkingRef.current = false;
+      setCheckingSession(false);
     }
   };
+
+  const busy = mutation.isPending || checkingSession;
 
   return (
     <>
@@ -116,8 +145,8 @@ export function ChatForm({ user }: { user: PublicUser }) {
               className="focus-visible:ring-transparent text-base resize-none min-h-10 max-h-20"
               autoComplete="off"
             />
-            <Button type="submit" size="icon" disabled={mutation.isPending}>
-              {mutation.isPending ? (
+            <Button type="submit" size="icon" disabled={busy}>
+              {busy ? (
                 <Loader2Icon className="w-4 h-4 animate-spin" />
               ) : (
                 <SendIcon className="h-4 w-4" />
