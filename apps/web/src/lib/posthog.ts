@@ -28,17 +28,56 @@ export const ERROR_TRACKING_ENABLED = Boolean(import.meta.env.PROD && TOKEN);
 // second navigation, a viewport resize from the mobile URL bar or keyboard)
 // rejects the ViewTransition's promises, and the router discards the
 // transition object, so nothing can attach a handler; the navigation itself
-// still completes. The ResizeObserver loop notice is the spec's benign "a
-// frame skipped delivery" signal.
-const BENIGN_EXCEPTIONS: ReadonlyArray<{ type: string; value: RegExp }> = [
+// still completes. Safari words it differently ("Old view transition aborted
+// by new view transition", "View transition was skipped because document
+// visibility state is hidden"), so that rule ignores the type. The
+// ResizeObserver loop notice is the spec's benign "a frame skipped delivery"
+// signal.
+//
+// The rest come from outside the app: Facebook's Android in-app browser
+// ("Java object is gone" after its JS bridge is torn down), Outlook SafeLinks'
+// link scanner rejecting with "Object Not Found Matching Id", and a
+// cross-origin script's "Script error." that carries no stack to act on.
+type BenignRule = { type?: string; value: RegExp; withoutStack?: boolean };
+
+const BENIGN_EXCEPTIONS: ReadonlyArray<BenignRule> = [
   {
-    type: "DOMException",
-    value: /^(AbortError|InvalidStateError): Transition was (skipped|aborted)/,
+    value:
+      /^(AbortError|InvalidStateError): Transition was (skipped|aborted)|view transition/i,
   },
   { type: "Error", value: /^ResizeObserver loop/ },
+  { value: /Java object is gone/ },
+  { value: /Object Not Found Matching Id/ },
+  { value: /^Script error\.?$/, withoutStack: true },
 ];
 
-type ExceptionEntry = { type?: unknown; value?: unknown };
+type ExceptionEntry = {
+  type?: unknown;
+  value?: unknown;
+  mechanism?: { synthetic?: unknown };
+  stacktrace?: { frames?: unknown };
+};
+
+// An ErrorEvent with no error object gets a synthetic stack from the SDK.
+function hasRealStack(entry: ExceptionEntry): boolean {
+  const frames = entry.stacktrace?.frames;
+  return (
+    entry.mechanism?.synthetic !== true &&
+    Array.isArray(frames) &&
+    frames.length > 0
+  );
+}
+
+function isBenign(entry: ExceptionEntry): boolean {
+  const { type, value } = entry;
+  if (typeof value !== "string") return false;
+  return BENIGN_EXCEPTIONS.some(
+    (rule) =>
+      (rule.type === undefined || type === rule.type) &&
+      rule.value.test(value) &&
+      !(rule.withoutStack && hasRealStack(entry)),
+  );
+}
 
 export function dropBenignExceptions(
   event: CaptureResult | null,
@@ -48,15 +87,7 @@ export function dropBenignExceptions(
     | ExceptionEntry[]
     | undefined;
   if (!Array.isArray(list) || list.length === 0) return event;
-  const benign = list.every(({ type, value }) =>
-    BENIGN_EXCEPTIONS.some(
-      (rule) =>
-        type === rule.type &&
-        typeof value === "string" &&
-        rule.value.test(value),
-    ),
-  );
-  return benign ? null : event;
+  return list.every(isBenign) ? null : event;
 }
 
 const OPTIONS: Partial<PostHogConfig> = {

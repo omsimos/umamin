@@ -49,7 +49,9 @@ describe("browser error tracking, unconfigured", () => {
   });
 });
 
-function exceptionEvent(list: Array<{ type: string; value: string }>) {
+function exceptionEvent(
+  list: Array<{ type: string; value: string } & Record<string, unknown>>,
+) {
   return {
     uuid: "evt",
     event: "$exception",
@@ -85,6 +87,48 @@ describe("dropBenignExceptions", () => {
         ]),
       ),
     ).toBeNull();
+  });
+
+  it("drops Safari's wording of an interrupted view transition", () => {
+    for (const value of [
+      "AbortError: Old view transition aborted by new view transition.",
+      "InvalidStateError: View transition was skipped because document visibility state is hidden.",
+    ]) {
+      expect(
+        dropBenignExceptions(exceptionEvent([{ type: "DOMException", value }])),
+      ).toBeNull();
+    }
+  });
+
+  it("drops errors injected by in-app browsers and link scanners", () => {
+    for (const entry of [
+      { type: "Error", value: "Java object is gone" },
+      {
+        type: "UnhandledRejection",
+        value:
+          "Non-Error promise rejection captured with value: Object Not Found Matching Id:3, MethodName:update, ParamCount:4",
+      },
+    ]) {
+      expect(dropBenignExceptions(exceptionEvent([entry]))).toBeNull();
+    }
+  });
+
+  it("drops a stackless cross-origin Script error only", () => {
+    const stackless = {
+      type: "Error",
+      value: "Script error.",
+      mechanism: { synthetic: true },
+    };
+    expect(dropBenignExceptions(exceptionEvent([stackless]))).toBeNull();
+
+    const withStack = exceptionEvent([
+      {
+        type: "Error",
+        value: "Script error.",
+        stacktrace: { type: "raw", frames: [{ filename: "app.js" }] },
+      },
+    ]);
+    expect(dropBenignExceptions(withStack)).toBe(withStack);
   });
 
   it("keeps other DOMExceptions", () => {
