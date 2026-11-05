@@ -1,7 +1,8 @@
+import { type Client, LibsqlError } from "@libsql/client";
 import { sessionTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "../src/server-lib/db";
 import {
   __clearSessionCache,
@@ -85,6 +86,39 @@ describe("session core (real libSQL)", () => {
     expect((await validateSessionToken(db, token)).session).not.toBeNull();
     await invalidateUserSessions(db, "user1");
     expect((await validateSessionToken(db, token)).session).toBeNull();
+  });
+
+  // Every authed request starts with this lookup, so a single dropped Turso
+  // response used to fail the whole request with a 500.
+  it("survives one transient gateway error on the lookup", async () => {
+    await seedUser(db, "user1");
+    const token = generateSessionToken();
+    await createSession(db, token, "user1");
+    __clearSessionCache();
+
+    const client = (db as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    const spy = vi
+      .spyOn(client, "execute")
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+
+    const result = await validateSessionToken(db, token);
+    expect(result.session?.userId).toBe("user1");
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry a lookup that fails for a non-transient reason", async () => {
+    const token = generateSessionToken();
+    const client = (db as unknown as { $client: Client }).$client;
+    const spy = vi
+      .spyOn(client, "execute")
+      .mockRejectedValue(new LibsqlError("no such table", "SQLITE_ERROR"));
+
+    await expect(validateSessionToken(db, token)).rejects.toThrow();
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it("returns null for an unknown token", async () => {

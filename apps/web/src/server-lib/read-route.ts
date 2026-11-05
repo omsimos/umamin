@@ -1,5 +1,6 @@
 import type { Context, HonoRequest } from "hono";
 import type { AppBindings } from "./context";
+import { retryTransientRead } from "./db-retry";
 import type { AppEnv } from "./env";
 import { formatErrorChain, INTERNAL_SERVER_ERROR } from "./errors";
 import { extractClientIp } from "./ip";
@@ -81,6 +82,8 @@ function sessionResolverFrom(
 
 // Private handlers get the FULL context (may resolve the viewer session).
 // `null` is a valid body (missing entity) — it still gets the private envelope.
+// Both handler kinds must only read: a transient database error runs the
+// handler a second time (retryTransientRead), and a write could apply twice.
 type PrivateReadHandler = (c: AppContext) => Promise<Response | object | null>;
 
 // Public handlers get ONLY the request + env — no Context, so they have no
@@ -114,11 +117,17 @@ async function privateReadAllowed(c: AppContext): Promise<boolean> {
  */
 export function withPrivateRead(label: string, handler: PrivateReadHandler) {
   return async (c: AppContext): Promise<Response> => {
+    let attempts = 1;
     try {
       if (!(await privateReadAllowed(c))) {
         return privateJson({ error: RATE_LIMIT_ERROR }, 429);
       }
-      const result = await handler(c);
+      const result = await retryTransientRead(
+        () => handler(c),
+        () => {
+          attempts += 1;
+        },
+      );
       return result instanceof Response
         ? stamp(result, PRIVATE_CACHE_HEADERS)
         : privateJson(result);
@@ -126,7 +135,7 @@ export function withPrivateRead(label: string, handler: PrivateReadHandler) {
       console.error(`Error ${label}:`, formatErrorChain(error));
       captureRequestException(c, error, {
         distinctId: viewerIdFrom(c),
-        properties: { read: label },
+        properties: { read: label, attempts },
       });
       return privateJson({ error: INTERNAL_SERVER_ERROR }, 500);
     }
@@ -256,13 +265,19 @@ export function withPublicRead(
     }
     if (hit) return hit;
 
+    let attempts = 1;
     try {
       const ip = extractClientIp((name) => c.req.header(name));
       if (!(await checkReadRateLimit(c.env, ip))) {
         return publicJson({ error: RATE_LIMIT_ERROR }, 0, 0, 429);
       }
 
-      const result = await handler(c.req, c.env);
+      const result = await retryTransientRead(
+        () => handler(c.req, c.env),
+        () => {
+          attempts += 1;
+        },
+      );
       // A handler-built Response is an early exit (404) — pin it uncacheable,
       // same as apps/www's `publicJson(body, 0, { status })`. A 200 keeps the
       // route's normal TTL.
@@ -292,7 +307,7 @@ export function withPublicRead(
       console.error(`Error ${label}:`, formatErrorChain(error));
       captureRequestException(c, error, {
         distinctId: viewerIdFrom(c),
-        properties: { read: label },
+        properties: { read: label, attempts },
       });
       return publicJson({ error: INTERNAL_SERVER_ERROR }, 0, 0, 500);
     }

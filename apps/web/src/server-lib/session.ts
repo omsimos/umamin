@@ -14,6 +14,7 @@ import type { Context } from "hono";
 import { getCookie } from "hono/cookie";
 import { LEGACY_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME } from "./cookies";
 import type { Db } from "./db";
+import { retryTransientRead } from "./db-retry";
 
 // Session TTL + sliding-renewal window, unchanged from apps/www/lib/session.ts.
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
@@ -150,12 +151,17 @@ async function loadSession(
   db: Db,
   sessionId: string,
 ): Promise<SessionValidationResult> {
-  const [row] = await db
-    .select({ session: sessionTable, user: userTable })
-    .from(sessionTable)
-    .leftJoin(userTable, eq(sessionTable.userId, userTable.id))
-    .where(eq(sessionTable.id, sessionId))
-    .limit(1);
+  // Every authed request starts here, so one dropped Turso response would
+  // otherwise fail the whole request. Only the read is retried; the expiry
+  // delete and renewal below are writes.
+  const [row] = await retryTransientRead(() =>
+    db
+      .select({ session: sessionTable, user: userTable })
+      .from(sessionTable)
+      .leftJoin(userTable, eq(sessionTable.userId, userTable.id))
+      .where(eq(sessionTable.id, sessionId))
+      .limit(1),
+  );
 
   if (!row?.user) {
     return { session: null, user: null };
