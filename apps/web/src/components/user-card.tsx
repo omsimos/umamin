@@ -155,7 +155,7 @@ export function UserCard({
               <ShieldUserIcon className="size-4" />
               <span>
                 <span className="font-medium text-foreground">
-                  {user.points.toLocaleString()}
+                  {user.points.toLocaleString("en-US")}
                 </span>{" "}
                 aura points
               </span>
