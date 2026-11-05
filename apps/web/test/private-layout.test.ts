@@ -1,5 +1,6 @@
 import { isRedirect } from "@tanstack/react-router";
 import { describe, expect, it, vi } from "vitest";
+import { RequestFailedError } from "@/lib/request-error";
 import { Route } from "@/routes/_private";
 
 // The pathless _private layout gates every private route: its beforeLoad
@@ -32,6 +33,22 @@ describe("_private layout guard", () => {
         (err as { options?: { to?: string } }).options?.to;
       expect(to).toBe("/login");
     }
+  });
+
+  // Public pages read a failed /api/me as signed out. Here that would send a
+  // signed-in user to /login, so the error has to surface instead.
+  it("surfaces a 5xx from /api/me instead of redirecting to /login", async () => {
+    const failure = new RequestFailedError("/api/me", 502);
+    const beforeLoad = Route.options.beforeLoad as BeforeLoad;
+    const run = beforeLoad({
+      context: {
+        queryClient: { ensureQueryData: vi.fn().mockRejectedValue(failure) },
+        // biome-ignore lint/suspicious/noExplicitAny: minimal partial context for the guard
+      } as any,
+      // biome-ignore lint/suspicious/noExplicitAny: unused router args
+    } as any);
+
+    await expect(run).rejects.toBe(failure);
   });
 
   it("passes through and returns the current user when authenticated", async () => {

@@ -47,7 +47,11 @@ export const Route = createFileRoute("/_social/feed")({
     const { sort } = deps;
     // Resolve the viewer first so page 1 is served under the correct
     // viewer-keyed query — no wasted public page plus a second /api/posts.
-    const viewerId = await loadViewerId(context.queryClient);
+    // Following redirects a signed-out viewer, so a failed /api/me must not
+    // read as signed out there.
+    const viewerId = await loadViewerId(context.queryClient, {
+      strict: sort === "following",
+    });
 
     // Following has nothing to show a signed-out viewer.
     if (sort === "following" && !viewerId) {
