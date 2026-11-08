@@ -69,9 +69,9 @@ export async function subscribeToPush(
 // unsubscribe (including during SSR).
 //
 // Deliberately NOT the lib's unsubscribe(), which swallows a rejection and
-// returns the endpoint anyway: that prunes the server row while the browser
-// subscription survives, so the toggle reads "on" for a device the server can
-// never reach again. A failure here has to surface to the caller.
+// returns the endpoint anyway: a caller that prunes the server row on that
+// endpoint would leave a live browser subscription it believes is gone. A
+// failure here has to surface to the caller.
 export async function unsubscribeFromPush(): Promise<string | null> {
   if (typeof window === "undefined") return null;
   const sub = await getCurrentSubscription();
