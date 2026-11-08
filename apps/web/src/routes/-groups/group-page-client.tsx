@@ -53,7 +53,7 @@ import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupEditDialog } from "@/components/group-edit-dialog";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
-import { useBusyKeys } from "@/hooks/use-busy-keys";
+import { usePendingKeys } from "@/hooks/use-pending-keys";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
 import type { GroupAccent, GroupIcon } from "@/lib/group";
@@ -166,7 +166,13 @@ export function GroupPageClient({
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups() }),
     ]);
 
-  const busy = useBusyKeys();
+  const kickKey = ["group", tag, "kick"] as const;
+  const respondKey = ["group", tag, "respond"] as const;
+  const kicking = usePendingKeys(kickKey, (userId: string) => userId);
+  const responding = usePendingKeys(
+    respondKey,
+    ({ userId }: { userId: string }) => userId,
+  );
 
   const equip = useSingleFlightAction(equipGroupBadgeAction);
   const equipped = equippedGroupId === group?.id;
@@ -217,6 +223,7 @@ export function GroupPageClient({
   });
 
   const kickMutation = useMutation({
+    mutationKey: kickKey,
     mutationFn: async (userId: string) => {
       const res = await kickGroupMemberAction({
         groupId: group?.id ?? "",
@@ -226,7 +233,6 @@ export function GroupPageClient({
         throw new ExpectedError(res.error);
       return userId;
     },
-    onMutate: (userId) => busy.add(`member:${userId}`),
     onSuccess: (userId) => {
       queryClient.setQueryData<InfiniteData<GroupMembersResponse>>(
         queryKeys.groupMembers(tag),
@@ -243,7 +249,6 @@ export function GroupPageClient({
       toast.success("Member removed.");
     },
     onError: (err) => toast.error(err.message),
-    onSettled: (_data, _err, userId) => busy.remove(`member:${userId}`),
   });
 
   const inviteMutation = useMutation({
@@ -323,6 +328,7 @@ export function GroupPageClient({
   });
 
   const respondRequestMutation = useMutation({
+    mutationKey: respondKey,
     mutationFn: async ({
       userId,
       accept,
@@ -339,7 +345,6 @@ export function GroupPageClient({
         throw new ExpectedError(res.error);
       return userId;
     },
-    onMutate: ({ userId }) => busy.add(`request:${userId}`),
     onSuccess: (userId) => {
       queryClient.setQueryData<InfiniteData<GroupRequestsResponse>>(
         queryKeys.groupRequests(tag),
@@ -356,7 +361,6 @@ export function GroupPageClient({
       queryClient.invalidateQueries({ queryKey: queryKeys.groupMembers(tag) });
     },
     onError: (err) => toast.error(err.message),
-    onSettled: (_data, _err, { userId }) => busy.remove(`request:${userId}`),
   });
 
   const handleInvite: FormEventHandler = (e) => {
@@ -590,7 +594,7 @@ export function GroupPageClient({
                   size="icon"
                   variant="ghost"
                   aria-label={`Approve ${request.user.username}`}
-                  disabled={busy.has(`request:${request.user.id}`)}
+                  disabled={responding.has(request.user.id)}
                   onClick={() =>
                     respondRequestMutation.mutate({
                       userId: request.user.id,
@@ -606,7 +610,7 @@ export function GroupPageClient({
                   size="icon"
                   variant="ghost"
                   aria-label={`Reject ${request.user.username}`}
-                  disabled={busy.has(`request:${request.user.id}`)}
+                  disabled={responding.has(request.user.id)}
                   onClick={() =>
                     respondRequestMutation.mutate({
                       userId: request.user.id,
@@ -688,7 +692,7 @@ export function GroupPageClient({
                         size="icon"
                         variant="ghost"
                         aria-label={`Remove ${member.user.username}`}
-                        disabled={busy.has(`member:${member.user.id}`)}
+                        disabled={kicking.has(member.user.id)}
                         className="text-muted-foreground hover:text-destructive"
                       >
                         <UserMinusIcon className="size-4" />

@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { TimeAgo } from "@/components/time-ago";
-import { useBusyKeys } from "@/hooks/use-busy-keys";
+import { usePendingKeys } from "@/hooks/use-pending-keys";
 import { callAction } from "@/lib/api";
 import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
@@ -117,7 +117,11 @@ function ReviewList({ kind }: { kind: QueueKind }) {
   const queryClient = useQueryClient();
   // Removal is permanent, so it takes a second tap on the same row.
   const [confirming, setConfirming] = useState<string | null>(null);
-  const busy = useBusyKeys();
+  // Both mutations below key under this prefix and take `{ item }`.
+  const mutationKey = ["review-queue", kind] as const;
+  const busy = usePendingKeys(mutationKey, ({ item }: { item: ReviewItem }) =>
+    rowKey(item),
+  );
 
   useEffect(() => {
     if (!confirming) return;
@@ -158,6 +162,7 @@ function ReviewList({ kind }: { kind: QueueKind }) {
     );
 
   const decideMutation = useMutation({
+    mutationKey: [...mutationKey, "decide"],
     mutationFn: async ({
       decision,
       item,
@@ -169,7 +174,6 @@ function ReviewList({ kind }: { kind: QueueKind }) {
       if (error) throw new ExpectedError(error);
       return { decision, item };
     },
-    onMutate: ({ item }) => busy.add(rowKey(item)),
     onSuccess: ({ decision, item }) => {
       settle(item);
       toast.success(decisionToast[decision]);
@@ -183,22 +187,20 @@ function ReviewList({ kind }: { kind: QueueKind }) {
       }
       toast.error("Couldn't save that. Try again.");
     },
-    onSettled: (_data, _err, { item }) => busy.remove(rowKey(item)),
   });
 
   const removeMutation = useMutation({
-    mutationFn: async (item: ReviewItem) => {
+    mutationKey: [...mutationKey, "remove"],
+    mutationFn: async ({ item }: { item: ReviewItem }) => {
       const error = getActionError(await removeContent(item));
       if (error) throw new ExpectedError(error);
       return item;
     },
-    onMutate: (item) => busy.add(rowKey(item)),
     onSuccess: (item) => {
       settle(item);
       toast.success("Removed.");
     },
     onError: () => toast.error("Couldn't remove it."),
-    onSettled: (_data, _err, item) => busy.remove(rowKey(item)),
   });
 
   const decideRow = (decision: Decision, item: ReviewItem) => {
@@ -299,7 +301,7 @@ function ReviewList({ kind }: { kind: QueueKind }) {
                   onClick={() => {
                     if (confirming === key) {
                       setConfirming(null);
-                      removeMutation.mutate(item);
+                      removeMutation.mutate({ item });
                     } else {
                       setConfirming(key);
                     }

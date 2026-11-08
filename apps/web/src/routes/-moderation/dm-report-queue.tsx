@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { BanUserDialog } from "@/components/ban-user-dialog";
 import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { TimeAgo } from "@/components/time-ago";
-import { useBusyKeys } from "@/hooks/use-busy-keys";
+import { usePendingKeys } from "@/hooks/use-pending-keys";
 import { resolveDmReportAction } from "@/lib/actions";
 import type { DmReportItem } from "@/lib/dm/types";
 import { ExpectedError } from "@/lib/expected-error";
@@ -29,16 +29,22 @@ async function fetchDmReports(): Promise<DmReportItem[]> {
 
 type Resolution = "dismissed" | "actioned";
 
+const RESOLVE_KEY = ["dm-report", "resolve"] as const;
+
 export function DmReportQueue() {
   const queryClient = useQueryClient();
   const [banTarget, setBanTarget] = useState<DmReportItem | null>(null);
-  const busy = useBusyKeys();
+  const busy = usePendingKeys(
+    RESOLVE_KEY,
+    ({ report }: { report: DmReportItem }) => report.id,
+  );
   const { data, isLoading, error, isFetching, refetch } = useQuery({
     queryKey,
     queryFn: fetchDmReports,
   });
 
   const resolveMutation = useMutation({
+    mutationKey: RESOLVE_KEY,
     mutationFn: async ({
       report,
       resolution,
@@ -52,14 +58,12 @@ export function DmReportQueue() {
       if (err) throw new ExpectedError(err);
       return report;
     },
-    onMutate: ({ report }) => busy.add(report.id),
     onSuccess: (report) => {
       queryClient.setQueryData<DmReportItem[]>(queryKey, (current) =>
         current?.filter((r) => r.id !== report.id),
       );
     },
     onError: () => toast.error("Couldn't save that. Try again."),
-    onSettled: (_data, _err, { report }) => busy.remove(report.id),
   });
 
   if (isLoading) {
