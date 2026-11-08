@@ -112,13 +112,32 @@ function orderCreated({
   });
 }
 
-function orderRefunded(orderId: string, refunded = true): string {
+// A refund carries the whole order, custom data included. userId defaults to
+// none so a refund can't be pinned to a buyer unless a test asks for it.
+function orderRefunded(
+  orderId: string,
+  refunded = true,
+  { userId = null, variantId = 77 }: OrderOverrides = {},
+): string {
   return JSON.stringify({
-    meta: { event_name: "order_refunded" },
+    meta: {
+      event_name: "order_refunded",
+      custom_data: userId === null ? {} : { user_id: userId },
+    },
     data: {
       type: "orders",
       id: orderId,
-      attributes: { store_id: 10, status: "refunded", refunded },
+      attributes: {
+        store_id: 10,
+        identifier: `uuid-${orderId}`,
+        status: "refunded",
+        refunded,
+        total: 12900,
+        currency: "PHP",
+        test_mode: false,
+        created_at: "2026-08-07T00:00:00.000000Z",
+        first_order_item: { variant_id: variantId },
+      },
     },
   });
 }
@@ -281,6 +300,31 @@ describe("POST /api/webhooks/lemonsqueezy (real libSQL)", () => {
     const res = await post(app, orderRefunded("404"));
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ result: "unknown-order" });
+  });
+
+  it("grants nothing for an order whose refund arrived first", async () => {
+    const refund = await post(
+      app,
+      orderRefunded("9001", true, { userId: "buyer" }),
+    );
+    const order = await post(app, orderCreated());
+    expect([refund.status, order.status]).toEqual([200, 200]);
+    expect(await proUntil(db, "buyer")).toBeNull();
+    const purchases = await db.select().from(proPurchaseTable);
+    expect(purchases).toHaveLength(1);
+    expect(purchases[0]?.refundedAt).toBeInstanceOf(Date);
+    expect(await refund.json()).toMatchObject({
+      result: "refunded-before-order",
+    });
+  });
+
+  it("records nothing for an early refund of another product", async () => {
+    const res = await post(
+      app,
+      orderRefunded("9001", true, { userId: "buyer", variantId: 42 }),
+    );
+    expect(await res.json()).toMatchObject({ result: "unknown-order" });
+    expect(await db.select().from(proPurchaseTable)).toHaveLength(0);
   });
 
   it("skips unpaid orders without recording anything", async () => {

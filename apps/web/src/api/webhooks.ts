@@ -5,7 +5,11 @@ import {
   verifyWebhookSignature,
 } from "../server-lib/lemonsqueezy";
 import { captureRequestException } from "../server-lib/posthog";
-import { recordProPurchase, refundProPurchase } from "../server-lib/pro";
+import {
+  type ProGrant,
+  recordProPurchase,
+  refundProPurchase,
+} from "../server-lib/pro";
 import { ctxDb } from "./actions/_shared";
 
 // Lemon Squeezy order webhook (subscribe to order_created + order_refunded in
@@ -85,12 +89,32 @@ export const webhooksApp = new Hono<AppBindings>().post(
       return c.json({ ok: true, skipped: "foreign store" });
     }
 
+    // Only the Pro variant grants Pro — the store may sell other products
+    // through the same webhook someday.
+    const variantId = c.env.LEMONSQUEEZY_VARIANT_ID;
+    const orderVariantId = order.first_order_item?.variant_id;
+    const isProOrder =
+      !variantId || String(orderVariantId) === String(variantId);
+    const userId = event.meta?.custom_data?.user_id;
+    const grantFor = (buyerId: string): ProGrant => {
+      const purchasedAt = order.created_at ? new Date(order.created_at) : null;
+      return {
+        userId: buyerId,
+        orderId,
+        identifier: order.identifier ?? null,
+        variantId: orderVariantId ?? null,
+        total: order.total ?? null,
+        currency: order.currency ?? null,
+        testMode: order.test_mode ?? false,
+        purchasedAt:
+          purchasedAt && !Number.isNaN(purchasedAt.getTime())
+            ? purchasedAt
+            : new Date(),
+      };
+    };
+
     if (eventName === "order_created") {
-      // Only the Pro variant grants Pro — the store may sell other products
-      // through the same webhook someday.
-      const variantId = c.env.LEMONSQUEEZY_VARIANT_ID;
-      const orderVariantId = order.first_order_item?.variant_id;
-      if (variantId && String(orderVariantId) !== String(variantId)) {
+      if (!isProOrder) {
         return c.json({ ok: true, skipped: "other product" });
       }
 
@@ -100,7 +124,6 @@ export const webhooksApp = new Hono<AppBindings>().post(
         return c.json({ ok: true, skipped: "not paid" });
       }
 
-      const userId = event.meta?.custom_data?.user_id;
       if (typeof userId !== "string" || !userId) {
         // A purchase made outside the in-app checkout (e.g. a direct store
         // link) has no attribution — surface it for manual support handling.
@@ -113,20 +136,7 @@ export const webhooksApp = new Hono<AppBindings>().post(
         return c.json({ ok: true, skipped: "unattributed" });
       }
 
-      const purchasedAt = order.created_at ? new Date(order.created_at) : null;
-      const result = await recordProPurchase(ctxDb(c), {
-        userId,
-        orderId,
-        identifier: order.identifier ?? null,
-        variantId: orderVariantId ?? null,
-        total: order.total ?? null,
-        currency: order.currency ?? null,
-        testMode: order.test_mode ?? false,
-        purchasedAt:
-          purchasedAt && !Number.isNaN(purchasedAt.getTime())
-            ? purchasedAt
-            : new Date(),
-      });
+      const result = await recordProPurchase(ctxDb(c), grantFor(userId));
       console.log(`[pro] order ${orderId}: ${result}`);
       return c.json({ ok: true, result });
     }
@@ -136,7 +146,14 @@ export const webhooksApp = new Hono<AppBindings>().post(
     if (order.refunded !== true) {
       return c.json({ ok: true, skipped: "partial refund" });
     }
-    const result = await refundProPurchase(ctxDb(c), orderId);
+    // The refund carries the same order payload as order_created, so a Pro
+    // refund that arrives first can still be pinned to its buyer.
+    const result = await refundProPurchase(ctxDb(c), orderId, {
+      grant:
+        isProOrder && typeof userId === "string" && userId
+          ? grantFor(userId)
+          : null,
+    });
     console.log(`[pro] refund ${orderId}: ${result}`);
     return c.json({ ok: true, result });
   },
