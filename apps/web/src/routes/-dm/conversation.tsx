@@ -41,6 +41,7 @@ import type { UiDmMessage } from "@/lib/dm/client-state";
 import type { DmErrorCode } from "@/lib/dm/protocol";
 import type { DmPeerResponse, DmReplyPreview } from "@/lib/dm/types";
 import { Link, useAppNavigate } from "@/lib/navigation";
+import { reloadPage } from "@/lib/reload-page";
 import {
   SessionBackButton,
   SessionFrame,
@@ -156,11 +157,7 @@ export function DmUnavailable({
           </Button>
         )}
         {reason === "outdated" && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => globalThis.location.reload()}
-          >
+          <Button variant="outline" size="sm" onClick={reloadPage}>
             Refresh
           </Button>
         )}

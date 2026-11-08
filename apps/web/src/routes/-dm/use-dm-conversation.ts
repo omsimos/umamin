@@ -24,6 +24,7 @@ import {
   createReconnectingSocket,
   type ReconnectingSocket,
 } from "@/lib/realtime/socket";
+import { reloadPage } from "@/lib/reload-page";
 
 /** A peer's typing indicator clears after this long without a refresh. */
 const TYPING_STALE_MS = 8_000;
@@ -61,7 +62,7 @@ function reloadForVersion() {
   } catch {
     // Storage blocked: reloading once more is still the right call.
   }
-  globalThis.location.reload();
+  reloadPage();
 }
 
 export interface DmConversation {
