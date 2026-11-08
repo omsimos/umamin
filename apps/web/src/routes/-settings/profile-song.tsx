@@ -55,7 +55,6 @@ export function ProfileSong({ user }: { user: UserWithAccount }) {
     onSuccess: (next) => {
       patchMusic(next);
       toast.success("Profile song updated.");
-      setOpen(false);
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Couldn't update song.");
@@ -131,8 +130,8 @@ export function ProfileSong({ user }: { user: UserWithAccount }) {
         open={open}
         onOpenChange={setOpen}
         value=""
-        onAttach={(url) => attachMutation.mutate(url)}
-        onRemove={() => removeMutation.mutate()}
+        onAttach={(url) => attachMutation.mutateAsync(url)}
+        onRemove={() => removeMutation.mutateAsync()}
         description="Paste a link from Spotify, Apple Music, SoundCloud, or YouTube Music and it'll play right on your profile."
       />
     </section>
