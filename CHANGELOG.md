@@ -24,6 +24,27 @@ any that are empty.
 
 - The streak bolt changes color as a streak grows: orange at 7 days, red at 30 and purple at 90. Your post or note toast tells you when it changes.
 
+### Changed
+
+- When a new version of Umamin is ready, every open tab offers to reload, and a dismissed prompt comes back when you return to the tab.
+- After you pay for Pro, the plans page checks for your upgrade on its own and keeps the buy button off until it arrives.
+
+### Fixed
+
+- "Tap to retry" on a chat message that didn't send now sends it again.
+- Chats no longer get stuck on "Connecting…" after an update, and a closed chat stays closed when you come back to the tab.
+- In Umamin Chat, "typing…" stays up while your match keeps typing.
+- Cancelling a new match in Umamin Chat no longer bounces you between screens, and an old "Search again" prompt can't end a chat you're in.
+- A send effect cut off when a chat ends no longer plays in your next chat, and "It's mutual!" no longer shows again after a reload.
+- Follow and Block show the right state when you had already followed or blocked someone from another tab or device.
+- Tapping like, repost or react quickly no longer leaves the wrong state or count.
+- Push notifications only show as on when this device can actually receive them, and a failed attempt to turn them off leaves them on instead of half off.
+- The composer stays open while your post is sending, so a post that fails keeps your draft.
+- Adding a profile song keeps the dialog open until it saves, so a failed save doesn't lose your link.
+- A moderator's decision only applies to the version of a note they reviewed, not to a rewrite saved after they loaded it.
+- Moderation and group admin buttons stay disabled until their own action finishes.
+- A Pro refund that reaches Umamin before its order no longer grants Pro.
+
 ## [7.21.0] - 2026-11-05
 
 ### Changed
