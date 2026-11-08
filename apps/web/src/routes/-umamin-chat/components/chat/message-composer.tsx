@@ -124,10 +124,10 @@ export function MessageComposer({
       stopTyping();
       return;
     }
-    if (!typingRef.current) {
-      typingRef.current = true;
-      onTyping(true);
-    }
+    // Every keystroke, not just the first: the partner drops the indicator
+    // unless it's refreshed, and the transport throttles the refreshes.
+    typingRef.current = true;
+    onTyping(true);
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(stopTyping, TYPING_IDLE_MS);
   }

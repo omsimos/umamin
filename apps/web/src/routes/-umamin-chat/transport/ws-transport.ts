@@ -146,14 +146,29 @@ type Mode =
       self: SelfIdentity | null;
       socket: ReconnectingSocket;
     }
+  /** Leaving a room: waiting for the leave op's ack (or the timeout) on the
+   *  room's socket before settling into `after`. */
+  | {
+      kind: "leaving";
+      socket: ReconnectingSocket;
+      /** Set once the leave op is on the wire; its ack settles the leave. */
+      opId: string | null;
+      timer: ReturnType<typeof setTimeout>;
+      after: AfterLeave;
+    }
   /** The room is gone (purged or dropped after the end) but the ended view
    *  stays up until the user leaves. */
   | { kind: "held" };
 
-interface Leaving {
-  opId: string | null;
-  timer: ReturnType<typeof setTimeout>;
-}
+/** What a leave settles into, and what the snapshot shows until then. */
+type AfterLeave =
+  /** A plain leave: hold the chat being left, then go idle. */
+  | { kind: "idle" }
+  /** A rematch: show the radar at once, then search. */
+  | { kind: "find"; self: SelfIdentity; options?: FindMatchOptions }
+  /** A rematch cancelled before the old room was left: idle at once, so the
+   *  lobby never sees the radar and sends the user back to the session. */
+  | { kind: "cancelled" };
 
 let reloadedThisPage = false;
 
@@ -208,9 +223,6 @@ export function createWsTransport(
   let selfTyping = false;
   let selfTypingSentAt = 0;
   let tempSeq = 0;
-  let leaving: Leaving | null = null;
-  let pendingFind: { self: SelfIdentity; options?: FindMatchOptions } | null =
-    null;
   let reloadRequested = false;
   let lobbyStats: ChatStats | undefined;
 
@@ -270,12 +282,14 @@ export function createWsTransport(
   }
 
   function build(): SessionSnapshot {
-    if (leaving) {
-      // Rematch: show the radar at once, never the chat being left. A plain
-      // leave holds the current view until it settles to idle.
-      return pendingFind ? matchingSnapshot(pendingFind.self) : snapshot;
-    }
     switch (mode.kind) {
+      case "leaving":
+        // Rematch: show the radar at once, never the chat being left. A plain
+        // leave holds the current view until it settles to idle.
+        if (mode.after.kind === "find")
+          return matchingSnapshot(mode.after.self);
+        if (mode.after.kind === "cancelled") return IDLE_SNAPSHOT;
+        return snapshot;
       case "idle":
         return IDLE_SNAPSHOT;
       case "lobby":
@@ -386,6 +400,14 @@ export function createWsTransport(
     selfTypingSentAt = 0;
     roomCache = null;
     lobbyStats = undefined;
+  }
+
+  /** The room socket stays live through a leave, until it settles. */
+  function ownsRoom(socket: ReconnectingSocket): boolean {
+    return (
+      (mode.kind === "room" || mode.kind === "leaving") &&
+      mode.socket === socket
+    );
   }
 
   function roomSocket(): ReconnectingSocket | null {
@@ -506,12 +528,12 @@ export function createWsTransport(
         send(JSON.stringify(frame));
       },
       onMessage: (data) => {
-        if (mode.kind !== "room" || mode.socket !== socket) return;
+        if (!ownsRoom(socket)) return;
         const frame = parse<RoomServerFrame>(data);
         if (frame) onRoomFrame(frame);
       },
       onClose: (code, willReconnect) => {
-        if (mode.kind !== "room" || mode.socket !== socket) return;
+        if (!ownsRoom(socket)) return;
         onRoomClose(socket, code, willReconnect);
       },
     });
@@ -519,12 +541,12 @@ export function createWsTransport(
   }
 
   function onRoomFrame(frame: RoomServerFrame) {
-    if (leaving) {
+    if (mode.kind === "leaving") {
       if (frame.t === "sync") {
         synced = true;
         meta = frame.meta;
         sendLeave();
-      } else if (frame.t === "ack" && frame.id === leaving.opId) {
+      } else if (frame.t === "ack" && frame.id === mode.opId) {
         finishLeave();
       }
       return;
@@ -631,7 +653,7 @@ export function createWsTransport(
         .map((p) => (p.status === "sending" ? withStatus(p, "queued") : p));
     }
 
-    if (leaving) {
+    if (mode.kind === "leaving") {
       finishLeave();
       return;
     }
@@ -704,7 +726,7 @@ export function createWsTransport(
   /** Fire-and-forget ops. Unlike sends they aren't queued: a stale tap
    *  replayed after a reconnect could act on a changed conversation. */
   function op(build: (id: string) => RoomOpFrame) {
-    if (leaving || mode.kind !== "room") return;
+    if (mode.kind !== "room") return;
     const socket = roomSocket();
     const id = newOpId();
     if (!socket || !canSendOps() || !socket.send(JSON.stringify(build(id)))) {
@@ -715,42 +737,49 @@ export function createWsTransport(
   // --- Leaving -------------------------------------------------------------
 
   function sendLeave() {
-    if (!leaving || leaving.opId !== null) return;
+    if (mode.kind !== "leaving" || mode.opId !== null) return;
     // An ended match needs no leave op: the room would treat it as a no-op.
-    if (meta?.phase !== "active" || !canSendOps()) {
+    if (meta?.phase !== "active" || !synced || !mode.socket.isOpen()) {
       if (synced || meta?.phase === "ended") finishLeave();
       return;
     }
     const id = newOpId();
-    const sent = roomSocket()?.send(
-      JSON.stringify({ t: "leave", id } satisfies RoomFrame),
-    );
-    if (!sent) {
+    if (
+      !mode.socket.send(JSON.stringify({ t: "leave", id } satisfies RoomFrame))
+    ) {
       finishLeave();
       return;
     }
-    leaving.opId = id;
+    mode.opId = id;
   }
 
   function finishLeave() {
-    if (!leaving) return;
-    clearTimeout(leaving.timer);
-    leaving = null;
-    if (mode.kind === "room") mode.socket.close();
+    if (mode.kind !== "leaving") return;
+    clearTimeout(mode.timer);
+    mode.socket.close();
+    const { after } = mode;
     store(null);
     resetRoomState();
     mode = { kind: "idle" };
-    const find = pendingFind;
-    pendingFind = null;
-    if (find) startLobby(find.self, find.options);
+    if (after.kind === "find") startLobby(after.self, after.options);
     commit();
   }
 
-  function toIdle() {
-    if (mode.kind === "lobby" || mode.kind === "room") mode.socket.close();
-    resetRoomState();
+  function closeMode() {
+    if (mode.kind === "leaving") clearTimeout(mode.timer);
+    if (
+      mode.kind === "lobby" ||
+      mode.kind === "room" ||
+      mode.kind === "leaving"
+    ) {
+      mode.socket.close();
+    }
     mode = { kind: "idle" };
-    pendingFind = null;
+  }
+
+  function toIdle() {
+    closeMode();
+    resetRoomState();
     commit();
   }
 
@@ -762,9 +791,10 @@ export function createWsTransport(
     if (reload() === false) onError(UPDATED_MESSAGE);
   }
 
-  function beginLeave() {
+  function beginLeave(after: AfterLeave) {
+    if (mode.kind !== "room") return;
     const timer = setTimeout(finishLeave, LEAVE_ACK_TIMEOUT_MS);
-    leaving = { opId: null, timer };
+    mode = { kind: "leaving", socket: mode.socket, opId: null, timer, after };
     pending = [];
     // Not synced yet (fresh match or reload): the leave goes out on sync, or
     // the timeout closes anyway.
@@ -794,16 +824,15 @@ export function createWsTransport(
 
     findMatch(self: SelfIdentity, findOptions?: FindMatchOptions) {
       if (disposed) return;
-      if (leaving) {
-        pendingFind = { self, options: findOptions };
+      if (mode.kind === "leaving") {
+        mode.after = { kind: "find", self, options: findOptions };
         commit();
         return;
       }
       if (mode.kind === "room") {
         // Leave the current room first (a no-op wait once it has ended),
         // then search; the radar shows from this call on.
-        pendingFind = { self, options: findOptions };
-        beginLeave();
+        beginLeave({ kind: "find", self, options: findOptions });
         return;
       }
       if (mode.kind === "lobby") mode.socket.close();
@@ -814,7 +843,7 @@ export function createWsTransport(
 
     send(text: string, opts: SendOpts = {}) {
       const trimmed = text.trim();
-      if (!trimmed || leaving || mode.kind !== "room") return;
+      if (!trimmed || mode.kind !== "room") return;
       if (meta && meta.phase !== "active") return;
       tempSeq += 1;
       const tempId = `tmp-${tempSeq}`;
@@ -864,7 +893,7 @@ export function createWsTransport(
 
     retrySend(messageId: string) {
       const p = pending.find((x) => x.tempId === messageId);
-      if (p?.status !== "failed" || leaving) return;
+      if (p?.status !== "failed" || mode.kind !== "room") return;
       transmit(messageId);
       commit();
     },
@@ -898,7 +927,7 @@ export function createWsTransport(
 
     setTyping(isTyping: boolean) {
       // Best effort: never queued while disconnected, never surfaced.
-      if (leaving || meta?.phase !== "active") return;
+      if (meta?.phase !== "active") return;
       const socket = roomSocket();
       if (!socket || !canSendOps()) return;
       const now = Date.now();
@@ -930,14 +959,15 @@ export function createWsTransport(
     },
 
     leave() {
-      pendingFind = null;
-      if (leaving) {
-        // A cancelled rematch: settle to idle once the old room is left.
-        commit();
+      if (mode.kind === "leaving") {
+        if (mode.after.kind === "find") {
+          mode.after = { kind: "cancelled" };
+          commit();
+        }
         return;
       }
       if (mode.kind === "room") {
-        beginLeave();
+        beginLeave({ kind: "idle" });
         return;
       }
       store(null);
@@ -947,12 +977,8 @@ export function createWsTransport(
     dispose() {
       if (disposed) return;
       disposed = true;
-      if (leaving) clearTimeout(leaving.timer);
-      leaving = null;
-      pendingFind = null;
-      if (mode.kind === "lobby" || mode.kind === "room") mode.socket.close();
+      closeMode();
       clearPartnerTyping();
-      mode = { kind: "idle" };
       listeners.clear();
     },
   };

@@ -916,6 +916,36 @@ describe("wsTransport", () => {
       expect(FakeWebSocket.instances.at(-1)).toBe(room);
     });
 
+    // The lobby sends a "matching" snapshot straight back to the session, so
+    // a cancel that kept showing the radar until the leave settled bounced
+    // the user between the two screens.
+    it("a cancelled rematch shows idle at once, before the leave settles", () => {
+      const ctx = setup();
+      const { room } = activeRoom(ctx);
+      ctx.t.leave();
+      ctx.t.findMatch(SELF);
+      ctx.seen.length = 0;
+      ctx.t.leave();
+      expect(ctx.t.getSnapshot()).toBe(IDLE_SNAPSHOT);
+      expect(room.closedWith).toBeUndefined();
+      room.push({ t: "ack", id: sentOps(room).at(-1)?.id });
+      expect(room.closedWith).toBe(1000);
+      expect(ctx.seen.map((s) => s.phase)).toEqual(["idle"]);
+    });
+
+    it("searches again after a cancelled rematch when asked to", () => {
+      const ctx = setup();
+      const { room } = activeRoom(ctx);
+      ctx.t.leave();
+      ctx.t.findMatch(SELF);
+      ctx.t.leave();
+      ctx.t.findMatch(SELF);
+      expect(ctx.t.getSnapshot().phase).toBe("matching");
+      room.push({ t: "ack", id: sentOps(room).at(-1)?.id });
+      expect(ctx.last().url).toMatch(/\/api\/chat\/lobby$/);
+      expect(ctx.t.getSnapshot().phase).toBe("matching");
+    });
+
     it("leaves right after matching once the room syncs", () => {
       const ctx = setup();
       ctx.t.findMatch(SELF);

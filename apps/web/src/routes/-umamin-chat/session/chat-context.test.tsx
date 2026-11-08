@@ -8,9 +8,14 @@ const wsTransport = vi.hoisted(() => ({
   create: vi.fn(),
   dispose: vi.fn(),
   findMatch: vi.fn(),
+  /** Off: findMatch is recorded but the transport stays idle, as it is
+   *  after a queue timeout. */
+  searches: true,
 }));
 
-const toast = vi.hoisted(() => Object.assign(vi.fn(), { error: vi.fn() }));
+const toast = vi.hoisted(() =>
+  Object.assign(vi.fn(), { error: vi.fn(), dismiss: vi.fn() }),
+);
 vi.mock("sonner", () => ({ toast }));
 
 vi.mock("../transport/ws-transport", () => ({
@@ -22,7 +27,7 @@ vi.mock("../transport/ws-transport", () => ({
       ...mock,
       findMatch: (...args: Parameters<typeof mock.findMatch>) => {
         wsTransport.findMatch(...args);
-        mock.findMatch(...args);
+        if (wsTransport.searches) mock.findMatch(...args);
       },
       dispose: wsTransport.dispose,
     };
@@ -51,8 +56,10 @@ describe("useChatSession", () => {
     wsTransport.create.mockClear();
     wsTransport.dispose.mockClear();
     wsTransport.findMatch.mockClear();
+    wsTransport.searches = true;
     toast.mockClear();
     toast.error.mockClear();
+    toast.dismiss.mockClear();
   });
 
   it("reflects the transport snapshot and drives actions", () => {
@@ -93,6 +100,7 @@ describe("useChatSession", () => {
   });
 
   it("offers to search again with the same identity after a queue timeout", () => {
+    wsTransport.searches = false;
     render(
       <ChatSessionProvider>
         <Probe />
@@ -115,6 +123,35 @@ describe("useChatSession", () => {
       avatarSeed: "s",
       interests: [],
     });
+  });
+
+  it("never lets a stale search-again toast leave a search already under way", () => {
+    wsTransport.searches = false;
+    render(
+      <ChatSessionProvider>
+        <Probe />
+      </ChatSessionProvider>,
+    );
+    act(() => {
+      screen.getByText("go").click();
+    });
+    const { onError } = wsTransport.create.mock.calls[0][0] as {
+      onError: (message: string) => void;
+    };
+    act(() => onError("queue timed out"));
+    const options = toast.mock.calls[0][1] as {
+      id: string;
+      action: { onClick: () => void };
+    };
+
+    wsTransport.searches = true;
+    act(() => {
+      screen.getByText("go").click();
+    });
+    expect(screen.getByTestId("phase").textContent).toBe("matching");
+    expect(toast.dismiss).toHaveBeenCalledWith(options.id);
+    act(() => options.action.onClick());
+    expect(wsTransport.findMatch).toHaveBeenCalledTimes(2);
   });
 
   // The composer's typing cleanup is keyed on setTyping; a new identity per
