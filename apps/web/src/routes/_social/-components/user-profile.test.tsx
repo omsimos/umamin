@@ -8,8 +8,12 @@ import {
   fetchUserProfile,
   fetchUserProfileViewer,
 } from "@/lib/query-fetchers";
-import type { CurrentUserResponse, PublicUserWithBadge } from "@/lib/types";
-import { followUserAction } from "../-lib/actions";
+import type {
+  CurrentUserResponse,
+  PublicUserWithBadge,
+  UserProfileViewerResponse,
+} from "@/lib/types";
+import { blockUserAction, followUserAction } from "../-lib/actions";
 import { UserProfile } from "./user-profile";
 
 const navigate = vi.fn();
@@ -207,6 +211,73 @@ describe("UserProfile", () => {
       expect(
         screen.queryByRole("button", { name: "Chat with @alice" }),
       ).toBeNull();
+    });
+  });
+
+  describe("no-op answers settle to the server's state", () => {
+    async function renderNotFollowing() {
+      const viewer = {
+        currentUserId: "viewer-1",
+        isAuthenticated: true,
+        isFollowing: false,
+        isBlocked: false,
+        isBlockedBy: false,
+        isMuted: false,
+        isBanned: false,
+      };
+      vi.mocked(fetchUserProfileViewer).mockResolvedValue(viewer);
+      const currentUser = await fetchCurrentUserOptional();
+      return renderProfile((client) => {
+        client.setQueryData(queryKeys.currentUser(), currentUser);
+        client.setQueryData(queryKeys.userProfileViewer("alice"), viewer);
+      });
+    }
+
+    it("shows Following when the server says the viewer already follows", async () => {
+      vi.mocked(followUserAction).mockResolvedValue({
+        alreadyFollowing: true,
+      });
+      const { queryClient } = await renderNotFollowing();
+
+      await userEvent.click(
+        await screen.findByRole("button", { name: "Follow" }),
+      );
+
+      expect(
+        await screen.findByRole("button", { name: "Following" }),
+      ).toBeEnabled();
+      expect(
+        queryClient.getQueryData<UserProfileViewerResponse>(
+          queryKeys.userProfileViewer("alice"),
+        )?.isFollowing,
+      ).toBe(true);
+    });
+
+    it("shows the user as blocked when the server says they already were", async () => {
+      vi.mocked(blockUserAction).mockResolvedValue({
+        alreadyBlocked: true,
+      });
+      const { queryClient } = await renderNotFollowing();
+
+      await userEvent.click(
+        await screen.findByRole("button", { name: "More options" }),
+      );
+      await userEvent.click(await screen.findByText("Block"));
+
+      await waitFor(() => expect(blockUserAction).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(
+          queryClient.getQueryData<UserProfileViewerResponse>(
+            queryKeys.userProfileViewer("alice"),
+          )?.isBlocked,
+        ).toBe(true),
+      );
+      expect(screen.getByRole("button", { name: "Follow" })).toBeDisabled();
+
+      await userEvent.click(
+        screen.getByRole("button", { name: "More options" }),
+      );
+      expect(await screen.findByText("Unblock")).toBeInTheDocument();
     });
   });
 

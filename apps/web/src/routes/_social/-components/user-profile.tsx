@@ -195,6 +195,39 @@ export function UserProfile({ username, initialUser }: Props) {
     }
   };
 
+  // A no-op write ("already following", "already blocked", ...) moved no
+  // server counters: restore the pre-tap counts, then record the state the
+  // server reported. The pre-tap cache disagreed with the server, so its counts
+  // may be stale too; refetch them.
+  const settleNoOp = (
+    snapshots:
+      | {
+          previousProfile?: UserProfileResponse;
+          previousViewer?: UserProfileViewerResponse;
+          previousCurrentUser?: CurrentUserResponse;
+        }
+      | undefined,
+    reported: { isFollowing?: boolean; isBlocked?: boolean },
+  ) => {
+    queryClient.setQueryData(
+      queryKeys.userProfile(username),
+      snapshots?.previousProfile,
+    );
+    queryClient.setQueryData(
+      queryKeys.userProfileViewer(username),
+      snapshots?.previousViewer,
+    );
+    queryClient.setQueryData(
+      queryKeys.currentUser(),
+      snapshots?.previousCurrentUser,
+    );
+    patchProfileCaches(reported);
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.userProfile(username),
+    });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
+  };
+
   const followMutation = useMutation({
     mutationFn: async (prevFollowing: boolean) => {
       const res = prevFollowing
@@ -269,22 +302,8 @@ export function UserProfile({ username, initialUser }: Props) {
     onSuccess: (res, prevFollowing, ctx) => {
       if (prevFollowing) {
         if (res && "alreadyRemoved" in res && res.alreadyRemoved) {
-          // No follow row existed, so the server's counters never moved: undo
-          // the optimistic -1 by restoring the snapshots, then record the state
-          // the server reports.
-          queryClient.setQueryData(
-            queryKeys.userProfile(username),
-            ctx?.previousProfile,
-          );
-          queryClient.setQueryData(
-            queryKeys.userProfileViewer(username),
-            ctx?.previousViewer,
-          );
-          queryClient.setQueryData(
-            queryKeys.currentUser(),
-            ctx?.previousCurrentUser,
-          );
-          patchProfileCaches({ isFollowing: false });
+          // No follow row existed, so the server's counters never moved.
+          settleNoOp(ctx, { isFollowing: false });
         }
         void queryClient.invalidateQueries({
           queryKey: queryKeys.dmPeerRoot(),
@@ -294,18 +313,10 @@ export function UserProfile({ username, initialUser }: Props) {
       }
 
       if (res && "alreadyFollowing" in res && res.alreadyFollowing) {
-        queryClient.setQueryData(
-          queryKeys.userProfile(username),
-          ctx?.previousProfile,
-        );
-        queryClient.setQueryData(
-          queryKeys.userProfileViewer(username),
-          ctx?.previousViewer,
-        );
-        queryClient.setQueryData(
-          queryKeys.currentUser(),
-          ctx?.previousCurrentUser,
-        );
+        settleNoOp(ctx, { isFollowing: true });
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.dmPeerRoot(),
+        });
         toast.error("Already following.");
         return;
       }
@@ -416,21 +427,16 @@ export function UserProfile({ username, initialUser }: Props) {
 
       if (res && "alreadyBlocked" in res && res.alreadyBlocked) {
         queryClient.setQueryData(
-          queryKeys.userProfile(username),
-          ctx?.previousProfile,
-        );
-        queryClient.setQueryData(
-          queryKeys.userProfileViewer(username),
-          ctx?.previousViewer,
-        );
-        queryClient.setQueryData(
-          queryKeys.currentUser(),
-          ctx?.previousCurrentUser,
-        );
-        queryClient.setQueryData(
           queryKeys.receivedMessages(),
           ctx?.previousMessages,
         );
+        // A block deletes the follow edges and refuses new ones, so an
+        // existing block also means not following.
+        settleNoOp(ctx, { isBlocked: true, isFollowing: false });
+        queryClient.invalidateQueries({ queryKey: queryKeys.blockedUsers() });
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.dmPeerRoot(),
+        });
         toast.error("Already blocked.");
         return;
       }

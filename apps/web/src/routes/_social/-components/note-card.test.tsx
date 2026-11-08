@@ -1,8 +1,20 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { InfiniteData } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from "@tanstack/react-query";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { queryKeys } from "@/lib/query";
 import { toStreakDay } from "@/lib/streak";
-import type { NoteItem } from "@/lib/types";
+import type { NoteItem, NotesResponse } from "@/lib/types";
 import { NoteCard } from "./note-card";
 
 // The reaction/remove actions moved from apps/www's `@/app/actions/note` to the
@@ -187,6 +199,87 @@ describe("NoteCard reactions", () => {
     const mention = screen.getByRole("link", { name: "@josh" });
     expect(mention).toHaveAttribute("href", "/user/josh");
     expect(screen.getByText("https://example.com")).toBeInTheDocument();
+  });
+});
+
+describe("NoteCard reaction double tap", () => {
+  function deferred<T>() {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((r) => {
+      resolve = r;
+    });
+    return { promise, resolve };
+  }
+
+  // Renders from the notes cache, as the list does, so the card's own cache
+  // write reaches its props.
+  function renderCached(note: NoteItem) {
+    const queryClient = new QueryClient();
+    const initialData: InfiniteData<NotesResponse> = {
+      pageParams: [null],
+      pages: [{ data: [note], nextCursor: null }],
+    };
+    function CachedNoteCard() {
+      const { data } = useQuery({
+        queryKey: queryKeys.notes(),
+        queryFn: () => initialData,
+        initialData,
+        staleTime: Number.POSITIVE_INFINITY,
+      });
+      const item = data.pages[0]?.data[0];
+      return item ? <NoteCard data={item} isAuthenticated /> : null;
+    }
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CachedNoteCard />
+      </QueryClientProvider>,
+    );
+    return () =>
+      queryClient.getQueryData<InfiniteData<NotesResponse>>(queryKeys.notes())
+        ?.pages[0]?.data[0];
+  }
+
+  const reactButton = () =>
+    screen.getByRole("button", { name: /react to this note|remove reaction/i });
+
+  it("keeps the latest tap while the first request lands", async () => {
+    const add = deferred<unknown>();
+    const remove = deferred<unknown>();
+    addAction.mockReturnValue(add.promise as never);
+    removeAction.mockReturnValue(remove.promise as never);
+    const cached = renderCached(makeNote({ reactionCount: 4 }));
+
+    fireEvent.click(reactButton());
+    fireEvent.click(reactButton());
+    await act(async () => add.resolve({ success: true }));
+
+    expect(reactButton()).toHaveAttribute("aria-pressed", "false");
+    expect(reactButton()).toHaveTextContent("4");
+
+    await waitFor(() => expect(removeAction).toHaveBeenCalled());
+    await act(async () => remove.resolve({ success: true }));
+
+    expect(reactButton()).toHaveAttribute("aria-pressed", "false");
+    expect(reactButton()).toHaveTextContent("4");
+    expect(cached()?.isReacted).toBe(false);
+    expect(cached()?.reactionCount).toBe(4);
+  });
+
+  it("ends consistent when the first tap fails and the second was a no-op", async () => {
+    const add = deferred<unknown>();
+    const remove = deferred<unknown>();
+    addAction.mockReturnValue(add.promise as never);
+    removeAction.mockReturnValue(remove.promise as never);
+    const cached = renderCached(makeNote({ reactionCount: 4 }));
+
+    fireEvent.click(reactButton());
+    fireEvent.click(reactButton());
+    await act(async () => add.resolve({ error: "Rate limited" }));
+    await act(async () => remove.resolve({ alreadyRemoved: true }));
+
+    expect(reactButton()).toHaveAttribute("aria-pressed", "false");
+    expect(reactButton()).toHaveTextContent("4");
+    expect(cached()?.reactionCount).toBe(4);
   });
 });
 

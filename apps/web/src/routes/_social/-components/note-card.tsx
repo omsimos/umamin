@@ -34,7 +34,7 @@ import {
   UserXIcon,
   VolumeXIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { BlockUserDialog } from "@/components/block-user-dialog";
@@ -50,6 +50,7 @@ import {
   useBurstAction,
 } from "@/hooks/use-burst-action";
 import { useMuteUser } from "@/hooks/use-mute-user";
+import { useOptimisticToggle } from "@/hooks/use-optimistic-toggle";
 import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
@@ -115,21 +116,11 @@ export function NoteCard({
   const canModerate =
     isAuthenticated && currentUser?.user?.isModerator === true && !isOwnNote;
 
-  const [reacted, setReacted] = useState(data.isReacted === true);
-  const [reactions, setReactions] = useState(data.reactionCount ?? 0);
-
-  // Scalar deps only — see post-card.tsx: depending on `data` itself would
-  // clobber optimistic state on every parent render.
-  useEffect(() => {
-    setReacted(data.isReacted === true);
-    setReactions(data.reactionCount ?? 0);
-  }, [data.isReacted, data.reactionCount]);
-
   const handleReactAction = useBurstAction(
-    async (prevReacted: boolean) =>
-      prevReacted
-        ? removeNoteReactionAction({ noteId: data.id })
-        : addNoteReactionAction({ noteId: data.id }),
+    async (nextReacted: boolean) =>
+      nextReacted
+        ? addNoteReactionAction({ noteId: data.id })
+        : removeNoteReactionAction({ noteId: data.id }),
     { limit: 4, rejectMessage: BURST_ACTION_REJECT_MESSAGE },
   );
 
@@ -145,26 +136,11 @@ export function NoteCard({
     );
   };
 
-  const handleReact = async () => {
-    // A just-composed note renders under a placeholder id until the server
-    // swap lands — its row does not exist yet (mirrors poll-card).
-    if (data.id.startsWith("optimistic-")) return;
-
-    const prevReacted = reacted;
-    const prevCount = reactions;
-    const nextReacted = !prevReacted;
-    const nextCount = prevReacted ? Math.max(prevCount - 1, 0) : prevCount + 1;
-
-    // Micro-tick on reacting only, matching the like button.
-    if (nextReacted) {
-      vibrate(5);
-    }
-
-    setReacted(nextReacted);
-    setReactions(nextCount);
-
-    try {
-      const res = await handleReactAction(prevReacted);
+  const reaction = useOptimisticToggle({
+    on: data.isReacted === true,
+    count: data.reactionCount ?? 0,
+    send: async (nextReacted) => {
+      const res = await handleReactAction(nextReacted);
       const actionError = getActionError(res);
       if (actionError) {
         throw new ExpectedError(actionError);
@@ -172,16 +148,26 @@ export function NoteCard({
 
       // The edge was already in the target state — keep the flag, revert the ±1.
       if (isAlreadyReacted(res) || isAlreadyRemoved(res)) {
-        setReactions(prevCount);
-        syncReactionCache(nextReacted, prevCount);
-        return;
+        return "unchanged";
       }
-
-      syncReactionCache(nextReacted, nextCount);
-    } catch (err) {
-      setReacted(prevReacted);
-      setReactions(prevCount);
+      return "changed";
+    },
+    onSettled: (state) => syncReactionCache(state.on, state.count),
+    onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Couldn't react.");
+    },
+  });
+  const reacted = reaction.on;
+  const reactions = reaction.count;
+
+  const handleReact = () => {
+    // A just-composed note renders under a placeholder id until the server
+    // swap lands — its row does not exist yet (mirrors poll-card).
+    if (data.id.startsWith("optimistic-")) return;
+
+    // Micro-tick on reacting only, matching the like button.
+    if (reaction.toggle()) {
+      vibrate(5);
     }
   };
 
