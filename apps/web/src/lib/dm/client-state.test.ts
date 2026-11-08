@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   type DmState,
   dmReducer,
+  findOutgoing,
   initialDmState,
   lastPeerSeq,
   localId,
@@ -42,8 +43,7 @@ describe("dmReducer", () => {
     let s = synced([msg(1, false)]);
     s = dmReducer(s, {
       type: "send",
-      clientId: "c1",
-      text: "hi",
+      frame: { t: "send", id: "c1", text: "hi" },
       replyTo: null,
       at: 5,
     });
@@ -62,8 +62,7 @@ describe("dmReducer", () => {
     let s = synced([msg(1, false)]);
     s = dmReducer(s, {
       type: "send",
-      clientId: "c1",
-      text: "hi",
+      frame: { t: "send", id: "c1", text: "hi" },
       replyTo: null,
       at: 5,
     });
@@ -80,8 +79,7 @@ describe("dmReducer", () => {
     let s = synced([]);
     s = dmReducer(s, {
       type: "send",
-      clientId: "c1",
-      text: "hi",
+      frame: { t: "send", id: "c1", text: "hi" },
       replyTo: null,
       at: 5,
     });
@@ -126,8 +124,7 @@ describe("dmReducer", () => {
     let s = synced([]);
     s = dmReducer(s, {
       type: "send",
-      clientId: "c1",
-      text: "hi",
+      frame: { t: "send", id: "c1", text: "hi" },
       replyTo: null,
       at: 5,
     });
@@ -135,6 +132,27 @@ describe("dmReducer", () => {
     expect(s.messages[0]?.delivery).toBe("failed");
     s = dmReducer(s, { type: "retry", clientId: "c1" });
     expect(s.messages[0]?.delivery).toBe("sending");
+    expect(findOutgoing(s.messages, "c1")).toEqual({
+      delivery: "sending",
+      frame: { t: "send", id: "c1", text: "hi" },
+    });
+  });
+
+  it("pauses while hidden and resumes as connecting", () => {
+    let s = dmReducer(synced([]), { type: "pause" });
+    expect(s.status).toBe("paused");
+    s = dmReducer(s, { type: "resume" });
+    expect(s.status).toBe("connecting");
+  });
+
+  it("keeps a terminal status through pause, resume and socket events", () => {
+    for (const terminal of ["unavailable", "busy", "outdated"] as const) {
+      let s = dmReducer(synced([]), { type: "status", status: terminal });
+      s = dmReducer(s, { type: "pause" });
+      s = dmReducer(s, { type: "resume" });
+      s = dmReducer(s, { type: "status", status: "reconnecting" });
+      expect(s.status).toBe(terminal);
+    }
   });
 
   it("clears the typing indicator when the peer's message lands or the socket drops", () => {
@@ -154,8 +172,7 @@ describe("read helpers", () => {
       synced([msg(1, false), msg(2, true), msg(3, false), msg(4, true)]),
       {
         type: "send",
-        clientId: "c",
-        text: "x",
+        frame: { t: "send", id: "c", text: "x" },
         replyTo: null,
         at: 9,
       },

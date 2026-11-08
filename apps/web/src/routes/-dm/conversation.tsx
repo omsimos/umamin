@@ -121,19 +121,21 @@ export function BackToChats() {
   );
 }
 
-/** Unknown user, a block, or no mutual follow and no history yet. */
+/** Unknown user, a block, no mutual follow and no history yet, or a chat
+ *  that can't reconnect. */
 export function DmUnavailable({
   username,
   reason,
 }: {
   username: string;
-  reason: "missing" | "not-mutual" | "closed" | "busy";
+  reason: "missing" | "not-mutual" | "closed" | "busy" | "outdated";
 }) {
   const copy = {
     missing: "This chat isn't available.",
     "not-mutual": `You can message @${username} once you follow each other.`,
     closed: "This chat is no longer available.",
     busy: "This chat is open in too many tabs. Close one and try again.",
+    outdated: "Umamin was updated. Refresh the page to keep chatting.",
   }[reason];
   return (
     <SessionFrame
@@ -151,6 +153,15 @@ export function DmUnavailable({
         {reason === "not-mutual" && (
           <Button asChild variant="outline" size="sm">
             <Link href={`/user/${username}`}>View profile</Link>
+          </Button>
+        )}
+        {reason === "outdated" && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => globalThis.location.reload()}
+          >
+            Refresh
           </Button>
         )}
       </div>
@@ -191,6 +202,9 @@ export function DmConversationScreen({
   }
   if (state.status === "unavailable") {
     return <DmUnavailable username={peer.username} reason="closed" />;
+  }
+  if (state.status === "outdated") {
+    return <DmUnavailable username={peer.username} reason="outdated" />;
   }
 
   const meta = state.meta;

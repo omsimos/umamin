@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { PING_INTERVAL_MS, PONG_TIMEOUT_MS } from "@/lib/chat/constants";
 import {
+  type DmSendFrame,
   type DmState,
   dmReducer,
+  findOutgoing,
   initialDmState,
+  isTerminalStatus,
   lastPeerSeq,
 } from "@/lib/dm/client-state";
 import {
@@ -48,7 +51,8 @@ function wsUrl(username: string): string {
   return url.toString();
 }
 
-/** An old bundle against a new protocol: reload once, not in a loop. */
+/** An old bundle against a new protocol: reload once, not in a loop. When
+ *  this declines, the screen asks the user to refresh instead. */
 function reloadForVersion() {
   try {
     const last = Number(sessionStorage.getItem(RELOAD_KEY) ?? 0);
@@ -81,15 +85,18 @@ export function useDmConversation(
   onError?: (code: DmErrorCode) => void,
 ): DmConversation {
   const [state, dispatch] = useReducer(dmReducer, initialDmState);
+  // Non-null only while `live`: the effect below opens it and its cleanup,
+  // or a terminal close, drops it.
   const socketRef = useRef<ReconnectingSocket | null>(null);
-  // Sends not yet acked, replayed after a reconnect. The server dedupes on
-  // the op id, so a replay can't double-post.
-  const pendingSends = useRef(new Map<string, DmFrame>());
   const waiters = useRef(new Map<string, (r: OpResult) => void>());
   const readSent = useRef(0);
   const onErrorRef = useRef(onError);
   useEffect(() => {
     onErrorRef.current = onError;
+  });
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
   });
 
   const sendFrame = useCallback((frame: DmFrame) => {
@@ -97,10 +104,34 @@ export function useDmConversation(
   }, []);
 
   useEffect(() => {
+    const onVisibility = () => {
+      dispatch({
+        type: document.visibilityState === "visible" ? "resume" : "pause",
+      });
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  const live = !isTerminalStatus(state.status) && state.status !== "paused";
+
+  useEffect(() => {
+    if (!live) return;
+    if (document.visibilityState !== "visible") {
+      dispatch({ type: "pause" });
+      return;
+    }
     let tooMany = 0;
     const settle = (id: string, result: OpResult) => {
       waiters.current.get(id)?.(result);
       waiters.current.delete(id);
+    };
+    const stop = (status: "unavailable" | "busy" | "outdated") => {
+      socketRef.current?.close();
+      socketRef.current = null;
+      dispatch({ type: "status", status });
     };
 
     const handle = (raw: string) => {
@@ -119,8 +150,12 @@ export function useDmConversation(
             meta: frame.meta,
             hasMore: frame.hasMore,
           });
-          for (const pending of pendingSends.current.values()) {
-            socketRef.current?.send(JSON.stringify(pending));
+          // Sends still waiting on the server go out again. The server
+          // dedupes on the op id, so a replay can't double-post.
+          for (const m of stateRef.current.messages) {
+            if (m.frame && m.delivery === "sending") {
+              socketRef.current?.send(JSON.stringify(m.frame));
+            }
           }
           return;
         case "msgs":
@@ -141,12 +176,14 @@ export function useDmConversation(
           dispatch({ type: "typing", on: frame.on, at: Date.now() });
           return;
         case "ack":
-          pendingSends.current.delete(frame.id);
           settle(frame.id, { ok: true });
           return;
         case "err":
           if (!frame.id) return;
-          if (pendingSends.current.delete(frame.id)) {
+          if (
+            findOutgoing(stateRef.current.messages, frame.id)?.delivery ===
+            "sending"
+          ) {
             dispatch({ type: "failed", clientId: frame.id });
             onErrorRef.current?.(frame.code);
           }
@@ -154,49 +191,45 @@ export function useDmConversation(
       }
     };
 
-    const open = () => {
-      if (socketRef.current) return;
-      readSent.current = 0;
-      socketRef.current = createReconnectingSocket({
-        url: () => wsUrl(username),
-        keepalive: {
-          ping: PING,
-          pong: PONG,
-          intervalMs: PING_INTERVAL_MS,
-          timeoutMs: PONG_TIMEOUT_MS,
-        },
-        // Visibility is handled below: a hidden page closes the socket.
-        doc: null,
-        isPermanentClose: (code) => FINAL_CODES.has(code),
-        onOpen: (send) => {
-          send(JSON.stringify({ t: "hi", v: DM_PROTOCOL_VERSION }));
-        },
-        onMessage: handle,
-        onClose: (code, willReconnect) => {
-          for (const id of waiters.current.keys()) {
-            settle(id, { ok: false, code: "offline" });
-          }
-          if (code === CLOSE.TOO_MANY && ++tooMany >= 5) {
-            socketRef.current?.close();
-            socketRef.current = null;
-            dispatch({ type: "status", status: "busy" });
-            return;
-          }
-          if (code === CLOSE.VERSION) {
-            reloadForVersion();
-            return;
-          }
-          if (!willReconnect) {
-            socketRef.current = null;
-            dispatch({ type: "status", status: "unavailable" });
-            return;
-          }
-          dispatch({ type: "status", status: "reconnecting" });
-        },
-      });
-    };
+    readSent.current = 0;
+    socketRef.current = createReconnectingSocket({
+      url: () => wsUrl(username),
+      keepalive: {
+        ping: PING,
+        pong: PONG,
+        intervalMs: PING_INTERVAL_MS,
+        timeoutMs: PONG_TIMEOUT_MS,
+      },
+      // Visibility is handled above: a hidden page pauses, which closes the
+      // socket.
+      doc: null,
+      isPermanentClose: (code) => FINAL_CODES.has(code),
+      onOpen: (send) => {
+        send(JSON.stringify({ t: "hi", v: DM_PROTOCOL_VERSION }));
+      },
+      onMessage: handle,
+      onClose: (code, willReconnect) => {
+        for (const id of waiters.current.keys()) {
+          settle(id, { ok: false, code: "offline" });
+        }
+        if (code === CLOSE.TOO_MANY && ++tooMany >= 5) {
+          stop("busy");
+          return;
+        }
+        if (code === CLOSE.VERSION) {
+          reloadForVersion();
+          stop("outdated");
+          return;
+        }
+        if (!willReconnect) {
+          stop("unavailable");
+          return;
+        }
+        dispatch({ type: "status", status: "reconnecting" });
+      },
+    });
 
-    const close = () => {
+    return () => {
       // close() suppresses onClose, which is what normally settles these.
       for (const id of [...waiters.current.keys()]) {
         settle(id, { ok: false, code: "offline" });
@@ -204,23 +237,7 @@ export function useDmConversation(
       socketRef.current?.close();
       socketRef.current = null;
     };
-
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        dispatch({ type: "status", status: "connecting" });
-        open();
-      } else {
-        close();
-      }
-    };
-
-    if (document.visibilityState === "visible") open();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      close();
-    };
-  }, [username]);
+  }, [username, live]);
 
   // A visible screen reads what it shows.
   const peerSeq = lastPeerSeq(state.messages);
@@ -245,15 +262,13 @@ export function useDmConversation(
 
   const send = useCallback(
     (text: string, replyTo: DmReplyPreview | null) => {
-      const clientId = crypto.randomUUID();
-      const frame: DmFrame = {
+      const frame: DmSendFrame = {
         t: "send",
-        id: clientId,
+        id: crypto.randomUUID(),
         text,
         ...(replyTo ? { replyTo: replyTo.id } : {}),
       };
-      pendingSends.current.set(clientId, frame);
-      dispatch({ type: "send", clientId, text, replyTo, at: Date.now() });
+      dispatch({ type: "send", frame, replyTo, at: Date.now() });
       // Offline: it stays "sending" and goes out with the next sync.
       sendFrame(frame);
     },
@@ -262,10 +277,11 @@ export function useDmConversation(
 
   const retry = useCallback(
     (clientId: string) => {
-      const frame = pendingSends.current.get(clientId);
-      if (!frame) return;
+      const outgoing = findOutgoing(stateRef.current.messages, clientId);
+      if (outgoing?.delivery !== "failed") return;
       dispatch({ type: "retry", clientId });
-      sendFrame(frame);
+      // Offline: it goes out with the next sync, like a fresh send.
+      sendFrame(outgoing.frame);
     },
     [sendFrame],
   );
@@ -315,11 +331,6 @@ export function useDmConversation(
     },
     [sendFrame],
   );
-
-  const stateRef = useRef(state);
-  useEffect(() => {
-    stateRef.current = state;
-  });
 
   const loadOlder = useCallback(() => {
     const current = stateRef.current;

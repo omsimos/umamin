@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DmServerFrame } from "@/lib/dm/protocol";
+import { CLOSE, DM_CLOSED, type DmServerFrame } from "@/lib/dm/protocol";
 import { useDmConversation } from "./use-dm-conversation";
 
 class FakeWebSocket {
@@ -33,6 +33,11 @@ class FakeWebSocket {
     this.onopen?.(new Event("open"));
   }
 
+  serverClose(code: number) {
+    this.readyState = 3;
+    this.onclose?.({ code } as CloseEvent);
+  }
+
   serverSend(frame: DmServerFrame) {
     this.onmessage?.({ data: JSON.stringify(frame) } as MessageEvent);
   }
@@ -48,6 +53,13 @@ function setVisibility(state: "visible" | "hidden") {
   Object.defineProperty(document, "visibilityState", {
     configurable: true,
     get: () => state,
+  });
+}
+
+function switchVisibility(state: "visible" | "hidden") {
+  act(() => {
+    setVisibility(state);
+    document.dispatchEvent(new Event("visibilitychange"));
   });
 }
 
@@ -168,5 +180,79 @@ describe("useDmConversation requests", () => {
     return vi.waitFor(() => {
       expect(result.current.state.loadingOlder).toBe(false);
     });
+  });
+});
+
+describe("useDmConversation connection and sends", () => {
+  beforeEach(() => {
+    FakeWebSocket.instances = [];
+    vi.stubGlobal("WebSocket", FakeWebSocket);
+    setVisibility("visible");
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    Reflect.deleteProperty(document, "visibilityState");
+  });
+
+  it("re-sends the original frame when a failed send is retried", () => {
+    const { result, socket } = mountOpen();
+    act(() => result.current.send("hi", null));
+    const [first] = socket.sentFrames("send");
+    if (!first?.id) throw new Error("send frame missing");
+    act(() => {
+      socket.serverSend({ t: "err", id: first.id, code: "rate_limited" });
+    });
+    expect(result.current.state.messages.at(-1)?.delivery).toBe("failed");
+
+    act(() => result.current.retry(first.id ?? ""));
+    expect(socket.sentFrames("send")).toEqual([first, first]);
+    expect(result.current.state.messages.at(-1)?.delivery).toBe("sending");
+  });
+
+  it("replays a send made while hidden once the next sync lands", () => {
+    const { result } = mountOpen();
+    switchVisibility("hidden");
+    act(() => result.current.send("later", null));
+    switchVisibility("visible");
+    const next = FakeWebSocket.instances[1];
+    if (!next) throw new Error("no reconnect");
+    act(() => {
+      next.serverOpen();
+      next.serverSend({ t: "sync", meta, messages: [message], hasMore: false });
+    });
+    expect(next.sentFrames("send")).toHaveLength(1);
+  });
+
+  it("reads as paused while hidden and reconnects when shown", () => {
+    const { result } = mountOpen();
+    switchVisibility("hidden");
+    expect(result.current.state.status).toBe("paused");
+    switchVisibility("visible");
+    expect(result.current.state.status).toBe("connecting");
+    expect(FakeWebSocket.instances).toHaveLength(2);
+  });
+
+  it("stays outdated after a version close when the reload was already tried", () => {
+    // A reload inside the last minute makes the guard decline another one.
+    sessionStorage.setItem("umamin-dm:versionReloadAt", String(Date.now()));
+    const { result, socket } = mountOpen();
+    act(() => socket.serverClose(CLOSE.VERSION));
+    expect(result.current.state.status).toBe("outdated");
+    switchVisibility("hidden");
+    switchVisibility("visible");
+    expect(result.current.state.status).toBe("outdated");
+    expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
+  it("doesn't reopen a closed chat when the tab regains focus", () => {
+    const { result, socket } = mountOpen();
+    act(() => socket.serverClose(DM_CLOSED));
+    expect(result.current.state.status).toBe("unavailable");
+    switchVisibility("hidden");
+    switchVisibility("visible");
+    expect(result.current.state.status).toBe("unavailable");
+    expect(FakeWebSocket.instances).toHaveLength(1);
   });
 });
