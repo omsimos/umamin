@@ -53,6 +53,7 @@ import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupEditDialog } from "@/components/group-edit-dialog";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
+import { useBusyKeys } from "@/hooks/use-busy-keys";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
 import type { GroupAccent, GroupIcon } from "@/lib/group";
@@ -156,11 +157,16 @@ export function GroupPageClient({
     ...infiniteQueryDefaults,
   });
 
-  const refreshMembership = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.groupViewer(tag) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.group(tag) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.userGroups() });
-  };
+  // Membership mutations await this so their buttons stay disabled until the
+  // new relationship has arrived, instead of re-enabling on the old one.
+  const refreshMembership = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.groupViewer(tag) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.group(tag) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups() }),
+    ]);
+
+  const busy = useBusyKeys();
 
   const equip = useSingleFlightAction(equipGroupBadgeAction);
   const equipped = equippedGroupId === group?.id;
@@ -184,11 +190,13 @@ export function GroupPageClient({
       if (res && "error" in res && res.error)
         throw new ExpectedError(res.error);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
-      refreshMembership();
+    onSuccess: async () => {
       toast.success("You left the group.");
-      router.invalidate();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() }),
+        refreshMembership(),
+        router.invalidate(),
+      ]);
     },
     onError: (err) => toast.error(err.message),
   });
@@ -218,6 +226,7 @@ export function GroupPageClient({
         throw new ExpectedError(res.error);
       return userId;
     },
+    onMutate: (userId) => busy.add(`member:${userId}`),
     onSuccess: (userId) => {
       queryClient.setQueryData<InfiniteData<GroupMembersResponse>>(
         queryKeys.groupMembers(tag),
@@ -234,6 +243,7 @@ export function GroupPageClient({
       toast.success("Member removed.");
     },
     onError: (err) => toast.error(err.message),
+    onSettled: (_data, _err, userId) => busy.remove(`member:${userId}`),
   });
 
   const inviteMutation = useMutation({
@@ -264,13 +274,15 @@ export function GroupPageClient({
       if ("error" in res) throw new ExpectedError(res.error);
       return res;
     },
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       const joined = "joined" in res && res.joined;
       if (joined) vibrate();
       toast.success(joined ? "You're in!" : "Request sent.");
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
-      refreshMembership();
-      if (joined) router.invalidate();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() }),
+        refreshMembership(),
+        joined ? router.invalidate() : null,
+      ]);
     },
     onError: (err) => toast.error(err.message),
   });
@@ -281,9 +293,9 @@ export function GroupPageClient({
       if (res && "error" in res && res.error)
         throw new ExpectedError(res.error);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Request withdrawn.");
-      refreshMembership();
+      await refreshMembership();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -298,12 +310,14 @@ export function GroupPageClient({
         throw new ExpectedError(res.error);
       return accept;
     },
-    onSuccess: (accept) => {
+    onSuccess: async (accept) => {
       if (accept) vibrate();
       toast.success(accept ? "You're in!" : "Invite declined.");
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
-      refreshMembership();
-      router.invalidate();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() }),
+        refreshMembership(),
+        router.invalidate(),
+      ]);
     },
     onError: (err) => toast.error(err.message),
   });
@@ -325,6 +339,7 @@ export function GroupPageClient({
         throw new ExpectedError(res.error);
       return userId;
     },
+    onMutate: ({ userId }) => busy.add(`request:${userId}`),
     onSuccess: (userId) => {
       queryClient.setQueryData<InfiniteData<GroupRequestsResponse>>(
         queryKeys.groupRequests(tag),
@@ -341,6 +356,7 @@ export function GroupPageClient({
       queryClient.invalidateQueries({ queryKey: queryKeys.groupMembers(tag) });
     },
     onError: (err) => toast.error(err.message),
+    onSettled: (_data, _err, { userId }) => busy.remove(`request:${userId}`),
   });
 
   const handleInvite: FormEventHandler = (e) => {
@@ -574,10 +590,7 @@ export function GroupPageClient({
                   size="icon"
                   variant="ghost"
                   aria-label={`Approve ${request.user.username}`}
-                  disabled={
-                    respondRequestMutation.isPending &&
-                    respondRequestMutation.variables?.userId === request.user.id
-                  }
+                  disabled={busy.has(`request:${request.user.id}`)}
                   onClick={() =>
                     respondRequestMutation.mutate({
                       userId: request.user.id,
@@ -593,10 +606,7 @@ export function GroupPageClient({
                   size="icon"
                   variant="ghost"
                   aria-label={`Reject ${request.user.username}`}
-                  disabled={
-                    respondRequestMutation.isPending &&
-                    respondRequestMutation.variables?.userId === request.user.id
-                  }
+                  disabled={busy.has(`request:${request.user.id}`)}
                   onClick={() =>
                     respondRequestMutation.mutate({
                       userId: request.user.id,
@@ -678,10 +688,7 @@ export function GroupPageClient({
                         size="icon"
                         variant="ghost"
                         aria-label={`Remove ${member.user.username}`}
-                        disabled={
-                          kickMutation.isPending &&
-                          kickMutation.variables === member.user.id
-                        }
+                        disabled={busy.has(`member:${member.user.id}`)}
                         className="text-muted-foreground hover:text-destructive"
                       >
                         <UserMinusIcon className="size-4" />

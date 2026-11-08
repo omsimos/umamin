@@ -2,10 +2,14 @@ import { moderationDisputeTable } from "@umamin/db/schema/moderation-dispute";
 import { noteTable } from "@umamin/db/schema/note";
 import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import * as z from "zod";
 import { action } from "../../server-lib/action";
-import { contentLabel } from "../../server-lib/content-label";
+import {
+  canTransition,
+  contentLabel,
+  reviewState,
+} from "../../server-lib/content-label";
 import type { Db } from "../../server-lib/db";
 import { severAllDms } from "../../server-lib/dm/lifecycle";
 import { isModerationEnforced } from "../../server-lib/flags";
@@ -162,9 +166,15 @@ export const allowIpHandler = action(
   },
 );
 
-const clearFlagSchema = z.object({
+const reviewTargetSchema = z.object({
   kind: z.enum(["post", "comment", "note"]),
   id: idSchema,
+});
+
+const decisionSchema = reviewTargetSchema.extend({
+  // The text the moderator saw. A note keeps its id when its author rewrites
+  // it, so a decision made on the old text must not land on the new one.
+  content: z.string().max(2000),
 });
 
 const REVIEW_TABLES = {
@@ -173,76 +183,26 @@ const REVIEW_TABLES = {
   note: noteTable,
 } as const;
 
-// A moderator marks a classifier flag a false positive: the row keeps its
-// scores (for tuning) but loses its label and leaves the review queue.
-export const clearContentFlagHandler = action(
-  {
-    schema: clearFlagSchema,
-    auth: "user",
-    rateLimit: {
-      name: "write",
-      key: ({ session }) => `clearflag:${session.userId}`,
-    },
-  },
-  async ({ kind, id }, { user, c }) => {
-    if (!isModerator(user, c.env.MODERATOR_USERS)) {
-      return { error: "Not found" };
-    }
-    const table = REVIEW_TABLES[kind];
-    await ctxDb(c)
-      .update(table)
-      // Pinned: $onUpdate would restamp updated_at, which is a note's position
-      // in /notes; a review decision or a viewer's dispute must not bump it.
-      .set({ modClearedAt: new Date(), updatedAt: sql`${table.updatedAt}` })
-      .where(eq(table.id, id));
-    return { success: true };
-  },
-);
-
-const keepFlagSchema = clearFlagSchema;
-
-// A moderator looked and agrees with the label (or, for an uncovered flag,
-// sees nothing to act on): the row keeps its label and leaves the queue.
-export const keepContentFlagHandler = action(
-  {
-    schema: keepFlagSchema,
-    auth: "user",
-    rateLimit: {
-      name: "write",
-      key: ({ session }) => `keepflag:${session.userId}`,
-    },
-  },
-  async ({ kind, id }, { user, c }) => {
-    if (!isModerator(user, c.env.MODERATOR_USERS)) {
-      return { error: "Not found" };
-    }
-    const table = REVIEW_TABLES[kind];
-    await ctxDb(c)
-      .update(table)
-      .set({ modReviewedAt: new Date(), updatedAt: sql`${table.updatedAt}` })
-      .where(eq(table.id, id));
-    return { success: true };
-  },
-);
-
 const OWNER_COLUMNS = {
   post: postTable.authorId,
   comment: postCommentTable.authorId,
   note: noteTable.userId,
 } as const;
 
-async function loadLabelled(
+async function loadReviewRow(
   db: Db,
   kind: keyof typeof REVIEW_TABLES,
   id: string,
-  enforce: boolean,
 ) {
   const table = REVIEW_TABLES[kind];
   const [row] = await db
     .select({
       ownerId: OWNER_COLUMNS[kind],
+      content: table.content,
       modSevere: table.modSevere,
       modDrama: table.modDrama,
+      modReason: table.modReason,
+      modFlaggedAt: table.modFlaggedAt,
       modClearedAt: table.modClearedAt,
       modReviewedAt: table.modReviewedAt,
       modAppealedAt: table.modAppealedAt,
@@ -250,16 +210,119 @@ async function loadLabelled(
     .from(table)
     .where(eq(table.id, id))
     .limit(1);
-  return row && contentLabel(row, enforce) ? row : null;
+  return row ?? null;
 }
 
 const NOT_LABELLED = "This isn't covered or folded anymore.";
 const ALREADY_REVIEWED = "A moderator already reviewed this.";
+const CHANGED = "This changed since you loaded it. Refresh to see the latest.";
+const NOT_PENDING = "This isn't waiting for review anymore.";
+
+// Clear and keep share one path: the row must still hold the text the
+// moderator saw, and be in a state the decision applies to.
+async function decide(
+  db: Db,
+  { kind, id, content }: z.infer<typeof decisionSchema>,
+  decision: "clear" | "keep",
+) {
+  const row = await loadReviewRow(db, kind, id);
+  if (!row || row.content !== content) return { error: CHANGED };
+
+  const state = reviewState(row);
+  if (!canTransition(state, decision)) {
+    return {
+      error:
+        state === "cleared" || state === "kept"
+          ? ALREADY_REVIEWED
+          : NOT_PENDING,
+    };
+  }
+
+  const table = REVIEW_TABLES[kind];
+  const updated = await db
+    .update(table)
+    // Pinned: $onUpdate would restamp updated_at, which is a note's position
+    // in /notes; a review decision or a viewer's dispute must not bump it.
+    .set(
+      decision === "clear"
+        ? { modClearedAt: new Date(), updatedAt: sql`${table.updatedAt}` }
+        : { modReviewedAt: new Date(), updatedAt: sql`${table.updatedAt}` },
+    )
+    .where(
+      and(
+        eq(table.id, id),
+        eq(table.content, content),
+        isNull(table.modClearedAt),
+        decision === "keep"
+          ? and(isNull(table.modReviewedAt), isNotNull(table.modFlaggedAt))
+          : undefined,
+      ),
+    )
+    .returning({ id: table.id });
+  // A rewrite or another moderator's decision landed between the read and
+  // the write.
+  if (updated.length === 0) return { error: CHANGED };
+  return { success: true };
+}
+
+// A moderator marks a classifier flag a false positive: the row keeps its
+// scores (for tuning) but loses its label and leaves the review queue.
+export const clearContentFlagHandler = action(
+  {
+    schema: decisionSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `clearflag:${session.userId}`,
+    },
+  },
+  async (input, { user, c }) => {
+    if (!isModerator(user, c.env.MODERATOR_USERS)) {
+      return { error: "Not found" };
+    }
+    return decide(ctxDb(c), input, "clear");
+  },
+);
+
+// A moderator looked and agrees with the label (or, for an uncovered flag,
+// sees nothing to act on): the row keeps its label and leaves the queue.
+export const keepContentFlagHandler = action(
+  {
+    schema: decisionSchema,
+    auth: "user",
+    rateLimit: {
+      name: "write",
+      key: ({ session }) => `keepflag:${session.userId}`,
+    },
+  },
+  async (input, { user, c }) => {
+    if (!isModerator(user, c.env.MODERATOR_USERS)) {
+      return { error: "Not found" };
+    }
+    return decide(ctxDb(c), input, "keep");
+  },
+);
+
+async function loadLabelled(
+  db: Db,
+  kind: keyof typeof REVIEW_TABLES,
+  id: string,
+  enforce: boolean,
+) {
+  const row = await loadReviewRow(db, kind, id);
+  return row && contentLabel(row, enforce) ? row : null;
+}
+
+// Appeal and dispute only reach a row no moderator has decided on. The read
+// checks that first; this repeats it in the write for a decision that lands
+// in between.
+const undecided = (table: (typeof REVIEW_TABLES)[keyof typeof REVIEW_TABLES]) =>
+  and(isNull(table.modClearedAt), isNull(table.modReviewedAt));
 
 // The author asks a moderator to look at Uma's label on their own content.
 export const appealContentLabelHandler = action(
   {
-    schema: clearFlagSchema,
+    schema: reviewTargetSchema,
     auth: "user",
     rateLimit: {
       name: "write",
@@ -275,17 +338,21 @@ export const appealContentLabelHandler = action(
       await isModerationEnforced(c.env),
     );
     if (!row || row.ownerId !== session.userId) return { error: NOT_LABELLED };
-    if (row.modReviewedAt) return { error: ALREADY_REVIEWED };
+    if (!canTransition(reviewState(row), "appeal")) {
+      return { error: ALREADY_REVIEWED };
+    }
 
     const table = REVIEW_TABLES[kind];
-    await db
+    const updated = await db
       .update(table)
       .set({
         modAppealedAt: sql`coalesce(${table.modAppealedAt}, unixepoch())`,
         modFlaggedAt: sql`coalesce(${table.modFlaggedAt}, unixepoch())`,
         updatedAt: sql`${table.updatedAt}`,
       })
-      .where(eq(table.id, id));
+      .where(and(eq(table.id, id), undecided(table)))
+      .returning({ id: table.id });
+    if (updated.length === 0) return { error: ALREADY_REVIEWED };
     return { success: true };
   },
 );
@@ -294,7 +361,7 @@ export const appealContentLabelHandler = action(
 // item in the review queue unless a moderator already decided on it.
 export const disputeContentLabelHandler = action(
   {
-    schema: clearFlagSchema,
+    schema: reviewTargetSchema,
     auth: "user",
     rateLimit: {
       name: "write",
@@ -310,7 +377,9 @@ export const disputeContentLabelHandler = action(
       await isModerationEnforced(c.env),
     );
     if (!row || row.ownerId === session.userId) return { error: NOT_LABELLED };
-    if (row.modReviewedAt) return { error: ALREADY_REVIEWED };
+    if (!canTransition(reviewState(row), "dispute")) {
+      return { error: ALREADY_REVIEWED };
+    }
 
     const table = REVIEW_TABLES[kind];
     await db.batch([
@@ -324,7 +393,7 @@ export const disputeContentLabelHandler = action(
           modFlaggedAt: sql`coalesce(${table.modFlaggedAt}, unixepoch())`,
           updatedAt: sql`${table.updatedAt}`,
         })
-        .where(and(eq(table.id, id), isNull(table.modReviewedAt))),
+        .where(and(eq(table.id, id), undecided(table))),
     ]);
     return { success: true };
   },

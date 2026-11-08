@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { BanUserDialog } from "@/components/ban-user-dialog";
 import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { TimeAgo } from "@/components/time-ago";
+import { useBusyKeys } from "@/hooks/use-busy-keys";
 import { resolveDmReportAction } from "@/lib/actions";
 import type { DmReportItem } from "@/lib/dm/types";
 import { ExpectedError } from "@/lib/expected-error";
@@ -31,6 +32,7 @@ type Resolution = "dismissed" | "actioned";
 export function DmReportQueue() {
   const queryClient = useQueryClient();
   const [banTarget, setBanTarget] = useState<DmReportItem | null>(null);
+  const busy = useBusyKeys();
   const { data, isLoading, error, isFetching, refetch } = useQuery({
     queryKey,
     queryFn: fetchDmReports,
@@ -50,12 +52,14 @@ export function DmReportQueue() {
       if (err) throw new ExpectedError(err);
       return report;
     },
+    onMutate: ({ report }) => busy.add(report.id),
     onSuccess: (report) => {
       queryClient.setQueryData<DmReportItem[]>(queryKey, (current) =>
         current?.filter((r) => r.id !== report.id),
       );
     },
     onError: () => toast.error("Couldn't save that. Try again."),
+    onSettled: (_data, _err, { report }) => busy.remove(report.id),
   });
 
   if (isLoading) {
@@ -79,9 +83,7 @@ export function DmReportQueue() {
       )}
       <ul className="divide-y rounded-lg border">
         {data.map((report) => {
-          const busy =
-            resolveMutation.isPending &&
-            resolveMutation.variables?.report.id === report.id;
+          const rowBusy = busy.has(report.id);
           return (
             <li key={report.id} className="space-y-2 p-3">
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -127,7 +129,7 @@ export function DmReportQueue() {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={busy}
+                  disabled={rowBusy}
                   onClick={() =>
                     resolveMutation.mutate({ report, resolution: "dismissed" })
                   }
@@ -137,7 +139,7 @@ export function DmReportQueue() {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={busy}
+                  disabled={rowBusy}
                   onClick={() =>
                     resolveMutation.mutate({ report, resolution: "actioned" })
                   }
@@ -148,7 +150,7 @@ export function DmReportQueue() {
                   <Button
                     size="sm"
                     variant="destructive"
-                    disabled={busy}
+                    disabled={rowBusy}
                     onClick={() => setBanTarget(report)}
                   >
                     Ban @{report.reported.username}

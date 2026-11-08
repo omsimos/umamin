@@ -13,13 +13,16 @@ vi.mock("../src/server-lib/posthog", () => ({
 const { classifyContent } = vi.hoisted(() => ({ classifyContent: vi.fn() }));
 vi.mock("../src/server-lib/content-classifier", () => ({ classifyContent }));
 
+import type { Client, InStatement } from "@libsql/client";
 import { messageReplyTable, messageTable } from "@umamin/db/schema/message";
 import { noteTable } from "@umamin/db/schema/note";
 import { notificationTable } from "@umamin/db/schema/notification";
 import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/libsql";
 import { IMAGE_AURA_REQUIRED_ERROR } from "../src/lib/post-images";
+import { isPendingReview, reviewState } from "../src/server-lib/content-label";
 import {
   getCurrentNoteData,
   getMessagesPage,
@@ -498,7 +501,7 @@ describe("content moderation (real libSQL)", () => {
           await callJson(
             outsider,
             "clearContentFlagAction",
-            { kind: "post", id: "flagged" },
+            { kind: "post", id: "flagged", content: "f" },
             { MODERATOR_USERS: "u_author" },
           )
         ).json,
@@ -511,7 +514,7 @@ describe("content moderation (real libSQL)", () => {
       await callJson(
         moderator,
         "clearContentFlagAction",
-        { kind: "post", id: "flagged" },
+        { kind: "post", id: "flagged", content: "f" },
         { MODERATOR_USERS: "u_author" },
       );
       const page = await getSevereReviewPage(db, null, true);
@@ -565,7 +568,7 @@ describe("content moderation (real libSQL)", () => {
           await callJson(
             asUser("viewer"),
             "keepContentFlagAction",
-            { kind: "post", id: "flagged" },
+            { kind: "post", id: "flagged", content: "f" },
             MOD_ENV,
           )
         ).json,
@@ -574,7 +577,7 @@ describe("content moderation (real libSQL)", () => {
       await callJson(
         asUser("mod"),
         "keepContentFlagAction",
-        { kind: "post", id: "flagged" },
+        { kind: "post", id: "flagged", content: "f" },
         MOD_ENV,
       );
       expect(await queueIds()).toEqual(["anon-note"]);
@@ -621,7 +624,7 @@ describe("content moderation (real libSQL)", () => {
         const { json } = await callJson<{ success?: boolean }>(
           asUser(user),
           action,
-          { kind: "note", id: "labelled" },
+          { kind: "note", id: "labelled", content: "mean words" },
           MOD_ENV,
         );
         expect(json.success).toBe(true);
@@ -632,6 +635,190 @@ describe("content moderation (real libSQL)", () => {
       await act("appealContentLabelAction", "author");
       await act("keepContentFlagAction", "mod");
       await act("clearContentFlagAction", "mod");
+    });
+
+    it("won't apply a decision made on a note's earlier text to its rewrite", async () => {
+      await db.insert(userTable).values({ id: "mod", username: "u_mod" });
+      const author = asUser("author");
+      classifyContent.mockResolvedValue({
+        severe: 92,
+        drama: 10,
+        reason: "threat",
+      });
+      await callJson(
+        author,
+        "createNoteAction",
+        { content: "first", isAnonymous: false },
+        MOD_ENV,
+      );
+      const seen = (await getSevereReviewPage(db, null, true)).data.find(
+        (item) => item.content === "first",
+      );
+      expect(seen).toBeDefined();
+
+      // Still flagged after the rewrite, so the stale row and the new one
+      // differ only in their text.
+      classifyContent.mockResolvedValue({
+        severe: 95,
+        drama: 10,
+        reason: "threat",
+      });
+      await callJson(
+        author,
+        "createNoteAction",
+        { content: "second", isAnonymous: false },
+        MOD_ENV,
+      );
+
+      for (const action of [
+        "clearContentFlagAction",
+        "keepContentFlagAction",
+      ]) {
+        const { json } = await callJson(
+          asUser("mod"),
+          action,
+          { kind: "note", id: seen?.id, content: seen?.content },
+          MOD_ENV,
+        );
+        expect(json).toEqual({
+          error: "This changed since you loaded it. Refresh to see the latest.",
+        });
+      }
+      const [row] = await db
+        .select()
+        .from(noteTable)
+        .where(eq(noteTable.userId, "author"));
+      expect(row).toMatchObject({
+        id: seen?.id,
+        content: "second",
+        modClearedAt: null,
+        modReviewedAt: null,
+      });
+      expect(await queueIds()).toContain(seen?.id);
+    });
+
+    it("won't keep a label a moderator uncovered, but can uncover a kept one", async () => {
+      await db.insert(userTable).values({ id: "mod", username: "u_mod" });
+      await db.insert(postTable).values({
+        id: "kept-first",
+        content: "k",
+        authorId: "author",
+        modFlaggedAt: new Date(),
+        ...SEVERE,
+      });
+      const decide = async (action: string, id: string, content: string) =>
+        (
+          await callJson(
+            asUser("mod"),
+            action,
+            { kind: "post", id, content },
+            MOD_ENV,
+          )
+        ).json;
+      const label = async (postId: string) =>
+        (await getPostById(db, { postId, enforce: true }))?.moderation;
+
+      expect(await decide("clearContentFlagAction", "flagged", "f")).toEqual({
+        success: true,
+      });
+      expect(await decide("keepContentFlagAction", "flagged", "f")).toEqual({
+        error: "A moderator already reviewed this.",
+      });
+      const [cleared] = await db
+        .select({ modReviewedAt: postTable.modReviewedAt })
+        .from(postTable)
+        .where(eq(postTable.id, "flagged"));
+      expect(cleared?.modReviewedAt).toBeNull();
+      expect(await label("flagged")).toBeNull();
+
+      // The drama check offers Uncover on a kept label.
+      expect(await decide("keepContentFlagAction", "kept-first", "k")).toEqual({
+        success: true,
+      });
+      expect(await label("kept-first")).toBe("severe");
+      expect(await decide("clearContentFlagAction", "kept-first", "k")).toEqual(
+        { success: true },
+      );
+      expect(await label("kept-first")).toBeNull();
+      expect(await queueIds()).toEqual(["anon-note"]);
+    });
+
+    it("won't record an appeal that lands after a moderator's decision", async () => {
+      await db.insert(postTable).values({
+        id: "sad",
+        content: "i miss you",
+        authorId: "author",
+        ...DRAMA,
+      });
+      // A moderator keeps the label between the appeal's read and its write.
+      const client = (db as unknown as { $client: Client }).$client;
+      let raced = false;
+      const racing = drizzle({
+        client: new Proxy(client, {
+          get(target, prop) {
+            if (prop === "execute") {
+              const execute = target.execute.bind(target) as (
+                ...args: unknown[]
+              ) => ReturnType<Client["execute"]>;
+              return async (stmt: InStatement, ...rest: unknown[]) => {
+                const text = typeof stmt === "string" ? stmt : stmt.sql;
+                if (
+                  !raced &&
+                  text.startsWith("update") &&
+                  text.includes("mod_appealed_at")
+                ) {
+                  raced = true;
+                  await db
+                    .update(postTable)
+                    .set({ modReviewedAt: new Date() })
+                    .where(eq(postTable.id, "sad"));
+                }
+                return execute(stmt, ...rest);
+              };
+            }
+            const value = Reflect.get(target, prop);
+            return typeof value === "function" ? value.bind(target) : value;
+          },
+        }),
+      }) as unknown as Db;
+
+      const { json } = await callJson(
+        buildApp(racing, authed("author", { username: "u_author" })),
+        "appealContentLabelAction",
+        { kind: "post", id: "sad" },
+        MOD_ENV,
+      );
+      expect(raced).toBe(true);
+      expect(json).toEqual({ error: "A moderator already reviewed this." });
+      const [row] = await db
+        .select({ modAppealedAt: postTable.modAppealedAt })
+        .from(postTable)
+        .where(eq(postTable.id, "sad"));
+      expect(row?.modAppealedAt).toBeNull();
+    });
+
+    it("queues exactly the rows reviewState calls pending", async () => {
+      const at = new Date(Date.now() - 5000);
+      const rows = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(
+        (bits) => ({
+          id: `combo-${bits}`,
+          content: "c",
+          authorId: "author",
+          ...SEVERE,
+          modFlaggedAt: bits & 1 ? at : null,
+          modClearedAt: bits & 2 ? at : null,
+          modReviewedAt: bits & 4 ? at : null,
+          modAppealedAt: bits & 8 ? at : null,
+        }),
+      );
+      await db.insert(postTable).values(rows);
+      const queued = new Set(await queueIds());
+      for (const row of rows) {
+        expect([row.id, queued.has(row.id)]).toEqual([
+          row.id,
+          isPendingReview(reviewState(row)),
+        ]);
+      }
     });
 
     it("queues a folded post when its author asks for review, once", async () => {
