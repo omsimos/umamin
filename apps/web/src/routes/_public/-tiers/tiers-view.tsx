@@ -25,7 +25,7 @@ import {
   SparklesIcon,
   UsersRoundIcon,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { callAction } from "@/lib/api";
@@ -146,14 +146,27 @@ function PerkList({ perks }: { perks: Perk[] }) {
 
 const routeApi = getRouteApi("/_public/tiers");
 
+const CONFIRM_POLL_MS = 3_000;
+const CONFIRM_TIMEOUT_MS = 2 * 60_000;
+
 export function TiersView() {
   const { pro } = routeApi.useSearch();
   const queryClient = useQueryClient();
+  const [confirmTimedOut, setConfirmTimedOut] = useState(false);
   const { data, isPending } = useQuery({
     queryKey: queryKeys.currentUser(),
     queryFn: fetchCurrentUserOptional,
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
+    refetchInterval: (query) => {
+      const polled = query.state.data?.user;
+      return pro === "success" &&
+        !confirmTimedOut &&
+        polled &&
+        !hasUmaminPro(polled.proUntil)
+        ? CONFIRM_POLL_MS
+        : false;
+    },
   });
 
   const user = data?.user;
@@ -163,6 +176,16 @@ export function TiersView() {
   // already bought keeps the badge, theme and ad-free perks either way.
   const { pro: proLaunched } = useFeatureFlags();
 
+  // Back from checkout but the webhook hasn't granted Pro yet. The buy button
+  // stays off meanwhile, so a second purchase isn't one tap away, and the
+  // user is polled for a bounded time (refetchInterval above).
+  const awaitingPro = pro === "success" && !!user && !isPro;
+  const confirmation = !awaitingPro
+    ? "none"
+    : confirmTimedOut
+      ? "delayed"
+      : "awaiting";
+
   // The webhook grants Pro moments after Lemon Squeezy redirects back here —
   // refetch so the Active badge appears without a manual reload.
   useEffect(() => {
@@ -170,6 +193,15 @@ export function TiersView() {
       queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
     }
   }, [pro, queryClient]);
+
+  useEffect(() => {
+    if (confirmation !== "awaiting") return;
+    const timer = setTimeout(
+      () => setConfirmTimedOut(true),
+      CONFIRM_TIMEOUT_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [confirmation]);
 
   const checkout = useMutation({
     mutationFn: async () => {
@@ -251,10 +283,43 @@ export function TiersView() {
             </div>
             <PerkList perks={PRO_PERKS} />
 
-            {pro === "success" && !isPro && (
-              <div className="rounded-xl border bg-muted/30 p-3 text-sm">
-                Payment received. Pro unlocks as soon as the order is confirmed,
-                usually within a minute. Check back shortly.
+            {confirmation === "awaiting" && (
+              <div
+                role="status"
+                className="flex items-start gap-2 rounded-xl border bg-muted/30 p-3 text-sm"
+              >
+                <Loader2Icon className="mt-0.5 size-4 shrink-0 animate-spin" />
+                <p>
+                  Payment received. Pro unlocks as soon as the order is
+                  confirmed, usually within a minute. This page updates on its
+                  own.
+                </p>
+              </div>
+            )}
+
+            {confirmation === "delayed" && (
+              <div
+                role="status"
+                className="space-y-2 rounded-xl border bg-muted/30 p-3 text-sm"
+              >
+                <p>
+                  Your order is taking longer than usual to confirm. Please
+                  don't pay again. Check again in a few minutes, and if Pro
+                  still isn't active, email umamin@omsimos.com with your
+                  receipt.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setConfirmTimedOut(false);
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.currentUser(),
+                    });
+                  }}
+                >
+                  Check again
+                </Button>
               </div>
             )}
 
@@ -267,15 +332,15 @@ export function TiersView() {
                   </span>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  That's around ₱{PRO_PER_MONTH_PHP} a month. One-time payment.
-                  not a subscription, nothing to cancel.
+                  That's around ₱{PRO_PER_MONTH_PHP} a month. It's a one-time
+                  payment, not a subscription, so there's nothing to cancel.
                 </p>
               </div>
 
               {user || isPending ? (
                 <Button
                   className="w-full"
-                  disabled={checkingOut || isPending}
+                  disabled={checkingOut || isPending || awaitingPro}
                   onClick={() => checkout.mutate()}
                 >
                   {checkingOut && <Loader2Icon className="animate-spin" />}
