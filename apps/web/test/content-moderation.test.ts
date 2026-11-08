@@ -21,8 +21,13 @@ import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
+import { decisionAllowed } from "../src/api/actions/moderation";
 import { IMAGE_AURA_REQUIRED_ERROR } from "../src/lib/post-images";
-import { isPendingReview, reviewState } from "../src/server-lib/content-label";
+import {
+  canTransition,
+  isPendingReview,
+  reviewState,
+} from "../src/server-lib/content-label";
 import {
   getCurrentNoteData,
   getMessagesPage,
@@ -818,6 +823,47 @@ describe("content moderation (real libSQL)", () => {
           row.id,
           isPendingReview(reviewState(row)),
         ]);
+      }
+    });
+
+    it("lets a decision write only the rows canTransition allows", async () => {
+      const at = new Date(Date.now() - 5000);
+      const scores = {
+        severe: SEVERE,
+        drama: DRAMA,
+        clean: CLEAN,
+        unscored: { modSevere: null, modDrama: null, modReason: null },
+      };
+      const rows = Object.entries(scores).flatMap(([name, score]) =>
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((bits) => ({
+          id: `combo-${name}-${bits}`,
+          content: "c",
+          authorId: "author",
+          ...score,
+          modFlaggedAt: bits & 1 ? at : null,
+          modClearedAt: bits & 2 ? at : null,
+          modReviewedAt: bits & 4 ? at : null,
+          modAppealedAt: bits & 8 ? at : null,
+        })),
+      );
+      await db.insert(postTable).values(rows);
+
+      for (const decision of ["clear", "keep"] as const) {
+        const allowed = new Set(
+          (
+            await db
+              .select({ id: postTable.id })
+              .from(postTable)
+              .where(decisionAllowed(postTable, decision))
+          ).map((r) => r.id),
+        );
+        for (const row of rows) {
+          expect([decision, row.id, allowed.has(row.id)]).toEqual([
+            decision,
+            row.id,
+            canTransition(reviewState(row), decision),
+          ]);
+        }
       }
     });
 

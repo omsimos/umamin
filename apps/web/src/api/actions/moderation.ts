@@ -2,13 +2,15 @@ import { moderationDisputeTable } from "@umamin/db/schema/moderation-dispute";
 import { noteTable } from "@umamin/db/schema/note";
 import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, isNull, or, sql } from "drizzle-orm";
 import * as z from "zod";
 import { action } from "../../server-lib/action";
 import {
   canTransition,
   contentLabel,
+  DRAMA_THRESHOLD,
   reviewState,
+  SEVERE_THRESHOLD,
 } from "../../server-lib/content-label";
 import type { Db } from "../../server-lib/db";
 import { severAllDms } from "../../server-lib/dm/lifecycle";
@@ -218,26 +220,43 @@ const ALREADY_REVIEWED = "A moderator already reviewed this.";
 const CHANGED = "This changed since you loaded it. Refresh to see the latest.";
 const NOT_PENDING = "This isn't waiting for review anymore.";
 
+/**
+ * canTransition(reviewState(row), decision) as SQL, so the write enforces it
+ * on its own. test/content-moderation.test.ts pins the two together.
+ */
+export function decisionAllowed(
+  table: (typeof REVIEW_TABLES)[keyof typeof REVIEW_TABLES],
+  decision: "clear" | "keep",
+) {
+  if (decision === "keep") {
+    // queued or appealed
+    return and(
+      isNull(table.modClearedAt),
+      isNull(table.modReviewedAt),
+      isNotNull(table.modFlaggedAt),
+    );
+  }
+  // labelled, queued, appealed or kept
+  return and(
+    isNull(table.modClearedAt),
+    or(
+      isNotNull(table.modReviewedAt),
+      isNotNull(table.modFlaggedAt),
+      gte(table.modSevere, SEVERE_THRESHOLD),
+      gte(table.modDrama, DRAMA_THRESHOLD),
+    ),
+  );
+}
+
 // Clear and keep share one path: the row must still hold the text the
-// moderator saw, and be in a state the decision applies to.
+// moderator saw, and be in a state the decision applies to. The guarded write
+// goes first, so a decision costs one round trip; the row is read only to
+// explain a refusal.
 async function decide(
   db: Db,
   { kind, id, content }: z.infer<typeof decisionSchema>,
   decision: "clear" | "keep",
 ) {
-  const row = await loadReviewRow(db, kind, id);
-  if (!row || row.content !== content) return { error: CHANGED };
-
-  const state = reviewState(row);
-  if (!canTransition(state, decision)) {
-    return {
-      error:
-        state === "cleared" || state === "kept"
-          ? ALREADY_REVIEWED
-          : NOT_PENDING,
-    };
-  }
-
   const table = REVIEW_TABLES[kind];
   const updated = await db
     .update(table)
@@ -252,17 +271,21 @@ async function decide(
       and(
         eq(table.id, id),
         eq(table.content, content),
-        isNull(table.modClearedAt),
-        decision === "keep"
-          ? and(isNull(table.modReviewedAt), isNotNull(table.modFlaggedAt))
-          : undefined,
+        decisionAllowed(table, decision),
       ),
     )
     .returning({ id: table.id });
-  // A rewrite or another moderator's decision landed between the read and
-  // the write.
-  if (updated.length === 0) return { error: CHANGED };
-  return { success: true };
+  if (updated.length > 0) return { success: true };
+
+  const row = await loadReviewRow(db, kind, id);
+  if (!row || row.content !== content) return { error: CHANGED };
+  const state = reviewState(row);
+  // Allowed now but not at the write: it changed in between.
+  if (canTransition(state, decision)) return { error: CHANGED };
+  return {
+    error:
+      state === "cleared" || state === "kept" ? ALREADY_REVIEWED : NOT_PENDING,
+  };
 }
 
 // A moderator marks a classifier flag a false positive: the row keeps its
