@@ -1,6 +1,6 @@
 import { proPurchaseTable } from "@umamin/db/schema/pro";
 import { userTable } from "@umamin/db/schema/user";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it } from "vitest";
 import { webhooksApp } from "../src/api/webhooks";
@@ -316,6 +316,32 @@ describe("POST /api/webhooks/lemonsqueezy (real libSQL)", () => {
     expect(await refund.json()).toMatchObject({
       result: "refunded-before-order",
     });
+  });
+
+  it("refunds an order that lands between the refund's lookup and insert", async () => {
+    // Stands in for a concurrent order_created: just before the refund's own
+    // insert, write the paid row and the Pro it grants, so that insert hits
+    // the UNIQUE orderId.
+    await db.run(sql`
+      CREATE TRIGGER race_order_created BEFORE INSERT ON pro_purchase
+      WHEN NEW.refunded_at IS NOT NULL
+      BEGIN
+        INSERT INTO pro_purchase (id, user_id, order_id, test_mode, created_at)
+          VALUES ('raced', NEW.user_id, NEW.order_id, 0, NEW.created_at);
+        UPDATE user SET pro_until = NEW.created_at + 15552000
+          WHERE id = NEW.user_id;
+      END
+    `);
+
+    const res = await post(
+      app,
+      orderRefunded("9001", true, { userId: "buyer" }),
+    );
+    expect(await res.json()).toMatchObject({ ok: true, result: "refunded" });
+    expect(await proUntil(db, "buyer")).toBeNull();
+    const purchases = await db.select().from(proPurchaseTable);
+    expect(purchases).toHaveLength(1);
+    expect(purchases[0]?.refundedAt).toBeInstanceOf(Date);
   });
 
   it("records nothing for an early refund of another product", async () => {

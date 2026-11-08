@@ -95,14 +95,19 @@ export async function refundProPurchase(
   }: { refundedAt?: Date; grant?: ProGrant | null } = {},
 ): Promise<ProRefundResult> {
   return db.transaction(async (tx) => {
-    const [purchase] = await tx
-      .select({
-        userId: proPurchaseTable.userId,
-        refundedAt: proPurchaseTable.refundedAt,
-      })
-      .from(proPurchaseTable)
-      .where(eq(proPurchaseTable.orderId, orderId))
-      .limit(1);
+    const findPurchase = async () => {
+      const [row] = await tx
+        .select({
+          userId: proPurchaseTable.userId,
+          refundedAt: proPurchaseTable.refundedAt,
+        })
+        .from(proPurchaseTable)
+        .where(eq(proPurchaseTable.orderId, orderId))
+        .limit(1);
+      return row;
+    };
+
+    let purchase = await findPurchase();
     if (!purchase) {
       if (!grant || grant.orderId !== orderId) return "unknown-order";
       const [user] = await tx
@@ -111,11 +116,16 @@ export async function refundProPurchase(
         .where(eq(userTable.id, grant.userId))
         .limit(1);
       if (!user) return "unknown-order";
-      await tx
+      const inserted = await tx
         .insert(proPurchaseTable)
         .values({ ...purchaseValues(grant), refundedAt })
-        .onConflictDoNothing();
-      return "refunded-before-order";
+        .onConflictDoNothing()
+        .returning({ id: proPurchaseTable.id });
+      if (inserted.length > 0) return "refunded-before-order";
+      // A concurrent order_created wrote the row after the lookup above.
+      // Refund that row like any other, or the buyer keeps the Pro it granted.
+      purchase = await findPurchase();
+      if (!purchase) return "unknown-order";
     }
     if (purchase.refundedAt) return "already-refunded";
 
