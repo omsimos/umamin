@@ -151,7 +151,11 @@ const CONFIRM_TIMEOUT_MS = 2 * 60_000;
 
 export function TiersView() {
   const { pro } = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
   const queryClient = useQueryClient();
+  // Captured once so the marker can leave the URL (below) while this view
+  // still remembers the user came back from checkout.
+  const [returnedFromCheckout] = useState(pro === "success");
   const [confirmTimedOut, setConfirmTimedOut] = useState(false);
   const { data, isPending } = useQuery({
     queryKey: queryKeys.currentUser(),
@@ -160,7 +164,7 @@ export function TiersView() {
     ...infiniteQueryDefaults,
     refetchInterval: (query) => {
       const polled = query.state.data?.user;
-      return pro === "success" &&
+      return returnedFromCheckout &&
         !confirmTimedOut &&
         polled &&
         !hasUmaminPro(polled.proUntil)
@@ -179,7 +183,7 @@ export function TiersView() {
   // Back from checkout but the webhook hasn't granted Pro yet. The buy button
   // stays off meanwhile, so a second purchase isn't one tap away, and the
   // user is polled for a bounded time (refetchInterval above).
-  const awaitingPro = pro === "success" && !!user && !isPro;
+  const awaitingPro = returnedFromCheckout && !!user && !isPro;
   const confirmation = !awaitingPro
     ? "none"
     : confirmTimedOut
@@ -189,10 +193,20 @@ export function TiersView() {
   // The webhook grants Pro moments after Lemon Squeezy redirects back here —
   // refetch so the Active badge appears without a manual reload.
   useEffect(() => {
-    if (pro === "success") {
+    if (returnedFromCheckout) {
       queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
     }
-  }, [pro, queryClient]);
+  }, [returnedFromCheckout, queryClient]);
+
+  // Drop ?pro=success once the wait is over (confirmed, timed out, or never
+  // applied). Left in the URL, a reload or a later visit from history would
+  // lock the buy button again for a user with no order in flight.
+  const settled = !isPending && confirmation !== "awaiting";
+  useEffect(() => {
+    if (pro === "success" && settled) {
+      navigate({ search: {}, replace: true });
+    }
+  }, [pro, settled, navigate]);
 
   useEffect(() => {
     if (confirmation !== "awaiting") return;
@@ -229,7 +243,7 @@ export function TiersView() {
 
       <Tabs
         defaultValue={
-          proLaunched && (pro === "success" || isPro)
+          proLaunched && (returnedFromCheckout || isPro)
             ? "pro"
             : isPlus
               ? "plus"

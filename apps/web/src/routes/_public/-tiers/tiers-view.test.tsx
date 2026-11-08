@@ -6,10 +6,14 @@ const mocks = vi.hoisted(() => ({
   search: { pro: "success" as "success" | undefined },
   fetchUser: vi.fn(),
   callAction: vi.fn(),
+  navigate: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
-  getRouteApi: () => ({ useSearch: () => mocks.search }),
+  getRouteApi: () => ({
+    useSearch: () => mocks.search,
+    useNavigate: () => mocks.navigate,
+  }),
   Link: () => null,
 }));
 vi.mock("@/hooks/use-feature-flags", () => ({
@@ -53,7 +57,13 @@ describe("TiersView after checkout", () => {
     mocks.search.pro = "success";
     mocks.fetchUser.mockReset();
     mocks.fetchUser.mockResolvedValue({ user: { ...BUYER } });
+    mocks.navigate.mockReset();
   });
+
+  const strippedMarker = () =>
+    mocks.navigate.mock.calls.some(
+      ([opts]) => opts?.replace === true && opts?.search?.pro === undefined,
+    );
 
   afterEach(() => {
     vi.useRealTimers();
@@ -86,6 +96,7 @@ describe("TiersView after checkout", () => {
 
     expect(screen.getByText("Active")).toBeInTheDocument();
     expect(buyButton()).toBeEnabled();
+    expect(strippedMarker()).toBe(true);
 
     const settled = mocks.fetchUser.mock.calls.length;
     await advance(30_000);
@@ -99,10 +110,37 @@ describe("TiersView after checkout", () => {
     await advance(2 * 60_000);
     expect(screen.getByText(/email umamin@omsimos.com/)).toBeInTheDocument();
     expect(buyButton()).toBeDisabled();
+    // A reload or a revisit from history must not lock the button again.
+    expect(strippedMarker()).toBe(true);
 
     const settled = mocks.fetchUser.mock.calls.length;
     await advance(30_000);
     expect(mocks.fetchUser.mock.calls.length).toBe(settled);
+  });
+
+  it("keeps the marker in the URL while confirmation is pending", async () => {
+    renderTiers();
+    await advance(1_000);
+
+    expect(buyButton()).toBeDisabled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it("keeps the wait after the marker leaves the URL", async () => {
+    renderTiers();
+    await advance(2 * 60_000);
+    expect(strippedMarker()).toBe(true);
+
+    // The router drops ?pro=success; the view still knows it came from
+    // checkout, so "Check again" resumes polling.
+    mocks.search.pro = undefined;
+    await act(async () => {
+      screen.getByRole("button", { name: "Check again" }).click();
+    });
+    expect(buyButton()).toBeDisabled();
+    const before = mocks.fetchUser.mock.calls.length;
+    await advance(3_000);
+    expect(mocks.fetchUser.mock.calls.length).toBeGreaterThan(before);
   });
 
   it("doesn't poll without a checkout return", async () => {
