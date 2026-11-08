@@ -18,6 +18,12 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.22.0] - 2026-11-08
+
+### Added
+
+- The streak bolt changes color as a streak grows: orange at 7 days, red at 30 and purple at 90. Your post or note toast tells you when it changes.
+
 ## [7.21.0] - 2026-11-05
 
 ### Changed
@@ -1293,6 +1299,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.22.0]: https://github.com/omsimos/umamin/compare/v7.21.0...v7.22.0
 [7.21.0]: https://github.com/omsimos/umamin/compare/v7.20.1...v7.21.0
 [7.20.1]: https://github.com/omsimos/umamin/compare/v7.20.0...v7.20.1
 [7.20.0]: https://github.com/omsimos/umamin/compare/v7.19.0...v7.20.0

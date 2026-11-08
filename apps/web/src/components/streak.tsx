@@ -7,14 +7,34 @@ import {
   isStreakAtRisk,
   STREAK_MIN_DISPLAY,
   type StreakState,
+  type StreakTier,
+  streakTier,
 } from "@/lib/streak";
 
+// Literal class strings so Tailwind's source scan picks them up. Red, not
+// pink, for the month tier: pink is the brand and the verified badge.
+const STREAK_TIER_STYLES: Record<StreakTier, string> = {
+  base: "fill-amber-500 text-amber-500",
+  week: "fill-orange-500 text-orange-500",
+  month: "fill-red-500 text-red-500",
+  quarter: "fill-violet-500 text-violet-500",
+};
+
 // A bolt, not a flame: the flame already means "reacted" on note cards.
-export function StreakIcon({ className }: { className?: string }) {
+export function StreakIcon({
+  streak,
+  className,
+}: {
+  // The live streak, which picks the bolt's color tier.
+  streak: number;
+  className?: string;
+}) {
+  const tier = streakTier(streak);
   return (
     <ZapIcon
       aria-hidden
-      className={cn("fill-amber-500 text-amber-500", className)}
+      data-tier={tier}
+      className={cn(STREAK_TIER_STYLES[tier], className)}
     />
   );
 }
@@ -30,7 +50,7 @@ export function StreakChip({ state }: { state?: StreakState }) {
       className="inline-flex items-center gap-0.5 text-xs font-semibold text-muted-foreground tabular-nums"
       title={`${streak}-day streak`}
     >
-      <StreakIcon className="size-3.5" />
+      <StreakIcon streak={streak} className="size-3.5" />
       {streak}
       <span className="sr-only"> day streak</span>
     </span>
@@ -73,7 +93,7 @@ export function StreakReminder({
         className,
       )}
     >
-      <StreakIcon className="size-3.5 shrink-0" />
+      <StreakIcon streak={streak} className="size-3.5 shrink-0" />
       {text}
     </p>
   );
