@@ -9,6 +9,14 @@
     "correctness": "error"
   },
   "rules": {
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
+    "react/exhaustive-effect-dependencies": "error",
     "typescript/no-explicit-any": "error",
     "typescript/no-non-null-assertion": "error",
     "react/no-array-index-key": "error",
