@@ -53,6 +53,7 @@ import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { GroupEditDialog } from "@/components/group-edit-dialog";
 import { TimeAgoVerbose } from "@/components/time-ago-verbose";
+import { usePendingKeys } from "@/hooks/use-pending-keys";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
 import type { GroupAccent, GroupIcon } from "@/lib/group";
@@ -156,11 +157,22 @@ export function GroupPageClient({
     ...infiniteQueryDefaults,
   });
 
-  const refreshMembership = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.groupViewer(tag) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.group(tag) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.userGroups() });
-  };
+  // Membership mutations await this so their buttons stay disabled until the
+  // new relationship has arrived, instead of re-enabling on the old one.
+  const refreshMembership = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.groupViewer(tag) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.group(tag) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups() }),
+    ]);
+
+  const kickKey = ["group", tag, "kick"] as const;
+  const respondKey = ["group", tag, "respond"] as const;
+  const kicking = usePendingKeys(kickKey, (userId: string) => userId);
+  const responding = usePendingKeys(
+    respondKey,
+    ({ userId }: { userId: string }) => userId,
+  );
 
   const equip = useSingleFlightAction(equipGroupBadgeAction);
   const equipped = equippedGroupId === group?.id;
@@ -184,11 +196,13 @@ export function GroupPageClient({
       if (res && "error" in res && res.error)
         throw new ExpectedError(res.error);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
-      refreshMembership();
+    onSuccess: async () => {
       toast.success("You left the group.");
-      router.invalidate();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() }),
+        refreshMembership(),
+        router.invalidate(),
+      ]);
     },
     onError: (err) => toast.error(err.message),
   });
@@ -209,6 +223,7 @@ export function GroupPageClient({
   });
 
   const kickMutation = useMutation({
+    mutationKey: kickKey,
     mutationFn: async (userId: string) => {
       const res = await kickGroupMemberAction({
         groupId: group?.id ?? "",
@@ -264,13 +279,15 @@ export function GroupPageClient({
       if ("error" in res) throw new ExpectedError(res.error);
       return res;
     },
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       const joined = "joined" in res && res.joined;
       if (joined) vibrate();
       toast.success(joined ? "You're in!" : "Request sent.");
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
-      refreshMembership();
-      if (joined) router.invalidate();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() }),
+        refreshMembership(),
+        joined ? router.invalidate() : null,
+      ]);
     },
     onError: (err) => toast.error(err.message),
   });
@@ -281,9 +298,9 @@ export function GroupPageClient({
       if (res && "error" in res && res.error)
         throw new ExpectedError(res.error);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Request withdrawn.");
-      refreshMembership();
+      await refreshMembership();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -298,17 +315,20 @@ export function GroupPageClient({
         throw new ExpectedError(res.error);
       return accept;
     },
-    onSuccess: (accept) => {
+    onSuccess: async (accept) => {
       if (accept) vibrate();
       toast.success(accept ? "You're in!" : "Invite declined.");
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
-      refreshMembership();
-      router.invalidate();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() }),
+        refreshMembership(),
+        router.invalidate(),
+      ]);
     },
     onError: (err) => toast.error(err.message),
   });
 
   const respondRequestMutation = useMutation({
+    mutationKey: respondKey,
     mutationFn: async ({
       userId,
       accept,
@@ -574,10 +594,7 @@ export function GroupPageClient({
                   size="icon"
                   variant="ghost"
                   aria-label={`Approve ${request.user.username}`}
-                  disabled={
-                    respondRequestMutation.isPending &&
-                    respondRequestMutation.variables?.userId === request.user.id
-                  }
+                  disabled={responding.has(request.user.id)}
                   onClick={() =>
                     respondRequestMutation.mutate({
                       userId: request.user.id,
@@ -593,10 +610,7 @@ export function GroupPageClient({
                   size="icon"
                   variant="ghost"
                   aria-label={`Reject ${request.user.username}`}
-                  disabled={
-                    respondRequestMutation.isPending &&
-                    respondRequestMutation.variables?.userId === request.user.id
-                  }
+                  disabled={responding.has(request.user.id)}
                   onClick={() =>
                     respondRequestMutation.mutate({
                       userId: request.user.id,
@@ -678,10 +692,7 @@ export function GroupPageClient({
                         size="icon"
                         variant="ghost"
                         aria-label={`Remove ${member.user.username}`}
-                        disabled={
-                          kickMutation.isPending &&
-                          kickMutation.variables === member.user.id
-                        }
+                        disabled={kicking.has(member.user.id)}
                         className="text-muted-foreground hover:text-destructive"
                       >
                         <UserMinusIcon className="size-4" />

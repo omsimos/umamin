@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
@@ -12,8 +12,9 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from "@/lib/push-client";
-import { queryKeys } from "@/lib/query";
+import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { patchCurrentUser } from "@/lib/query-cache";
+import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 import type { CurrentUserResponse } from "@/lib/types";
 
 // Ported from apps/www's hooks/use-push-notifications.ts. The two push actions
@@ -51,9 +52,56 @@ export type PushState =
   | "off"
   | "on";
 
+// What the browser alone can tell us. "on" also needs the server side.
+type DeviceState =
+  | "loading"
+  | "unsupported"
+  | "ios-install"
+  | "denied"
+  | "subscribed"
+  | "unsubscribed";
+
+// The account this browser's subscription was last registered to. A browser
+// has one subscription whoever is signed in, so after an account switch, or a
+// register that failed and couldn't be undone, the browser can hold a
+// subscription the server never sends to. "" means not registered; a missing
+// key means it was registered before this marker existed.
+const OWNER_KEY = "umamin:push-owner";
+
+function readOwner(): string | null {
+  try {
+    return localStorage.getItem(OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeOwner(owner: string) {
+  try {
+    localStorage.setItem(OWNER_KEY, owner);
+  } catch {}
+}
+
+async function readDevice(): Promise<DeviceState> {
+  if (!isPushSupported() || !VAPID_PUBLIC_KEY) return "unsupported";
+  if (isIosWebPushBlocked()) return "ios-install";
+  if (Notification.permission === "denied") return "denied";
+  return (await getExistingSubscription().catch(() => null))
+    ? "subscribed"
+    : "unsubscribed";
+}
+
 export function usePushNotifications() {
   const queryClient = useQueryClient();
-  const [state, setState] = useState<PushState>("loading");
+  const { data: currentUser, isPending: userPending } = useQuery({
+    queryKey: queryKeys.currentUser(),
+    queryFn: fetchCurrentUserOptional,
+    staleTime: PRIVATE_STALE_TIME,
+  });
+  const user = currentUser?.user ?? null;
+
+  const [device, setDevice] = useState<DeviceState>("loading");
+  const [owner, setOwner] = useState<string | null>(null);
 
   const register = useSingleFlightAction(registerPushSubscriptionAction);
   const unregister = useSingleFlightAction(unregisterPushSubscriptionAction);
@@ -67,29 +115,26 @@ export function usePushNotifications() {
     );
   };
 
+  const markOwner = (next: string) => {
+    writeOwner(next);
+    setOwner(next);
+  };
+
   useEffect(() => {
     let active = true;
 
     (async () => {
-      if (!isPushSupported() || !VAPID_PUBLIC_KEY) {
-        if (active) setState("unsupported");
-        return;
-      }
-      if (isIosWebPushBlocked()) {
-        if (active) setState("ios-install");
-        return;
-      }
-      if (Notification.permission === "denied") {
+      const next = await readDevice();
+      if (next === "denied") {
         // Permission was revoked outside the app — prune the now-dead
         // subscription. Best-effort here: reaching "denied" is what matters.
+        writeOwner("");
         const endpoint = await unsubscribeFromPush().catch(() => null);
         if (endpoint) void unregister({ endpoint });
-        if (active) setState("denied");
-        return;
       }
-
-      const sub = await getExistingSubscription();
-      if (active) setState(sub ? "on" : "off");
+      if (!active) return;
+      setOwner(readOwner());
+      setDevice(next);
     })();
 
     return () => {
@@ -97,8 +142,30 @@ export function usePushNotifications() {
     };
   }, [unregister]);
 
+  // "on" needs both sides: this browser holds a subscription registered to
+  // this account, and the server still has push on for the account (pushPrefs
+  // drops to 0 with its last device, see server-lib/push-devices.ts).
+  let state: PushState;
+  if (device !== "subscribed" && device !== "unsubscribed") {
+    state = device;
+  } else if (userPending) {
+    state = "loading";
+  } else {
+    const registeredHere = owner === null || (!!user && owner === user.id);
+    state =
+      device === "subscribed" && registeredHere && (user?.pushPrefs ?? 0) !== 0
+        ? "on"
+        : "off";
+  }
+
+  const syncDevice = async () => {
+    setOwner(readOwner());
+    setDevice(await readDevice());
+  };
+
   const enableMutation = useMutation({
     mutationFn: async () => {
+      if (!user) throw new ExpectedError("Sign in to enable notifications.");
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         throw new ExpectedError(
@@ -107,41 +174,53 @@ export function usePushNotifications() {
             : "Notification permission was not granted.",
         );
       }
+      markOwner("");
       const sub = await subscribeToPush(VAPID_PUBLIC_KEY as string);
       const res = await register(sub);
-      if ("error" in res) throw new ExpectedError(res.error);
+      if ("error" in res) {
+        // The browser is subscribed but the server never stored it. Undo it
+        // so the next visit doesn't read the subscription as on; if the undo
+        // fails too, the cleared owner still keeps it off.
+        await unsubscribeFromPush().catch(() => null);
+        throw new ExpectedError(res.error);
+      }
+      markOwner(user.id);
       return res.pushPrefs;
     },
     onSuccess: (pushPrefs) => {
       patchPushPrefs(pushPrefs);
-      setState("on");
+      setDevice("subscribed");
       toast.success("Push notifications enabled.");
     },
     onError: (err: Error) => {
-      if (
-        typeof Notification !== "undefined" &&
-        Notification.permission === "denied"
-      ) {
-        setState("denied");
-      }
+      void syncDevice();
       toast.error(err.message ?? "Couldn't enable notifications.");
     },
   });
 
   const disableMutation = useMutation({
     mutationFn: async () => {
-      const endpoint = await unsubscribeFromPush();
-      if (!endpoint) return null;
-      const res = await unregister({ endpoint });
-      if ("error" in res) throw new ExpectedError(res.error);
-      return res.pushPrefs;
+      // Server first: once its row is gone nothing is sent here, so a failed
+      // browser unsubscribe only leaves an unused subscription behind. The
+      // other order can leave the server pushing to a device that reads off.
+      const sub = await getExistingSubscription();
+      let pushPrefs: number | null = null;
+      if (sub) {
+        const res = await unregister({ endpoint: sub.endpoint });
+        if ("error" in res) throw new ExpectedError(res.error);
+        pushPrefs = res.pushPrefs;
+      }
+      markOwner("");
+      await unsubscribeFromPush().catch(() => null);
+      return pushPrefs;
     },
     onSuccess: (pushPrefs) => {
       patchPushPrefs(pushPrefs);
-      setState("off");
+      void syncDevice();
       toast.success("Push notifications disabled.");
     },
     onError: (err: Error) => {
+      void syncDevice();
       toast.error(err.message ?? "Couldn't disable notifications.");
     },
   });

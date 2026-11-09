@@ -52,9 +52,32 @@ export function displayStreak(
   return streak >= STREAK_MIN_DISPLAY ? streak : 0;
 }
 
+export type StreakTier = "base" | "week" | "month" | "quarter";
+
+// Highest first. Each tier recolors the streak bolt; the color names show up
+// in the milestone toast, so keep them in sync with STREAK_TIER_STYLES.
+export const STREAK_TIERS = [
+  { tier: "quarter", minDays: 90, color: "purple" },
+  { tier: "month", minDays: 30, color: "red" },
+  { tier: "week", minDays: 7, color: "orange" },
+] as const satisfies readonly {
+  tier: StreakTier;
+  minDays: number;
+  color: string;
+}[];
+
+/** The bolt tier for a live streak count (pass activeStreak, not the raw row). */
+export function streakTier(streak: number): StreakTier {
+  return STREAK_TIERS.find((t) => streak >= t.minDays)?.tier ?? "base";
+}
+
 /** A save's success toast, with the streak count once it's worth showing. */
 export function streakToast(message: string, update?: StreakUpdate | null) {
-  return update && update.streak >= STREAK_MIN_DISPLAY
-    ? `${message} ${update.streak}-day streak.`
-    : message;
+  if (!update || update.streak < STREAK_MIN_DISPLAY) return message;
+  // A streak grows one day per save day, so a tier is reached on its exact
+  // threshold and the toast fires once per tier.
+  const reached = STREAK_TIERS.find((t) => t.minDays === update.streak);
+  return reached
+    ? `${message} ${update.streak}-day streak. Your bolt is ${reached.color} now.`
+    : `${message} ${update.streak}-day streak.`;
 }

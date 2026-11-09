@@ -203,7 +203,9 @@ export interface ChatTransport {
   dealCard(cardId: string, mode?: GameMode): void;
   answerCard(cardId: string, pick: GamePick): void;
   dismissGame(): void;
-  /** Best-effort: delivery is not guaranteed. */
+  /** Best-effort: delivery is not guaranteed. Call with true on every
+   *  keystroke; the transport throttles, and the partner's indicator lapses
+   *  without a refresh. */
   setTyping(isTyping: boolean): void;
   signalStayConnected(): void;
   /** Submit (or replace, pre-reveal) the own stay-connected handle. */

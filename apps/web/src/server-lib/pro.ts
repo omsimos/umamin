@@ -25,6 +25,19 @@ export type ProGrant = {
 
 export type ProGrantResult = "granted" | "duplicate" | "user-missing";
 
+function purchaseValues(grant: ProGrant) {
+  return {
+    userId: grant.userId,
+    orderId: grant.orderId,
+    identifier: grant.identifier ?? null,
+    variantId: grant.variantId ?? null,
+    total: grant.total ?? null,
+    currency: grant.currency ?? null,
+    testMode: grant.testMode ?? false,
+    createdAt: grant.purchasedAt,
+  };
+}
+
 /**
  * Records a paid order and extends the buyer's Pro horizon. Idempotent: the
  * UNIQUE orderId turns a webhook redelivery into a no-op insert, and the
@@ -46,16 +59,7 @@ export async function recordProPurchase(
 
     const inserted = await tx
       .insert(proPurchaseTable)
-      .values({
-        userId: grant.userId,
-        orderId: grant.orderId,
-        identifier: grant.identifier ?? null,
-        variantId: grant.variantId ?? null,
-        total: grant.total ?? null,
-        currency: grant.currency ?? null,
-        testMode: grant.testMode ?? false,
-        createdAt: grant.purchasedAt,
-      })
+      .values(purchaseValues(grant))
       .onConflictDoNothing()
       .returning({ id: proPurchaseTable.id });
 
@@ -64,29 +68,65 @@ export async function recordProPurchase(
   });
 }
 
-export type ProRefundResult = "refunded" | "already-refunded" | "unknown-order";
+export type ProRefundResult =
+  | "refunded"
+  | "already-refunded"
+  | "refunded-before-order"
+  | "unknown-order";
 
 /**
  * Marks an order refunded and re-derives the buyer's Pro horizon from the
  * remaining purchases (which may still be a future date if other purchases
- * stand). "unknown-order" covers orders for other products or a store
- * misrouting — acked, never retried.
+ * stand). "unknown-order" covers orders for other products, a store
+ * misrouting, or a buyer who can't be identified — acked, never retried.
+ *
+ * Lemon Squeezy doesn't order its deliveries, so a refund can land before
+ * its order_created. When the caller passes the Pro order's details as
+ * `grant`, that refund is stored as an already-refunded purchase, and the
+ * late order_created hits the UNIQUE orderId as a duplicate and grants
+ * nothing.
  */
 export async function refundProPurchase(
   db: Db,
   orderId: string,
-  refundedAt: Date = new Date(),
+  {
+    refundedAt = new Date(),
+    grant = null,
+  }: { refundedAt?: Date; grant?: ProGrant | null } = {},
 ): Promise<ProRefundResult> {
   return db.transaction(async (tx) => {
-    const [purchase] = await tx
-      .select({
-        userId: proPurchaseTable.userId,
-        refundedAt: proPurchaseTable.refundedAt,
-      })
-      .from(proPurchaseTable)
-      .where(eq(proPurchaseTable.orderId, orderId))
-      .limit(1);
-    if (!purchase) return "unknown-order";
+    const findPurchase = async () => {
+      const [row] = await tx
+        .select({
+          userId: proPurchaseTable.userId,
+          refundedAt: proPurchaseTable.refundedAt,
+        })
+        .from(proPurchaseTable)
+        .where(eq(proPurchaseTable.orderId, orderId))
+        .limit(1);
+      return row;
+    };
+
+    let purchase = await findPurchase();
+    if (!purchase) {
+      if (!grant || grant.orderId !== orderId) return "unknown-order";
+      const [user] = await tx
+        .select({ id: userTable.id })
+        .from(userTable)
+        .where(eq(userTable.id, grant.userId))
+        .limit(1);
+      if (!user) return "unknown-order";
+      const inserted = await tx
+        .insert(proPurchaseTable)
+        .values({ ...purchaseValues(grant), refundedAt })
+        .onConflictDoNothing()
+        .returning({ id: proPurchaseTable.id });
+      if (inserted.length > 0) return "refunded-before-order";
+      // A concurrent order_created wrote the row after the lookup above.
+      // Refund that row like any other, or the buyer keeps the Pro it granted.
+      purchase = await findPurchase();
+      if (!purchase) return "unknown-order";
+    }
     if (purchase.refundedAt) return "already-refunded";
 
     await tx

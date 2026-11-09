@@ -22,7 +22,7 @@ import type {
   ReviewKind,
   ReviewPage,
 } from "../lib/types";
-import { contentLabel } from "./content-label";
+import { contentLabel, reviewState } from "./content-label";
 import { parseCursor } from "./cursor";
 import { feedAuthorColumns } from "./data";
 import type { Db } from "./db";
@@ -47,7 +47,28 @@ const scoreFields = <
   reason: table.modReason,
   flaggedAt: table.modFlaggedAt,
   clearedAt: table.modClearedAt,
+  reviewedAt: table.modReviewedAt,
   appealedAt: table.modAppealedAt,
+});
+
+type ScoreFields = {
+  severe: number | null;
+  drama: number | null;
+  reason: string | null;
+  flaggedAt: Date | null;
+  clearedAt: Date | null;
+  reviewedAt: Date | null;
+  appealedAt: Date | null;
+};
+
+const reviewColumns = (row: ScoreFields) => ({
+  modSevere: row.severe,
+  modDrama: row.drama,
+  modReason: row.reason,
+  modFlaggedAt: row.flaggedAt,
+  modClearedAt: row.clearedAt,
+  modReviewedAt: row.reviewedAt,
+  modAppealedAt: row.appealedAt,
 });
 
 const quotedPost = alias(postTable, "quoted_post");
@@ -84,6 +105,8 @@ export async function getSevereReviewPage(
     table: T,
   ) =>
     and(
+      // isPendingReview(reviewState(row)) in SQL, in the shape of the
+      // mod_pending partial indexes. content-moderation.test.ts pins the two.
       isNotNull(table.modFlaggedAt),
       isNull(table.modClearedAt),
       isNull(table.modReviewedAt),
@@ -209,8 +232,9 @@ export async function getDramaReviewPage(
       .limit(DRAMA_WINDOW),
   ]);
 
-  const isCandidate = (row: { drama: number | null; clearedAt: Date | null }) =>
-    (row.drama ?? 0) >= DRAMA_FLOOR && !row.clearedAt;
+  const isCandidate = (row: ScoreFields) =>
+    (row.drama ?? 0) >= DRAMA_FLOOR &&
+    reviewState(reviewColumns(row)) !== "cleared";
 
   const merged = mergeNewest(
     [
@@ -234,16 +258,11 @@ function toItem(
     postId?: string;
     context?: string | null;
     isAnonymous?: boolean;
-    severe: number | null;
-    drama: number | null;
-    reason: string | null;
-    flaggedAt: Date | null;
-    clearedAt: Date | null;
-    appealedAt: Date | null;
     author: FeedAuthor;
-  },
+  } & ScoreFields,
   enforce: boolean,
 ): ReviewItem {
+  const columns = reviewColumns(row);
   return {
     kind,
     id: row.id,
@@ -256,16 +275,8 @@ function toItem(
     severe: row.severe,
     drama: row.drama,
     reason: row.reason,
-    label: contentLabel(
-      {
-        modSevere: row.severe,
-        modDrama: row.drama,
-        modReason: row.reason,
-        modClearedAt: row.clearedAt,
-      },
-      enforce,
-    ),
-    appealed: !!row.appealedAt,
+    label: contentLabel(columns, enforce),
+    appealed: reviewState(columns) === "appealed",
     disputes: 0,
   };
 }

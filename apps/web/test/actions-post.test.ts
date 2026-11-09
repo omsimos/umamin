@@ -101,7 +101,7 @@ describe("post actions (real libSQL)", () => {
     await callJson(app, "addLikeAction", { postId: "p1" });
     const { json } = await callJson(app, "addLikeAction", { postId: "p1" });
 
-    expect(json).toEqual({ success: true, alreadyLiked: true });
+    expect(json).toEqual({ success: true, alreadyLiked: true, count: 1 });
     expect(await points(db, "author")).toBe(2);
   });
 
@@ -184,7 +184,7 @@ describe("post actions (real libSQL)", () => {
     const app = buildApp(db, authed("viewer", { createdAt: OLD }));
     const { json } = await callJson(app, "removeLikeAction", { postId: "p1" });
 
-    expect(json).toEqual({ success: true, alreadyRemoved: true });
+    expect(json).toEqual({ success: true, alreadyRemoved: true, count: 3 });
     const [post] = await db
       .select({ likeCount: postTable.likeCount })
       .from(postTable)
@@ -450,8 +450,16 @@ describe("post actions (real libSQL)", () => {
         commentId: "c1",
       });
 
-      expect(repost.json).toEqual({ success: true, alreadyReposted: true });
-      expect(like.json).toEqual({ success: true, alreadyLiked: true });
+      expect(repost.json).toEqual({
+        success: true,
+        alreadyReposted: true,
+        count: 1,
+      });
+      expect(like.json).toEqual({
+        success: true,
+        alreadyLiked: true,
+        count: 1,
+      });
       expect(await points(db, "author")).toBe(104);
     });
 
@@ -513,7 +521,7 @@ describe("post actions (real libSQL)", () => {
         postId: "p1",
       });
 
-      expect(json).toEqual({ success: true, alreadyReposted: true });
+      expect(json).toEqual({ success: true, alreadyReposted: true, count: 1 });
       expect(await repostCount()).toBe(1);
       expect(await points(db, "author")).toBe(3);
     });
@@ -553,7 +561,7 @@ describe("post actions (real libSQL)", () => {
         postId: "p1",
       });
 
-      expect(json).toEqual({ success: true, alreadyRemoved: true });
+      expect(json).toEqual({ success: true, alreadyRemoved: true, count: 5 });
       expect(await repostCount()).toBe(5);
       expect(await points(db, "author")).toBe(10);
     });
@@ -613,7 +621,7 @@ describe("post actions (real libSQL)", () => {
         commentId: "c1",
       });
 
-      expect(json).toEqual({ success: true, alreadyRemoved: true });
+      expect(json).toEqual({ success: true, alreadyRemoved: true, count: 3 });
       expect(await commentLikeCount()).toBe(3);
       expect(await points(db, "commenter")).toBe(10);
     });
@@ -788,6 +796,39 @@ describe("post actions (real libSQL)", () => {
       expect(json).toMatchObject({ success: true });
       const rest = await db.select().from(moderationDisputeTable);
       expect(rest.map((r) => `${r.kind}:${r.targetId}`)).toEqual(["post:p1"]);
+    });
+  });
+
+  it("a no-op note reaction reports the note's real count", async () => {
+    await db.insert(noteTable).values({
+      id: "n1",
+      userId: "author",
+      content: "a note",
+      isAnonymous: false,
+      reactionCount: 4,
+    });
+    await db
+      .insert(noteReactionTable)
+      .values({ noteId: "n1", userId: "viewer" });
+
+    const viewer = buildApp(db, authed("viewer", { createdAt: OLD }));
+    const again = await callJson(viewer, "addNoteReactionAction", {
+      noteId: "n1",
+    });
+    expect(again.json).toEqual({
+      success: true,
+      alreadyReacted: true,
+      count: 4,
+    });
+
+    const author = buildApp(db, authed("author", { createdAt: OLD }));
+    const never = await callJson(author, "removeNoteReactionAction", {
+      noteId: "n1",
+    });
+    expect(never.json).toEqual({
+      success: true,
+      alreadyRemoved: true,
+      count: 4,
     });
   });
 });

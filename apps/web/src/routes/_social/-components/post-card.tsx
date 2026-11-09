@@ -16,7 +16,7 @@ import {
   MessageSquareTextIcon,
   Repeat2Icon,
 } from "lucide-react";
-import { memo, useEffect, useId, useState } from "react";
+import { memo, useId, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ComposeDialog } from "@/components/compose-dialog";
@@ -32,6 +32,10 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import {
+  unchangedOutcome,
+  useOptimisticToggle,
+} from "@/hooks/use-optimistic-toggle";
 import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
@@ -81,14 +85,6 @@ function PostCardImpl({
   const commentCount = "commentCount" in data ? data.commentCount : undefined;
   const imageId = useId();
   const imageTargetId = `umamin-${imageId}`;
-  const [liked, setLiked] = useState<boolean>(data.isLiked === true);
-  const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
-  const [reposted, setReposted] = useState<boolean>(
-    "isReposted" in data ? data.isReposted === true : false,
-  );
-  const [reposts, setReposts] = useState<number>(
-    "repostCount" in data ? (data.repostCount ?? 0) : 0,
-  );
   const [quoteOpen, setQuoteOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -124,31 +120,17 @@ function PostCardImpl({
     }));
   };
 
-  const dataIsReposted =
-    "isReposted" in data ? data.isReposted === true : false;
-  const dataRepostCount = "repostCount" in data ? (data.repostCount ?? 0) : 0;
-
-  // Scalar deps only — depending on the `data` object (a fresh reference on most
-  // parent renders) re-ran this effect constantly and could clobber optimistic
-  // like/repost state mid-flight. Now it resyncs only when a value truly changes.
-  useEffect(() => {
-    setLiked(data.isLiked === true);
-    setLikes(data.likeCount ?? 0);
-    setReposted(dataIsReposted);
-    setReposts(dataRepostCount);
-  }, [data.isLiked, data.likeCount, dataIsReposted, dataRepostCount]);
-
   const handleLikeAction = useBurstAction(
-    async (prevLiked: boolean) => {
+    async (nextLiked: boolean) => {
       if (isComment) {
-        return prevLiked
-          ? removeCommentLikeAction({ commentId: data.id })
-          : addCommentLikeAction({ commentId: data.id });
+        return nextLiked
+          ? addCommentLikeAction({ commentId: data.id })
+          : removeCommentLikeAction({ commentId: data.id });
       }
 
-      return prevLiked
-        ? removeLikeAction({ postId: data.id })
-        : addLikeAction({ postId: data.id });
+      return nextLiked
+        ? addLikeAction({ postId: data.id })
+        : removeLikeAction({ postId: data.id });
     },
     {
       limit: 4,
@@ -157,98 +139,82 @@ function PostCardImpl({
   );
 
   const handleRepostAction = useBurstAction(
-    async (prevReposted: boolean) =>
-      prevReposted
-        ? removeRepostAction({ postId: data.id })
-        : addRepostAction({ postId: data.id }),
+    async (nextReposted: boolean) =>
+      nextReposted
+        ? addRepostAction({ postId: data.id })
+        : removeRepostAction({ postId: data.id }),
     {
       limit: 4,
       rejectMessage: BURST_ACTION_REJECT_MESSAGE,
     },
   );
 
-  const handleLike = async () => {
-    const prevLiked = liked;
-    const prevLikes = likes;
-    const nextLiked = !prevLiked;
-    const nextLikes = prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1;
-
-    setLiked(nextLiked);
-    setLikes(nextLikes);
-
-    try {
-      const res = await handleLikeAction(prevLiked);
+  const like = useOptimisticToggle({
+    on: data.isLiked === true,
+    count: data.likeCount ?? 0,
+    send: async (nextLiked) => {
+      const res = await handleLikeAction(nextLiked);
       const actionError = getActionError(res);
       if (actionError) {
         throw new ExpectedError(actionError);
       }
 
       // Server no-op (the like row was already in the target state): the DB
-      // count never moved, so drop our optimistic ±1 — keep the target flag but
-      // restore the previous count — to avoid permanently drifting the cache.
+      // count never moved, so the optimistic ±1 is dropped for the server's
+      // count.
       if (isAlreadyLiked(res) || isAlreadyRemoved(res)) {
-        setLikes(prevLikes);
-        syncLikeCache(nextLiked, prevLikes);
-        return;
+        return unchangedOutcome(res);
       }
 
-      syncLikeCache(nextLiked, nextLikes);
       if (isComment) {
-        toast.success(prevLiked ? "Comment unliked." : "Comment liked.");
+        toast.success(nextLiked ? "Comment liked." : "Comment unliked.");
       } else {
-        toast.success(prevLiked ? "Post unliked." : "Post liked.");
+        toast.success(nextLiked ? "Post liked." : "Post unliked.");
       }
-    } catch (err) {
-      setLiked(prevLiked);
-      setLikes(prevLikes);
+      return "changed";
+    },
+    onSettled: (state) => syncLikeCache(state.on, state.count),
+    onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Couldn't update like.");
       captureException(err, { source: "like" });
-    }
-  };
+    },
+  });
 
-  const handleRepost = async () => {
-    const prevReposted = reposted;
-    const prevReposts = reposts;
-
-    setReposted(!prevReposted);
-    setReposts((v) => (prevReposted ? Math.max(v - 1, 0) : v + 1));
-
-    try {
-      const res = await handleRepostAction(prevReposted);
+  const repost = useOptimisticToggle({
+    on: "isReposted" in data ? data.isReposted === true : false,
+    count: "repostCount" in data ? (data.repostCount ?? 0) : 0,
+    send: async (nextReposted) => {
+      const res = await handleRepostAction(nextReposted);
       const actionError = getActionError(res);
       if (actionError) {
         throw new ExpectedError(actionError);
       }
-      if (prevReposted) {
-        // Remove branch. If the row was already gone, the DB count never moved,
-        // so restore our optimistic -1 instead of persisting an undercount.
-        if (isAlreadyRemoved(res)) {
-          setReposts(prevReposts);
-          syncRepostCache(false, prevReposts);
-          toast.success("Repost removed.");
-          return;
-        }
+      // A no-op leaves the DB count where it was, so the optimistic ±1 is
+      // dropped for the server's count instead of persisting a drifted one.
+      if (!nextReposted) {
         toast.success("Repost removed.");
-        syncRepostCache(false, Math.max(prevReposts - 1, 0));
-      } else {
-        if (isAlreadyReposted(res)) {
-          setReposted(prevReposted);
-          setReposts(prevReposts);
-          toast.error("Already reposted.");
-          return;
-        }
-        toast.success("Reposted.");
-        syncRepostCache(true, prevReposts + 1);
+        return isAlreadyRemoved(res) ? unchangedOutcome(res) : "changed";
       }
-    } catch (err) {
-      setReposted(prevReposted);
-      setReposts(prevReposts);
+      if (isAlreadyReposted(res)) {
+        toast.error("Already reposted.");
+        return unchangedOutcome(res);
+      }
+      toast.success("Reposted.");
+      return "changed";
+    },
+    onSettled: (state) => syncRepostCache(state.on, state.count),
+    onError: (err) => {
       toast.error(
         err instanceof Error ? err.message : "Couldn't update repost.",
       );
       captureException(err, { source: "repost" });
-    }
-  };
+    },
+  });
+
+  const liked = like.on;
+  const likes = like.count;
+  const reposted = repost.on;
+  const reposts = repost.count;
 
   // Quotes are real posts now — narrow once for the dialog + embed render.
   const quotablePost = !isComment && "repostCount" in data ? data : null;
@@ -386,7 +352,7 @@ function PostCardImpl({
             type="button"
             variant="ghost"
             disabled={!isAuthenticated}
-            onClick={handleLike}
+            onClick={like.toggle}
             aria-label={`${liked ? "Unlike" : "Like"} ${isComment ? "comment" : "post"}`}
             aria-pressed={liked}
             className={cn(
@@ -430,7 +396,7 @@ function PostCardImpl({
               <DropdownMenuContent align="center">
                 <DropdownMenuItem
                   onClick={() => {
-                    handleRepost();
+                    repost.toggle();
                   }}
                 >
                   <span className="flex items-center gap-2">

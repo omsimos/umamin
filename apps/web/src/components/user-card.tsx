@@ -163,7 +163,7 @@ export function UserCard({
 
             {streak > 0 && (
               <div className="text-muted-foreground text-sm flex items-center gap-2">
-                <StreakIcon className="size-4" />
+                <StreakIcon streak={streak} className="size-4" />
                 <span>
                   <span className="font-medium text-foreground">{streak}</span>
                   -day streak

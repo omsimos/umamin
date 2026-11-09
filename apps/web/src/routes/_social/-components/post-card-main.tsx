@@ -15,7 +15,7 @@ import {
   MessageSquareTextIcon,
   Repeat2Icon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";
 import { ComposeDialog } from "@/components/compose-dialog";
@@ -31,6 +31,10 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
+import {
+  unchangedOutcome,
+  useOptimisticToggle,
+} from "@/hooks/use-optimistic-toggle";
 import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
@@ -66,10 +70,6 @@ export function PostCardMain({
   currentUserId,
 }: Props) {
   const author = data.author;
-  const [liked, setLiked] = useState<boolean>(data.isLiked === true);
-  const [likes, setLikes] = useState<number>(data.likeCount ?? 0);
-  const [reposted, setReposted] = useState<boolean>(data.isReposted === true);
-  const [reposts, setReposts] = useState<number>(data.repostCount ?? 0);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -91,18 +91,11 @@ export function PostCardMain({
     }));
   };
 
-  useEffect(() => {
-    setLiked(data.isLiked === true);
-    setLikes(data.likeCount ?? 0);
-    setReposted(data.isReposted === true);
-    setReposts(data.repostCount ?? 0);
-  }, [data.isLiked, data.likeCount, data.isReposted, data.repostCount]);
-
   const handleLikeAction = useBurstAction(
-    async (prevLiked: boolean) =>
-      prevLiked
-        ? removeLikeAction({ postId: data.id })
-        : addLikeAction({ postId: data.id }),
+    async (nextLiked: boolean) =>
+      nextLiked
+        ? addLikeAction({ postId: data.id })
+        : removeLikeAction({ postId: data.id }),
     {
       limit: 6,
       rejectMessage: BURST_ACTION_REJECT_MESSAGE,
@@ -110,93 +103,80 @@ export function PostCardMain({
   );
 
   const handleRepostAction = useBurstAction(
-    async (prevReposted: boolean) =>
-      prevReposted
-        ? removeRepostAction({ postId: data.id })
-        : addRepostAction({ postId: data.id }),
+    async (nextReposted: boolean) =>
+      nextReposted
+        ? addRepostAction({ postId: data.id })
+        : removeRepostAction({ postId: data.id }),
     {
       limit: 4,
       rejectMessage: BURST_ACTION_REJECT_MESSAGE,
     },
   );
 
-  const handleLike = async () => {
-    const prevLiked = liked;
-    const prevLikes = likes;
-    const nextLiked = !prevLiked;
-    const nextLikes = prevLiked ? Math.max(prevLikes - 1, 0) : prevLikes + 1;
-
-    // Micro-tick on like only — undoing one isn't a moment.
-    if (nextLiked) {
-      vibrate(5);
-    }
-
-    setLiked(nextLiked);
-    setLikes(nextLikes);
-
-    try {
-      const res = await handleLikeAction(prevLiked);
+  const like = useOptimisticToggle({
+    on: data.isLiked === true,
+    count: data.likeCount ?? 0,
+    send: async (nextLiked) => {
+      const res = await handleLikeAction(nextLiked);
       const actionError = getActionError(res);
       if (actionError) {
         throw new ExpectedError(actionError);
       }
 
-      // Server no-op (like row already in target state): drop the optimistic ±1.
+      // Server no-op (like row already in target state): drop the optimistic ±1
+      // for the server's count.
       if (isAlreadyLiked(res) || isAlreadyRemoved(res)) {
-        setLikes(prevLikes);
-        syncLikeCache(nextLiked, prevLikes);
-        return;
+        return unchangedOutcome(res);
       }
 
-      syncLikeCache(nextLiked, nextLikes);
-      toast.success(prevLiked ? "Post unliked." : "Post liked.");
-    } catch (err) {
-      setLiked(prevLiked);
-      setLikes(prevLikes);
+      toast.success(nextLiked ? "Post liked." : "Post unliked.");
+      return "changed";
+    },
+    onSettled: (state) => syncLikeCache(state.on, state.count),
+    onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Couldn't update like.");
       captureException(err, { source: "like" });
-    }
-  };
+    },
+  });
 
-  const handleRepost = async () => {
-    const prevReposted = reposted;
-    const prevReposts = reposts;
-
-    setReposted(!prevReposted);
-    setReposts((v) => (prevReposted ? Math.max(v - 1, 0) : v + 1));
-
-    try {
-      const res = await handleRepostAction(prevReposted);
+  const repost = useOptimisticToggle({
+    on: data.isReposted === true,
+    count: data.repostCount ?? 0,
+    send: async (nextReposted) => {
+      const res = await handleRepostAction(nextReposted);
       const actionError = getActionError(res);
       if (actionError) {
         throw new ExpectedError(actionError);
       }
-      if (prevReposted) {
-        if (isAlreadyRemoved(res)) {
-          setReposts(prevReposts);
-          syncRepostCache(false, prevReposts);
-          toast.success("Repost removed.");
-          return;
-        }
+      if (!nextReposted) {
         toast.success("Repost removed.");
-        syncRepostCache(false, Math.max(prevReposts - 1, 0));
-      } else {
-        if (isAlreadyReposted(res)) {
-          setReposted(prevReposted);
-          setReposts(prevReposts);
-          toast.error("Already reposted.");
-          return;
-        }
-        toast.success("Reposted.");
-        syncRepostCache(true, prevReposts + 1);
+        return isAlreadyRemoved(res) ? unchangedOutcome(res) : "changed";
       }
-    } catch (err) {
-      setReposted(prevReposted);
-      setReposts(prevReposts);
+      if (isAlreadyReposted(res)) {
+        toast.error("Already reposted.");
+        return unchangedOutcome(res);
+      }
+      toast.success("Reposted.");
+      return "changed";
+    },
+    onSettled: (state) => syncRepostCache(state.on, state.count),
+    onError: (err) => {
       toast.error(
         err instanceof Error ? err.message : "Couldn't update repost.",
       );
       captureException(err, { source: "repost" });
+    },
+  });
+
+  const liked = like.on;
+  const likes = like.count;
+  const reposted = repost.on;
+  const reposts = repost.count;
+
+  const handleLike = () => {
+    // Micro-tick on like only — undoing one isn't a moment.
+    if (like.toggle()) {
+      vibrate(5);
     }
   };
 
@@ -334,7 +314,7 @@ export function PostCardMain({
             <DropdownMenuContent align="center">
               <DropdownMenuItem
                 onClick={() => {
-                  handleRepost();
+                  repost.toggle();
                 }}
               >
                 <span className="flex items-center gap-2">

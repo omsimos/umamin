@@ -40,6 +40,19 @@ describe("MessageComposer", () => {
     expect(onTyping).toHaveBeenLastCalledWith(false);
   });
 
+  it("keeps reporting typing while the user keeps typing", async () => {
+    const onTyping = vi.fn();
+    render(<MessageComposer onSend={() => {}} onTyping={onTyping} />);
+    await userEvent.type(screen.getByRole("textbox"), "hello");
+    expect(onTyping.mock.calls).toEqual([
+      [true],
+      [true],
+      [true],
+      [true],
+      [true],
+    ]);
+  });
+
   it("sends trimmed text and clears the field", async () => {
     const onSend = vi.fn();
     render(<MessageComposer onSend={onSend} />);

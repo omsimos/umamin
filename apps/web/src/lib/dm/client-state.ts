@@ -3,23 +3,44 @@
  * local intents, so merge rules (optimistic sends, edits, history pages) are
  * testable without a socket.
  */
+import type { DmFrame } from "./protocol";
 import type { DmMessage, DmMeta, DmReplyPreview } from "./types";
 
 export type DmDelivery = "sending" | "failed";
+export type DmSendFrame = Extract<DmFrame, { t: "send" }>;
 
 export interface UiDmMessage extends DmMessage {
   /** Set on optimistic sends until the server's copy replaces them. */
   delivery?: DmDelivery;
+  /** Set with `delivery`: what a replay or a retry sends again. Its id is the
+   *  op id the server dedupes on, so a resend can't double-post. */
+  frame?: DmSendFrame;
 }
 
 export type DmStatus =
   | "connecting"
   | "open"
   | "reconnecting"
+  /** The page is hidden, so the socket is closed on purpose. */
+  | "paused"
   /** Blocked, unknown user, or flag off: the screen explains, no retry. */
   | "unavailable"
   /** Refused repeatedly for too many open sockets: the screen explains, no retry. */
-  | "busy";
+  | "busy"
+  /** The server speaks a newer protocol and the page didn't reload: the
+   *  screen asks for a refresh. */
+  | "outdated";
+
+const TERMINAL: ReadonlySet<DmStatus> = new Set<DmStatus>([
+  "unavailable",
+  "busy",
+  "outdated",
+]);
+
+/** A status only a remount leaves, so no socket event or focus may undo it. */
+export function isTerminalStatus(status: DmStatus): boolean {
+  return TERMINAL.has(status);
+}
 
 export interface DmState {
   status: DmStatus;
@@ -42,6 +63,8 @@ export const initialDmState: DmState = {
 
 export type DmAction =
   | { type: "status"; status: DmStatus }
+  | { type: "pause" }
+  | { type: "resume" }
   | { type: "sync"; messages: DmMessage[]; meta: DmMeta; hasMore: boolean }
   | { type: "msgs"; messages: DmMessage[] }
   | { type: "history"; messages: DmMessage[]; hasMore: boolean }
@@ -51,8 +74,7 @@ export type DmAction =
   | { type: "loadOlderFailed" }
   | {
       type: "send";
-      clientId: string;
-      text: string;
+      frame: DmSendFrame;
       replyTo: DmReplyPreview | null;
       at: number;
     }
@@ -97,12 +119,20 @@ function merge(current: UiDmMessage[], incoming: DmMessage[]): UiDmMessage[] {
 export function dmReducer(state: DmState, action: DmAction): DmState {
   switch (action.type) {
     case "status":
+      if (isTerminalStatus(state.status)) return state;
       return {
         ...state,
         status: action.status,
         // A dropped socket can't deliver the peer's "typing off".
         peerTypingAt: action.status === "open" ? state.peerTypingAt : null,
       };
+    case "pause":
+      if (isTerminalStatus(state.status)) return state;
+      return { ...state, status: "paused", peerTypingAt: null };
+    case "resume":
+      return state.status === "paused"
+        ? { ...state, status: "connecting" }
+        : state;
     case "sync": {
       // A (re)connect replaces server history with the newest page and keeps
       // sends still waiting on an ack, unless the page already has them.
@@ -146,15 +176,16 @@ export function dmReducer(state: DmState, action: DmAction): DmState {
         messages: order([
           ...state.messages,
           {
-            id: localId(action.clientId),
-            clientId: action.clientId,
+            id: localId(action.frame.id),
+            clientId: action.frame.id,
             mine: true,
-            text: action.text,
+            text: action.frame.text,
             replyTo: action.replyTo,
             myReaction: null,
             theirReaction: null,
             createdAt: action.at,
             delivery: "sending",
+            frame: action.frame,
           },
         ]),
       };
@@ -172,6 +203,17 @@ export function dmReducer(state: DmState, action: DmAction): DmState {
         ),
       };
   }
+}
+
+/** My optimistic send with this client id, if it's still waiting on the server. */
+export function findOutgoing(
+  messages: UiDmMessage[],
+  clientId: string,
+): { delivery: DmDelivery; frame: DmSendFrame } | null {
+  const m = messages.find((x) => x.id === localId(clientId));
+  return m?.delivery && m.frame
+    ? { delivery: m.delivery, frame: m.frame }
+    : null;
 }
 
 /** The newest message from the peer, which a visible screen marks read. */

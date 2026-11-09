@@ -12,10 +12,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@umamin/ui/components/tabs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { TimeAgo } from "@/components/time-ago";
+import { usePendingKeys } from "@/hooks/use-pending-keys";
 import { callAction } from "@/lib/api";
 import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
@@ -52,9 +53,14 @@ type Decision = "clear" | "keep";
 function decideAction(decision: Decision, item: ReviewItem) {
   return callAction<{ success?: boolean }>(
     decision === "clear" ? "clearContentFlagAction" : "keepContentFlagAction",
-    { kind: item.kind, id: item.id },
+    { kind: item.kind, id: item.id, content: item.content },
   );
 }
+
+const rowKey = (item: ReviewItem) => `${item.kind}:${item.id}`;
+
+// How long the second tap on Remove stays armed.
+const CONFIRM_MS = 4000;
 
 function removeContent(item: ReviewItem) {
   if (item.kind === "post") return deletePostAction({ postId: item.id });
@@ -111,6 +117,18 @@ function ReviewList({ kind }: { kind: QueueKind }) {
   const queryClient = useQueryClient();
   // Removal is permanent, so it takes a second tap on the same row.
   const [confirming, setConfirming] = useState<string | null>(null);
+  // Both mutations below key under this prefix and take `{ item }`.
+  const mutationKey = ["review-queue", kind] as const;
+  const busy = usePendingKeys(mutationKey, ({ item }: { item: ReviewItem }) =>
+    rowKey(item),
+  );
+
+  useEffect(() => {
+    if (!confirming) return;
+    const timer = setTimeout(() => setConfirming(null), CONFIRM_MS);
+    return () => clearTimeout(timer);
+  }, [confirming]);
+
   const {
     data,
     isLoading,
@@ -144,6 +162,7 @@ function ReviewList({ kind }: { kind: QueueKind }) {
     );
 
   const decideMutation = useMutation({
+    mutationKey: [...mutationKey, "decide"],
     mutationFn: async ({
       decision,
       item,
@@ -159,11 +178,20 @@ function ReviewList({ kind }: { kind: QueueKind }) {
       settle(item);
       toast.success(decisionToast[decision]);
     },
-    onError: () => toast.error("Couldn't save that. Try again."),
+    onError: (err) => {
+      if (err instanceof ExpectedError) {
+        // The item changed or was decided since the queue loaded.
+        toast.error(err.message);
+        queryClient.invalidateQueries({ queryKey: queryKey(kind) });
+        return;
+      }
+      toast.error("Couldn't save that. Try again.");
+    },
   });
 
   const removeMutation = useMutation({
-    mutationFn: async (item: ReviewItem) => {
+    mutationKey: [...mutationKey, "remove"],
+    mutationFn: async ({ item }: { item: ReviewItem }) => {
       const error = getActionError(await removeContent(item));
       if (error) throw new ExpectedError(error);
       return item;
@@ -174,6 +202,11 @@ function ReviewList({ kind }: { kind: QueueKind }) {
     },
     onError: () => toast.error("Couldn't remove it."),
   });
+
+  const decideRow = (decision: Decision, item: ReviewItem) => {
+    setConfirming(null);
+    decideMutation.mutate({ decision, item });
+  };
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -190,11 +223,6 @@ function ReviewList({ kind }: { kind: QueueKind }) {
     return <p className="text-sm text-muted-foreground">Nothing to review.</p>;
   }
 
-  const busy = (item: ReviewItem) =>
-    (decideMutation.isPending &&
-      decideMutation.variables?.item.id === item.id) ||
-    (removeMutation.isPending && removeMutation.variables?.id === item.id);
-
   return (
     <>
       {error && (
@@ -205,7 +233,8 @@ function ReviewList({ kind }: { kind: QueueKind }) {
       )}
       <ul className="divide-y rounded-lg border">
         {items.map((item) => {
-          const key = `${item.kind}:${item.id}`;
+          const key = rowKey(item);
+          const rowBusy = busy.has(key);
           return (
             <li key={key} className="space-y-2 p-3">
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -249,10 +278,8 @@ function ReviewList({ kind }: { kind: QueueKind }) {
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={busy(item)}
-                    onClick={() =>
-                      decideMutation.mutate({ decision: "clear", item })
-                    }
+                    disabled={rowBusy}
+                    onClick={() => decideRow("clear", item)}
                   >
                     Uncover
                   </Button>
@@ -261,10 +288,8 @@ function ReviewList({ kind }: { kind: QueueKind }) {
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={busy(item)}
-                    onClick={() =>
-                      decideMutation.mutate({ decision: "keep", item })
-                    }
+                    disabled={rowBusy}
+                    onClick={() => decideRow("keep", item)}
                   >
                     {item.label ? "Keep" : "Dismiss"}
                   </Button>
@@ -272,11 +297,11 @@ function ReviewList({ kind }: { kind: QueueKind }) {
                 <Button
                   size="sm"
                   variant="destructive"
-                  disabled={busy(item)}
+                  disabled={rowBusy}
                   onClick={() => {
                     if (confirming === key) {
                       setConfirming(null);
-                      removeMutation.mutate(item);
+                      removeMutation.mutate({ item });
                     } else {
                       setConfirming(key);
                     }

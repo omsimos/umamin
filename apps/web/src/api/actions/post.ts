@@ -656,6 +656,7 @@ export const addLikeHandler = action(
     const targetProbe = db
       .select({
         blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+        likeCount: postTable.likeCount,
       })
       .from(postTable)
       .where(eq(postTable.id, postId))
@@ -668,14 +669,22 @@ export const addLikeHandler = action(
     const [inserted, bumped] = results;
     // The award statement is optional, so the tuple's last slot is a union;
     // the probe is always last.
-    const [target] = results[results.length - 1] as { blocked: number }[];
+    const [target] = results[results.length - 1] as {
+      blocked: number;
+      likeCount: number;
+    }[];
 
     if (!target || target.blocked === 1) {
       // Same outcome as a bad id, like comments.
       return { error: "Post not found" };
     }
     if (inserted.length === 0) {
-      return { success: true, alreadyLiked: true } as const;
+      // The client didn't know about this like, so its count is stale too.
+      return {
+        success: true,
+        alreadyLiked: true,
+        count: target.likeCount,
+      } as const;
     }
 
     const likedPost = bumped[0];
@@ -845,7 +854,13 @@ export const removeLikeHandler = action(
       : await db.batch(statements);
 
     if (removed.length === 0) {
-      return { success: true, alreadyRemoved: true };
+      // Rare path: the client's count was stale, so read the real one.
+      const [post] = await db
+        .select({ count: postTable.likeCount })
+        .from(postTable)
+        .where(eq(postTable.id, postId))
+        .limit(1);
+      return { success: true, alreadyRemoved: true, count: post?.count };
     }
 
     return { success: true };
@@ -919,6 +934,7 @@ export const addCommentLikeHandler = action(
       const [target] = await db
         .select({
           blocked: sql<number>`CASE WHEN ${noBlockBetween(postCommentTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+          likeCount: postCommentTable.likeCount,
         })
         .from(postCommentTable)
         .where(eq(postCommentTable.id, commentId))
@@ -926,7 +942,7 @@ export const addCommentLikeHandler = action(
       if (!target || target.blocked === 1) {
         return { error: "Comment not found" };
       }
-      return { success: true, alreadyLiked: true };
+      return { success: true, alreadyLiked: true, count: target.likeCount };
     }
 
     return { success: true };
@@ -977,7 +993,13 @@ export const removeCommentLikeHandler = action(
       : await db.batch(statements);
 
     if (removed.length === 0) {
-      return { success: true, alreadyRemoved: true };
+      // Rare path: the client's count was stale, so read the real one.
+      const [comment] = await db
+        .select({ count: postCommentTable.likeCount })
+        .from(postCommentTable)
+        .where(eq(postCommentTable.id, commentId))
+        .limit(1);
+      return { success: true, alreadyRemoved: true, count: comment?.count };
     }
 
     return { success: true };
@@ -1048,6 +1070,7 @@ export const addRepostHandler = action(
       const [target] = await db
         .select({
           blocked: sql<number>`CASE WHEN ${noBlockBetween(postTable.authorId, session.userId)} THEN 0 ELSE 1 END`,
+          repostCount: postTable.repostCount,
         })
         .from(postTable)
         .where(eq(postTable.id, postId))
@@ -1055,7 +1078,11 @@ export const addRepostHandler = action(
       if (!target || target.blocked === 1) {
         return { error: "Post not found" };
       }
-      return { success: true, alreadyReposted: true };
+      return {
+        success: true,
+        alreadyReposted: true,
+        count: target.repostCount,
+      };
     }
 
     return { success: true, repost };
@@ -1106,7 +1133,13 @@ export const removeRepostHandler = action(
       : await db.batch(statements);
 
     if (removed.length === 0) {
-      return { success: true, alreadyRemoved: true };
+      // Rare path: the client's count was stale, so read the real one.
+      const [post] = await db
+        .select({ count: postTable.repostCount })
+        .from(postTable)
+        .where(eq(postTable.id, postId))
+        .limit(1);
+      return { success: true, alreadyRemoved: true, count: post?.count };
     }
 
     return { success: true };

@@ -315,16 +315,24 @@ export function withModeration<
     modSevere,
     modDrama,
     modReason,
-    modFlaggedAt: _modFlaggedAt,
+    modFlaggedAt,
     modClearedAt,
-    modReviewedAt: _modReviewedAt,
-    modAppealedAt: _modAppealedAt,
+    modReviewedAt,
+    modAppealedAt,
     ...rest
   } = row;
   return {
     ...rest,
     moderation: contentLabel(
-      { modSevere, modDrama, modReason, modClearedAt },
+      {
+        modSevere,
+        modDrama,
+        modReason,
+        modFlaggedAt,
+        modClearedAt,
+        modReviewedAt,
+        modAppealedAt,
+      },
       enforce,
     ),
   };

@@ -143,12 +143,24 @@ export function ComposeDialog({
     }
   };
 
+  // A post carries a poll or images, never both: whichever is attached first
+  // locks out the other. Every attach path (picker, drop, paste, poll button)
+  // checks these two flags.
+  const attached = poll
+    ? "poll"
+    : attachments.items.length > 0
+      ? "images"
+      : "none";
+  // Images also need the Aura gate.
+  const canAttachImages = imagesUnlocked && attached !== "poll";
+  const canAttachPoll = attached !== "images";
+
   const handlePickImages = () => {
     if (!imagesUnlocked) {
       toast.info(IMAGE_AURA_REQUIRED_ERROR);
       return;
     }
-    if (poll) return;
+    if (!canAttachImages) return;
     fileInputRef.current?.click();
   };
 
@@ -157,15 +169,14 @@ export function ComposeDialog({
       toast.info(POLL_PLUS_REQUIRED_ERROR);
       return;
     }
-    if (attachments.items.length > 0) return;
+    if (!canAttachPoll) return;
     setPoll((current) =>
       current ? null : { options: ["", ""], duration: DEFAULT_POLL_DURATION },
     );
   };
 
   const acceptFiles = (files: Iterable<File>) => {
-    // Poll XOR images, and images need the Aura gate — drag/paste respect both.
-    if (!imagesUnlocked || poll) return;
+    if (!canAttachImages) return;
     attachments.addFiles(files);
   };
 
@@ -175,6 +186,10 @@ export function ComposeDialog({
     content.trim().length > 0 || attachments.items.length > 0 || poll !== null;
 
   const handleOpenChange = (next: boolean) => {
+    // The optimistic feed item is showing this draft's image previews until
+    // the post settles, and a failed post needs the draft back for a retry,
+    // so the composer can't close or discard mid-send.
+    if (!next && isPending) return;
     if (!next && isDirty) {
       setConfirmDiscard(true);
       return;
@@ -183,6 +198,7 @@ export function ComposeDialog({
   };
 
   const discardDraft = () => {
+    if (isPending) return;
     setConfirmDiscard(false);
     setContent("");
     setPoll(null);
@@ -198,7 +214,7 @@ export function ComposeDialog({
         onDragOver={(e) => {
           if (!imagesAvailable) return;
           e.preventDefault();
-          if (imagesUnlocked && !poll) setDragging(true);
+          if (canAttachImages) setDragging(true);
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => {
@@ -235,6 +251,7 @@ export function ComposeDialog({
               variant="ghost"
               size="icon"
               onClick={() => handleOpenChange(false)}
+              disabled={isPending}
               aria-label="Cancel"
             >
               <XIcon />
@@ -283,7 +300,7 @@ export function ComposeDialog({
                 onChange={(e) => setContent(e.target.value)}
                 onPaste={(e) => {
                   const files = e.clipboardData?.files;
-                  if (imagesAvailable && imagesUnlocked && files?.length) {
+                  if (imagesAvailable && canAttachImages && files?.length) {
                     e.preventDefault();
                     acceptFiles(files);
                   }
@@ -347,7 +364,8 @@ export function ComposeDialog({
                   aria-label="Add images"
                   onClick={handlePickImages}
                   disabled={
-                    attachments.items.length >= MAX_POST_IMAGES || !!poll
+                    attachments.items.length >= MAX_POST_IMAGES ||
+                    attached === "poll"
                   }
                   className="text-pink-500 hover:text-pink-600"
                 >
@@ -362,7 +380,7 @@ export function ComposeDialog({
               aria-label={poll ? "Remove poll" : "Add a poll"}
               aria-pressed={!!poll}
               onClick={handleTogglePoll}
-              disabled={attachments.items.length > 0}
+              disabled={!canAttachPoll}
               className="text-pink-500 hover:text-pink-600"
             >
               <BarChart3Icon className="size-5" />

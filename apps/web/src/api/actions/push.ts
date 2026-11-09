@@ -1,10 +1,11 @@
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
-import { and, desc, eq, notInArray } from "drizzle-orm";
+import { and, desc, eq, ne, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ALL_PUSH_CATEGORIES } from "../../lib/push-prefs";
 import { action } from "../../server-lib/action";
 import { isAllowedPushEndpoint } from "../../server-lib/push";
+import { clearPushPrefsWithoutDevices } from "../../server-lib/push-devices";
 import { ctxDb } from "./_shared";
 
 const PUSH_DEVICE_CAP = 20;
@@ -28,35 +29,43 @@ export const registerPushSubscriptionHandler = action(
   },
   async ({ endpoint, p256dh, auth }, { user, c }) => {
     const db = ctxDb(c);
-    await db
-      .insert(pushSubscriptionTable)
-      .values({ userId: user.id, endpoint, p256dh, auth })
-      .onConflictDoUpdate({
-        target: pushSubscriptionTable.endpoint,
-        set: { userId: user.id, p256dh, auth, failureCount: 0 },
-      });
-
-    await db
-      .delete(pushSubscriptionTable)
-      .where(
-        and(
-          eq(pushSubscriptionTable.userId, user.id),
-          notInArray(
-            pushSubscriptionTable.id,
-            db
-              .select({ id: pushSubscriptionTable.id })
-              .from(pushSubscriptionTable)
-              .where(eq(pushSubscriptionTable.userId, user.id))
-              .orderBy(desc(pushSubscriptionTable.createdAt))
-              .limit(PUSH_DEVICE_CAP),
+    await db.batch([
+      // A browser shared between accounts moves its row to whoever registers
+      // last, and that may have been the previous account's only device. This
+      // runs before the upsert, while the row still names the previous owner.
+      clearPushPrefsWithoutDevices(
+        db,
+        sql`${userTable.id} = (SELECT ${pushSubscriptionTable.userId} FROM ${pushSubscriptionTable} WHERE ${pushSubscriptionTable.endpoint} = ${endpoint}) AND ${ne(userTable.id, user.id)}`,
+        endpoint,
+      ),
+      db
+        .insert(pushSubscriptionTable)
+        .values({ userId: user.id, endpoint, p256dh, auth })
+        .onConflictDoUpdate({
+          target: pushSubscriptionTable.endpoint,
+          set: { userId: user.id, p256dh, auth, failureCount: 0 },
+        }),
+      db
+        .delete(pushSubscriptionTable)
+        .where(
+          and(
+            eq(pushSubscriptionTable.userId, user.id),
+            notInArray(
+              pushSubscriptionTable.id,
+              db
+                .select({ id: pushSubscriptionTable.id })
+                .from(pushSubscriptionTable)
+                .where(eq(pushSubscriptionTable.userId, user.id))
+                .orderBy(desc(pushSubscriptionTable.createdAt))
+                .limit(PUSH_DEVICE_CAP),
+            ),
           ),
         ),
-      );
-
-    await db
-      .update(userTable)
-      .set({ pushPrefs: ALL_PUSH_CATEGORIES })
-      .where(eq(userTable.id, user.id));
+      db
+        .update(userTable)
+        .set({ pushPrefs: ALL_PUSH_CATEGORIES })
+        .where(eq(userTable.id, user.id)),
+    ]);
 
     return { pushPrefs: ALL_PUSH_CATEGORIES };
   },
@@ -72,30 +81,23 @@ export const unregisterPushSubscriptionHandler = action(
   },
   async ({ endpoint }, { user, c }) => {
     const db = ctxDb(c);
-    await db
-      .delete(pushSubscriptionTable)
-      .where(
-        and(
-          eq(pushSubscriptionTable.endpoint, endpoint),
-          eq(pushSubscriptionTable.userId, user.id),
+    const [, , prefsRows] = await db.batch([
+      db
+        .delete(pushSubscriptionTable)
+        .where(
+          and(
+            eq(pushSubscriptionTable.endpoint, endpoint),
+            eq(pushSubscriptionTable.userId, user.id),
+          ),
         ),
-      );
+      clearPushPrefsWithoutDevices(db, eq(userTable.id, user.id)),
+      db
+        .select({ pushPrefs: userTable.pushPrefs })
+        .from(userTable)
+        .where(eq(userTable.id, user.id))
+        .limit(1),
+    ]);
 
-    const [remaining] = await db
-      .select({ id: pushSubscriptionTable.id })
-      .from(pushSubscriptionTable)
-      .where(eq(pushSubscriptionTable.userId, user.id))
-      .limit(1);
-
-    if (remaining) {
-      return { pushPrefs: null };
-    }
-
-    await db
-      .update(userTable)
-      .set({ pushPrefs: 0 })
-      .where(eq(userTable.id, user.id));
-
-    return { pushPrefs: 0 };
+    return { pushPrefs: prefsRows[0]?.pushPrefs ?? 0 };
   },
 );

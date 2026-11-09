@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { cardById, drawCard, type PlayChoice } from "@/lib/chat/decks";
 import { visibleOnline } from "@/lib/chat/stats";
@@ -26,7 +26,7 @@ import {
   SessionTitle,
 } from "./-umamin-chat/components/shell/session-frame";
 import { useChatStats } from "./-umamin-chat/lib/share-card/use-chat-stats";
-import { useSendEffects } from "./-umamin-chat/lib/use-send-effects";
+import { useMatchMoments } from "./-umamin-chat/lib/use-match-moments";
 import { useChatSession } from "./-umamin-chat/session/chat-context";
 
 // Full-screen: a top-level route, so neither the app navbar
@@ -75,8 +75,6 @@ function Session() {
     if (phase === "idle") navigate({ to: "/chat", replace: true });
   }, [phase, navigate]);
 
-  const [iceBreakerDismissed, setIceBreakerDismissed] = useState(false);
-  const [celebrationDismissed, setCelebrationDismissed] = useState(false);
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
   // A stable object: the composer pulls focus whenever this identity changes.
   const composerReply = useMemo(
@@ -93,7 +91,6 @@ function Session() {
     [replyTarget, partner?.alias],
   );
   const [connectOpen, setConnectOpen] = useState(false);
-  const [revealOverlayOpen, setRevealOverlayOpen] = useState(false);
   const [warmupPrompt, setWarmupPrompt] = useState<string | null>(null);
 
   // A fresh radar clears the previous session's warm-up pick; the pick itself
@@ -105,62 +102,22 @@ function Session() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on match identity
   useEffect(() => {
-    setIceBreakerDismissed(false);
-    setCelebrationDismissed(false);
     setReplyTarget(null);
     setConnectOpen(false);
-    setRevealOverlayOpen(false);
   }, [snapshot.matchId]);
 
-  // Reveal moments, seeded per match identity so a reload doesn't replay
-  // them: the asymmetric tease when
-  // the partner submits first ("they left something — never WHAT"), and the
-  // one-shot flip overlay when both handles land.
+  // Send effects, the celebration, the reveal and the ice-breaker, seeded per
+  // match identity so a reload doesn't replay them. The tease is asymmetric:
+  // the partner submitted first ("they left something — never WHAT").
   const reveal = snapshot.reveal;
   const bothRevealed = Boolean(reveal.self.handle && reveal.partner.handle);
-  const partnerAliasForTease = partner?.alias;
-  const seenReveal = useRef({ matchId: "", teased: false, revealed: false });
-  useEffect(() => {
-    if (!snapshot.matchId) return;
-    if (seenReveal.current.matchId !== snapshot.matchId) {
-      seenReveal.current = {
-        matchId: snapshot.matchId,
-        teased: reveal.partner.submitted,
-        revealed: bothRevealed,
-      };
-      return;
-    }
-    if (
-      reveal.partner.submitted &&
-      !bothRevealed &&
-      !seenReveal.current.teased &&
-      phase === "active" &&
-      partnerAliasForTease
-    ) {
-      seenReveal.current.teased = true;
-      toast(`${partnerAliasForTease} left something for you 👀`, {
+  const moments = useMatchMoments(snapshot, {
+    onTease: (alias) =>
+      toast(`${alias} left something for you 👀`, {
         action: { label: "Open", onClick: () => setConnectOpen(true) },
-      });
-    }
-    if (bothRevealed && !seenReveal.current.revealed) {
-      seenReveal.current.revealed = true;
-      if (phase === "active") {
-        setConnectOpen(false);
-        setRevealOverlayOpen(true);
-      }
-    }
-  }, [
-    snapshot.matchId,
-    reveal.partner.submitted,
-    bothRevealed,
-    phase,
-    partnerAliasForTease,
-  ]);
-
-  const { active: activeEffect, clear: clearEffect } = useSendEffects(
-    messages,
-    snapshot.matchId,
-  );
+      }),
+    onReveal: () => setConnectOpen(false),
+  });
   const receiptStats = useChatStats(snapshot);
 
   function sendWithMode(text: string, mode: ComposerMode) {
@@ -217,7 +174,7 @@ function Session() {
   }
 
   const showIceBreaker =
-    !iceBreakerDismissed &&
+    !moments.iceBreakerDismissed &&
     !messages.some((m) => m.author === "self" && !m.gameResult);
 
   // While the live card shows a revealed round, its result row would repeat
@@ -318,17 +275,17 @@ function Session() {
                   extraPrompt={warmupPrompt}
                   onPrompt={(text) => {
                     send(text);
-                    setIceBreakerDismissed(true);
+                    moments.dismissIceBreaker();
                   }}
                   onPlay={
                     snapshot.game
                       ? undefined
                       : () => {
                           play("this-or-that");
-                          setIceBreakerDismissed(true);
+                          moments.dismissIceBreaker();
                         }
                   }
-                  onDismiss={() => setIceBreakerDismissed(true)}
+                  onDismiss={moments.dismissIceBreaker}
                 />
               ) : undefined
             }
@@ -357,23 +314,29 @@ function Session() {
         />
       )}
 
-      {phase === "active" && activeEffect && (
-        <SendEffectOverlay effect={activeEffect} onDone={clearEffect} />
-      )}
-
-      {phase === "active" && mutual && !celebrationDismissed && partner && (
-        <StayConnectedCelebration
-          selfAlias={self.alias}
-          selfSeed={self.avatarSeed}
-          partnerAlias={partner.alias}
-          partnerSeed={partner.avatarSeed}
-          onContinue={() => setCelebrationDismissed(true)}
-          onDropHandle={() => {
-            setCelebrationDismissed(true);
-            setConnectOpen(true);
-          }}
+      {phase === "active" && moments.effect && (
+        <SendEffectOverlay
+          effect={moments.effect}
+          onDone={moments.clearEffect}
         />
       )}
+
+      {phase === "active" &&
+        moments.overlay === "celebration" &&
+        mutual &&
+        partner && (
+          <StayConnectedCelebration
+            selfAlias={self.alias}
+            selfSeed={self.avatarSeed}
+            partnerAlias={partner.alias}
+            partnerSeed={partner.avatarSeed}
+            onContinue={moments.closeOverlay}
+            onDropHandle={() => {
+              moments.closeOverlay();
+              setConnectOpen(true);
+            }}
+          />
+        )}
 
       {phase === "active" && partner && (
         <ConnectionSheet
@@ -387,18 +350,21 @@ function Session() {
         />
       )}
 
-      {phase === "active" && revealOverlayOpen && bothRevealed && partner && (
-        <HandleRevealOverlay
-          self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
-          partner={{
-            alias: partner.alias,
-            avatarSeed: partner.avatarSeed,
-          }}
-          selfHandle={reveal.self.handle ?? ""}
-          partnerHandle={reveal.partner.handle ?? ""}
-          onClose={() => setRevealOverlayOpen(false)}
-        />
-      )}
+      {phase === "active" &&
+        moments.overlay === "reveal" &&
+        bothRevealed &&
+        partner && (
+          <HandleRevealOverlay
+            self={{ alias: self.alias, avatarSeed: self.avatarSeed }}
+            partner={{
+              alias: partner.alias,
+              avatarSeed: partner.avatarSeed,
+            }}
+            selfHandle={reveal.self.handle ?? ""}
+            partnerHandle={reveal.partner.handle ?? ""}
+            onClose={moments.closeOverlay}
+          />
+        )}
     </SessionFrame>
   );
 }

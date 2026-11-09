@@ -31,6 +31,7 @@ interface ChatSessionValue extends ChatActions {
 const ChatSessionContext = createContext<ChatSessionValue | null>(null);
 
 const noopUnsubscribe = () => {};
+const SEARCH_AGAIN_TOAST = "umamin-chat:search-again";
 const loadingSnapshot = () => LOADING_SNAPSHOT;
 
 function bindActions(
@@ -87,9 +88,17 @@ export function ChatSessionProvider({
           // The transport has gone idle and the session bounced to the lobby;
           // the lobby moves back to the radar once the new search starts.
           toast("Still there?", {
+            id: SEARCH_AGAIN_TOAST,
             description: message,
             duration: 15_000,
-            action: { label: "Search again", onClick: () => t.findMatch(self) },
+            action: {
+              label: "Search again",
+              // Once a search or a chat has started, a late tap would leave
+              // that chat to start another search.
+              onClick: () => {
+                if (t.getSnapshot().phase === "idle") t.findMatch(self);
+              },
+            },
           });
           return;
         }
@@ -118,6 +127,10 @@ export function ChatSessionProvider({
     getSnapshot,
     loadingSnapshot,
   );
+
+  useEffect(() => {
+    if (snapshot.phase !== "idle") toast.dismiss(SEARCH_AGAIN_TOAST);
+  }, [snapshot.phase]);
 
   // Keyed on the transport only, so the actions keep their identity across
   // snapshots. Without the React Compiler, a fresh setTyping per frame would

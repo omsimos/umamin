@@ -18,6 +18,40 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.22.0] - 2026-11-08
+
+### Added
+
+- The streak bolt changes color as a streak grows: orange at 7 days, red at 30 and purple at 90. Your post or note toast tells you when it changes.
+
+### Changed
+
+- When a new version of Umamin is ready, every open tab offers to reload, and a dismissed prompt comes back when you return to the tab.
+- After you pay for Pro, the plans page checks for your upgrade on its own and keeps the buy button off until it arrives.
+
+### Fixed
+
+- "Tap to retry" on a chat message that didn't send now sends it again.
+- Chats no longer get stuck on "Connecting…" after an update, and a closed chat stays closed when you come back to the tab.
+- In Umamin Chat, "typing…" stays up while your match keeps typing.
+- Cancelling a new match in Umamin Chat no longer bounces you between screens, and an old "Search again" prompt can't end a chat you're in.
+- A send effect cut off when a chat ends no longer plays in your next chat, and "It's mutual!" no longer shows again after a reload.
+- Follow and Block show the right state when you had already followed or blocked someone from another tab or device.
+- Tapping like, repost or react quickly no longer leaves the wrong state or count.
+- Push notifications only show as on when this device can actually receive them, and a failed attempt to turn them off leaves them on instead of half off.
+- The composer stays open while your post is sending, so a post that fails keeps your draft.
+- Adding a profile song keeps the dialog open until it saves, so a failed save doesn't lose your link.
+- A moderator's decision only applies to the version of a note they reviewed, not to a rewrite saved after they loaded it.
+- Moderation and group admin buttons stay disabled until their own action finishes.
+- A Pro refund that reaches Umamin before its order no longer grants Pro.
+- Liking, reposting or reacting to something you already did on another device shows the right count.
+- Profiles say "1 Follower" instead of "1 Followers".
+- Chat message boxes no longer show a scrollbar before you type.
+
+### Accessibility
+
+- Screen readers announce the push notifications switch in settings by name.
+
 ## [7.21.0] - 2026-11-05
 
 ### Changed
@@ -1293,6 +1327,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.22.0]: https://github.com/omsimos/umamin/compare/v7.21.0...v7.22.0
 [7.21.0]: https://github.com/omsimos/umamin/compare/v7.20.1...v7.21.0
 [7.20.1]: https://github.com/omsimos/umamin/compare/v7.20.0...v7.20.1
 [7.20.0]: https://github.com/omsimos/umamin/compare/v7.19.0...v7.20.0

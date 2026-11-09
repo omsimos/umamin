@@ -3,7 +3,10 @@ import { useCallback, useLayoutEffect, useRef } from "react";
 function updateTextAreaSize(textArea?: HTMLTextAreaElement | null) {
   if (!textArea) return;
   textArea.style.height = "3rem";
-  textArea.style.height = `${textArea.scrollHeight}px`;
+  // scrollHeight leaves out the border, and border-box heights include it, so
+  // without it a bordered textarea always overflows and shows a scrollbar.
+  const border = textArea.offsetHeight - textArea.clientHeight;
+  textArea.style.height = `${textArea.scrollHeight + border}px`;
 }
 
 export function useDynamicTextarea(content: string) {

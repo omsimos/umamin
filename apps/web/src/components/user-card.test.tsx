@@ -46,6 +46,16 @@ describe("UserCard note streak", () => {
     expect(screen.getByText("12")).toBeInTheDocument();
   });
 
+  it("colors the bolt by streak tier", () => {
+    const { container } = render(
+      <UserCard user={{ ...user, streak: 30, streakDay: toStreakDay() }} />,
+    );
+    expect(container.querySelector("[data-tier]")).toHaveAttribute(
+      "data-tier",
+      "month",
+    );
+  });
+
   it("hides a streak that broke after the profile was cached", () => {
     render(
       <UserCard user={{ ...user, streak: 12, streakDay: toStreakDay() - 2 }} />,

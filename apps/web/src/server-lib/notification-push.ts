@@ -8,6 +8,7 @@ import type { Db } from "./db";
 import type { AppEnv } from "./env";
 import { captureServerException } from "./posthog";
 import { sendPush } from "./push";
+import { clearPushPrefsWithoutDevices } from "./push-devices";
 
 // Web Push fan-out for one in-app notification (ported from apps/www/lib/server/
 // push.ts). The Node `web-push` dependency and its module-init VAPID setup are
@@ -212,14 +213,17 @@ export async function sendPushForNotification(
         // 404/410 = the subscription is dead/expired — prune it (scoped to this
         // recipient).
         if (!result.ok && result.expired) {
-          await db
-            .delete(pushSubscriptionTable)
-            .where(
-              and(
-                eq(pushSubscriptionTable.endpoint, sub.endpoint),
-                eq(pushSubscriptionTable.userId, recipientId),
+          await db.batch([
+            db
+              .delete(pushSubscriptionTable)
+              .where(
+                and(
+                  eq(pushSubscriptionTable.endpoint, sub.endpoint),
+                  eq(pushSubscriptionTable.userId, recipientId),
+                ),
               ),
-            );
+            clearPushPrefsWithoutDevices(db, eq(userTable.id, recipientId)),
+          ]);
         }
       } catch (err) {
         // Other failures (disallowed endpoint / push-service error) are

@@ -1,6 +1,6 @@
 import { proPurchaseTable } from "@umamin/db/schema/pro";
 import { userTable } from "@umamin/db/schema/user";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it } from "vitest";
 import { webhooksApp } from "../src/api/webhooks";
@@ -112,13 +112,32 @@ function orderCreated({
   });
 }
 
-function orderRefunded(orderId: string, refunded = true): string {
+// A refund carries the whole order, custom data included. userId defaults to
+// none so a refund can't be pinned to a buyer unless a test asks for it.
+function orderRefunded(
+  orderId: string,
+  refunded = true,
+  { userId = null, variantId = 77 }: OrderOverrides = {},
+): string {
   return JSON.stringify({
-    meta: { event_name: "order_refunded" },
+    meta: {
+      event_name: "order_refunded",
+      custom_data: userId === null ? {} : { user_id: userId },
+    },
     data: {
       type: "orders",
       id: orderId,
-      attributes: { store_id: 10, status: "refunded", refunded },
+      attributes: {
+        store_id: 10,
+        identifier: `uuid-${orderId}`,
+        status: "refunded",
+        refunded,
+        total: 12900,
+        currency: "PHP",
+        test_mode: false,
+        created_at: "2026-08-07T00:00:00.000000Z",
+        first_order_item: { variant_id: variantId },
+      },
     },
   });
 }
@@ -281,6 +300,57 @@ describe("POST /api/webhooks/lemonsqueezy (real libSQL)", () => {
     const res = await post(app, orderRefunded("404"));
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ result: "unknown-order" });
+  });
+
+  it("grants nothing for an order whose refund arrived first", async () => {
+    const refund = await post(
+      app,
+      orderRefunded("9001", true, { userId: "buyer" }),
+    );
+    const order = await post(app, orderCreated());
+    expect([refund.status, order.status]).toEqual([200, 200]);
+    expect(await proUntil(db, "buyer")).toBeNull();
+    const purchases = await db.select().from(proPurchaseTable);
+    expect(purchases).toHaveLength(1);
+    expect(purchases[0]?.refundedAt).toBeInstanceOf(Date);
+    expect(await refund.json()).toMatchObject({
+      result: "refunded-before-order",
+    });
+  });
+
+  it("refunds an order that lands between the refund's lookup and insert", async () => {
+    // Stands in for a concurrent order_created: just before the refund's own
+    // insert, write the paid row and the Pro it grants, so that insert hits
+    // the UNIQUE orderId.
+    await db.run(sql`
+      CREATE TRIGGER race_order_created BEFORE INSERT ON pro_purchase
+      WHEN NEW.refunded_at IS NOT NULL
+      BEGIN
+        INSERT INTO pro_purchase (id, user_id, order_id, test_mode, created_at)
+          VALUES ('raced', NEW.user_id, NEW.order_id, 0, NEW.created_at);
+        UPDATE user SET pro_until = NEW.created_at + 15552000
+          WHERE id = NEW.user_id;
+      END
+    `);
+
+    const res = await post(
+      app,
+      orderRefunded("9001", true, { userId: "buyer" }),
+    );
+    expect(await res.json()).toMatchObject({ ok: true, result: "refunded" });
+    expect(await proUntil(db, "buyer")).toBeNull();
+    const purchases = await db.select().from(proPurchaseTable);
+    expect(purchases).toHaveLength(1);
+    expect(purchases[0]?.refundedAt).toBeInstanceOf(Date);
+  });
+
+  it("records nothing for an early refund of another product", async () => {
+    const res = await post(
+      app,
+      orderRefunded("9001", true, { userId: "buyer", variantId: 42 }),
+    );
+    expect(await res.json()).toMatchObject({ result: "unknown-order" });
+    expect(await db.select().from(proPurchaseTable)).toHaveLength(0);
   });
 
   it("skips unpaid orders without recording anything", async () => {

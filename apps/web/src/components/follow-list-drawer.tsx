@@ -101,7 +101,7 @@ export function FollowListDrawer({
         <span className="font-semibold text-foreground">
           {followerCount ?? 0}
         </span>{" "}
-        Followers
+        {followerCount === 1 ? "Follower" : "Followers"}
       </Button>
     </div>
   );
