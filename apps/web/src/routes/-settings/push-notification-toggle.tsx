@@ -38,6 +38,7 @@ export function PushNotificationToggle() {
         </p>
       </div>
       <Switch
+        aria-label="Push notifications"
         disabled={isPending || !actionable}
         checked={state === "on"}
         onCheckedChange={(checked) => (checked ? enable() : disable())}
