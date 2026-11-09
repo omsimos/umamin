@@ -22,7 +22,7 @@ export function OrgAvatar({
   if (imageUrl) {
     // crossOrigin so the avatar can be rasterized into exported images.
     return (
-      // biome-ignore lint/performance/noImgElement: rasterized by modern-screenshot; next/image can't be captured
+      // oxlint-disable-next-line nextjs/no-img-element -- rasterized by modern-screenshot; next/image can't be captured
       <img
         src={imageUrl}
         alt=""

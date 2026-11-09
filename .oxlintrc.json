@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "options": {
+    "reportUnusedDisableDirectives": "error",
+    "denyWarnings": true
+  },
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y", "vitest"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "react/no-array-index-key": "error",
+    "react/no-children-prop": "off",
+    "vitest/valid-expect": [
+      "error",
+      {
+        "maxArgs": 2
+      }
+    ],
+    "react/set-state-in-effect": "off",
+    "react/refs": "off",
+    "react/purity": "off",
+    "react/preserve-manual-memoization": "off",
+    "jsx-a11y/no-autofocus": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "unicorn/no-useless-spread": "off",
+    "vitest/require-mock-type-parameters": "off",
+    "vitest/require-to-throw-message": "off",
+    "vitest/no-conditional-expect": "off",
+    "vitest/expect-expect": "off"
+  },
+  "overrides": [
+    {
+      "files": ["apps/org/**"],
+      "plugins": ["nextjs"]
+    }
+  ],
+  "ignorePatterns": [
+    "**/routeTree.gen.ts",
+    "**/worker-configuration.d.ts",
+    "**/dist/**",
+    "**/.next/**",
+    "**/build/**"
+  ]
+}

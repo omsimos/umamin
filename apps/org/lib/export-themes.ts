@@ -163,7 +163,7 @@ export const DEFAULT_THEME_PREFS: ExportThemePrefs = {
 function presetById(id: string): ExportThemePreset {
   return (
     EXPORT_THEME_PRESETS.find((p) => p.id === id) ??
-    // biome-ignore lint/style/noNonNullAssertion: the default preset is a static registry entry
+    // oxlint-disable-next-line typescript/no-non-null-assertion -- the default preset is a static registry entry
     EXPORT_THEME_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID)!
   );
 }

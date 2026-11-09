@@ -46,7 +46,7 @@ export function PollComposer({
         <div
           // Options have no stable identity while editing; order never
           // changes except by removal, so the index is the identity.
-          // biome-ignore lint/suspicious/noArrayIndexKey: positional rows
+          // oxlint-disable-next-line react/no-array-index-key -- positional rows
           key={index}
           className="flex items-center gap-2"
         >

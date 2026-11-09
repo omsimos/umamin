@@ -9,7 +9,7 @@ import { captureException } from "@/lib/posthog";
 
 declare global {
   interface Window {
-    // biome-ignore lint/suspicious/noExplicitAny: google
+    // oxlint-disable-next-line typescript/no-explicit-any -- google
     adsbygoogle: any;
   }
 }
@@ -97,7 +97,6 @@ const AdContainer = ({ placement, className }: Props) => {
     // throw "All 'ins' elements already have ads" on every attempt.
     pushedRef.current = true;
     try {
-      // biome-ignore lint/suspicious/noAssignInExpressions: google
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
       captureException(err, { source: "ads" });

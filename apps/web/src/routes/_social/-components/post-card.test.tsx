@@ -29,7 +29,7 @@ vi.mock("sonner", () => ({
 }));
 vi.mock("@/lib/posthog", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/navigation", () => ({
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- test stub
   Link: ({ to, href, children, prefetch: _p, preload: _pl, ...rest }: any) => (
     <a href={to ?? href} {...rest}>
       {children}

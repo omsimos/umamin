@@ -17,7 +17,7 @@ pnpm --filter=web test             # jsdom + node suites
 pnpm --filter=web test:workers     # workerd suites (*.worker.test.ts)
 pnpm --filter=web build            # staging build; build:production for prod
 pnpm --filter=web eval:moderation check   # classifier regression gate
-pnpm biome check --write <files>
+pnpm exec oxlint --fix <files> && pnpm exec oxfmt <files>
 ```
 
 `pnpm test` at the root does not run `test:workers`. Run both when you touch

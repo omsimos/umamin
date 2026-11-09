@@ -73,7 +73,7 @@ export function useMatchMoments(
   const partnerAlias = partner?.alias;
 
   const seen = useRef<Seen | null>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: update only closes over matchId
+  // oxlint-disable react-hooks/exhaustive-deps -- update only closes over matchId
   useEffect(() => {
     if (!matchId) return;
     const s = seen.current;
@@ -117,6 +117,7 @@ export function useMatchMoments(
       }
     }
   }, [
+    // oxlint-enable react-hooks/exhaustive-deps
     matchId,
     messages,
     reveal.partner.submitted,

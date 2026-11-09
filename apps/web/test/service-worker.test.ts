@@ -158,10 +158,9 @@ describe("service worker lifecycle", () => {
     await w.install();
     expect(w.caches.open).toHaveBeenCalledWith("umamin-static-1.2.3");
     // Simulate a leftover cache from an earlier release.
-    await (await w.caches.open("umamin-static-1.2.2")).put(
-      request("/x"),
-      response(),
-    );
+    await (
+      await w.caches.open("umamin-static-1.2.2")
+    ).put(request("/x"), response());
     await w.activate();
     expect(w.caches.delete).toHaveBeenCalledWith("umamin-static-1.2.2");
     expect(w.caches.delete).not.toHaveBeenCalledWith("umamin-static-1.2.3");
@@ -170,10 +169,9 @@ describe("service worker lifecycle", () => {
 
   it("purges the page cache stored under the old name at the same version", async () => {
     await w.install();
-    await (await w.caches.open("umamin-pages-1.2.3")).put(
-      request("/moderation"),
-      response(),
-    );
+    await (
+      await w.caches.open("umamin-pages-1.2.3")
+    ).put(request("/moderation"), response());
     await w.activate();
     expect(w.caches.delete).toHaveBeenCalledWith("umamin-pages-1.2.3");
     expect(w.caches.delete).not.toHaveBeenCalledWith("umamin-static-1.2.3");

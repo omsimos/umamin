@@ -12,14 +12,13 @@ vi.mock("@/server-lib/posthog", () => ({
 }));
 
 const { FLAG_UMAMIN_CHAT } = await import("@/lib/flags");
-const { __clearFlagCache, isUmaminChatEnabled } = await import(
-  "@/server-lib/flags"
-);
+const { __clearFlagCache, isUmaminChatEnabled } =
+  await import("@/server-lib/flags");
 
 const ENV = {
   POSTHOG_PROJECT_TOKEN: "phc_test",
   POSTHOG_HOST: "https://flags.test",
-  // biome-ignore lint/suspicious/noExplicitAny: partial env stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- partial env stub
 } as any;
 
 const fetchMock = vi.fn();

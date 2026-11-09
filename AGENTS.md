@@ -40,7 +40,8 @@ pnpm build                 # turbo build, all workspaces
 pnpm check-types           # turbo check-types
 pnpm test                  # every workspace's `test` script
 pnpm --filter=web test:workers   # apps/web workerd suites, NOT covered by `pnpm test`
-pnpm biome ci .            # what CI runs for formatting and lint
+pnpm format-and-lint       # oxfmt --check and oxlint, what CI runs
+pnpm format-and-lint:fix   # oxlint --fix, then oxfmt
 ```
 
 Scope a task to one workspace with `pnpm --filter=<name> <script>`. Package
@@ -57,11 +58,10 @@ Run the same four checks CI runs:
 1. `pnpm check-types`
 2. `pnpm test`
 3. `pnpm --filter=web test:workers` (if you touched `apps/web`)
-4. `pnpm biome ci .`
+4. `pnpm format-and-lint`
 
-Lefthook runs `biome check --write` on staged files at commit time and may
-rewrite import order or wrapping inside your commit. Its glob skips CSS, so run
-`pnpm biome ci .` yourself after editing a stylesheet.
+Lefthook runs `oxlint --fix` and then `oxfmt` on staged files at commit time,
+so it may rewrite import order or wrapping inside your commit.
 
 ## Commits and pull requests
 
@@ -95,7 +95,7 @@ rewrite import order or wrapping inside your commit. Its glob skips CSS, so run
 ## CI and deploys
 
 - `.github/workflows/ci.yml` validates and never deploys. Jobs: `build`,
-  `verify` (typecheck plus both `apps/web` test runners), `quality` (Biome),
+  `verify` (typecheck plus both `apps/web` test runners), `quality` (oxfmt and oxlint),
   `release`. It runs on PRs and on pushes to `main`. A push to `dev` alone runs
   nothing; the PR is the gate.
 - Cloudflare Workers Builds deploys `apps/web` from GitHub: `dev` to staging
@@ -163,7 +163,10 @@ these packages, since it rewrites the manifest away from `catalog:`.
 
 ## Code style
 
-- Biome formats and lints. Don't hand-format.
+- oxfmt formats (`.oxfmtrc.json`) and oxlint lints (`.oxlintrc.json`). Don't
+  hand-format. oxfmt skips Markdown and YAML on purpose.
+- Suppress a lint with `// oxlint-disable-next-line <rule> -- <reason>`. An
+  unused directive fails the lint, so delete it when the code changes.
 - Comments explain a non-obvious why. Don't restate the code.
 - UI copy and user-facing docs: plain sentences, sentence-case headings, no em
   dashes.

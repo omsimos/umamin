@@ -9,6 +9,7 @@ describe("cn", () => {
   });
 
   it("drops falsy conditional classes", () => {
+    // oxlint-disable-next-line no-constant-binary-expression -- the falsy conditional is the input under test
     expect(cn("a", false && "b", null, undefined, "c")).toBe("a c");
   });
 

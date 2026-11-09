@@ -1,10 +1,7 @@
+// Resolved to the same hashed URL the Geist stylesheet references, for the
+// preload link in `head` below.
+import geistLatin from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url";
 import type { QueryClient } from "@tanstack/react-query";
-import {
-  createRootRouteWithContext,
-  HeadContent,
-  Outlet,
-  Scripts,
-} from "@tanstack/react-router";
 // Self-hosted variable fonts (replaces next/font/google). Explicit `.css`
 // subpaths satisfy TS 6's noUncheckedSideEffectImports (vite/client types
 // `*.css`); the family names map to --font-* in styles.css.
@@ -14,9 +11,12 @@ import "@fontsource-variable/geist-mono/index.css";
 // slightly expanded (styles.css), and the italic is real, not synthesized.
 import "@fontsource-variable/archivo/standard.css";
 import "@fontsource-variable/archivo/standard-italic.css";
-// Resolved to the same hashed URL the Geist stylesheet references, for the
-// preload link in `head` below.
-import geistLatin from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url";
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  Outlet,
+  Scripts,
+} from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { NotFoundPage } from "@/components/not-found-page";
 import { Providers } from "@/components/providers";

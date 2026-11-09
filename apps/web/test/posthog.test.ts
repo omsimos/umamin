@@ -14,9 +14,8 @@ vi.mock("posthog-node", () => ({
   },
 }));
 
-const { captureRequestException, captureServerException } = await import(
-  "@/server-lib/posthog"
-);
+const { captureRequestException, captureServerException } =
+  await import("@/server-lib/posthog");
 
 // A production-ish env. Capture is gated on NODE_ENV because `pnpm dev:web` runs
 // with CLOUDFLARE_ENV=staging and therefore inherits staging's POSTHOG_* vars —
@@ -26,7 +25,7 @@ const PROD_ENV = {
   POSTHOG_PROJECT_TOKEN: "phc_test",
   POSTHOG_HOST: "https://eu.i.posthog.com",
   POSTHOG_ENV: "production",
-  // biome-ignore lint/suspicious/noExplicitAny: partial env stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- partial env stub
 } as any;
 
 function requestContext(env: unknown, waitUntil = vi.fn()) {
@@ -34,7 +33,7 @@ function requestContext(env: unknown, waitUntil = vi.fn()) {
     env,
     req: { url: "https://www.umamin.link/api/feed?cursor=abc", method: "GET" },
     executionCtx: { waitUntil },
-    // biome-ignore lint/suspicious/noExplicitAny: partial Hono context stub
+    // oxlint-disable-next-line typescript/no-explicit-any -- partial Hono context stub
   } as any;
 }
 
@@ -46,7 +45,7 @@ beforeEach(() => {
 describe("captureServerException", () => {
   it("sends nothing when the project token is absent", () => {
     captureServerException(
-      // biome-ignore lint/suspicious/noExplicitAny: partial env stub
+      // oxlint-disable-next-line typescript/no-explicit-any -- partial env stub
       { NODE_ENV: "production" } as any,
       vi.fn(),
       new Error("boom"),
@@ -177,7 +176,7 @@ describe("captureRequestException", () => {
       get executionCtx(): never {
         throw new Error("no execution context");
       },
-      // biome-ignore lint/suspicious/noExplicitAny: partial Hono context stub
+      // oxlint-disable-next-line typescript/no-explicit-any -- partial Hono context stub
     } as any;
     expect(() => captureRequestException(c, new Error("boom"))).not.toThrow();
     expect(captureExceptionImmediate).toHaveBeenCalledTimes(1);

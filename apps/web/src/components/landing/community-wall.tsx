@@ -274,7 +274,7 @@ export function CommunityWall() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
           {COLUMNS.map((column, i) => (
             <div
-              // biome-ignore lint/suspicious/noArrayIndexKey: fixed columns
+              // oxlint-disable-next-line react/no-array-index-key -- fixed columns
               key={i}
               className={cn(
                 "flex animate-scroll-up flex-col gap-3 hover:[animation-play-state:paused] motion-reduce:animate-none md:gap-4",
@@ -286,7 +286,7 @@ export function CommunityWall() {
               {[0, 1].map((copy) =>
                 column.map((card, j) => (
                   <div
-                    // biome-ignore lint/suspicious/noArrayIndexKey: static, duplicated on purpose for the loop
+                    // oxlint-disable-next-line react/no-array-index-key -- static, duplicated on purpose for the loop
                     key={`${copy}-${j}`}
                     aria-hidden={copy === 1 || undefined}
                   >

@@ -100,7 +100,7 @@ function Session() {
     if (phase === "matching") setWarmupPrompt(null);
   }, [phase]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on match identity
+  // Keyed on match identity.
   useEffect(() => {
     setReplyTarget(null);
     setConnectOpen(false);

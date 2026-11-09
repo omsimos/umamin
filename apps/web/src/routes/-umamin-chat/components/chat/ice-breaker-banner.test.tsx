@@ -48,7 +48,7 @@ describe("IceBreakerBanner", () => {
       screen.getByText((_, el) =>
         Boolean(
           el?.getAttribute("data-slot") === "marker-content" &&
-            el.textContent === "You both like 🎵 Music & 🎮 Gaming",
+          el.textContent === "You both like 🎵 Music & 🎮 Gaming",
         ),
       ),
     ).toBeInTheDocument();

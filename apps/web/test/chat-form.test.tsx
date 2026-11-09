@@ -27,7 +27,7 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/lib/navigation", () => ({
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- test stub
   Link: ({ href, children, ...rest }: any) => (
     <a href={href} {...rest}>
       {children}

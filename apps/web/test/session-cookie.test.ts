@@ -15,9 +15,8 @@ describe("session cookie in production mode", () => {
   it("sets and deletes the __Host- cookie with Secure", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.resetModules();
-    const { setSessionCookie, deleteSessionCookie } = await import(
-      "../src/server-lib/session-cookie"
-    );
+    const { setSessionCookie, deleteSessionCookie } =
+      await import("../src/server-lib/session-cookie");
 
     const app = new Hono()
       .get("/set", (c) => {

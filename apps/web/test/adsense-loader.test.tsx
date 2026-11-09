@@ -77,7 +77,7 @@ describe("AdsenseLoader", () => {
   it("falls back to a timer without requestIdleCallback", async () => {
     vi.useFakeTimers();
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: removing a DOM API
+      // oxlint-disable-next-line typescript/no-explicit-any -- removing a DOM API
       delete (window as any).requestIdleCallback;
       const { AdsenseLoader } = await import("@/components/adsense-loader");
       render(<AdsenseLoader />);

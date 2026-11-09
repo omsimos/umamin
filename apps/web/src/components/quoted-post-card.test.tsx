@@ -9,7 +9,7 @@ import { QuotedPostCard } from "./quoted-post-card";
 // Router's Link and needs a RouterProvider. Mock the shim to a plain <a> so the
 // card renders standalone (href === the `to` target).
 vi.mock("@/lib/navigation", () => ({
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- test stub
   Link: ({ to, href, children, prefetch: _p, preload: _pl, ...rest }: any) => (
     <a href={to ?? href} {...rest}>
       {children}
