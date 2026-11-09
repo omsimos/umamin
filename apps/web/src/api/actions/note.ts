@@ -230,6 +230,17 @@ export const removeNoteHandler = action(
   },
 );
 
+// A no-op reaction means the client's count was stale, so it gets the real
+// one. Only that rare path pays this read.
+async function reactionCount(tx: Pick<Db, "select">, noteId: string) {
+  const [note] = await tx
+    .select({ count: noteTable.reactionCount })
+    .from(noteTable)
+    .where(eq(noteTable.id, noteId))
+    .limit(1);
+  return note?.count;
+}
+
 export const addNoteReactionHandler = action(
   {
     schema: z.object({ noteId: idSchema }),
@@ -256,7 +267,11 @@ export const addNoteReactionHandler = action(
         .returning({ id: noteReactionTable.id });
 
       if (inserted.length === 0) {
-        return { success: true, alreadyReacted: true };
+        return {
+          success: true,
+          alreadyReacted: true,
+          count: await reactionCount(tx, noteId),
+        };
       }
 
       await tx
@@ -291,7 +306,11 @@ export const removeNoteReactionHandler = action(
         .returning({ id: noteReactionTable.id });
 
       if (removed.length === 0) {
-        return { success: true, alreadyRemoved: true };
+        return {
+          success: true,
+          alreadyRemoved: true,
+          count: await reactionCount(tx, noteId),
+        };
       }
 
       await tx

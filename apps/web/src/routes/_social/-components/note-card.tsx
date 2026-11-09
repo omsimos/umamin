@@ -50,7 +50,10 @@ import {
   useBurstAction,
 } from "@/hooks/use-burst-action";
 import { useMuteUser } from "@/hooks/use-mute-user";
-import { useOptimisticToggle } from "@/hooks/use-optimistic-toggle";
+import {
+  unchangedOutcome,
+  useOptimisticToggle,
+} from "@/hooks/use-optimistic-toggle";
 import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
@@ -146,9 +149,10 @@ export function NoteCard({
         throw new ExpectedError(actionError);
       }
 
-      // The edge was already in the target state — keep the flag, revert the ±1.
+      // The edge was already in the target state: keep the flag, and take the
+      // server's count over the ±1.
       if (isAlreadyReacted(res) || isAlreadyRemoved(res)) {
-        return "unchanged";
+        return unchangedOutcome(res);
       }
       return "changed";
     },

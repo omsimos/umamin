@@ -32,7 +32,10 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
-import { useOptimisticToggle } from "@/hooks/use-optimistic-toggle";
+import {
+  unchangedOutcome,
+  useOptimisticToggle,
+} from "@/hooks/use-optimistic-toggle";
 import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
@@ -157,9 +160,10 @@ function PostCardImpl({
       }
 
       // Server no-op (the like row was already in the target state): the DB
-      // count never moved, so the optimistic ±1 is dropped.
+      // count never moved, so the optimistic ±1 is dropped for the server's
+      // count.
       if (isAlreadyLiked(res) || isAlreadyRemoved(res)) {
-        return "unchanged";
+        return unchangedOutcome(res);
       }
 
       if (isComment) {
@@ -186,14 +190,14 @@ function PostCardImpl({
         throw new ExpectedError(actionError);
       }
       // A no-op leaves the DB count where it was, so the optimistic ±1 is
-      // dropped instead of persisting a drifted count.
+      // dropped for the server's count instead of persisting a drifted one.
       if (!nextReposted) {
         toast.success("Repost removed.");
-        return isAlreadyRemoved(res) ? "unchanged" : "changed";
+        return isAlreadyRemoved(res) ? unchangedOutcome(res) : "changed";
       }
       if (isAlreadyReposted(res)) {
         toast.error("Already reposted.");
-        return "unchanged";
+        return unchangedOutcome(res);
       }
       toast.success("Reposted.");
       return "changed";

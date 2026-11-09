@@ -194,4 +194,21 @@ describe("PostCard repost toggle", () => {
       screen.getByRole("button", { name: "Repost options" }),
     ).toHaveTextContent("2");
   });
+
+  it("takes the server's count when it says the post was already reposted", async () => {
+    // Reposted on another device: the cache never counted it.
+    addRepost.mockResolvedValue({ alreadyReposted: true, count: 3 } as never);
+    const { cached } = renderCard();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Repost options" }),
+    );
+    await userEvent.click(await screen.findByText("Repost"));
+
+    await waitFor(() => expect(cached()?.isReposted).toBe(true));
+    expect(cached()?.repostCount).toBe(3);
+    expect(
+      screen.getByRole("button", { name: "Repost options" }),
+    ).toHaveTextContent("3");
+  });
 });

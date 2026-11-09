@@ -3,8 +3,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export type ToggleState = { on: boolean; count: number };
 
 // "unchanged" means the server was already in the requested state, so its
-// counter never moved.
-export type ToggleOutcome = "changed" | "unchanged";
+// counter never moved. `{ count }` is the same no-op carrying the server's
+// count: the cache didn't know the server's state, so its count is stale too.
+export type ToggleOutcome = "changed" | "unchanged" | { count: number };
+
+/** The outcome for a no-op response, with its `count` when the server sent one. */
+export function unchangedOutcome(res: unknown): ToggleOutcome {
+  const count =
+    res && typeof res === "object" && "count" in res ? res.count : undefined;
+  return typeof count === "number" && count >= 0 ? { count } : "unchanged";
+}
 
 type Options = {
   on: boolean;
@@ -84,7 +92,9 @@ export function useOptimisticToggle({
       const nextCount =
         outcome === "changed"
           ? Math.max(base.count + (target ? 1 : -1), 0)
-          : base.count;
+          : outcome === "unchanged"
+            ? base.count
+            : outcome.count;
       commit({
         ...machineRef.current,
         confirmed: { on: target, count: nextCount },

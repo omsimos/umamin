@@ -31,7 +31,10 @@ import {
   BURST_ACTION_REJECT_MESSAGE,
   useBurstAction,
 } from "@/hooks/use-burst-action";
-import { useOptimisticToggle } from "@/hooks/use-optimistic-toggle";
+import {
+  unchangedOutcome,
+  useOptimisticToggle,
+} from "@/hooks/use-optimistic-toggle";
 import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
@@ -120,9 +123,10 @@ export function PostCardMain({
         throw new ExpectedError(actionError);
       }
 
-      // Server no-op (like row already in target state): drop the optimistic ±1.
+      // Server no-op (like row already in target state): drop the optimistic ±1
+      // for the server's count.
       if (isAlreadyLiked(res) || isAlreadyRemoved(res)) {
-        return "unchanged";
+        return unchangedOutcome(res);
       }
 
       toast.success(nextLiked ? "Post liked." : "Post unliked.");
@@ -146,11 +150,11 @@ export function PostCardMain({
       }
       if (!nextReposted) {
         toast.success("Repost removed.");
-        return isAlreadyRemoved(res) ? "unchanged" : "changed";
+        return isAlreadyRemoved(res) ? unchangedOutcome(res) : "changed";
       }
       if (isAlreadyReposted(res)) {
         toast.error("Already reposted.");
-        return "unchanged";
+        return unchangedOutcome(res);
       }
       toast.success("Reposted.");
       return "changed";
