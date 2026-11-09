@@ -44,6 +44,13 @@ any that are empty.
 - A moderator's decision only applies to the version of a note they reviewed, not to a rewrite saved after they loaded it.
 - Moderation and group admin buttons stay disabled until their own action finishes.
 - A Pro refund that reaches Umamin before its order no longer grants Pro.
+- Liking, reposting or reacting to something you already did on another device shows the right count.
+- Profiles say "1 Follower" instead of "1 Followers".
+- Chat message boxes no longer show a scrollbar before you type.
+
+### Accessibility
+
+- Screen readers announce the push notifications switch in settings by name.
 
 ## [7.21.0] - 2026-11-05
 
