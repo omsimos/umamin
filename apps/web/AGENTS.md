@@ -24,6 +24,11 @@ pnpm exec oxlint --fix <files> && pnpm exec oxfmt <files>
 anything that only works inside workerd: KV, the Cache API, rate-limit
 bindings, Durable Objects, argon2 wasm.
 
+`test/workers-setup.ts` makes `AsyncLocalStorage#disable()` a no-op for the
+workerd suites. Vitest 5 calls it after `vi.mock` factories settle, and
+workerd doesn't implement it, so without the shim every worker suite that
+mocks a module fails to load.
+
 ## Local development
 
 - Dev runs with `CLOUDFLARE_ENV=staging`, so it inherits staging's vars from

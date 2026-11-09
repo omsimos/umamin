@@ -19,8 +19,8 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@types/node": "^24.13.4",
-    "tsdown": "^0.23.0",
+    "@types/node": "^24.19.2",
+    "tsdown": "^0.23.7",
     "tsx": "catalog:",
     "typescript": "^7.0.2",
     "vitest": "catalog:"

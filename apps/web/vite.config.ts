@@ -8,7 +8,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import remarkGfm from "remark-gfm";
 import { defineConfig, loadEnv, type Plugin } from "vite";
-import { isValidVapidPublicKey } from "./src/lib/vapid";
+import { isValidVapidPublicKey } from "./src/lib/vapid.ts";
 
 // Displayed app version comes from the top CHANGELOG entry — the same source
 // the release pipeline tags from (mirrors apps/www next.config.ts). It also
