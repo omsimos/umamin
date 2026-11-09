@@ -172,9 +172,3 @@ these packages, since it rewrites the manifest away from `catalog:`.
   dashes.
 - `apps/web` carries many "ported from apps/www" comments. They record why the
   code has its shape; keep them.
-
-## Local-only folders
-
-`docs/superpowers/`, `plans/` and `apps/web/store-assets/` are excluded through
-`.git/info/exclude` on the maintainer's machine. They may hold plans and design
-notes locally, but they are not in the repo, so don't rely on them existing.

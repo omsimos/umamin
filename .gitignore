@@ -42,6 +42,11 @@ local.db-wal
 # Playwright MCP artifacts
 .playwright-mcp
 
+# Local plans, design notes and store assets
+/docs/superpowers/
+/plans/
+/apps/web/store-assets/
+
 # Misc
 .DS_Store
 *.pem
