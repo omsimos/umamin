@@ -1,13 +1,13 @@
-import { Google } from "arctic";
+import type { GoogleOAuthConfig } from "@umamin/auth/google";
 import type { AppEnv } from "./env";
 
-// arctic is fetch-based (Workers-safe). The singleton `google` client that
-// apps/www built at module init from process.env is replaced by a per-request
-// factory bound to the request env (the Workers "explicit deps" rule).
-export function buildGoogle(env: AppEnv): Google {
-  return new Google(
-    env.GOOGLE_CLIENT_ID ?? "",
-    env.GOOGLE_CLIENT_SECRET ?? "",
-    env.GOOGLE_REDIRECT_URI ?? "",
-  );
+// apps/www built a singleton Google client at module init from process.env. On
+// Workers the config is read per request from the request env instead (the
+// Workers "explicit deps" rule).
+export function googleOAuthConfig(env: AppEnv): GoogleOAuthConfig {
+  return {
+    clientId: env.GOOGLE_CLIENT_ID ?? "",
+    clientSecret: env.GOOGLE_CLIENT_SECRET ?? "",
+    redirectUri: env.GOOGLE_REDIRECT_URI ?? "",
+  };
 }

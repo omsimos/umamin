@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2023"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

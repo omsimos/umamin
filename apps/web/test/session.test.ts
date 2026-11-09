@@ -13,7 +13,7 @@ import {
   invalidateSession,
   invalidateUserSessions,
   resolveSession,
-  sessionIdFromToken,
+  hashSessionToken,
   validateSessionToken,
 } from "../src/server-lib/session";
 import { makeTestDb } from "./helpers/db";
@@ -42,7 +42,7 @@ describe("session core (real libSQL)", () => {
     await seedUser(db, "user1");
     const token = generateSessionToken();
     const session = await createSession(db, token, "user1");
-    expect(session.id).toBe(sessionIdFromToken(token));
+    expect(session.id).toBe(await hashSessionToken(token));
 
     const result = await validateSessionToken(db, token);
     expect(result.session?.userId).toBe("user1");
@@ -129,7 +129,7 @@ describe("session core (real libSQL)", () => {
   it("deletes and rejects an expired session", async () => {
     await seedUser(db, "user2");
     const token = generateSessionToken();
-    const id = sessionIdFromToken(token);
+    const id = await hashSessionToken(token);
     await db.insert(sessionTable).values({
       id,
       userId: "user2",
@@ -159,7 +159,7 @@ describe("session core (real libSQL)", () => {
   it("slides expiry forward inside the 15-day renewal window", async () => {
     await seedUser(db, "user4");
     const token = generateSessionToken();
-    const id = sessionIdFromToken(token);
+    const id = await hashSessionToken(token);
     // Expires in 10 days → inside the 15-day threshold → should renew to ~30d.
     const soon = Date.now() + 1000 * 60 * 60 * 24 * 10;
     await db

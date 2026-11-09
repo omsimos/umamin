@@ -1,8 +1,7 @@
-import { sha256 } from "@oslojs/crypto/sha2";
 import {
-  encodeBase32LowerCaseNoPadding,
-  encodeHexLowerCase,
-} from "@oslojs/encoding";
+  generateSessionToken,
+  hashSessionToken,
+} from "@umamin/auth/session-token";
 import type {
   InsertSession,
   SelectSession,
@@ -85,15 +84,10 @@ function pruneMicroCache(now: number): void {
   }
 }
 
-export function sessionIdFromToken(token: string): string {
-  return encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-}
-
-export function generateSessionToken(): string {
-  const bytes = new Uint8Array(20);
-  crypto.getRandomValues(bytes);
-  return encodeBase32LowerCaseNoPadding(bytes);
-}
+// Token minting and hashing live in @umamin/auth so both apps share one
+// implementation; re-exported because every caller already imports sessions
+// from here.
+export { generateSessionToken, hashSessionToken };
 
 export async function createSession(
   db: DbOrTx,
@@ -101,7 +95,7 @@ export async function createSession(
   userId: string,
 ): Promise<SelectSession> {
   const session: InsertSession = {
-    id: sessionIdFromToken(token),
+    id: await hashSessionToken(token),
     userId,
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
@@ -119,7 +113,7 @@ export async function validateSessionToken(
   db: Db,
   token: string,
 ): Promise<SessionValidationResult> {
-  const sessionId = sessionIdFromToken(token);
+  const sessionId = await hashSessionToken(token);
 
   const now = Date.now();
   const cached = microCache.get(sessionId);

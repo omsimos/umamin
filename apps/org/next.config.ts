@@ -72,7 +72,12 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
-  transpilePackages: ["@umamin/org-db", "@umamin/encryption", "@umamin/ui"],
+  transpilePackages: [
+    "@umamin/auth",
+    "@umamin/org-db",
+    "@umamin/encryption",
+    "@umamin/ui",
+  ],
   async headers() {
     return [{ source: "/(.*)", headers: buildSecurityHeaders() }];
   },
