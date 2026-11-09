@@ -143,7 +143,9 @@ export function AccountSheet({
                 <span className="font-bold text-foreground">
                   {user.followerCount ?? 0}
                 </span>{" "}
-                <span className="text-muted-foreground">Followers</span>
+                <span className="text-muted-foreground">
+                  {user.followerCount === 1 ? "Follower" : "Followers"}
+                </span>
               </span>
             </Link>
           </DrawerClose>
