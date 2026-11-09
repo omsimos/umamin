@@ -24,6 +24,8 @@ import {
   DropdownMenuTrigger,
 } from "@umamin/ui/components/dropdown-menu";
 import { cn } from "@umamin/ui/lib/utils";
+import { thinking } from "blobatar/expression";
+import "blobatar/motion.css";
 import {
   CircleUserRoundIcon,
   EllipsisVerticalIcon,
@@ -31,8 +33,6 @@ import {
   MessageSquareXIcon,
   Trash2Icon,
 } from "lucide-react";
-import "blobatar/motion.css";
-import { thinking } from "blobatar/expression";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BlobatarFallback } from "@/components/blobatar-fallback";

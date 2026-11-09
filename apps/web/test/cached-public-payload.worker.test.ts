@@ -87,11 +87,15 @@ async function fetchPrivate(path: string, mounted = app as unknown as Hono) {
 describe("getCachedPublicPayload (workers Cache API)", () => {
   it("shares one entry: the producer runs once per key", async () => {
     const key = crypto.randomUUID();
-    const first = await (await fetchPrivate(`/feed?key=${key}`)).json<{
+    const first = await (
+      await fetchPrivate(`/feed?key=${key}`)
+    ).json<{
       n: number;
     }>();
     const before = produced;
-    const second = await (await fetchPrivate(`/feed?key=${key}`)).json<{
+    const second = await (
+      await fetchPrivate(`/feed?key=${key}`)
+    ).json<{
       n: number;
     }>();
 
@@ -127,7 +131,9 @@ describe("getCachedPublicPayload (workers Cache API)", () => {
 
   it("canonicalizes the key: a null/empty declared param and undeclared params collapse onto one entry", async () => {
     const key = crypto.randomUUID();
-    const first = await (await fetchPrivate(`/feed?key=${key}`)).json<{
+    const first = await (
+      await fetchPrivate(`/feed?key=${key}`)
+    ).json<{
       n: number;
     }>();
     const before = produced;
@@ -148,10 +154,14 @@ describe("getCachedPublicPayload (workers Cache API)", () => {
 
   it("separates distinct declared values", async () => {
     const key = crypto.randomUUID();
-    const a = await (await fetchPrivate(`/feed?key=${key}`)).json<{
+    const a = await (
+      await fetchPrivate(`/feed?key=${key}`)
+    ).json<{
       n: number;
     }>();
-    const b = await (await fetchPrivate(`/feed?key=${key}&cursor=page2`)).json<{
+    const b = await (
+      await fetchPrivate(`/feed?key=${key}&cursor=page2`)
+    ).json<{
       n: number;
     }>();
 

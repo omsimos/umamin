@@ -22,7 +22,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.useRealTimers();
-  // biome-ignore lint/suspicious/noExplicitAny: google global
+  // oxlint-disable-next-line typescript/no-explicit-any -- google global
   delete (window as any).adsbygoogle;
 });
 

@@ -100,10 +100,10 @@ function Session() {
     if (phase === "matching") setWarmupPrompt(null);
   }, [phase]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on match identity
   useEffect(() => {
     setReplyTarget(null);
     setConnectOpen(false);
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- keyed on match identity
   }, [snapshot.matchId]);
 
   // Send effects, the celebration, the reveal and the ice-breaker, seeded per

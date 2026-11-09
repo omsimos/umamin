@@ -256,6 +256,6 @@
 
 /* Collapse AdSense slots that couldn't be filled so they leave no empty box. */
 ins.adsbygoogle[data-ad-status="unfilled"] {
-  /* biome-ignore lint/complexity/noImportantStyles: must override AdSense's inline display:block on the <ins> */
+  /* !important: must override AdSense's inline display:block on the <ins>. */
   display: none !important;
 }

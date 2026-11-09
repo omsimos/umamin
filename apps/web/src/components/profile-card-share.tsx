@@ -133,7 +133,7 @@ export function ProfileCardShare({
 
   // Pre-generate on open so the Share tap calls navigator.share synchronously
   // (the mobile share sheet requires an intact user gesture).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: generate once per open
+  // oxlint-disable react-hooks/exhaustive-deps -- generate once per open
   useEffect(() => {
     if (!open) return;
     let alive = true;
@@ -156,6 +156,7 @@ export function ProfileCardShare({
       setCard(null);
     };
   }, [open]);
+  // oxlint-enable react-hooks/exhaustive-deps
 
   const body = (
     <PreviewBody card={card} filename={filename} username={user.username} />

@@ -126,11 +126,18 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
-      - name: Run Biome
-        run: biome ci .
+      # oxfmt and oxlint are standalone binaries, so this job skips the
+      # workspace install and runs the versions pinned in the root package.json.
+      - name: Check formatting
+        run: npx --yes "oxfmt@$(jq -r .devDependencies.oxfmt package.json)" --check
+
+      - name: Lint
+        run: npx --yes "oxlint@$(jq -r .devDependencies.oxlint package.json)" --format=github
 
   release:
     name: Release

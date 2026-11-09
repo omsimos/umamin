@@ -42,7 +42,7 @@ vi.mock("@/components/block-user-dialog", () => ({
 // Router's Link, which needs a RouterProvider). Mock it to a plain <a> so the
 // mention href assertion works standalone (matches quoted-post-card.test).
 vi.mock("@/lib/navigation", () => ({
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- test stub
   Link: ({ to, href, children, prefetch: _p, preload: _pl, ...rest }: any) => (
     <a href={to ?? href} {...rest}>
       {children}

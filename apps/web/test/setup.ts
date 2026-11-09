@@ -35,7 +35,7 @@ if (!("ResizeObserver" in globalThis)) {
     unobserve() {}
     disconnect() {}
   }
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- test stub
   (globalThis as any).ResizeObserver = MockResizeObserver;
 }
 
@@ -56,6 +56,6 @@ if (!("IntersectionObserver" in globalThis)) {
       return [];
     }
   }
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- test stub
   (globalThis as any).IntersectionObserver = MockIntersectionObserver;
 }

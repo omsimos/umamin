@@ -15,9 +15,9 @@ function runBeforeLoad(user: unknown) {
   const beforeLoad = Route.options.beforeLoad as BeforeLoad;
   // Only context.queryClient.ensureQueryData is touched by the guard.
   return beforeLoad({
-    // biome-ignore lint/suspicious/noExplicitAny: minimal partial context for the guard
+    // oxlint-disable-next-line typescript/no-explicit-any -- minimal partial context for the guard
     context: { queryClient: { ensureQueryData } } as any,
-    // biome-ignore lint/suspicious/noExplicitAny: unused router args
+    // oxlint-disable-next-line typescript/no-explicit-any -- unused router args
   } as any);
 }
 
@@ -43,9 +43,9 @@ describe("_private layout guard", () => {
     const run = beforeLoad({
       context: {
         queryClient: { ensureQueryData: vi.fn().mockRejectedValue(failure) },
-        // biome-ignore lint/suspicious/noExplicitAny: minimal partial context for the guard
+        // oxlint-disable-next-line typescript/no-explicit-any -- minimal partial context for the guard
       } as any,
-      // biome-ignore lint/suspicious/noExplicitAny: unused router args
+      // oxlint-disable-next-line typescript/no-explicit-any -- unused router args
     } as any);
 
     await expect(run).rejects.toBe(failure);

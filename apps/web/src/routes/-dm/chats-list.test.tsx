@@ -10,7 +10,7 @@ import { fetchDmThreadsPage } from "@/lib/query-fetchers";
 import { ChatsList } from "./chats-list";
 
 vi.mock("@/lib/navigation", () => ({
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- test stub
   Link: ({ to, href, children, ...rest }: any) => (
     <a href={to ?? href} {...rest}>
       {children}

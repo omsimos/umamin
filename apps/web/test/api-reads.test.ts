@@ -359,9 +359,8 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
         { id: "stranger", username: "stranger_user" },
       ]);
       const { aesEncrypt } = await import("@umamin/encryption");
-      const { messageTable, messageReplyTable } = await import(
-        "@umamin/db/schema/message"
-      );
+      const { messageTable, messageReplyTable } =
+        await import("@umamin/db/schema/message");
       await db.insert(messageTable).values({
         id: "m1",
         question: "ask me",

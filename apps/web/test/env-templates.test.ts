@@ -95,7 +95,7 @@ describe("env files", () => {
   it("has no base env file that would shadow a mode file", () => {
     // vite and wrangler both load .env → .env.local → .env.<mode>, so a stray
     // .env.local outranks .env in EVERY mode, including a production build.
-    const present = readdirSync(root).filter((name) => /^\.env/.test(name));
+    const present = readdirSync(root).filter((name) => name.startsWith(".env"));
     expect(
       present.filter((name) => name === ".env" || name.endsWith(".local")),
     ).toEqual([]);

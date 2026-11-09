@@ -232,6 +232,7 @@ export function useDmConversation(
 
     return () => {
       // close() suppresses onClose, which is what normally settles these.
+      // oxlint-disable-next-line react-hooks/exhaustive-deps -- the waiters map is meant to be read at teardown
       for (const id of [...waiters.current.keys()]) {
         settle(id, { ok: false, code: "offline" });
       }

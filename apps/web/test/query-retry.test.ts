@@ -87,6 +87,7 @@ describe("loader fetches with the client defaults", () => {
       .mockRejectedValue(new RequestFailedError("/api/x", 404));
 
     const result = client(false).fetchQuery({ queryKey: ["x"], queryFn });
+    // oxlint-disable-next-line vitest/valid-expect -- awaited below, after the fake timers run
     const settled = expect(result).rejects.toThrow("(404)");
     await vi.runAllTimersAsync();
     await settled;
@@ -98,6 +99,7 @@ describe("loader fetches with the client defaults", () => {
     const queryFn = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
 
     const result = client(true).fetchQuery({ queryKey: ["x"], queryFn });
+    // oxlint-disable-next-line vitest/valid-expect -- awaited below, after the fake timers run
     const settled = expect(result).rejects.toThrow("Failed to fetch");
     await vi.runAllTimersAsync();
     await settled;

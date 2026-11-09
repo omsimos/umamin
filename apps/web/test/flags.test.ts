@@ -45,7 +45,7 @@ const {
 const ENV = {
   POSTHOG_PROJECT_TOKEN: "phc_test",
   POSTHOG_HOST: "https://us.i.posthog.com",
-  // biome-ignore lint/suspicious/noExplicitAny: partial env stub
+  // oxlint-disable-next-line typescript/no-explicit-any -- partial env stub
 } as any;
 
 // `evaluateFlags` returns a snapshot object, not a plain map. isEnabled() is
@@ -157,7 +157,7 @@ describe("resolveFlags", () => {
   });
 
   it("resolves false without a project token, and never calls out", async () => {
-    // biome-ignore lint/suspicious/noExplicitAny: partial env stub
+    // oxlint-disable-next-line typescript/no-explicit-any -- partial env stub
     const flags = await resolveFlags({} as any, "user_1", [FLAG_UMAMIN_PRO]);
     expect(flags[FLAG_UMAMIN_PRO]).toBe(false);
     expect(construct).not.toHaveBeenCalled();
@@ -202,7 +202,7 @@ describe("resolveFlags", () => {
 
   it("honours FLAGS_FORCE_ON without contacting PostHog", async () => {
     const flags = await resolveFlags(
-      // biome-ignore lint/suspicious/noExplicitAny: partial env stub
+      // oxlint-disable-next-line typescript/no-explicit-any -- partial env stub
       { FLAGS_FORCE_ON: ` ${FLAG_UMAMIN_PRO} , other ` } as any,
       "user_1",
       [FLAG_UMAMIN_PRO],
@@ -384,7 +384,7 @@ describe("resolveFlags", () => {
     it("lets FLAGS_FORCE_ON win over a fallback", async () => {
       evaluateFlags.mockRejectedValue(new Error("flags down"));
       const flags = await resolveFlags(
-        // biome-ignore lint/suspicious/noExplicitAny: partial env stub
+        // oxlint-disable-next-line typescript/no-explicit-any -- partial env stub
         { ...ENV, FLAGS_FORCE_ON: FLAG_UMAMIN_PRO } as any,
         null,
         [FLAG_UMAMIN_PRO, FLAG_CONTENT_MODERATION],
@@ -594,7 +594,7 @@ describe("refreshFlagSnapshot", () => {
 
   it("no-ops without a KV binding or a project token", async () => {
     await refreshFlagSnapshot(ENV);
-    // biome-ignore lint/suspicious/noExplicitAny: partial env stub
+    // oxlint-disable-next-line typescript/no-explicit-any -- partial env stub
     await refreshFlagSnapshot({ KV: memoryKv().kv } as any);
     expect(evaluateFlags).not.toHaveBeenCalled();
   });
