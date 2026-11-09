@@ -1,4 +1,4 @@
-import type { createGateway, Experimental_EvaluationModel } from "ai";
+import type { createGateway, Experimental_DecisionModel } from "ai";
 import type { AppEnv } from "./env";
 import { formatErrorChain } from "./errors";
 import { captureServerException } from "./posthog";
@@ -196,13 +196,13 @@ const gateways = new Map<string, ReturnType<typeof createGateway>>();
 function defaultModel(
   sdk: typeof import("ai"),
   apiKey: string,
-): Experimental_EvaluationModel {
+): Experimental_DecisionModel {
   let gateway = gateways.get(apiKey);
   if (!gateway) {
     gateway = sdk.createGateway({ apiKey });
     gateways.set(apiKey, gateway);
   }
-  return gateway.evaluationModel(MODEL_ID);
+  return gateway.decisionModel(MODEL_ID);
 }
 
 // The Gateway reports our own timeout as a 500 whose cause is the AbortError,
@@ -297,7 +297,7 @@ function hasServerErrorStatus(err: unknown): boolean {
 
 type ClassifyOptions = {
   // Test seam; production resolves Jev through the Gateway.
-  model?: Experimental_EvaluationModel;
+  model?: Experimental_DecisionModel;
   defer?: (promise: Promise<unknown>) => void;
   // A background retry has no user waiting on it.
   timeoutMs?: number;
@@ -350,7 +350,7 @@ export async function classifyContentWithOutcome(
   try {
     const sdk = await import("ai");
     const model = opts.model ?? defaultModel(sdk, apiKey as string);
-    const result = await sdk.experimental_evaluate({
+    const result = await sdk.experimental_decide({
       model,
       state: buildState(input, text),
       questions: CLASSIFIER_QUESTIONS,

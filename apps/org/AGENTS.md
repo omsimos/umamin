@@ -20,8 +20,6 @@ pnpm org:create-org                       # provision an organization (no signup
 
 ## Rules
 
-- This is the only workspace on TypeScript 6 (`^6.0.3`). Next.js doesn't
-  support 7 yet. Don't align it with the rest of the repo.
 - The React Compiler is on. Don't hand-write `memo`, `useMemo` or
   `useCallback` for performance.
 - Mutations are server actions wrapped in `withAction`

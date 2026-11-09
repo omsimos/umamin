@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import remarkGfm from "remark-gfm";
 import { defineConfig } from "vitest/config";
 
-// Plain node/jsdom runner. The @cloudflare/vitest-pool-workers integration is
+// Plain node/jsdom runner. The @cloudflare/vitest-plugin integration is
 // reserved for server-lib/API suites (see vitest.workers.config.ts); the Hono
 // app and its handlers run fine under node for contract-level tests, and the
 // ported component suites need jsdom + the React plugin + the `@/` alias.

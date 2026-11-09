@@ -1,4 +1,4 @@
-import { Experimental_EvaluationMockModelV4 } from "ai/test";
+import { Experimental_DecisionMockModelV4 } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/server-lib/posthog", () => ({
@@ -62,9 +62,17 @@ function mockAnswers(result: ClassifierAnswers) {
   );
 }
 
+// The SDK hands providers the state as parts; a plain object arrives as one
+// json part.
+function sentState<T>(call: unknown): T {
+  const [{ state }] = call as [{ state: { type: string; value: unknown }[] }];
+  const part = state.find((p) => p.type === "json");
+  return part?.value as T;
+}
+
 function mockModel(result: ClassifierAnswers) {
-  return new Experimental_EvaluationMockModelV4({
-    doEvaluate: async () => ({ answers: mockAnswers(result), warnings: [] }),
+  return new Experimental_DecisionMockModelV4({
+    doDecide: async () => ({ answers: mockAnswers(result), warnings: [] }),
   });
 }
 
@@ -168,19 +176,17 @@ describe("classifyContent", () => {
   });
 
   it("sends the parent post apart from the author's own text", async () => {
-    const doEvaluate = vi.fn(async () => ({
+    const doDecide = vi.fn(async () => ({
       answers: mockAnswers(answers()),
       warnings: [],
     }));
-    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    const model = new Experimental_DecisionMockModelV4({ doDecide });
     await classifyContent(
       env,
       { kind: "comment", text: "wag ganyan", context: "parent post" },
       { model },
     );
-    const [[{ state }]] = doEvaluate.mock.calls as unknown as [
-      [{ state: Record<string, unknown> }],
-    ];
+    const state = sentState<Record<string, unknown>>(doDecide.mock.calls[0]);
     expect(state).toMatchObject({
       text: "wag ganyan",
       replyingTo: "parent post",
@@ -189,11 +195,11 @@ describe("classifyContent", () => {
   });
 
   it("sends a comment's thread and a message's question as their own fields", async () => {
-    const doEvaluate = vi.fn(async () => ({
+    const doDecide = vi.fn(async () => ({
       answers: mockAnswers(answers()),
       warnings: [],
     }));
-    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    const model = new Experimental_DecisionMockModelV4({ doDecide });
     await classifyContent(
       env,
       {
@@ -209,10 +215,9 @@ describe("classifyContent", () => {
       { kind: "message", text: "mataray pero mabait", question: "Ask me" },
       { model },
     );
-    const [[comment], [message]] = doEvaluate.mock.calls as unknown as [
-      [{ state: Record<string, string | string[]> }],
-      [{ state: Record<string, string | string[]> }],
-    ];
+    const [comment, message] = doDecide.mock.calls.map((call) => ({
+      state: sentState<Record<string, string | string[]>>(call),
+    }));
     expect(comment.state.earlierComments).toEqual([
       "second",
       "x".repeat(200),
@@ -232,18 +237,18 @@ describe("classifyContent", () => {
   });
 
   it("skips the call for trivially short text", async () => {
-    const doEvaluate = vi.fn();
-    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    const doDecide = vi.fn();
+    const model = new Experimental_DecisionMockModelV4({ doDecide });
     expect(
       await classifyContent(env, { kind: "comment", text: " ok " }, { model }),
     ).toEqual({ severe: 0, drama: 0, reason: null });
-    expect(doEvaluate).not.toHaveBeenCalled();
+    expect(doDecide).not.toHaveBeenCalled();
   });
 
   it("skips the call once the user's classifier budget is spent", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const doEvaluate = vi.fn();
-    const model = new Experimental_EvaluationMockModelV4({ doEvaluate });
+    const doDecide = vi.fn();
+    const model = new Experimental_DecisionMockModelV4({ doDecide });
     const limit = vi.fn().mockResolvedValue({ success: false });
     const limited = {
       AI_GATEWAY_API_KEY: "test-key",
@@ -257,7 +262,7 @@ describe("classifyContent", () => {
         { model, limitKey: "u1" },
       ),
     ).toBeNull();
-    expect(doEvaluate).not.toHaveBeenCalled();
+    expect(doDecide).not.toHaveBeenCalled();
     expect(limit).toHaveBeenCalledWith({ key: "classify:u1" });
     expect(warn).toHaveBeenCalledWith("content classification skipped", {
       kind: "post",
@@ -282,12 +287,12 @@ describe("classifyContent", () => {
 
   describe("classifyContentWithOutcome", () => {
     const failing = (err: Error) =>
-      new Experimental_EvaluationMockModelV4({
-        doEvaluate: async () => {
+      new Experimental_DecisionMockModelV4({
+        doDecide: async () => {
           throw err;
         },
       });
-    const run = (model: Experimental_EvaluationMockModelV4, report?: boolean) =>
+    const run = (model: Experimental_DecisionMockModelV4, report?: boolean) =>
       classifyContentWithOutcome(
         env,
         { kind: "post", text: "anything" },
@@ -346,8 +351,8 @@ describe("classifyContent", () => {
       statusCode: 400,
       requestBodyValues: { text: "secret words" },
     });
-    const model = new Experimental_EvaluationMockModelV4({
-      doEvaluate: async () => {
+    const model = new Experimental_DecisionMockModelV4({
+      doDecide: async () => {
         throw failure;
       },
     });
@@ -374,8 +379,8 @@ describe("classifyContent", () => {
 
   it("logs a failure as a flattened chain, not the raw error", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    const model = new Experimental_EvaluationMockModelV4({
-      doEvaluate: async () => {
+    const model = new Experimental_DecisionMockModelV4({
+      doDecide: async () => {
         throw Object.assign(new Error("provider said no"), {
           requestBodyValues: { text: "secret words" },
         });
@@ -397,8 +402,8 @@ describe("classifyContent", () => {
   });
 
   it("fails open on a provider error and reports it", async () => {
-    const model = new Experimental_EvaluationMockModelV4({
-      doEvaluate: async () => {
+    const model = new Experimental_DecisionMockModelV4({
+      doDecide: async () => {
         throw new Error("upstream exploded");
       },
     });
@@ -410,8 +415,8 @@ describe("classifyContent", () => {
 
   it("fails open quietly on a rate limit", async () => {
     vi.mocked(captureServerException).mockClear();
-    const model = new Experimental_EvaluationMockModelV4({
-      doEvaluate: async () => {
+    const model = new Experimental_DecisionMockModelV4({
+      doDecide: async () => {
         throw Object.assign(new Error("Too Many Requests"), {
           statusCode: 429,
         });
@@ -427,8 +432,8 @@ describe("classifyContent", () => {
     vi.mocked(captureServerException).mockClear();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const throwing = (err: Error) =>
-      new Experimental_EvaluationMockModelV4({
-        doEvaluate: async () => {
+      new Experimental_DecisionMockModelV4({
+        doDecide: async () => {
           throw err;
         },
       });

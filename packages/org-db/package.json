@@ -29,15 +29,15 @@
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
-    "@node-rs/argon2": "^2.2.1",
+    "@node-rs/argon2": "^2.2.2",
     "@umamin/encryption": "workspace:*",
-    "drizzle-orm": "^0.45.3",
-    "nanoid": "^6.0.1"
+    "drizzle-orm": "^0.45.4",
+    "nanoid": "^6.0.2"
   },
   "devDependencies": {
-    "@types/node": "^24.12.4",
+    "@types/node": "^24.19.2",
     "drizzle-kit": "^0.31.11",
-    "tsdown": "^0.23.0",
+    "tsdown": "^0.23.7",
     "tsx": "catalog:",
     "typescript": "^7.0.2"
   }

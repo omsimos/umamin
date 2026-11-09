@@ -1,4 +1,4 @@
-import { cloudflareTest } from "@cloudflare/vitest-pool-workers";
+import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 
 // Spike config (Phase 0): runs server-side tests inside workerd via miniflare.
@@ -8,6 +8,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["**/*.worker.test.ts"],
+    setupFiles: ["./test/workers-setup.ts"],
   },
   plugins: [
     cloudflareTest({

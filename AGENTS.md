@@ -124,9 +124,9 @@ so it may rewrite import order or wrapping inside your commit.
 
 ## TypeScript
 
-- TypeScript 7 (the native Go compiler) everywhere except `apps/org`, which
-  stays on 6 because Next.js doesn't support 7 yet. The split is deliberate; don't
-  align them. Check with `pnpm exec tsc --version` inside a workspace.
+- TypeScript 7 (the native Go compiler) in every workspace. Next.js 16.4
+  type-checks `apps/org` with it during `next build`. Check with
+  `pnpm exec tsc --version` inside a workspace.
 - TypeScript only type-checks. tsdown builds the packages and Vite/Next build
   the apps.
 - tsdown embeds the TypeScript API for `.d.ts` output. It must stay at
@@ -150,15 +150,15 @@ workspace manifest points at it with `"catalog:"`. A bump means editing that
 block, then running `pnpm install`. Don't run `pnpm up` inside a workspace for
 these packages, since it rewrites the manifest away from `catalog:`.
 
-- `@types/react` and `@types/react-dom`: pinned exact (no `^` or `~`) at
-  `19.2.x`. 19.3 breaks `next-themes` children typing and TanStack's inline
-  `errorComponent` props in every app. pnpm rewrites `~` to `^`, which lets
-  19.3 back in.
+- `@types/react` and `@types/react-dom`: pinned exact (no `^` or `~`). A
+  minor bump of these types has broken `next-themes` children typing and
+  TanStack's inline `errorComponent` props in every app before, so bump them
+  on purpose and run `pnpm check-types --force`. pnpm rewrites `~` to `^`.
 - `react` and `react-dom`: one version workspace-wide. `@umamin/ui` owns Radix,
   so a split gives two React copies and `Cannot read properties of null
   (reading 'useState')` in component tests.
-- `vitest`: one version, and it stays on 4.x while
-  `@cloudflare/vitest-pool-workers` peers on it. A patch-level split detaches
+- `vitest`: one version. `@cloudflare/vitest-plugin` peers on it, so check
+  its peer range before a major bump. A patch-level split detaches
   `@testing-library/jest-dom` matchers (TS2339 on `toBeInTheDocument`).
 
 ## Code style
