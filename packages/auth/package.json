@@ -1,0 +1,29 @@
+{
+  "name": "@umamin/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./session-token": {
+      "types": "./src/session-token.ts",
+      "import": "./src/session-token.ts",
+      "default": "./src/session-token.ts"
+    },
+    "./google": {
+      "types": "./src/google.ts",
+      "import": "./src/google.ts",
+      "default": "./src/google.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf ./node_modules .turbo"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2",
+    "vitest": "catalog:"
+  }
+}

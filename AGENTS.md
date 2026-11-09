@@ -21,6 +21,7 @@ pnpm + Turborepo. This file covers the whole repo. Each workspace has its own
 | `packages/db` | `@umamin/db`, Drizzle schema and migrations for `apps/web` | See `packages/db/AGENTS.md`. |
 | `packages/org-db` | `@umamin/org-db`, the separate database for `apps/org` | See `packages/org-db/AGENTS.md`. |
 | `packages/ui` | `@umamin/ui`, the shared design system (shadcn + Radix) | Used by both apps. See `packages/ui/AGENTS.md`. |
+| `packages/auth` | `@umamin/auth`, session tokens and Google OAuth | See `packages/auth/AGENTS.md`. |
 | `packages/encryption` | `@umamin/encryption`, AES-256-GCM helpers | See `packages/encryption/AGENTS.md`. |
 
 New product work goes in `apps/web`. Two apps were folded into it and deleted.
@@ -46,7 +47,7 @@ pnpm format-and-lint:fix   # oxlint --fix, then oxfmt
 
 Scope a task to one workspace with `pnpm --filter=<name> <script>`. Package
 names are `web`, `org`, `@umamin/db`, `@umamin/org-db`, `@umamin/ui`,
-`@umamin/encryption`.
+`@umamin/auth`, `@umamin/encryption`.
 
 Turbo caches `check-types` and `test`. After a dependency change, pass
 `--force` or you can get a stale pass.

@@ -38,7 +38,7 @@ import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
 import {
   __clearSessionCache,
   createSession,
-  sessionIdFromToken,
+  hashSessionToken,
 } from "../src/server-lib/session";
 import { ANON, authed, buildApp, call, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
@@ -181,7 +181,7 @@ describe("user actions (real libSQL)", () => {
       .from(sessionTable)
       .where(eq(sessionTable.userId, "user1"));
     expect(sessions).toHaveLength(1);
-    expect(sessions[0].id).not.toBe(sessionIdFromToken("device-a-token"));
+    expect(sessions[0].id).not.toBe(await hashSessionToken("device-a-token"));
     const [row] = await db
       .select({ passwordHash: userTable.passwordHash })
       .from(userTable)

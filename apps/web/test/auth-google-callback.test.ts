@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The callback resolves its db through getDb(env) rather than the c.set("db")
 // seam the action tests use, so the module is stubbed to hand back the same
-// in-memory libSQL instance. arctic's token exchange and the denylist /
+// in-memory libSQL instance. Google's token exchange and the denylist /
 // rate-limit gates are stubbed to their pass-through outcome; what's under test
 // is the upsert, which runs its true SQL against real migrations.
 const state = {
@@ -14,17 +14,10 @@ vi.mock("../src/server-lib/db", () => ({
   getDb: () => state.db,
 }));
 
-vi.mock("../src/server-lib/oauth", () => ({
-  buildGoogle: () => ({
-    validateAuthorizationCode: async () => ({ idToken: () => "stub.id.token" }),
-  }),
-}));
-
-vi.mock("arctic", () => ({
-  decodeIdToken: () => state.claims,
-  OAuth2RequestError: class extends Error {},
-  generateState: () => "s",
-  generateCodeVerifier: () => "v",
+vi.mock("@umamin/auth/google", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@umamin/auth/google")>()),
+  exchangeAuthorizationCode: async () => ({ idToken: "stub.id.token" }),
+  decodeIdTokenClaims: () => state.claims,
 }));
 
 vi.mock("../src/server-lib/ip-denylist", () => ({

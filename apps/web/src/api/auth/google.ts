@@ -1,11 +1,11 @@
-import { accountTable, userTable } from "@umamin/db/schema/user";
 import {
-  decodeIdToken,
+  createAuthorizationURL,
+  decodeIdTokenClaims,
+  exchangeAuthorizationCode,
   generateCodeVerifier,
   generateState,
-  OAuth2RequestError,
-  type OAuth2Tokens,
-} from "arctic";
+} from "@umamin/auth/google";
+import { accountTable, userTable } from "@umamin/db/schema/user";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
@@ -22,7 +22,7 @@ import { getDb } from "../../server-lib/db";
 import { formatErrorChain } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
-import { buildGoogle } from "../../server-lib/oauth";
+import { googleOAuthConfig } from "../../server-lib/oauth";
 import { captureRequestException } from "../../server-lib/posthog";
 import { checkRateLimit } from "../../server-lib/ratelimit";
 import {
@@ -33,8 +33,8 @@ import {
 import { setSessionCookie } from "../../server-lib/session-cookie";
 
 // Google OAuth initiator + callback ported as Hono GET routes at the SAME PATHS
-// as apps/www (/auth/google, /auth/google/callback — redirects, not /api). arctic
-// is fetch-based (Workers-safe). State/PKCE cookies, picture-host pinning,
+// as apps/www (/auth/google, /auth/google/callback — redirects, not /api). The
+// OAuth client in @umamin/auth/google is fetch-based (Workers-safe). State/PKCE cookies, picture-host pinning,
 // denylist + rate-limit checks, upsert, and session mint are all preserved;
 // revalidateTag is dropped. The orchestrator mounts this at /auth/google.
 
@@ -77,17 +77,17 @@ const claimsSchema = z.object({
 });
 
 export const googleAuthApp = new Hono<AppBindings>()
-  .get("/", (c) => {
+  .get("/", async (c) => {
     // Only "register" may create a new account in the callback.
     const intent = c.req.query("intent") === "register" ? "register" : "login";
 
     const state = generateState();
     const codeVerifier = generateCodeVerifier();
-    const url = buildGoogle(c.env).createAuthorizationURL(state, codeVerifier, [
-      "openid",
-      "profile",
-      "email",
-    ]);
+    const url = await createAuthorizationURL(googleOAuthConfig(c.env), {
+      state,
+      codeVerifier,
+      scopes: ["openid", "profile", "email"],
+    });
 
     setOauthCookie(
       c,
@@ -149,17 +149,21 @@ export const googleAuthApp = new Hono<AppBindings>()
     }
 
     const db = getDb(c.env);
-    const google = buildGoogle(c.env);
 
-    let tokens: OAuth2Tokens;
+    // A rejected or replayed code is a user/provider outcome, not a bug.
+    let idToken: string;
     try {
-      tokens = await google.validateAuthorizationCode(code, codeVerifier);
+      ({ idToken } = await exchangeAuthorizationCode(
+        googleOAuthConfig(c.env),
+        code,
+        codeVerifier,
+      ));
     } catch {
       return c.body(null, 400);
     }
 
     try {
-      const claims = claimsSchema.safeParse(decodeIdToken(tokens.idToken()));
+      const claims = claimsSchema.safeParse(decodeIdTokenClaims(idToken));
       if (!claims.success) {
         console.log("Invalid ID token claims");
         return c.body(null, 400);
@@ -251,10 +255,6 @@ export const googleAuthApp = new Hono<AppBindings>()
       return c.redirect("/inbox", 302);
     } catch (err) {
       console.error("oauth_callback_failed", formatErrorChain(err));
-      // A provider-side OAuth rejection is a user/provider outcome, not a bug.
-      if (err instanceof OAuth2RequestError) {
-        return c.body(null, 400);
-      }
       captureRequestException(c, err, {
         properties: { oauth: "google", intent },
       });
