@@ -14,7 +14,7 @@
 //     Run it after any change to the questions, the context wording, or the
 //     thresholds. Exits 1 on any mismatch.
 //
-// Reads AI_GATEWAY_API_KEY from the environment or apps/web/.dev.vars.
+// Reads TYPESAFE_AI_API_KEY from the environment or apps/web/.dev.vars.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -42,13 +42,13 @@ const flag = (name: string) => {
 };
 
 function apiKey() {
-  if (process.env.AI_GATEWAY_API_KEY) return process.env.AI_GATEWAY_API_KEY;
+  if (process.env.TYPESAFE_AI_API_KEY) return process.env.TYPESAFE_AI_API_KEY;
   try {
     const line = readFileSync(join(import.meta.dirname, "../.dev.vars"), "utf8")
       .split("\n")
-      .find((l) => l.startsWith("AI_GATEWAY_API_KEY="));
+      .find((l) => l.startsWith("TYPESAFE_AI_API_KEY="));
     return line
-      ?.slice("AI_GATEWAY_API_KEY=".length)
+      ?.slice("TYPESAFE_AI_API_KEY=".length)
       .trim()
       .replace(/^"|"$/g, "");
   } catch {
@@ -127,8 +127,8 @@ async function seed(out: string) {
 
 async function run(input: string) {
   const key = apiKey();
-  if (!key) throw new Error("AI_GATEWAY_API_KEY is not set");
-  const env = { AI_GATEWAY_API_KEY: key } as AppEnv;
+  if (!key) throw new Error("TYPESAFE_AI_API_KEY is not set");
+  const env = { TYPESAFE_AI_API_KEY: key } as AppEnv;
 
   const [header, ...body] = parseCsv(readFileSync(input, "utf8"));
   const col = (name: string) => header.indexOf(name);
@@ -227,8 +227,8 @@ const ACCEPTS: Record<Expect, string[]> = {
 
 async function check(input: string) {
   const key = apiKey();
-  if (!key) throw new Error("AI_GATEWAY_API_KEY is not set");
-  const env = { AI_GATEWAY_API_KEY: key } as AppEnv;
+  if (!key) throw new Error("TYPESAFE_AI_API_KEY is not set");
+  const env = { TYPESAFE_AI_API_KEY: key } as AppEnv;
   const cases = JSON.parse(readFileSync(input, "utf8")) as Case[];
 
   const failures: string[] = [];
@@ -244,7 +244,7 @@ async function check(input: string) {
             thread: item.thread ?? null,
             question: item.question ?? null,
           });
-        // A cold Gateway call can outlast the production timeout.
+        // A cold API call can outlast the production timeout.
         const scores = (await classify()) ?? (await classify());
         const got = scores ? label(scores) : "error";
         const ok = ACCEPTS[item.expect].includes(got);

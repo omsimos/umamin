@@ -1,22 +1,23 @@
-import type { createGateway, Experimental_DecisionModel } from "ai";
+import type { createTypeSafeAi } from "@ai-sdk/typesafe-ai";
+import type { Experimental_DecisionModel } from "ai";
 import type { AppEnv } from "./env";
 import { formatErrorChain } from "./errors";
 import { captureServerException } from "./posthog";
 import { checkRateLimit } from "./ratelimit";
 
-// Classifies user-written text with TypeSafe's Jev through the Vercel AI
-// Gateway. Every failure (no key, timeout, rate limit, refusal, bad response)
+// Classifies user-written text with TypeSafe's Jev through the direct TypeSafe
+// API. Every failure (no key, timeout, rate limit, refusal, bad response)
 // returns null, which callers store as "unclassified" and readers treat as
 // clean: the classifier only ever covers content, so failing open is the safe
 // direction. See docs/superpowers/community-safety-plan.md.
 //
-// The AI SDK is imported lazily: statically it adds ~325 kB to the Worker's
-// startup bundle, which every request would pay for on a cold start.
+// The AI SDK and the TypeSafe provider are imported lazily: statically the SDK
+// adds ~325 kB to the Worker's startup bundle, which every request would pay for on a cold start.
 
 // Pinned: the bare alias follows jev-latest, which moves without a deploy, and
 // the thresholds and scripts/moderation-cases.json were tuned on 1.13. 1.14
 // scored counter-speech 15-30 points higher on drama in the regression gate.
-const MODEL_ID = "typesafe-ai/jev-1.13.0";
+const MODEL_ID = "jev-1.13.0";
 const TIMEOUT_MS = 2000;
 const MIN_TEXT_LENGTH = 3;
 const CONTEXT_MAX_LENGTH = 500;
@@ -191,22 +192,22 @@ export function scoreAnswers(
   return { severe: severeScore, drama, reason };
 }
 
-const gateways = new Map<string, ReturnType<typeof createGateway>>();
+const providers = new Map<string, ReturnType<typeof createTypeSafeAi>>();
 
-function defaultModel(
-  sdk: typeof import("ai"),
+async function defaultModel(
   apiKey: string,
-): Experimental_DecisionModel {
-  let gateway = gateways.get(apiKey);
-  if (!gateway) {
-    gateway = sdk.createGateway({ apiKey });
-    gateways.set(apiKey, gateway);
+): Promise<Experimental_DecisionModel> {
+  let provider = providers.get(apiKey);
+  if (!provider) {
+    const { createTypeSafeAi } = await import("@ai-sdk/typesafe-ai");
+    provider = createTypeSafeAi({ apiKey });
+    providers.set(apiKey, provider);
   }
-  return gateway.decisionModel(MODEL_ID);
+  return provider.decisionModel(MODEL_ID);
 }
 
-// The Gateway reports our own timeout as a 500 whose cause is the AbortError,
-// so the cause chain is walked. Returns the matching error's name, or null for
+// The SDK can wrap our own timeout in an API error whose cause is the
+// AbortError, so the cause chain is walked. Returns the matching error's name, or null for
 // a failure worth reporting.
 function expectedFailureName(err: unknown): string | null {
   let current = err;
@@ -296,7 +297,7 @@ function hasServerErrorStatus(err: unknown): boolean {
 }
 
 type ClassifyOptions = {
-  // Test seam; production resolves Jev through the Gateway.
+  // Test seam; production resolves Jev through the TypeSafe API.
   model?: Experimental_DecisionModel;
   defer?: (promise: Promise<unknown>) => void;
   // A background retry has no user waiting on it.
@@ -326,7 +327,7 @@ export async function classifyContentWithOutcome(
   const text = input.text.trim();
   if (text.length < MIN_TEXT_LENGTH) return { scores: CLEAN, failure: null };
 
-  const apiKey = env.AI_GATEWAY_API_KEY;
+  const apiKey = env.TYPESAFE_AI_API_KEY;
   if (!opts.model && !apiKey) return { scores: null, failure: "unavailable" };
 
   if (
@@ -348,8 +349,10 @@ export async function classifyContentWithOutcome(
   );
 
   try {
-    const sdk = await import("ai");
-    const model = opts.model ?? defaultModel(sdk, apiKey as string);
+    const [sdk, model] = await Promise.all([
+      import("ai"),
+      opts.model ?? defaultModel(apiKey as string),
+    ]);
     const result = await sdk.experimental_decide({
       model,
       state: buildState(input, text),

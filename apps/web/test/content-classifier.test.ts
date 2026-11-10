@@ -15,7 +15,7 @@ import { contentLabel } from "../src/server-lib/content-label";
 import type { AppEnv } from "../src/server-lib/env";
 import { captureServerException } from "../src/server-lib/posthog";
 
-const env = { AI_GATEWAY_API_KEY: "test-key" } as AppEnv;
+const env = { TYPESAFE_AI_API_KEY: "test-key" } as AppEnv;
 
 function answers(
   overrides: Partial<Record<string, number>> = {},
@@ -251,7 +251,7 @@ describe("classifyContent", () => {
     const model = new Experimental_DecisionMockModelV4({ doDecide });
     const limit = vi.fn().mockResolvedValue({ success: false });
     const limited = {
-      AI_GATEWAY_API_KEY: "test-key",
+      TYPESAFE_AI_API_KEY: "test-key",
       RL_WRITE: { limit },
     } as unknown as AppEnv;
 
@@ -273,7 +273,7 @@ describe("classifyContent", () => {
 
   it("classifies while the user's classifier budget lasts", async () => {
     const limited = {
-      AI_GATEWAY_API_KEY: "test-key",
+      TYPESAFE_AI_API_KEY: "test-key",
       RL_WRITE: { limit: vi.fn().mockResolvedValue({ success: true }) },
     } as unknown as AppEnv;
     expect(
@@ -428,7 +428,7 @@ describe("classifyContent", () => {
     expect(captureServerException).not.toHaveBeenCalled();
   });
 
-  it("logs a gateway-wrapped timeout without reporting it or its text", async () => {
+  it("logs an API-wrapped timeout without reporting it or its text", async () => {
     vi.mocked(captureServerException).mockClear();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const throwing = (err: Error) =>
@@ -437,9 +437,9 @@ describe("classifyContent", () => {
           throw err;
         },
       });
-    const gatewayError = (cause?: unknown) =>
-      Object.assign(new Error("Gateway request failed"), {
-        name: "GatewayResponseError",
+    const apiError = (cause?: unknown) =>
+      Object.assign(new Error("TypeSafe request failed"), {
+        name: "AI_APICallError",
         statusCode: 500,
         cause,
       });
@@ -448,9 +448,7 @@ describe("classifyContent", () => {
       env,
       { kind: "comment", text: "secret words" },
       {
-        model: throwing(
-          gatewayError(new DOMException("aborted", "AbortError")),
-        ),
+        model: throwing(apiError(new DOMException("aborted", "AbortError"))),
       },
     );
     expect(captureServerException).not.toHaveBeenCalled();
@@ -465,7 +463,7 @@ describe("classifyContent", () => {
     await classifyContent(
       env,
       { kind: "comment", text: "secret words" },
-      { model: throwing(gatewayError()) },
+      { model: throwing(apiError()) },
     );
     expect(captureServerException).toHaveBeenCalledTimes(1);
     vi.restoreAllMocks();

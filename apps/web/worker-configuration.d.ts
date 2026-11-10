@@ -23,7 +23,7 @@ interface __BaseEnv_Env {
 	R2_PUBLIC_URL: string;
 	VAPID_PUBLIC_KEY: string;
 	NODE_ENV: string;
-	AI_GATEWAY_API_KEY: string;
+	TYPESAFE_AI_API_KEY: string;
 	CHAT_LOBBY: DurableObjectNamespace<import("./src/server").ChatLobby>;
 	CHAT_ROOM: DurableObjectNamespace<import("./src/server").ChatRoom>;
 	DM_ROOM: DurableObjectNamespace<import("./src/server").DmRoom>;
@@ -47,7 +47,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "APP_URL" | "SEO_INDEXABLE" | "POSTHOG_PROJECT_TOKEN" | "POSTHOG_HOST" | "POSTHOG_ENV" | "FLAGS_FORCE_ON" | "TURSO_CONNECTION_URL" | "AES_256_GCM_KEY" | "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_SECRET" | "GOOGLE_REDIRECT_URI" | "MODERATOR_USERS" | "R2_BUCKET" | "R2_ACCESS_KEY_ID" | "R2_SECRET_ACCESS_KEY" | "R2_ACCOUNT_ID" | "VAPID_PRIVATE_KEY" | "R2_PUBLIC_URL" | "VAPID_PUBLIC_KEY" | "NODE_ENV" | "AI_GATEWAY_API_KEY">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "APP_URL" | "SEO_INDEXABLE" | "POSTHOG_PROJECT_TOKEN" | "POSTHOG_HOST" | "POSTHOG_ENV" | "FLAGS_FORCE_ON" | "TURSO_CONNECTION_URL" | "AES_256_GCM_KEY" | "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_SECRET" | "GOOGLE_REDIRECT_URI" | "MODERATOR_USERS" | "R2_BUCKET" | "R2_ACCESS_KEY_ID" | "R2_SECRET_ACCESS_KEY" | "R2_ACCOUNT_ID" | "VAPID_PRIVATE_KEY" | "R2_PUBLIC_URL" | "VAPID_PUBLIC_KEY" | "NODE_ENV" | "TYPESAFE_AI_API_KEY">> {}
 }
 
 // Begin runtime types
