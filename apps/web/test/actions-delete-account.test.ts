@@ -25,6 +25,9 @@ import { groupMemberTable, groupTable } from "@umamin/db/schema/group";
 import {
   pollOptionTable,
   pollVoteTable,
+  postCommentTable,
+  postLikeTable,
+  postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
 import { userFollowTable, userTable } from "@umamin/db/schema/user";
@@ -74,13 +77,21 @@ async function seed(db: Db) {
     { groupId: "g1", userId: "leaver", role: "member" },
   ]);
 
-  // repostCount starts at 1: the quote below applied it when it was created.
+  // repostCount 3: the quote below plus reposts from leaver and owner.
   await db.insert(postTable).values({
     id: "p1",
     content: "poll",
     authorId: "stayer",
     pollVoteCount: 1,
-    repostCount: 1,
+    repostCount: 3,
+    // Two comments from leaver and one from owner: two commenters. leaver
+    // reposted and quoted, owner reposted: two resharers.
+    commentCount: 3,
+    commenterCount: 2,
+    likeCount: 2,
+    likerCount: 2,
+    voterCount: 1,
+    resharerCount: 2,
     pollEndsAt: new Date(Date.now() + 1e7),
   });
   await db.insert(pollOptionTable).values([
@@ -90,6 +101,19 @@ async function seed(db: Db) {
   await db
     .insert(pollVoteTable)
     .values({ postId: "p1", optionId: "o1", userId: "leaver" });
+  await db.insert(postLikeTable).values([
+    { postId: "p1", userId: "leaver" },
+    { postId: "p1", userId: "owner" },
+  ]);
+  await db.insert(postRepostTable).values([
+    { postId: "p1", userId: "leaver" },
+    { postId: "p1", userId: "owner" },
+  ]);
+  await db.insert(postCommentTable).values([
+    { id: "c1", postId: "p1", authorId: "leaver", content: "a" },
+    { id: "c2", postId: "p1", authorId: "leaver", content: "b" },
+    { id: "c3", postId: "p1", authorId: "owner", content: "c" },
+  ]);
 
   await db.insert(postTable).values({
     id: "q1",
@@ -150,11 +174,22 @@ describe("deleteAccount (real libSQL)", () => {
       .select({
         pollVoteCount: postTable.pollVoteCount,
         repostCount: postTable.repostCount,
+        commentCount: postTable.commentCount,
+        commenterCount: postTable.commenterCount,
+        likerCount: postTable.likerCount,
+        voterCount: postTable.voterCount,
+        resharerCount: postTable.resharerCount,
       })
       .from(postTable)
       .where(eq(postTable.id, "p1"));
     expect(p1.pollVoteCount).toBe(0);
-    expect(p1.repostCount).toBe(0);
+    expect(p1.repostCount).toBe(1);
+    expect(p1.commentCount).toBe(1);
+    expect(p1.commenterCount).toBe(1);
+    expect(p1.likerCount).toBe(1);
+    expect(p1.voterCount).toBe(0);
+    // leaver both reposted and quoted, and counts once.
+    expect(p1.resharerCount).toBe(1);
   });
 
   it("rejects a wrong confirmation phrase with an error, not a redirect", async () => {

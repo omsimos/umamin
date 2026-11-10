@@ -68,6 +68,7 @@ import type {
   GroupRequestsResponse,
   MessagesResponse,
   MessageThreadResponse,
+  HotCounterColumn,
   ModerationColumn,
   MutedUsersResponse,
   NoteItem,
@@ -294,9 +295,9 @@ async function getQuotedPostMap(
   );
 }
 
-// Strips the server-only classifier columns and attaches the label the client
-// renders from. Every post/comment/note payload goes through this, so a raw
-// score never reaches the wire.
+// Strips the server-only classifier columns and Hot's people counts, and
+// attaches the label the client renders from. Every post/comment/note payload
+// goes through this, so a raw score never reaches the wire.
 export function withModeration<
   T extends {
     modSevere: number | null;
@@ -306,11 +307,17 @@ export function withModeration<
     modClearedAt?: Date | null;
     modReviewedAt?: Date | null;
     modAppealedAt?: Date | null;
+    commenterCount?: number;
+    likerCount?: number;
+    voterCount?: number;
+    resharerCount?: number;
   },
 >(
   row: T,
   enforce: boolean,
-): Omit<T, ModerationColumn> & { moderation: ContentLabel | null } {
+): Omit<T, ModerationColumn | HotCounterColumn> & {
+  moderation: ContentLabel | null;
+} {
   const {
     modSevere,
     modDrama,
@@ -319,6 +326,10 @@ export function withModeration<
     modClearedAt,
     modReviewedAt,
     modAppealedAt,
+    commenterCount: _commenterCount,
+    likerCount: _likerCount,
+    voterCount: _voterCount,
+    resharerCount: _resharerCount,
     ...rest
   } = row;
   return {

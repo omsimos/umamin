@@ -20,7 +20,7 @@ export const HOT_DIVERSIFY_MAX_GAP = 720;
 
 export type HotRankablePost = Pick<
   SelectPost,
-  "createdAt" | "likeCount" | "pollVoteCount" | "commentCount" | "repostCount"
+  "createdAt" | "likerCount" | "voterCount" | "commenterCount" | "resharerCount"
 > &
   Partial<Pick<SelectPost, "modSevere" | "modDrama" | "modClearedAt">>;
 
@@ -31,12 +31,16 @@ export function isHotEligible(post: HotRankablePost, enforce: boolean) {
   return !isCoveredLabel(contentLabel(post, enforce));
 }
 
+// People, not actions: each signal counts people other than the author, once
+// each (see the counters on postTable). Authors replying in their own threads
+// wrote most comments, and counting every comment let a post with no other
+// commenter rank as one of the most discussed.
 export function getHotEngagement(post: HotRankablePost) {
   return (
-    post.likeCount +
-    post.pollVoteCount +
-    post.commentCount * 3 +
-    post.repostCount * 4
+    post.likerCount +
+    post.voterCount +
+    post.commenterCount * 3 +
+    post.resharerCount * 4
   );
 }
 

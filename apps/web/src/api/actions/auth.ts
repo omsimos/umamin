@@ -32,6 +32,10 @@ import {
   GENERIC_ERROR,
   USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
+import {
+  removeOther,
+  removeQuoterKeepingReposters,
+} from "../../server-lib/hot-counters";
 import { extractClientIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
 import { isReservedModeratorName } from "../../server-lib/moderation";
@@ -330,6 +334,7 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
         .update(postTable)
         .set({
           likeCount: sql`CASE WHEN ${postTable.likeCount} > 0 THEN ${postTable.likeCount} - 1 ELSE 0 END`,
+          likerCount: removeOther(postTable.likerCount, uid),
         })
         .where(
           inArray(
@@ -345,6 +350,7 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
         .update(postTable)
         .set({
           repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
+          resharerCount: removeOther(postTable.resharerCount, uid),
         })
         .where(
           inArray(
@@ -360,6 +366,7 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
         .update(postTable)
         .set({
           commentCount: sql`MAX(0, ${postTable.commentCount} - (SELECT COUNT(*) FROM ${postCommentTable} WHERE ${postCommentTable.postId} = ${postTable.id} AND ${postCommentTable.authorId} = ${uid}))`,
+          commenterCount: removeOther(postTable.commenterCount, uid),
         })
         .where(
           inArray(
@@ -437,6 +444,7 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
         .update(postTable)
         .set({
           pollVoteCount: sql`CASE WHEN ${postTable.pollVoteCount} > 0 THEN ${postTable.pollVoteCount} - 1 ELSE 0 END`,
+          voterCount: removeOther(postTable.voterCount, uid),
         })
         .where(
           inArray(
@@ -457,6 +465,8 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
         .update(postTable)
         .set({
           repostCount: sql`MAX(0, ${postTable.repostCount} - (SELECT COUNT(*) FROM ${postTable} AS ${quotes} WHERE ${quotes.quotedPostId} = ${postTable.id} AND ${quotes.authorId} = ${uid}))`,
+          // The repost pass above already took off anyone who also reposted.
+          resharerCount: removeQuoterKeepingReposters(uid),
         })
         .where(
           inArray(

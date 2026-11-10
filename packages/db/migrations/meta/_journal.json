@@ -232,6 +232,13 @@
       "when": 1793817696881,
       "tag": "0032_general_streak",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1794338958028,
+      "tag": "0033_hot_people_counts",
+      "breakpoints": true
     }
   ]
 }

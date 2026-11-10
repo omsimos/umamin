@@ -33,6 +33,14 @@ import {
 import { getPostById, withModeration } from "../../server-lib/data";
 import { isForeignKeyConstraintViolation } from "../../server-lib/errors";
 import { isModerationEnforced } from "../../server-lib/flags";
+import {
+  addCommenter,
+  addOther,
+  addResharer,
+  removeCommenter,
+  removeOther,
+  removeResharer,
+} from "../../server-lib/hot-counters";
 import { extractClientIp } from "../../server-lib/ip";
 import { isModerator } from "../../server-lib/moderation";
 import { deleteDisputes } from "../../server-lib/moderation-review";
@@ -257,7 +265,10 @@ export const createPostHandler = action(
         if (quotedPostId) {
           const [bumped] = await tx
             .update(postTable)
-            .set({ repostCount: sql`${postTable.repostCount} + 1` })
+            .set({
+              repostCount: sql`${postTable.repostCount} + 1`,
+              resharerCount: addResharer(session.userId, inserted.id),
+            })
             .where(eq(postTable.id, quotedPostId))
             .returning({ authorId: postTable.authorId });
 
@@ -351,6 +362,7 @@ export const deletePostHandler = action(
           .update(postTable)
           .set({
             repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
+            resharerCount: removeResharer(ownerId),
           })
           .where(eq(postTable.id, post.quotedPostId))
           .returning({ authorId: postTable.authorId });
@@ -481,7 +493,10 @@ export const createCommentHandler = action(
         .returning(),
       db
         .update(postTable)
-        .set({ commentCount: sql`${postTable.commentCount} + 1` })
+        .set({
+          commentCount: sql`${postTable.commentCount} + 1`,
+          commenterCount: addCommenter(session.userId, postId, commentId),
+        })
         .where(and(eq(postTable.id, postId), PREV_CHANGED))
         .returning({ authorId: postTable.authorId }),
     ] as const;
@@ -558,6 +573,8 @@ export const deleteCommentHandler = action(
         .update(postTable)
         .set({
           commentCount: sql`CASE WHEN ${postTable.commentCount} > 0 THEN ${postTable.commentCount} - 1 ELSE 0 END`,
+          // The deleted row is already gone by now.
+          commenterCount: removeCommenter(comment.authorId, comment.postId),
         })
         .where(eq(postTable.id, comment.postId))
         .returning({ authorId: postTable.authorId });
@@ -640,7 +657,10 @@ export const addLikeHandler = action(
         .returning({ id: postLikeTable.id }),
       db
         .update(postTable)
-        .set({ likeCount: sql`${postTable.likeCount} + 1` })
+        .set({
+          likeCount: sql`${postTable.likeCount} + 1`,
+          likerCount: addOther(postTable.likerCount, session.userId),
+        })
         .where(and(eq(postTable.id, postId), PREV_CHANGED))
         .returning({
           authorId: postTable.authorId,
@@ -762,7 +782,10 @@ export const votePollHandler = action(
         .where(and(eq(pollOptionTable.id, optionId), PREV_CHANGED)),
       db
         .update(postTable)
-        .set({ pollVoteCount: sql`${postTable.pollVoteCount} + 1` })
+        .set({
+          pollVoteCount: sql`${postTable.pollVoteCount} + 1`,
+          voterCount: addOther(postTable.voterCount, session.userId),
+        })
         .where(and(eq(postTable.id, postId), PREV_CHANGED)),
     ] as const;
 
@@ -844,6 +867,7 @@ export const removeLikeHandler = action(
         .update(postTable)
         .set({
           likeCount: sql`CASE WHEN ${postTable.likeCount} > 0 THEN ${postTable.likeCount} - 1 ELSE 0 END`,
+          likerCount: removeOther(postTable.likerCount, session.userId),
         })
         .where(and(eq(postTable.id, postId), PREV_CHANGED))
         .returning({ authorId: postTable.authorId }),
@@ -1055,7 +1079,10 @@ export const addRepostHandler = action(
         .returning(),
       db
         .update(postTable)
-        .set({ repostCount: sql`${postTable.repostCount} + 1` })
+        .set({
+          repostCount: sql`${postTable.repostCount} + 1`,
+          resharerCount: addResharer(session.userId),
+        })
         .where(and(eq(postTable.id, postId), PREV_CHANGED)),
     ] as const;
 
@@ -1124,6 +1151,7 @@ export const removeRepostHandler = action(
         .update(postTable)
         .set({
           repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
+          resharerCount: removeResharer(session.userId),
         })
         .where(and(eq(postTable.id, postId), PREV_CHANGED)),
     ] as const;

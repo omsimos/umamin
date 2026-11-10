@@ -13,27 +13,27 @@ const HOUR_MS = 3_600_000;
 function makePost(overrides: Partial<HotRankablePost> = {}): HotRankablePost {
   return {
     createdAt: new Date("2026-06-01T00:00:00.000Z"),
-    likeCount: 0,
-    pollVoteCount: 0,
-    commentCount: 0,
-    repostCount: 0,
+    likerCount: 0,
+    voterCount: 0,
+    commenterCount: 0,
+    resharerCount: 0,
     ...overrides,
   };
 }
 
 describe("getHotEngagement", () => {
-  it("weights likes and poll votes at 1, comments at 3, reposts at 4", () => {
-    expect(getHotEngagement(makePost({ likeCount: 1 }))).toBe(1);
-    expect(getHotEngagement(makePost({ pollVoteCount: 1 }))).toBe(1);
-    expect(getHotEngagement(makePost({ commentCount: 1 }))).toBe(3);
-    expect(getHotEngagement(makePost({ repostCount: 1 }))).toBe(4);
+  it("weights likers and voters at 1, commenters at 3, resharers at 4", () => {
+    expect(getHotEngagement(makePost({ likerCount: 1 }))).toBe(1);
+    expect(getHotEngagement(makePost({ voterCount: 1 }))).toBe(1);
+    expect(getHotEngagement(makePost({ commenterCount: 1 }))).toBe(3);
+    expect(getHotEngagement(makePost({ resharerCount: 1 }))).toBe(4);
     expect(
       getHotEngagement(
         makePost({
-          likeCount: 2,
-          pollVoteCount: 3,
-          commentCount: 4,
-          repostCount: 5,
+          likerCount: 2,
+          voterCount: 3,
+          commenterCount: 4,
+          resharerCount: 5,
         }),
       ),
     ).toBe(2 + 3 + 4 * 3 + 5 * 4);
@@ -47,7 +47,7 @@ describe("getHotScore", () => {
   });
 
   it("dampens engagement: the first like is worth far more than the 101st", () => {
-    const at = (likeCount: number) => getHotScore(makePost({ likeCount }));
+    const at = (likerCount: number) => getHotScore(makePost({ likerCount }));
     const firstLike = at(1) - at(0);
     const hundredFirstLike = at(101) - at(100);
 
@@ -55,7 +55,7 @@ describe("getHotScore", () => {
   });
 
   it("lets an E=100 post pin for ~19h, not days", () => {
-    const engaged = makePost({ likeCount: 100 });
+    const engaged = makePost({ likerCount: 100 });
     const freshAfter = (hours: number) =>
       makePost({
         createdAt: new Date(engaged.createdAt.getTime() + hours * HOUR_MS),
@@ -69,7 +69,7 @@ describe("getHotScore", () => {
 
 describe("getHotScoreKey", () => {
   it("is the rounded score", () => {
-    const post = makePost({ likeCount: 7 });
+    const post = makePost({ likerCount: 7 });
     expect(getHotScoreKey(post)).toBe(Math.round(getHotScore(post)));
     expect(Number.isSafeInteger(getHotScoreKey(post))).toBe(true);
   });
