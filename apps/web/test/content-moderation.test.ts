@@ -217,8 +217,8 @@ describe("content moderation (real libSQL)", () => {
           content: "f",
           authorId: "author",
           createdAt: new Date(now - 3 * 3_600_000),
-          commentCount: 400,
-          repostCount: 200,
+          commenterCount: 400,
+          resharerCount: 200,
           ...DRAMA,
         },
         {
@@ -233,7 +233,7 @@ describe("content moderation (real libSQL)", () => {
           content: "a",
           authorId: "author",
           createdAt: new Date(now - 30_000),
-          likeCount: 50,
+          likerCount: 50,
           ...SEVERE,
         },
         {
@@ -241,7 +241,7 @@ describe("content moderation (real libSQL)", () => {
           content: "g",
           authorId: "author",
           createdAt: new Date(now - 20_000),
-          commentCount: 300,
+          commenterCount: 300,
           ...SCAM,
         },
       ]);

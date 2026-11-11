@@ -334,12 +334,13 @@ OAuth callback check it again in the handler. IPs are canonicalized on store
 and compare.
 
 **Content classification.** Posts, comments and notes are scored by the
-classifier in `server-lib/content-classifier.ts` through the AI Gateway, behind
-the `content-moderation` flag. The `ai` package is dynamically imported to keep
-it out of the Worker's startup bundle. After changing prompts or thresholds,
+classifier in `server-lib/content-classifier.ts`, which calls TypeSafe's Jev
+directly through `@ai-sdk/typesafe-ai`, behind the `content-moderation` flag.
+The `ai` and `@ai-sdk/typesafe-ai` packages are dynamically imported to keep
+them out of the Worker's startup bundle. After changing prompts or thresholds,
 run `pnpm --filter=web eval:moderation check`. It sends every case in
-`scripts/moderation-cases.json` to the live model through the AI Gateway, so it
-needs `AI_GATEWAY_API_KEY` (from the shell or `.dev.vars`) and costs a little
+`scripts/moderation-cases.json` to the live model, so it
+needs `TYPESAFE_AI_API_KEY` (from the shell or `.dev.vars`) and costs a little
 money. It is not part of CI. It retries a case once when the first call times
 out, and exits 1 on any mismatch.
 

@@ -44,6 +44,17 @@ export const postTable = sqliteTable(
       .$onUpdate(() => new Date()),
     likeCount: integer("like_count").notNull().default(0),
     commentCount: integer("comment_count").notNull().default(0),
+    // Hot ranks on these people counts, never on the display counters above:
+    // each counts people other than the author, and each person once. Most
+    // comments are authors replying in their own threads, and a self-like,
+    // self-repost or repeated quote would otherwise rank a post up with no one
+    // else involved. Server-only (see HotCounterColumn), so a payload never
+    // shows whether the author liked their own post.
+    commenterCount: integer("commenter_count").notNull().default(0),
+    likerCount: integer("liker_count").notNull().default(0),
+    voterCount: integer("voter_count").notNull().default(0),
+    // Reposted or quoted: someone who did both counts once.
+    resharerCount: integer("resharer_count").notNull().default(0),
     repostCount: integer("repost_count").notNull().default(0),
     // Denormalized poll-vote total across all options, mirroring likeCount —
     // feeds the Hot engagement score without a per-read aggregate over
@@ -59,6 +70,10 @@ export const postTable = sqliteTable(
   (t) => [
     index("post_created_at_id_idx").on(t.createdAt, t.id),
     index("post_author_created_at_idx").on(t.authorId, t.createdAt, t.id),
+    // "Has this user quoted this post" for resharerCount. Partial: only quotes.
+    index("post_quoted_author_idx")
+      .on(t.quotedPostId, t.authorId)
+      .where(sql`${t.quotedPostId} IS NOT NULL`),
     // Backs the classifier retry cron and its backlog count: unclassified rows
     // only, so a clean window costs ~0 rows scanned.
     index("post_unclassified_created_idx")

@@ -20,7 +20,7 @@ import type { Db } from "../src/server-lib/db";
 import type { AppEnv } from "../src/server-lib/env";
 import { makeTestDb } from "./helpers/db";
 
-const env = { AI_GATEWAY_API_KEY: "test-key" } as AppEnv;
+const env = { TYPESAFE_AI_API_KEY: "test-key" } as AppEnv;
 const SCORES = { severe: 91, drama: 40, reason: "harassment" };
 const minutesAgo = (minutes: number) =>
   new Date(Date.now() - minutes * 60 * 1000);
@@ -226,7 +226,7 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
     expect(row?.updatedAt).toEqual(savedAt);
   });
 
-  it("sends nothing without a Gateway key", async () => {
+  it("sends nothing without a TypeSafe key", async () => {
     await db.insert(postTable).values({
       id: "p1",
       content: "missed",
@@ -300,7 +300,7 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
       }),
     };
     const kvEnv = {
-      AI_GATEWAY_API_KEY: "test-key",
+      TYPESAFE_AI_API_KEY: "test-key",
       KV: kv,
     } as unknown as AppEnv;
 
@@ -310,7 +310,7 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
       kv.put.mockClear();
       await db.insert(postTable).values({
         id: "bad",
-        content: "the gateway refuses this",
+        content: "the API refuses this",
         authorId: "a",
         createdAt: minutesAgo(10),
       });

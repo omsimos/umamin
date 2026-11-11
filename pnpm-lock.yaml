@@ -323,6 +323,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@ai-sdk/typesafe-ai':
+        specifier: 3.0.35
+        version: 3.0.35(zod@4.6.7)
       '@blobatar/react':
         specifier: ^2.7.0
         version: 2.7.0(blobatar@2.7.0(react@19.3.1))(react@19.3.1)
@@ -714,6 +717,12 @@ packages:
   '@ai-sdk/provider@4.0.37':
     resolution: {integrity: sha512-4uPgZ3qiX/JaQFr0dQoibUzHImZit9u05ro2BxGUnJwU4fV28BOAbKUa2OjQvqtM1tMac3bTKkaXdyzGovQXqg==}
     engines: {node: '>=22'}
+
+  '@ai-sdk/typesafe-ai@3.0.35':
+    resolution: {integrity: sha512-vmqj3uCrmlR+oUI1DMgxT7n7P8LmB11FSl4i5ErGUqMrnp7PSVw3rD0A8oxNHezNU1zBvX0b8gdY/50EgiiCMA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   '@alloc/quick-lru@5.3.0':
     resolution: {integrity: sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA==}
@@ -5614,6 +5623,12 @@ snapshots:
   '@ai-sdk/provider@4.0.37':
     dependencies:
       json-schema: 0.4.0
+
+  '@ai-sdk/typesafe-ai@3.0.35(zod@4.6.7)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.37
+      '@ai-sdk/provider-utils': 5.0.76(zod@4.6.7)
+      zod: 4.6.7
 
   '@alloc/quick-lru@5.3.0': {}
 

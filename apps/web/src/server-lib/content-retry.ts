@@ -28,7 +28,7 @@ import type { AppEnv } from "./env";
 // there also means the receiver never opted in to classification.
 
 const RETRY_WINDOW_MS = 6 * 60 * 60 * 1000;
-// A failure that just happened is usually the Gateway struggling; resending at
+// A failure that just happened is usually the TypeSafe API struggling; resending at
 // once would likely fail the same way.
 const RETRY_MIN_AGE_MS = 60 * 1000;
 const RETRY_BATCH = 10;
@@ -36,7 +36,7 @@ const RETRY_BATCH = 10;
 const RETRY_CANDIDATES = RETRY_BATCH * 3;
 const RETRY_CONCURRENCY = 4;
 const RETRY_TIMEOUT_MS = 8000;
-// A row the Gateway keeps rejecting for good (not a timeout or a 5xx) would be
+// A row the TypeSafe API keeps rejecting for good (not a timeout or a 5xx) would be
 // re-sent every 5 minutes for the whole window and starve the rows behind it.
 // The counter lives in KV, expires just after the window, and is a no-op
 // without the binding.
@@ -98,7 +98,7 @@ export async function retryUnclassifiedContent(
   env: AppEnv,
   defer?: Defer,
 ): Promise<{ attempted: number; classified: number; backlog: number }> {
-  if (!env.AI_GATEWAY_API_KEY)
+  if (!env.TYPESAFE_AI_API_KEY)
     return { attempted: 0, classified: 0, backlog: 0 };
 
   const now = Date.now();

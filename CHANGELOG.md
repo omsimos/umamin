@@ -18,6 +18,16 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.23.0] - 2026-11-11
+
+### Changed
+
+- Hot ranks posts by how many different people like, vote on, comment on or share them. Your own likes, votes, reposts and replies on your post no longer move it up, and each person counts once however many times they comment or quote.
+
+### Security & Privacy
+
+- The automated content checks now send text straight to TypeSafe AI instead of through Vercel's AI Gateway, so one less company handles your posts.
+
 ## [7.22.0] - 2026-11-08
 
 ### Added
@@ -1327,6 +1337,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.23.0]: https://github.com/omsimos/umamin/compare/v7.22.0...v7.23.0
 [7.22.0]: https://github.com/omsimos/umamin/compare/v7.21.0...v7.22.0
 [7.21.0]: https://github.com/omsimos/umamin/compare/v7.20.1...v7.21.0
 [7.20.1]: https://github.com/omsimos/umamin/compare/v7.20.0...v7.20.1

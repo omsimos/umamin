@@ -37,10 +37,10 @@ function fakeKv() {
 type SeedPost = {
   id: string;
   createdAt: Date;
-  likeCount?: number;
-  pollVoteCount?: number;
-  commentCount?: number;
-  repostCount?: number;
+  likerCount?: number;
+  voterCount?: number;
+  commenterCount?: number;
+  resharerCount?: number;
 };
 
 async function seed(db: Db, posts: SeedPost[]) {
@@ -51,10 +51,10 @@ async function seed(db: Db, posts: SeedPost[]) {
       content: `post ${p.id}`,
       authorId: "u1",
       createdAt: p.createdAt,
-      likeCount: p.likeCount ?? 0,
-      pollVoteCount: p.pollVoteCount ?? 0,
-      commentCount: p.commentCount ?? 0,
-      repostCount: p.repostCount ?? 0,
+      likerCount: p.likerCount ?? 0,
+      voterCount: p.voterCount ?? 0,
+      commenterCount: p.commenterCount ?? 0,
+      resharerCount: p.resharerCount ?? 0,
     });
   }
 }
@@ -74,7 +74,7 @@ describe("recomputeHotFeed", () => {
     const now = Date.now();
     const posts: SeedPost[] = [
       { id: "old", createdAt: new Date(now - 100 * 864e5) },
-      { id: "engaged", createdAt: new Date(now - 36e5), likeCount: 100 },
+      { id: "engaged", createdAt: new Date(now - 36e5), likerCount: 100 },
       { id: "fresh", createdAt: new Date(now) },
     ];
     await seed(db, posts);
@@ -91,17 +91,17 @@ describe("recomputeHotFeed", () => {
         (a, b) =>
           getHotScore({
             createdAt: b.createdAt,
-            likeCount: b.likeCount ?? 0,
-            pollVoteCount: 0,
-            commentCount: 0,
-            repostCount: 0,
+            likerCount: b.likerCount ?? 0,
+            voterCount: 0,
+            commenterCount: 0,
+            resharerCount: 0,
           }) -
           getHotScore({
             createdAt: a.createdAt,
-            likeCount: a.likeCount ?? 0,
-            pollVoteCount: 0,
-            commentCount: 0,
-            repostCount: 0,
+            likerCount: a.likerCount ?? 0,
+            voterCount: 0,
+            commenterCount: 0,
+            resharerCount: 0,
           }),
       )
       .map((p) => p.id);

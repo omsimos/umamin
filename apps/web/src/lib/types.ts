@@ -223,6 +223,14 @@ export type ModerationColumn =
   | "modReviewedAt"
   | "modAppealedAt";
 
+// Hot's people counts (hot-score.ts). Server-only: a liker count one below the
+// like count would show that the author liked their own post.
+export type HotCounterColumn =
+  | "commenterCount"
+  | "likerCount"
+  | "voterCount"
+  | "resharerCount";
+
 export type ContentLabel = "severe" | "scam" | "drama";
 
 type Moderated = {
@@ -234,13 +242,19 @@ type Moderated = {
 // The embedded card inside a quote post. Never carries viewer overlays, a
 // nested quotedPost, or a live poll — embedding stops at one level (the card
 // links through; pollEndsAt alone drives a static "Poll" indicator).
-export type QuotedPostData = Omit<SelectPost, "images" | ModerationColumn> &
+export type QuotedPostData = Omit<
+  SelectPost,
+  "images" | ModerationColumn | HotCounterColumn
+> &
   Moderated & {
     images?: PostImageDisplay[] | null;
     author: FeedAuthor;
   };
 
-export type PostData = Omit<SelectPost, "images" | ModerationColumn> &
+export type PostData = Omit<
+  SelectPost,
+  "images" | ModerationColumn | HotCounterColumn
+> &
   Moderated & {
     images?: PostImageDisplay[] | null;
     // Set when quotedPostId is set: the resolved post, or null when it's been

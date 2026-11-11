@@ -21,6 +21,7 @@
     "clean": "rm -rf dist .turbo .wrangler node_modules"
   },
   "dependencies": {
+    "@ai-sdk/typesafe-ai": "3.0.35",
     "@blobatar/react": "^2.7.0",
     "@fontsource-variable/archivo": "^5.3.0",
     "@fontsource-variable/geist": "^5.3.0",

@@ -34,6 +34,11 @@ So every migration must be additive. For anything destructive, expand and
 contract over separate releases: add the new column, deploy code that uses it,
 then drop the old column in a later release.
 
+A backfill can run while the old Worker still serves, and writes made by the
+old code in that gap aren't in it. For Hot's people counts on `postTable`, run
+the "Reconcile Hot counts" workflow (`pnpm --filter=@umamin/db reconcile:hot`)
+once the deploy is live. It rewrites only the rows that are wrong.
+
 ## Writing a migration
 
 - Edit `src/schema/`, then run `generate`. Commit the `.sql` file, its

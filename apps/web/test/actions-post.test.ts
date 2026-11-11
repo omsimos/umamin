@@ -231,6 +231,150 @@ describe("post actions (real libSQL)", () => {
     expect(await db.select().from(notificationTable)).toHaveLength(1);
   });
 
+  describe("commenterCount", () => {
+    async function counts() {
+      const [post] = await db
+        .select({
+          comments: postTable.commentCount,
+          commenters: postTable.commenterCount,
+        })
+        .from(postTable)
+        .where(eq(postTable.id, "p1"));
+      return post;
+    }
+    const comment = (userId: string, content: string) =>
+      callJson<{ success: boolean; comment?: { id: string } }>(
+        buildApp(db, authed(userId, { createdAt: OLD })),
+        "createCommentAction",
+        { postId: "p1", content },
+      );
+    const remove = (userId: string, commentId: string) =>
+      callJson(
+        buildApp(db, authed(userId, { createdAt: OLD })),
+        "deleteCommentAction",
+        { commentId },
+      );
+
+    it("counts each other person once and never the post's author", async () => {
+      await comment("author", "replying to my own post");
+      await comment("author", "and again");
+      expect(await counts()).toEqual({ comments: 2, commenters: 0 });
+
+      await comment("viewer", "first");
+      await comment("viewer", "second");
+      expect(await counts()).toEqual({ comments: 4, commenters: 1 });
+    });
+
+    it("drops a commenter only when their last comment is deleted", async () => {
+      const first = (await comment("viewer", "first")).json.comment?.id;
+      const second = (await comment("viewer", "second")).json.comment?.id;
+      if (!first || !second) throw new Error("comments not created");
+
+      await remove("viewer", first);
+      expect(await counts()).toEqual({ comments: 1, commenters: 1 });
+      await remove("viewer", second);
+      expect(await counts()).toEqual({ comments: 0, commenters: 0 });
+    });
+
+    it("leaves commenters alone when the author deletes their own reply", async () => {
+      await comment("viewer", "hello");
+      const own = (await comment("author", "hi back")).json.comment?.id;
+      if (!own) throw new Error("comment not created");
+
+      await remove("author", own);
+      expect(await counts()).toEqual({ comments: 1, commenters: 1 });
+    });
+  });
+
+  describe("Hot people counts", () => {
+    beforeEach(async () => {
+      await seedUser(db, "other");
+    });
+
+    async function people() {
+      const [post] = await db
+        .select({
+          likes: postTable.likeCount,
+          likers: postTable.likerCount,
+          voters: postTable.voterCount,
+          reposts: postTable.repostCount,
+          resharers: postTable.resharerCount,
+        })
+        .from(postTable)
+        .where(eq(postTable.id, "p1"));
+      return post;
+    }
+    const as = (userId: string) =>
+      buildApp(db, authed(userId, { createdAt: OLD }));
+
+    it("leaves out the author's own like and poll vote", async () => {
+      await db
+        .update(postTable)
+        .set({ pollEndsAt: new Date(Date.now() + 60 * 60 * 1000) })
+        .where(eq(postTable.id, "p1"));
+      await db
+        .insert(pollOptionTable)
+        .values({ id: "o1", postId: "p1", idx: 0, label: "yes" });
+
+      for (const user of ["author", "viewer"]) {
+        await callJson(as(user), "addLikeAction", { postId: "p1" });
+        await callJson(as(user), "votePollAction", { optionId: "o1" });
+      }
+      expect(await people()).toMatchObject({ likes: 2, likers: 1, voters: 1 });
+
+      await callJson(as("author"), "removeLikeAction", { postId: "p1" });
+      expect(await people()).toMatchObject({ likes: 1, likers: 1 });
+      await callJson(as("viewer"), "removeLikeAction", { postId: "p1" });
+      expect(await people()).toMatchObject({ likes: 0, likers: 0 });
+    });
+
+    it("counts a person once across reposts and repeated quotes", async () => {
+      const quote = async (userId: string) => {
+        const { json } = await callJson<{ post?: { id: string } }>(
+          as(userId),
+          "createPostAction",
+          { content: "look", quotedPostId: "p1" },
+        );
+        if (!json.post) throw new Error("quote not created");
+        return json.post.id;
+      };
+
+      await callJson(as("author"), "addRepostAction", { postId: "p1" });
+      await quote("author");
+      expect(await people()).toMatchObject({ reposts: 2, resharers: 0 });
+
+      await callJson(as("viewer"), "addRepostAction", { postId: "p1" });
+      const first = await quote("viewer");
+      const second = await quote("viewer");
+      await quote("other");
+      expect(await people()).toMatchObject({ reposts: 6, resharers: 2 });
+
+      // viewer still has a repost and a quote after each of these.
+      await callJson(as("viewer"), "deletePostAction", { postId: first });
+      await callJson(as("viewer"), "removeRepostAction", { postId: "p1" });
+      expect(await people()).toMatchObject({ reposts: 4, resharers: 2 });
+      await callJson(as("viewer"), "deletePostAction", { postId: second });
+      expect(await people()).toMatchObject({ reposts: 3, resharers: 1 });
+    });
+
+    it("never sends the people counts to the client", async () => {
+      await callJson(as("viewer"), "addLikeAction", { postId: "p1" });
+      const { json } = await callJson(as("viewer"), "getPostPublicAction", {
+        id: "p1",
+      });
+
+      expect(JSON.stringify(json)).toContain('"likeCount":1');
+      for (const key of [
+        "likerCount",
+        "voterCount",
+        "commenterCount",
+        "resharerCount",
+      ]) {
+        expect(JSON.stringify(json)).not.toContain(key);
+      }
+    });
+  });
+
   it("a comment on a missing post is reported as not found", async () => {
     const app = buildApp(db, authed("viewer", { createdAt: OLD }));
     const { json } = await callJson(app, "createCommentAction", {
