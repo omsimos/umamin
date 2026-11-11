@@ -1,0 +1,48 @@
+name: Reconcile Hot counts
+
+# Manual. Recomputes Hot's people counts on postTable from the engagement
+# tables (packages/db/src/reconcile-hot-counts.ts). Run it after the Worker
+# deploy that follows a change to how the counts are kept: migrate.yml and the
+# deploy aren't ordered, so writes made by the old Worker after the migration
+# can leave counts off by one.
+#
+#   gh workflow run reconcile-hot-counts.yml --ref dev    # staging
+#   gh workflow run reconcile-hot-counts.yml --ref main   # production
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: reconcile-hot-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    name: Recompute people counts
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    # Same environment mapping as migrate.yml.
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Reconcile
+        env:
+          TURSO_CONNECTION_URL: ${{ secrets.TURSO_CONNECTION_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: pnpm --filter=@umamin/db reconcile:hot

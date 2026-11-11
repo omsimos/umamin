@@ -37,6 +37,7 @@ import {
   addCommenter,
   addOther,
   addResharer,
+  hasCommented,
   removeCommenter,
   removeOther,
   removeResharer,
@@ -473,12 +474,7 @@ export const createCommentHandler = action(
         actorCreatedAt: user?.createdAt,
         delta: AURA_POINTS.comment,
       },
-      sql`${PREV_CHANGED} AND NOT EXISTS (
-        SELECT 1 FROM ${postCommentTable}
-        WHERE ${postCommentTable.authorId} = ${session.userId}
-          AND ${postCommentTable.postId} = ${postId}
-          AND ${postCommentTable.id} <> ${commentId}
-      )`,
+      sql`${PREV_CHANGED} AND NOT ${hasCommented(session.userId, postId, commentId)}`,
     );
     const statements = [
       db

@@ -27,7 +27,12 @@ export function removeOther(column: SQLiteColumn, userId: string): SQL {
   return sql`MAX(0, ${column} - CASE WHEN ${notAuthor(userId)} THEN 1 ELSE 0 END)`;
 }
 
-function hasCommented(userId: string, postId: string, exceptId?: string) {
+/** Whether userId has a comment on postId other than exceptId. */
+export function hasCommented(
+  userId: string,
+  postId: string,
+  exceptId?: string,
+): SQL {
   return sql`EXISTS (
     SELECT 1 FROM ${postCommentTable}
     WHERE ${postCommentTable.authorId} = ${userId}
@@ -50,6 +55,14 @@ export function removeCommenter(userId: string, postId: string): SQL {
   return sql`MAX(0, ${postTable.commenterCount} - CASE WHEN ${notAuthor(userId)} AND NOT ${hasCommented(userId, postId)} THEN 1 ELSE 0 END)`;
 }
 
+function hasReposted(userId: string) {
+  return sql`EXISTS (
+    SELECT 1 FROM ${postRepostTable}
+    WHERE ${postRepostTable.postId} = ${postTable.id}
+      AND ${postRepostTable.userId} = ${userId}
+  )`;
+}
+
 // Whether userId has a repost or a quote of the post being updated. `repost:
 // false` skips the repost table, for the repost insert itself.
 function hasShared(
@@ -63,11 +76,7 @@ function hasShared(
       ${opts.exceptQuoteId ? sql`AND ${quote.id} <> ${opts.exceptQuoteId}` : sql``}
   )`;
   if (!opts.repost) return quoted;
-  return sql`(${quoted} OR EXISTS (
-    SELECT 1 FROM ${postRepostTable}
-    WHERE ${postRepostTable.postId} = ${postTable.id}
-      AND ${postRepostTable.userId} = ${userId}
-  ))`;
+  return sql`(${quoted} OR ${hasReposted(userId)})`;
 }
 
 /**
@@ -89,9 +98,5 @@ export function removeResharer(userId: string): SQL {
 
 /** Account deletion, quotes pass: -1 unless the repost pass already did it. */
 export function removeQuoterKeepingReposters(userId: string): SQL {
-  return sql`CASE WHEN EXISTS (
-    SELECT 1 FROM ${postRepostTable}
-    WHERE ${postRepostTable.postId} = ${postTable.id}
-      AND ${postRepostTable.userId} = ${userId}
-  ) THEN ${postTable.resharerCount} ELSE MAX(0, ${postTable.resharerCount} - 1) END`;
+  return sql`MAX(0, ${postTable.resharerCount} - CASE WHEN ${notAuthor(userId)} AND NOT ${hasReposted(userId)} THEN 1 ELSE 0 END)`;
 }
