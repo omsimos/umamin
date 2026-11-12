@@ -38,6 +38,11 @@ async function fetchMessages(cursor: string | null): Promise<MessagesResponse> {
     window.location.assign("/login");
     throw new Error("Session expired");
   }
+  if (res.status === 403) {
+    // The account went back to a default password (an operator reset).
+    window.location.assign("/settings");
+    throw new Error("Password change required");
+  }
   if (!res.ok) throw new Error("Failed to load messages");
   return res.json();
 }
