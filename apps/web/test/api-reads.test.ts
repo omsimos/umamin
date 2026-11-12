@@ -4,7 +4,7 @@ import { postCommentTable, postTable } from "@umamin/db/schema/post";
 import { accountTable, userTable } from "@umamin/db/schema/user";
 import { aesEncrypt } from "@umamin/encryption";
 import { Hono } from "hono";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readsApp } from "../src/api/routes";
 import { __setReadDb } from "../src/api/routes/_shared";
 import type { Db } from "../src/server-lib/db";
@@ -122,48 +122,85 @@ describe("read routes (real libSQL + stubbed Cache API)", () => {
     });
   });
 
-  // /api/flags is PRIVATE for a reason: flags are evaluated against the viewer's
+  // Both flag routes are PRIVATE: /flags/pro is evaluated against the viewer's
   // distinct id, so a shared-cache response would hand one viewer's rollout
   // bucket to every other viewer.
   describe("feature flags read", () => {
-    it("is never cached and does not vary the answer by cache", async () => {
-      const res = await fetchApp("/flags");
-      expect(res.headers.get("cache-control")).toBe(
-        "private, no-store, max-age=0",
-      );
-      expect(res.headers.get("vary")).toBe("Cookie");
-    });
+    it.each(["/flags", "/flags/pro"])(
+      "%s is never cached and does not vary the answer by cache",
+      async (path) => {
+        const res = await fetchApp(path);
+        expect(res.headers.get("cache-control")).toBe(
+          "private, no-store, max-age=0",
+        );
+        expect(res.headers.get("vary")).toBe("Cookie");
+      },
+    );
 
-    // Fails closed: with no PostHog token configured the Pro offer stays hidden
-    // rather than defaulting to visible.
-    it("resolves the Pro offer to hidden when PostHog is unconfigured", async () => {
+    // Fails closed: with no PostHog token configured every surface stays
+    // hidden rather than defaulting to visible.
+    it("resolves the global flags to hidden when PostHog is unconfigured", async () => {
       const res = await fetchApp("/flags");
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
-        pro: false,
         contentModeration: false,
         chat: false,
         dm: false,
       });
     });
 
-    it("reflects a forced-on flag for a signed-in viewer", async () => {
+    it("resolves the Pro offer to hidden when PostHog is unconfigured", async () => {
+      const res = await fetchApp("/flags/pro");
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ pro: false });
+    });
+
+    it("reflects the forced-on global flags", async () => {
+      const res = await fetchApp(
+        "/flags",
+        {},
+        { FLAGS_FORCE_ON: "content-moderation,umamin-chat,umamin-dm" },
+      );
+      expect(await res.json()).toEqual({
+        contentModeration: true,
+        chat: true,
+        dm: true,
+      });
+    });
+
+    it("reflects a forced-on Pro offer for a signed-in viewer", async () => {
       await db.insert(userTable).values({ id: "f1", username: "flag_user" });
       const token = generateSessionToken();
       await createSession(db, token, "f1");
 
       const res = await fetchApp(
-        "/flags",
+        "/flags/pro",
         { headers: { cookie: `session=${token}` } },
-        {
-          FLAGS_FORCE_ON: "umamin-pro,content-moderation,umamin-chat,umamin-dm",
-        },
+        { FLAGS_FORCE_ON: "umamin-pro" },
       );
+      expect(await res.json()).toEqual({ pro: true });
+    });
+
+    // The rate limiter in withPrivateRead resolves a presented cookie, so the
+    // handler's own lookup is only observable on a request without one.
+    it("the global flags read makes no session lookup", async () => {
+      const dbFor = vi.fn(() => db);
+      __setReadDb(dbFor);
+
+      const res = await fetchApp("/flags");
+      expect(res.status).toBe(200);
+      expect(dbFor).not.toHaveBeenCalled();
+    });
+
+    it("answers the global flags for a garbage session cookie", async () => {
+      const res = await fetchApp("/flags", {
+        headers: { cookie: "session=garbage" },
+      });
+      expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
-        pro: true,
-        contentModeration: true,
-        chat: true,
-        dm: true,
+        contentModeration: false,
+        chat: false,
+        dm: false,
       });
     });
   });

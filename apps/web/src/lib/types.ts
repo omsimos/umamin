@@ -522,10 +522,9 @@ export type UserProfileViewerResponse = {
   isBanned: boolean;
 };
 
-// Resolved server-side per viewer; `pro` false hides every Pro purchase entry
-// point. Fails closed, so an unreachable PostHog reads as "keep it hidden".
+// Global switches only, the same for every viewer. Fails closed, so an
+// unreachable PostHog reads as "keep it hidden".
 export type FeatureFlagsResponse = {
-  pro: boolean;
   // The global content-moderation switch: gates the content-filter settings.
   contentModeration: boolean;
   // The global Umamin Chat switch: gates /chat and its entry points.
@@ -533,6 +532,10 @@ export type FeatureFlagsResponse = {
   // The global direct-messages switch: gates the Chats tab and DM sockets.
   dm: boolean;
 };
+
+// Resolved per viewer. False hides every Pro purchase entry point; fails
+// closed, so an unreachable PostHog reads as "keep it hidden".
+export type ProOfferResponse = { pro: boolean };
 
 // ── moderation review (moderator-only) ───────────────────────────────────────
 
