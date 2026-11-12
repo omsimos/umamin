@@ -1,5 +1,5 @@
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import * as z from "zod";
 import { parseMusicUrl } from "../../lib/music";
 import { action } from "../../server-lib/action";
@@ -80,8 +80,15 @@ export const createNoteHandler = action(
       spotifyThumbnail: null,
     };
 
-    await db.transaction(async (tx) => {
-      const [row] = await tx
+    const ownNoteId = db
+      .select({ id: noteTable.id })
+      .from(noteTable)
+      .where(eq(noteTable.userId, session.userId));
+
+    // One round trip instead of four. A user has one note row, so the row the
+    // upsert just wrote is the one these subqueries find.
+    await db.batch([
+      db
         .insert(noteTable)
         .values({
           userId: session.userId,
@@ -110,16 +117,12 @@ export const createNoteHandler = action(
             ...moderation,
             updatedAt: sql`(unixepoch())`,
           },
-        })
-        .returning({ id: noteTable.id });
-
-      if (row) {
-        await tx
-          .delete(noteReactionTable)
-          .where(eq(noteReactionTable.noteId, row.id));
-        await clearNoteDisputes(tx, row.id);
-      }
-    });
+        }),
+      db
+        .delete(noteReactionTable)
+        .where(inArray(noteReactionTable.noteId, ownNoteId)),
+      deleteDisputes(db, "note", ownNoteId),
+    ]);
 
     // Outside the transaction so it adds no round trip to the save: it runs
     // alongside the note re-read. Anonymous saves don't count, since a streak
