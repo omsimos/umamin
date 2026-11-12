@@ -943,6 +943,147 @@ describe("post actions (real libSQL)", () => {
     });
   });
 
+  describe("deletes undo counts and aura", () => {
+    const as = (userId: string) =>
+      buildApp(db, authed(userId, { createdAt: OLD }));
+
+    async function post(id: string) {
+      const [row] = await db
+        .select({
+          comments: postTable.commentCount,
+          reposts: postTable.repostCount,
+          resharers: postTable.resharerCount,
+        })
+        .from(postTable)
+        .where(eq(postTable.id, id));
+      return row;
+    }
+
+    async function comment(userId: string, content: string) {
+      const { json } = await callJson<{ comment?: { id: string } }>(
+        as(userId),
+        "createCommentAction",
+        { postId: "p1", content },
+      );
+      if (!json.comment) throw new Error("comment not created");
+      return json.comment.id;
+    }
+
+    async function quote(userId: string) {
+      const { json } = await callJson<{ post?: { id: string } }>(
+        as(userId),
+        "createPostAction",
+        { content: "look", quotedPostId: "p1" },
+      );
+      if (!json.post) throw new Error("quote not created");
+      return json.post.id;
+    }
+
+    it("deleting a person's only comment reverses the first-comment aura", async () => {
+      const id = await comment("viewer", "first");
+      expect(await points(db, "author")).toBe(5);
+
+      const { json } = await callJson(as("viewer"), "deleteCommentAction", {
+        commentId: id,
+      });
+
+      expect(json).toEqual({ success: true, postId: "p1" });
+      expect(await points(db, "author")).toBe(0);
+      expect((await post("p1")).comments).toBe(0);
+    });
+
+    it("deleting one of two comments keeps the aura", async () => {
+      const first = await comment("viewer", "first");
+      await comment("viewer", "second");
+
+      await callJson(as("viewer"), "deleteCommentAction", {
+        commentId: first,
+      });
+
+      expect(await points(db, "author")).toBe(5);
+      expect((await post("p1")).comments).toBe(1);
+    });
+
+    it("a moderator deleting someone's comment reverses no aura", async () => {
+      const id = await comment("viewer", "first");
+
+      const { json } = await callJson(
+        as("mod"),
+        "deleteCommentAction",
+        { commentId: id },
+        { MODERATOR_USERS: "u_mod" },
+      );
+
+      expect(json).toEqual({ success: true, postId: "p1" });
+      expect(await db.select().from(postCommentTable)).toHaveLength(0);
+      expect((await post("p1")).comments).toBe(0);
+      expect(await points(db, "author")).toBe(5);
+    });
+
+    it("deleting a comment keeps the disputes on the person's other comment", async () => {
+      const first = await comment("viewer", "first");
+      const second = await comment("viewer", "second");
+      await db.insert(moderationDisputeTable).values([
+        { kind: "comment", targetId: first, userId: "author" },
+        { kind: "comment", targetId: second, userId: "author" },
+      ]);
+
+      await callJson(as("viewer"), "deleteCommentAction", {
+        commentId: first,
+      });
+
+      const rest = await db.select().from(moderationDisputeTable);
+      expect(rest.map((r) => r.targetId)).toEqual([second]);
+    });
+
+    it("deleting a quote reverses the quote aura and the quoted post's counts", async () => {
+      const id = await quote("viewer");
+      expect(await points(db, "author")).toBe(3);
+      expect(await post("p1")).toMatchObject({ reposts: 1, resharers: 1 });
+
+      const { json } = await callJson(as("viewer"), "deletePostAction", {
+        postId: id,
+      });
+
+      expect(json).toEqual({ success: true });
+      expect(await points(db, "author")).toBe(0);
+      expect(await post("p1")).toMatchObject({ reposts: 0, resharers: 0 });
+    });
+
+    it("deleting a pinned post clears the pin", async () => {
+      await db
+        .update(userTable)
+        .set({ pinnedPostId: "p1" })
+        .where(eq(userTable.id, "author"));
+
+      await callJson(as("author"), "deletePostAction", { postId: "p1" });
+
+      const [row] = await db
+        .select({ pinnedPostId: userTable.pinnedPostId })
+        .from(userTable)
+        .where(eq(userTable.id, "author"));
+      expect(row.pinnedPostId).toBeNull();
+    });
+
+    it("a second delete of the same post changes nothing more", async () => {
+      await seedUser(db, "other");
+      await quote("other");
+      const id = await quote("viewer");
+      await callJson(as("viewer"), "deletePostAction", { postId: id });
+      const after = await post("p1");
+      const pointsAfter = await points(db, "author");
+
+      const { json } = await callJson(as("viewer"), "deletePostAction", {
+        postId: id,
+      });
+
+      expect(json).toEqual({ error: "Post not found" });
+      expect(after).toMatchObject({ reposts: 1, resharers: 1 });
+      expect(await post("p1")).toEqual(after);
+      expect(await points(db, "author")).toBe(pointsAfter);
+    });
+  });
+
   it("a no-op note reaction reports the note's real count", async () => {
     await db.insert(noteTable).values({
       id: "n1",
