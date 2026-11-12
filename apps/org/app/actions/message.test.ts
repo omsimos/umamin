@@ -14,12 +14,16 @@ const mocks = vi.hoisted(() => ({
   values: vi.fn(),
   aesEncrypt: vi.fn(),
   checkRateLimit: vi.fn(),
+  getSession: vi.fn(),
+  del: vi.fn(),
+  where: vi.fn(),
 }));
 
 vi.mock("@umamin/org-db", () => ({
   db: {
     select: (...args: unknown[]) => mocks.select(...args),
     insert: (...args: unknown[]) => mocks.insert(...args),
+    delete: (...args: unknown[]) => mocks.del(...args),
   },
 }));
 
@@ -28,7 +32,7 @@ vi.mock("@umamin/encryption", () => ({
 }));
 
 vi.mock("@/lib/auth", () => ({
-  getSession: async () => ({ session: null, user: null }),
+  getSession: (...args: unknown[]) => mocks.getSession(...args),
 }));
 
 vi.mock("@/lib/ratelimit", () => ({
@@ -37,7 +41,8 @@ vi.mock("@/lib/ratelimit", () => ({
   RATE_LIMIT_ERROR: "Too many requests",
 }));
 
-import { sendMessageAction } from "./message";
+import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
+import { deleteMessageAction, sendMessageAction } from "./message";
 
 function org(messageCharLimit: number | null, acceptingMessages = true) {
   return {
@@ -50,6 +55,9 @@ function org(messageCharLimit: number | null, acceptingMessages = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getSession.mockResolvedValue({ session: null, user: null });
+  mocks.del.mockReturnValue({ where: mocks.where });
+  mocks.where.mockResolvedValue(undefined);
   mocks.state.orgRows = [org(null)];
   mocks.checkRateLimit.mockResolvedValue(true);
   mocks.aesEncrypt.mockResolvedValue("encrypted-content");
@@ -71,6 +79,7 @@ describe("sendMessageAction character limits", () => {
     ).toEqual({ success: true });
 
     vi.clearAllMocks();
+    mocks.getSession.mockResolvedValue({ session: null, user: null });
     mocks.checkRateLimit.mockResolvedValue(true);
     mocks.select.mockReturnValue({
       from: () => ({
@@ -120,5 +129,42 @@ describe("sendMessageAction character limits", () => {
     ).toEqual({ success: true });
     expect(mocks.aesEncrypt).not.toHaveBeenCalled();
     expect(mocks.insert).not.toHaveBeenCalled();
+  });
+});
+
+function signedInAs(mustChangePassword: boolean) {
+  return {
+    session: { id: "s1", orgId: "org-1", expiresAt: Date.now() + 1e9 },
+    user: { id: "org-1", username: "acme", mustChangePassword },
+  };
+}
+
+describe("deleteMessageAction", () => {
+  it("deletes only the signed-in organization's message", async () => {
+    mocks.getSession.mockResolvedValue(signedInAs(false));
+
+    expect(await deleteMessageAction("m1")).toEqual({ success: true });
+
+    const condition = mocks.where.mock.calls[0]?.[0];
+    const query = new SQLiteSyncDialect().sqlToQuery(condition);
+    expect(query.sql).toContain('"org_message"."id" = ?');
+    expect(query.sql).toContain('"org_message"."org_id" = ?');
+    expect(query.params).toEqual(["m1", "org-1"]);
+  });
+
+  it("refuses without a session", async () => {
+    const result = await deleteMessageAction("m1");
+
+    expect(result).toHaveProperty("error");
+    expect(mocks.del).not.toHaveBeenCalled();
+  });
+
+  it("refuses an account that still has its default password", async () => {
+    mocks.getSession.mockResolvedValue(signedInAs(true));
+
+    expect(await deleteMessageAction("m1")).toEqual({
+      error: "Set a new password before you continue.",
+    });
+    expect(mocks.del).not.toHaveBeenCalled();
   });
 });
