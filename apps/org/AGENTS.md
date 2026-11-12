@@ -32,6 +32,10 @@ pnpm org:create-org                       # provision an organization (no signup
 - Rate limiting uses Upstash Redis (`KV_REST_API_URL`, `KV_REST_API_TOKEN`).
   Without them it logs a warning and turns rate limiting off, so production must
   have both set.
+- Production strips `console.log`, `console.info` and `console.debug`
+  (`next.config.ts`). Only `console.error` and `console.warn` reach Vercel's
+  logs. Report server errors through `logServerError` in `lib/server/log.ts`,
+  which keeps query parameters out of the log.
 - Sessions are database-backed (`lib/session.ts`, `lib/auth.ts`). A Vercel cron
   (`vercel.json`) calls `/api/cron/cleanup-sessions` daily with
   `CRON_SECRET`.

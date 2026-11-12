@@ -61,8 +61,12 @@ export async function getClientIp(): Promise<string> {
 }
 
 /**
- * Returns true if the request may proceed. No-ops to true when Redis is
- * unconfigured (local dev / transient KV outage) — set KV_REST_API_* to enforce.
+ * Returns true if the request may proceed. Without Redis configured every
+ * limiter allows (local dev runs this way). In production that state logs the
+ * "[ratelimit] Redis not configured" error above once per server instance.
+ *
+ * Redis configured but unreachable is different: `limit()` throws, and the
+ * caller's error handling turns that into an error response.
  */
 export async function checkRateLimit(
   name: LimiterName,
