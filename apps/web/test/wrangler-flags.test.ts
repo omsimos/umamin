@@ -111,4 +111,14 @@ describe("wrangler Durable Object bindings", () => {
     expect(id("production")).toBeDefined();
     expect(id("staging")).not.toBe(id("production"));
   });
+
+  it("gives each environment its own per-account login limiter", () => {
+    const id = (env: string) =>
+      config.env[env]?.unsafe?.bindings.find(
+        (b) => b.name === "RL_LOGIN_ACCOUNT",
+      )?.namespace_id;
+    expect(id("staging")).toBeDefined();
+    expect(id("production")).toBeDefined();
+    expect(id("staging")).not.toBe(id("production"));
+  });
 });

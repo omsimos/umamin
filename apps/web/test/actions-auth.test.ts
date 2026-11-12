@@ -40,6 +40,37 @@ function sessionToken(res: Response): string | null {
   return /(?:^|,\s*)session=([^;]+)/.exec(raw)?.[1] ?? null;
 }
 
+function recordingLimiter() {
+  const keys: string[] = [];
+  return {
+    keys,
+    binding: {
+      limit: async ({ key }: { key: string }) => {
+        keys.push(key);
+        return { success: true };
+      },
+    },
+  };
+}
+
+function countingLimiter(max: number) {
+  const counts = new Map<string, number>();
+  const keys: string[] = [];
+  return {
+    keys,
+    binding: {
+      limit: async ({ key }: { key: string }) => {
+        keys.push(key);
+        const n = (counts.get(key) ?? 0) + 1;
+        counts.set(key, n);
+        return { success: n <= max };
+      },
+    },
+  };
+}
+
+const ip = (addr: string) => ({ "cf-connecting-ip": addr });
+
 describe("auth flows (real libSQL)", () => {
   let db: Db;
 
@@ -213,5 +244,111 @@ describe("auth flows (real libSQL)", () => {
     expect(json).toEqual({ error: "An unexpected error occurred" });
     expect(captureRequestException).toHaveBeenCalledTimes(1);
     expect(captureRequestException.mock.calls[0][1]).toBeInstanceOf(Error);
+  });
+
+  describe("limiter keys", () => {
+    const loginBody = { username: "alice1", password: "password123" };
+
+    it("login shares one budget across an IPv6 /64", async () => {
+      const app = buildApp(db, ANON);
+      const auth = recordingLimiter();
+      const env = { RL_AUTH: auth.binding } as never;
+      await call(app, "login", loginBody, env, ip("2001:db8:1:2::1"));
+      await call(app, "login", loginBody, env, ip("2001:db8:1:2:ffff::9"));
+      await call(app, "login", loginBody, env, ip("2001:db8:1:3::1"));
+
+      expect(auth.keys).toHaveLength(3);
+      expect(auth.keys[0]).toBe(auth.keys[1]);
+      expect(auth.keys[2]).not.toBe(auth.keys[0]);
+      for (const key of auth.keys) expect(key.startsWith("login:")).toBe(true);
+    });
+
+    it("login keeps an IPv4 address whole", async () => {
+      const app = buildApp(db, ANON);
+      const auth = recordingLimiter();
+      await call(
+        app,
+        "login",
+        loginBody,
+        { RL_AUTH: auth.binding } as never,
+        ip("203.0.113.9"),
+      );
+      expect(auth.keys).toEqual(["login:203.0.113.9"]);
+    });
+
+    it("signup shares one budget across an IPv6 /64", async () => {
+      const app = buildApp(db, ANON);
+      const auth = recordingLimiter();
+      const env = { RL_AUTH: auth.binding } as never;
+      for (const [username, addr] of [
+        ["signer1", "2001:db8:1:2::1"],
+        ["signer2", "2001:db8:1:2:ffff::9"],
+      ]) {
+        await call(
+          app,
+          "signup",
+          { username, password: "password123", confirmPassword: "password123" },
+          env,
+          ip(addr),
+        );
+      }
+
+      expect(auth.keys).toHaveLength(2);
+      expect(auth.keys[0]).toBe(auth.keys[1]);
+      for (const key of auth.keys) expect(key.startsWith("signup:")).toBe(true);
+    });
+
+    it("login is limited per username, whatever the network", async () => {
+      const app = buildApp(db, ANON);
+      await call(app, "signup", {
+        username: "alice1",
+        password: "password123",
+        confirmPassword: "password123",
+      });
+      const account = countingLimiter(2);
+      const env = { RL_LOGIN_ACCOUNT: account.binding } as never;
+      const wrong = { username: "alice1", password: "wrongpassword" };
+
+      const results = [];
+      for (const addr of ["203.0.113.1", "198.51.100.2", "192.0.2.3"]) {
+        results.push((await callJson(app, "login", wrong, env, ip(addr))).json);
+      }
+      expect(results).toEqual([
+        { error: INCORRECT },
+        { error: INCORRECT },
+        { error: RATE_LIMIT_ERROR },
+      ]);
+
+      const other = await callJson(
+        app,
+        "login",
+        { username: "bobby1", password: "wrongpassword" },
+        env,
+        ip("203.0.113.1"),
+      );
+      expect(other.json).toEqual({ error: INCORRECT });
+      expect(account.keys[0]).toBe("login:u:alice1");
+    });
+
+    it("login normalizes the username before keying the account limit", async () => {
+      const app = buildApp(db, ANON);
+      const account = recordingLimiter();
+      const env = { RL_LOGIN_ACCOUNT: account.binding } as never;
+      for (const username of ["  ALICE1 ", "alice1"]) {
+        await call(app, "login", { username, password: "password123" }, env);
+      }
+      expect(account.keys).toEqual(["login:u:alice1", "login:u:alice1"]);
+    });
+
+    it("a login refused by the IP limit does not spend the account budget", async () => {
+      const app = buildApp(db, ANON);
+      const account = recordingLimiter();
+      const { json } = await callJson(app, "login", loginBody, {
+        RL_AUTH: { limit: async () => ({ success: false }) },
+        RL_LOGIN_ACCOUNT: account.binding,
+      } as never);
+      expect(json).toEqual({ error: RATE_LIMIT_ERROR });
+      expect(account.keys).toHaveLength(0);
+    });
   });
 });

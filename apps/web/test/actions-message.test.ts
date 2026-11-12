@@ -88,6 +88,29 @@ describe("message actions (real libSQL)", () => {
     expect(await countMessages(db, "recv")).toBe(1);
   });
 
+  it("sendMessageAction shares one budget across an IPv6 /64", async () => {
+    const app = buildApp(db, ANON);
+    const keys: string[] = [];
+    const msg = {
+      limit: async ({ key }: { key: string }) => {
+        keys.push(key);
+        return { success: true };
+      },
+    };
+    for (const addr of ["2001:db8:1:2::1", "2001:db8:1:2:ffff::9"]) {
+      await callJson(
+        app,
+        "sendMessageAction",
+        { question: "ask me", content: "hi there", receiverId: "recv" },
+        { RL_MESSAGE: msg } as never,
+        { "cf-connecting-ip": addr },
+      );
+    }
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBe(keys[1]);
+    for (const key of keys) expect(key.startsWith("msg:")).toBe(true);
+  });
+
   it("stores only a question the receiver wrote: their prompt or their note", async () => {
     await db
       .update(userTable)

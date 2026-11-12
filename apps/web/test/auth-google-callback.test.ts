@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = {
   db: null as Db | null,
   claims: {} as Record<string, unknown>,
+  limiterKeys: [] as string[],
 };
 
 vi.mock("../src/server-lib/db", () => ({
@@ -25,7 +26,10 @@ vi.mock("../src/server-lib/ip-denylist", () => ({
 }));
 
 vi.mock("../src/server-lib/ratelimit", () => ({
-  checkRateLimit: async () => true,
+  checkRateLimit: async (_env: unknown, _name: string, key: string) => {
+    state.limiterKeys.push(key);
+    return true;
+  },
 }));
 
 import { accountTable, userTable } from "@umamin/db/schema/user";
@@ -57,7 +61,11 @@ const FAKE_CTX = {
 
 // Matching state + a code verifier are all the CSRF/PKCE gate needs; `intent`
 // is what decides whether the callback may provision an account.
-function callback(intent: "register" | "login", session?: string) {
+function callback(
+  intent: "register" | "login",
+  session?: string,
+  opts: { headers?: Record<string, string> } = {},
+) {
   const app = new Hono<AppBindings>().route("/auth/google", googleAuthApp);
   const cookies = [
     `${GOOGLE_OAUTH_STATE_COOKIE_NAME}=st`,
@@ -68,7 +76,7 @@ function callback(intent: "register" | "login", session?: string) {
 
   return app.request(
     "/auth/google/callback?code=c&state=st",
-    { headers: { cookie: cookies } },
+    { headers: { cookie: cookies, ...opts.headers } },
     { TURSO_CONNECTION_URL: "", TURSO_AUTH_TOKEN: "" } as unknown as AppEnv,
     FAKE_CTX,
   );
@@ -81,6 +89,7 @@ describe("google oauth callback (real libSQL)", () => {
     __clearSessionCache();
     db = await makeTestDb();
     state.db = db;
+    state.limiterKeys = [];
     state.claims = {
       sub: "google-sub-1",
       email: "alice@example.com",
@@ -144,5 +153,21 @@ describe("google oauth callback (real libSQL)", () => {
       .from(userTable)
       .where(eq(userTable.id, "user_2"));
     expect(after.imageUrl).toBeNull();
+  });
+
+  it("keys the callback limit on the IPv6 /64", async () => {
+    await callback("register", undefined, {
+      headers: { "cf-connecting-ip": "2001:db8:1:2::1" },
+    });
+    state.claims = { ...state.claims, sub: "google-sub-2" };
+    await callback("register", undefined, {
+      headers: { "cf-connecting-ip": "2001:db8:1:2:ffff::9" },
+    });
+
+    expect(state.limiterKeys).toHaveLength(2);
+    expect(state.limiterKeys[0]).toBe(state.limiterKeys[1]);
+    for (const key of state.limiterKeys) {
+      expect(key.startsWith("oauth:google:")).toBe(true);
+    }
   });
 });

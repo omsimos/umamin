@@ -20,7 +20,7 @@ import {
 } from "../../server-lib/cookies";
 import { getDb } from "../../server-lib/db";
 import { formatErrorChain } from "../../server-lib/errors";
-import { extractClientIp } from "../../server-lib/ip";
+import { extractClientIp, rateLimitKeyForIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
 import { googleOAuthConfig } from "../../server-lib/oauth";
 import { captureRequestException } from "../../server-lib/posthog";
@@ -144,7 +144,13 @@ export const googleAuthApp = new Hono<AppBindings>()
     if (await isIpDenied(c.env.KV, ip)) {
       return c.body(null, 403);
     }
-    if (!(await checkRateLimit(c.env, "auth", `oauth:google:${ip}`))) {
+    if (
+      !(await checkRateLimit(
+        c.env,
+        "auth",
+        `oauth:google:${rateLimitKeyForIp(ip)}`,
+      ))
+    ) {
       return c.body(null, 429);
     }
 
