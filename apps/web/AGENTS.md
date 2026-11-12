@@ -104,6 +104,8 @@ Use these for all new code.
   guard, rate limit, handler. It returns `Out | { error }` and never throws.
   `auth: "none"` rate-limits before the session lookup. On the client, narrow
   with `res && "error" in res`.
+- A notification is written after the response. Call `notifyLater(c, db, params)`
+  from `api/actions/_shared.ts` in an action; never `await notify(...)` there.
 - Error strings live in `server-lib/errors.ts`. The shared `idSchema` lives in
   `server-lib/schema.ts`.
 - Rate limits are Workers Rate Limiting bindings (`RL_*` in `wrangler.jsonc`).
