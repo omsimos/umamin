@@ -1,6 +1,5 @@
 import "server-only";
 
-import { aesDecrypt } from "@umamin/encryption";
 import { db } from "@umamin/org-db";
 import { orgMessageTable } from "@umamin/org-db/schema/message";
 import { orgTable } from "@umamin/org-db/schema/org";
@@ -12,6 +11,7 @@ import type {
   MessagesResponse,
   PublicOrg,
 } from "@/lib/query-types";
+import { decryptMessages } from "./decrypt-messages";
 
 // Divides evenly into the dashboard's 2/3/4-column grid.
 export const MESSAGES_PAGE_SIZE = 24;
@@ -92,14 +92,6 @@ function parseCursor(
   return { createdAt, id };
 }
 
-async function safeDecrypt(payload: string): Promise<string> {
-  try {
-    return await aesDecrypt(payload);
-  } catch {
-    return "";
-  }
-}
-
 export async function getOrgMessagesPage(params: {
   orgId: string;
   cursor?: string | null;
@@ -135,14 +127,7 @@ export async function getOrgMessagesPage(params: {
   const hasMore = rows.length > MESSAGES_PAGE_SIZE;
   const page = hasMore ? rows.slice(0, MESSAGES_PAGE_SIZE) : rows;
 
-  const messages = await Promise.all(
-    page.map(async (m) => ({
-      id: m.id,
-      question: m.question,
-      content: await safeDecrypt(m.content),
-      createdAt: m.createdAt.getTime(),
-    })),
-  );
+  const messages = await decryptMessages(page);
 
   const last = page.at(-1);
   const nextCursor =

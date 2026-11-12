@@ -14,6 +14,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { SESSION_COOKIE_NAME } from "./cookies";
 import { checkRateLimit, getClientIp, RATE_LIMIT_ERROR } from "./ratelimit";
+import { logServerError } from "./server/log";
 import {
   deleteSessionTokenCookie,
   invalidateSession,
@@ -90,7 +91,7 @@ export async function login(_initialState: unknown, formData: FormData) {
 
     await mintSessionCookie(org.id);
   } catch (err) {
-    console.error("Login error:", err);
+    logServerError("Login error:", err);
     return { error: "An unexpected error occurred" };
   }
 

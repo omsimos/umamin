@@ -189,6 +189,10 @@ catalogs:
       specifier: ^5.1.0
       version: 5.1.0
 
+overrides:
+  seroval: '>=1.6.11 <1.7'
+  dompurify: '>=3.4.17 <4'
+
 importers:
 
   .:
@@ -3979,8 +3983,8 @@ packages:
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
 
-  dompurify@3.4.15:
-    resolution: {integrity: sha512-EUBjM+B+lkDE41iE82DDSCfkoPGfXx8IxFxPMjNzm/Uk4xDet77rTN9wqlxlVg71kK7XGuUMv6wUxJUwwv+Xyw==}
+  dompurify@3.4.17:
+    resolution: {integrity: sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==}
 
   drizzle-kit@0.31.11:
     resolution: {integrity: sha512-YCYqxTLIB2OCqf6w9/Vef13baBVbwQIPcbT4Y56AfO6B9ajZhDhD8Jkveg/hJvT/iuMloKD/IYYkyMMNhr7Kqg==}
@@ -5035,10 +5039,10 @@ packages:
     resolution: {integrity: sha512-4Nk35ttD3DTDJW4hgw5StsVAPeU6qnDFnULAouw6tQ7oLTV/ICXrWpsXo2EE52eSP2joUMazbVf52mFEcADqRw==}
     engines: {node: '>=10'}
     peerDependencies:
-      seroval: ^1.0
+      seroval: '>=1.6.11 <1.7'
 
-  seroval@1.6.7:
-    resolution: {integrity: sha512-AeDcLh0yO2SFm9W71essgnSzLV9DI8ZH0x0knXn2DMnUZj728mpLbxjlbB6IqKCmqh8JA3cEqRyGoNkt584JcQ==}
+  seroval@1.6.12:
+    resolution: {integrity: sha512-CqbIVfk/7GL3ITwZI55lcPbpQbjHZ2DD5cUj4iH7E9YsCfHNJV1mx7yNp86Z84w5IpmkZZS/2s5vPOWmVWSdQg==}
     engines: {node: '>=10'}
 
   setimmediate@1.0.5:
@@ -6734,7 +6738,7 @@ snapshots:
     dependencies:
       '@posthog/core': 1.64.1
       '@posthog/types': 1.421.1
-      dompurify: 3.4.15
+      dompurify: 3.4.17
       preact: 10.29.8
     transitivePeerDependencies:
       - preact-render-to-string
@@ -7590,8 +7594,8 @@ snapshots:
     dependencies:
       '@tanstack/history': 1.162.5
       cookie-es: 3.1.1
-      seroval: 1.6.7
-      seroval-plugins: 1.6.7(seroval@1.6.7)
+      seroval: 1.6.12
+      seroval-plugins: 1.6.7(seroval@1.6.12)
 
   '@tanstack/router-generator@1.168.0(supports-color@10.2.2)':
     dependencies:
@@ -7653,7 +7657,7 @@ snapshots:
       '@tanstack/router-core': 1.171.39
       '@tanstack/start-fn-stubs': 1.162.0
       '@tanstack/start-storage-context': 1.167.41
-      seroval: 1.6.7
+      seroval: 1.6.12
 
   '@tanstack/start-fn-stubs@1.162.0': {}
 
@@ -7672,7 +7676,7 @@ snapshots:
       lightningcss: 1.33.0
       pathe: 2.0.3
       picomatch: 4.0.7
-      seroval: 1.6.7
+      seroval: 1.6.12
       source-map: 0.7.6
       srvx: 1.0.8
       tinyglobby: 0.2.17
@@ -7703,7 +7707,7 @@ snapshots:
       '@tanstack/start-storage-context': 1.167.41
       cookie-es: 3.1.1
       fetchdts: 0.2.0
-      seroval: 1.6.7
+      seroval: 1.6.12
 
   '@tanstack/start-storage-context@1.167.41':
     dependencies:
@@ -8135,7 +8139,7 @@ snapshots:
 
   dom-accessibility-api@0.6.3: {}
 
-  dompurify@3.4.15:
+  dompurify@3.4.17:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -9244,7 +9248,7 @@ snapshots:
       '@posthog/core': 1.64.1
       '@posthog/types': 1.421.1
       core-js: 3.50.0
-      dompurify: 3.4.15
+      dompurify: 3.4.17
       fflate: 0.4.9
       preact: 10.29.8
       query-selector-shadow-dom: 1.0.1
@@ -9542,11 +9546,11 @@ snapshots:
 
   semver@7.8.5: {}
 
-  seroval-plugins@1.6.7(seroval@1.6.7):
+  seroval-plugins@1.6.7(seroval@1.6.12):
     dependencies:
-      seroval: 1.6.7
+      seroval: 1.6.12
 
-  seroval@1.6.7: {}
+  seroval@1.6.12: {}
 
   setimmediate@1.0.5: {}
 

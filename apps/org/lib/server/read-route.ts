@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { privateJson } from "@/lib/private-json";
 import { checkReadRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { INTERNAL_SERVER_ERROR } from "./errors";
+import { logServerError } from "./log";
 
 type RouteContext<P> = { params: Promise<P> };
 
@@ -31,7 +32,7 @@ export function withPrivateRead<P = Record<string, never>>(
       const result = await handler(req, ctx);
       return result instanceof Response ? result : privateJson(result);
     } catch (error) {
-      console.error(`Error ${label}:`, error);
+      logServerError(`Error ${label}:`, error);
       return privateJson({ error: INTERNAL_SERVER_ERROR }, { status: 500 });
     }
   };

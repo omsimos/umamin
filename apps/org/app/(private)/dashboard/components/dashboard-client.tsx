@@ -24,6 +24,7 @@ import {
   loadExportThemePrefs,
   resolveExportTheme,
 } from "@/lib/export-themes";
+import { loadAllMessages, RateLimitedError } from "@/lib/message-walk";
 import { queryKeys } from "@/lib/query";
 import type { MessagesResponse, OrgMessageItem } from "@/lib/query-types";
 import { MessageCard } from "./message-card";
@@ -38,6 +39,12 @@ async function fetchMessages(cursor: string | null): Promise<MessagesResponse> {
     window.location.assign("/login");
     throw new Error("Session expired");
   }
+  if (res.status === 403) {
+    // The account went back to a default password (an operator reset).
+    window.location.assign("/settings");
+    throw new Error("Password change required");
+  }
+  if (res.status === 429) throw new RateLimitedError("Rate limited");
   if (!res.ok) throw new Error("Failed to load messages");
   return res.json();
 }
@@ -117,9 +124,16 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
     setPage((p) => p + 1);
   }
 
-  async function runExport(list: OrgMessageItem[]) {
+  async function runExport(all: OrgMessageItem[]) {
+    const list = all.filter((m) => !m.decryptFailed);
+    const skipped = all.length - list.length;
     if (list.length === 0) {
-      toast.info("No messages to export");
+      toast.info(
+        skipped > 0
+          ? "None of these messages could be decrypted, so there is nothing to export."
+          : "No messages to export",
+      );
+      setExporting(false);
       return;
     }
     setExporting(true);
@@ -133,9 +147,13 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
           toast.loading(`Rendering ${done}/${total}…`, { id });
         },
       );
+      const notes = [
+        failed ? `${failed} failed` : null,
+        skipped ? `${skipped} couldn't be decrypted` : null,
+      ].filter(Boolean);
       toast.success(
         `Exported ${ok} image${ok === 1 ? "" : "s"}${
-          failed ? ` (${failed} failed)` : ""
+          notes.length ? ` (${notes.join(", ")})` : ""
         }`,
         { id },
       );
@@ -150,17 +168,21 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
     // Walk every page fresh from the top so "all" really means all,
     // independent of which pages have been visited.
     setExporting(true);
+    const id = toast.loading("Loading messages…");
     try {
-      const all: OrgMessageItem[] = [];
-      let c: string | null = null;
-      do {
-        const res: MessagesResponse = await fetchMessages(c);
-        all.push(...res.messages);
-        c = res.nextCursor;
-      } while (c);
+      const all = await loadAllMessages(fetchMessages, {
+        onProgress: (loaded) =>
+          toast.loading(`Loading messages… ${loaded}`, { id }),
+        onPause: () =>
+          toast.loading(
+            "Loading is paused for a moment. It resumes on its own.",
+            { id },
+          ),
+      });
+      toast.dismiss(id);
       await runExport(all);
     } catch {
-      toast.error("Couldn't load all messages to export");
+      toast.error("Couldn't load all messages to export", { id });
       setExporting(false);
     }
   }
@@ -197,7 +219,7 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
           <ExportThemeDialog
             prefs={themePrefs}
             onSave={setThemePrefs}
-            sample={messages[0] ?? null}
+            sample={messages.find((m) => !m.decryptFailed) ?? null}
           />
           {selected.size > 0 ? (
             <>

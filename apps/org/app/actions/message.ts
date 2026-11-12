@@ -9,7 +9,7 @@ import {
   messageCharLimitError,
   resolveMessageCharLimit,
 } from "@/lib/constants";
-import { getClientIp } from "@/lib/ratelimit";
+import { checkRateLimit, getClientIp, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { idSchema, sendMessageSchema } from "@/lib/schema";
 import { INVALID_INPUT_ERROR } from "@/lib/server/errors";
 import { withAction } from "@/lib/server/with-action";
@@ -39,6 +39,11 @@ export const sendMessageAction = withAction(
 
     if (!org?.acceptingMessages) {
       return { success: true };
+    }
+
+    // Checked after the lookup so an unknown id never spends a Redis call.
+    if (!(await checkRateLimit("orgInbox", `msg-org:${org.id}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const messageCharLimit = resolveMessageCharLimit(org.messageCharLimit);

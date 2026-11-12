@@ -26,18 +26,29 @@ pnpm org:create-org                       # provision an organization (no signup
   (`lib/server/with-action.ts`): zod parse, session guard (`auth: "session"`,
   `"user"` or `"none"`), rate limit, handler. Return `{ error }` instead of
   throwing.
+  Both authenticated modes refuse an account that still has its default
+  invite password; only the password change sets `allowDefaultPassword`.
+  `/api/messages` applies the same rule with a 403.
 - Every GET route is per-viewer and goes through `withPrivateRead`
   (`lib/server/read-route.ts`), which sends `no-store` + `Vary: Cookie`. There
   is no public cached route; don't add one without a cache-key design.
 - Rate limiting uses Upstash Redis (`KV_REST_API_URL`, `KV_REST_API_TOKEN`).
   Without them it logs a warning and turns rate limiting off, so production must
   have both set.
+- Production strips `console.log`, `console.info` and `console.debug`
+  (`next.config.ts`). Only `console.error` and `console.warn` reach Vercel's
+  logs. Report server errors through `logServerError` in `lib/server/log.ts`,
+  which keeps query parameters out of the log.
 - Sessions are database-backed (`lib/session.ts`, `lib/auth.ts`). A Vercel cron
   (`vercel.json`) calls `/api/cron/cleanup-sessions` daily with
   `CRON_SECRET`.
 - Message export builds branded images and a ZIP in the browser
   (`lib/export.tsx`, `lib/export-themes.ts`, `jszip`, `modern-screenshot`).
   Test changes against `test/export-themes.test.ts` and an actual export.
+  A bulk export downloads one ZIP per 200 images (`lib/export-parts.ts`), and
+  "Download all" pauses and retries when the read limiter answers 429
+  (`lib/message-walk.ts`). A message that can't be decrypted is flagged
+  `decryptFailed`, shown as such, and left out of exports.
 - Use `@umamin/ui` components. Add new shadcn components to `packages/ui`
   rather than this app when another app could use them.
 

@@ -18,6 +18,7 @@ export const updatePasswordAction = withAction(
   {
     schema: passwordFormSchema,
     auth: "user",
+    allowDefaultPassword: true,
     // The "auth" limiter (not "write"): this verifies the current password, so
     // a hijacked session must not get a faster brute-force lane than login.
     rateLimit: { name: "auth", key: ({ user }) => `pwd:${user.id}` },
