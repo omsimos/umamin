@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import type { AppBindings } from "../../server-lib/context";
 import { type Db, getDb } from "../../server-lib/db";
+import { notify } from "../../server-lib/notifications";
 
 export type AppContext = Context<AppBindings>;
 
@@ -21,4 +22,15 @@ export function defer(c: AppContext) {
       void p;
     }
   };
+}
+
+// notify() is best effort and swallows its own errors, so the response does
+// not wait a Tokyo round trip for it.
+export function notifyLater(
+  c: AppContext,
+  db: Db,
+  params: Parameters<typeof notify>[1],
+) {
+  const later = defer(c);
+  later(notify({ db, env: c.env, defer: later }, params));
 }
