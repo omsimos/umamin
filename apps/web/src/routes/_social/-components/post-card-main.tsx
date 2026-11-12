@@ -27,22 +27,12 @@ import { PostImages } from "@/components/post-images";
 import { QuotedPostCard } from "@/components/quoted-post-card";
 import { StreakChip } from "@/components/streak";
 import { TimeAgo } from "@/components/time-ago";
-import {
-  BURST_ACTION_REJECT_MESSAGE,
-  useBurstAction,
-} from "@/hooks/use-burst-action";
-import {
-  unchangedOutcome,
-  useOptimisticToggle,
-} from "@/hooks/use-optimistic-toggle";
-import { ExpectedError } from "@/lib/expected-error";
+import { useReactionToggle } from "@/hooks/use-reaction-toggle";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
-import { captureException } from "@/lib/posthog";
 import { patchPostEverywhere } from "@/lib/query-cache";
 import { type PostData, toQuotedPostData } from "@/lib/types";
 import {
-  getActionError,
   hasPlusFeatures,
   isAlreadyLiked,
   isAlreadyRemoved,
@@ -91,81 +81,43 @@ export function PostCardMain({
     }));
   };
 
-  const handleLikeAction = useBurstAction(
-    async (nextLiked: boolean) =>
+  const like = useReactionToggle({
+    on: data.isLiked === true,
+    count: data.likeCount ?? 0,
+    request: (nextLiked) =>
       nextLiked
         ? addLikeAction({ postId: data.id })
         : removeLikeAction({ postId: data.id }),
-    {
-      limit: 6,
-      rejectMessage: BURST_ACTION_REJECT_MESSAGE,
+    // Server no-op (like row already in target state): drop the optimistic ±1
+    // for the server's count.
+    isNoop: (res) => isAlreadyLiked(res) || isAlreadyRemoved(res),
+    onResponse: (nextLiked, noop) => {
+      if (!noop) toast.success(nextLiked ? "Post liked." : "Post unliked.");
     },
-  );
+    writeCache: (state) => syncLikeCache(state.on, state.count),
+    fallbackError: "Couldn't update like.",
+    errorSource: "like",
+    burstLimit: 6,
+  });
 
-  const handleRepostAction = useBurstAction(
-    async (nextReposted: boolean) =>
+  const repost = useReactionToggle({
+    on: data.isReposted === true,
+    count: data.repostCount ?? 0,
+    request: (nextReposted) =>
       nextReposted
         ? addRepostAction({ postId: data.id })
         : removeRepostAction({ postId: data.id }),
-    {
-      limit: 4,
-      rejectMessage: BURST_ACTION_REJECT_MESSAGE,
+    isNoop: (res, nextReposted) =>
+      nextReposted ? isAlreadyReposted(res) : isAlreadyRemoved(res),
+    onResponse: (nextReposted, noop) => {
+      // Removing shows the same toast whether or not the row was still there.
+      if (!nextReposted) toast.success("Repost removed.");
+      else if (noop) toast.error("Already reposted.");
+      else toast.success("Reposted.");
     },
-  );
-
-  const like = useOptimisticToggle({
-    on: data.isLiked === true,
-    count: data.likeCount ?? 0,
-    send: async (nextLiked) => {
-      const res = await handleLikeAction(nextLiked);
-      const actionError = getActionError(res);
-      if (actionError) {
-        throw new ExpectedError(actionError);
-      }
-
-      // Server no-op (like row already in target state): drop the optimistic ±1
-      // for the server's count.
-      if (isAlreadyLiked(res) || isAlreadyRemoved(res)) {
-        return unchangedOutcome(res);
-      }
-
-      toast.success(nextLiked ? "Post liked." : "Post unliked.");
-      return "changed";
-    },
-    onSettled: (state) => syncLikeCache(state.on, state.count),
-    onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Couldn't update like.");
-      captureException(err, { source: "like" });
-    },
-  });
-
-  const repost = useOptimisticToggle({
-    on: data.isReposted === true,
-    count: data.repostCount ?? 0,
-    send: async (nextReposted) => {
-      const res = await handleRepostAction(nextReposted);
-      const actionError = getActionError(res);
-      if (actionError) {
-        throw new ExpectedError(actionError);
-      }
-      if (!nextReposted) {
-        toast.success("Repost removed.");
-        return isAlreadyRemoved(res) ? unchangedOutcome(res) : "changed";
-      }
-      if (isAlreadyReposted(res)) {
-        toast.error("Already reposted.");
-        return unchangedOutcome(res);
-      }
-      toast.success("Reposted.");
-      return "changed";
-    },
-    onSettled: (state) => syncRepostCache(state.on, state.count),
-    onError: (err) => {
-      toast.error(
-        err instanceof Error ? err.message : "Couldn't update repost.",
-      );
-      captureException(err, { source: "repost" });
-    },
+    writeCache: (state) => syncRepostCache(state.on, state.count),
+    fallbackError: "Couldn't update repost.",
+    errorSource: "repost",
   });
 
   const liked = like.on;
