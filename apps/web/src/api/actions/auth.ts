@@ -36,7 +36,7 @@ import {
   removeOther,
   removeQuoterKeepingReposters,
 } from "../../server-lib/hot-counters";
-import { extractClientIp } from "../../server-lib/ip";
+import { extractClientIp, rateLimitKeyForIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
 import { isReservedModeratorName } from "../../server-lib/moderation";
 import { AURA_POINTS, isAuraEligibleActor } from "../../server-lib/points";
@@ -109,7 +109,20 @@ export async function loginHandler(c: AppContext): Promise<Response> {
   if (await isIpDenied(c.env.KV, ip)) {
     return c.json({ error: ACCESS_BLOCKED_ERROR });
   }
-  if (!(await checkRateLimit(c.env, "auth", `login:${ip}`))) {
+  if (
+    !(await checkRateLimit(c.env, "auth", `login:${rateLimitKeyForIp(ip)}`))
+  ) {
+    return c.json({ error: RATE_LIMIT_ERROR });
+  }
+  // Checked after the IP limit, so a client that is already over its own
+  // budget can't spend this username's budget too.
+  if (
+    !(await checkRateLimit(
+      c.env,
+      "login-account",
+      `login:u:${normalizedUsername}`,
+    ))
+  ) {
     return c.json({ error: RATE_LIMIT_ERROR });
   }
 
@@ -175,7 +188,9 @@ export async function signupHandler(c: AppContext): Promise<Response> {
   if (await isIpDenied(c.env.KV, ip)) {
     return c.json({ error: ACCESS_BLOCKED_ERROR });
   }
-  if (!(await checkRateLimit(c.env, "auth", `signup:${ip}`))) {
+  if (
+    !(await checkRateLimit(c.env, "auth", `signup:${rateLimitKeyForIp(ip)}`))
+  ) {
     return c.json({ error: RATE_LIMIT_ERROR });
   }
 
@@ -233,11 +248,10 @@ export async function logoutHandler(c: AppContext): Promise<Response> {
   const db = ctxDb(c);
   const { session } = await resolveSession(c, db);
 
-  if (!session) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  await invalidateSession(db, session.id);
+  // A session that was revoked elsewhere (password change, ban, expiry) still
+  // has its httpOnly cookie in this browser, and only this response can clear
+  // it. Answering 401 left that device unable to sign out.
+  if (session) await invalidateSession(db, session.id);
   deleteSessionCookie(c);
   return c.json({ redirect: "/login" });
 }

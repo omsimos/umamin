@@ -1,11 +1,12 @@
 import {
+  accountTable,
   sessionTable,
   userBlockTable,
   userFollowTable,
   userMuteTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { and, eq, or, sql } from "drizzle-orm";
+import { and, eq, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { type MusicAttachment, parseMusicUrl } from "../../lib/music";
 import { publicImageUrl } from "../../lib/post-images";
@@ -21,6 +22,7 @@ import { revokeDmSockets, severDm } from "../../server-lib/dm/lifecycle";
 import {
   formatErrorChain,
   isUniqueConstraintViolation,
+  LAST_LOGIN_METHOD_ERROR,
   USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
@@ -246,6 +248,79 @@ export const updatePasswordHandler = action(
       revokeDmSockets(db, c.env, user.id).catch((err) =>
         captureRequestException(c, err, {
           properties: { action: "password-dm" },
+        }),
+      ),
+    );
+
+    return { success: true };
+  },
+);
+
+export const unlinkGoogleAccountHandler = action(
+  {
+    // The row is named by its link time, scoped to the caller. The Google
+    // subject id never reaches the client (see LinkedAccount in lib/types).
+    schema: z.object({ linkedAt: z.coerce.date() }),
+    auth: "user",
+    rateLimit: { name: "auth", key: ({ user }) => `unlink:${user.id}` },
+  },
+  async ({ linkedAt }, { session, user, c }) => {
+    const db = ctxDb(c);
+    const linkedAtSeconds = Math.floor(linkedAt.getTime() / 1000);
+    const thisRow = and(
+      eq(accountTable.userId, user.id),
+      eq(accountTable.providerId, "google"),
+      eq(accountTable.createdAt, linkedAt),
+    );
+
+    // One batch: the row goes only while another way to sign in remains,
+    // and the other devices are signed out only if it went.
+    const [removed] = await db.batch([
+      db
+        .delete(accountTable)
+        .where(
+          and(
+            thisRow,
+            sql`(
+              EXISTS (
+                SELECT 1 FROM "user" u
+                WHERE u.id = ${user.id} AND u.password_hash IS NOT NULL
+              )
+              OR EXISTS (
+                SELECT 1 FROM oauth_account other
+                WHERE other.user_id = ${user.id}
+                  AND other.created_at <> ${linkedAtSeconds}
+              )
+            )`,
+          ),
+        )
+        .returning({ email: accountTable.email }),
+      db
+        .delete(sessionTable)
+        .where(
+          and(
+            eq(sessionTable.userId, user.id),
+            ne(sessionTable.id, session.id),
+            PREV_CHANGED,
+          ),
+        ),
+    ]);
+
+    if (removed.length === 0) {
+      const [still] = await db
+        .select({ email: accountTable.email })
+        .from(accountTable)
+        .where(thisRow)
+        .limit(1);
+      return still ? { error: LAST_LOGIN_METHOD_ERROR } : { success: true };
+    }
+
+    clearSessionCache();
+    // Revoked sessions don't close sockets that are already open.
+    defer(c)(
+      revokeDmSockets(db, c.env, user.id).catch((err) =>
+        captureRequestException(c, err, {
+          properties: { action: "unlink-google-dm" },
         }),
       ),
     );

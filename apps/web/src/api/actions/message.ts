@@ -10,7 +10,7 @@ import { formatContent } from "../../server-lib/content";
 import { classifyContent } from "../../server-lib/content-classifier";
 import { scoreColumns } from "../../server-lib/content-label";
 import { ACCESS_BLOCKED_ERROR } from "../../server-lib/errors";
-import { extractClientIp } from "../../server-lib/ip";
+import { extractClientIp, rateLimitKeyForIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
 import { idSchema } from "../../server-lib/schema";
 import { ctxDb, defer, notifyLater } from "./_shared";
@@ -321,7 +321,8 @@ export const sendMessageHandler = action(
     // Anonymous vector: IP-keyed limiter runs BEFORE the session lookup.
     rateLimit: {
       name: "message",
-      key: ({ c }) => `msg:${extractClientIp((n) => c.req.header(n))}`,
+      key: ({ c }) =>
+        `msg:${rateLimitKeyForIp(extractClientIp((n) => c.req.header(n)))}`,
     },
   },
   async ({ question, content, receiverId }, { session, c }) => {
