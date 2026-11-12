@@ -65,6 +65,22 @@ export function hasUmaminPro(
   return until.getTime() > now;
 }
 
+/**
+ * Whether a checkout has been applied. `baselineMs` is the Pro horizon seen
+ * before leaving for checkout (0 for no Pro), so a renewal counts only once
+ * the horizon moves past it. Null means no baseline was saved, and any active
+ * Pro counts.
+ */
+export function isProPurchaseConfirmed(
+  proUntil: Date | string | null | undefined,
+  baselineMs: number | null,
+  now: number = Date.now(),
+): boolean {
+  if (!proUntil || !hasUmaminPro(proUntil, now)) return false;
+  if (baselineMs === null) return true;
+  return new Date(proUntil).getTime() > baselineMs;
+}
+
 // Calendar-month add that CLAMPS to the target month's last day instead of
 // rolling over (Aug 31 + 6mo → Feb 28/29, not Mar 2/3) — "6 months" must never
 // quietly land in the wrong month. UTC so the result is timezone-independent.

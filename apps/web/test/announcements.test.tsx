@@ -20,7 +20,6 @@ import type { FeatureFlagsResponse } from "@/lib/types";
 // attribute on <html> hides the dismissed ones.
 
 const FLAGS_ON: FeatureFlagsResponse = {
-  pro: false,
   contentModeration: true,
   chat: false,
   dm: false,

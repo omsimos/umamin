@@ -91,6 +91,10 @@ export function useDmConversation(
   const socketRef = useRef<ReconnectingSocket | null>(null);
   const waiters = useRef(new Map<string, (r: OpResult) => void>());
   const readSent = useRef(0);
+  // Op ids the room acknowledged with a stored message. `stateRef` lags a
+  // render behind, so an error that arrives right after the ack is checked
+  // against this instead.
+  const storedSends = useRef(new Set<string>());
   const onErrorRef = useRef(onError);
   useEffect(() => {
     onErrorRef.current = onError;
@@ -177,13 +181,22 @@ export function useDmConversation(
           dispatch({ type: "typing", on: frame.on, at: Date.now() });
           return;
         case "ack":
+          if (frame.messageId) {
+            storedSends.current.add(frame.id);
+            dispatch({
+              type: "acked",
+              clientId: frame.id,
+              messageId: frame.messageId,
+            });
+          }
           settle(frame.id, { ok: true });
           return;
         case "err":
           if (!frame.id) return;
           if (
+            !storedSends.current.has(frame.id) &&
             findOutgoing(stateRef.current.messages, frame.id)?.delivery ===
-            "sending"
+              "sending"
           ) {
             dispatch({ type: "failed", clientId: frame.id });
             onErrorRef.current?.(frame.code);

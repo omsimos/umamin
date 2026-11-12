@@ -11,8 +11,11 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BURST_ACTION_REJECT_MESSAGE } from "@/hooks/use-burst-action";
 import { queryKeys } from "@/lib/query";
+import type { CommentData } from "@/lib/types";
 import type { PostData, PostResponse } from "@/lib/types";
 import { PostCard } from "./post-card";
 
@@ -44,14 +47,18 @@ vi.mock("./post-menu", () => ({ PostMenu: () => null }));
 vi.mock("./comment-menu", () => ({ CommentMenu: () => null }));
 
 import {
+  addCommentLikeAction,
   addLikeAction,
   addRepostAction,
   removeLikeAction,
+  removeRepostAction,
 } from "../-lib/actions";
 
 const addLike = vi.mocked(addLikeAction);
 const removeLike = vi.mocked(removeLikeAction);
 const addRepost = vi.mocked(addRepostAction);
+const removeRepost = vi.mocked(removeRepostAction);
+const addCommentLike = vi.mocked(addCommentLikeAction);
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -97,14 +104,14 @@ function CachedPostCard() {
 
 function renderCard() {
   const queryClient = new QueryClient();
-  render(
+  const { unmount } = render(
     <QueryClientProvider client={queryClient}>
       <CachedPostCard />
     </QueryClientProvider>,
   );
   const cached = () =>
     queryClient.getQueryData<PostResponse>(queryKeys.post("post-1"));
-  return { cached };
+  return { cached, unmount };
 }
 
 const likeButton = () => screen.getByRole("button", { name: /like post/i });
@@ -176,6 +183,20 @@ describe("PostCard like toggle", () => {
     expect(cached()?.isLiked).toBe(true);
     expect(cached()?.likeCount).toBe(6);
   });
+
+  it("keeps the post unliked when the card unmounts before a refused like returns", async () => {
+    const add = deferred<unknown>();
+    addLike.mockReturnValue(add.promise as never);
+    const { cached, unmount } = renderCard();
+
+    fireEvent.click(likeButton());
+    unmount();
+    await act(async () => add.resolve({ error: "Couldn't like." }));
+
+    expect(cached()?.isLiked).toBe(false);
+    expect(cached()?.likeCount).toBe(5);
+    expect(toast.success).not.toHaveBeenCalled();
+  });
 });
 
 describe("PostCard repost toggle", () => {
@@ -210,5 +231,128 @@ describe("PostCard repost toggle", () => {
     expect(
       screen.getByRole("button", { name: "Repost options" }),
     ).toHaveTextContent("3");
+  });
+});
+
+const repostedPost = { ...basePost, isReposted: true } as PostData;
+
+function CachedRepostedPostCard() {
+  const { data } = useQuery<PostResponse>({
+    queryKey: queryKeys.post("post-1"),
+    queryFn: () => repostedPost,
+    initialData: repostedPost,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  return data ? (
+    <PostCard data={data} isAuthenticated currentUserId="viewer-1" />
+  ) : null;
+}
+
+const comment = {
+  id: "comment-1",
+  postId: "post-1",
+  authorId: "author-1",
+  content: "nice",
+  likeCount: 1,
+  isLiked: false,
+  createdAt: new Date("2026-06-01T00:00:00Z"),
+  updatedAt: new Date("2026-06-01T00:00:00Z"),
+  author: {
+    id: "author-1",
+    username: "alice",
+    displayName: null,
+    imageUrl: null,
+  },
+} as unknown as CommentData;
+
+describe("PostCard toasts", () => {
+  it("toasts when a like lands", async () => {
+    addLike.mockResolvedValue({ success: true } as never);
+    const { cached } = renderCard();
+
+    fireEvent.click(likeButton());
+
+    await waitFor(() => expect(cached()?.isLiked).toBe(true));
+    expect(toast.success).toHaveBeenCalledWith("Post liked.");
+  });
+
+  it("toasts when a repost lands and when it is removed", async () => {
+    addRepost.mockResolvedValue({ success: true } as never);
+    const { cached, unmount } = renderCard();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Repost options" }),
+    );
+    await userEvent.click(await screen.findByText("Repost"));
+
+    await waitFor(() => expect(cached()?.isReposted).toBe(true));
+    expect(toast.success).toHaveBeenCalledWith("Reposted.");
+    unmount();
+
+    removeRepost.mockResolvedValue({ alreadyRemoved: true } as never);
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CachedRepostedPostCard />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Repost options" }),
+    );
+    await userEvent.click(await screen.findByText("Remove repost"));
+
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith("Repost removed."),
+    );
+    expect(removeRepost).toHaveBeenCalledWith({ postId: "post-1" });
+  });
+
+  it("likes a comment with its own action and toast", async () => {
+    addCommentLike.mockResolvedValue({ success: true } as never);
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <PostCard
+          data={comment}
+          isComment
+          isAuthenticated
+          currentUserId="viewer-1"
+        />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Like comment" }));
+
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith("Comment liked."),
+    );
+    expect(addCommentLike).toHaveBeenCalledWith({ commentId: comment.id });
+    expect(addLike).not.toHaveBeenCalled();
+  });
+});
+
+describe("PostCard like burst", () => {
+  it("refuses the fifth like in a burst", async () => {
+    addLike.mockResolvedValue({ success: true } as never);
+    removeLike.mockResolvedValue({ success: true } as never);
+    const { cached } = renderCard();
+    const likeRequests = () =>
+      addLike.mock.calls.length + removeLike.mock.calls.length;
+
+    for (let sent = 1; sent <= 4; sent++) {
+      fireEvent.click(likeButton());
+      const liked = sent % 2 === 1;
+      await waitFor(() => expect(cached()?.isLiked).toBe(liked));
+      expect(likeRequests()).toBe(sent);
+    }
+
+    fireEvent.click(likeButton());
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(BURST_ACTION_REJECT_MESSAGE),
+    );
+    expect(likeRequests()).toBe(4);
+    expect(likeButton()).toHaveAttribute("aria-pressed", "false");
   });
 });

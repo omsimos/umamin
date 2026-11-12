@@ -6,6 +6,7 @@ import { RouteSegmentError } from "@/components/route-segment-error";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
 import { ssrSessionCookiePresent } from "@/lib/loader-fetch";
 import { loadViewer } from "@/lib/loader-viewer";
+import { settleLoadedProfile } from "@/lib/profile-loader-cache";
 import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
 import { absoluteUrl, pageSeo, websiteId } from "@/lib/seo";
 import type {
@@ -43,9 +44,14 @@ export const Route = createFileRoute("/_social/user/$username")({
       throw notFound();
     }
 
-    queryClient.setQueryData(queryKeys.userProfile(username), user);
-
-    return { username, user: user as PublicUserWithBadge };
+    return {
+      username,
+      user: settleLoadedProfile(
+        queryClient,
+        username,
+        user as PublicUserWithBadge,
+      ),
+    };
   },
   head: ({ loaderData }) => {
     const username = loaderData?.username;

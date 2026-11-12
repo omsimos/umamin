@@ -19,7 +19,33 @@ import { retryTransientRead } from "./db-retry";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const SESSION_RENEW_THRESHOLD_MS = 1000 * 60 * 60 * 24 * 15;
 
-type ActiveSession = { session: SelectSession; user: SelectUser };
+// Named columns, not the whole tables. A whole-row select lists every column in
+// the schema, so a Worker that deploys before its migration would fail every
+// signed-in request on a column the session never reads. Add a column here
+// only when a consumer of the session user needs it.
+const sessionColumns = {
+  id: sessionTable.id,
+  userId: sessionTable.userId,
+  expiresAt: sessionTable.expiresAt,
+};
+
+const sessionUserColumns = {
+  id: userTable.id,
+  username: userTable.username,
+  imageUrl: userTable.imageUrl,
+  bannerImageUrl: userTable.bannerImageUrl,
+  quietMode: userTable.quietMode,
+  hideDrama: userTable.hideDrama,
+  messageFilter: userTable.messageFilter,
+  proUntil: userTable.proUntil,
+  points: userTable.points,
+  bannedAt: userTable.bannedAt,
+  createdAt: userTable.createdAt,
+};
+
+export type SessionUser = Pick<SelectUser, keyof typeof sessionUserColumns>;
+
+type ActiveSession = { session: SelectSession; user: SessionUser };
 
 // Lets createSession run inside a caller's own db.transaction (e.g. password
 // rotation) without widening validateSessionToken's plain-Db contract.
@@ -42,8 +68,8 @@ export type SessionValidationResult =
 // Kept because the alternative — a KV read per authed request — is both slower
 // and, at KV's ~60s propagation, worse than the window it would close.
 const MICRO_CACHE_TTL_MS = 12_000;
-// Hard cap: an isolate can live for hours and each entry holds a full user +
-// session row, so an unbounded Map would grow with every distinct session the
+// Hard cap: an isolate can live for hours and each entry holds the session and
+// the session's user columns, so an unbounded Map would grow with every distinct session the
 // isolate ever sees. At the TTL above, this is far more than one isolate's
 // concurrent working set.
 const MICRO_CACHE_MAX_ENTRIES = 500;
@@ -150,7 +176,7 @@ async function loadSession(
   // delete and renewal below are writes.
   const [row] = await retryTransientRead(() =>
     db
-      .select({ session: sessionTable, user: userTable })
+      .select({ session: sessionColumns, user: sessionUserColumns })
       .from(sessionTable)
       .leftJoin(userTable, eq(sessionTable.userId, userTable.id))
       .where(eq(sessionTable.id, sessionId))

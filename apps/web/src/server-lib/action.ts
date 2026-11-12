@@ -1,4 +1,4 @@
-import type { SelectSession, SelectUser } from "@umamin/db/schema/user";
+import type { SelectSession } from "@umamin/db/schema/user";
 import type { Context } from "hono";
 import type * as z from "zod";
 import type { AppBindings } from "./context";
@@ -10,6 +10,7 @@ import {
   type LimiterName,
   RATE_LIMIT_ERROR,
 } from "./ratelimit";
+import type { SessionUser } from "./session";
 
 // Hono port of apps/www/lib/server/with-action.ts with the IDENTICAL config
 // surface (schema / invalidInput / auth / authError / rateLimit{name,key} /
@@ -29,10 +30,10 @@ type AppContext = Context<AppBindings>;
 type AuthMode = "session" | "user" | "none";
 
 type Ctx<A extends AuthMode> = (A extends "user"
-  ? { session: SelectSession; user: SelectUser }
+  ? { session: SelectSession; user: SessionUser }
   : A extends "none"
-    ? { session: SelectSession | null; user: SelectUser | null }
-    : { session: SelectSession; user: SelectUser | null }) & {
+    ? { session: SelectSession | null; user: SessionUser | null }
+    : { session: SelectSession; user: SessionUser | null }) & {
   c: AppContext;
 };
 

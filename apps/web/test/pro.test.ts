@@ -3,6 +3,7 @@ import {
   addMonthsClamped,
   computeProUntil,
   hasUmaminPro,
+  isProPurchaseConfirmed,
 } from "../src/lib/pro";
 
 const at = (iso: string) => new Date(iso);
@@ -25,6 +26,42 @@ describe("hasUmaminPro", () => {
 
   it("accepts the string form JSON deserialization produces", () => {
     expect(hasUmaminPro("2027-01-01T00:00:00.000Z", NOW)).toBe(true);
+  });
+});
+
+describe("isProPurchaseConfirmed", () => {
+  const NOW = at("2026-08-07T12:00:00Z").getTime();
+  const OLD_UNTIL = at("2026-09-07T12:00:00Z");
+  const NEW_UNTIL = at("2027-03-07T12:00:00Z");
+
+  it("is not confirmed without Pro, even for a first purchase", () => {
+    expect(isProPurchaseConfirmed(null, 0, NOW)).toBe(false);
+  });
+
+  it("confirms a first purchase once Pro is active", () => {
+    expect(isProPurchaseConfirmed(OLD_UNTIL, 0, NOW)).toBe(true);
+  });
+
+  it("keeps a renewal pending while the horizon equals the baseline", () => {
+    expect(
+      isProPurchaseConfirmed(OLD_UNTIL.toISOString(), OLD_UNTIL.getTime(), NOW),
+    ).toBe(false);
+  });
+
+  it("confirms a renewal once the horizon moves past the baseline", () => {
+    expect(
+      isProPurchaseConfirmed(NEW_UNTIL.toISOString(), OLD_UNTIL.getTime(), NOW),
+    ).toBe(true);
+  });
+
+  it("counts any active Pro when no baseline was saved", () => {
+    expect(isProPurchaseConfirmed(OLD_UNTIL, null, NOW)).toBe(true);
+  });
+
+  it("never confirms an expired horizon", () => {
+    const expired = at("2026-08-01T00:00:00Z");
+    expect(isProPurchaseConfirmed(expired, 0, NOW)).toBe(false);
+    expect(isProPurchaseConfirmed(expired, null, NOW)).toBe(false);
   });
 });
 

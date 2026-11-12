@@ -5,13 +5,20 @@ import type * as z from "zod";
 import { getSession } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import type { SessionValidationResult } from "@/lib/session";
-import { GENERIC_ERROR, INVALID_INPUT_ERROR } from "./errors";
+import {
+  GENERIC_ERROR,
+  INVALID_INPUT_ERROR,
+  PASSWORD_CHANGE_REQUIRED_ERROR,
+} from "./errors";
+import { logServerError } from "./log";
 
 type Authed = Exclude<SessionValidationResult, { session: null }>;
 type LimiterName = Parameters<typeof checkRateLimit>[0];
 
 // "session" guards the session row only; "user" guards both session + org row;
 // "none" admits anonymous callers (the session is still resolved for the handler).
+// Both authenticated modes also refuse an account that still has its default
+// password, unless the action sets `allowDefaultPassword`.
 type AuthMode = "session" | "user" | "none";
 
 type Ctx<A extends AuthMode> = A extends "user"
@@ -27,6 +34,8 @@ type ActionConfig<S extends z.ZodType, A extends AuthMode> = {
   invalidInput?: string | ((error: z.ZodError) => string);
   auth?: A;
   authError?: string;
+  /** Lets an account still on its default invite password call this action. */
+  allowDefaultPassword?: boolean;
   rateLimit?: {
     name: LimiterName;
     key: (ctx: Ctx<A>) => string | Promise<string>;
@@ -97,6 +106,11 @@ export function withAction<
         if (!session || (auth === "user" && !user)) {
           return { error: config.authError ?? GENERIC_ERROR };
         }
+        // An account on its default invite password may only change it. The
+        // gate is here so a new action is covered without remembering to add it.
+        if (user?.mustChangePassword && !config.allowDefaultPassword) {
+          return { error: PASSWORD_CHANGE_REQUIRED_ERROR };
+        }
         ctx = { session, user } as Ctx<A>;
         if (config.rateLimit) {
           const key = await config.rateLimit.key(ctx);
@@ -113,7 +127,7 @@ export function withAction<
       if (mapped) {
         return mapped;
       }
-      console.log(err);
+      logServerError("Action error:", err);
       return { error: config.errorMessage ?? GENERIC_ERROR };
     }
   }) as Action<z.input<S>, Out>;

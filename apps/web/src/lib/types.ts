@@ -110,14 +110,16 @@ export type CurrentUserClient = PublicUserWithBadge & {
 };
 // Only what the Account settings card renders. The provider subject id and the
 // owning userId never leave the server — this payload is dehydrated into every
-// signed-in page's HTML.
+// signed-in page's HTML. `linkId` stands in for the subject id when the card
+// names a row (server-lib/linked-account.ts).
 export type LinkedAccount = Pick<
   SelectAccount,
   "providerId" | "email" | "picture" | "createdAt"
->;
+> & { linkId: string };
 
 export type UserWithAccount = CurrentUserClient & {
   account: LinkedAccount | null;
+  accounts: LinkedAccount[];
 };
 
 export function toPublicUser(user: SelectUser): PublicUser {
@@ -522,10 +524,9 @@ export type UserProfileViewerResponse = {
   isBanned: boolean;
 };
 
-// Resolved server-side per viewer; `pro` false hides every Pro purchase entry
-// point. Fails closed, so an unreachable PostHog reads as "keep it hidden".
+// Global switches only, the same for every viewer. Fails closed, so an
+// unreachable PostHog reads as "keep it hidden".
 export type FeatureFlagsResponse = {
-  pro: boolean;
   // The global content-moderation switch: gates the content-filter settings.
   contentModeration: boolean;
   // The global Umamin Chat switch: gates /chat and its entry points.
@@ -533,6 +534,10 @@ export type FeatureFlagsResponse = {
   // The global direct-messages switch: gates the Chats tab and DM sockets.
   dm: boolean;
 };
+
+// Resolved per viewer. False hides every Pro purchase entry point; fails
+// closed, so an unreachable PostHog reads as "keep it hidden".
+export type ProOfferResponse = { pro: boolean };
 
 // ── moderation review (moderator-only) ───────────────────────────────────────
 

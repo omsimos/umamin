@@ -3,8 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const logoutAction = vi.fn();
-vi.mock("./actions", () => ({ logoutAction: () => logoutAction() }));
+const signOut = vi.fn();
+vi.mock("@/lib/sign-out", () => ({ signOut: () => signOut() }));
 
 const navigate = vi.fn();
 vi.mock("@/lib/navigation", () => ({ useAppNavigate: () => navigate }));
@@ -31,8 +31,8 @@ describe("SignOutButton", () => {
   });
 
   it("a failed sign-out stays on the page, keeps the cache and toasts", async () => {
-    // callAction never rejects; a CSRF block or a 500 comes back as { error }.
-    logoutAction.mockResolvedValue({ error: "An error occurred" });
+    // signOut rejects when logout comes back as { error } (a CSRF block or a 500).
+    signOut.mockRejectedValue(new Error("An error occurred"));
     const client = renderButton();
     client.setQueryData(["me"], { id: "u1" });
 
@@ -48,7 +48,7 @@ describe("SignOutButton", () => {
   });
 
   it("a successful sign-out clears the cache and follows the redirect", async () => {
-    logoutAction.mockResolvedValue({ redirect: "/login" });
+    signOut.mockResolvedValue({ redirect: "/login" });
     const client = renderButton();
     client.setQueryData(["me"], { id: "u1" });
 

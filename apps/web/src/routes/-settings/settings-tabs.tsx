@@ -33,6 +33,7 @@ export function SettingsTabs() {
     return {
       ...rest,
       account: accounts?.length ? accounts[0] : null,
+      accounts: accounts ?? [],
     };
   }, [data?.user]);
 

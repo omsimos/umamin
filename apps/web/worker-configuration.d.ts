@@ -34,6 +34,7 @@ interface __BaseEnv_Env {
 	RL_READ: RateLimit;
 	RL_READ_SHARED: RateLimit;
 	RL_CHAT_CONNECT: RateLimit;
+	RL_LOGIN_ACCOUNT: RateLimit;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

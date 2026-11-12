@@ -1,9 +1,14 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen } from "@testing-library/react";
+import {
+  type InfiniteData,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PollData } from "@/lib/types";
+import { votePollAction } from "@/lib/actions";
+import type { FeedResponse, PollData, PostData } from "@/lib/types";
 import { PollCard } from "./poll-card";
 
 vi.mock("@/lib/actions", () => ({ votePollAction: vi.fn() }));
@@ -73,5 +78,48 @@ describe("PollCard clock", () => {
 
     expect(screen.getByText(/ends in 5m/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vote for Yes" })).toBeEnabled();
+  });
+});
+
+describe("PollCard vote", () => {
+  it("writes a vote into the profile feed cache", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SERVER_NOW);
+    const queryClient = new QueryClient();
+    const key = ["user-posts", "josh"];
+    queryClient.setQueryData<InfiniteData<FeedResponse>>(key, {
+      pageParams: [null],
+      pages: [
+        {
+          data: [
+            {
+              type: "post",
+              post: { id: "p1", poll } as unknown as PostData,
+            },
+          ],
+          nextCursor: null,
+        },
+      ] as FeedResponse[],
+    });
+    vi.mocked(votePollAction).mockResolvedValue({
+      success: true,
+      votedOptionId: "a",
+    } as never);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <PollCard postId="p1" poll={poll} isAuthenticated />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Vote for Yes" }));
+    await act(async () => {});
+
+    const cachedPoll =
+      queryClient.getQueryData<InfiniteData<FeedResponse>>(key)?.pages[0]
+        ?.data[0]?.post.poll;
+    expect(cachedPoll?.myVoteOptionId).toBe("a");
+    expect(
+      cachedPoll?.options.find((option) => option.id === "a")?.voteCount,
+    ).toBe(4);
   });
 });

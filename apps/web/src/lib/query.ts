@@ -45,6 +45,7 @@ export const queryKeys = {
   groupRequests: (tagOrId: string) => ["group-requests", tagOrId] as const,
   groupViewer: (tagOrId: string) => ["group-viewer", tagOrId] as const,
   featureFlags: () => ["feature-flags"] as const,
+  proOffer: () => ["pro-offer"] as const,
   dmThreads: () => ["dm-threads"] as const,
   dmUnread: () => ["dm-unread"] as const,
   dmPeer: (username: string) => ["dm-peer", username] as const,

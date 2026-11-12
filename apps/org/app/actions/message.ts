@@ -9,7 +9,7 @@ import {
   messageCharLimitError,
   resolveMessageCharLimit,
 } from "@/lib/constants";
-import { getClientIp } from "@/lib/ratelimit";
+import { checkRateLimit, getClientIp, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import { idSchema, sendMessageSchema } from "@/lib/schema";
 import { INVALID_INPUT_ERROR } from "@/lib/server/errors";
 import { withAction } from "@/lib/server/with-action";
@@ -44,6 +44,14 @@ export const sendMessageAction = withAction(
     const messageCharLimit = resolveMessageCharLimit(org.messageCharLimit);
     if (content.length > messageCharLimit) {
       return { error: messageCharLimitError(messageCharLimit) };
+    }
+
+    // Every sender shares this budget, so only a message that would be stored
+    // spends it. An unknown id or an over-long message never reaches Redis.
+    // Trade-off: someone rotating addresses can still use up one org's hour.
+    // The cap bounds that cost; it can't tell them apart from real senders.
+    if (!(await checkRateLimit("orgInbox", `msg-org:${org.id}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const encrypted = await aesEncrypt(content);

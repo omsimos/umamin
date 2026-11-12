@@ -45,13 +45,11 @@ import {
 import { extractClientIp } from "../../server-lib/ip";
 import { isModerator } from "../../server-lib/moderation";
 import { deleteDisputes } from "../../server-lib/moderation-review";
-import { notify } from "../../server-lib/notifications";
 import {
   AURA_POINTS,
   auraAwardStatement,
   auraReverseStatement,
   awardAura,
-  reverseAura,
 } from "../../server-lib/points";
 import {
   POLL_DURATIONS,
@@ -67,7 +65,7 @@ import { captureRequestException } from "../../server-lib/posthog";
 import { createR2 } from "../../server-lib/r2";
 import { idSchema } from "../../server-lib/schema";
 import { recordStreak } from "../../server-lib/streak";
-import { ctxDb, defer } from "./_shared";
+import { ctxDb, defer, notifyLater } from "./_shared";
 
 // Cache-tag fan-out (revalidateTag/updateTag) is GONE in the Worker port: authed
 // reads hit Turso directly (read-your-writes), public reads cache at route level.
@@ -344,50 +342,57 @@ export const deletePostHandler = action(
 
     const ownerId = post.authorId;
 
-    await db.transaction(async (tx) => {
+    const head = [
       // Before the post goes: its comments cascade away and their ids are
       // needed to find their disputes.
-      await deleteDisputes(
-        tx,
+      deleteDisputes(
+        db,
         "comment",
-        tx
+        db
           .select({ id: postCommentTable.id })
           .from(postCommentTable)
           .where(eq(postCommentTable.postId, postId)),
+      ),
+      deleteDisputes(db, "post", postId),
+      db.delete(postTable).where(eq(postTable.id, postId)),
+    ] as const;
+
+    const unpin = db
+      .update(userTable)
+      .set({ pinnedPostId: null })
+      .where(
+        and(eq(userTable.id, ownerId), eq(userTable.pinnedPostId, postId)),
       );
-      await deleteDisputes(tx, "post", postId);
-      await tx.delete(postTable).where(eq(postTable.id, postId));
 
-      if (post.quotedPostId) {
-        const [bumped] = await tx
-          .update(postTable)
-          .set({
-            repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
-            resharerCount: removeResharer(ownerId),
-          })
-          .where(eq(postTable.id, post.quotedPostId))
-          .returning({ authorId: postTable.authorId });
+    if (post.quotedPostId) {
+      const unshare = db
+        .update(postTable)
+        .set({
+          repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
+          resharerCount: removeResharer(ownerId),
+        })
+        // Only when the delete right above removed the quote.
+        .where(and(eq(postTable.id, post.quotedPostId), PREV_CHANGED));
+      const reversal = auraReverseStatement(
+        db,
+        {
+          beneficiary: { postId: post.quotedPostId },
+          actorId: ownerId,
+          actorCreatedAt: isOwner ? user?.createdAt : undefined,
+          delta: AURA_POINTS.quote,
+        },
+        PREV_CHANGED,
+      );
+      await (reversal
+        ? db.batch([...head, unshare, reversal, unpin])
+        : db.batch([...head, unshare, unpin]));
+    } else {
+      await db.batch([...head, unpin]);
+    }
 
-        if (bumped) {
-          await reverseAura(tx, {
-            beneficiaryId: bumped.authorId,
-            actorId: ownerId,
-            actorCreatedAt: isOwner ? user?.createdAt : undefined,
-            delta: AURA_POINTS.quote,
-          });
-        }
-      }
-
-      await tx
-        .update(userTable)
-        .set({ pinnedPostId: null })
-        .where(
-          and(eq(userTable.id, ownerId), eq(userTable.pinnedPostId, postId)),
-        );
-    });
-
+    // The response does not wait for R2. deletePostImages logs its own failures.
     const r2 = createR2(c.env);
-    if (r2) await r2.deletePostImages(post.images);
+    if (r2) defer(c)(r2.deletePostImages(post.images));
 
     return { success: true };
   },
@@ -505,20 +510,17 @@ export const createCommentHandler = action(
     postAuthorId = updated?.authorId;
 
     if (postAuthorId && createdComment) {
-      await notify(
-        { db, env: c.env, defer: defer(c) },
-        {
-          recipientId: postAuthorId,
-          type: "comment",
-          targetId: postId,
-          actorId: session.userId,
-          // A covered or folded comment must not be read in full from the bell.
-          preview: contentLabel(createdComment, enforce)
-            ? null
-            : createdComment.content,
-          blockChecked: true,
-        },
-      );
+      notifyLater(c, db, {
+        recipientId: postAuthorId,
+        type: "comment",
+        targetId: postId,
+        actorId: session.userId,
+        // A covered or folded comment must not be read in full from the bell.
+        preview: contentLabel(createdComment, enforce)
+          ? null
+          : createdComment.content,
+        blockChecked: true,
+      });
     }
 
     return {
@@ -555,48 +557,36 @@ export const deleteCommentHandler = action(
       return { error: "Comment not found" };
     }
 
-    await db.transaction(async (tx) => {
-      const removed = await tx
-        .delete(postCommentTable)
-        .where(eq(postCommentTable.id, commentId))
-        .returning({ id: postCommentTable.id });
+    const reversal = auraReverseStatement(
+      db,
+      {
+        beneficiary: { postId: comment.postId },
+        actorId: comment.authorId,
+        actorCreatedAt: isOwner ? user?.createdAt : undefined,
+        delta: AURA_POINTS.comment,
+      },
+      // The post update changed a row, and this person has no comment left here.
+      sql`${PREV_CHANGED} AND NOT ${hasCommented(comment.authorId, comment.postId)}`,
+    );
 
-      if (removed.length === 0) return;
-
-      await deleteDisputes(tx, "comment", commentId);
-
-      const [updated] = await tx
+    // Order matters: PREV_CHANGED reads only the statement right before it.
+    // The dispute cleanup goes last so it sits between no gated pair.
+    const statements = [
+      db.delete(postCommentTable).where(eq(postCommentTable.id, commentId)),
+      db
         .update(postTable)
         .set({
           commentCount: sql`CASE WHEN ${postTable.commentCount} > 0 THEN ${postTable.commentCount} - 1 ELSE 0 END`,
           // The deleted row is already gone by now.
           commenterCount: removeCommenter(comment.authorId, comment.postId),
         })
-        .where(eq(postTable.id, comment.postId))
-        .returning({ authorId: postTable.authorId });
+        .where(and(eq(postTable.id, comment.postId), PREV_CHANGED)),
+    ] as const;
+    const cleanup = deleteDisputes(db, "comment", commentId);
 
-      if (updated?.authorId) {
-        const remaining = await tx
-          .select({ id: postCommentTable.id })
-          .from(postCommentTable)
-          .where(
-            and(
-              eq(postCommentTable.authorId, comment.authorId),
-              eq(postCommentTable.postId, comment.postId),
-            ),
-          )
-          .limit(1);
-
-        if (remaining.length === 0) {
-          await reverseAura(tx, {
-            beneficiaryId: updated.authorId,
-            actorId: comment.authorId,
-            actorCreatedAt: isOwner ? user?.createdAt : undefined,
-            delta: AURA_POINTS.comment,
-          });
-        }
-      }
-    });
+    await (reversal
+      ? db.batch([...statements, reversal, cleanup])
+      : db.batch([...statements, cleanup]));
 
     return { success: true, postId: comment.postId };
   },
@@ -706,17 +696,14 @@ export const addLikeHandler = action(
     const likedPost = bumped[0];
 
     if (likedPost) {
-      await notify(
-        { db, env: c.env, defer: defer(c) },
-        {
-          recipientId: likedPost.authorId,
-          type: "like",
-          targetId: postId,
-          actorId: session.userId,
-          preview: likedPost.content,
-          blockChecked: true,
-        },
-      );
+      notifyLater(c, db, {
+        recipientId: likedPost.authorId,
+        type: "like",
+        targetId: postId,
+        actorId: session.userId,
+        preview: likedPost.content,
+        blockChecked: true,
+      });
     }
     return { success: true } as const;
   },
@@ -811,17 +798,14 @@ export const votePollHandler = action(
     }
 
     if (target.blocked === 0) {
-      await notify(
-        { db, env: c.env, defer: defer(c) },
-        {
-          recipientId: target.authorId,
-          type: "vote",
-          targetId: postId,
-          actorId: session.userId,
-          preview: target.content,
-          blockChecked: true,
-        },
-      );
+      notifyLater(c, db, {
+        recipientId: target.authorId,
+        type: "vote",
+        targetId: postId,
+        actorId: session.userId,
+        preview: target.content,
+        blockChecked: true,
+      });
     }
 
     return { success: true, votedOptionId: optionId } as const;

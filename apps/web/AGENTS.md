@@ -104,6 +104,8 @@ Use these for all new code.
   guard, rate limit, handler. It returns `Out | { error }` and never throws.
   `auth: "none"` rate-limits before the session lookup. On the client, narrow
   with `res && "error" in res`.
+- A notification is written after the response. Call `notifyLater(c, db, params)`
+  from `api/actions/_shared.ts` in an action; never `await notify(...)` there.
 - Error strings live in `server-lib/errors.ts`. The shared `idSchema` lives in
   `server-lib/schema.ts`.
 - Rate limits are Workers Rate Limiting bindings (`RL_*` in `wrangler.jsonc`).
@@ -113,7 +115,9 @@ Use these for all new code.
   before the session lookup. Mobile carriers put many phones behind one IP, so
   any new per-IP limit on a signed-in path throttles unrelated users together. A cap the
   bindings can't express (for example 2 group edits a day) goes on KV, like
-  `server-lib/group-edit.ts`.
+  `server-lib/group-edit.ts`. Build a per-IP limiter key with
+  `rateLimitKeyForIp` from `server-lib/ip.ts`, so an IPv6 /64 shares one
+  budget. Login also checks `RL_LOGIN_ACCOUNT`, keyed per username.
 - Workers KV is eventually consistent (about 60 s) and allows 1 write per
   second per key. Store one key per entry, never one JSON blob, or concurrent
   read-modify-writes drop data. Every KV consumer must no-op without the
@@ -198,16 +202,17 @@ Use these for all new code.
 
 ## Feature flags
 
-- Flags are evaluated in the Worker and read by the browser from the private
-  `/api/flags` route. Keys live in `lib/flags.ts` only. Use `evaluateFlags` +
+- Flags are evaluated in the Worker and read by the browser from two private
+  routes: `/api/flags` for the global switches and `/api/flags/pro` for the
+  per-viewer Pro offer. Keys live in `lib/flags.ts` only. Use `evaluateFlags` +
   `isEnabled`, not `isFeatureEnabled`.
-- `/api/flags` must stay `withPrivateRead`; a shared cached response would hand
-  one viewer's rollout to everyone.
+- `/api/flags` and `/api/flags/pro` must both stay `withPrivateRead`; a shared
+  cached response would hand one viewer's rollout to everyone.
 - Signed-out flag values come from a KV snapshot (`flags:anonymous:v1`) that
   the `*/5` cron refreshes, so no request waits on PostHog for them. A change
   in PostHog takes up to about 7 minutes to reach every isolate. A snapshot
   older than 20 minutes is ignored and the flag is evaluated live. Signed-in
-  `umamin-pro` is still evaluated live per user.
+  `umamin-pro` is still evaluated live per user, on `/api/flags/pro` only.
 - When PostHog fails (outage, timeout, quota, a partly computed answer), a
   flag falls back to its last known value in the isolate, else its
   `FLAG_FALLBACK` default in `server-lib/flags.ts`: `false` for surfaces,

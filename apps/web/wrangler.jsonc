@@ -131,6 +131,14 @@
             "type": "ratelimit",
             "namespace_id": "1008",
             "simple": { "limit": 40, "period": 60 }
+          },
+          {
+            // Login attempts per username, whatever the network. Looser than
+            // RL_AUTH so one network (5 a minute) can't exhaust it alone.
+            "name": "RL_LOGIN_ACCOUNT",
+            "type": "ratelimit",
+            "namespace_id": "1010",
+            "simple": { "limit": 10, "period": 60 }
           }
         ]
       },
@@ -254,6 +262,14 @@
             "type": "ratelimit",
             "namespace_id": "2008",
             "simple": { "limit": 40, "period": 60 }
+          },
+          {
+            // Login attempts per username, whatever the network. Looser than
+            // RL_AUTH so one network (5 a minute) can't exhaust it alone.
+            "name": "RL_LOGIN_ACCOUNT",
+            "type": "ratelimit",
+            "namespace_id": "2010",
+            "simple": { "limit": 10, "period": 60 }
           }
         ]
       },

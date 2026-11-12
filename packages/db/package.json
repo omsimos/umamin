@@ -11,6 +11,10 @@
       "types": "./dist/web.d.mts",
       "import": "./dist/web.mjs"
     },
+    "./hot-counts": {
+      "types": "./src/hot-counts.ts",
+      "import": "./src/hot-counts.ts"
+    },
     "./schema/*": {
       "types": "./src/schema/*.ts",
       "import": "./src/schema/*.ts"

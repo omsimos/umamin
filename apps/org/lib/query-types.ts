@@ -20,6 +20,8 @@ export type OrgMessageItem = {
   question: string;
   content: string;
   createdAt: number;
+  // Set when the stored message could not be decrypted. `content` is then "".
+  decryptFailed?: true;
 };
 
 export type MessagesResponse = {

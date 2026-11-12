@@ -8,11 +8,9 @@
       "outputs": [".next/**", "!.next/cache/**"],
       "env": [
         "TURSO_*",
-        "GOOGLE_*",
         "KV_REST_API_*",
         "CRON_SECRET",
         "AES_256_GCM_KEY",
-        "R2_*",
         "NEXT_PUBLIC_APP_URL"
       ]
     }

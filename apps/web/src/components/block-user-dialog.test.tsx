@@ -21,6 +21,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
+import { queryKeys } from "@/lib/query";
 import { BlockUserDialog } from "./block-user-dialog";
 
 function wrapper(client: QueryClient) {
@@ -60,6 +61,30 @@ describe("BlockUserDialog", () => {
     expect(toastSuccess).toHaveBeenCalledWith("User blocked.");
     expect(onBlocked).toHaveBeenCalledTimes(1);
     expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the viewer's own follow counts after a block", async () => {
+    callAction.mockResolvedValue({ success: true });
+    const client = new QueryClient();
+    client.setQueryData(queryKeys.currentUser(), {});
+
+    render(
+      <BlockUserDialog
+        userId="user_9"
+        username="mallory"
+        open
+        onOpenChange={() => {}}
+      />,
+      { wrapper: wrapper(client) },
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Block" }));
+
+    await waitFor(() =>
+      expect(client.getQueryState(queryKeys.currentUser())?.isInvalidated).toBe(
+        true,
+      ),
+    );
   });
 
   it("surfaces an error toast when the action returns { error }", async () => {

@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@umamin/ui/components/alert";
-import { Link2OffIcon } from "lucide-react";
 import BrowserWarning from "@/components/browser-warning";
+import { GoogleAuthErrorAlert } from "@/components/google-auth-error-alert";
 import { Link } from "@/lib/navigation";
 import { pageSeo } from "@/lib/seo";
 import { LoginForm } from "./-auth/login-form";
@@ -45,15 +40,7 @@ function LoginPage() {
         </p>
       </div>
 
-      {error === "no_account" && (
-        <Alert variant="destructive" className="mb-6">
-          <Link2OffIcon />
-          <AlertTitle>No account found</AlertTitle>
-          <AlertDescription>
-            That Google account isn&apos;t linked to an Umamin account.
-          </AlertDescription>
-        </Alert>
-      )}
+      <GoogleAuthErrorAlert code={error} className="mb-6" />
 
       <LoginForm />
 

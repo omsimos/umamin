@@ -12,6 +12,10 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from "@/lib/push-client";
+import {
+  readPushOwner as readOwner,
+  writePushOwner as writeOwner,
+} from "@/lib/push-owner";
 import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { patchCurrentUser } from "@/lib/query-cache";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
@@ -60,27 +64,6 @@ type DeviceState =
   | "denied"
   | "subscribed"
   | "unsubscribed";
-
-// The account this browser's subscription was last registered to. A browser
-// has one subscription whoever is signed in, so after an account switch, or a
-// register that failed and couldn't be undone, the browser can hold a
-// subscription the server never sends to. "" means not registered; a missing
-// key means it was registered before this marker existed.
-const OWNER_KEY = "umamin:push-owner";
-
-function readOwner(): string | null {
-  try {
-    return localStorage.getItem(OWNER_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeOwner(owner: string) {
-  try {
-    localStorage.setItem(OWNER_KEY, owner);
-  } catch {}
-}
 
 async function readDevice(): Promise<DeviceState> {
   if (!isPushSupported() || !VAPID_PUBLIC_KEY) return "unsupported";

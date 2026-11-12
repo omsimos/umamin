@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -7,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   fetchUser: vi.fn(),
   callAction: vi.fn(),
   navigate: vi.fn(),
+  assign: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -16,14 +23,18 @@ vi.mock("@tanstack/react-router", () => ({
   }),
   Link: () => null,
 }));
-vi.mock("@/hooks/use-feature-flags", () => ({
-  useFeatureFlags: () => ({ pro: true }),
+vi.mock("@/hooks/use-pro-offer", () => ({
+  useProOffer: () => true,
 }));
 vi.mock("@/lib/query-fetchers", () => ({
   fetchCurrentUserOptional: mocks.fetchUser,
 }));
 vi.mock("@/lib/api", () => ({ callAction: mocks.callAction }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@/lib/reload-page", () => ({
+  assignLocation: mocks.assign,
+  reloadPage: vi.fn(),
+}));
 
 import { TiersView } from "./tiers-view";
 
@@ -51,14 +62,22 @@ const buyButton = () =>
 // Flushes the query's resolved fetch and React's re-render.
 const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 
+const BASELINE_KEY = "umamin-pro:checkoutBaseline";
+const DAY_MS = 86_400_000;
+
+function resetMocks() {
+  vi.useFakeTimers();
+  sessionStorage.clear();
+  mocks.search.pro = "success";
+  mocks.fetchUser.mockReset();
+  mocks.fetchUser.mockResolvedValue({ user: { ...BUYER } });
+  mocks.navigate.mockReset();
+  mocks.assign.mockReset();
+  mocks.callAction.mockReset();
+}
+
 describe("TiersView after checkout", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    mocks.search.pro = "success";
-    mocks.fetchUser.mockReset();
-    mocks.fetchUser.mockResolvedValue({ user: { ...BUYER } });
-    mocks.navigate.mockReset();
-  });
+  beforeEach(resetMocks);
 
   const strippedMarker = () =>
     mocks.navigate.mock.calls.some(
@@ -151,5 +170,121 @@ describe("TiersView after checkout", () => {
     const settled = mocks.fetchUser.mock.calls.length;
     await advance(30_000);
     expect(mocks.fetchUser.mock.calls.length).toBe(settled);
+  });
+});
+
+describe("TiersView renewals", () => {
+  beforeEach(resetMocks);
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const oldUntil = () => new Date(Date.now() + 30 * DAY_MS).toISOString();
+  const newUntil = () => new Date(Date.now() + 210 * DAY_MS).toISOString();
+
+  it("keeps a renewal waiting until Pro extends", async () => {
+    const OLD_UNTIL = oldUntil();
+    const NEW_UNTIL = newUntil();
+    sessionStorage.setItem(BASELINE_KEY, String(new Date(OLD_UNTIL).getTime()));
+    mocks.fetchUser.mockResolvedValue({
+      user: { ...BUYER, proUntil: OLD_UNTIL },
+    });
+
+    renderTiers();
+    await advance(1_000);
+    expect(buyButton()).toBeDisabled();
+    expect(screen.getByText(/Payment received/)).toBeInTheDocument();
+
+    const before = mocks.fetchUser.mock.calls.length;
+    await advance(3_000);
+    expect(mocks.fetchUser.mock.calls.length).toBeGreaterThan(before);
+
+    mocks.fetchUser.mockResolvedValue({
+      user: { ...BUYER, proUntil: NEW_UNTIL },
+    });
+    await advance(4_000);
+    expect(buyButton()).toBeEnabled();
+    expect(screen.queryByText(/Payment received/)).not.toBeInTheDocument();
+    expect(sessionStorage.getItem(BASELINE_KEY)).toBeNull();
+  });
+
+  it("confirms at once when the renewal landed before the return", async () => {
+    sessionStorage.setItem(
+      BASELINE_KEY,
+      String(new Date(oldUntil()).getTime()),
+    );
+    mocks.fetchUser.mockResolvedValue({
+      user: { ...BUYER, proUntil: newUntil() },
+    });
+
+    renderTiers();
+    await advance(1_000);
+    expect(buyButton()).toBeEnabled();
+  });
+
+  it("treats any active Pro as confirmed when no baseline was saved", async () => {
+    mocks.fetchUser.mockResolvedValue({
+      user: { ...BUYER, proUntil: oldUntil() },
+    });
+
+    renderTiers();
+    await advance(1_000);
+    expect(buyButton()).toBeEnabled();
+  });
+});
+
+describe("TiersView checkout button", () => {
+  const CHECKOUT_URL = "https://pay.example/checkout";
+
+  beforeEach(() => {
+    resetMocks();
+    mocks.search.pro = undefined;
+    mocks.callAction.mockResolvedValue({ url: CHECKOUT_URL });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function startCheckout() {
+    renderTiers();
+    await advance(1_000);
+    // Without a checkout return or active Pro the page opens on another tab.
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Pro" }));
+    await act(async () => {
+      buyButton().click();
+    });
+    await advance(0);
+  }
+
+  async function showPage(persisted: boolean) {
+    const event = new Event("pageshow");
+    if (persisted) Object.defineProperty(event, "persisted", { value: true });
+    act(() => {
+      window.dispatchEvent(event);
+    });
+    // React Query batches the reset notification on a zero-delay timer.
+    await advance(0);
+  }
+
+  it("saves the Pro horizon before leaving for checkout", async () => {
+    await startCheckout();
+
+    expect(mocks.assign).toHaveBeenCalledWith(CHECKOUT_URL);
+    expect(sessionStorage.getItem(BASELINE_KEY)).toBe("0");
+  });
+
+  it("re-enables the button when the page is restored from the back-forward cache", async () => {
+    await startCheckout();
+    expect(buyButton()).toBeDisabled();
+    await showPage(true);
+    expect(buyButton()).toBeEnabled();
+
+    cleanup();
+    await startCheckout();
+    expect(buyButton()).toBeDisabled();
+    await showPage(false);
+    expect(buyButton()).toBeDisabled();
   });
 });

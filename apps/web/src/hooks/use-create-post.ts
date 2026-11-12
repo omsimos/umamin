@@ -15,6 +15,7 @@ import {
   applyStreakUpdate,
   patchPostAcrossFeed,
   prependFeedItem,
+  removePostFromFeed,
   replaceFeedItem,
 } from "@/lib/query-cache";
 import { streakToast } from "@/lib/streak";
@@ -100,9 +101,16 @@ export function useCreatePost(user: PublicUser | null) {
       if (!user) return {};
       await queryClient.cancelQueries({ queryKey: queryKeys.postsRoot() });
 
-      const previous = queryClient.getQueriesData<InfiniteData<FeedResponse>>({
-        queryKey: queryKeys.postsRoot(),
-      });
+      // A feed with no data yet becomes a one-item feed after the prepend. On
+      // failure it is reset so it loads normally instead of showing empty.
+      // Only the feeds the prepend writes to: the following feed is left alone.
+      const emptyKeys = queryClient
+        .getQueriesData<InfiniteData<FeedResponse>>({
+          queryKey: queryKeys.postsRoot(),
+          predicate: (query) => isNonFollowingFeedQuery(query.queryKey),
+        })
+        .filter(([, data]) => data === undefined)
+        .map(([queryKey]) => queryKey);
 
       // Temp option ids: the optimistic poll renders but is not votable until
       // the server swap brings the real ids (onSuccess below).
@@ -149,11 +157,23 @@ export function useCreatePost(user: PublicUser | null) {
         (current) => prependFeedItem(current, optimistic),
       );
 
-      return { previous, optimisticId: optimisticPost.id };
+      return { emptyKeys, optimisticId: optimisticPost.id };
     },
     onError: (err, _vars, ctx) => {
-      for (const [queryKey, previous] of ctx?.previous ?? []) {
-        queryClient.setQueryData(queryKey, previous);
+      // Remove only the optimistic item. Restoring whole-feed snapshots would
+      // also undo likes and votes made while the post was sending.
+      if (ctx?.optimisticId) {
+        const { optimisticId } = ctx;
+        queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+          {
+            queryKey: queryKeys.postsRoot(),
+            predicate: (query) => isNonFollowingFeedQuery(query.queryKey),
+          },
+          (current) => removePostFromFeed(current, optimisticId),
+        );
+        for (const queryKey of ctx.emptyKeys ?? []) {
+          void queryClient.resetQueries({ queryKey, exact: true });
+        }
       }
       toast.error(err.message ?? "Couldn't post.");
     },

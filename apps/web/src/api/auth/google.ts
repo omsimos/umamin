@@ -6,11 +6,12 @@ import {
   generateState,
 } from "@umamin/auth/google";
 import { accountTable, userTable } from "@umamin/db/schema/user";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { nanoid } from "nanoid";
 import * as z from "zod";
+import type { GoogleAuthErrorCode } from "../../lib/google-auth-errors";
 import { generateUsernameId } from "../../server-lib/content";
 import type { AppBindings } from "../../server-lib/context";
 import {
@@ -20,7 +21,7 @@ import {
 } from "../../server-lib/cookies";
 import { getDb } from "../../server-lib/db";
 import { formatErrorChain } from "../../server-lib/errors";
-import { extractClientIp } from "../../server-lib/ip";
+import { extractClientIp, rateLimitKeyForIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
 import { googleOAuthConfig } from "../../server-lib/oauth";
 import { captureRequestException } from "../../server-lib/posthog";
@@ -28,6 +29,7 @@ import { checkRateLimit } from "../../server-lib/ratelimit";
 import {
   createSession,
   generateSessionToken,
+  hasSessionCredential,
   resolveSession,
 } from "../../server-lib/session";
 import { setSessionCookie } from "../../server-lib/session-cookie";
@@ -78,8 +80,15 @@ const claimsSchema = z.object({
 
 export const googleAuthApp = new Hono<AppBindings>()
   .get("/", async (c) => {
-    // Only "register" may create a new account in the callback.
-    const intent = c.req.query("intent") === "register" ? "register" : "login";
+    // Only "register" may create a new account in the callback, and only
+    // "link" may attach a Google identity to the signed-in profile.
+    const requested = c.req.query("intent");
+    const intent =
+      requested === "register" || requested === "link" ? requested : "login";
+
+    if (intent === "link" && !hasSessionCredential(c)) {
+      return c.redirect("/login", 302);
+    }
 
     const state = generateState();
     const codeVerifier = generateCodeVerifier();
@@ -124,6 +133,19 @@ export const googleAuthApp = new Hono<AppBindings>()
       setOauthCookie(c, GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME, "", 0);
       setOauthCookie(c, GOOGLE_OAUTH_INTENT_COOKIE_NAME, "", 0);
     };
+    clearOauthCookies();
+
+    // A signed-in visitor is bounced off /login, so they see errors on
+    // /settings. Before the session is resolved, cookie presence decides: no
+    // database read on an early failure path. Once it is resolved, pass the
+    // answer, because a revoked cookie would send the error to /settings,
+    // which bounces to /login and drops it.
+    const fail = (
+      code: GoogleAuthErrorCode,
+      signedIn = hasSessionCredential(c),
+    ) => c.redirect(`${signedIn ? "/settings" : "/login"}?error=${code}`, 302);
+
+    if (c.req.query("error") !== undefined) return fail("cancelled");
 
     if (
       code === null ||
@@ -131,21 +153,25 @@ export const googleAuthApp = new Hono<AppBindings>()
       storedState === null ||
       codeVerifier === null
     ) {
-      return c.body(null, 400);
+      return fail("expired");
     }
 
-    clearOauthCookies();
-
     if (state !== storedState) {
-      return c.body(null, 400);
+      return fail("expired");
     }
 
     const ip = extractClientIp((n) => c.req.header(n));
     if (await isIpDenied(c.env.KV, ip)) {
-      return c.body(null, 403);
+      return fail("blocked");
     }
-    if (!(await checkRateLimit(c.env, "auth", `oauth:google:${ip}`))) {
-      return c.body(null, 429);
+    if (
+      !(await checkRateLimit(
+        c.env,
+        "auth",
+        `oauth:google:${rateLimitKeyForIp(ip)}`,
+      ))
+    ) {
+      return fail("rate_limited");
     }
 
     const db = getDb(c.env);
@@ -159,14 +185,14 @@ export const googleAuthApp = new Hono<AppBindings>()
         codeVerifier,
       ));
     } catch {
-      return c.body(null, 400);
+      return fail("failed");
     }
 
     try {
       const claims = claimsSchema.safeParse(decodeIdTokenClaims(idToken));
       if (!claims.success) {
         console.log("Invalid ID token claims");
-        return c.body(null, 400);
+        return fail("failed");
       }
 
       const googleUser = claims.data;
@@ -183,25 +209,39 @@ export const googleAuthApp = new Hono<AppBindings>()
         )
         .limit(1);
 
-      if (user && existingUser) {
-        return c.redirect("/settings?error=already_linked", 302);
-      } else if (user) {
-        await db.transaction(async (tx) => {
-          // Linking never touches imageUrl: the default profile picture is the
-          // account's own blobatar, and adopting a Google photo would silently
-          // change how someone looks to everyone else. `picture` is stored for
-          // the linked-account card only.
-          await tx.insert(accountTable).values({
-            providerId: "google",
-            providerUserId: googleUser.sub,
-            userId: user.id,
-            picture: googleUser.picture ?? "",
-            email: googleUser.email,
-          });
-        });
+      if (intent === "link") {
+        // The session ended between Settings and Google.
+        if (!user) return fail("expired", false);
 
-        return c.redirect("/settings", 302);
+        if (existingUser) {
+          return existingUser.userId === user.id
+            ? c.redirect("/settings?tab=account", 302)
+            : fail("already_linked");
+        }
+
+        // Linking never touches imageUrl: the default profile picture is the
+        // account's own blobatar, and adopting a Google photo would silently
+        // change how someone looks to everyone else. `picture` is stored for
+        // the linked-account card only.
+        //
+        // One statement, so two callbacks racing for the same profile can't
+        // both link.
+        const linked = await db.run(sql`
+          INSERT INTO oauth_account (provider_user_id, email, picture, user_id, provider_id)
+          SELECT ${googleUser.sub}, ${googleUser.email}, ${googleUser.picture ?? ""}, ${user.id}, 'google'
+          WHERE NOT EXISTS (
+            SELECT 1 FROM oauth_account
+            WHERE user_id = ${user.id} AND provider_id = 'google'
+          )
+        `);
+        if (linked.rowsAffected === 0) return fail("has_google");
+
+        return c.redirect("/settings?tab=account", 302);
       }
+
+      // Signed in, but this flow started on /login or /register. Sign-in
+      // never changes which identities a profile has.
+      if (user) return c.redirect("/inbox", 302);
 
       if (existingUser) {
         // Google proved this identity, so a banned account can be told why.
@@ -258,7 +298,7 @@ export const googleAuthApp = new Hono<AppBindings>()
       captureRequestException(c, err, {
         properties: { oauth: "google", intent },
       });
-      return c.body(null, 500);
+      return fail("failed");
     }
   });
 

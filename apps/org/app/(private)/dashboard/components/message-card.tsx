@@ -54,6 +54,7 @@ export function MessageCard({
   const [deleting, startDelete] = useTransition();
   const [saving, setSaving] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const unreadable = message.decryptFailed === true;
 
   function del() {
     startDelete(async () => {
@@ -93,6 +94,7 @@ export function MessageCard({
           variant="ghost"
           size="icon"
           onClick={() => onToggle(message)}
+          disabled={unreadable}
           aria-label={selected ? "Deselect" : "Select"}
           aria-pressed={selected}
           className={cn(
@@ -115,9 +117,15 @@ export function MessageCard({
         aria-label="View full message"
         className="text-foreground -mx-2 mt-2 h-auto w-full justify-start rounded-md px-2 py-1 text-left font-normal whitespace-normal"
       >
-        <span className="line-clamp-5 text-sm break-words whitespace-pre-wrap">
-          {message.content}
-        </span>
+        {unreadable ? (
+          <span className="text-muted-foreground text-sm italic">
+            This message couldn't be decrypted.
+          </span>
+        ) : (
+          <span className="line-clamp-5 text-sm break-words whitespace-pre-wrap">
+            {message.content}
+          </span>
+        )}
       </Button>
 
       <div className="mt-auto flex items-center justify-between pt-3">
@@ -129,7 +137,7 @@ export function MessageCard({
             variant="ghost"
             size="icon"
             onClick={saveImage}
-            disabled={saving}
+            disabled={saving || unreadable}
             aria-label="Save image"
             className="text-muted-foreground size-7"
           >
@@ -186,10 +194,16 @@ export function MessageCard({
             </DialogDescription>
           </DialogHeader>
           <div className="bg-muted max-h-[55dvh] overflow-y-auto rounded-lg p-4 text-sm leading-relaxed break-words whitespace-pre-wrap">
-            {message.content}
+            {unreadable
+              ? "This message couldn't be decrypted. Its content is still stored. Contact support before deleting it."
+              : message.content}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={saveImage} disabled={saving}>
+            <Button
+              variant="outline"
+              onClick={saveImage}
+              disabled={saving || unreadable}
+            >
               {saving ? (
                 <Loader2Icon className="animate-spin" />
               ) : (

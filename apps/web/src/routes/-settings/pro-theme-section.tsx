@@ -4,7 +4,7 @@ import { cn } from "@umamin/ui/lib/utils";
 import { BanIcon, CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 import { PRO_THEME_STYLES } from "@/components/pro-flair";
-import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { useProOffer } from "@/hooks/use-pro-offer";
 import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
 import { hasUmaminPro, PRO_THEMES, type ProTheme } from "@/lib/pro";
@@ -23,7 +23,7 @@ import { updateProfileThemeAction } from "./actions";
 export function ProThemeSection({ user }: { user: UserWithAccount }) {
   const queryClient = useQueryClient();
   const isPro = hasUmaminPro(user.proUntil);
-  const { pro: proLaunched } = useFeatureFlags();
+  const proLaunched = useProOffer();
   const current = (user.profileTheme ?? null) as ProTheme | null;
 
   const mutation = useMutation({

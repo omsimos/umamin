@@ -1,5 +1,5 @@
 import { groupTable } from "@umamin/db/schema/group";
-import { userTable } from "@umamin/db/schema/user";
+import { accountTable, userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getCurrentUserData } from "../src/server-lib/data";
@@ -58,5 +58,28 @@ describe("getCurrentUserData group badge (real libSQL)", () => {
       .set({ equippedGroupId: "deleted" })
       .where(eq(userTable.id, "me"));
     expect((await getCurrentUserData(db, "me")).user?.groupBadge).toBeNull();
+  });
+
+  it("returns linked accounts oldest first", async () => {
+    await db.insert(accountTable).values({
+      providerUserId: "b",
+      email: "new@example.com",
+      picture: "",
+      userId: "me",
+      providerId: "google",
+      createdAt: new Date("2026-02-01T00:00:00Z"),
+    });
+    await db.insert(accountTable).values({
+      providerUserId: "a",
+      email: "old@example.com",
+      picture: "",
+      userId: "me",
+      providerId: "google",
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+    });
+
+    expect(
+      (await getCurrentUserData(db, "me")).user?.accounts.map((a) => a.email),
+    ).toEqual(["old@example.com", "new@example.com"]);
   });
 });

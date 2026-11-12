@@ -5,7 +5,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@umamin/ui/components/avatar";
-import { Button } from "@umamin/ui/components/button";
+import { buttonVariants } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2Icon, ScanFaceIcon, SendIcon } from "lucide-react";
@@ -182,20 +182,26 @@ function ChatComposerInput({
   );
 }
 
+// A plain <button> with the button styles, not <Button>: Button always renders
+// data-slot="button" (so an asChild trigger can't rename it), which would
+// overwrite this slot.
 function ChatComposerSend({
   className,
   pending,
   disabled,
   children,
   ...props
-}: React.ComponentProps<typeof Button> & { pending?: boolean }) {
+}: React.ComponentProps<"button"> & { pending?: boolean }) {
   return (
-    <Button
+    <button
       type="submit"
-      size="icon"
-      data-slot="chat-composer-send"
-      className={cn("size-12 shrink-0 rounded-full", className)}
+      className={cn(
+        buttonVariants({ size: "icon" }),
+        "size-12 shrink-0 rounded-full",
+        className,
+      )}
       {...props}
+      data-slot="chat-composer-send"
       disabled={pending || disabled}
     >
       {pending ? (
@@ -204,7 +210,7 @@ function ChatComposerSend({
         (children ?? <SendIcon className="size-4" />)
       )}
       <span className="sr-only">Send</span>
-    </Button>
+    </button>
   );
 }
 

@@ -1,13 +1,15 @@
 import { userTable } from "@umamin/db/schema/user";
-import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { type StreakUpdate, toStreakDay } from "../lib/streak";
 import type { Db } from "./db";
 
 /**
  * Counts a shared note or a post toward the user's streak in one PK update with no prior
  * read: the day after the last counted day extends it, any later day restarts
- * it at 1. Returns the new state, or null when today was already counted (the
- * WHERE skips the row, so a same-day re-save writes nothing).
+ * it at 1. Returns the new state, or null when today or a later day was already
+ * counted. The WHERE skips the row, so a same-day re-save writes nothing, and a
+ * save that started before Manila midnight but lands after a newer one can't
+ * move the stored day backwards and reset the streak.
  */
 export async function recordStreak(
   db: Pick<Db, "update">,
@@ -32,7 +34,7 @@ export async function recordStreak(
     .where(
       and(
         eq(userTable.id, userId),
-        or(isNull(userTable.streakDay), ne(userTable.streakDay, today)),
+        or(isNull(userTable.streakDay), lt(userTable.streakDay, today)),
       ),
     )
     .returning({ streak: userTable.streak });

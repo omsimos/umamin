@@ -78,6 +78,7 @@ export type DmAction =
       replyTo: DmReplyPreview | null;
       at: number;
     }
+  | { type: "acked"; clientId: string; messageId: string }
   | { type: "failed"; clientId: string }
   | { type: "retry"; clientId: string };
 
@@ -189,6 +190,35 @@ export function dmReducer(state: DmState, action: DmAction): DmState {
           },
         ]),
       };
+    case "acked": {
+      // The room stored this send. Its "msgs" echo normally follows and
+      // replaces the bubble, but a resend of a stored op is answered with the
+      // ack alone, so the ack has to settle the bubble by itself.
+      const local = state.messages.find(
+        (m) => m.id === localId(action.clientId),
+      );
+      if (!local) return state;
+      if (state.messages.some((m) => m.id === action.messageId)) {
+        return {
+          ...state,
+          messages: state.messages.filter((m) => m !== local),
+        };
+      }
+      const stored: UiDmMessage = {
+        id: action.messageId,
+        clientId: local.clientId,
+        mine: local.mine,
+        text: local.text,
+        replyTo: local.replyTo,
+        myReaction: local.myReaction,
+        theirReaction: local.theirReaction,
+        createdAt: local.createdAt,
+      };
+      return {
+        ...state,
+        messages: order(state.messages.map((m) => (m === local ? stored : m))),
+      };
+    }
     case "failed":
     case "retry":
       return {

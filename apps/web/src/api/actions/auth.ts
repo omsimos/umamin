@@ -11,14 +11,17 @@ import {
   postRepostTable,
   postTable,
 } from "@umamin/db/schema/post";
+import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import {
   accountTable,
+  sessionTable,
   userFollowTable,
   userTable,
 } from "@umamin/db/schema/user";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 import { hash, verify } from "../../server-lib/argon2";
 import { generateUsernameId } from "../../server-lib/content";
 import { passesCsrf } from "../../server-lib/csrf";
@@ -36,15 +39,18 @@ import {
   removeOther,
   removeQuoterKeepingReposters,
 } from "../../server-lib/hot-counters";
-import { extractClientIp } from "../../server-lib/ip";
+import { extractClientIp, rateLimitKeyForIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
 import { isReservedModeratorName } from "../../server-lib/moderation";
 import { AURA_POINTS, isAuraEligibleActor } from "../../server-lib/points";
 import { captureRequestException } from "../../server-lib/posthog";
+import { pushEndpointSchema } from "../../server-lib/push";
+import { clearPushPrefsWithoutDevices } from "../../server-lib/push-devices";
 import { createR2 } from "../../server-lib/r2";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "../../server-lib/ratelimit";
 import { registerSchema } from "../../server-lib/schema";
 import {
+  clearSessionCache,
   createSession,
   generateSessionToken,
   invalidateSession,
@@ -109,7 +115,20 @@ export async function loginHandler(c: AppContext): Promise<Response> {
   if (await isIpDenied(c.env.KV, ip)) {
     return c.json({ error: ACCESS_BLOCKED_ERROR });
   }
-  if (!(await checkRateLimit(c.env, "auth", `login:${ip}`))) {
+  if (
+    !(await checkRateLimit(c.env, "auth", `login:${rateLimitKeyForIp(ip)}`))
+  ) {
+    return c.json({ error: RATE_LIMIT_ERROR });
+  }
+  // Checked after the IP limit, so a client that is already over its own
+  // budget can't spend this username's budget too.
+  if (
+    !(await checkRateLimit(
+      c.env,
+      "login-account",
+      `login:u:${normalizedUsername}`,
+    ))
+  ) {
     return c.json({ error: RATE_LIMIT_ERROR });
   }
 
@@ -175,7 +194,9 @@ export async function signupHandler(c: AppContext): Promise<Response> {
   if (await isIpDenied(c.env.KV, ip)) {
     return c.json({ error: ACCESS_BLOCKED_ERROR });
   }
-  if (!(await checkRateLimit(c.env, "auth", `signup:${ip}`))) {
+  if (
+    !(await checkRateLimit(c.env, "auth", `signup:${rateLimitKeyForIp(ip)}`))
+  ) {
     return c.json({ error: RATE_LIMIT_ERROR });
   }
 
@@ -227,17 +248,41 @@ export async function signupHandler(c: AppContext): Promise<Response> {
   return c.json({ redirect: "/inbox" });
 }
 
+const logoutSchema = z.object({ pushEndpoint: pushEndpointSchema.optional() });
+
 export async function logoutHandler(c: AppContext): Promise<Response> {
   if (csrfBlocked(c)) return c.json({ error: GENERIC_ERROR }, 403);
 
   const db = ctxDb(c);
   const { session } = await resolveSession(c, db);
 
-  if (!session) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
+  // An unreadable or invalid body only skips the push cleanup: nothing may
+  // stop a sign-out.
+  const body = logoutSchema.safeParse(await c.req.json().catch(() => ({})));
+  const pushEndpoint = body.success ? body.data.pushEndpoint : undefined;
 
-  await invalidateSession(db, session.id);
+  // A session that was revoked elsewhere (password change, ban, expiry) still
+  // has its httpOnly cookie in this browser, and only this response can clear
+  // it. Answering 401 left that device unable to sign out.
+  if (session && pushEndpoint) {
+    // This browser's push row goes in the same batch as the session, so a
+    // logout that fails leaves both in place.
+    await db.batch([
+      db
+        .delete(pushSubscriptionTable)
+        .where(
+          and(
+            eq(pushSubscriptionTable.endpoint, pushEndpoint),
+            eq(pushSubscriptionTable.userId, session.userId),
+          ),
+        ),
+      clearPushPrefsWithoutDevices(db, eq(userTable.id, session.userId)),
+      db.delete(sessionTable).where(eq(sessionTable.id, session.id)),
+    ]);
+    clearSessionCache();
+  } else if (session) {
+    await invalidateSession(db, session.id);
+  }
   deleteSessionCookie(c);
   return c.json({ redirect: "/login" });
 }

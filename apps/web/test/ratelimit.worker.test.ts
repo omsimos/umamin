@@ -45,6 +45,13 @@ describe("ratelimit (binding stub)", () => {
     expect(write.limit).toHaveBeenCalledWith({ key: "k" });
   });
 
+  it("maps login-account to its own binding", async () => {
+    const account = fakeLimiter(1);
+    const env = envWith({ RL_LOGIN_ACCOUNT: account, RL_AUTH: fakeLimiter(1) });
+    await checkRateLimit(env, "login-account", "k");
+    expect(account.limit).toHaveBeenCalledWith({ key: "k" });
+  });
+
   it("keeps keys independent", async () => {
     const env = envWith({ RL_MESSAGE: fakeLimiter(1) });
     expect(await checkRateLimit(env, "message", "a")).toBe(true);

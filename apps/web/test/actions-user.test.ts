@@ -25,6 +25,7 @@ vi.mock("../src/server-lib/posthog", () => ({
 
 import { dmThreadTable } from "@umamin/db/schema/dm";
 import {
+  accountTable,
   sessionTable,
   userBlockTable,
   userFollowTable,
@@ -34,6 +35,8 @@ import { eq } from "drizzle-orm";
 import { dmPair } from "../src/lib/dm/pair";
 import { hash } from "../src/server-lib/argon2";
 import type { Db } from "../src/server-lib/db";
+import { LAST_LOGIN_METHOD_ERROR } from "../src/server-lib/errors";
+import { linkedAccountId } from "../src/server-lib/linked-account";
 import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
 import {
   __clearSessionCache,
@@ -229,6 +232,171 @@ describe("user actions (real libSQL)", () => {
     expect(res.status).toBe(200);
     await vi.waitFor(() => expect(revoked).toHaveLength(1));
     expect(revoked[0]).toEqual([`dm:v1:${pair.threadId}`, "user1"]);
+  });
+
+  describe("unlinkGoogleAccountAction", () => {
+    const T1 = new Date("2026-01-01T00:00:00Z");
+    const T2 = new Date("2026-02-01T00:00:00Z");
+
+    async function seedUser(id: string, withPassword: boolean) {
+      await db.insert(userTable).values({
+        id,
+        username: `u_${id}`,
+        passwordHash: withPassword ? await hash(OLD_PASSWORD) : null,
+      });
+    }
+
+    function subjectOf(userId: string, createdAt: Date, n = 0) {
+      return `${userId}-${createdAt.getTime()}-${n}`;
+    }
+
+    function linkRow(userId: string, createdAt: Date, n = 0) {
+      return db.insert(accountTable).values({
+        providerId: "google",
+        providerUserId: subjectOf(userId, createdAt, n),
+        userId,
+        email: `${subjectOf(userId, createdAt, n)}@example.com`,
+        picture: "",
+        createdAt,
+      });
+    }
+
+    function linkIdOf(userId: string, createdAt: Date, n = 0) {
+      return linkedAccountId(subjectOf(userId, createdAt, n));
+    }
+
+    async function seedSessions(userId: string) {
+      await db.insert(sessionTable).values([
+        { id: `sess-${userId}`, userId, expiresAt: Date.now() + 1e9 },
+        { id: "other-device", userId, expiresAt: Date.now() + 1e9 },
+      ]);
+    }
+
+    async function accountsOf(userId: string) {
+      return db
+        .select({ providerUserId: accountTable.providerUserId })
+        .from(accountTable)
+        .where(eq(accountTable.userId, userId));
+    }
+
+    async function sessionIdsOf(userId: string) {
+      const rows = await db
+        .select({ id: sessionTable.id })
+        .from(sessionTable)
+        .where(eq(sessionTable.userId, userId));
+      return rows.map((row) => row.id).toSorted();
+    }
+
+    it("removes the account when a password remains, and signs out other devices", async () => {
+      await seedUser("u1", true);
+      await linkRow("u1", T1);
+      await seedSessions("u1");
+
+      const { json } = await callJson(
+        buildApp(db, authed("u1")),
+        "unlinkGoogleAccountAction",
+        { linkId: await linkIdOf("u1", T1) },
+      );
+
+      expect(json).toEqual({ success: true });
+      expect(await accountsOf("u1")).toHaveLength(0);
+      expect(await sessionIdsOf("u1")).toEqual(["sess-u1"]);
+    });
+
+    it("refuses to remove the only way to sign in", async () => {
+      await seedUser("u1", false);
+      await linkRow("u1", T1);
+      await seedSessions("u1");
+
+      const { json } = await callJson(
+        buildApp(db, authed("u1")),
+        "unlinkGoogleAccountAction",
+        { linkId: await linkIdOf("u1", T1) },
+      );
+
+      expect(json).toEqual({ error: LAST_LOGIN_METHOD_ERROR });
+      expect(await accountsOf("u1")).toHaveLength(1);
+      expect(await sessionIdsOf("u1")).toEqual(["other-device", "sess-u1"]);
+    });
+
+    it("removes one of two Google accounts without a password, then refuses the last", async () => {
+      await seedUser("u1", false);
+      await linkRow("u1", T1);
+      await linkRow("u1", T2);
+      const app = buildApp(db, authed("u1"));
+
+      const first = await callJson(app, "unlinkGoogleAccountAction", {
+        linkId: await linkIdOf("u1", T1),
+      });
+      expect(first.json).toEqual({ success: true });
+      expect(await accountsOf("u1")).toEqual([
+        { providerUserId: subjectOf("u1", T2) },
+      ]);
+
+      const last = await callJson(app, "unlinkGoogleAccountAction", {
+        linkId: await linkIdOf("u1", T2),
+      });
+      expect(last.json).toEqual({ error: LAST_LOGIN_METHOD_ERROR });
+      expect(await accountsOf("u1")).toHaveLength(1);
+    });
+
+    it("tells apart two accounts linked in the same second", async () => {
+      await seedUser("u1", false);
+      await linkRow("u1", T1, 0);
+      await linkRow("u1", T1, 1);
+
+      const { json } = await callJson(
+        buildApp(db, authed("u1")),
+        "unlinkGoogleAccountAction",
+        { linkId: await linkIdOf("u1", T1, 0) },
+      );
+
+      expect(json).toEqual({ success: true });
+      expect(await accountsOf("u1")).toEqual([
+        { providerUserId: subjectOf("u1", T1, 1) },
+      ]);
+    });
+
+    it("never touches another profile's account", async () => {
+      await seedUser("u1", true);
+      await seedUser("u2", false);
+      await linkRow("u2", T1);
+
+      const { json } = await callJson(
+        buildApp(db, authed("u1")),
+        "unlinkGoogleAccountAction",
+        { linkId: await linkIdOf("u2", T1) },
+      );
+
+      expect(json).toEqual({ success: true });
+      expect(await accountsOf("u2")).toHaveLength(1);
+    });
+
+    it("an unknown linkId is a no-op", async () => {
+      await seedUser("u1", true);
+      await linkRow("u1", T1);
+
+      const { json } = await callJson(
+        buildApp(db, authed("u1")),
+        "unlinkGoogleAccountAction",
+        { linkId: await linkIdOf("u1", T2) },
+      );
+
+      expect(json).toEqual({ success: true });
+      expect(await accountsOf("u1")).toHaveLength(1);
+    });
+
+    it("rejects a linkId that is not one", async () => {
+      await seedUser("u1", true);
+
+      const res = await call(
+        buildApp(db, authed("u1")),
+        "unlinkGoogleAccountAction",
+        { linkId: "soon" },
+      );
+
+      expect(res.status).toBe(400);
+    });
   });
 
   describe("follow and unfollow", () => {
