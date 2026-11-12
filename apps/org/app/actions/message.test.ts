@@ -132,6 +132,41 @@ describe("sendMessageAction character limits", () => {
   });
 });
 
+describe("sendMessageAction organization cap", () => {
+  it("refuses a send once the organization is over its cap", async () => {
+    mocks.checkRateLimit.mockImplementation(
+      async (name: string) => name !== "orgInbox",
+    );
+
+    expect(
+      await sendMessageAction({ orgId: "org-1", content: "hello" }),
+    ).toEqual({ error: "Too many requests" });
+    expect(mocks.aesEncrypt).not.toHaveBeenCalled();
+    expect(mocks.insert).not.toHaveBeenCalled();
+  });
+
+  it("keys the cap on the organization id", async () => {
+    expect(
+      await sendMessageAction({ orgId: "org-1", content: "hello" }),
+    ).toEqual({ success: true });
+    expect(mocks.checkRateLimit).toHaveBeenCalledWith(
+      "orgInbox",
+      "msg-org:org-1",
+    );
+  });
+
+  it("doesn't check the cap for a missing organization", async () => {
+    mocks.state.orgRows = [];
+
+    await sendMessageAction({ orgId: "org-1", content: "hello" });
+
+    expect(mocks.checkRateLimit).not.toHaveBeenCalledWith(
+      "orgInbox",
+      expect.anything(),
+    );
+  });
+});
+
 function signedInAs(mustChangePassword: boolean) {
   return {
     session: { id: "s1", orgId: "org-1", expiresAt: Date.now() + 1e9 },

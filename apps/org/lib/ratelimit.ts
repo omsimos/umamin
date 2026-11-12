@@ -8,7 +8,7 @@ import { redis } from "./redis";
 export const RATE_LIMIT_ERROR =
   "Too many requests. Please try again in a minute.";
 
-type LimiterName = "auth" | "message" | "write" | "read";
+type LimiterName = "auth" | "message" | "orgInbox" | "write" | "read";
 
 // analytics:false keeps the Upstash command count (and cost) minimal. Each
 // limiter gets its own ephemeralCache so an in-memory block can't leak across.
@@ -27,6 +27,15 @@ const limiters: Record<LimiterName, Ratelimit> | null = redis
         redis,
         limiter: Ratelimit.slidingWindow(10, "60 s"),
         prefix: "rl:message",
+        ephemeralCache: new Map(),
+        analytics: false,
+      }),
+      // Messages one organization accepts, whatever addresses they come from.
+      // The per-IP limiter above can't stop a sender who rotates addresses.
+      orgInbox: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(300, "1 h"),
+        prefix: "rl:orginbox",
         ephemeralCache: new Map(),
         analytics: false,
       }),
