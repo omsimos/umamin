@@ -34,6 +34,21 @@ So every migration must be additive. For anything destructive, expand and
 contract over separate releases: add the new column, deploy code that uses it,
 then drop the old column in a later release.
 
+CI enforces this on pull requests
+(`.github/scripts/check-additive-migrations.sh`). A new migration that contains
+`DROP TABLE`, `DROP COLUMN`, `RENAME` or a table rebuild (`__new_`) fails unless
+the file has a `-- destructive-ok: <reason>` line. Add that line only for the
+contract half of an expand and contract, after the release that stopped using
+the old name is live. `DROP INDEX` needs no marker.
+
+Additive is only safe when the migration lands first. If the Worker deploys
+before it, any query that selects a whole table names the new column and fails
+with "no such column". The session lookup in
+`apps/web/src/server-lib/session.ts` selects named columns for this reason, so
+that window cannot fail sign-in. Keep it that way, and prefer named columns in
+any query every request depends on. If the migrate job fails on `main`, rerun
+it from the Actions tab before anything else.
+
 A backfill can run while the old Worker still serves, and writes made by the
 old code in that gap aren't in it. For Hot's people counts on `postTable`, run
 the "Reconcile Hot counts" workflow (`pnpm --filter=@umamin/db reconcile:hot`)

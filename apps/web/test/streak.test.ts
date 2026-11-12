@@ -116,6 +116,17 @@ describe("recordStreak (real libSQL)", () => {
     expect((await state()).streak).toBe(2);
   });
 
+  it("ignores a save for an older day that lands late", async () => {
+    await recordStreak(db, "u1", today);
+    await recordStreak(db, "u1", today + 1);
+    expect(await recordStreak(db, "u1", today)).toBeNull();
+    expect(await state()).toEqual({
+      streak: 2,
+      streakBest: 2,
+      streakDay: today + 1,
+    });
+  });
+
   it("restarts at 1 after a missed day but keeps the best", async () => {
     await recordStreak(db, "u1", today);
     await recordStreak(db, "u1", today + 1);

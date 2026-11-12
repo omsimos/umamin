@@ -1,6 +1,6 @@
 import { type Client, LibsqlError } from "@libsql/client";
 import { sessionTable, userTable } from "@umamin/db/schema/user";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "../src/server-lib/db";
@@ -43,6 +43,21 @@ describe("session core (real libSQL)", () => {
     const token = generateSessionToken();
     const session = await createSession(db, token, "user1");
     expect(session.id).toBe(await hashSessionToken(token));
+
+    const result = await validateSessionToken(db, token);
+    expect(result.session?.userId).toBe("user1");
+    expect(result.user?.username).toBe("u_user1");
+  });
+
+  // A Worker can deploy before its migration lands. The lookup must not name
+  // columns the session never reads, or that window fails every signed-in
+  // request. Dropping an unrelated column stands in for "column not there yet".
+  it("validates a session when the database lacks a user column it doesn't read", async () => {
+    await seedUser(db, "user1");
+    const token = generateSessionToken();
+    await createSession(db, token, "user1");
+    await db.run(sql.raw("ALTER TABLE `user` DROP COLUMN `music_title`"));
+    __clearSessionCache();
 
     const result = await validateSessionToken(db, token);
     expect(result.session?.userId).toBe("user1");
