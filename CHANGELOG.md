@@ -18,6 +18,37 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.24.0] - 2026-11-12
+
+### Added
+
+- Settings lists every Google account connected to your profile, and you can disconnect one.
+
+### Fixed
+
+- Cancelling Google sign-in, or a sign-in that expires or fails, returns you to the login page with an explanation instead of a blank page.
+- You can sign out on a device whose session already ended, for example after changing your password elsewhere.
+- Your follower count and profile edits no longer snap back to their old values for a few minutes after you change them.
+- Blocking someone from a chat updates your blocked list, their profile and your inbox right away.
+- A poll vote made on a profile no longer disappears when you come back.
+- A like or repost no longer shows as done when the request was refused, and no longer flips back while the feed loads more posts.
+- A post that fails to send no longer undoes likes you made while it was sending.
+- A streak no longer resets when two posts land around midnight.
+- A chat message that was delivered no longer stays on "sending" or shows as failed after a brief server hiccup.
+- Renewing Pro waits for the new expiry date before the buy button comes back, and the button no longer gets stuck after you press Back on the payment page.
+
+### Performance & Cost
+
+- Likes, comments, votes, follows and messages respond faster.
+- Saving a note and deleting posts or comments respond faster.
+- Chats, Umamin Chat and Settings load without waiting on an extra check.
+
+### Security & Privacy
+
+- Sign-in, sign-up and anonymous message limits hold when someone rotates through many addresses on one network, and repeated password attempts on one account are slowed down.
+- A Google account is connected only when you start from Settings, and a profile can have one. Disconnecting it signs out your other devices.
+- Signing out stops push notifications on that device, so the next person using it does not see yours.
+
 ## [7.23.0] - 2026-11-11
 
 ### Changed
@@ -1337,6 +1368,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.24.0]: https://github.com/omsimos/umamin/compare/v7.23.0...v7.24.0
 [7.23.0]: https://github.com/omsimos/umamin/compare/v7.22.0...v7.23.0
 [7.22.0]: https://github.com/omsimos/umamin/compare/v7.21.0...v7.22.0
 [7.21.0]: https://github.com/omsimos/umamin/compare/v7.20.1...v7.21.0
