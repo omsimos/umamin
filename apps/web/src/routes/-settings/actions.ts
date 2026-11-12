@@ -29,6 +29,10 @@ export function updatePasswordAction(input: PasswordInput) {
   return callAction<{ success: true }>("updatePasswordAction", input);
 }
 
+export function unlinkGoogleAccountAction(input: { linkedAt: Date | string }) {
+  return callAction<{ success: true }>("unlinkGoogleAccountAction", input);
+}
+
 export function toggleQuietModeAction() {
   return callAction<{ quietMode: boolean }>("toggleQuietModeAction");
 }

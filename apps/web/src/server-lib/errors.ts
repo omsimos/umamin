@@ -39,6 +39,9 @@ export const ACCOUNT_DELETE_FAILED_ERROR =
 // is indistinguishable from a taken one (the roster must not be probeable).
 export const USERNAME_TAKEN_ERROR = "Username already exists";
 
+export const LAST_LOGIN_METHOD_ERROR =
+  "Set a password first. This Google account is the only way to sign in.";
+
 // Drizzle surfaces the driver error as `Error.cause`; the constraint class and
 // the offending column both live on that link, not on the wrapper.
 function constraintCause(
