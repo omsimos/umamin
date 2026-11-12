@@ -30,7 +30,7 @@ supportedArchitectures:
 # an entry once its dependent requires the patched version itself
 # (@tanstack/router-core for seroval, posthog-js for dompurify).
 overrides:
-  seroval: '>=1.6.11 <2'
+  seroval: '>=1.6.11 <1.7'
   dompurify: '>=3.4.17 <4'
 
 # One version each, workspace-wide. Root AGENTS.md "Dependencies that must
