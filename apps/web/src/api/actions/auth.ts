@@ -248,11 +248,10 @@ export async function logoutHandler(c: AppContext): Promise<Response> {
   const db = ctxDb(c);
   const { session } = await resolveSession(c, db);
 
-  if (!session) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  await invalidateSession(db, session.id);
+  // A session that was revoked elsewhere (password change, ban, expiry) still
+  // has its httpOnly cookie in this browser, and only this response can clear
+  // it. Answering 401 left that device unable to sign out.
+  if (session) await invalidateSession(db, session.id);
   deleteSessionCookie(c);
   return c.json({ redirect: "/login" });
 }
