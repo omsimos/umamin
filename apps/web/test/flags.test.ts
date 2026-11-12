@@ -211,6 +211,19 @@ describe("resolveFlags", () => {
     expect(construct).not.toHaveBeenCalled();
   });
 
+  // Staging forces every flag on, so a live request there would only add
+  // latency to an answer the override already decides.
+  it("skips the evaluation when every requested key is forced on", async () => {
+    const flags = await resolveFlags(
+      // oxlint-disable-next-line typescript/no-explicit-any -- partial env stub
+      { ...ENV, FLAGS_FORCE_ON: FLAG_UMAMIN_PRO } as any,
+      "user-1",
+      [FLAG_UMAMIN_PRO],
+    );
+    expect(flags).toEqual({ [FLAG_UMAMIN_PRO]: true });
+    expect(evaluateFlags).not.toHaveBeenCalled();
+  });
+
   it("resolves an unknown flag key to false", async () => {
     evaluateFlags.mockResolvedValue(snapshot({}));
     expect(await isFlagEnabled(ENV, "user_1", "not-a-real-flag")).toBe(false);
