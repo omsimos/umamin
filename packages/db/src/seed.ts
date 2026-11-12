@@ -376,6 +376,30 @@ for (let i = 0; i < additionalMessageCount; i += 1) {
   });
 }
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+// The seed resets every table. It shares its .env with the scripts that are
+// meant for real databases, so a remote URL needs the hostname spelled out.
+function assertSeedTarget(url: string): void {
+  if (url.startsWith("file:")) return;
+
+  let hostname = "";
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    // Unparseable URL: treated as remote below.
+  }
+  if (LOCAL_HOSTS.has(hostname)) return;
+
+  if (hostname && process.argv.includes(`--allow-remote=${hostname}`)) return;
+
+  throw new Error(
+    `Refusing to seed ${hostname || "an unrecognized database URL"}: the seed deletes every row. ` +
+      "It only runs against a file: or localhost database. To override, pass " +
+      `--allow-remote=${hostname || "<hostname>"}.`,
+  );
+}
+
 function resolveClientOptions(): ClientOptions {
   const urlFromEnv =
     process.env.TURSO_CONNECTION_URL ??
@@ -387,6 +411,8 @@ function resolveClientOptions(): ClientOptions {
     urlFromEnv.trim().length > 0
       ? urlFromEnv
       : `file:${path.resolve(process.cwd(), "local.db")}`;
+
+  assertSeedTarget(url);
 
   if (url.startsWith("file:")) {
     return { url };
