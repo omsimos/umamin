@@ -50,6 +50,9 @@ function Button({
     <Comp
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
+      // After the spread so an asChild parent (a Radix trigger) can't rename
+      // it. That also overrides a caller's own data-slot: a component that
+      // needs its own slot styles a native element with buttonVariants.
       data-slot="button"
     />
   );
