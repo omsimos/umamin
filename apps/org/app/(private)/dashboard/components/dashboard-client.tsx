@@ -122,9 +122,16 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
     setPage((p) => p + 1);
   }
 
-  async function runExport(list: OrgMessageItem[]) {
+  async function runExport(all: OrgMessageItem[]) {
+    const list = all.filter((m) => !m.decryptFailed);
+    const skipped = all.length - list.length;
     if (list.length === 0) {
-      toast.info("No messages to export");
+      toast.info(
+        skipped > 0
+          ? "None of these messages could be decrypted, so there is nothing to export."
+          : "No messages to export",
+      );
+      setExporting(false);
       return;
     }
     setExporting(true);
@@ -138,9 +145,13 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
           toast.loading(`Rendering ${done}/${total}…`, { id });
         },
       );
+      const notes = [
+        failed ? `${failed} failed` : null,
+        skipped ? `${skipped} couldn't be decrypted` : null,
+      ].filter(Boolean);
       toast.success(
         `Exported ${ok} image${ok === 1 ? "" : "s"}${
-          failed ? ` (${failed} failed)` : ""
+          notes.length ? ` (${notes.join(", ")})` : ""
         }`,
         { id },
       );
@@ -202,7 +213,7 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
           <ExportThemeDialog
             prefs={themePrefs}
             onSave={setThemePrefs}
-            sample={messages[0] ?? null}
+            sample={messages.find((m) => !m.decryptFailed) ?? null}
           />
           {selected.size > 0 ? (
             <>
