@@ -4,7 +4,6 @@ import { fetchFeatureFlags } from "@/lib/query-fetchers";
 import type { FeatureFlagsResponse } from "@/lib/types";
 
 const HIDDEN: FeatureFlagsResponse = {
-  pro: false,
   contentModeration: false,
   chat: false,
   dm: false,
