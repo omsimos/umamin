@@ -45,7 +45,6 @@ import {
 import { extractClientIp } from "../../server-lib/ip";
 import { isModerator } from "../../server-lib/moderation";
 import { deleteDisputes } from "../../server-lib/moderation-review";
-import { notify } from "../../server-lib/notifications";
 import {
   AURA_POINTS,
   auraAwardStatement,
@@ -67,7 +66,7 @@ import { captureRequestException } from "../../server-lib/posthog";
 import { createR2 } from "../../server-lib/r2";
 import { idSchema } from "../../server-lib/schema";
 import { recordStreak } from "../../server-lib/streak";
-import { ctxDb, defer } from "./_shared";
+import { ctxDb, defer, notifyLater } from "./_shared";
 
 // Cache-tag fan-out (revalidateTag/updateTag) is GONE in the Worker port: authed
 // reads hit Turso directly (read-your-writes), public reads cache at route level.
@@ -505,20 +504,17 @@ export const createCommentHandler = action(
     postAuthorId = updated?.authorId;
 
     if (postAuthorId && createdComment) {
-      await notify(
-        { db, env: c.env, defer: defer(c) },
-        {
-          recipientId: postAuthorId,
-          type: "comment",
-          targetId: postId,
-          actorId: session.userId,
-          // A covered or folded comment must not be read in full from the bell.
-          preview: contentLabel(createdComment, enforce)
-            ? null
-            : createdComment.content,
-          blockChecked: true,
-        },
-      );
+      notifyLater(c, db, {
+        recipientId: postAuthorId,
+        type: "comment",
+        targetId: postId,
+        actorId: session.userId,
+        // A covered or folded comment must not be read in full from the bell.
+        preview: contentLabel(createdComment, enforce)
+          ? null
+          : createdComment.content,
+        blockChecked: true,
+      });
     }
 
     return {
@@ -706,17 +702,14 @@ export const addLikeHandler = action(
     const likedPost = bumped[0];
 
     if (likedPost) {
-      await notify(
-        { db, env: c.env, defer: defer(c) },
-        {
-          recipientId: likedPost.authorId,
-          type: "like",
-          targetId: postId,
-          actorId: session.userId,
-          preview: likedPost.content,
-          blockChecked: true,
-        },
-      );
+      notifyLater(c, db, {
+        recipientId: likedPost.authorId,
+        type: "like",
+        targetId: postId,
+        actorId: session.userId,
+        preview: likedPost.content,
+        blockChecked: true,
+      });
     }
     return { success: true } as const;
   },
@@ -811,17 +804,14 @@ export const votePollHandler = action(
     }
 
     if (target.blocked === 0) {
-      await notify(
-        { db, env: c.env, defer: defer(c) },
-        {
-          recipientId: target.authorId,
-          type: "vote",
-          targetId: postId,
-          actorId: session.userId,
-          preview: target.content,
-          blockChecked: true,
-        },
-      );
+      notifyLater(c, db, {
+        recipientId: target.authorId,
+        type: "vote",
+        targetId: postId,
+        actorId: session.userId,
+        preview: target.content,
+        blockChecked: true,
+      });
     }
 
     return { success: true, votedOptionId: optionId } as const;

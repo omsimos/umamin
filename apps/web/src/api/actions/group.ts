@@ -40,9 +40,8 @@ import {
   GROUP_EDIT_RATE_LIMITED_ERROR,
 } from "../../server-lib/group-edit";
 import { isReservedGroupTag } from "../../server-lib/group-reserved";
-import { notify } from "../../server-lib/notifications";
 import { idSchema } from "../../server-lib/schema";
-import { ctxDb, defer } from "./_shared";
+import { ctxDb, notifyLater } from "./_shared";
 
 // Cache-tag fan-out is gone in the Worker port (see api/actions/post.ts note);
 // badge-feed revalidation that used revalidateTag("posts"/"notes") is now the
@@ -313,10 +312,8 @@ export const inviteToGroupHandler = action(
       return { error: GROUP_INVITE_PENDING_ERROR };
     }
 
-    const deps = { db, env: c.env, defer: defer(c) };
-
     if (outcome.kind === "accepted") {
-      await notify(deps, {
+      notifyLater(c, db, {
         recipientId: target.id,
         type: "group_accept",
         targetId: groupId,
@@ -326,7 +323,7 @@ export const inviteToGroupHandler = action(
       return { success: true, accepted: true };
     }
 
-    await notify(deps, {
+    notifyLater(c, db, {
       recipientId: target.id,
       type: "group_invite",
       targetId: groupId,
@@ -435,10 +432,8 @@ export const requestToJoinGroupHandler = action(
       return { error: GROUP_REQUEST_PENDING_ERROR };
     }
 
-    const deps = { db, env: c.env, defer: defer(c) };
-
     if (outcome.kind === "joined") {
-      await notify(deps, {
+      notifyLater(c, db, {
         recipientId: group.creatorId,
         type: "group_join",
         targetId: groupId,
@@ -448,7 +443,7 @@ export const requestToJoinGroupHandler = action(
       return { success: true, joined: true, equipped: outcome.equipped };
     }
 
-    await notify(deps, {
+    notifyLater(c, db, {
       recipientId: group.creatorId,
       type: "group_request",
       targetId: groupId,
@@ -521,16 +516,13 @@ export const respondToInviteHandler = action(
     }
 
     if (result.kind === "accepted" && result.creatorId) {
-      await notify(
-        { db, env: c.env, defer: defer(c) },
-        {
-          recipientId: result.creatorId,
-          type: "group_join",
-          targetId: groupId,
-          actorId: session.userId,
-          preview: result.name,
-        },
-      );
+      notifyLater(c, db, {
+        recipientId: result.creatorId,
+        type: "group_join",
+        targetId: groupId,
+        actorId: session.userId,
+        preview: result.name,
+      });
     }
 
     return { success: true, accepted: result.kind === "accepted" };
@@ -597,16 +589,13 @@ export const respondToJoinRequestHandler = action(
     }
 
     if (result.kind === "approved") {
-      await notify(
-        { db, env: c.env, defer: defer(c) },
-        {
-          recipientId: userId,
-          type: "group_accept",
-          targetId: groupId,
-          actorId: session.userId,
-          preview: group.name,
-        },
-      );
+      notifyLater(c, db, {
+        recipientId: userId,
+        type: "group_accept",
+        targetId: groupId,
+        actorId: session.userId,
+        preview: group.name,
+      });
     }
 
     return { success: true, approved: result.kind === "approved" };

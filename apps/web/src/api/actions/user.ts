@@ -27,7 +27,6 @@ import { extractClientIp } from "../../server-lib/ip";
 import { isReservedModeratorName } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { MAX_MUTES } from "../../server-lib/mutes";
-import { notify } from "../../server-lib/notifications";
 import {
   AURA_POINTS,
   auraAwardStatement,
@@ -43,7 +42,7 @@ import {
   generateSessionToken,
 } from "../../server-lib/session";
 import { setSessionCookie } from "../../server-lib/session-cookie";
-import { ctxDb, defer } from "./_shared";
+import { ctxDb, defer, notifyLater } from "./_shared";
 
 // Set the photo and return the value it replaced, read in the same transaction
 // so R2 cleanup targets the object that actually became unreachable.
@@ -340,15 +339,12 @@ export const followUserHandler = action(
       return { success: true, alreadyFollowing: true } as const;
     }
 
-    await notify(
-      { db, env: c.env, defer: defer(c) },
-      {
-        recipientId: userId,
-        type: "follow",
-        actorId: session.userId,
-        blockChecked: true,
-      },
-    );
+    notifyLater(c, db, {
+      recipientId: userId,
+      type: "follow",
+      actorId: session.userId,
+      blockChecked: true,
+    });
 
     return { success: true } as const;
   },
