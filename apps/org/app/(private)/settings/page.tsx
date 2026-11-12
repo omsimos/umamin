@@ -28,7 +28,8 @@ export default async function SettingsPage() {
       {user.mustChangePassword && (
         <div className="border-primary/40 bg-primary/5 text-foreground rounded-lg border px-4 py-3 text-sm">
           <strong className="font-medium">Set a new password.</strong> You're
-          using the default password from your invite — please change it below.
+          using the default password from your invite. Change it below to open
+          your inbox and profile settings.
         </div>
       )}
 
@@ -41,19 +42,21 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ProfileForm
-            displayName={user.displayName}
-            question={user.question}
-            acceptingMessages={user.acceptingMessages}
-            messageCharLimit={user.messageCharLimit}
-          />
-        </CardContent>
-      </Card>
+      {!user.mustChangePassword && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProfileForm
+              displayName={user.displayName}
+              question={user.question}
+              acceptingMessages={user.acceptingMessages}
+              messageCharLimit={user.messageCharLimit}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
