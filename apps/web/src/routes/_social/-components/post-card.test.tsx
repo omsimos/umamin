@@ -11,6 +11,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { queryKeys } from "@/lib/query";
 import type { PostData, PostResponse } from "@/lib/types";
@@ -97,14 +98,14 @@ function CachedPostCard() {
 
 function renderCard() {
   const queryClient = new QueryClient();
-  render(
+  const { unmount } = render(
     <QueryClientProvider client={queryClient}>
       <CachedPostCard />
     </QueryClientProvider>,
   );
   const cached = () =>
     queryClient.getQueryData<PostResponse>(queryKeys.post("post-1"));
-  return { cached };
+  return { cached, unmount };
 }
 
 const likeButton = () => screen.getByRole("button", { name: /like post/i });
@@ -175,6 +176,20 @@ describe("PostCard like toggle", () => {
     expect(likeButton()).toHaveTextContent("6");
     expect(cached()?.isLiked).toBe(true);
     expect(cached()?.likeCount).toBe(6);
+  });
+
+  it("keeps the post unliked when the card unmounts before a refused like returns", async () => {
+    const add = deferred<unknown>();
+    addLike.mockReturnValue(add.promise as never);
+    const { cached, unmount } = renderCard();
+
+    fireEvent.click(likeButton());
+    unmount();
+    await act(async () => add.resolve({ error: "Couldn't like." }));
+
+    expect(cached()?.isLiked).toBe(false);
+    expect(cached()?.likeCount).toBe(5);
+    expect(toast.success).not.toHaveBeenCalled();
   });
 });
 
