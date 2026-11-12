@@ -9,6 +9,9 @@ const state = {
   db: null as Db | null,
   claims: {} as Record<string, unknown>,
   limiterKeys: [] as string[],
+  denied: false,
+  limited: false,
+  exchangeFails: false,
 };
 
 vi.mock("../src/server-lib/db", () => ({
@@ -17,18 +20,21 @@ vi.mock("../src/server-lib/db", () => ({
 
 vi.mock("@umamin/auth/google", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@umamin/auth/google")>()),
-  exchangeAuthorizationCode: async () => ({ idToken: "stub.id.token" }),
+  exchangeAuthorizationCode: async () => {
+    if (state.exchangeFails) throw new Error("invalid_grant");
+    return { idToken: "stub.id.token" };
+  },
   decodeIdTokenClaims: () => state.claims,
 }));
 
 vi.mock("../src/server-lib/ip-denylist", () => ({
-  isIpDenied: async () => false,
+  isIpDenied: async () => state.denied,
 }));
 
 vi.mock("../src/server-lib/ratelimit", () => ({
   checkRateLimit: async (_env: unknown, _name: string, key: string) => {
     state.limiterKeys.push(key);
-    return true;
+    return !state.limited;
   },
 }));
 
@@ -59,27 +65,55 @@ const FAKE_CTX = {
   passThroughOnException: () => {},
 } as unknown as ExecutionContext;
 
+type CallbackOpts = {
+  headers?: Record<string, string>;
+  // Replaces the default "?code=c&state=st".
+  query?: string;
+  // Leaves out a cookie the gate needs.
+  without?: "state" | "verifier";
+};
+
 // Matching state + a code verifier are all the CSRF/PKCE gate needs; `intent`
 // is what decides whether the callback may provision an account.
 function callback(
   intent: "register" | "login",
   session?: string,
-  opts: { headers?: Record<string, string> } = {},
+  opts: CallbackOpts = {},
 ) {
   const app = new Hono<AppBindings>().route("/auth/google", googleAuthApp);
   const cookies = [
-    `${GOOGLE_OAUTH_STATE_COOKIE_NAME}=st`,
-    `${GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME}=cv`,
+    ...(opts.without === "state"
+      ? []
+      : [`${GOOGLE_OAUTH_STATE_COOKIE_NAME}=st`]),
+    ...(opts.without === "verifier"
+      ? []
+      : [`${GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME}=cv`]),
     `${GOOGLE_OAUTH_INTENT_COOKIE_NAME}=${intent}`,
     ...(session ? [`${SESSION_COOKIE_NAME}=${session}`] : []),
   ].join("; ");
 
   return app.request(
-    "/auth/google/callback?code=c&state=st",
+    `/auth/google/callback${opts.query ?? "?code=c&state=st"}`,
     { headers: { cookie: cookies, ...opts.headers } },
     { TURSO_CONNECTION_URL: "", TURSO_AUTH_TOKEN: "" } as unknown as AppEnv,
     FAKE_CTX,
   );
+}
+
+function mintedSession(res: Response): boolean {
+  return res.headers
+    .getSetCookie()
+    .some(
+      (value) =>
+        value.startsWith(`${SESSION_COOKIE_NAME}=`) &&
+        !value.startsWith(`${SESSION_COOKIE_NAME}=;`),
+    );
+}
+
+async function expectNothingCreated(db: Db, res: Response) {
+  expect(await db.select().from(userTable)).toHaveLength(0);
+  expect(await db.select().from(accountTable)).toHaveLength(0);
+  expect(mintedSession(res)).toBe(false);
 }
 
 describe("google oauth callback (real libSQL)", () => {
@@ -90,6 +124,9 @@ describe("google oauth callback (real libSQL)", () => {
     db = await makeTestDb();
     state.db = db;
     state.limiterKeys = [];
+    state.denied = false;
+    state.limited = false;
+    state.exchangeFails = false;
     state.claims = {
       sub: "google-sub-1",
       email: "alice@example.com",
@@ -169,5 +206,110 @@ describe("google oauth callback (real libSQL)", () => {
     for (const key of state.limiterKeys) {
       expect(key.startsWith("oauth:google:")).toBe(true);
     }
+  });
+
+  describe("security gates", () => {
+    it("refuses a state that does not match the cookie", async () => {
+      const res = await callback("register", undefined, {
+        query: "?code=c&state=other",
+      });
+      await expectNothingCreated(db, res);
+    });
+
+    it("refuses a callback without the PKCE verifier cookie", async () => {
+      const res = await callback("register", undefined, {
+        without: "verifier",
+      });
+      await expectNothingCreated(db, res);
+    });
+
+    it("refuses a callback without a code", async () => {
+      const res = await callback("register", undefined, { query: "?state=st" });
+      await expectNothingCreated(db, res);
+    });
+
+    it("a login intent never creates an account", async () => {
+      const res = await callback("login");
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe("/login?error=no_account");
+      await expectNothingCreated(db, res);
+    });
+
+    it("refuses to link a Google identity that belongs to another account", async () => {
+      await db.insert(userTable).values([
+        { id: "owner", username: "owner" },
+        { id: "other", username: "other" },
+      ]);
+      await db.insert(accountTable).values({
+        providerId: "google",
+        providerUserId: "google-sub-1",
+        userId: "owner",
+        email: "o@example.com",
+        picture: "",
+      });
+      const token = generateSessionToken();
+      await createSession(db, token, "other");
+
+      const res = await callback("login", token);
+      expect(res.headers.get("location")).toBe(
+        "/settings?error=already_linked",
+      );
+
+      const [account] = await db
+        .select()
+        .from(accountTable)
+        .where(eq(accountTable.providerUserId, "google-sub-1"));
+      expect(account.userId).toBe("owner");
+    });
+
+    it("a banned linked account is sent to /banned without a session", async () => {
+      await db
+        .insert(userTable)
+        .values({ id: "banned", username: "banned", bannedAt: new Date() });
+      await db.insert(accountTable).values({
+        providerId: "google",
+        providerUserId: "google-sub-1",
+        userId: "banned",
+        email: "b@example.com",
+        picture: "",
+      });
+
+      const res = await callback("login");
+      expect(res.headers.get("location")).toBe("/banned");
+      expect(mintedSession(res)).toBe(false);
+    });
+
+    it("a linked account signs in", async () => {
+      await db.insert(userTable).values({ id: "linked", username: "linked" });
+      await db.insert(accountTable).values({
+        providerId: "google",
+        providerUserId: "google-sub-1",
+        userId: "linked",
+        email: "l@example.com",
+        picture: "",
+      });
+
+      const res = await callback("login");
+      expect(res.headers.get("location")).toBe("/inbox");
+      expect(mintedSession(res)).toBe(true);
+    });
+
+    it("a denied IP gets nothing", async () => {
+      state.denied = true;
+      const res = await callback("register");
+      await expectNothingCreated(db, res);
+    });
+
+    it("a rate-limited client gets nothing", async () => {
+      state.limited = true;
+      const res = await callback("register");
+      await expectNothingCreated(db, res);
+    });
+
+    it("a rejected authorization code creates nothing", async () => {
+      state.exchangeFails = true;
+      const res = await callback("register");
+      await expectNothingCreated(db, res);
+    });
   });
 });
