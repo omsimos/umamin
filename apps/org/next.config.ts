@@ -70,7 +70,11 @@ function buildSecurityHeaders() {
 const nextConfig: NextConfig = {
   reactCompiler: true,
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
+    // error and warn stay: they are the only server-side signal in Vercel's logs.
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? { exclude: ["error", "warn"] }
+        : false,
   },
   transpilePackages: [
     "@umamin/auth",
