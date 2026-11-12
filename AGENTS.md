@@ -113,7 +113,7 @@ so it may rewrite import order or wrapping inside your commit.
 
 ## Testing conventions
 
-- Vitest 4 everywhere, `globals: false`. Import `describe`, `it`, `expect` and
+- Vitest 5 everywhere, `globals: false`. Import `describe`, `it`, `expect` and
   `vi` from `vitest` explicitly.
 - The turbo `test` task depends on `^build`. `@umamin/db` resolves to its built
   `dist/`, and Vitest must resolve it even when the test mocks it, so a fresh
