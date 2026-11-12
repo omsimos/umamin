@@ -1,10 +1,9 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { loaderFetchJson } from "./loader-fetch";
 import { PRIVATE_STALE_TIME, queryKeys } from "./query";
-import type { FeatureFlagsResponse } from "./types";
+import type { FeatureFlagsResponse, ProOfferResponse } from "./types";
 
 const HIDDEN: FeatureFlagsResponse = {
-  pro: false,
   contentModeration: false,
   chat: false,
   dm: false,
@@ -30,4 +29,17 @@ export async function loadFeatureFlags(
       loaderFetchJson<FeatureFlagsResponse>("/api/flags").catch(() => HIDDEN),
     staleTime: PRIVATE_STALE_TIME,
   });
+}
+
+/** The Pro offer flag, for routes that render a Pro purchase entry point. */
+export async function loadProOffer(queryClient: QueryClient): Promise<boolean> {
+  const { pro } = await queryClient.ensureQueryData({
+    queryKey: queryKeys.proOffer(),
+    queryFn: () =>
+      loaderFetchJson<ProOfferResponse>("/api/flags/pro").catch(() => ({
+        pro: false,
+      })),
+    staleTime: PRIVATE_STALE_TIME,
+  });
+  return pro;
 }

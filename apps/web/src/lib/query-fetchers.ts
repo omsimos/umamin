@@ -25,6 +25,7 @@ import type {
   NotificationBadgeResponse,
   NotificationsResponse,
   PostResponse,
+  ProOfferResponse,
   UserGroupsResponse,
   UserProfileResponse,
   UserProfileViewerResponse,
@@ -110,6 +111,10 @@ export async function fetchCurrentNote() {
 
 export async function fetchFeatureFlags() {
   return fetchJson<FeatureFlagsResponse>("/api/flags");
+}
+
+export async function fetchProOffer() {
+  return fetchJson<ProOfferResponse>("/api/flags/pro");
 }
 
 export async function fetchCurrentUser() {

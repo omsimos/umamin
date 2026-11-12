@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BackHeader } from "@/components/back-header";
-import { loadFeatureFlags } from "@/lib/loader-flags";
+import { loadProOffer } from "@/lib/loader-flags";
 import { pageSeo } from "@/lib/seo";
 import { TiersView } from "./-tiers/tiers-view";
 
@@ -29,8 +29,8 @@ export const Route = createFileRoute("/_public/tiers")({
   // Primed here so SSR already knows whether Pro is launched — resolving it in
   // the component would paint the Pro tab and then remove it.
   loader: async ({ context }) => {
-    const { pro } = await loadFeatureFlags(context.queryClient);
-    return { proLaunched: pro };
+    const proLaunched = await loadProOffer(context.queryClient);
+    return { proLaunched };
   },
   head: ({ loaderData }) =>
     pageSeo({

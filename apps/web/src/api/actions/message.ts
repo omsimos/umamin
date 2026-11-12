@@ -12,9 +12,8 @@ import { scoreColumns } from "../../server-lib/content-label";
 import { ACCESS_BLOCKED_ERROR } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
 import { isIpDenied } from "../../server-lib/ip-denylist";
-import { notify } from "../../server-lib/notifications";
 import { idSchema } from "../../server-lib/schema";
-import { ctxDb, defer } from "./_shared";
+import { ctxDb, defer, notifyLater } from "./_shared";
 
 export const deleteMessageHandler = action(
   {
@@ -200,16 +199,13 @@ export const createReplyHandler = action(
       }
 
       if (msg.senderId) {
-        await notify(
-          { db, env: c.env, defer: defer(c) },
-          {
-            recipientId: msg.senderId,
-            type: "reply",
-            targetId: messageId,
-            actorId: session.userId,
-            blockChecked: true,
-          },
-        );
+        notifyLater(c, db, {
+          recipientId: msg.senderId,
+          type: "reply",
+          targetId: messageId,
+          actorId: session.userId,
+          blockChecked: true,
+        });
       }
 
       return { success: true, reply: formatted, updatedAt: now };
@@ -244,29 +240,22 @@ export const createReplyHandler = action(
     ]);
     const row = inserted[0];
 
-    // Best-effort past the write — a notification must never fail the send.
-    try {
-      if (isSender) {
-        await notify(
-          { db, env: c.env, defer: defer(c) },
-          // Actor stays null — a thread notification must never name the
-          // anonymous sender.
-          { recipientId: msg.receiverId, type: "thread", targetId: messageId },
-        );
-      } else if (msg.senderId) {
-        await notify(
-          { db, env: c.env, defer: defer(c) },
-          {
-            recipientId: msg.senderId,
-            type: "reply",
-            targetId: messageId,
-            actorId: session.userId,
-            blockChecked: true,
-          },
-        );
-      }
-    } catch (err) {
-      console.error("thread reply post-insert failed", err);
+    if (isSender) {
+      notifyLater(
+        c,
+        db,
+        // Actor stays null — a thread notification must never name the
+        // anonymous sender.
+        { recipientId: msg.receiverId, type: "thread", targetId: messageId },
+      );
+    } else if (msg.senderId) {
+      notifyLater(c, db, {
+        recipientId: msg.senderId,
+        type: "reply",
+        targetId: messageId,
+        actorId: session.userId,
+        blockChecked: true,
+      });
     }
 
     return {
@@ -442,10 +431,7 @@ export const sendMessageHandler = action(
       ...scoreColumns(scores),
     });
 
-    await notify(
-      { db, env: c.env, defer: defer(c) },
-      { recipientId: receiverId, type: "message" },
-    );
+    notifyLater(c, db, { recipientId: receiverId, type: "message" });
 
     return { success: true };
   },

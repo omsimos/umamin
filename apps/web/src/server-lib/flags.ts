@@ -409,6 +409,8 @@ export async function resolveFlags(
   ) as Record<string, boolean>;
 
   if (!env.POSTHOG_PROJECT_TOKEN) return closed;
+  // Every key is forced on, so PostHog's answer would be overridden anyway.
+  if (keys.every((key) => forced.has(key))) return closed;
 
   const distinctId = viewerId ?? ANONYMOUS_DISTINCT_ID;
 

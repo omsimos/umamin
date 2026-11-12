@@ -39,19 +39,24 @@ export function buildApp(db: Db, session: ResolvedSession) {
 }
 
 const SAME_ORIGIN = { origin: "https://x.test", host: "x.test" };
-const FAKE_CTX = {
-  waitUntil: () => {},
-  passThroughOnException: () => {},
-} as unknown as ExecutionContext;
 
-export function call(
+export async function call(
   app: Hono<AppBindings>,
   name: string,
   body?: unknown,
   env: Partial<AppEnv> = {},
   extraHeaders: Record<string, string> = {},
 ) {
-  return app.request(
+  // Collected so a test sees what the Worker would finish after responding.
+  const deferred: Promise<unknown>[] = [];
+  const ctx = {
+    waitUntil: (p: Promise<unknown>) => {
+      deferred.push(p);
+    },
+    passThroughOnException: () => {},
+  } as unknown as ExecutionContext;
+
+  const res = await app.request(
     `/actions/${name}`,
     {
       method: "POST",
@@ -63,8 +68,14 @@ export function call(
       body: JSON.stringify(body ?? {}),
     },
     env as unknown as AppEnv,
-    FAKE_CTX,
+    ctx,
   );
+
+  // Deferred work can defer more (the notification write defers its push).
+  while (deferred.length > 0) {
+    await Promise.allSettled(deferred.splice(0));
+  }
+  return res;
 }
 
 export async function callJson<T = unknown>(
