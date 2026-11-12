@@ -33,6 +33,7 @@ import { ExpectedError } from "@/lib/expected-error";
 import { MIN_AURA_FOR_IMAGES } from "@/lib/post-images";
 import {
   hasUmaminPro,
+  isProPurchaseConfirmed,
   PRO_PER_MONTH_PHP,
   PRO_PRICE_PHP,
   PRO_TERM_MONTHS,
@@ -43,6 +44,7 @@ import {
   queryKeys,
 } from "@/lib/query";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
+import { assignLocation } from "@/lib/reload-page";
 import { getActionError, hasUmaminPlus } from "@/lib/utils";
 
 type Perk = { icon: LucideIcon; title: string; detail: string };
@@ -149,6 +151,41 @@ const routeApi = getRouteApi("/_public/tiers");
 const CONFIRM_POLL_MS = 3_000;
 const CONFIRM_TIMEOUT_MS = 2 * 60_000;
 
+const CHECKOUT_BASELINE_KEY = "umamin-pro:checkoutBaseline";
+
+// The Pro horizon seen before leaving for checkout, in ms (0 for no Pro).
+// Null when nothing was saved or storage is blocked.
+function readCheckoutBaseline(): number | null {
+  try {
+    const raw = sessionStorage.getItem(CHECKOUT_BASELINE_KEY);
+    if (raw === null) return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCheckoutBaseline(proUntil?: Date | string | null) {
+  try {
+    const ms = proUntil ? new Date(proUntil).getTime() : 0;
+    sessionStorage.setItem(
+      CHECKOUT_BASELINE_KEY,
+      String(Number.isFinite(ms) ? ms : 0),
+    );
+  } catch {
+    // Storage blocked: the return falls back to "any active Pro counts".
+  }
+}
+
+function clearCheckoutBaseline() {
+  try {
+    sessionStorage.removeItem(CHECKOUT_BASELINE_KEY);
+  } catch {
+    // Nothing to clear.
+  }
+}
+
 export function TiersView() {
   const { pro } = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
@@ -157,6 +194,14 @@ export function TiersView() {
   // still remembers the user came back from checkout.
   const [returnedFromCheckout] = useState(pro === "success");
   const [confirmTimedOut, setConfirmTimedOut] = useState(false);
+  // Read in an effect, not during render: /tiers is server-rendered and the
+  // server has no sessionStorage.
+  const [baseline, setBaseline] = useState<number | null | undefined>(
+    undefined,
+  );
+  useEffect(() => {
+    if (returnedFromCheckout) setBaseline(readCheckoutBaseline());
+  }, [returnedFromCheckout]);
   const { data, isPending } = useQuery({
     queryKey: queryKeys.currentUser(),
     queryFn: fetchCurrentUserOptional,
@@ -167,7 +212,8 @@ export function TiersView() {
       return returnedFromCheckout &&
         !confirmTimedOut &&
         polled &&
-        !hasUmaminPro(polled.proUntil)
+        baseline !== undefined &&
+        !isProPurchaseConfirmed(polled.proUntil, baseline)
         ? CONFIRM_POLL_MS
         : false;
     },
@@ -180,10 +226,13 @@ export function TiersView() {
   // already bought keeps the badge, theme and ad-free perks either way.
   const proLaunched = useProOffer();
 
-  // Back from checkout but the webhook hasn't granted Pro yet. The buy button
-  // stays off meanwhile, so a second purchase isn't one tap away, and the
-  // user is polled for a bounded time (refetchInterval above).
-  const awaitingPro = returnedFromCheckout && !!user && !isPro;
+  // Back from checkout but the webhook hasn't applied the order yet. For a
+  // renewal the user already has Pro, so the wait ends only when the horizon
+  // moves past the one saved before checkout. The buy button stays off
+  // meanwhile, so a second purchase isn't one tap away.
+  const purchaseConfirmed =
+    baseline !== undefined && isProPurchaseConfirmed(user?.proUntil, baseline);
+  const awaitingPro = returnedFromCheckout && !!user && !purchaseConfirmed;
   const confirmation = !awaitingPro
     ? "none"
     : confirmTimedOut
@@ -217,6 +266,10 @@ export function TiersView() {
     return () => clearTimeout(timer);
   }, [confirmation]);
 
+  useEffect(() => {
+    if (returnedFromCheckout && purchaseConfirmed) clearCheckoutBaseline();
+  }, [returnedFromCheckout, purchaseConfirmed]);
+
   const checkout = useMutation({
     mutationFn: async () => {
       const res = await callAction<{ url: string }>("createProCheckoutAction");
@@ -224,10 +277,22 @@ export function TiersView() {
       throw new ExpectedError(getActionError(res) ?? "An error occurred");
     },
     onSuccess: (url) => {
-      window.location.assign(url);
+      writeCheckoutBaseline(user?.proUntil);
+      assignLocation(url);
     },
     onError: (err) => toast.error(err.message),
   });
+  // The mutation stays "success" so the button is off through the redirect.
+  // A page restored from the back-forward cache keeps that state, which would
+  // leave the button stuck after the user pressed Back on the payment page.
+  const resetCheckout = checkout.reset;
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) resetCheckout();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [resetCheckout]);
   // Stay disabled through the redirect — the mutation "succeeds" before the
   // browser actually leaves, and a re-click would mint a second checkout.
   const checkingOut = checkout.isPending || checkout.isSuccess;
