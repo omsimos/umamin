@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { useProOffer } from "@/hooks/use-pro-offer";
 import { callAction } from "@/lib/api";
 import { ExpectedError } from "@/lib/expected-error";
 import { MIN_AURA_FOR_IMAGES } from "@/lib/post-images";
@@ -178,7 +178,7 @@ export function TiersView() {
   const isPro = hasUmaminPro(user?.proUntil);
   // Pro is built but not launched. The flag hides the OFFER only — a user who
   // already bought keeps the badge, theme and ad-free perks either way.
-  const { pro: proLaunched } = useFeatureFlags();
+  const proLaunched = useProOffer();
 
   // Back from checkout but the webhook hasn't granted Pro yet. The buy button
   // stays off meanwhile, so a second purchase isn't one tap away, and the

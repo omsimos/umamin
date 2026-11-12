@@ -16,8 +16,8 @@ vi.mock("@tanstack/react-router", () => ({
   }),
   Link: () => null,
 }));
-vi.mock("@/hooks/use-feature-flags", () => ({
-  useFeatureFlags: () => ({ pro: true }),
+vi.mock("@/hooks/use-pro-offer", () => ({
+  useProOffer: () => true,
 }));
 vi.mock("@/lib/query-fetchers", () => ({
   fetchCurrentUserOptional: mocks.fetchUser,

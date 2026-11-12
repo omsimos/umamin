@@ -24,12 +24,11 @@ function wrapper({ children }: { children: ReactNode }) {
 describe("useFeatureFlags", () => {
   // The anti-flash invariant. Every flag here gates a surface that is currently
   // OFF, so the pre-data default has to be hidden — defaulting to visible would
-  // paint the Pro offer on every page load until the fetch resolved.
+  // paint a gated surface on every page load until the fetch resolved.
   it("reads as hidden before the flags arrive", () => {
     fetchFeatureFlags.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useFeatureFlags(), { wrapper });
     expect(result.current).toEqual({
-      pro: false,
       contentModeration: false,
       chat: false,
       dm: false,
@@ -43,7 +42,6 @@ describe("useFeatureFlags", () => {
       expect(fetchFeatureFlags).toHaveBeenCalled();
     });
     expect(result.current).toEqual({
-      pro: false,
       contentModeration: false,
       chat: false,
       dm: false,
@@ -52,7 +50,6 @@ describe("useFeatureFlags", () => {
 
   it("passes through a resolved flag", async () => {
     fetchFeatureFlags.mockResolvedValue({
-      pro: true,
       contentModeration: true,
       chat: true,
       dm: true,
@@ -60,7 +57,6 @@ describe("useFeatureFlags", () => {
     const { result } = renderHook(() => useFeatureFlags(), { wrapper });
     await waitFor(() => {
       expect(result.current).toEqual({
-        pro: true,
         contentModeration: true,
         chat: true,
         dm: true,
@@ -76,7 +72,6 @@ describe("loadFeatureFlags", () => {
     loaderFetchJson.mockRejectedValue(new Error("flags down"));
     const queryClient = new QueryClient();
     await expect(loadFeatureFlags(queryClient)).resolves.toEqual({
-      pro: false,
       contentModeration: false,
       chat: false,
       dm: false,
