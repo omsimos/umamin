@@ -2,13 +2,8 @@ import {
   createFileRoute,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@umamin/ui/components/alert";
 import { Skeleton } from "@umamin/ui/components/skeleton";
-import { Link2OffIcon } from "lucide-react";
+import { GoogleAuthErrorAlert } from "@/components/google-auth-error-alert";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { loadFeatureFlags } from "@/lib/loader-flags";
 import { pageSeo } from "@/lib/seo";
@@ -72,22 +67,7 @@ function SettingsPage() {
           Manage your account settings
         </p>
 
-        {error === "already_linked" && (
-          <Alert variant="destructive" className="mb-4">
-            <Link2OffIcon />
-            <AlertTitle>Failed to link account</AlertTitle>
-            <AlertDescription>
-              Google account already connected to a different profile.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {error === "rate_limited" && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertTitle>Too many requests</AlertTitle>
-            <AlertDescription>Please try again in a minute.</AlertDescription>
-          </Alert>
-        )}
+        <GoogleAuthErrorAlert code={error} className="mb-4" />
 
         <SettingsTabs />
       </div>
