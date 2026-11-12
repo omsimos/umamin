@@ -1,8 +1,27 @@
 import { render, screen } from "@testing-library/react";
 import { Button, buttonVariants } from "@umamin/ui/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+} from "@umamin/ui/components/dropdown-menu";
 import { describe, expect, it } from "vitest";
 
 describe("Button", () => {
+  // A Radix trigger with asChild merges its own data-slot into the child.
+  it("keeps its own data-slot under an asChild trigger", () => {
+    render(
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button>Open</Button>
+        </DropdownMenuTrigger>
+      </DropdownMenu>,
+    );
+    expect(screen.getByRole("button", { name: "Open" })).toHaveAttribute(
+      "data-slot",
+      "button",
+    );
+  });
+
   it("renders a button with its children and the button role", () => {
     render(<Button>Click me</Button>);
     const button = screen.getByRole("button", { name: "Click me" });
