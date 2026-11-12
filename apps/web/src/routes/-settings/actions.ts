@@ -106,10 +106,6 @@ export function updateProfileThemeAction(input: { theme: ProTheme | null }) {
   );
 }
 
-export function logoutAction() {
-  return callAction<{ redirect: string }>("logout");
-}
-
 export function deleteAccountAction(confirmation: string) {
   return callAction<{ redirect: string } | { error: string }>("deleteAccount", {
     confirmation,
