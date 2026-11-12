@@ -93,6 +93,24 @@ describe("aesEncrypt / aesDecrypt", () => {
     expect(await aesDecrypt(underOriginal)).toBe("before swap");
   });
 
+  // A test-only key (the 32 bytes 0x00 to 0x1f, not a secret) and a payload an
+  // earlier build produced with it. This pins the stored format: if a change
+  // makes this fail, fix the change. Never regenerate the payload to make it pass.
+  const FIXTURE_KEY = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=";
+  const FIXTURE_PLAINTEXT = "umamin fixture: kumusta 🐈";
+  const FIXTURE_PAYLOAD =
+    "HFIESJuABIL0M5VD4h0H67vE8IQRBmsEgKFfLOPVLgWrh2eATA2UI5ldg0A=.SPSV4finX+odo4eM";
+
+  it("decrypts a ciphertext produced by an earlier build", async () => {
+    const original = process.env.AES_256_GCM_KEY;
+    try {
+      process.env.AES_256_GCM_KEY = FIXTURE_KEY;
+      expect(await aesDecrypt(FIXTURE_PAYLOAD)).toBe(FIXTURE_PLAINTEXT);
+    } finally {
+      process.env.AES_256_GCM_KEY = original;
+    }
+  });
+
   it("throws when the AES key env var is absent", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const original = process.env.AES_256_GCM_KEY;

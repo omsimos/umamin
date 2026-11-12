@@ -27,7 +27,7 @@ async function importAesKey(base64Key: string): Promise<CryptoKey> {
     "raw",
     rawClean,
     { name: "AES-GCM" },
-    /* extractable */ true,
+    /* extractable */ false,
     ["encrypt", "decrypt"],
   );
 }
