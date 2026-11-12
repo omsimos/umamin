@@ -1,4 +1,5 @@
 import { Blobatar } from "@blobatar/react";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useCanGoBack, useRouter } from "@tanstack/react-router";
 import {
   AlertDialog,
@@ -41,6 +42,8 @@ import type { UiDmMessage } from "@/lib/dm/client-state";
 import type { DmErrorCode } from "@/lib/dm/protocol";
 import type { DmPeerResponse, DmReplyPreview } from "@/lib/dm/types";
 import { Link, useAppNavigate } from "@/lib/navigation";
+import { queryKeys } from "@/lib/query";
+import { invalidateAfterBlock } from "@/lib/query-cache";
 import { reloadPage } from "@/lib/reload-page";
 import {
   SessionBackButton,
@@ -166,6 +169,20 @@ export function DmUnavailable({
   );
 }
 
+// Exported so the block path can be tested without opening a socket.
+export async function blockDmPeer(
+  queryClient: QueryClient,
+  peer: Pick<Peer, "id" | "username">,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const res = await blockUserAction({ userId: peer.id });
+  if (res && "error" in res) return { ok: false, error: res.error };
+  invalidateAfterBlock(queryClient, peer.username);
+  // The block removed the follow in both directions, so the viewer's own
+  // follower and following counts moved.
+  void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
+  return { ok: true };
+}
+
 export function DmConversationScreen({
   peer,
   onLeave,
@@ -174,6 +191,7 @@ export function DmConversationScreen({
   onLeave: () => void;
 }) {
   const navigate = useAppNavigate();
+  const queryClient = useQueryClient();
   const convo = useDmConversation(peer.username, toastFor);
   const { state } = convo;
   const [replyTarget, setReplyTarget] = useState<UiDmMessage | null>(null);
@@ -225,8 +243,8 @@ export function DmConversationScreen({
       }
       navigate("/inbox?tab=chats");
     } else if (kind === "block") {
-      const res = await blockUserAction({ userId: peer.id });
-      if (res && "error" in res) {
+      const res = await blockDmPeer(queryClient, peer);
+      if (!res.ok) {
         toast.error(res.error);
         return;
       }

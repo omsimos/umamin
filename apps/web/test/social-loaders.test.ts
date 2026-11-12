@@ -117,6 +117,52 @@ describe("/user/$username loader", () => {
 
     expect(mocks.fetch).not.toHaveBeenCalledWith("/api/user/target/viewer");
   });
+
+  describe("profile cache entry", () => {
+    const key = queryKeys.userProfile("target");
+    const cachedFollowers = () =>
+      queryClient.getQueryData<typeof profile>(key)?.followerCount;
+
+    beforeEach(() => {
+      mocks.cookie.mockResolvedValue(false);
+      mocks.viewer.mockResolvedValue(null);
+      mocks.fetch.mockImplementation(async (path) =>
+        path.endsWith("/posts") ? page("p1") : profile,
+      );
+    });
+
+    it("seeds an empty profile cache", async () => {
+      await runLoader(UserRoute, ctx());
+
+      expect(queryClient.getQueryData(key)).toEqual(profile);
+    });
+
+    it("keeps a profile this device just patched", async () => {
+      queryClient.setQueryData(key, { ...profile, followerCount: 4 });
+
+      await expect(runLoader(UserRoute, ctx())).resolves.toMatchObject({
+        user: { followerCount: 4 },
+      });
+      expect(cachedFollowers()).toBe(4);
+
+      await expect(runLoader(UserRoute, ctx(true))).resolves.toMatchObject({
+        user: { followerCount: 4 },
+      });
+      expect(cachedFollowers()).toBe(4);
+    });
+
+    it("replaces a profile entry older than the Worker cache window", async () => {
+      queryClient.setQueryData(
+        key,
+        { ...profile, followerCount: 4 },
+        { updatedAt: Date.now() - 301_000 },
+      );
+
+      await runLoader(UserRoute, ctx());
+
+      expect(cachedFollowers()).toBe(3);
+    });
+  });
 });
 
 describe("signed-in /feed and /notes loaders", () => {

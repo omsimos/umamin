@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { DEFAULT_FEED_SORT, normalizeFeedSort } from "../../lib/feed-sort";
+import { PUBLIC_PROFILE_MAX_AGE_SECONDS } from "../../lib/profile-cache";
 import type { AppBindings } from "../../server-lib/context";
 import {
   getNotesPage,
@@ -133,7 +134,7 @@ export const publicRoutes = new Hono<AppBindings>()
       "fetching public user profile",
       // 7d → 300s (plan): Cache API has no tag purge; a short TTL bounds
       // anonymous staleness while own-device reads stay fresh via setQueryData.
-      300,
+      PUBLIC_PROFILE_MAX_AGE_SECONDS,
       async (req, env) => {
         const username = formatUsername(req.param("username") ?? "");
         const result = await getPublicUserProfileWithBadge(

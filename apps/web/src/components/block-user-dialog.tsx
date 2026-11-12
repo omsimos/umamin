@@ -13,7 +13,7 @@ import { Button } from "@umamin/ui/components/button";
 import { toast } from "sonner";
 import { blockUserAction } from "@/lib/actions";
 import { ExpectedError } from "@/lib/expected-error";
-import { queryKeys } from "@/lib/query";
+import { invalidateAfterBlock } from "@/lib/query-cache";
 
 type BlockUserDialogProps = {
   userId: string;
@@ -42,21 +42,7 @@ export function BlockUserDialog({
       }
     },
     onSuccess: () => {
-      // Refetch options are stable (no refetch-on-mount), so every cache the
-      // block changes must be invalidated explicitly. Settings' blocked-users
-      // list and the inbox (server-filtered) are common to all surfaces; the
-      // profile-viewer entry is removed (not invalidated) because resolveViewer
-      // short-circuits on getQueryData and the query is enabled: false.
-      queryClient.invalidateQueries({ queryKey: queryKeys.blockedUsers() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dmPeerRoot() });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.receivedMessages(),
-      });
-      if (username) {
-        queryClient.removeQueries({
-          queryKey: queryKeys.userProfileViewer(username),
-        });
-      }
+      invalidateAfterBlock(queryClient, username);
       toast.success("User blocked.");
       onBlocked?.();
     },

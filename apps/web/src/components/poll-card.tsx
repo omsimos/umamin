@@ -1,4 +1,3 @@
-import type { InfiniteData } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
@@ -20,14 +19,8 @@ import {
   pollTotalVotes,
 } from "@/lib/poll";
 import { captureException } from "@/lib/posthog";
-import { queryKeys } from "@/lib/query";
-import { patchPostAcrossFeed, patchPostResponse } from "@/lib/query-cache";
-import type {
-  FeedResponse,
-  PollData,
-  PostData,
-  PostResponse,
-} from "@/lib/types";
+import { patchPostEverywhere } from "@/lib/query-cache";
+import type { PollData, PostData } from "@/lib/types";
 import { getActionError, isAlreadyVoted, shortTimeUntil } from "@/lib/utils";
 
 type PollCardProps = {
@@ -93,13 +86,7 @@ export function PollCard({ postId, poll, isAuthenticated }: PollCardProps) {
           }
         : post;
 
-    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
-      { queryKey: queryKeys.postsRoot() },
-      (current) => patchPostAcrossFeed(current, postId, patch),
-    );
-    queryClient.setQueryData<PostResponse>(queryKeys.post(postId), (current) =>
-      patchPostResponse(current, patch),
-    );
+    patchPostEverywhere(queryClient, postId, patch);
   };
 
   const handleVoteAction = useBurstAction(
