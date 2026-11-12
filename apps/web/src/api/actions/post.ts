@@ -50,7 +50,6 @@ import {
   auraAwardStatement,
   auraReverseStatement,
   awardAura,
-  reverseAura,
 } from "../../server-lib/points";
 import {
   POLL_DURATIONS,
@@ -343,50 +342,57 @@ export const deletePostHandler = action(
 
     const ownerId = post.authorId;
 
-    await db.transaction(async (tx) => {
+    const head = [
       // Before the post goes: its comments cascade away and their ids are
       // needed to find their disputes.
-      await deleteDisputes(
-        tx,
+      deleteDisputes(
+        db,
         "comment",
-        tx
+        db
           .select({ id: postCommentTable.id })
           .from(postCommentTable)
           .where(eq(postCommentTable.postId, postId)),
+      ),
+      deleteDisputes(db, "post", postId),
+      db.delete(postTable).where(eq(postTable.id, postId)),
+    ] as const;
+
+    const unpin = db
+      .update(userTable)
+      .set({ pinnedPostId: null })
+      .where(
+        and(eq(userTable.id, ownerId), eq(userTable.pinnedPostId, postId)),
       );
-      await deleteDisputes(tx, "post", postId);
-      await tx.delete(postTable).where(eq(postTable.id, postId));
 
-      if (post.quotedPostId) {
-        const [bumped] = await tx
-          .update(postTable)
-          .set({
-            repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
-            resharerCount: removeResharer(ownerId),
-          })
-          .where(eq(postTable.id, post.quotedPostId))
-          .returning({ authorId: postTable.authorId });
+    if (post.quotedPostId) {
+      const unshare = db
+        .update(postTable)
+        .set({
+          repostCount: sql`CASE WHEN ${postTable.repostCount} > 0 THEN ${postTable.repostCount} - 1 ELSE 0 END`,
+          resharerCount: removeResharer(ownerId),
+        })
+        // Only when the delete right above removed the quote.
+        .where(and(eq(postTable.id, post.quotedPostId), PREV_CHANGED));
+      const reversal = auraReverseStatement(
+        db,
+        {
+          beneficiary: { postId: post.quotedPostId },
+          actorId: ownerId,
+          actorCreatedAt: isOwner ? user?.createdAt : undefined,
+          delta: AURA_POINTS.quote,
+        },
+        PREV_CHANGED,
+      );
+      await (reversal
+        ? db.batch([...head, unshare, reversal, unpin])
+        : db.batch([...head, unshare, unpin]));
+    } else {
+      await db.batch([...head, unpin]);
+    }
 
-        if (bumped) {
-          await reverseAura(tx, {
-            beneficiaryId: bumped.authorId,
-            actorId: ownerId,
-            actorCreatedAt: isOwner ? user?.createdAt : undefined,
-            delta: AURA_POINTS.quote,
-          });
-        }
-      }
-
-      await tx
-        .update(userTable)
-        .set({ pinnedPostId: null })
-        .where(
-          and(eq(userTable.id, ownerId), eq(userTable.pinnedPostId, postId)),
-        );
-    });
-
+    // The response does not wait for R2. deletePostImages logs its own failures.
     const r2 = createR2(c.env);
-    if (r2) await r2.deletePostImages(post.images);
+    if (r2) defer(c)(r2.deletePostImages(post.images));
 
     return { success: true };
   },
