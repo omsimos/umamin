@@ -1,4 +1,8 @@
-import type { InfiniteData, QueryClient } from "@tanstack/react-query";
+import type {
+  InfiniteData,
+  QueryClient,
+  QueryKey,
+} from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query";
 import type { StreakUpdate } from "@/lib/streak";
 import type {
@@ -199,21 +203,49 @@ export function patchPostResponse(
 // Every surface that renders a PostCard from an infinite feed. A patch that
 // misses one leaves that surface stale for the session (refetch-on-focus/mount
 // are off), so like/repost/delete go through these instead of listing keys.
+// patchPostEverywhere's `patch` must set absolute values, because it can run
+// twice (see applyPatchDurably).
 const FEED_ROOTS = [queryKeys.postsRoot(), queryKeys.userPostsRoot()] as const;
+
+// A fetch already in flight builds its result from what it read before this
+// write: a refetch asked the server too early, and fetchNextPage appends to
+// the pages it captured when it started. When it lands it replaces the patch,
+// so the patch runs again right after each such fetch resolves. `apply` must
+// set absolute values (never increment), because it can run twice.
+export function applyPatchDurably(
+  queryClient: QueryClient,
+  roots: readonly QueryKey[],
+  apply: () => void,
+): void {
+  const inFlight = roots.flatMap((queryKey) =>
+    queryClient.getQueryCache().findAll({ queryKey, fetchStatus: "fetching" }),
+  );
+  apply();
+  for (const query of inFlight) {
+    void query.promise?.then(apply, () => undefined);
+  }
+}
 
 export function patchPostEverywhere(
   queryClient: QueryClient,
   postId: string,
   patch: (post: PostData) => PostData,
 ): void {
-  for (const queryKey of FEED_ROOTS) {
-    queryClient.setQueriesData<InfiniteData<FeedResponse>>(
-      { queryKey },
-      (current) => patchPostAcrossFeed(current, postId, patch),
-    );
-  }
-  queryClient.setQueryData<PostResponse>(queryKeys.post(postId), (current) =>
-    patchPostResponse(current, patch),
+  applyPatchDurably(
+    queryClient,
+    [...FEED_ROOTS, queryKeys.post(postId)],
+    () => {
+      for (const queryKey of FEED_ROOTS) {
+        queryClient.setQueriesData<InfiniteData<FeedResponse>>(
+          { queryKey },
+          (current) => patchPostAcrossFeed(current, postId, patch),
+        );
+      }
+      queryClient.setQueryData<PostResponse>(
+        queryKeys.post(postId),
+        (current) => patchPostResponse(current, patch),
+      );
+    },
   );
 }
 

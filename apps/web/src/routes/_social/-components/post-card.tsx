@@ -40,7 +40,11 @@ import { ExpectedError } from "@/lib/expected-error";
 import { Link } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
-import { patchComment, patchPostEverywhere } from "@/lib/query-cache";
+import {
+  applyPatchDurably,
+  patchComment,
+  patchPostEverywhere,
+} from "@/lib/query-cache";
 import {
   type CommentData,
   type CommentsResponse,
@@ -99,14 +103,20 @@ function PostCardImpl({
         likeCount: nextLikes,
       }));
     } else if (commentPostId) {
-      queryClient.setQueryData<InfiniteData<CommentsResponse>>(
-        queryKeys.postComments(commentPostId),
-        (current) =>
-          patchComment(current, data.id, (comment) => ({
-            ...comment,
-            isLiked: nextLiked,
-            likeCount: nextLikes,
-          })),
+      applyPatchDurably(
+        queryClient,
+        [queryKeys.postComments(commentPostId)],
+        () => {
+          queryClient.setQueryData<InfiniteData<CommentsResponse>>(
+            queryKeys.postComments(commentPostId),
+            (current) =>
+              patchComment(current, data.id, (comment) => ({
+                ...comment,
+                isLiked: nextLiked,
+                likeCount: nextLikes,
+              })),
+          );
+        },
       );
     }
   };

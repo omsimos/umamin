@@ -58,7 +58,7 @@ import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
 import { queryKeys } from "@/lib/query";
-import { patchNote } from "@/lib/query-cache";
+import { applyPatchDurably, patchNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/types";
 import {
   getActionError,
@@ -128,15 +128,17 @@ export function NoteCard({
   );
 
   const syncReactionCache = (nextReacted: boolean, nextCount: number) => {
-    queryClient.setQueriesData<InfiniteData<NotesResponse>>(
-      { queryKey: queryKeys.notesRoot() },
-      (current) =>
-        patchNote(current, data.id, (note) => ({
-          ...note,
-          isReacted: nextReacted,
-          reactionCount: nextCount,
-        })),
-    );
+    applyPatchDurably(queryClient, [queryKeys.notesRoot()], () => {
+      queryClient.setQueriesData<InfiniteData<NotesResponse>>(
+        { queryKey: queryKeys.notesRoot() },
+        (current) =>
+          patchNote(current, data.id, (note) => ({
+            ...note,
+            isReacted: nextReacted,
+            reactionCount: nextCount,
+          })),
+      );
+    });
   };
 
   const reaction = useOptimisticToggle({

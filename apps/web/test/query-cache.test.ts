@@ -1,6 +1,6 @@
 import type { InfiniteData } from "@tanstack/react-query";
 import { QueryClient } from "@tanstack/react-query";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   patchPostAcrossFeed,
   patchPostEverywhere,
@@ -85,5 +85,34 @@ describe("patchPostEverywhere / removePostEverywhere", () => {
         ?.pages[0]?.data,
     ).toEqual([]);
     expect(qc.getQueryData(["post", "a"])).toBeNull();
+  });
+
+  it("keeps a patch when a refetch that started earlier lands", async () => {
+    const qc = new QueryClient();
+    const key = ["posts", "latest", "public"];
+    qc.setQueryData(key, makeFeed(["a"]));
+
+    let resolveStale: ((page: FeedResponse) => void) | undefined;
+    const fetching = qc.fetchInfiniteQuery({
+      queryKey: key,
+      queryFn: () =>
+        new Promise<FeedResponse>((resolve) => {
+          resolveStale = resolve;
+        }),
+      initialPageParam: null,
+    });
+    // The fetch must be running before the patch is written.
+    await vi.waitFor(() => expect(resolveStale).toBeDefined());
+    expect(qc.getQueryState(key)?.fetchStatus).toBe("fetching");
+
+    patchPostEverywhere(qc, "a", (post) => ({ ...post, likeCount: 5 }));
+    resolveStale?.({ data: [makeItem("a")], nextCursor: null });
+    await fetching;
+    await Promise.resolve();
+
+    expect(
+      qc.getQueryData<InfiniteData<FeedResponse>>(key)?.pages[0]?.data[0]?.post
+        .likeCount,
+    ).toBe(5);
   });
 });
