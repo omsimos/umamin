@@ -113,7 +113,9 @@ Use these for all new code.
   before the session lookup. Mobile carriers put many phones behind one IP, so
   any new per-IP limit on a signed-in path throttles unrelated users together. A cap the
   bindings can't express (for example 2 group edits a day) goes on KV, like
-  `server-lib/group-edit.ts`.
+  `server-lib/group-edit.ts`. Build a per-IP limiter key with
+  `rateLimitKeyForIp` from `server-lib/ip.ts`, so an IPv6 /64 shares one
+  budget. Login also checks `RL_LOGIN_ACCOUNT`, keyed per username.
 - Workers KV is eventually consistent (about 60 s) and allows 1 write per
   second per key. Store one key per entry, never one JSON blob, or concurrent
   read-modify-writes drop data. Every KV consumer must no-op without the
