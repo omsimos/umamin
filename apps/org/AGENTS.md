@@ -26,6 +26,9 @@ pnpm org:create-org                       # provision an organization (no signup
   (`lib/server/with-action.ts`): zod parse, session guard (`auth: "session"`,
   `"user"` or `"none"`), rate limit, handler. Return `{ error }` instead of
   throwing.
+  Both authenticated modes refuse an account that still has its default
+  invite password; only the password change sets `allowDefaultPassword`.
+  `/api/messages` applies the same rule with a 403.
 - Every GET route is per-viewer and goes through `withPrivateRead`
   (`lib/server/read-route.ts`), which sends `no-store` + `Vary: Cookie`. There
   is no public cached route; don't add one without a cache-key design.
