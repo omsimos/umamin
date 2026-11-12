@@ -365,6 +365,26 @@ export function patchFollowListUser(
   };
 }
 
+// The caches a block changes that no surface patches by hand. Refetch on
+// mount is off, so each one needs an explicit invalidation. The profile-viewer
+// entry is removed instead: resolveViewer returns a cached value without
+// checking whether it is stale.
+export function invalidateAfterBlock(
+  queryClient: QueryClient,
+  username?: string,
+): void {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.blockedUsers() });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.dmPeerRoot() });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.receivedMessages(),
+  });
+  if (username) {
+    queryClient.removeQueries({
+      queryKey: queryKeys.userProfileViewer(username),
+    });
+  }
+}
+
 /**
  * Applies a save's new streak to the caches that render it for the author:
  * the current user (composer reminders) and their own profile.
