@@ -22,18 +22,25 @@ import { queryKeys } from "@/lib/query";
 import type { LinkedAccount } from "@/lib/types";
 import { LinkedGoogleAccounts } from "./linked-google-accounts";
 
-function linked(email: string, createdAt: string): LinkedAccount {
+function linked(
+  email: string,
+  createdAt: string,
+  linkId: string,
+): LinkedAccount {
   return {
     providerId: "google",
     email,
     picture: "",
     // The browser gets createdAt as an ISO string from JSON.
     createdAt: createdAt as unknown as Date,
+    linkId,
   };
 }
 
-const FIRST = linked("first@example.com", "2026-01-01T00:00:00.000Z");
-const SECOND = linked("second@example.com", "2026-02-01T00:00:00.000Z");
+// Linked in the same second, so only linkId tells them apart.
+const SAME_SECOND = "2026-01-01T00:00:00.000Z";
+const FIRST = linked("first@example.com", SAME_SECOND, "a".repeat(32));
+const SECOND = linked("second@example.com", SAME_SECOND, "b".repeat(32));
 
 function renderAccounts(accounts: LinkedAccount[]) {
   const client = new QueryClient();
@@ -106,7 +113,7 @@ describe("LinkedGoogleAccounts", () => {
     );
     expect(unlinkGoogleAccountAction).toHaveBeenCalledTimes(1);
     expect(unlinkGoogleAccountAction).toHaveBeenCalledWith({
-      linkedAt: SECOND.createdAt,
+      linkId: SECOND.linkId,
     });
   });
 

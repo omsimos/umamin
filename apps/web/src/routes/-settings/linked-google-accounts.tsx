@@ -34,9 +34,7 @@ export function LinkedGoogleAccounts({ user }: { user: UserWithAccount }) {
 
   const unlink = useMutation({
     mutationFn: async (account: LinkedAccount) => {
-      const res = await unlinkGoogleAccountAction({
-        linkedAt: account.createdAt,
-      });
+      const res = await unlinkGoogleAccountAction({ linkId: account.linkId });
       const err = actionError(res);
       if (err) throw new ExpectedError(err);
     },
@@ -83,7 +81,7 @@ export function LinkedGoogleAccounts({ user }: { user: UserWithAccount }) {
 
       <div className="mt-2 space-y-2">
         {user.accounts.map((account) => (
-          <Card key={`${account.providerId}:${String(account.createdAt)}`}>
+          <Card key={account.linkId}>
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="flex min-w-0 flex-1 items-center gap-4">
                 <Avatar className="h-16 w-16 shrink-0">

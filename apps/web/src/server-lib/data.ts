@@ -69,6 +69,7 @@ import type {
   MessagesResponse,
   MessageThreadResponse,
   HotCounterColumn,
+  LinkedAccount,
   ModerationColumn,
   MutedUsersResponse,
   NoteItem,
@@ -98,6 +99,7 @@ import {
   getHotScoreKey,
   isHotEligible,
 } from "./hot-score";
+import { linkedAccountId } from "./linked-account";
 import { isModerator } from "./moderation";
 import { getMutedIds } from "./mutes";
 import { countUnseen } from "./notifications";
@@ -2138,9 +2140,10 @@ export async function getCurrentUserData(
     };
   };
 
-  const getAccounts = async () =>
-    db
+  const getAccounts = async (): Promise<LinkedAccount[]> => {
+    const rows = await db
       .select({
+        providerUserId: accountTable.providerUserId,
         providerId: accountTable.providerId,
         email: accountTable.email,
         picture: accountTable.picture,
@@ -2149,6 +2152,13 @@ export async function getCurrentUserData(
       .from(accountTable)
       .where(eq(accountTable.userId, userId))
       .orderBy(asc(accountTable.createdAt), asc(accountTable.providerUserId));
+    return Promise.all(
+      rows.map(async ({ providerUserId, ...account }) => ({
+        ...account,
+        linkId: await linkedAccountId(providerUserId),
+      })),
+    );
+  };
 
   // Independent cached reads — run concurrently to halve cold-cache latency on
   // /api/me (hit on nearly every authenticated page).

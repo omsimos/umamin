@@ -26,6 +26,10 @@ import {
   USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
+import {
+  LINKED_ACCOUNT_ID_PATTERN,
+  linkedAccountId,
+} from "../../server-lib/linked-account";
 import { isReservedModeratorName } from "../../server-lib/moderation";
 import { fetchMusicMeta } from "../../server-lib/music-meta";
 import { MAX_MUTES } from "../../server-lib/mutes";
@@ -258,19 +262,36 @@ export const updatePasswordHandler = action(
 
 export const unlinkGoogleAccountHandler = action(
   {
-    // The row is named by its link time, scoped to the caller. The Google
-    // subject id never reaches the client (see LinkedAccount in lib/types).
-    schema: z.object({ linkedAt: z.coerce.date() }),
+    // The row is named by its linkId, scoped to the caller. The Google subject
+    // id never reaches the client (see LinkedAccount in lib/types).
+    schema: z.object({ linkId: z.string().regex(LINKED_ACCOUNT_ID_PATTERN) }),
     auth: "user",
     rateLimit: { name: "auth", key: ({ user }) => `unlink:${user.id}` },
   },
-  async ({ linkedAt }, { session, user, c }) => {
+  async ({ linkId }, { session, user, c }) => {
     const db = ctxDb(c);
-    const linkedAtSeconds = Math.floor(linkedAt.getTime() / 1000);
+    // A profile has a handful of linked rows at most, so match in memory.
+    const linked = await db
+      .select({ providerUserId: accountTable.providerUserId })
+      .from(accountTable)
+      .where(
+        and(
+          eq(accountTable.userId, user.id),
+          eq(accountTable.providerId, "google"),
+        ),
+      );
+    let providerUserId: string | undefined;
+    for (const row of linked) {
+      if ((await linkedAccountId(row.providerUserId)) === linkId) {
+        providerUserId = row.providerUserId;
+      }
+    }
+    // Already gone (another tab, a stale page): nothing to do.
+    if (providerUserId === undefined) return { success: true };
+
     const thisRow = and(
       eq(accountTable.userId, user.id),
-      eq(accountTable.providerId, "google"),
-      eq(accountTable.createdAt, linkedAt),
+      eq(accountTable.providerUserId, providerUserId),
     );
 
     // One batch: the row goes only while another way to sign in remains,
@@ -289,7 +310,7 @@ export const unlinkGoogleAccountHandler = action(
               OR EXISTS (
                 SELECT 1 FROM oauth_account other
                 WHERE other.user_id = ${user.id}
-                  AND other.created_at <> ${linkedAtSeconds}
+                  AND other.provider_user_id <> ${providerUserId}
               )
             )`,
           ),

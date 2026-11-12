@@ -4,6 +4,7 @@ import {
   sendPushNotification,
   type VapidConfig,
 } from "@mmmike/web-push/send";
+import { z } from "zod";
 
 // Web Push send primitive for the Worker runtime (plan R3). @node-rs/argon2's
 // sibling `web-push` uses Node crypto and won't run on Workers; @mmmike/web-push
@@ -42,6 +43,11 @@ export function isAllowedPushEndpoint(value: string): boolean {
     ALLOWED_PUSH_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))
   );
 }
+
+export const pushEndpointSchema = z
+  .string()
+  .max(512)
+  .refine(isAllowedPushEndpoint, "Invalid push endpoint");
 
 // The subscription row shape stored in push_subscription (endpoint + keys),
 // matching apps/www's DB projection.

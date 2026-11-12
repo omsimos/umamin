@@ -24,13 +24,18 @@ vi.mock("../src/server-lib/posthog", () => ({
   captureServerException,
 }));
 
+import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { sessionTable, userTable } from "@umamin/db/schema/user";
 import { hash } from "../src/server-lib/argon2";
 import { SESSION_COOKIE_NAME } from "../src/server-lib/cookies";
 import type { Db } from "../src/server-lib/db";
 import { accountSuspendedMessage } from "../src/server-lib/errors";
 import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
-import { __clearSessionCache } from "../src/server-lib/session";
+import {
+  __clearSessionCache,
+  createSession,
+  generateSessionToken,
+} from "../src/server-lib/session";
 import { ANON, buildApp, call, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
 
@@ -228,6 +233,61 @@ describe("auth flows (real libSQL)", () => {
     );
     expect(await second.json()).toEqual({ redirect: "/login" });
     expect(await db.select().from(sessionTable)).toHaveLength(1);
+  });
+
+  it("logout removes this browser's push row, and only that one", async () => {
+    await db.insert(userTable).values([
+      { id: "u1", username: "u_one", pushPrefs: 1 },
+      { id: "u2", username: "u_two", pushPrefs: 1 },
+    ]);
+    const token = generateSessionToken();
+    await createSession(db, token, "u1");
+    const endpoint = (device: string) =>
+      `https://fcm.googleapis.com/fcm/send/${device}`;
+    await db.insert(pushSubscriptionTable).values([
+      { userId: "u1", endpoint: endpoint("this"), p256dh: "k", auth: "a" },
+      { userId: "u2", endpoint: endpoint("other"), p256dh: "k", auth: "a" },
+    ]);
+
+    const res = await call(
+      buildApp(db, ANON),
+      "logout",
+      { pushEndpoint: endpoint("this") },
+      {},
+      { cookie: `session=${token}` },
+    );
+
+    expect(await res.json()).toEqual({ redirect: "/login" });
+    const left = await db
+      .select({ userId: pushSubscriptionTable.userId })
+      .from(pushSubscriptionTable);
+    expect(left).toEqual([{ userId: "u2" }]);
+    const prefs = await db
+      .select({ id: userTable.id, pushPrefs: userTable.pushPrefs })
+      .from(userTable)
+      .orderBy(userTable.id);
+    expect(prefs).toEqual([
+      { id: "u1", pushPrefs: 0 },
+      { id: "u2", pushPrefs: 1 },
+    ]);
+    expect(await db.select().from(sessionTable)).toHaveLength(0);
+  });
+
+  it("logout ignores a push endpoint it doesn't accept", async () => {
+    await db.insert(userTable).values({ id: "u1", username: "u_one" });
+    const token = generateSessionToken();
+    await createSession(db, token, "u1");
+
+    const res = await call(
+      buildApp(db, ANON),
+      "logout",
+      { pushEndpoint: "http://evil.test/x" },
+      {},
+      { cookie: `session=${token}` },
+    );
+
+    expect(await res.json()).toEqual({ redirect: "/login" });
+    expect(await db.select().from(sessionTable)).toHaveLength(0);
   });
 
   it("logout still refuses a cross-site request", async () => {

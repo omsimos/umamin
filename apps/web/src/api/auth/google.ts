@@ -136,12 +136,14 @@ export const googleAuthApp = new Hono<AppBindings>()
     clearOauthCookies();
 
     // A signed-in visitor is bounced off /login, so they see errors on
-    // /settings. Cookie presence only: no database read on a failure path.
-    const fail = (code: GoogleAuthErrorCode) =>
-      c.redirect(
-        `${hasSessionCredential(c) ? "/settings" : "/login"}?error=${code}`,
-        302,
-      );
+    // /settings. Before the session is resolved, cookie presence decides: no
+    // database read on an early failure path. Once it is resolved, pass the
+    // answer, because a revoked cookie would send the error to /settings,
+    // which bounces to /login and drops it.
+    const fail = (
+      code: GoogleAuthErrorCode,
+      signedIn = hasSessionCredential(c),
+    ) => c.redirect(`${signedIn ? "/settings" : "/login"}?error=${code}`, 302);
 
     if (c.req.query("error") !== undefined) return fail("cancelled");
 
@@ -209,7 +211,7 @@ export const googleAuthApp = new Hono<AppBindings>()
 
       if (intent === "link") {
         // The session ended between Settings and Google.
-        if (!user) return fail("expired");
+        if (!user) return fail("expired", false);
 
         if (existingUser) {
           return existingUser.userId === user.id

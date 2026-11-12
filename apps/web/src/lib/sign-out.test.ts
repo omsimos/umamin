@@ -38,9 +38,7 @@ describe("signOut", () => {
     mocks.unsubscribeFails = false;
     mocks.unsubscribed = 0;
     mocks.callAction.mockReset();
-    mocks.callAction.mockImplementation(async (name: string) =>
-      name === "logout" ? { redirect: "/login" } : { pushPrefs: 0 },
-    );
+    mocks.callAction.mockResolvedValue({ redirect: "/login" });
     localStorage.clear();
   });
 
@@ -48,17 +46,16 @@ describe("signOut", () => {
     vi.useRealTimers();
   });
 
-  it("ends this browser's push subscription before ending the session", async () => {
+  it("removes this browser's push row with the logout, then unsubscribes", async () => {
     mocks.sub = { endpoint: ENDPOINT };
     localStorage.setItem(OWNER_KEY, "u1");
 
     await signOut();
 
-    expect(calledActions()).toEqual([
-      "unregisterPushSubscriptionAction",
-      "logout",
-    ]);
-    expect(mocks.callAction.mock.calls[0][1]).toEqual({ endpoint: ENDPOINT });
+    expect(calledActions()).toEqual(["logout"]);
+    expect(mocks.callAction.mock.calls[0][1]).toEqual({
+      pushEndpoint: ENDPOINT,
+    });
     expect(mocks.unsubscribed).toBe(1);
     expect(localStorage.getItem(OWNER_KEY)).toBe("");
   });
@@ -69,22 +66,20 @@ describe("signOut", () => {
     const res = await signOut();
 
     expect(calledActions()).toEqual(["logout"]);
+    expect(mocks.callAction.mock.calls[0][1]).toBeUndefined();
     expect(mocks.unsubscribed).toBe(0);
     expect(res).toEqual({ redirect: "/login" });
   });
 
-  it("still unsubscribes the browser when the server refuses the unregister", async () => {
+  it("keeps push working when the logout fails", async () => {
     mocks.sub = { endpoint: ENDPOINT };
-    mocks.callAction.mockImplementation(async (name: string) =>
-      name === "logout"
-        ? { redirect: "/login" }
-        : { error: "Too many requests" },
-    );
+    localStorage.setItem(OWNER_KEY, "u1");
+    mocks.callAction.mockResolvedValue({ error: "Couldn't sign out" });
 
-    await signOut();
+    await expect(signOut()).rejects.toThrow("Couldn't sign out");
 
-    expect(mocks.unsubscribed).toBe(1);
-    expect(calledActions()).toContain("logout");
+    expect(mocks.unsubscribed).toBe(0);
+    expect(localStorage.getItem(OWNER_KEY)).toBe("u1");
   });
 
   it("a browser unsubscribe that throws does not block sign-out", async () => {
@@ -102,7 +97,8 @@ describe("signOut", () => {
     await vi.advanceTimersByTimeAsync(3000);
     await done;
 
-    expect(calledActions()).toContain("logout");
+    expect(calledActions()).toEqual(["logout"]);
+    expect(mocks.callAction.mock.calls[0][1]).toBeUndefined();
   });
 
   it("skips push on a browser without push support", async () => {
@@ -115,9 +111,7 @@ describe("signOut", () => {
   });
 
   it("rejects with the server's message when logout fails", async () => {
-    mocks.callAction.mockImplementation(async (name: string) =>
-      name === "logout" ? { error: "An error occurred" } : { pushPrefs: 0 },
-    );
+    mocks.callAction.mockResolvedValue({ error: "An error occurred" });
 
     await expect(signOut()).rejects.toMatchObject({
       message: "An error occurred",

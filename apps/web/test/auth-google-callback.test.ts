@@ -414,6 +414,12 @@ describe("google oauth callback (real libSQL)", () => {
       await expectNothingCreated(db, res);
     });
 
+    it("a link whose session was revoked explains itself on /login", async () => {
+      const res = await callback("link", generateSessionToken());
+      expect(res.headers.get("location")).toBe("/login?error=expired");
+      await expectNothingCreated(db, res);
+    });
+
     it("the initiator keeps a link intent only for a signed-in browser", async () => {
       const signedOut = await start("?intent=link");
       expect(signedOut.status).toBe(302);

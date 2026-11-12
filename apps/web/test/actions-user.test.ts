@@ -36,6 +36,7 @@ import { dmPair } from "../src/lib/dm/pair";
 import { hash } from "../src/server-lib/argon2";
 import type { Db } from "../src/server-lib/db";
 import { LAST_LOGIN_METHOD_ERROR } from "../src/server-lib/errors";
+import { linkedAccountId } from "../src/server-lib/linked-account";
 import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
 import {
   __clearSessionCache,
@@ -245,15 +246,23 @@ describe("user actions (real libSQL)", () => {
       });
     }
 
-    function linkRow(userId: string, createdAt: Date) {
+    function subjectOf(userId: string, createdAt: Date, n = 0) {
+      return `${userId}-${createdAt.getTime()}-${n}`;
+    }
+
+    function linkRow(userId: string, createdAt: Date, n = 0) {
       return db.insert(accountTable).values({
         providerId: "google",
-        providerUserId: `${userId}-${createdAt.getTime()}`,
+        providerUserId: subjectOf(userId, createdAt, n),
         userId,
-        email: `${userId}-${createdAt.getTime()}@example.com`,
+        email: `${subjectOf(userId, createdAt, n)}@example.com`,
         picture: "",
         createdAt,
       });
+    }
+
+    function linkIdOf(userId: string, createdAt: Date, n = 0) {
+      return linkedAccountId(subjectOf(userId, createdAt, n));
     }
 
     async function seedSessions(userId: string) {
@@ -265,7 +274,7 @@ describe("user actions (real libSQL)", () => {
 
     async function accountsOf(userId: string) {
       return db
-        .select({ createdAt: accountTable.createdAt })
+        .select({ providerUserId: accountTable.providerUserId })
         .from(accountTable)
         .where(eq(accountTable.userId, userId));
     }
@@ -286,7 +295,7 @@ describe("user actions (real libSQL)", () => {
       const { json } = await callJson(
         buildApp(db, authed("u1")),
         "unlinkGoogleAccountAction",
-        { linkedAt: T1.toISOString() },
+        { linkId: await linkIdOf("u1", T1) },
       );
 
       expect(json).toEqual({ success: true });
@@ -302,7 +311,7 @@ describe("user actions (real libSQL)", () => {
       const { json } = await callJson(
         buildApp(db, authed("u1")),
         "unlinkGoogleAccountAction",
-        { linkedAt: T1.toISOString() },
+        { linkId: await linkIdOf("u1", T1) },
       );
 
       expect(json).toEqual({ error: LAST_LOGIN_METHOD_ERROR });
@@ -317,16 +326,35 @@ describe("user actions (real libSQL)", () => {
       const app = buildApp(db, authed("u1"));
 
       const first = await callJson(app, "unlinkGoogleAccountAction", {
-        linkedAt: T1.toISOString(),
+        linkId: await linkIdOf("u1", T1),
       });
       expect(first.json).toEqual({ success: true });
-      expect(await accountsOf("u1")).toEqual([{ createdAt: T2 }]);
+      expect(await accountsOf("u1")).toEqual([
+        { providerUserId: subjectOf("u1", T2) },
+      ]);
 
       const last = await callJson(app, "unlinkGoogleAccountAction", {
-        linkedAt: T2.toISOString(),
+        linkId: await linkIdOf("u1", T2),
       });
       expect(last.json).toEqual({ error: LAST_LOGIN_METHOD_ERROR });
-      expect(await accountsOf("u1")).toEqual([{ createdAt: T2 }]);
+      expect(await accountsOf("u1")).toHaveLength(1);
+    });
+
+    it("tells apart two accounts linked in the same second", async () => {
+      await seedUser("u1", false);
+      await linkRow("u1", T1, 0);
+      await linkRow("u1", T1, 1);
+
+      const { json } = await callJson(
+        buildApp(db, authed("u1")),
+        "unlinkGoogleAccountAction",
+        { linkId: await linkIdOf("u1", T1, 0) },
+      );
+
+      expect(json).toEqual({ success: true });
+      expect(await accountsOf("u1")).toEqual([
+        { providerUserId: subjectOf("u1", T1, 1) },
+      ]);
     });
 
     it("never touches another profile's account", async () => {
@@ -337,34 +365,34 @@ describe("user actions (real libSQL)", () => {
       const { json } = await callJson(
         buildApp(db, authed("u1")),
         "unlinkGoogleAccountAction",
-        { linkedAt: T1.toISOString() },
+        { linkId: await linkIdOf("u2", T1) },
       );
 
       expect(json).toEqual({ success: true });
       expect(await accountsOf("u2")).toHaveLength(1);
     });
 
-    it("an unknown link time is a no-op", async () => {
+    it("an unknown linkId is a no-op", async () => {
       await seedUser("u1", true);
       await linkRow("u1", T1);
 
       const { json } = await callJson(
         buildApp(db, authed("u1")),
         "unlinkGoogleAccountAction",
-        { linkedAt: T2.toISOString() },
+        { linkId: await linkIdOf("u1", T2) },
       );
 
       expect(json).toEqual({ success: true });
       expect(await accountsOf("u1")).toHaveLength(1);
     });
 
-    it("rejects a link time that is not a date", async () => {
+    it("rejects a linkId that is not one", async () => {
       await seedUser("u1", true);
 
       const res = await call(
         buildApp(db, authed("u1")),
         "unlinkGoogleAccountAction",
-        { linkedAt: "soon" },
+        { linkId: "soon" },
       );
 
       expect(res.status).toBe(400);

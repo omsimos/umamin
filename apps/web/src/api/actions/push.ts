@@ -5,16 +5,11 @@ import { and, desc, eq, ne, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ALL_PUSH_CATEGORIES } from "../../lib/push-prefs";
 import { action } from "../../server-lib/action";
-import { isAllowedPushEndpoint } from "../../server-lib/push";
+import { pushEndpointSchema } from "../../server-lib/push";
 import { clearPushPrefsWithoutDevices } from "../../server-lib/push-devices";
 import { ctxDb } from "./_shared";
 
 const PUSH_DEVICE_CAP = 20;
-
-const endpointSchema = z
-  .string()
-  .max(512)
-  .refine(isAllowedPushEndpoint, "Invalid push endpoint");
 
 function decodesTo(value: string, ok: (bytes: Uint8Array) => boolean) {
   try {
@@ -25,7 +20,7 @@ function decodesTo(value: string, ok: (bytes: Uint8Array) => boolean) {
 }
 
 const registerSchema = z.object({
-  endpoint: endpointSchema,
+  endpoint: pushEndpointSchema,
   // The same checks the push library makes before it sends: an uncompressed
   // P-256 point and a secret of at least 16 bytes.
   p256dh: z
@@ -91,7 +86,7 @@ export const registerPushSubscriptionHandler = action(
   },
 );
 
-const unregisterSchema = z.object({ endpoint: endpointSchema });
+const unregisterSchema = z.object({ endpoint: pushEndpointSchema });
 
 export const unregisterPushSubscriptionHandler = action(
   {

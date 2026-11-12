@@ -110,11 +110,12 @@ export type CurrentUserClient = PublicUserWithBadge & {
 };
 // Only what the Account settings card renders. The provider subject id and the
 // owning userId never leave the server — this payload is dehydrated into every
-// signed-in page's HTML.
+// signed-in page's HTML. `linkId` stands in for the subject id when the card
+// names a row (server-lib/linked-account.ts).
 export type LinkedAccount = Pick<
   SelectAccount,
   "providerId" | "email" | "picture" | "createdAt"
->;
+> & { linkId: string };
 
 export type UserWithAccount = CurrentUserClient & {
   account: LinkedAccount | null;

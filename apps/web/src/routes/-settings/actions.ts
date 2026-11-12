@@ -29,7 +29,7 @@ export function updatePasswordAction(input: PasswordInput) {
   return callAction<{ success: true }>("updatePasswordAction", input);
 }
 
-export function unlinkGoogleAccountAction(input: { linkedAt: Date | string }) {
+export function unlinkGoogleAccountAction(input: { linkId: string }) {
   return callAction<{ success: true }>("unlinkGoogleAccountAction", input);
 }
 
