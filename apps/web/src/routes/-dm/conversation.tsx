@@ -42,7 +42,6 @@ import type { UiDmMessage } from "@/lib/dm/client-state";
 import type { DmErrorCode } from "@/lib/dm/protocol";
 import type { DmPeerResponse, DmReplyPreview } from "@/lib/dm/types";
 import { Link, useAppNavigate } from "@/lib/navigation";
-import { queryKeys } from "@/lib/query";
 import { invalidateAfterBlock } from "@/lib/query-cache";
 import { reloadPage } from "@/lib/reload-page";
 import {
@@ -177,9 +176,6 @@ export async function blockDmPeer(
   const res = await blockUserAction({ userId: peer.id });
   if (res && "error" in res) return { ok: false, error: res.error };
   invalidateAfterBlock(queryClient, peer.username);
-  // The block removed the follow in both directions, so the viewer's own
-  // follower and following counts moved.
-  void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
   return { ok: true };
 }
 

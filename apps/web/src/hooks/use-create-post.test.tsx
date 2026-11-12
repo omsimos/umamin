@@ -84,4 +84,25 @@ describe("useCreatePost", () => {
     expect(postA()?.isLiked).toBe(true);
     expect(postA()?.likeCount).toBe(1);
   });
+
+  it("leaves a following feed it never touched alone when a post fails", async () => {
+    const queryClient = new QueryClient();
+    const followingKey = ["posts", "following", "u1"];
+    await queryClient.prefetchQuery({
+      queryKey: followingKey,
+      queryFn: () => Promise.reject(new Error("offline")),
+      retry: false,
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    vi.mocked(createPostAction).mockResolvedValue({ error: "Nope" } as never);
+    const { result } = renderHook(() => useCreatePost(user), { wrapper });
+
+    await act(async () => {
+      await result.current.submitPost({ content: "hi" }).catch(() => {});
+    });
+
+    expect(queryClient.getQueryState(followingKey)?.status).toBe("error");
+  });
 });

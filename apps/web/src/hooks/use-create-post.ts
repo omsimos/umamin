@@ -101,12 +101,14 @@ export function useCreatePost(user: PublicUser | null) {
       if (!user) return {};
       await queryClient.cancelQueries({ queryKey: queryKeys.postsRoot() });
 
-      const previous = queryClient.getQueriesData<InfiniteData<FeedResponse>>({
-        queryKey: queryKeys.postsRoot(),
-      });
       // A feed with no data yet becomes a one-item feed after the prepend. On
       // failure it is reset so it loads normally instead of showing empty.
-      const emptyKeys = previous
+      // Only the feeds the prepend writes to: the following feed is left alone.
+      const emptyKeys = queryClient
+        .getQueriesData<InfiniteData<FeedResponse>>({
+          queryKey: queryKeys.postsRoot(),
+          predicate: (query) => isNonFollowingFeedQuery(query.queryKey),
+        })
         .filter(([, data]) => data === undefined)
         .map(([queryKey]) => queryKey);
 

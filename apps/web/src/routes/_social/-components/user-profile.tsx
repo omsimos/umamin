@@ -33,6 +33,7 @@ import { useMuteUser } from "@/hooks/use-mute-user";
 import { ExpectedError } from "@/lib/expected-error";
 import { useAppNavigate } from "@/lib/navigation";
 import { captureException } from "@/lib/posthog";
+import { markProfileFromServer } from "@/lib/profile-loader-cache";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -77,7 +78,7 @@ export function UserProfile({ username, initialUser }: Props) {
   const { data: user } = useQuery({
     ...pageQueryOptions(
       queryKeys.userProfile(username),
-      () => fetchUserProfile(username),
+      async () => markProfileFromServer(await fetchUserProfile(username)),
       PUBLIC_STALE_TIME,
     ),
     initialData: initialUser,

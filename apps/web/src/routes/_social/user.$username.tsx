@@ -6,7 +6,7 @@ import { RouteSegmentError } from "@/components/route-segment-error";
 import { UserCardSkeleton } from "@/components/skeleton/user-card-skeleton";
 import { ssrSessionCookiePresent } from "@/lib/loader-fetch";
 import { loadViewer } from "@/lib/loader-viewer";
-import { PUBLIC_PROFILE_MAX_AGE_SECONDS } from "@/lib/profile-cache";
+import { settleLoadedProfile } from "@/lib/profile-loader-cache";
 import { PRIVATE_STALE_TIME, PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
 import { absoluteUrl, pageSeo, websiteId } from "@/lib/seo";
 import type {
@@ -44,20 +44,14 @@ export const Route = createFileRoute("/_social/user/$username")({
       throw notFound();
     }
 
-    // The Worker caches this read, so `user` can predate a change this device
-    // already wrote into the cache (a follow, a new avatar). An entry written
-    // inside the cache window is kept. An older or invalidated one is replaced.
-    const key = queryKeys.userProfile(username);
-    const cached = queryClient.getQueryState<PublicUserWithBadge>(key);
-    const cachedUser =
-      cached &&
-      !cached.isInvalidated &&
-      Date.now() - cached.dataUpdatedAt < PUBLIC_PROFILE_MAX_AGE_SECONDS * 1000
-        ? cached.data
-        : undefined;
-    if (cachedUser === undefined) queryClient.setQueryData(key, user);
-
-    return { username, user: (cachedUser ?? user) as PublicUserWithBadge };
+    return {
+      username,
+      user: settleLoadedProfile(
+        queryClient,
+        username,
+        user as PublicUserWithBadge,
+      ),
+    };
   },
   head: ({ loaderData }) => {
     const username = loaderData?.username;

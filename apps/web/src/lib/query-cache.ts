@@ -400,12 +400,14 @@ export function patchFollowListUser(
 // The caches a block changes that no surface patches by hand. Refetch on
 // mount is off, so each one needs an explicit invalidation. The profile-viewer
 // entry is removed instead: resolveViewer returns a cached value without
-// checking whether it is stale.
+// checking whether it is stale. The block removes the follow in both
+// directions, so the viewer's own follower and following counts move too.
 export function invalidateAfterBlock(
   queryClient: QueryClient,
   username?: string,
 ): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.blockedUsers() });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
   void queryClient.invalidateQueries({ queryKey: queryKeys.dmPeerRoot() });
   void queryClient.invalidateQueries({
     queryKey: queryKeys.receivedMessages(),
