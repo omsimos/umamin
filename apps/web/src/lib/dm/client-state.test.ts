@@ -58,6 +58,56 @@ describe("dmReducer", () => {
     ]);
   });
 
+  it("turns an optimistic send into the stored message on its ack", () => {
+    let s = synced([msg(1, false)]);
+    s = dmReducer(s, {
+      type: "send",
+      frame: { t: "send", id: "c1", text: "hi" },
+      replyTo: null,
+      at: 5,
+    });
+    s = dmReducer(s, { type: "acked", clientId: "c1", messageId: "9" });
+    expect(s.messages.map((m) => m.id)).toEqual(["1", "9"]);
+    expect(s.messages[1]?.delivery).toBeUndefined();
+    expect(s.messages[1]?.frame).toBeUndefined();
+  });
+
+  it("replaces an acked send with the server copy without a duplicate", () => {
+    let s = synced([msg(1, false)]);
+    s = dmReducer(s, {
+      type: "send",
+      frame: { t: "send", id: "c1", text: "hi" },
+      replyTo: null,
+      at: 5,
+    });
+    s = dmReducer(s, { type: "acked", clientId: "c1", messageId: "9" });
+    s = dmReducer(s, {
+      type: "msgs",
+      messages: [msg(9, true, { clientId: "c1", text: "server" })],
+    });
+    expect(s.messages).toHaveLength(2);
+    expect(s.messages[1]?.text).toBe("server");
+  });
+
+  it("drops the optimistic copy when the stored message is already on screen", () => {
+    let s = synced([msg(1, false), msg(9, true)]);
+    s = dmReducer(s, {
+      type: "send",
+      frame: { t: "send", id: "c1", text: "hi" },
+      replyTo: null,
+      at: 5,
+    });
+    s = dmReducer(s, { type: "acked", clientId: "c1", messageId: "9" });
+    expect(s.messages.map((m) => m.id)).toEqual(["1", "9"]);
+  });
+
+  it("ignores an ack for a send that is not pending", () => {
+    const s = synced([msg(1, false)]);
+    expect(
+      dmReducer(s, { type: "acked", clientId: "c1", messageId: "9" }),
+    ).toBe(s);
+  });
+
   it("keeps an unacked send across a reconnect sync", () => {
     let s = synced([msg(1, false)]);
     s = dmReducer(s, {
