@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadAllMessages, RateLimitedError } from "./message-walk";
+import {
+  loadAllMessages,
+  RateLimitedError,
+  WalkStoppedError,
+} from "./message-walk";
 import type { MessagesResponse, OrgMessageItem } from "./query-types";
 
 const noWait = async () => {};
@@ -45,18 +49,25 @@ describe("loadAllMessages", () => {
 
     expect(all.map((m) => m.id)).toEqual(["a", "b", "c", "d", "e"]);
     expect(fetchPage.mock.calls.filter(([c]) => c === "c1")).toHaveLength(2);
-    expect(onPause).toHaveBeenCalledOnce();
+    expect(onPause).toHaveBeenCalledExactlyOnceWith(2);
   });
 
-  it("gives up after the last retry", async () => {
+  it("gives up after the last retry and keeps the pages that loaded", async () => {
     const fetchPage = vi.fn(async (cursor: string | null) => {
       if (cursor === "c1") throw new RateLimitedError();
       return pageFor(cursor);
     });
 
-    await expect(
-      loadAllMessages(fetchPage, { wait: noWait, maxRetries: 2 }),
-    ).rejects.toBeInstanceOf(RateLimitedError);
+    const error = await loadAllMessages(fetchPage, {
+      wait: noWait,
+      maxRetries: 2,
+    }).catch((err: unknown) => err);
+
+    expect(error).toBeInstanceOf(WalkStoppedError);
+    expect((error as WalkStoppedError).loaded.map((m) => m.id)).toEqual([
+      "a",
+      "b",
+    ]);
     expect(fetchPage.mock.calls.filter(([c]) => c === "c1")).toHaveLength(3);
   });
 

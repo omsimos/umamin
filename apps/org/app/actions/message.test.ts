@@ -165,6 +165,17 @@ describe("sendMessageAction organization cap", () => {
       expect.anything(),
     );
   });
+
+  it("an over-long message doesn't spend the organization's cap", async () => {
+    mocks.state.orgRows = [org(250)];
+
+    await sendMessageAction({ orgId: "org-1", content: "a".repeat(251) });
+
+    expect(mocks.checkRateLimit).not.toHaveBeenCalledWith(
+      "orgInbox",
+      expect.anything(),
+    );
+  });
 });
 
 function signedInAs(mustChangePassword: boolean) {

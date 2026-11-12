@@ -41,14 +41,17 @@ export const sendMessageAction = withAction(
       return { success: true };
     }
 
-    // Checked after the lookup so an unknown id never spends a Redis call.
-    if (!(await checkRateLimit("orgInbox", `msg-org:${org.id}`))) {
-      return { error: RATE_LIMIT_ERROR };
-    }
-
     const messageCharLimit = resolveMessageCharLimit(org.messageCharLimit);
     if (content.length > messageCharLimit) {
       return { error: messageCharLimitError(messageCharLimit) };
+    }
+
+    // Every sender shares this budget, so only a message that would be stored
+    // spends it. An unknown id or an over-long message never reaches Redis.
+    // Trade-off: someone rotating addresses can still use up one org's hour.
+    // The cap bounds that cost; it can't tell them apart from real senders.
+    if (!(await checkRateLimit("orgInbox", `msg-org:${org.id}`))) {
+      return { error: RATE_LIMIT_ERROR };
     }
 
     const encrypted = await aesEncrypt(content);

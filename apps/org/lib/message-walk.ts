@@ -2,9 +2,17 @@ import type { MessagesResponse, OrgMessageItem } from "@/lib/query-types";
 
 export class RateLimitedError extends Error {}
 
+// The read limit outlasted every retry for one page. Carries the pages that
+// did load, so the caller can still export those instead of nothing.
+export class WalkStoppedError extends Error {
+  constructor(readonly loaded: OrgMessageItem[]) {
+    super("Stopped by the read limit");
+  }
+}
+
 type WalkOptions = {
   onProgress?: (loaded: number) => void;
-  onPause?: () => void;
+  onPause?: (loaded: number) => void;
   wait?: (ms: number) => Promise<void>;
   retryMs?: number;
   maxRetries?: number;
@@ -12,7 +20,8 @@ type WalkOptions = {
 
 // Loads every inbox page in order. The read route is rate limited per IP, so a
 // large inbox gets a 429 partway through. That is a pause, not a failure: wait
-// and ask for the same page again.
+// and ask for the same page again. The retry count is per page because the
+// limiter refills: a large inbox pauses many times and each pause clears.
 export async function loadAllMessages(
   fetchPage: (cursor: string | null) => Promise<MessagesResponse>,
   {
@@ -32,10 +41,9 @@ export async function loadAllMessages(
       try {
         page = await fetchPage(cursor);
       } catch (err) {
-        if (!(err instanceof RateLimitedError) || attempt >= maxRetries) {
-          throw err;
-        }
-        onPause?.();
+        if (!(err instanceof RateLimitedError)) throw err;
+        if (attempt >= maxRetries) throw new WalkStoppedError(all);
+        onPause?.(all.length);
         await wait(retryMs);
       }
     }

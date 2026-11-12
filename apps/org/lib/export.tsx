@@ -171,15 +171,41 @@ export async function downloadCardImage(
   downloadBlob(blob, `${org.username}-${message.id}.png`);
 }
 
+export type ZipPart = {
+  // Zero-based. Part 0 downloads on its own; this is only asked for later ones.
+  index: number;
+  total: number;
+  // Must run inside a click handler: see exportMessagesAsZip.
+  download: () => void;
+};
+
+export type ExportResult = {
+  // Images in the ZIPs that were downloaded.
+  ok: number;
+  failed: number;
+  // Messages left out because a later part was never downloaded.
+  notDownloaded: number;
+};
+
 // Render each message to a branded PNG and bundle them into ZIPs: one ZIP for
 // up to ZIP_PART_SIZE images, several above that. Never uses navigator.share
 // (one gesture per file).
+//
+// Browsers block or prompt for a second download that no click started, so
+// every part after the first waits for `awaitClick`. It resolves true once its
+// click handler has called `download`, or false to stop the export.
 export async function exportMessagesAsZip(
   messages: OrgMessageItem[],
   org: ExportOrg,
   theme: ExportTheme,
-  onProgress?: (done: number, total: number) => void,
-): Promise<{ ok: number; failed: number }> {
+  {
+    onProgress,
+    awaitClick,
+  }: {
+    onProgress?: (done: number, total: number) => void;
+    awaitClick: (part: ZipPart) => Promise<boolean>;
+  },
+): Promise<ExportResult> {
   // Loaded on demand (like modern-screenshot) — keeps jszip out of the
   // dashboard's initial chunk.
   const { default: JSZip } = await import("jszip");
@@ -192,22 +218,36 @@ export async function exportMessagesAsZip(
   for (const [partIndex, part] of parts.entries()) {
     // One archive per part, released before the next starts.
     const zip = new JSZip();
+    let partOk = 0;
+    let partFailed = 0;
     for (const [i, m] of part.entries()) {
       try {
         const blob = await rasterizeCard(m, theme);
         const position = partIndex * ZIP_PART_SIZE + i + 1;
         zip.file(`${String(position).padStart(digits, "0")}-${m.id}.png`, blob);
-        ok++;
+        partOk++;
       } catch (err) {
         console.error("export card failed", err);
-        failed++;
+        partFailed++;
       }
       done++;
       onProgress?.(done, messages.length);
     }
     const blob = await zip.generateAsync({ type: "blob" });
-    downloadBlob(blob, zipPartName(org.username, partIndex, parts.length));
+    const name = zipPartName(org.username, partIndex, parts.length);
+    const download = () => downloadBlob(blob, name);
+
+    if (partIndex === 0) {
+      download();
+    } else if (
+      !(await awaitClick({ index: partIndex, total: parts.length, download }))
+    ) {
+      const notDownloaded = messages.length - partIndex * ZIP_PART_SIZE;
+      return { ok, failed, notDownloaded };
+    }
+    ok += partOk;
+    failed += partFailed;
   }
 
-  return { ok, failed };
+  return { ok, failed, notDownloaded: 0 };
 }

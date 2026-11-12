@@ -18,13 +18,21 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { ExportThemeDialog } from "@/components/export-theme-dialog";
-import { type ExportOrg, exportMessagesAsZip } from "@/lib/export";
+import {
+  type ExportOrg,
+  exportMessagesAsZip,
+  type ZipPart,
+} from "@/lib/export";
 import {
   type ExportThemePrefs,
   loadExportThemePrefs,
   resolveExportTheme,
 } from "@/lib/export-themes";
-import { loadAllMessages, RateLimitedError } from "@/lib/message-walk";
+import {
+  loadAllMessages,
+  RateLimitedError,
+  WalkStoppedError,
+} from "@/lib/message-walk";
 import { queryKeys } from "@/lib/query";
 import type { MessagesResponse, OrgMessageItem } from "@/lib/query-types";
 import { MessageCard } from "./message-card";
@@ -137,28 +145,54 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
       return;
     }
     setExporting(true);
-    const id = toast.loading(`Rendering 0/${list.length}…`);
+    let id = toast.loading(`Rendering 0/${list.length}…`);
+    // Parts after the first need a click of their own, or the browser blocks
+    // them. The click handler downloads the finished ZIP straight away so the
+    // download keeps the click's user activation.
+    const awaitClick = (part: ZipPart) =>
+      new Promise<boolean>((resolve) => {
+        toast.dismiss(id);
+        id = toast(`Part ${part.index} of ${part.total} downloaded`, {
+          description: "Your browser needs a click for each file.",
+          duration: Number.POSITIVE_INFINITY,
+          action: {
+            label: `Download part ${part.index + 1}`,
+            onClick: () => {
+              part.download();
+              id = toast.loading("Rendering the next part…");
+              resolve(true);
+            },
+          },
+          cancel: { label: "Stop", onClick: () => resolve(false) },
+          onDismiss: () => resolve(false),
+        });
+      });
     try {
-      const { ok, failed } = await exportMessagesAsZip(
+      const { ok, failed, notDownloaded } = await exportMessagesAsZip(
         list,
         org,
         exportTheme,
-        (done, total) => {
-          toast.loading(`Rendering ${done}/${total}…`, { id });
+        {
+          onProgress: (done, total) => {
+            toast.loading(`Rendering ${done}/${total}…`, { id });
+          },
+          awaitClick,
         },
       );
       const notes = [
         failed ? `${failed} failed` : null,
         skipped ? `${skipped} couldn't be decrypted` : null,
+        notDownloaded ? `${notDownloaded} not downloaded` : null,
       ].filter(Boolean);
+      toast.dismiss(id);
       toast.success(
         `Exported ${ok} image${ok === 1 ? "" : "s"}${
           notes.length ? ` (${notes.join(", ")})` : ""
         }`,
-        { id },
       );
     } catch {
-      toast.error("Export failed", { id });
+      toast.dismiss(id);
+      toast.error("Export failed");
     } finally {
       setExporting(false);
     }
@@ -173,17 +207,30 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
       const all = await loadAllMessages(fetchMessages, {
         onProgress: (loaded) =>
           toast.loading(`Loading messages… ${loaded}`, { id }),
-        onPause: () =>
+        onPause: (loaded) =>
           toast.loading(
-            "Loading is paused for a moment. It resumes on its own.",
+            `Loading is paused at ${loaded} messages. It resumes on its own.`,
             { id },
           ),
       });
       toast.dismiss(id);
       await runExport(all);
-    } catch {
-      toast.error("Couldn't load all messages to export", { id });
+    } catch (err) {
       setExporting(false);
+      if (err instanceof WalkStoppedError && err.loaded.length > 0) {
+        const { loaded } = err;
+        toast.error(`Loading stopped at ${loaded.length} messages`, {
+          id,
+          description: "Too many requests. You can export what loaded.",
+          duration: Number.POSITIVE_INFINITY,
+          action: {
+            label: `Export ${loaded.length}`,
+            onClick: () => runExport(loaded),
+          },
+        });
+        return;
+      }
+      toast.error("Couldn't load all messages to export", { id });
     }
   }
 
