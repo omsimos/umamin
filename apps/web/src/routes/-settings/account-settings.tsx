@@ -3,50 +3,22 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
-import { Avatar, AvatarImage } from "@umamin/ui/components/avatar";
 import { Button } from "@umamin/ui/components/button";
-import { Card, CardHeader } from "@umamin/ui/components/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@umamin/ui/components/collapsible";
-import { Label } from "@umamin/ui/components/label";
 import { ChevronsUpDownIcon, KeyIcon, ShieldAlertIcon } from "lucide-react";
-import { BlobatarFallback } from "@/components/blobatar-fallback";
-import { TimeAgoVerbose } from "@/components/time-ago-verbose";
 import type { UserWithAccount } from "@/lib/types";
 import { DangerSettings } from "./danger-settings";
+import { LinkedGoogleAccounts } from "./linked-google-accounts";
 import { PasswordForm } from "./password-form";
 
 export function AccountSettings({ user }: { user: UserWithAccount }) {
   return (
     <div className="space-y-8">
-      {!!user.account && (
-        <section>
-          <Label>Google Account</Label>
-          <Card className="mt-2">
-            <CardHeader className="flex flex-row space-x-4 items-center">
-              <Avatar className="h-16 w-16">
-                <AvatarImage
-                  className="rounded-full"
-                  src={user.account.picture ?? ""}
-                  alt="Profile Picture"
-                />
-                <BlobatarFallback seed={user.id} />
-              </Avatar>
-
-              <div className="text-sm">
-                <p>{user.account.email}</p>
-
-                <p className="text-muted-foreground">
-                  Linked <TimeAgoVerbose date={user.account.createdAt} />
-                </p>
-              </div>
-            </CardHeader>
-          </Card>
-        </section>
-      )}
+      <LinkedGoogleAccounts user={user} />
 
       {!user.hasPassword && (
         <Alert>
@@ -54,25 +26,6 @@ export function AccountSettings({ user }: { user: UserWithAccount }) {
           <AlertTitle>Password (optional)</AlertTitle>
           <AlertDescription>
             You can have another way of logging in by adding a password.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!user.account && (
-        <Alert>
-          <AlertTitle>Link Account</AlertTitle>
-          <AlertDescription>
-            <span>
-              To prevent account loss, you may connect your account with Google.
-              You can still login with your credentials.
-            </span>
-            <Button variant="secondary" asChild className="mt-6">
-              {/* Server GET (Worker OAuth start), not a client route — a plain
-                  anchor does a full navigation. */}
-              <a href="/auth/google" className="w-full">
-                Connect with Google
-              </a>
-            </Button>
           </AlertDescription>
         </Alert>
       )}

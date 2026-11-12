@@ -118,6 +118,7 @@ export type LinkedAccount = Pick<
 
 export type UserWithAccount = CurrentUserClient & {
   account: LinkedAccount | null;
+  accounts: LinkedAccount[];
 };
 
 export function toPublicUser(user: SelectUser): PublicUser {
