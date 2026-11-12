@@ -551,48 +551,36 @@ export const deleteCommentHandler = action(
       return { error: "Comment not found" };
     }
 
-    await db.transaction(async (tx) => {
-      const removed = await tx
-        .delete(postCommentTable)
-        .where(eq(postCommentTable.id, commentId))
-        .returning({ id: postCommentTable.id });
+    const reversal = auraReverseStatement(
+      db,
+      {
+        beneficiary: { postId: comment.postId },
+        actorId: comment.authorId,
+        actorCreatedAt: isOwner ? user?.createdAt : undefined,
+        delta: AURA_POINTS.comment,
+      },
+      // The post update changed a row, and this person has no comment left here.
+      sql`${PREV_CHANGED} AND NOT ${hasCommented(comment.authorId, comment.postId)}`,
+    );
 
-      if (removed.length === 0) return;
-
-      await deleteDisputes(tx, "comment", commentId);
-
-      const [updated] = await tx
+    // Order matters: PREV_CHANGED reads only the statement right before it.
+    // The dispute cleanup goes last so it sits between no gated pair.
+    const statements = [
+      db.delete(postCommentTable).where(eq(postCommentTable.id, commentId)),
+      db
         .update(postTable)
         .set({
           commentCount: sql`CASE WHEN ${postTable.commentCount} > 0 THEN ${postTable.commentCount} - 1 ELSE 0 END`,
           // The deleted row is already gone by now.
           commenterCount: removeCommenter(comment.authorId, comment.postId),
         })
-        .where(eq(postTable.id, comment.postId))
-        .returning({ authorId: postTable.authorId });
+        .where(and(eq(postTable.id, comment.postId), PREV_CHANGED)),
+    ] as const;
+    const cleanup = deleteDisputes(db, "comment", commentId);
 
-      if (updated?.authorId) {
-        const remaining = await tx
-          .select({ id: postCommentTable.id })
-          .from(postCommentTable)
-          .where(
-            and(
-              eq(postCommentTable.authorId, comment.authorId),
-              eq(postCommentTable.postId, comment.postId),
-            ),
-          )
-          .limit(1);
-
-        if (remaining.length === 0) {
-          await reverseAura(tx, {
-            beneficiaryId: updated.authorId,
-            actorId: comment.authorId,
-            actorCreatedAt: isOwner ? user?.createdAt : undefined,
-            delta: AURA_POINTS.comment,
-          });
-        }
-      }
-    });
+    await (reversal
+      ? db.batch([...statements, reversal, cleanup])
+      : db.batch([...statements, cleanup]));
 
     return { success: true, postId: comment.postId };
   },
