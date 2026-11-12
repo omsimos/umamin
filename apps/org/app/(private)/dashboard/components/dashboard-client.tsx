@@ -24,6 +24,7 @@ import {
   loadExportThemePrefs,
   resolveExportTheme,
 } from "@/lib/export-themes";
+import { loadAllMessages, RateLimitedError } from "@/lib/message-walk";
 import { queryKeys } from "@/lib/query";
 import type { MessagesResponse, OrgMessageItem } from "@/lib/query-types";
 import { MessageCard } from "./message-card";
@@ -43,6 +44,7 @@ async function fetchMessages(cursor: string | null): Promise<MessagesResponse> {
     window.location.assign("/settings");
     throw new Error("Password change required");
   }
+  if (res.status === 429) throw new RateLimitedError("Rate limited");
   if (!res.ok) throw new Error("Failed to load messages");
   return res.json();
 }
@@ -166,17 +168,21 @@ export function DashboardClient({ org }: { org: ExportOrg }) {
     // Walk every page fresh from the top so "all" really means all,
     // independent of which pages have been visited.
     setExporting(true);
+    const id = toast.loading("Loading messages…");
     try {
-      const all: OrgMessageItem[] = [];
-      let c: string | null = null;
-      do {
-        const res: MessagesResponse = await fetchMessages(c);
-        all.push(...res.messages);
-        c = res.nextCursor;
-      } while (c);
+      const all = await loadAllMessages(fetchMessages, {
+        onProgress: (loaded) =>
+          toast.loading(`Loading messages… ${loaded}`, { id }),
+        onPause: () =>
+          toast.loading(
+            "Loading is paused for a moment. It resumes on its own.",
+            { id },
+          ),
+      });
+      toast.dismiss(id);
       await runExport(all);
     } catch {
-      toast.error("Couldn't load all messages to export");
+      toast.error("Couldn't load all messages to export", { id });
       setExporting(false);
     }
   }

@@ -45,6 +45,10 @@ pnpm org:create-org                       # provision an organization (no signup
 - Message export builds branded images and a ZIP in the browser
   (`lib/export.tsx`, `lib/export-themes.ts`, `jszip`, `modern-screenshot`).
   Test changes against `test/export-themes.test.ts` and an actual export.
+  A bulk export downloads one ZIP per 200 images (`lib/export-parts.ts`), and
+  "Download all" pauses and retries when the read limiter answers 429
+  (`lib/message-walk.ts`). A message that can't be decrypted is flagged
+  `decryptFailed`, shown as such, and left out of exports.
 - Use `@umamin/ui` components. Add new shadcn components to `packages/ui`
   rather than this app when another app could use them.
 
