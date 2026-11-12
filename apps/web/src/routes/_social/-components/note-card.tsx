@@ -45,15 +45,8 @@ import { MusicEmbed } from "@/components/music-embed";
 import { PostBody } from "@/components/post-body";
 import { StreakChip } from "@/components/streak";
 import { TimeAgo } from "@/components/time-ago";
-import {
-  BURST_ACTION_REJECT_MESSAGE,
-  useBurstAction,
-} from "@/hooks/use-burst-action";
 import { useMuteUser } from "@/hooks/use-mute-user";
-import {
-  unchangedOutcome,
-  useOptimisticToggle,
-} from "@/hooks/use-optimistic-toggle";
+import { useReactionToggle } from "@/hooks/use-reaction-toggle";
 import { ExpectedError } from "@/lib/expected-error";
 import { vibrate } from "@/lib/haptics";
 import { Link } from "@/lib/navigation";
@@ -61,7 +54,6 @@ import { queryKeys } from "@/lib/query";
 import { applyPatchDurably, patchNote } from "@/lib/query-cache";
 import type { NoteItem, NotesResponse } from "@/lib/types";
 import {
-  getActionError,
   hasPlusFeatures,
   isAlreadyReacted,
   isAlreadyRemoved,
@@ -119,14 +111,6 @@ export function NoteCard({
   const canModerate =
     isAuthenticated && currentUser?.user?.isModerator === true && !isOwnNote;
 
-  const handleReactAction = useBurstAction(
-    async (nextReacted: boolean) =>
-      nextReacted
-        ? addNoteReactionAction({ noteId: data.id })
-        : removeNoteReactionAction({ noteId: data.id }),
-    { limit: 4, rejectMessage: BURST_ACTION_REJECT_MESSAGE },
-  );
-
   const syncReactionCache = (nextReacted: boolean, nextCount: number) => {
     applyPatchDurably(queryClient, [queryKeys.notesRoot()], () => {
       queryClient.setQueriesData<InfiniteData<NotesResponse>>(
@@ -141,27 +125,18 @@ export function NoteCard({
     });
   };
 
-  const reaction = useOptimisticToggle({
+  const reaction = useReactionToggle({
     on: data.isReacted === true,
     count: data.reactionCount ?? 0,
-    send: async (nextReacted) => {
-      const res = await handleReactAction(nextReacted);
-      const actionError = getActionError(res);
-      if (actionError) {
-        throw new ExpectedError(actionError);
-      }
-
-      // The edge was already in the target state: keep the flag, and take the
-      // server's count over the ±1.
-      if (isAlreadyReacted(res) || isAlreadyRemoved(res)) {
-        return unchangedOutcome(res);
-      }
-      return "changed";
-    },
-    onSettled: (state) => syncReactionCache(state.on, state.count),
-    onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Couldn't react.");
-    },
+    request: (nextReacted) =>
+      nextReacted
+        ? addNoteReactionAction({ noteId: data.id })
+        : removeNoteReactionAction({ noteId: data.id }),
+    // The edge was already in the target state: keep the flag, and take the
+    // server's count over the ±1.
+    isNoop: (res) => isAlreadyReacted(res) || isAlreadyRemoved(res),
+    writeCache: (state) => syncReactionCache(state.on, state.count),
+    fallbackError: "Couldn't react.",
   });
   const reacted = reaction.on;
   const reactions = reaction.count;
