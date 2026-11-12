@@ -2147,7 +2147,8 @@ export async function getCurrentUserData(
         createdAt: accountTable.createdAt,
       })
       .from(accountTable)
-      .where(eq(accountTable.userId, userId));
+      .where(eq(accountTable.userId, userId))
+      .orderBy(asc(accountTable.createdAt), asc(accountTable.providerUserId));
 
   // Independent cached reads — run concurrently to halve cold-cache latency on
   // /api/me (hit on nearly every authenticated page).
