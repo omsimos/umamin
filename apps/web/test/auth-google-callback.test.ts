@@ -85,7 +85,7 @@ type CallbackOpts = {
 // Matching state + a code verifier are all the CSRF/PKCE gate needs; `intent`
 // is what decides whether the callback may provision an account.
 function callback(
-  intent: "register" | "login",
+  intent: "register" | "login" | "link",
   session?: string,
   opts: CallbackOpts = {},
 ) {
@@ -104,6 +104,18 @@ function callback(
   return app.request(
     `/auth/google/callback${opts.query ?? "?code=c&state=st"}`,
     { headers: { cookie: cookies, ...opts.headers } },
+    { TURSO_CONNECTION_URL: "", TURSO_AUTH_TOKEN: "" } as unknown as AppEnv,
+    FAKE_CTX,
+  );
+}
+
+function start(query: string, session?: string) {
+  const app = new Hono<AppBindings>().route("/auth/google", googleAuthApp);
+  return app.request(
+    `/auth/google${query}`,
+    {
+      headers: session ? { cookie: `${SESSION_COOKIE_NAME}=${session}` } : {},
+    },
     { TURSO_CONNECTION_URL: "", TURSO_AUTH_TOKEN: "" } as unknown as AppEnv,
     FAKE_CTX,
   );
@@ -176,7 +188,7 @@ describe("google oauth callback (real libSQL)", () => {
     const token = generateSessionToken();
     await createSession(db, token, "user_1");
 
-    const res = await callback("login", token);
+    const res = await callback("link", token);
     expect(res.status).toBe(302);
 
     const [after] = await db
@@ -184,6 +196,12 @@ describe("google oauth callback (real libSQL)", () => {
       .from(userTable)
       .where(eq(userTable.id, "user_1"));
     expect(after.imageUrl).toBe(uploaded);
+    expect(
+      await db
+        .select()
+        .from(accountTable)
+        .where(eq(accountTable.userId, "user_1")),
+    ).toHaveLength(1);
   });
 
   it("does not adopt the Google photo for a linking user who has none", async () => {
@@ -193,13 +211,19 @@ describe("google oauth callback (real libSQL)", () => {
     const token = generateSessionToken();
     await createSession(db, token, "user_2");
 
-    await callback("login", token);
+    await callback("link", token);
 
     const [after] = await db
       .select()
       .from(userTable)
       .where(eq(userTable.id, "user_2"));
     expect(after.imageUrl).toBeNull();
+    expect(
+      await db
+        .select()
+        .from(accountTable)
+        .where(eq(accountTable.userId, "user_2")),
+    ).toHaveLength(1);
   });
 
   it("keys the callback limit on the IPv6 /64", async () => {
@@ -260,7 +284,7 @@ describe("google oauth callback (real libSQL)", () => {
       const token = generateSessionToken();
       await createSession(db, token, "other");
 
-      const res = await callback("login", token);
+      const res = await callback("link", token);
       expect(res.headers.get("location")).toBe(
         "/settings?error=already_linked",
       );
@@ -320,6 +344,106 @@ describe("google oauth callback (real libSQL)", () => {
       state.exchangeFails = true;
       const res = await callback("register");
       await expectNothingCreated(db, res);
+    });
+  });
+
+  describe("linking", () => {
+    async function signIn(id: string) {
+      await db.insert(userTable).values({ id, username: id });
+      const token = generateSessionToken();
+      await createSession(db, token, id);
+      return token;
+    }
+
+    function linkRow(userId: string, providerUserId: string) {
+      return db.insert(accountTable).values({
+        providerId: "google",
+        providerUserId,
+        userId,
+        email: `${providerUserId}@example.com`,
+        picture: "",
+      });
+    }
+
+    it("a sign-in started on the login page never links", async () => {
+      const token = await signIn("me");
+
+      const res = await callback("login", token);
+      expect(res.headers.get("location")).toBe("/inbox");
+      expect(await db.select().from(accountTable)).toHaveLength(0);
+    });
+
+    it("a link started from Settings links the signed-in profile", async () => {
+      const token = await signIn("me");
+
+      const res = await callback("link", token);
+      expect(res.headers.get("location")).toBe("/settings?tab=account");
+
+      const rows = await db.select().from(accountTable);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].userId).toBe("me");
+    });
+
+    it("refuses a second Google identity for one profile", async () => {
+      const token = await signIn("me");
+      await linkRow("me", "google-sub-0");
+
+      const res = await callback("link", token);
+      expect(res.headers.get("location")).toBe("/settings?error=has_google");
+
+      const rows = await db
+        .select()
+        .from(accountTable)
+        .where(eq(accountTable.userId, "me"));
+      expect(rows).toHaveLength(1);
+      expect(rows[0].providerUserId).toBe("google-sub-0");
+    });
+
+    it("linking the identity the profile already has changes nothing", async () => {
+      const token = await signIn("me");
+      await linkRow("me", "google-sub-1");
+
+      const res = await callback("link", token);
+      expect(res.headers.get("location")).toBe("/settings?tab=account");
+      expect(await db.select().from(accountTable)).toHaveLength(1);
+    });
+
+    it("a link without a session creates nothing", async () => {
+      const res = await callback("link");
+      expect(res.headers.get("location")).toBe("/login?error=expired");
+      await expectNothingCreated(db, res);
+    });
+
+    it("the initiator keeps a link intent only for a signed-in browser", async () => {
+      const signedOut = await start("?intent=link");
+      expect(signedOut.status).toBe(302);
+      expect(signedOut.headers.get("location")).toBe("/login");
+
+      const token = await signIn("me");
+      const signedIn = await start("?intent=link", token);
+      expect(
+        signedIn.headers
+          .get("location")
+          ?.startsWith("https://accounts.google.com/"),
+      ).toBe(true);
+      expect(
+        signedIn.headers
+          .getSetCookie()
+          .some((value) =>
+            value.startsWith(`${GOOGLE_OAUTH_INTENT_COOKIE_NAME}=link`),
+          ),
+      ).toBe(true);
+    });
+
+    it("an unknown intent falls back to login", async () => {
+      const res = await start("?intent=admin");
+      expect(
+        res.headers
+          .getSetCookie()
+          .some((value) =>
+            value.startsWith(`${GOOGLE_OAUTH_INTENT_COOKIE_NAME}=login`),
+          ),
+      ).toBe(true);
     });
   });
 
