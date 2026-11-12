@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMIT_ERROR } from "@/lib/ratelimit";
 import type { SessionValidationResult } from "@/lib/session";
 import { GENERIC_ERROR, INVALID_INPUT_ERROR } from "./errors";
+import { logServerError } from "./log";
 
 type Authed = Exclude<SessionValidationResult, { session: null }>;
 type LimiterName = Parameters<typeof checkRateLimit>[0];
@@ -113,7 +114,7 @@ export function withAction<
       if (mapped) {
         return mapped;
       }
-      console.log(err);
+      logServerError("Action error:", err);
       return { error: config.errorMessage ?? GENERIC_ERROR };
     }
   }) as Action<z.input<S>, Out>;
