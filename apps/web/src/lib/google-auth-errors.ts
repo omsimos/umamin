@@ -30,6 +30,11 @@ export const GOOGLE_AUTH_ERRORS = {
     title: "Failed to link account",
     description: "Google account already connected to a different profile.",
   },
+  has_google: {
+    title: "Google account already connected",
+    description:
+      "This profile already has a Google account. Disconnect it in Settings before connecting another.",
+  },
 } as const;
 
 export type GoogleAuthErrorCode = keyof typeof GOOGLE_AUTH_ERRORS;
