@@ -25,6 +25,14 @@ supportedArchitectures:
   cpu: [current]
   libc: [current, musl]
 
+# Patched floors for transitive packages with open advisories. Both dependents
+# already accept these versions; the lockfile only held older patches. Remove
+# an entry once its dependent requires the patched version itself
+# (@tanstack/router-core for seroval, posthog-js for dompurify).
+overrides:
+  seroval: '>=1.6.11 <2'
+  dompurify: '>=3.4.17 <4'
+
 # One version each, workspace-wide. Root AGENTS.md "Dependencies that must
 # move together" explains why: a split mounts two Reacts under Radix and
 # detaches jest-dom matchers from vitest.
