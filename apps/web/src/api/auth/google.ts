@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { nanoid } from "nanoid";
 import * as z from "zod";
+import type { GoogleAuthErrorCode } from "../../lib/google-auth-errors";
 import { generateUsernameId } from "../../server-lib/content";
 import type { AppBindings } from "../../server-lib/context";
 import {
@@ -28,6 +29,7 @@ import { checkRateLimit } from "../../server-lib/ratelimit";
 import {
   createSession,
   generateSessionToken,
+  hasSessionCredential,
   resolveSession,
 } from "../../server-lib/session";
 import { setSessionCookie } from "../../server-lib/session-cookie";
@@ -124,6 +126,17 @@ export const googleAuthApp = new Hono<AppBindings>()
       setOauthCookie(c, GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME, "", 0);
       setOauthCookie(c, GOOGLE_OAUTH_INTENT_COOKIE_NAME, "", 0);
     };
+    clearOauthCookies();
+
+    // A signed-in visitor is bounced off /login, so they see errors on
+    // /settings. Cookie presence only: no database read on a failure path.
+    const fail = (code: GoogleAuthErrorCode) =>
+      c.redirect(
+        `${hasSessionCredential(c) ? "/settings" : "/login"}?error=${code}`,
+        302,
+      );
+
+    if (c.req.query("error") !== undefined) return fail("cancelled");
 
     if (
       code === null ||
@@ -131,18 +144,16 @@ export const googleAuthApp = new Hono<AppBindings>()
       storedState === null ||
       codeVerifier === null
     ) {
-      return c.body(null, 400);
+      return fail("expired");
     }
 
-    clearOauthCookies();
-
     if (state !== storedState) {
-      return c.body(null, 400);
+      return fail("expired");
     }
 
     const ip = extractClientIp((n) => c.req.header(n));
     if (await isIpDenied(c.env.KV, ip)) {
-      return c.body(null, 403);
+      return fail("blocked");
     }
     if (
       !(await checkRateLimit(
@@ -151,7 +162,7 @@ export const googleAuthApp = new Hono<AppBindings>()
         `oauth:google:${rateLimitKeyForIp(ip)}`,
       ))
     ) {
-      return c.body(null, 429);
+      return fail("rate_limited");
     }
 
     const db = getDb(c.env);
@@ -165,14 +176,14 @@ export const googleAuthApp = new Hono<AppBindings>()
         codeVerifier,
       ));
     } catch {
-      return c.body(null, 400);
+      return fail("failed");
     }
 
     try {
       const claims = claimsSchema.safeParse(decodeIdTokenClaims(idToken));
       if (!claims.success) {
         console.log("Invalid ID token claims");
-        return c.body(null, 400);
+        return fail("failed");
       }
 
       const googleUser = claims.data;
@@ -264,7 +275,7 @@ export const googleAuthApp = new Hono<AppBindings>()
       captureRequestException(c, err, {
         properties: { oauth: "google", intent },
       });
-      return c.body(null, 500);
+      return fail("failed");
     }
   });
 

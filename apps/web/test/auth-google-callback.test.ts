@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // The callback resolves its db through getDb(env) rather than the c.set("db")
 // seam the action tests use, so the module is stubbed to hand back the same
 // in-memory libSQL instance. Google's token exchange and the denylist /
-// rate-limit gates are stubbed to their pass-through outcome; what's under test
-// is the upsert, which runs its true SQL against real migrations.
+// rate-limit gates are stubbed behind switches that default to the pass-through
+// outcome; the upsert runs its true SQL against real migrations.
 const state = {
   db: null as Db | null,
   claims: {} as Record<string, unknown>,
@@ -13,6 +13,15 @@ const state = {
   limited: false,
   exchangeFails: false,
 };
+
+const { captureRequestException } = vi.hoisted(() => ({
+  captureRequestException: vi.fn(),
+}));
+
+vi.mock("../src/server-lib/posthog", () => ({
+  captureRequestException,
+  captureServerException: vi.fn(),
+}));
 
 vi.mock("../src/server-lib/db", () => ({
   getDb: () => state.db,
@@ -121,6 +130,7 @@ describe("google oauth callback (real libSQL)", () => {
 
   beforeEach(async () => {
     __clearSessionCache();
+    captureRequestException.mockClear();
     db = await makeTestDb();
     state.db = db;
     state.limiterKeys = [];
@@ -310,6 +320,129 @@ describe("google oauth callback (real libSQL)", () => {
       state.exchangeFails = true;
       const res = await callback("register");
       await expectNothingCreated(db, res);
+    });
+  });
+
+  describe("failures explain themselves", () => {
+    it.each([
+      {
+        name: "cancelled at Google",
+        opts: { query: "?error=access_denied&state=st" },
+        setup: () => {},
+        location: "/login?error=cancelled",
+      },
+      {
+        name: "missing code",
+        opts: { query: "?state=st" },
+        setup: () => {},
+        location: "/login?error=expired",
+      },
+      {
+        name: "state mismatch",
+        opts: { query: "?code=c&state=other" },
+        setup: () => {},
+        location: "/login?error=expired",
+      },
+      {
+        name: "missing verifier",
+        opts: { without: "verifier" },
+        setup: () => {},
+        location: "/login?error=expired",
+      },
+      {
+        name: "denied IP",
+        opts: {},
+        setup: () => {
+          state.denied = true;
+        },
+        location: "/login?error=blocked",
+      },
+      {
+        name: "rate limited",
+        opts: {},
+        setup: () => {
+          state.limited = true;
+        },
+        location: "/login?error=rate_limited",
+      },
+      {
+        name: "rejected code",
+        opts: {},
+        setup: () => {
+          state.exchangeFails = true;
+        },
+        location: "/login?error=failed",
+      },
+      {
+        name: "unusable claims",
+        opts: {},
+        setup: () => {
+          state.claims = { sub: "x" };
+        },
+        location: "/login?error=failed",
+      },
+    ] satisfies {
+      name: string;
+      opts: CallbackOpts;
+      setup: () => void;
+      location: string;
+    }[])(
+      "redirects a signed-out failure to /login with its code: $name",
+      async ({ opts, setup, location }) => {
+        setup();
+        const res = await callback("register", undefined, opts);
+        expect(res.status).toBe(302);
+        expect(res.headers.get("location")).toBe(location);
+      },
+    );
+
+    it("sends a signed-in failure to /settings", async () => {
+      await db.insert(userTable).values({ id: "user_1", username: "alice" });
+      const token = generateSessionToken();
+      await createSession(db, token, "user_1");
+      state.limited = true;
+
+      const res = await callback("login", token);
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe("/settings?error=rate_limited");
+    });
+
+    it("clears the OAuth cookies when the sign-in is cancelled", async () => {
+      const res = await callback("register", undefined, {
+        query: "?error=access_denied&state=st",
+      });
+      const setCookies = res.headers.getSetCookie();
+
+      for (const name of [
+        GOOGLE_OAUTH_STATE_COOKIE_NAME,
+        GOOGLE_OAUTH_CODE_VERIFIER_COOKIE_NAME,
+        GOOGLE_OAUTH_INTENT_COOKIE_NAME,
+      ]) {
+        expect(
+          setCookies.some(
+            (value) =>
+              value.startsWith(`${name}=;`) && value.includes("Max-Age=0"),
+          ),
+        ).toBe(true);
+      }
+    });
+
+    it("reports an unexpected error and still redirects", async () => {
+      state.db = new Proxy(db, {
+        get(target, prop, receiver) {
+          if (prop === "select") {
+            return () => {
+              throw new Error("turso unreachable");
+            };
+          }
+          return Reflect.get(target, prop, receiver);
+        },
+      }) as Db;
+
+      const res = await callback("register");
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe("/login?error=failed");
+      expect(captureRequestException).toHaveBeenCalledTimes(1);
     });
   });
 });
