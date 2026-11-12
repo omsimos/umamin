@@ -24,8 +24,9 @@ vi.mock("../src/server-lib/posthog", () => ({
   captureServerException,
 }));
 
-import { userTable } from "@umamin/db/schema/user";
+import { sessionTable, userTable } from "@umamin/db/schema/user";
 import { hash } from "../src/server-lib/argon2";
+import { SESSION_COOKIE_NAME } from "../src/server-lib/cookies";
 import type { Db } from "../src/server-lib/db";
 import { accountSuspendedMessage } from "../src/server-lib/errors";
 import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
@@ -38,6 +39,12 @@ const INCORRECT = "Incorrect username or password";
 function sessionToken(res: Response): string | null {
   const raw = res.headers.get("set-cookie") ?? "";
   return /(?:^|,\s*)session=([^;]+)/.exec(raw)?.[1] ?? null;
+}
+
+function clearsSessionCookie(res: Response): boolean {
+  return res.headers
+    .getSetCookie()
+    .some((value) => value.startsWith(`${SESSION_COOKIE_NAME}=;`));
 }
 
 function recordingLimiter() {
@@ -165,11 +172,75 @@ describe("auth flows (real libSQL)", () => {
     expect(right.json).toEqual({ error: accountSuspendedMessage("spam") });
   });
 
-  it("logout without a session is unauthorized", async () => {
+  it("logout with a session that no longer exists still clears the cookie", async () => {
+    const app = buildApp(db, ANON);
+    const res = await call(
+      app,
+      "logout",
+      {},
+      {},
+      { cookie: "session=revoked-token" },
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ redirect: "/login" });
+    expect(clearsSessionCookie(res)).toBe(true);
+  });
+
+  it("logout with no cookie at all still answers with the redirect", async () => {
     const app = buildApp(db, ANON);
     const res = await call(app, "logout", {});
-    expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({ error: "Unauthorized" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ redirect: "/login" });
+  });
+
+  it("logout deletes the session, and a second logout is harmless", async () => {
+    const app = buildApp(db, ANON);
+    await call(app, "signup", {
+      username: "carol1",
+      password: "password123",
+      confirmPassword: "password123",
+    });
+    const loginRes = await call(app, "login", {
+      username: "carol1",
+      password: "password123",
+    });
+    const token = sessionToken(loginRes);
+    expect(token).toBeTruthy();
+    // Signup minted a session of its own, so the login's is one of two.
+    expect(await db.select().from(sessionTable)).toHaveLength(2);
+
+    const first = await call(
+      app,
+      "logout",
+      {},
+      {},
+      { cookie: `session=${token}` },
+    );
+    expect(await first.json()).toEqual({ redirect: "/login" });
+    expect(await db.select().from(sessionTable)).toHaveLength(1);
+
+    const second = await call(
+      app,
+      "logout",
+      {},
+      {},
+      { cookie: `session=${token}` },
+    );
+    expect(await second.json()).toEqual({ redirect: "/login" });
+    expect(await db.select().from(sessionTable)).toHaveLength(1);
+  });
+
+  it("logout still refuses a cross-site request", async () => {
+    const app = buildApp(db, ANON);
+    const res = await call(
+      app,
+      "logout",
+      {},
+      {},
+      { origin: "https://evil.test", cookie: "session=anything" },
+    );
+    expect(res.status).toBe(403);
+    expect(clearsSessionCookie(res)).toBe(false);
   });
 
   it("rejects a duplicate username on signup", async () => {
