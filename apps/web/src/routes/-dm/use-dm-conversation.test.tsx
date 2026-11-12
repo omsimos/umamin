@@ -211,6 +211,68 @@ describe("useDmConversation connection and sends", () => {
     expect(result.current.state.messages.at(-1)?.delivery).toBe("sending");
   });
 
+  it("settles a send from its ack when no echo follows", () => {
+    const { result, socket } = mountOpen();
+    act(() => result.current.send("hi", null));
+    const [first] = socket.sentFrames("send");
+    if (!first?.id) throw new Error("send frame missing");
+    act(() => {
+      socket.serverSend({ t: "ack", id: first.id ?? "", messageId: "9" });
+    });
+    const last = result.current.state.messages.at(-1);
+    expect(last?.id).toBe("9");
+    expect(last?.text).toBe("hi");
+    expect(last?.delivery).toBeUndefined();
+  });
+
+  it("settles a retried send the room had already stored", () => {
+    const { result, socket } = mountOpen();
+    act(() => result.current.send("hi", null));
+    const [first] = socket.sentFrames("send");
+    const id = first?.id;
+    if (!id) throw new Error("send frame missing");
+    act(() => {
+      socket.serverSend({ t: "err", id, code: "unavailable" });
+    });
+    expect(result.current.state.messages.at(-1)?.delivery).toBe("failed");
+
+    act(() => result.current.retry(id));
+    act(() => {
+      socket.serverSend({ t: "ack", id, messageId: "9" });
+    });
+    const last = result.current.state.messages.at(-1);
+    expect(last?.id).toBe("9");
+    expect(last?.delivery).toBeUndefined();
+  });
+
+  it("does not mark a stored send failed when the room errors after the ack", () => {
+    const onError = vi.fn();
+    const { result } = renderHook(() => useDmConversation("pal", onError));
+    const socket = FakeWebSocket.instances[0];
+    if (!socket) throw new Error("no socket opened");
+    act(() => {
+      socket.serverOpen();
+      socket.serverSend({
+        t: "sync",
+        meta,
+        messages: [message],
+        hasMore: false,
+      });
+    });
+    act(() => result.current.send("hi", null));
+    const [first] = socket.sentFrames("send");
+    const id = first?.id;
+    if (!id) throw new Error("send frame missing");
+    act(() => {
+      socket.serverSend({ t: "ack", id, messageId: "9" });
+      socket.serverSend({ t: "err", id, code: "unavailable" });
+    });
+    const last = result.current.state.messages.at(-1);
+    expect(last?.id).toBe("9");
+    expect(last?.delivery).toBeUndefined();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it("replays a send made while hidden once the next sync lands", () => {
     const { result } = mountOpen();
     switchVisibility("hidden");
