@@ -1,4 +1,4 @@
-import { WebPushError } from "@mmmike/web-push/send";
+import { InvalidSubscriptionError, WebPushError } from "@mmmike/web-push/send";
 import type { NotificationType } from "@umamin/db/schema/notification";
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
@@ -206,6 +206,19 @@ export async function sendPushForNotification(
     tag: `${type}:${targetId}`,
   };
 
+  const prune = (endpoint: string) =>
+    db.batch([
+      db
+        .delete(pushSubscriptionTable)
+        .where(
+          and(
+            eq(pushSubscriptionTable.endpoint, endpoint),
+            eq(pushSubscriptionTable.userId, recipientId),
+          ),
+        ),
+      clearPushPrefsWithoutDevices(db, eq(userTable.id, recipientId)),
+    ]);
+
   await Promise.all(
     subs.map(async (sub) => {
       try {
@@ -213,19 +226,15 @@ export async function sendPushForNotification(
         // 404/410 = the subscription is dead/expired — prune it (scoped to this
         // recipient).
         if (!result.ok && result.expired) {
-          await db.batch([
-            db
-              .delete(pushSubscriptionTable)
-              .where(
-                and(
-                  eq(pushSubscriptionTable.endpoint, sub.endpoint),
-                  eq(pushSubscriptionTable.userId, recipientId),
-                ),
-              ),
-            clearPushPrefsWithoutDevices(db, eq(userTable.id, recipientId)),
-          ]);
+          await prune(sub.endpoint);
         }
       } catch (err) {
+        if (err instanceof InvalidSubscriptionError) {
+          // The stored keys can never encrypt a payload, so this row is as
+          // dead as a 404. Not reported: it is bad input, not a fault.
+          await prune(sub.endpoint);
+          return;
+        }
         // Other failures (disallowed endpoint / push-service error) are
         // best-effort: log and move on.
         // toJSON() is the lib's log-safe shape:
