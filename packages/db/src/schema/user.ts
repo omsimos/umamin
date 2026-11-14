@@ -103,6 +103,12 @@ export const userTable = sqliteTable(
     streak: integer("streak").notNull().default(0),
     streakBest: integer("streak_best").notNull().default(0),
     streakDay: integer("streak_day"),
+    // Owner-private opt-out from /leaderboard (same exposure rules as
+    // blockedWords). Part of the rank indexes' WHERE, so a hidden user costs
+    // the leaderboard reads nothing.
+    leaderboardHidden: integer("leaderboard_hidden", { mode: "boolean" })
+      .notNull()
+      .default(false),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -122,6 +128,16 @@ export const userTable = sqliteTable(
     index("user_banned_idx")
       .on(t.bannedAt)
       .where(sql`${t.bannedAt} IS NOT NULL`),
+    // /leaderboard top-N and rank counts walk these in order instead of
+    // scanning and sorting every user. SQLite only picks a partial index when
+    // the query repeats this WHERE; apps/web server-lib/leaderboard.ts keeps
+    // the matching predicate.
+    index("user_points_rank_idx")
+      .on(sql`${t.points} DESC`, t.createdAt)
+      .where(sql`banned_at IS NULL AND leaderboard_hidden = 0`),
+    index("user_streak_best_rank_idx")
+      .on(sql`${t.streakBest} DESC`, t.createdAt)
+      .where(sql`banned_at IS NULL AND leaderboard_hidden = 0`),
   ],
 );
 

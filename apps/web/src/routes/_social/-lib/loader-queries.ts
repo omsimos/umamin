@@ -1,4 +1,5 @@
 import type { FeedSort } from "@/lib/feed-sort";
+import type { LeaderboardResponse, LeaderboardTab } from "@/lib/leaderboard";
 import {
   loaderFetchJson,
   loaderFetchJsonOrNull,
@@ -19,6 +20,12 @@ import type {
 // absolute origin + forwarded cookie) and on client navigation (relative +
 // credentials). The queryKeys these prime match the client `useInfiniteQuery`
 // keys 1:1, so the hydrated cache is reused without a re-fetch.
+
+export function loaderFetchLeaderboard(tab: LeaderboardTab) {
+  return loaderFetchJson<LeaderboardResponse>(
+    `/api/public/leaderboard?tab=${tab}`,
+  );
+}
 
 export function loaderFetchPostsPage(
   cursor: string | null,

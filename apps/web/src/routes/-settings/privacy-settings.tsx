@@ -5,11 +5,13 @@ import {
   MessageCircleOffIcon,
   MessageSquareOffIcon,
   ShieldIcon,
+  TrophyIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
+import { LEADERBOARD_MAX_AGE_SECONDS } from "@/lib/leaderboard";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
 import type {
@@ -19,6 +21,7 @@ import type {
 } from "@/lib/types";
 import {
   toggleHideDramaAction,
+  toggleLeaderboardHiddenAction,
   toggleMessageFilterAction,
   toggleQuietModeAction,
 } from "./actions";
@@ -101,6 +104,43 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
     },
   });
 
+  const toggleLeaderboardHidden = useSingleFlightAction(
+    toggleLeaderboardHiddenAction,
+  );
+
+  const leaderboardMutation = useMutation({
+    mutationFn: async () => {
+      const res = await toggleLeaderboardHidden();
+      if ("error" in res && res.error) {
+        throw new ExpectedError(res.error);
+      }
+
+      return "leaderboardHidden" in res ? res.leaderboardHidden : undefined;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+        (current) =>
+          patchCurrentUser(current, (currentUser) => ({
+            ...currentUser,
+            leaderboardHidden: data ?? currentUser.leaderboardHidden,
+          })),
+      );
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.leaderboardRankRoot(),
+      });
+      toast.success(
+        data
+          ? "You're hidden from leaderboards."
+          : "You're back on leaderboards.",
+      );
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error(err.message ?? "Couldn't update this setting.");
+    },
+  });
+
   const toggleMessageFilter = useSingleFlightAction(toggleMessageFilterAction);
 
   const messageFilterMutation = useMutation({
@@ -150,6 +190,25 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             disabled={quietModeMutation.isPending}
             checked={user?.quietMode}
             onCheckedChange={() => quietModeMutation.mutate()}
+          />
+        </div>
+
+        <div className="flex items-center space-x-4 rounded-md border p-4 mt-2">
+          <TrophyIcon className="size-6" />
+          <div className="flex-1 space-y-1">
+            <p className="text-sm font-medium leading-none">
+              Show me on leaderboards
+            </p>
+            <p className="text-sm text-muted-foreground">
+              List your aura and best streak on the leaderboard. Changes can
+              take up to {LEADERBOARD_MAX_AGE_SECONDS / 60} minutes to show.
+            </p>
+          </div>
+          <Switch
+            aria-label="Show me on leaderboards"
+            disabled={leaderboardMutation.isPending}
+            checked={!(user?.leaderboardHidden ?? false)}
+            onCheckedChange={() => leaderboardMutation.mutate()}
           />
         </div>
 

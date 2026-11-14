@@ -136,6 +136,7 @@ describe("UserProfile", () => {
         pushPrefs: 0,
         hideDrama: true,
         messageFilter: false,
+        leaderboardHidden: false,
         accounts: [],
         isModerator: false,
       },

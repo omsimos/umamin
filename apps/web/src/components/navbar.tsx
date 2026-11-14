@@ -24,6 +24,7 @@ export function Navbar() {
   const mobileHeaderSurface =
     pathname === "/feed" ||
     pathname === "/notes" ||
+    pathname === "/leaderboard" ||
     pathname === "/inbox" ||
     pathname === "/notifications" ||
     pathname === "/settings" ||

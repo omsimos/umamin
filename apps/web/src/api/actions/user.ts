@@ -789,6 +789,22 @@ export const toggleHideDramaHandler = action(
   },
 );
 
+export const toggleLeaderboardHiddenHandler = action(
+  {
+    auth: "user",
+    rateLimit: { name: "write", key: ({ user }) => `leaderboard:${user.id}` },
+  },
+  async (_input, { user, c }) => {
+    const [row] = await ctxDb(c)
+      .update(userTable)
+      .set({ leaderboardHidden: sql`NOT ${userTable.leaderboardHidden}` })
+      .where(eq(userTable.id, user.id))
+      .returning({ leaderboardHidden: userTable.leaderboardHidden });
+
+    return { leaderboardHidden: row?.leaderboardHidden ?? false };
+  },
+);
+
 export const toggleMessageFilterHandler = action(
   {
     auth: "user",

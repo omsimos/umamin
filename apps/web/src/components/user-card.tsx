@@ -151,7 +151,10 @@ export function UserCard({
           />
 
           <div className="mt-3 space-y-1">
-            <div className="text-muted-foreground text-sm flex items-center gap-2">
+            <Link
+              href="/leaderboard"
+              className="text-muted-foreground text-sm flex w-fit items-center gap-2 hover:underline"
+            >
               <ShieldUserIcon className="size-4" />
               <span>
                 <span className="font-medium text-foreground">
@@ -159,16 +162,20 @@ export function UserCard({
                 </span>{" "}
                 aura points
               </span>
-            </div>
+            </Link>
 
             {streak > 0 && (
-              <div className="text-muted-foreground text-sm flex items-center gap-2">
+              <Link
+                href="/leaderboard"
+                search={{ tab: "streak" }}
+                className="text-muted-foreground text-sm flex w-fit items-center gap-2 hover:underline"
+              >
                 <StreakIcon streak={streak} className="size-4" />
                 <span>
                   <span className="font-medium text-foreground">{streak}</span>
                   -day streak
                 </span>
-              </div>
+              </Link>
             )}
 
             {user.quietMode && (

@@ -16,6 +16,7 @@ import {
   LogOutIcon,
   MessageSquareQuoteIcon,
   SettingsIcon,
+  TrophyIcon,
   UsersRoundIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -159,6 +160,13 @@ export function AccountSheet({
               <Link href="/groups" className={NAV_ITEM_CLASS}>
                 <UsersRoundIcon className="size-6" />
                 Groups
+              </Link>
+            </DrawerClose>
+
+            <DrawerClose asChild>
+              <Link href="/leaderboard" className={NAV_ITEM_CLASS}>
+                <TrophyIcon className="size-6" />
+                Leaderboard
               </Link>
             </DrawerClose>
 

@@ -1,5 +1,9 @@
 import { Hono } from "hono";
 import { DEFAULT_FEED_SORT, normalizeFeedSort } from "../../lib/feed-sort";
+import {
+  LEADERBOARD_MAX_AGE_SECONDS,
+  parseLeaderboardTab,
+} from "../../lib/leaderboard";
 import { PUBLIC_PROFILE_MAX_AGE_SECONDS } from "../../lib/profile-cache";
 import type { AppBindings } from "../../server-lib/context";
 import {
@@ -11,8 +15,9 @@ import {
   getPublicUserProfileWithBadge,
   getUserPostsPage,
 } from "../../server-lib/data";
-import { NOT_FOUND_ERROR } from "../../server-lib/errors";
+import { INVALID_INPUT_ERROR, NOT_FOUND_ERROR } from "../../server-lib/errors";
 import { isModerationEnforced } from "../../server-lib/flags";
+import { getLeaderboard } from "../../server-lib/leaderboard";
 import { withPublicRead } from "../../server-lib/read-route";
 import { formatUsername, resolveDb } from "./_shared";
 
@@ -40,6 +45,24 @@ export const PUBLIC_BROWSER_MAX_AGE = 60;
 // a second when no fresh snapshot exists (before the first cron run, or after
 // the cron has stopped).
 export const publicRoutes = new Hono<AppBindings>()
+  .get(
+    "/public/leaderboard",
+    withPublicRead(
+      "fetching leaderboard",
+      LEADERBOARD_MAX_AGE_SECONDS,
+      async (req, env) => {
+        // An unknown tab is a 400 (never cached) rather than a fallback, so
+        // junk values can't mint cache entries and Turso reads.
+        const tab = parseLeaderboardTab(req.query("tab") ?? "aura");
+        if (!tab) {
+          return Response.json({ error: INVALID_INPUT_ERROR }, { status: 400 });
+        }
+        return getLeaderboard(resolveDb(env), tab);
+      },
+      PUBLIC_BROWSER_MAX_AGE,
+      ["tab"],
+    ),
+  )
   .get(
     "/public/posts",
     withPublicRead(

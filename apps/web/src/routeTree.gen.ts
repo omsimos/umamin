@@ -31,6 +31,7 @@ import { Route as PublicSocialRouteImport } from './routes/_public/social'
 import { Route as PublicTermsRouteImport } from './routes/_public/terms'
 import { Route as PublicTiersRouteImport } from './routes/_public/tiers'
 import { Route as SocialFeedRouteImport } from './routes/_social/feed'
+import { Route as SocialLeaderboardRouteImport } from './routes/_social/leaderboard'
 import { Route as SocialNotesRouteImport } from './routes/_social/notes'
 import { Route as ChatIndexRouteImport } from './routes/chat.index'
 import { Route as ChatSessionRouteImport } from './routes/chat.session'
@@ -149,6 +150,11 @@ const SocialFeedRoute = SocialFeedRouteImport.update({
   path: '/feed',
   getParentRoute: () => SocialRoute,
 } as any)
+const SocialLeaderboardRoute = SocialLeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => SocialRoute,
+} as any)
 const SocialNotesRoute = SocialNotesRouteImport.update({
   id: '/notes',
   path: '/notes',
@@ -225,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof PublicTermsRoute
   '/tiers': typeof PublicTiersRoute
   '/feed': typeof SocialFeedRoute
+  '/leaderboard': typeof SocialLeaderboardRoute
   '/notes': typeof SocialNotesRoute
   '/chat/session': typeof ChatSessionRoute
   '/groups/$tag': typeof GroupsTagRouteWithChildren
@@ -255,6 +262,7 @@ export interface FileRoutesByTo {
   '/terms': typeof PublicTermsRoute
   '/tiers': typeof PublicTiersRoute
   '/feed': typeof SocialFeedRoute
+  '/leaderboard': typeof SocialLeaderboardRoute
   '/notes': typeof SocialNotesRoute
   '/chat/session': typeof ChatSessionRoute
   '/chat': typeof ChatIndexRoute
@@ -289,6 +297,7 @@ export interface FileRoutesById {
   '/_public/terms': typeof PublicTermsRoute
   '/_public/tiers': typeof PublicTiersRoute
   '/_social/feed': typeof SocialFeedRoute
+  '/_social/leaderboard': typeof SocialLeaderboardRoute
   '/_social/notes': typeof SocialNotesRoute
   '/chat/session': typeof ChatSessionRoute
   '/groups/$tag': typeof GroupsTagRouteWithChildren
@@ -323,6 +332,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tiers'
     | '/feed'
+    | '/leaderboard'
     | '/notes'
     | '/chat/session'
     | '/groups/$tag'
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tiers'
     | '/feed'
+    | '/leaderboard'
     | '/notes'
     | '/chat/session'
     | '/chat'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/_public/terms'
     | '/_public/tiers'
     | '/_social/feed'
+    | '/_social/leaderboard'
     | '/_social/notes'
     | '/chat/session'
     | '/groups/$tag'
@@ -565,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocialFeedRouteImport
       parentRoute: typeof SocialRoute
     }
+    '/_social/leaderboard': {
+      id: '/_social/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof SocialLeaderboardRouteImport
+      parentRoute: typeof SocialRoute
+    }
     '/_social/notes': {
       id: '/_social/notes'
       path: '/notes'
@@ -711,6 +730,7 @@ const PublicRouteWithChildren =
 
 interface SocialRouteChildren {
   SocialFeedRoute: typeof SocialFeedRoute
+  SocialLeaderboardRoute: typeof SocialLeaderboardRoute
   SocialNotesRoute: typeof SocialNotesRoute
   SocialPostIdRoute: typeof SocialPostIdRoute
   SocialToUsernameRoute: typeof SocialToUsernameRoute
@@ -719,6 +739,7 @@ interface SocialRouteChildren {
 
 const SocialRouteChildren: SocialRouteChildren = {
   SocialFeedRoute: SocialFeedRoute,
+  SocialLeaderboardRoute: SocialLeaderboardRoute,
   SocialNotesRoute: SocialNotesRoute,
   SocialPostIdRoute: SocialPostIdRoute,
   SocialToUsernameRoute: SocialToUsernameRoute,

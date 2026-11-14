@@ -216,7 +216,7 @@ export const feedAuthorColumns = {
  * callers' page query, so the badge ships in the same payload the read route
  * caches. Never a join on the feed union, never per-row lookups.
  */
-async function getGroupBadgeMap(
+export async function getGroupBadgeMap(
   db: Db,
   users: { equippedGroupId: string | null }[],
 ): Promise<Map<string, GroupBadgeData>> {
@@ -247,7 +247,7 @@ async function getGroupBadgeMap(
 
 // A dangling equippedGroupId (deleted group — soft ref) resolves to null and
 // renders no badge, the same husk degradation as quoted posts.
-function withGroupBadge<U extends { equippedGroupId: string | null }>(
+export function withGroupBadge<U extends { equippedGroupId: string | null }>(
   user: U,
   badgeMap: Map<string, GroupBadgeData>,
 ): U & { groupBadge: GroupBadgeData | null } {
@@ -2084,6 +2084,7 @@ export async function getCurrentUserData(
         // Owner-private content-filter preferences.
         hideDrama: userTable.hideDrama,
         messageFilter: userTable.messageFilter,
+        leaderboardHidden: userTable.leaderboardHidden,
         // Profile song (resolved into a lean `music` object below, raw columns
         // dropped) so settings can preview/edit the attached song.
         musicProvider: userTable.musicProvider,
