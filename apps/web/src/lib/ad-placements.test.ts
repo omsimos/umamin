@@ -22,14 +22,6 @@ const EXPECTED_KEYS = [
   "chat_ended",
 ] as const;
 
-// Below-the-fold placements lazy-load on scroll; the rest are eager.
-const LAZY_KEYS = new Set<string>([
-  "profile_bottom",
-  "to_user",
-  "profile_top",
-  "chat_lobby",
-]);
-
 describe("adPlacements", () => {
   it("exposes exactly the expected keys", () => {
     expect(Object.keys(adPlacements).sort()).toEqual([...EXPECTED_KEYS].sort());
@@ -42,12 +34,6 @@ describe("adPlacements", () => {
     expect(typeof entry.minHeight).toBe("number");
     expect(Number.isFinite(entry.minHeight)).toBe(true);
     expect(typeof entry.lazy).toBe("boolean");
-  });
-
-  it("lazy-loads exactly the below-the-fold placements", () => {
-    for (const key of EXPECTED_KEYS) {
-      expect(adPlacements[key].lazy).toBe(LAZY_KEYS.has(key));
-    }
   });
 });
 

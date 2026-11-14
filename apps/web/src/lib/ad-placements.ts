@@ -1,4 +1,22 @@
-export const adPlacements = {
+type AdPlacementConfig = {
+  slotId: string;
+  minHeight: number;
+  lazy: boolean;
+  /** How far ahead of the viewport a lazy slot starts loading. */
+  rootMargin?: string;
+};
+
+/** Head start for lazy slots people reach slowly, like the end of a profile. */
+export const DEFAULT_LAZY_ROOT_MARGIN = "200px 0px";
+
+/**
+ * In-feed slots are reached by flinging through a list, and a fill takes a
+ * second or two. A 200px lead lets the slot scroll past empty and fill
+ * offscreen, so these start loading 1.5 screens ahead.
+ */
+export const IN_FEED_ROOT_MARGIN = "150% 0px";
+
+const placements = {
   feed_top: {
     slotId: "9864130654",
     minHeight: 280,
@@ -7,7 +25,8 @@ export const adPlacements = {
   feed_inline: {
     slotId: "8551048984",
     minHeight: 280,
-    lazy: false,
+    lazy: true,
+    rootMargin: IN_FEED_ROOT_MARGIN,
   },
   notes_top: {
     slotId: "1999152698",
@@ -17,7 +36,8 @@ export const adPlacements = {
   notes_inline: {
     slotId: "9012650581",
     minHeight: 280,
-    lazy: false,
+    lazy: true,
+    rootMargin: IN_FEED_ROOT_MARGIN,
   },
   profile_bottom: {
     slotId: "4417432474",
@@ -59,9 +79,11 @@ export const adPlacements = {
     minHeight: 280,
     lazy: false,
   },
-} as const;
+} satisfies Record<string, AdPlacementConfig>;
 
-export type AdPlacement = keyof typeof adPlacements;
+export type AdPlacement = keyof typeof placements;
+
+export const adPlacements: Record<AdPlacement, AdPlacementConfig> = placements;
 
 /**
  * Master switch for every ad surface — set `VITE_ADS_ENABLED=false` in the

@@ -21,6 +21,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
   // oxlint-disable-next-line typescript/no-explicit-any -- google global
   delete (window as any).adsbygoogle;
@@ -61,4 +62,52 @@ describe("AdContainer in production", () => {
     });
     expect(push).toHaveBeenCalledTimes(1);
   });
+
+  // In-feed units sit below the first screen. Filled on render, most were
+  // never seen, and the low viewability lowered what advertisers bid on every
+  // unit. A fling through a list also outruns a short lead, so they start
+  // loading 1.5 screens ahead.
+  it.each(["feed_inline", "notes_inline"] as const)(
+    "waits to fill %s until it is 1.5 screens from the viewport",
+    async (placement) => {
+      let reveal: IntersectionObserverCallback = () => {};
+      let options: IntersectionObserverInit | undefined;
+      const observed: Element[] = [];
+      vi.stubGlobal(
+        "IntersectionObserver",
+        class {
+          constructor(
+            callback: IntersectionObserverCallback,
+            init?: IntersectionObserverInit,
+          ) {
+            reveal = callback;
+            options = init;
+          }
+          observe(target: Element) {
+            observed.push(target);
+          }
+          disconnect() {}
+        },
+      );
+      const push = vi.fn();
+      window.adsbygoogle = { push };
+      const AdContainer = await loadAdContainer();
+      const { container } = render(<AdContainer placement={placement} />);
+
+      expect(observed).toEqual([container.firstElementChild]);
+      expect(options?.rootMargin).toBe("150% 0px");
+      expect(container.querySelector("ins.adsbygoogle")).toBeNull();
+      expect(push).not.toHaveBeenCalled();
+
+      act(() => {
+        reveal(
+          [{ isIntersecting: true } as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+
+      expect(container.querySelector("ins.adsbygoogle")).not.toBeNull();
+      expect(push).toHaveBeenCalledTimes(1);
+    },
+  );
 });
