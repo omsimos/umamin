@@ -31,6 +31,7 @@ export function LeaderboardClient({
     staleTime: PUBLIC_STALE_TIME,
   });
   const entries = data?.entries ?? [];
+  const minStreak = LEADERBOARD_MIN_VALUE.streak;
 
   return (
     <div>
@@ -54,13 +55,18 @@ export function LeaderboardClient({
       />
 
       <div className="px-4 sm:px-0">
-        <ViewerRankCard tab={tab} viewerId={viewerId} />
+        <ViewerRankCard
+          tab={tab}
+          viewerId={viewerId}
+          viewerListed={entries.some((e) => e.user.id === viewerId)}
+          lastListedRank={entries.at(-1)?.rank ?? 0}
+        />
 
         {entries.length === 0 ? (
           <p className="py-16 text-center text-muted-foreground text-sm">
             {tab === "aura"
               ? "No one has earned aura yet."
-              : "No one has a streak of 2 days or more yet."}
+              : `No one has a streak of ${minStreak} days or more yet.`}
           </p>
         ) : (
           <ol>
@@ -172,9 +178,13 @@ export function LeaderboardRow({
 export function ViewerRankCard({
   tab,
   viewerId,
+  viewerListed = false,
+  lastListedRank = 0,
 }: {
   tab: LeaderboardTab;
   viewerId: string | null;
+  viewerListed?: boolean;
+  lastListedRank?: number;
 }) {
   const { data, isPending, isError } = useQuery({
     queryKey: queryKeys.leaderboardRank(viewerId ?? "", tab),
@@ -211,9 +221,13 @@ export function ViewerRankCard({
       </>
     );
   } else if (data.rank != null) {
+    // A tie that straddles the top-50 cut lists the older accounts, so the
+    // viewer can hold a rank the list shows without their own row in it.
+    const tiedOffList = !viewerListed && data.rank <= lastListedRank;
     message = (
       <>
-        You're <span className="font-semibold">#{data.rank}</span> with{" "}
+        You're {tiedOffList ? "tied at " : ""}
+        <span className="font-semibold">#{data.rank}</span> with{" "}
         {tab === "aura"
           ? `${data.value.toLocaleString("en-US")} aura`
           : `a ${data.value}-day best streak`}
@@ -226,7 +240,7 @@ export function ViewerRankCard({
     message =
       tab === "aura"
         ? "Earn aura when people like, comment on or repost your posts."
-        : "Post or share a note 2 days in a row to start a streak.";
+        : `Post or share a note ${LEADERBOARD_MIN_VALUE.streak} days in a row to start a streak.`;
   }
 
   return (

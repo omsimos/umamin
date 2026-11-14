@@ -23,6 +23,7 @@ import {
   formatErrorChain,
   isUniqueConstraintViolation,
   LAST_LOGIN_METHOD_ERROR,
+  USER_NOT_FOUND_ERROR,
   USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
@@ -801,7 +802,8 @@ export const toggleLeaderboardHiddenHandler = action(
       .where(eq(userTable.id, user.id))
       .returning({ leaderboardHidden: userTable.leaderboardHidden });
 
-    return { leaderboardHidden: row?.leaderboardHidden ?? false };
+    if (!row) return { error: USER_NOT_FOUND_ERROR };
+    return { leaderboardHidden: row.leaderboardHidden };
   },
 );
 

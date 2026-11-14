@@ -25,7 +25,15 @@ export function LinkTabs({
         <Link
           key={t.label}
           href={t.href}
-          {...(t.search ? { search: t.search } : {})}
+          {...(t.search
+            ? {
+                search: t.search,
+                // TanStack marks a link active (and overrides aria-current)
+                // when its search is a subset of the URL's, so `{}` would
+                // match every tab on the same path. Compare exactly.
+                activeOptions: { exact: true },
+              }
+            : {})}
           aria-current={t.active ? "page" : undefined}
           className={cn(
             "flex-1 border-b-2 px-2 pb-2.5 text-center text-sm font-semibold transition-colors",

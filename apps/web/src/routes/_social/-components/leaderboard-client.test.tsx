@@ -83,6 +83,21 @@ describe("LeaderboardClient", () => {
     expect(await screen.findByText("#2")).toBeInTheDocument();
   });
 
+  it("says tied when the viewer shares a listed rank but was cut off", async () => {
+    mockRank({ rank: 2, value: 500, hidden: false });
+    renderBoard("cut");
+
+    expect(await screen.findByText(/tied at/i)).toBeInTheDocument();
+  });
+
+  it("doesn't say tied when the viewer's row is listed", async () => {
+    mockRank({ rank: 2, value: 500, hidden: false });
+    renderBoard("me");
+
+    await screen.findByText("#2");
+    expect(screen.queryByText(/tied at/i)).not.toBeInTheDocument();
+  });
+
   it("points a hidden viewer to settings instead of a rank", async () => {
     mockRank({ rank: null, value: 500, hidden: true });
     renderBoard("me");

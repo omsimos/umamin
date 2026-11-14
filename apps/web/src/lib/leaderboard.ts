@@ -8,7 +8,8 @@ export const LEADERBOARD_LIMIT = 50;
 // "Your rank" stops counting here so one viewer's read never walks more than
 // this many index entries. Past it the page says "not in the top 1,000 yet".
 export const LEADERBOARD_RANK_CAP = 1000;
-// Public list TTL. The settings hint quotes it, so keep them in sync.
+// Public list TTL. With the browser max-age and the client stale time on top,
+// a change can take about 13 minutes to show; the settings hint rounds to 15.
 export const LEADERBOARD_MAX_AGE_SECONDS = 600;
 
 // Below these a user isn't listed or ranked: no aura yet, or a streak too

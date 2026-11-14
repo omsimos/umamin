@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
-import { LEADERBOARD_MAX_AGE_SECONDS } from "@/lib/leaderboard";
 import { queryKeys } from "@/lib/query";
 import { patchCurrentUser, patchUserProfile } from "@/lib/query-cache";
 import type {
@@ -201,7 +200,7 @@ export function PrivacySettings({ user }: { user: UserWithAccount }) {
             </p>
             <p className="text-sm text-muted-foreground">
               List your aura and best streak on the leaderboard. Changes can
-              take up to {LEADERBOARD_MAX_AGE_SECONDS / 60} minutes to show.
+              take about 15 minutes to show.
             </p>
           </div>
           <Switch
