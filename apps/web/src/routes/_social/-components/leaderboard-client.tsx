@@ -183,7 +183,6 @@ export function ViewerRankCard({
     enabled: viewerId != null,
   });
 
-  const unit = tab === "aura" ? "aura" : "day best streak";
   let message: ReactNode = null;
 
   if (!viewerId) {
@@ -215,7 +214,10 @@ export function ViewerRankCard({
     message = (
       <>
         You're <span className="font-semibold">#{data.rank}</span> with{" "}
-        {data.value.toLocaleString("en-US")} {unit}.
+        {tab === "aura"
+          ? `${data.value.toLocaleString("en-US")} aura`
+          : `a ${data.value}-day best streak`}
+        .
       </>
     );
   } else if (data.value >= LEADERBOARD_MIN_VALUE[tab]) {
