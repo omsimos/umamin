@@ -25,6 +25,10 @@ any that are empty.
 - A leaderboard page shows the top 50 people by all-time aura and by best streak, and where you rank. Open it from the menu or by tapping the aura or streak on any profile.
 - A privacy setting hides you from the leaderboard.
 
+### Performance & Cost
+
+- Ads inside the feed and notes load as you scroll toward them, so ads you never reach no longer use your data.
+
 ## [7.24.0] - 2026-11-12
 
 ### Added
