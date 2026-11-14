@@ -41,6 +41,12 @@ export function toggleHideDramaAction() {
   return callAction<{ hideDrama: boolean }>("toggleHideDramaAction");
 }
 
+export function toggleLeaderboardHiddenAction() {
+  return callAction<{ leaderboardHidden: boolean }>(
+    "toggleLeaderboardHiddenAction",
+  );
+}
+
 export function toggleMessageFilterAction() {
   return callAction<{ messageFilter: boolean }>("toggleMessageFilterAction");
 }

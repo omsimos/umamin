@@ -4,6 +4,9 @@ import { Link } from "@/lib/navigation";
 type LinkTab = {
   label: string;
   href: string;
+  // Search params for the target. The nav shim hands `href` to the router's
+  // `to`, which doesn't parse a `?query`, so pass them here instead.
+  search?: Record<string, unknown>;
   active: boolean;
   /** An unread count shown next to the label; hidden at 0. */
   badge?: number;
@@ -20,8 +23,17 @@ export function LinkTabs({
     <nav className={cn("flex w-full border-b", className)}>
       {tabs.map((t) => (
         <Link
-          key={t.href}
+          key={t.label}
           href={t.href}
+          {...(t.search
+            ? {
+                search: t.search,
+                // TanStack marks a link active (and overrides aria-current)
+                // when its search is a subset of the URL's, so `{}` would
+                // match every tab on the same path. Compare exactly.
+                activeOptions: { exact: true },
+              }
+            : {})}
           aria-current={t.active ? "page" : undefined}
           className={cn(
             "flex-1 border-b-2 px-2 pb-2.5 text-center text-sm font-semibold transition-colors",

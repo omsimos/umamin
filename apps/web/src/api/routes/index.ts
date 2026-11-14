@@ -5,6 +5,7 @@ import { blockedUsersRoutes } from "./blocked-users";
 import { dmRoutes } from "./dm";
 import { flagsRoutes } from "./flags";
 import { groupsRoutes } from "./groups";
+import { leaderboardRoutes } from "./leaderboard";
 import { meRoutes } from "./me";
 import { messagesRoutes } from "./messages";
 import { moderationRoutes } from "./moderation";
@@ -34,6 +35,7 @@ export const readsApp = new Hono<AppBindings>()
   .route("/", notificationsRoutes)
   .route("/", usersRoutes)
   .route("/", groupsRoutes)
+  .route("/", leaderboardRoutes)
   .route("/", publicRoutes)
   .route("/", moderationRoutes)
   .route("/", flagsRoutes);

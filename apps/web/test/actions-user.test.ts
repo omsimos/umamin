@@ -151,6 +151,16 @@ describe("user actions (real libSQL)", () => {
     expect(row.quietMode).toBe(false);
   });
 
+  it("toggles the leaderboard opt-out from the stored value", async () => {
+    const app = buildApp(db, authed("user1"));
+    expect((await callJson(app, "toggleLeaderboardHiddenAction")).json).toEqual(
+      { leaderboardHidden: true },
+    );
+    expect((await callJson(app, "toggleLeaderboardHiddenAction")).json).toEqual(
+      { leaderboardHidden: false },
+    );
+  });
+
   it("verifies the current password against the live row", async () => {
     // Session row carries a hash for a different password than the DB has.
     const app = buildApp(

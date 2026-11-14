@@ -4,6 +4,7 @@ import {
   ADS_ENABLED,
   type AdPlacement,
   adPlacements,
+  DEFAULT_LAZY_ROOT_MARGIN,
 } from "@/lib/ad-placements";
 import { captureException } from "@/lib/posthog";
 
@@ -23,6 +24,7 @@ const AdContainer = ({ placement, className }: Props) => {
   const config = adPlacements[placement];
   const isLazy = config?.lazy ?? true;
   const minHeight = config?.minHeight ?? 0;
+  const rootMargin = config?.rootMargin ?? DEFAULT_LAZY_ROOT_MARGIN;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const adRef = useRef<HTMLModElement | null>(null);
   const pushedRef = useRef(false);
@@ -55,7 +57,7 @@ const AdContainer = ({ placement, className }: Props) => {
         }
       },
       {
-        rootMargin: "200px 0px",
+        rootMargin,
         threshold: 0.1,
       },
     );
@@ -63,7 +65,7 @@ const AdContainer = ({ placement, className }: Props) => {
     observer.observe(containerRef.current);
 
     return () => observer.disconnect();
-  }, [config, isLazy, isVisible]);
+  }, [config, isLazy, isVisible, rootMargin]);
 
   useEffect(() => {
     if (config || import.meta.env.PROD) {

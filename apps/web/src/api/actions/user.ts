@@ -23,6 +23,7 @@ import {
   formatErrorChain,
   isUniqueConstraintViolation,
   LAST_LOGIN_METHOD_ERROR,
+  USER_NOT_FOUND_ERROR,
   USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
 import { extractClientIp } from "../../server-lib/ip";
@@ -786,6 +787,23 @@ export const toggleHideDramaHandler = action(
       .returning({ hideDrama: userTable.hideDrama });
 
     return { hideDrama: row?.hideDrama ?? !user.hideDrama };
+  },
+);
+
+export const toggleLeaderboardHiddenHandler = action(
+  {
+    auth: "user",
+    rateLimit: { name: "write", key: ({ user }) => `leaderboard:${user.id}` },
+  },
+  async (_input, { user, c }) => {
+    const [row] = await ctxDb(c)
+      .update(userTable)
+      .set({ leaderboardHidden: sql`NOT ${userTable.leaderboardHidden}` })
+      .where(eq(userTable.id, user.id))
+      .returning({ leaderboardHidden: userTable.leaderboardHidden });
+
+    if (!row) return { error: USER_NOT_FOUND_ERROR };
+    return { leaderboardHidden: row.leaderboardHidden };
   },
 );
 

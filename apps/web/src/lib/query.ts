@@ -50,6 +50,10 @@ export const queryKeys = {
   dmUnread: () => ["dm-unread"] as const,
   dmPeer: (username: string) => ["dm-peer", username] as const,
   dmPeerRoot: () => ["dm-peer"] as const,
+  leaderboard: (tab: string) => ["leaderboard", tab] as const,
+  leaderboardRank: (viewerId: string, tab: string) =>
+    ["leaderboard-rank", viewerId, tab] as const,
+  leaderboardRankRoot: () => ["leaderboard-rank"] as const,
 };
 
 export const infiniteQueryDefaults = {

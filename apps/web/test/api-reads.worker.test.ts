@@ -60,11 +60,13 @@ const EXPECTED_PATHS = [
   "/public/notes",
   "/public/user/alice",
   "/public/user/alice/posts",
+  "/public/leaderboard",
+  "/leaderboard/me",
 ];
 
 describe("route inventory (parity net)", () => {
-  it("covers all 24 ported GET routes", () => {
-    expect(EXPECTED_PATHS).toHaveLength(24);
+  it("covers all 26 GET routes", () => {
+    expect(EXPECTED_PATHS).toHaveLength(26);
   });
 
   it.each(EXPECTED_PATHS)("%s is routed (not 404)", async (path) => {

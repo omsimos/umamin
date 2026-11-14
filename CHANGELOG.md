@@ -18,6 +18,17 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.25.0] - 2026-11-14
+
+### Added
+
+- A leaderboard page shows the top 50 people by all-time aura and by best streak, and where you rank. Open it from the menu or by tapping the aura or streak on any profile.
+- A privacy setting hides you from the leaderboard.
+
+### Performance & Cost
+
+- Ads inside the feed and notes load as you scroll toward them, so ads you never reach no longer use your data.
+
 ## [7.24.0] - 2026-11-12
 
 ### Added
@@ -1368,6 +1379,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.25.0]: https://github.com/omsimos/umamin/compare/v7.24.0...v7.25.0
 [7.24.0]: https://github.com/omsimos/umamin/compare/v7.23.0...v7.24.0
 [7.23.0]: https://github.com/omsimos/umamin/compare/v7.22.0...v7.23.0
 [7.22.0]: https://github.com/omsimos/umamin/compare/v7.21.0...v7.22.0

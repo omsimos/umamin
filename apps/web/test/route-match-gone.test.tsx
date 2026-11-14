@@ -8,6 +8,7 @@ import { render } from "@testing-library/react";
 import type { ComponentType } from "react";
 import { describe, expect, it } from "vitest";
 import { Route as FeedRoute } from "@/routes/_social/feed";
+import { Route as LeaderboardRoute } from "@/routes/_social/leaderboard";
 import { Route as NotesRoute } from "@/routes/_social/notes";
 import { Route as PostRoute } from "@/routes/_social/post.$id";
 import { Route as SendMessageRoute } from "@/routes/_social/to.$username";
@@ -19,6 +20,7 @@ import { Route as GroupRoute } from "@/routes/groups.$tag.index";
 // throwing hooks then crashes the page (React #520 in production).
 const routes = {
   feed: FeedRoute,
+  leaderboard: LeaderboardRoute,
   notes: NotesRoute,
   post: PostRoute,
   "send message": SendMessageRoute,

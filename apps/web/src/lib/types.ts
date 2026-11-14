@@ -45,6 +45,7 @@ export type PublicUser = Omit<
   | "blockedWords"
   | "hideDrama"
   | "messageFilter"
+  | "leaderboardHidden"
   | "bannerImageUrl"
   | "pushPrefs"
   | "musicProvider"
@@ -59,7 +60,8 @@ export type PublicUser = Omit<
   // Pro profile theme is profile-surface-only, like bannerImageUrl — re-added
   // on PublicUserWithBadge, never on the per-author list payloads.
   | "profileTheme"
-  // Unused until a "best streak" surface exists.
+  // Only the leaderboard shows it, through its own lean payload
+  // (lib/leaderboard.ts), so it stays off every user payload.
   | "streakBest"
 >;
 
@@ -107,6 +109,7 @@ export type CurrentUserClient = PublicUserWithBadge & {
   // Content-filter preferences, owner-private like blockedWords.
   hideDrama: boolean;
   messageFilter: boolean;
+  leaderboardHidden: boolean;
 };
 // Only what the Account settings card renders. The provider subject id and the
 // owning userId never leave the server — this payload is dehydrated into every
@@ -129,6 +132,7 @@ export function toPublicUser(user: SelectUser): PublicUser {
     blockedWords: _blockedWords,
     hideDrama: _hideDrama,
     messageFilter: _messageFilter,
+    leaderboardHidden: _leaderboardHidden,
     bannerImageUrl: _bannerImageUrl,
     pushPrefs: _pushPrefs,
     musicProvider: _musicProvider,

@@ -5,6 +5,10 @@ import type {
   DmUnreadResponse,
 } from "@/lib/dm/types";
 import type { FeedSort } from "@/lib/feed-sort";
+import type {
+  LeaderboardRankResponse,
+  LeaderboardTab,
+} from "@/lib/leaderboard";
 import { RequestFailedError } from "@/lib/request-error";
 import type {
   BlockedUsersResponse,
@@ -115,6 +119,10 @@ export async function fetchFeatureFlags() {
 
 export async function fetchProOffer() {
   return fetchJson<ProOfferResponse>("/api/flags/pro");
+}
+
+export async function fetchLeaderboardRank(tab: LeaderboardTab) {
+  return fetchJson<LeaderboardRankResponse>(`/api/leaderboard/me?tab=${tab}`);
 }
 
 export async function fetchCurrentUser() {

@@ -12,6 +12,7 @@ import {
   MoonIcon,
   SettingsIcon,
   SunIcon,
+  TrophyIcon,
   UsersRoundIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -25,7 +26,7 @@ import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
 
 // Quick-access menu on the focused-view header (profile, inbox, notifications,
 // settings) where the account drawer isn't reachable: group/settings shortcuts
-// plus the theme toggle (otherwise only in the drawer).
+// plus the leaderboard and the theme toggle (otherwise only in the drawer).
 export function HeaderMenu() {
   const { resolvedTheme, setTheme } = useTheme();
   const { data } = useQuery({
@@ -45,6 +46,12 @@ export function HeaderMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem asChild>
+          <Link href="/leaderboard">
+            <TrophyIcon />
+            Leaderboard
+          </Link>
+        </DropdownMenuItem>
         {user ? (
           <>
             <DropdownMenuItem asChild>
