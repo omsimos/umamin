@@ -22,8 +22,11 @@ const EXPECTED_KEYS = [
   "chat_ended",
 ] as const;
 
-// Below-the-fold placements lazy-load on scroll; the rest are eager.
+// Below-the-fold placements lazy-load on scroll; the rest are eager. The
+// in-feed units sit 8+ rows down, so an eager one fills an ad nobody reaches.
 const LAZY_KEYS = new Set<string>([
+  "feed_inline",
+  "notes_inline",
   "profile_bottom",
   "to_user",
   "profile_top",

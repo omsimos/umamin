@@ -7,7 +7,7 @@ export const adPlacements = {
   feed_inline: {
     slotId: "8551048984",
     minHeight: 280,
-    lazy: false,
+    lazy: true,
   },
   notes_top: {
     slotId: "1999152698",
@@ -17,7 +17,7 @@ export const adPlacements = {
   notes_inline: {
     slotId: "9012650581",
     minHeight: 280,
-    lazy: false,
+    lazy: true,
   },
   profile_bottom: {
     slotId: "4417432474",

@@ -21,6 +21,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
   // oxlint-disable-next-line typescript/no-explicit-any -- google global
   delete (window as any).adsbygoogle;
@@ -61,4 +62,40 @@ describe("AdContainer in production", () => {
     });
     expect(push).toHaveBeenCalledTimes(1);
   });
+
+  // In-feed units sit 8+ rows down. Filled on render, most were never seen,
+  // and the low viewability lowered what advertisers bid on every unit.
+  it.each(["feed_inline", "notes_inline"] as const)(
+    "waits to fill %s until it scrolls near the viewport",
+    async (placement) => {
+      let reveal: IntersectionObserverCallback = () => {};
+      vi.stubGlobal(
+        "IntersectionObserver",
+        class {
+          constructor(callback: IntersectionObserverCallback) {
+            reveal = callback;
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
+      const push = vi.fn();
+      window.adsbygoogle = { push };
+      const AdContainer = await loadAdContainer();
+      const { container } = render(<AdContainer placement={placement} />);
+
+      expect(container.querySelector("ins.adsbygoogle")).toBeNull();
+      expect(push).not.toHaveBeenCalled();
+
+      act(() => {
+        reveal(
+          [{ isIntersecting: true } as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+
+      expect(container.querySelector("ins.adsbygoogle")).not.toBeNull();
+      expect(push).toHaveBeenCalledTimes(1);
+    },
+  );
 });
