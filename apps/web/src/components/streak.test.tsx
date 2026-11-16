@@ -30,18 +30,17 @@ describe("StreakReminder restore offer", () => {
   it("offers a restore the day after a missed day", () => {
     render(setup({ streak: 40, streakDay: today - 2 }).ui);
     expect(
-      screen.getByText("Your 40-day streak ended yesterday."),
+      screen.getByText("40-day streak ended yesterday."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Restore streak" }),
+      screen.getByRole("button", { name: "Restore streak, 3 left this month" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("3 left this month")).toBeInTheDocument();
   });
 
   it("offers it after a save already reset the streak today", () => {
     render(setup({ streak: 1, streakDay: today, streakBroken: 40 }).ui);
     expect(
-      screen.getByRole("button", { name: "Restore streak" }),
+      screen.getByRole("button", { name: /^Restore streak/ }),
     ).toBeInTheDocument();
   });
 
@@ -56,7 +55,7 @@ describe("StreakReminder restore offer", () => {
     );
     expect(
       screen.getByText(
-        "Your 40-day streak ended yesterday. You've used all 3 restores this month.",
+        "40-day streak ended yesterday. No restores left this month.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();

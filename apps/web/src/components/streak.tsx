@@ -13,7 +13,6 @@ import {
   restorableStreak,
   restoresLeft,
   STREAK_MIN_DISPLAY,
-  STREAK_RESTORES_PER_MONTH,
   type StreakState,
   type StreakTier,
   streakTier,
@@ -95,30 +94,30 @@ export function StreakReminder({
     return (
       <div
         className={cn(
-          "flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground",
+          "flex items-center justify-between gap-3 text-xs text-muted-foreground",
           className,
         )}
       >
-        <p className="flex items-center gap-1">
+        <p className="flex min-w-0 items-center gap-1">
           <StreakIcon streak={restorable} className="size-3.5 shrink-0" />
           {left > 0
-            ? `Your ${restorable}-day streak ended yesterday.`
-            : `Your ${restorable}-day streak ended yesterday. You've used all ${STREAK_RESTORES_PER_MONTH} restores this month.`}
+            ? `${restorable}-day streak ended yesterday.`
+            : `${restorable}-day streak ended yesterday. No restores left this month.`}
         </p>
         {left > 0 && (
-          <span className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-9 px-3 text-xs"
-              disabled={restore.isPending}
-              onClick={() => restore.mutate()}
-            >
-              Restore streak
-            </Button>
-            <span>{left} left this month</span>
-          </span>
+          // A text button the height of the line, with a 36px tap area
+          // pulled back into the row by the negative margin.
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="-my-2.5 h-9 shrink-0 px-2 text-xs font-semibold text-primary hover:text-primary"
+            aria-label={`Restore streak, ${left} left this month`}
+            disabled={restore.isPending}
+            onClick={() => restore.mutate()}
+          >
+            Restore · {left} left
+          </Button>
         )}
       </div>
     );
