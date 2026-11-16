@@ -7,6 +7,7 @@ import { drainDmPurge } from "./dm/lifecycle";
 import type { AppEnv } from "./env";
 import { recomputeHotFeed as recomputeHotFeedRanking } from "./feed-rank";
 import { isModerationEnforced } from "./flags";
+import { vapidFromEnv } from "./notification-push";
 import { captureServerException } from "./posthog";
 import { sendStreakPushes, streakPushKindForHour } from "./streak-push";
 
@@ -99,15 +100,21 @@ export async function sendStreakReminders(
 ): Promise<void> {
   const kind = streakPushKindForHour(new Date(scheduledTime).getUTCHours());
   if (!kind) return;
-  const { users, devices, capped } = await sendStreakPushes(
-    getDb(env),
-    env,
-    kind,
-    scheduledTime,
-  );
+  // Without VAPID keys nothing can be sent, so skip the query too.
+  const vapid = vapidFromEnv(env);
+  if (!vapid) return;
+
+  const { users, devices, capped, failures, firstFailure } =
+    await sendStreakPushes(getDb(env), vapid, kind, scheduledTime);
   console.log(
-    `[cron] streak ${kind} push: ${users} users, ${devices} devices${capped ? " (capped)" : ""}`,
+    `[cron] streak ${kind} push: ${users} users, ${devices} devices, ${failures} failed${capped ? " (capped)" : ""}`,
   );
+  // One report per run, not per device: a VAPID problem fails every send.
+  if (failures > 0) {
+    captureServerException(env, defer, firstFailure, {
+      properties: { push: "streak reminder failed", kind, failures },
+    });
+  }
   if (capped) {
     captureServerException(env, defer, new Error("streak push capped"), {
       properties: { kind, devices },

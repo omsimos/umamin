@@ -110,6 +110,12 @@ export const userTable = sqliteTable(
     streakBroken: integer("streak_broken").notNull().default(0),
     streakRestoresUsed: integer("streak_restores_used").notNull().default(0),
     streakRestoreMonth: integer("streak_restore_month"),
+    // Owner-private opt-out from streak reminder pushes. A column, not a
+    // pushPrefs bit: pushPrefs drops to 0 when the last device goes, and the
+    // opt-out has to survive that.
+    streakPushOff: integer("streak_push_off", { mode: "boolean" })
+      .notNull()
+      .default(false),
     // Owner-private opt-out from /leaderboard (same exposure rules as
     // blockedWords). Part of the rank indexes' WHERE, so a hidden user costs
     // the leaderboard reads nothing.

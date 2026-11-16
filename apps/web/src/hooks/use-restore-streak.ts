@@ -32,15 +32,15 @@ function cachedCurrentUser(queryClient: QueryClient) {
  * composer that showed it has closed.
  */
 export async function restoreStreakNow(queryClient: QueryClient) {
-  const user = cachedCurrentUser(queryClient);
-  if (!user) return;
-
   const res = await restoreStreakAction();
   if ("error" in res && res.error) throw new ExpectedError(res.error);
-  if (!("streakRestore" in res)) return;
+  if (!("streakRestore" in res)) {
+    throw new Error("Couldn't restore your streak.");
+  }
 
   const restored = res.streakRestore;
-  applyStreakUpdate(queryClient, user.username, restored);
+  const user = cachedCurrentUser(queryClient);
+  if (user) applyStreakUpdate(queryClient, user.username, restored);
   toast.success(`${restored.streak}-day streak restored. See you tomorrow.`);
 }
 

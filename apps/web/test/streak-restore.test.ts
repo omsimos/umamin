@@ -17,7 +17,7 @@ vi.mock("../src/server-lib/push", async (importOriginal) => {
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
 import { eq, sql } from "drizzle-orm";
-import { ALL_PUSH_CATEGORIES, PUSH_CATEGORY } from "../src/lib/push-prefs";
+import { ALL_PUSH_CATEGORIES } from "../src/lib/push-prefs";
 import {
   restorableStreak,
   restoresLeft,
@@ -26,7 +26,6 @@ import {
 } from "../src/lib/streak";
 import { getPublicUserProfileData } from "../src/server-lib/data";
 import type { Db } from "../src/server-lib/db";
-import type { AppEnv } from "../src/server-lib/env";
 import { sendPush } from "../src/server-lib/push";
 import { __clearSessionCache } from "../src/server-lib/session";
 import { recordStreak, restoreStreak } from "../src/server-lib/streak";
@@ -250,15 +249,13 @@ describe("restoreStreakAction (real libSQL)", () => {
 
 describe("streak push cron (real libSQL)", () => {
   let db: Db;
-  const env = {
-    VAPID_PUBLIC_KEY: "public",
-    VAPID_PRIVATE_KEY: "private",
-  } as unknown as AppEnv;
+  const vapid = { publicKey: "public", privateKey: "private", subject: "x" };
   const keys = { p256dh: "k", auth: "a" };
 
   async function user(
     id: string,
     values: Partial<typeof userTable.$inferInsert>,
+    devices = 1,
   ) {
     await db.insert(userTable).values({
       id,
@@ -266,11 +263,13 @@ describe("streak push cron (real libSQL)", () => {
       pushPrefs: ALL_PUSH_CATEGORIES,
       ...values,
     });
-    await db.insert(pushSubscriptionTable).values({
-      userId: id,
-      endpoint: `https://fcm.googleapis.com/fcm/send/${id}`,
-      ...keys,
-    });
+    for (let d = 0; d < devices; d++) {
+      await db.insert(pushSubscriptionTable).values({
+        userId: id,
+        endpoint: `https://fcm.googleapis.com/fcm/send/${id}-${d}`,
+        ...keys,
+      });
+    }
   }
 
   function sentTo() {
@@ -287,25 +286,6 @@ describe("streak push cron (real libSQL)", () => {
     vi.mocked(sendPush).mockReset();
     vi.mocked(sendPush).mockResolvedValue({ ok: true } as never);
     db = await makeTestDb();
-    await user("ending", { streak: 5, streakDay: TODAY - 1 });
-    await user("optedout", {
-      streak: 5,
-      streakDay: TODAY - 1,
-      pushPrefs: ALL_PUSH_CATEGORIES & ~PUSH_CATEGORY.streak,
-    });
-    await user("banned", {
-      streak: 5,
-      streakDay: TODAY - 1,
-      bannedAt: new Date(),
-    });
-    await user("short", { streak: 1, streakDay: TODAY - 1 });
-    await user("restorable", { streak: 9, streakDay: TODAY - 2 });
-    await user("usedup", {
-      streak: 9,
-      streakDay: TODAY - 2,
-      streakRestoresUsed: 3,
-      streakRestoreMonth: MONTH,
-    });
   });
 
   it("picks the reminder by the Manila hour", () => {
@@ -314,22 +294,74 @@ describe("streak push cron (real libSQL)", () => {
     expect(streakPushKindForHour(3)).toBeNull();
   });
 
-  it("warns streaks that end at midnight", async () => {
-    const at8pm = NOW + 8 * HOUR_MS;
-    await sendStreakPushes(db, env, "ending", at8pm);
-    expect(sentTo()).toEqual([
-      { endpoint: "ending", title: "Your 5-day streak ends at midnight" },
-    ]);
+  describe("who gets each reminder", () => {
+    beforeEach(async () => {
+      await user("ending", { streak: 5, streakDay: TODAY - 1 });
+      await user("optedout", {
+        streak: 5,
+        streakDay: TODAY - 1,
+        streakPushOff: true,
+      });
+      await user("banned", {
+        streak: 5,
+        streakDay: TODAY - 1,
+        bannedAt: new Date(),
+      });
+      await user("short", { streak: 1, streakDay: TODAY - 1 });
+      await user("restorable", { streak: 9, streakDay: TODAY - 2 });
+      await user("usedup", {
+        streak: 9,
+        streakDay: TODAY - 2,
+        streakRestoresUsed: 3,
+        streakRestoreMonth: MONTH,
+      });
+    });
+
+    it("warns streaks that end at midnight", async () => {
+      await sendStreakPushes(db, vapid, "ending", NOW + 8 * HOUR_MS);
+      expect(sentTo()).toEqual([
+        { endpoint: "ending-0", title: "Your 5-day streak ends at midnight" },
+      ]);
+    });
+
+    it("offers a restore to users who still have one", async () => {
+      await sendStreakPushes(db, vapid, "restore", NOW);
+      expect(sentTo()).toEqual([
+        {
+          endpoint: "restorable-0",
+          title: "Your 9-day streak ended. Restore it today",
+        },
+      ]);
+    });
   });
 
-  it("offers a restore to users who still have one", async () => {
-    await sendStreakPushes(db, env, "restore", NOW);
-    expect(sentTo()).toEqual([
-      {
-        endpoint: "restorable",
-        title: "Your 9-day streak ended. Restore it today",
-      },
-    ]);
+  describe("past the cap", () => {
+    beforeEach(async () => {
+      await user("a", { streak: 5, streakDay: TODAY - 1 });
+      await user("b", { streak: 5, streakDay: TODAY - 1 }, 2);
+      await user("c", { streak: 5, streakDay: TODAY - 1 });
+    });
+
+    it("leaves out the user whose devices cross the cap, not some of them", async () => {
+      const result = await sendStreakPushes(db, vapid, "ending", NOW, "a", 2);
+      expect(result).toMatchObject({ users: 1, devices: 1, capped: true });
+      expect(sentTo().map((s) => s.endpoint)).toEqual(["a-0"]);
+    });
+
+    it("starts from a different user when the pivot changes", async () => {
+      // Order from pivot "c" is c, a, b: c gets in, where pivot "a" left it out.
+      await sendStreakPushes(db, vapid, "ending", NOW, "c", 2);
+      expect(sentTo().map((s) => s.endpoint)).toEqual(["a-0", "c-0"]);
+    });
+  });
+
+  it("counts failures for one report instead of reporting each", async () => {
+    await user("a", { streak: 5, streakDay: TODAY - 1 }, 2);
+    vi.mocked(sendPush).mockRejectedValue(new Error("boom"));
+
+    const result = await sendStreakPushes(db, vapid, "ending", NOW);
+    expect(result.failures).toBe(2);
+    expect(result.firstFailure).toBeInstanceOf(Error);
   });
 });
 
@@ -345,6 +377,8 @@ describe("streak push query plan", () => {
         kind,
         TODAY,
         MONTH,
+        "pivot",
+        100,
       ).toSQL();
       const rows = await db.all<{ detail: string }>(
         sql.join([

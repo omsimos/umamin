@@ -3,9 +3,7 @@ import { Switch } from "@umamin/ui/components/switch";
 import { cn } from "@umamin/ui/lib/utils";
 import { BellIcon, ZapIcon } from "lucide-react";
 import { toast } from "sonner";
-import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
-import { PUSH_CATEGORY } from "@/lib/push-prefs";
 import { PRIVATE_STALE_TIME, queryKeys } from "@/lib/query";
 import { patchCurrentUser } from "@/lib/query-cache";
 import { fetchCurrentUserOptional } from "@/lib/query-fetchers";
@@ -14,7 +12,7 @@ import {
   type PushState,
   usePushNotifications,
 } from "../-shared/use-push-notifications";
-import { toggleStreakPushAction } from "./actions";
+import { setStreakPushAction } from "./actions";
 
 const COPY: Record<Exclude<PushState, "loading">, string> = {
   unsupported: "Not available in this browser.",
@@ -62,7 +60,7 @@ export function PushNotificationToggle() {
   );
 }
 
-// Streak reminders are the one push category a user can turn off alone.
+// Streak reminders can be turned off on their own while push stays on.
 function StreakPushToggle() {
   const queryClient = useQueryClient();
   const { data } = useQuery({
@@ -70,25 +68,24 @@ function StreakPushToggle() {
     queryFn: fetchCurrentUserOptional,
     staleTime: PRIVATE_STALE_TIME,
   });
-  const pushPrefs = data?.user?.pushPrefs ?? 0;
-  const toggle = useSingleFlightAction(toggleStreakPushAction);
+  const enabled = !(data?.user?.streakPushOff ?? false);
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await toggle();
+    mutationFn: async (next: boolean) => {
+      const res = await setStreakPushAction({ enabled: next });
       if ("error" in res && res.error) throw new ExpectedError(res.error);
-      return "pushPrefs" in res ? res.pushPrefs : pushPrefs;
+      return "streakPushOff" in res ? res.streakPushOff : !next;
     },
-    onSuccess: (next) => {
+    onSuccess: (streakPushOff) => {
       queryClient.setQueryData<CurrentUserResponse>(
         queryKeys.currentUser(),
         (current) =>
-          patchCurrentUser(current, (user) => ({ ...user, pushPrefs: next })),
+          patchCurrentUser(current, (user) => ({ ...user, streakPushOff })),
       );
       toast.success(
-        next & PUSH_CATEGORY.streak
-          ? "Streak reminders are on."
-          : "Streak reminders are off.",
+        streakPushOff
+          ? "Streak reminders are off."
+          : "Streak reminders are on.",
       );
     },
     onError: (err) => {
@@ -109,8 +106,8 @@ function StreakPushToggle() {
       <Switch
         aria-label="Streak reminders"
         disabled={mutation.isPending}
-        checked={(pushPrefs & PUSH_CATEGORY.streak) !== 0}
-        onCheckedChange={() => mutation.mutate()}
+        checked={enabled}
+        onCheckedChange={(checked) => mutation.mutate(checked)}
       />
     </div>
   );

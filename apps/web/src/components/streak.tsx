@@ -83,13 +83,13 @@ export function StreakReminder({
 }) {
   const today = useStreakToday();
   // Restore state is owner-only and lives on the current-user cache, which
-  // the props may not carry.
+  // the props may not carry. No offer until that cache has loaded.
   const own = useStreakRestoreState();
   const restore = useRestoreStreak();
   if (today === null) return null;
 
-  const restoreState = own ? { ...state, ...pickRestoreState(own) } : state;
-  const restorable = restorableStreak(restoreState, today);
+  const restoreState: StreakState = own ?? state;
+  const restorable = own ? restorableStreak(own, today) : 0;
   if (restorable > 0) {
     const left = restoresLeft(restoreState, toStreakMonth());
     return (
@@ -149,14 +149,4 @@ export function StreakReminder({
       {text}
     </p>
   );
-}
-
-function pickRestoreState(user: StreakState): StreakState {
-  return {
-    streak: user.streak,
-    streakDay: user.streakDay,
-    streakBroken: user.streakBroken,
-    streakRestoresUsed: user.streakRestoresUsed,
-    streakRestoreMonth: user.streakRestoreMonth,
-  };
 }

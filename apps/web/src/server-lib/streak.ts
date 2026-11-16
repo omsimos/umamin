@@ -92,8 +92,7 @@ export async function restoreStreak(
         eq(userTable.id, userId),
         sql`((${userTable.streakDay} = ${today - 2} AND ${userTable.streak} >= ${STREAK_MIN_DISPLAY})
           OR (${userTable.streakDay} = ${today} AND ${userTable.streakBroken} >= ${STREAK_MIN_DISPLAY}))`,
-        sql`(${userTable.streakRestoreMonth} IS NOT ${month}
-          OR ${userTable.streakRestoresUsed} < ${STREAK_RESTORES_PER_MONTH})`,
+        hasRestoreLeft(month),
       ),
     )
     .returning({
@@ -110,4 +109,10 @@ export async function restoreStreak(
         streakRestoreMonth: month,
       }
     : null;
+}
+
+/** SQL twin of restoresLeft(state, month) > 0. */
+export function hasRestoreLeft(month: number) {
+  return sql`(${userTable.streakRestoreMonth} IS NOT ${month}
+    OR ${userTable.streakRestoresUsed} < ${STREAK_RESTORES_PER_MONTH})`;
 }

@@ -3,8 +3,9 @@ import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
 import { and, desc, eq, ne, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
-import { ALL_PUSH_CATEGORIES, PUSH_CATEGORY } from "../../lib/push-prefs";
+import { ALL_PUSH_CATEGORIES } from "../../lib/push-prefs";
 import { action } from "../../server-lib/action";
+import { USER_NOT_FOUND_ERROR } from "../../server-lib/errors";
 import { pushEndpointSchema } from "../../server-lib/push";
 import { clearPushPrefsWithoutDevices } from "../../server-lib/push-devices";
 import { ctxDb } from "./_shared";
@@ -44,7 +45,7 @@ export const registerPushSubscriptionHandler = action(
   },
   async ({ endpoint, p256dh, auth }, { user, c }) => {
     const db = ctxDb(c);
-    const [, , , prefsRows] = await db.batch([
+    await db.batch([
       // A browser shared between accounts moves its row to whoever registers
       // last, and that may have been the previous account's only device. This
       // runs before the upsert, while the row still names the previous owner.
@@ -76,19 +77,13 @@ export const registerPushSubscriptionHandler = action(
             ),
           ),
         ),
-      // Turning push on from off enables every category. A user who already
-      // has push on keeps their prefs, so a second device doesn't undo a
-      // streak reminder opt-out.
       db
         .update(userTable)
-        .set({
-          pushPrefs: sql`CASE WHEN ${userTable.pushPrefs} = 0 THEN ${ALL_PUSH_CATEGORIES} ELSE ${userTable.pushPrefs} END`,
-        })
-        .where(eq(userTable.id, user.id))
-        .returning({ pushPrefs: userTable.pushPrefs }),
+        .set({ pushPrefs: ALL_PUSH_CATEGORIES })
+        .where(eq(userTable.id, user.id)),
     ]);
 
-    return { pushPrefs: prefsRows[0]?.pushPrefs ?? ALL_PUSH_CATEGORIES };
+    return { pushPrefs: ALL_PUSH_CATEGORIES };
   },
 );
 
@@ -123,26 +118,23 @@ export const unregisterPushSubscriptionHandler = action(
   },
 );
 
-// Flips streak reminders alone. Only while push is on: a user with no device
-// has prefs 0, and turning push on later enables every category.
-export const toggleStreakPushHandler = action(
+// Streak reminders are opted out on their own column, so the choice survives
+// push turning off with the last device. Sets the value the switch shows
+// rather than flipping it, so a stale tab can't do the opposite.
+export const setStreakPushHandler = action(
   {
+    schema: z.object({ enabled: z.boolean() }),
     auth: "user",
     rateLimit: { name: "write", key: ({ user }) => `push:${user.id}` },
   },
-  async (_input, { user, c }) => {
+  async ({ enabled }, { user, c }) => {
     const [row] = await ctxDb(c)
       .update(userTable)
-      .set({
-        // SQLite has no XOR operator.
-        pushPrefs: sql`CASE WHEN ${userTable.pushPrefs} & ${PUSH_CATEGORY.streak}
-          THEN ${userTable.pushPrefs} & ~${PUSH_CATEGORY.streak}
-          ELSE ${userTable.pushPrefs} | ${PUSH_CATEGORY.streak} END`,
-      })
-      .where(and(eq(userTable.id, user.id), ne(userTable.pushPrefs, 0)))
-      .returning({ pushPrefs: userTable.pushPrefs });
+      .set({ streakPushOff: !enabled })
+      .where(eq(userTable.id, user.id))
+      .returning({ streakPushOff: userTable.streakPushOff });
 
-    if (!row) return { error: "Turn on push notifications first." };
-    return { pushPrefs: row.pushPrefs };
+    if (!row) return { error: USER_NOT_FOUND_ERROR };
+    return { streakPushOff: row.streakPushOff };
   },
 );

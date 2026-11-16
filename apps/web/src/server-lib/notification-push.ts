@@ -123,7 +123,7 @@ const GENERIC_COPY: CopyEntry = {
   anonymous: true,
 };
 
-function vapidFromEnv(env: AppEnv) {
+export function vapidFromEnv(env: AppEnv) {
   const publicKey = env.VAPID_PUBLIC_KEY;
   const privateKey = env.VAPID_PRIVATE_KEY;
   if (!publicKey || !privateKey) return null;
@@ -206,29 +206,37 @@ export async function sendPushForNotification(
     tag: `${type}:${targetId}`,
   };
 
-  await deliverPush(db, env, recipientId, subs, payload, type);
+  await deliverPush(db, recipientId, subs, payload, vapid, (err, push) => {
+    captureServerException(env, undefined, err, {
+      properties: { push, type },
+    });
+  });
 }
 
 export type PushPayload = { title: string; url: string; tag: string };
 export type PushDevice = { endpoint: string; p256dh: string; auth: string };
 
+export type Vapid = NonNullable<ReturnType<typeof vapidFromEnv>>;
+
+// A failure worth reporting: VAPID rejected (401/403) or an unknown throw.
+export type PushFailureReport = (
+  err: unknown,
+  push: "vapid rejected" | "send failed",
+) => void;
+
 /**
  * Sends one payload to a user's devices. Prunes dead subscriptions (and push
- * prefs with them when it was the last device) and reports only VAPID
- * misconfiguration and unknown failures.
+ * prefs with them when it was the last device) and hands VAPID
+ * misconfiguration and unknown failures to `report`.
  */
 export async function deliverPush(
   db: Db,
-  env: AppEnv,
   recipientId: string,
   subs: PushDevice[],
   payload: PushPayload,
-  // For error reports only.
-  type: string,
+  vapid: Vapid,
+  report: PushFailureReport,
 ): Promise<void> {
-  const vapid = vapidFromEnv(env);
-  if (!vapid) return;
-
   const prune = (endpoint: string) =>
     db.batch([
       db
@@ -269,15 +277,11 @@ export async function deliverPush(
         if (err instanceof WebPushError) {
           console.error("web-push send rejected", err.toJSON());
           if (err.statusCode === 401 || err.statusCode === 403) {
-            captureServerException(env, undefined, err, {
-              properties: { push: "vapid rejected", type },
-            });
+            report(err, "vapid rejected");
           }
         } else {
           console.error("web-push send failed", err);
-          captureServerException(env, undefined, err, {
-            properties: { push: "send failed", type },
-          });
+          report(err, "send failed");
         }
       }
     }),

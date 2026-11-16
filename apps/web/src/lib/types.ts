@@ -67,6 +67,7 @@ export type PublicUser = Omit<
   | "streakBroken"
   | "streakRestoresUsed"
   | "streakRestoreMonth"
+  | "streakPushOff"
 >;
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
@@ -118,6 +119,7 @@ export type CurrentUserClient = PublicUserWithBadge & {
   streakBroken: number;
   streakRestoresUsed: number;
   streakRestoreMonth: number | null;
+  streakPushOff: boolean;
 };
 // Only what the Account settings card renders. The provider subject id and the
 // owning userId never leave the server — this payload is dehydrated into every
@@ -155,6 +157,7 @@ export function toPublicUser(user: SelectUser): PublicUser {
     streakBroken: _streakBroken,
     streakRestoresUsed: _streakRestoresUsed,
     streakRestoreMonth: _streakRestoreMonth,
+    streakPushOff: _streakPushOff,
     ...rest
   } = user;
   return rest;

@@ -1,15 +1,16 @@
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
-import { and, eq, isNull, or, sql } from "drizzle-orm";
-import { PUSH_CATEGORY } from "../lib/push-prefs";
-import {
-  STREAK_RESTORES_PER_MONTH,
-  toStreakDay,
-  toStreakMonth,
-} from "../lib/streak";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import { toStreakDay, toStreakMonth } from "../lib/streak";
 import type { Db } from "./db";
-import type { AppEnv } from "./env";
-import { deliverPush, type PushDevice } from "./notification-push";
+import {
+  deliverPush,
+  type PushDevice,
+  type PushFailureReport,
+  type Vapid,
+} from "./notification-push";
+import { hasRestoreLeft } from "./streak";
 
 // Daily streak pushes, run by the "0 1,12 * * *" cron (09:00 and 20:00
 // Manila). "ending" goes to streaks that end at midnight unless the user saves
@@ -17,9 +18,11 @@ import { deliverPush, type PushDevice } from "./notification-push";
 // still has a restore this month.
 export type StreakPushKind = "ending" | "restore";
 
-// Each device is one subrequest. Stay well under the Worker's per-invocation
-// limit; anyone past the cap misses one reminder, and the log says so.
-const MAX_DEVICES_PER_RUN = 900;
+// Paid Workers get 10,000 subrequests per invocation. A device costs at most
+// two: the send, and a prune batch when the endpoint is dead. Failure reports
+// are batched into one per run, so 4,000 devices stay under the limit with
+// room to spare.
+export const MAX_DEVICES_PER_RUN = 4000;
 const SEND_CONCURRENCY = 25;
 
 export function streakPushKindForHour(utcHour: number): StreakPushKind | null {
@@ -34,12 +37,19 @@ export function streakPushTitle(kind: StreakPushKind, streak: number) {
     : `Your ${streak}-day streak ended. Restore it today`;
 }
 
-/** Users due a streak push today, one row per device. */
+/**
+ * Users due a streak push today, one row per device, grouped by user. User
+ * ids are random, so starting the order at a random pivot and wrapping
+ * around means a capped run skips different users each day instead of the
+ * same ones every time.
+ */
 export function streakPushQuery(
   db: Db,
   kind: StreakPushKind,
   today: number,
   month: number,
+  pivot: string,
+  limit: number,
 ) {
   return db
     .select({
@@ -59,33 +69,54 @@ export function streakPushQuery(
         eq(userTable.streakDay, kind === "ending" ? today - 1 : today - 2),
         // The WHERE of user_streak_day_idx, repeated so SQLite uses it.
         sql`${userTable.streak} >= 2 AND ${userTable.pushPrefs} <> 0`,
-        sql`(${userTable.pushPrefs} & ${PUSH_CATEGORY.streak}) <> 0`,
+        eq(userTable.streakPushOff, false),
         isNull(userTable.bannedAt),
-        kind === "restore"
-          ? or(
-              sql`${userTable.streakRestoreMonth} IS NOT ${month}`,
-              sql`${userTable.streakRestoresUsed} < ${STREAK_RESTORES_PER_MONTH}`,
-            )
-          : undefined,
+        kind === "restore" ? hasRestoreLeft(month) : undefined,
       ),
     )
-    .limit(MAX_DEVICES_PER_RUN + 1);
+    .orderBy(sql`${userTable.id} < ${pivot}`, asc(userTable.id))
+    .limit(limit);
 }
+
+export type StreakPushResult = {
+  users: number;
+  devices: number;
+  capped: boolean;
+  failures: number;
+  firstFailure: unknown;
+};
 
 export async function sendStreakPushes(
   db: Db,
-  env: AppEnv,
+  vapid: Vapid,
   kind: StreakPushKind,
   now = Date.now(),
-): Promise<{ users: number; devices: number; capped: boolean }> {
+  pivot = nanoid(),
+  maxDevices = MAX_DEVICES_PER_RUN,
+): Promise<StreakPushResult> {
   const today = toStreakDay(now);
   const month = toStreakMonth(now);
 
-  const rows = await streakPushQuery(db, kind, today, month);
+  const rows = await streakPushQuery(
+    db,
+    kind,
+    today,
+    month,
+    pivot,
+    maxDevices + 1,
+  );
 
-  const capped = rows.length > MAX_DEVICES_PER_RUN;
+  // Cut at a whole user so nobody gets the push on only some devices: past
+  // the cap, drop every row of the last user that made it in.
+  const capped = rows.length > maxDevices;
+  let kept = rows.slice(0, maxDevices);
+  if (capped) {
+    const boundary = rows[maxDevices]?.userId;
+    kept = kept.filter((row) => row.userId !== boundary);
+  }
+
   const byUser = new Map<string, { streak: number; subs: PushDevice[] }>();
-  for (const row of rows.slice(0, MAX_DEVICES_PER_RUN)) {
+  for (const row of kept) {
     const entry = byUser.get(row.userId) ?? { streak: row.streak, subs: [] };
     entry.subs.push({
       endpoint: row.endpoint,
@@ -95,13 +126,19 @@ export async function sendStreakPushes(
     byUser.set(row.userId, entry);
   }
 
+  let failures = 0;
+  let firstFailure: unknown = null;
+  const report: PushFailureReport = (err) => {
+    failures += 1;
+    firstFailure ??= err;
+  };
+
   const users = [...byUser.entries()];
   for (let i = 0; i < users.length; i += SEND_CONCURRENCY) {
     await Promise.all(
       users.slice(i, i + SEND_CONCURRENCY).map(([userId, { streak, subs }]) =>
         deliverPush(
           db,
-          env,
           userId,
           subs,
           {
@@ -110,17 +147,18 @@ export async function sendStreakPushes(
             // One per user per day per kind on the device.
             tag: `streak-${kind}:${today}`,
           },
-          `streak-${kind}`,
-        ).catch((err) => {
-          console.error(`[cron] streak push failed for one user`, err);
-        }),
+          vapid,
+          report,
+        ).catch((err: unknown) => report(err, "send failed")),
       ),
     );
   }
 
   return {
     users: byUser.size,
-    devices: Math.min(rows.length, MAX_DEVICES_PER_RUN),
+    devices: kept.length,
     capped,
+    failures,
+    firstFailure,
   };
 }

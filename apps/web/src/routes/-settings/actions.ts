@@ -47,8 +47,8 @@ export function toggleLeaderboardHiddenAction() {
   );
 }
 
-export function toggleStreakPushAction() {
-  return callAction<{ pushPrefs: number }>("toggleStreakPushAction");
+export function setStreakPushAction(input: { enabled: boolean }) {
+  return callAction<{ streakPushOff: boolean }>("setStreakPushAction", input);
 }
 
 export function toggleMessageFilterAction() {

@@ -140,6 +140,7 @@ describe("UserProfile", () => {
         streakBroken: 0,
         streakRestoresUsed: 0,
         streakRestoreMonth: null,
+        streakPushOff: false,
         accounts: [],
         isModerator: false,
       },
