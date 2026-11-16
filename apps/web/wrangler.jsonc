@@ -143,8 +143,8 @@
         ]
       },
       "triggers": {
-        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry + DM purge + flag snapshot refresh
-        "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
+        // sessions cleanup, notifications cleanup, streak reminders, hot-feed recompute + moderation retry + DM purge + flag snapshot refresh
+        "crons": ["0 3 * * *", "0 4 * * *", "0 1,12 * * *", "*/5 * * * *"]
       },
       "vars": {
         "APP_URL": "https://dev.umamin.link",
@@ -274,8 +274,8 @@
         ]
       },
       "triggers": {
-        // sessions cleanup, notifications cleanup, hot-feed recompute + moderation retry + DM purge + flag snapshot refresh
-        "crons": ["0 3 * * *", "0 4 * * *", "*/5 * * * *"]
+        // sessions cleanup, notifications cleanup, streak reminders, hot-feed recompute + moderation retry + DM purge + flag snapshot refresh
+        "crons": ["0 3 * * *", "0 4 * * *", "0 1,12 * * *", "*/5 * * * *"]
       },
       "vars": {
         "APP_URL": "https://www.umamin.link",

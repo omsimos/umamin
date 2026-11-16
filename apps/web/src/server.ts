@@ -11,6 +11,7 @@ import {
   purgeDeletedDms,
   recomputeHotFeed,
   retryUnclassified,
+  sendStreakReminders,
 } from "./server-lib/cron";
 import type { AppEnv } from "./server-lib/env";
 import { formatErrorChain } from "./server-lib/errors";
@@ -107,6 +108,15 @@ const scheduled: ExportedHandlerScheduledHandler<AppEnv> = async (
       break;
     case "0 4 * * *":
       ctx.waitUntil(report(cleanupNotifications(env)));
+      break;
+    case "0 1,12 * * *":
+      ctx.waitUntil(
+        report(
+          sendStreakReminders(env, event.scheduledTime, (p) =>
+            ctx.waitUntil(p),
+          ),
+        ),
+      );
       break;
     case "*/5 * * * *":
       ctx.waitUntil(report(recomputeHotFeed(env)));

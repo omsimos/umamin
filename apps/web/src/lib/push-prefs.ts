@@ -14,12 +14,17 @@ export const PUSH_CATEGORY = {
   message: 1 << 2,
   // Group activity: joins, invites, requests, accepts, mentions.
   group: 1 << 3,
+  // Streak reminders: the evening before a streak ends and the morning a
+  // restore is available. The only category with its own settings switch.
+  streak: 1 << 4,
 } as const;
 
-// The master toggle enables every current category. Phase 2 will let a user
-// keep a subset; until then it's all-or-nothing.
+// The master toggle enables every current category. Only the streak bit can
+// be turned off on its own (settings), and enabling push on another device
+// keeps that choice; the other categories are all-or-nothing.
 export const ALL_PUSH_CATEGORIES =
   PUSH_CATEGORY.social |
   PUSH_CATEGORY.follow |
   PUSH_CATEGORY.message |
-  PUSH_CATEGORY.group;
+  PUSH_CATEGORY.group |
+  PUSH_CATEGORY.streak;

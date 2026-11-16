@@ -8,6 +8,7 @@ import type { AppEnv } from "./env";
 import { recomputeHotFeed as recomputeHotFeedRanking } from "./feed-rank";
 import { isModerationEnforced } from "./flags";
 import { captureServerException } from "./posthog";
+import { sendStreakPushes, streakPushKindForHour } from "./streak-push";
 
 // Scheduled-handler bodies. Kept as named functions so server.ts's scheduled()
 // dispatch is declarative and each job is unit-testable in isolation.
@@ -87,4 +88,29 @@ export async function retryUnclassified(
 export async function purgeDeletedDms(env: AppEnv): Promise<void> {
   const purged = await drainDmPurge(env);
   if (purged > 0) console.log(`[cron] dm purge: wiped ${purged} rooms`);
+}
+
+// 0 1,12 * * * — streak reminders at 09:00 and 20:00 Manila (see
+// server-lib/streak-push.ts). The hour picks which one.
+export async function sendStreakReminders(
+  env: AppEnv,
+  scheduledTime: number,
+  defer?: (promise: Promise<unknown>) => void,
+): Promise<void> {
+  const kind = streakPushKindForHour(new Date(scheduledTime).getUTCHours());
+  if (!kind) return;
+  const { users, devices, capped } = await sendStreakPushes(
+    getDb(env),
+    env,
+    kind,
+    scheduledTime,
+  );
+  console.log(
+    `[cron] streak ${kind} push: ${users} users, ${devices} devices${capped ? " (capped)" : ""}`,
+  );
+  if (capped) {
+    captureServerException(env, defer, new Error("streak push capped"), {
+      properties: { kind, devices },
+    });
+  }
 }

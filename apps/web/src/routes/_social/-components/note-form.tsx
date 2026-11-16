@@ -14,11 +14,11 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SongAttachDialog } from "@/components/song-attach-dialog";
 import { StreakReminder } from "@/components/streak";
+import { showSaveToast } from "@/hooks/use-restore-streak";
 import { MUSIC_PROVIDER_LABEL, parseMusicUrl } from "@/lib/music";
 import { captureException } from "@/lib/posthog";
 import { queryKeys } from "@/lib/query";
 import { applyStreakUpdate, patchNote, upsertNote } from "@/lib/query-cache";
-import { streakToast } from "@/lib/streak";
 import type { NoteItem, NotesResponse, PublicUser } from "@/lib/types";
 import { createNoteAction } from "../-lib/actions";
 
@@ -153,7 +153,7 @@ export function NoteForm({ currentUser }: { currentUser: PublicUser }) {
         );
       }
 
-      toast.success(streakToast("Note's out there.", update));
+      showSaveToast(queryClient, "Note's out there.", update);
 
       setContent("");
       setMusicUrl("");

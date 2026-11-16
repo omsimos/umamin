@@ -23,7 +23,7 @@ import { InvalidSubscriptionError } from "@mmmike/web-push/send";
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
-import { ALL_PUSH_CATEGORIES } from "../src/lib/push-prefs";
+import { ALL_PUSH_CATEGORIES, PUSH_CATEGORY } from "../src/lib/push-prefs";
 import type { Db } from "../src/server-lib/db";
 import type { AppEnv } from "../src/server-lib/env";
 import { sendPushForNotification } from "../src/server-lib/notification-push";
@@ -226,5 +226,49 @@ describe("push prefs stay in step with the user's devices (real libSQL)", () => 
     expect(await devicesOf(db, "alice")).toEqual([]);
     expect(await prefsOf(db, "alice")).toBe(0);
     expect(captureServerException).not.toHaveBeenCalled();
+  });
+});
+
+describe("streak reminder switch (real libSQL)", () => {
+  let db: Db;
+
+  const toggle = (userId: string) =>
+    callJson<{ pushPrefs: number } | { error: string }>(
+      buildApp(db, authed(userId)),
+      "toggleStreakPushAction",
+    );
+
+  beforeEach(async () => {
+    __clearSessionCache();
+    db = await makeTestDb();
+    await db.insert(userTable).values({ id: "alice", username: "u_alice" });
+  });
+
+  it("turns streak reminders off and on without touching other categories", async () => {
+    await register(db, "alice", PHONE);
+
+    const off = await toggle("alice");
+    expect(off.json).toEqual({
+      pushPrefs: ALL_PUSH_CATEGORIES & ~PUSH_CATEGORY.streak,
+    });
+
+    const on = await toggle("alice");
+    expect(on.json).toEqual({ pushPrefs: ALL_PUSH_CATEGORIES });
+  });
+
+  it("keeps the opt-out when another device registers", async () => {
+    await register(db, "alice", PHONE);
+    await toggle("alice");
+
+    const { json } = await register(db, "alice", LAPTOP);
+    expect(json).toEqual({
+      pushPrefs: ALL_PUSH_CATEGORIES & ~PUSH_CATEGORY.streak,
+    });
+  });
+
+  it("refuses while push is off, leaving prefs at 0", async () => {
+    const { json } = await toggle("alice");
+    expect(json).toEqual({ error: "Turn on push notifications first." });
+    expect(await prefsOf(db, "alice")).toBe(0);
   });
 });

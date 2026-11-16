@@ -1,6 +1,7 @@
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showSaveToast } from "@/hooks/use-restore-streak";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { createPostAction } from "@/lib/actions";
 import { ExpectedError } from "@/lib/expected-error";
@@ -18,7 +19,6 @@ import {
   removePostFromFeed,
   replaceFeedItem,
 } from "@/lib/query-cache";
-import { streakToast } from "@/lib/streak";
 import type {
   FeedItem,
   FeedResponse,
@@ -234,7 +234,7 @@ export function useCreatePost(user: PublicUser | null) {
         }
       }
 
-      toast.success(streakToast("Post published.", update));
+      showSaveToast(queryClient, "Post published.", update);
     },
   });
 

@@ -206,6 +206,29 @@ export async function sendPushForNotification(
     tag: `${type}:${targetId}`,
   };
 
+  await deliverPush(db, env, recipientId, subs, payload, type);
+}
+
+export type PushPayload = { title: string; url: string; tag: string };
+export type PushDevice = { endpoint: string; p256dh: string; auth: string };
+
+/**
+ * Sends one payload to a user's devices. Prunes dead subscriptions (and push
+ * prefs with them when it was the last device) and reports only VAPID
+ * misconfiguration and unknown failures.
+ */
+export async function deliverPush(
+  db: Db,
+  env: AppEnv,
+  recipientId: string,
+  subs: PushDevice[],
+  payload: PushPayload,
+  // For error reports only.
+  type: string,
+): Promise<void> {
+  const vapid = vapidFromEnv(env);
+  if (!vapid) return;
+
   const prune = (endpoint: string) =>
     db.batch([
       db

@@ -18,6 +18,13 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.26.0] - 2026-11-16
+
+### Added
+
+- Missed a day? You can restore your streak the next day, and it covers that day too, so your next post can wait until tomorrow. You get 3 restores a month.
+- Push notifications remind you at 8pm when your streak ends at midnight, and the next morning when you can restore it. You can turn streak reminders off in settings.
+
 ## [7.25.0] - 2026-11-14
 
 ### Added
@@ -1379,6 +1386,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.26.0]: https://github.com/omsimos/umamin/compare/v7.25.0...v7.26.0
 [7.25.0]: https://github.com/omsimos/umamin/compare/v7.24.0...v7.25.0
 [7.24.0]: https://github.com/omsimos/umamin/compare/v7.23.0...v7.24.0
 [7.23.0]: https://github.com/omsimos/umamin/compare/v7.22.0...v7.23.0
