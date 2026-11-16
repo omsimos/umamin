@@ -111,7 +111,7 @@ export function StreakReminder({
               type="button"
               size="sm"
               variant="outline"
-              className="h-7 px-2 text-xs"
+              className="h-9 px-3 text-xs"
               disabled={restore.isPending}
               onClick={() => restore.mutate()}
             >
