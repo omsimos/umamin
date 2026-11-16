@@ -3,7 +3,7 @@ import { callAction } from "@/lib/api";
 import type { createGroupSchema, updateGroupSchema } from "@/lib/group";
 import type { PollDuration } from "@/lib/poll";
 import type { PostImageInput } from "@/lib/post-images";
-import type { StreakUpdate } from "@/lib/streak";
+import type { StreakRestore, StreakUpdate } from "@/lib/streak";
 import type { PollData, PostData } from "@/lib/types";
 
 // Typed client wrappers over the ported Hono action endpoints
@@ -131,4 +131,8 @@ export function resolveDmReportAction(input: {
   resolution: "dismissed" | "actioned";
 }) {
   return callAction<{ success?: boolean }>("resolveDmReportAction", input);
+}
+
+export function restoreStreakAction() {
+  return callAction<{ streakRestore: StreakRestore }>("restoreStreakAction");
 }

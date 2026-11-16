@@ -63,6 +63,11 @@ export type PublicUser = Omit<
   // Only the leaderboard shows it, through its own lean payload
   // (lib/leaderboard.ts), so it stays off every user payload.
   | "streakBest"
+  // Restore state is owner-only, re-added on CurrentUserClient.
+  | "streakBroken"
+  | "streakRestoresUsed"
+  | "streakRestoreMonth"
+  | "streakPushOff"
 >;
 
 // Author shape on badge-rendering surfaces. Optional so optimistic client
@@ -110,6 +115,11 @@ export type CurrentUserClient = PublicUserWithBadge & {
   hideDrama: boolean;
   messageFilter: boolean;
   leaderboardHidden: boolean;
+  // Streak restore state (lib/streak.ts restorableStreak, restoresLeft).
+  streakBroken: number;
+  streakRestoresUsed: number;
+  streakRestoreMonth: number | null;
+  streakPushOff: boolean;
 };
 // Only what the Account settings card renders. The provider subject id and the
 // owning userId never leave the server — this payload is dehydrated into every
@@ -144,6 +154,10 @@ export function toPublicUser(user: SelectUser): PublicUser {
     bannedBy: _bannedBy,
     profileTheme: _profileTheme,
     streakBest: _streakBest,
+    streakBroken: _streakBroken,
+    streakRestoresUsed: _streakRestoresUsed,
+    streakRestoreMonth: _streakRestoreMonth,
+    streakPushOff: _streakPushOff,
     ...rest
   } = user;
   return rest;

@@ -246,6 +246,20 @@
       "when": 1794630214382,
       "tag": "0034_leaderboard",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1794808695741,
+      "tag": "0035_streak_restore",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1794809874894,
+      "tag": "0036_streak_push_off",
+      "breakpoints": true
     }
   ]
 }

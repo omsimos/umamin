@@ -2085,6 +2085,11 @@ export async function getCurrentUserData(
         hideDrama: userTable.hideDrama,
         messageFilter: userTable.messageFilter,
         leaderboardHidden: userTable.leaderboardHidden,
+        // Owner-private streak restore state for the composer's restore offer.
+        streakBroken: userTable.streakBroken,
+        streakRestoresUsed: userTable.streakRestoresUsed,
+        streakRestoreMonth: userTable.streakRestoreMonth,
+        streakPushOff: userTable.streakPushOff,
         // Profile song (resolved into a lean `music` object below, raw columns
         // dropped) so settings can preview/edit the attached song.
         musicProvider: userTable.musicProvider,

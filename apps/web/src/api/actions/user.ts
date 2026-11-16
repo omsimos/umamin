@@ -49,6 +49,7 @@ import {
   generateSessionToken,
 } from "../../server-lib/session";
 import { setSessionCookie } from "../../server-lib/session-cookie";
+import { restoreStreak } from "../../server-lib/streak";
 import { ctxDb, defer, notifyLater } from "./_shared";
 
 // Set the photo and return the value it replaced, read in the same transaction
@@ -804,6 +805,18 @@ export const toggleLeaderboardHiddenHandler = action(
 
     if (!row) return { error: USER_NOT_FOUND_ERROR };
     return { leaderboardHidden: row.leaderboardHidden };
+  },
+);
+
+export const restoreStreakHandler = action(
+  {
+    auth: "user",
+    rateLimit: { name: "write", key: ({ user }) => `streak:${user.id}` },
+  },
+  async (_input, { user, c }) => {
+    const restored = await restoreStreak(ctxDb(c), user.id);
+    if (!restored) return { error: "This streak can't be restored anymore." };
+    return { streakRestore: restored };
   },
 );
 

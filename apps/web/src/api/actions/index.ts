@@ -66,6 +66,7 @@ import {
 import { createProCheckoutHandler, updateProfileThemeHandler } from "./pro";
 import {
   registerPushSubscriptionHandler,
+  setStreakPushHandler,
   unregisterPushSubscriptionHandler,
 } from "./push";
 import {
@@ -82,6 +83,7 @@ import {
   muteUserHandler,
   removeProfileBannerHandler,
   removeProfilePhotoHandler,
+  restoreStreakHandler,
   toggleHideDramaHandler,
   toggleLeaderboardHiddenHandler,
   toggleMessageFilterHandler,
@@ -170,6 +172,8 @@ export const actionsApp = new Hono<AppBindings>()
     toggleLeaderboardHiddenHandler,
   )
   .post("/actions/toggleMessageFilterAction", toggleMessageFilterHandler)
+  .post("/actions/restoreStreakAction", restoreStreakHandler)
+  .post("/actions/setStreakPushAction", setStreakPushHandler)
   .post("/actions/updateBlockedWordsAction", updateBlockedWordsHandler)
   .post("/actions/updateProfilePhotoAction", updateProfilePhotoHandler)
   .post("/actions/updateProfileBannerAction", updateProfileBannerHandler)

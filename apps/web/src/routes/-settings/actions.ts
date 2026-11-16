@@ -47,6 +47,10 @@ export function toggleLeaderboardHiddenAction() {
   );
 }
 
+export function setStreakPushAction(input: { enabled: boolean }) {
+  return callAction<{ streakPushOff: boolean }>("setStreakPushAction", input);
+}
+
 export function toggleMessageFilterAction() {
   return callAction<{ messageFilter: boolean }>("toggleMessageFilterAction");
 }

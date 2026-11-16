@@ -228,3 +228,49 @@ describe("push prefs stay in step with the user's devices (real libSQL)", () => 
     expect(captureServerException).not.toHaveBeenCalled();
   });
 });
+
+describe("streak reminder switch (real libSQL)", () => {
+  let db: Db;
+
+  const set = (userId: string, enabled: boolean) =>
+    callJson<{ streakPushOff: boolean } | { error: string }>(
+      buildApp(db, authed(userId)),
+      "setStreakPushAction",
+      { enabled },
+    );
+
+  async function streakPushOff(id: string) {
+    const [row] = await db
+      .select({ off: userTable.streakPushOff })
+      .from(userTable)
+      .where(eq(userTable.id, id));
+    return row?.off;
+  }
+
+  beforeEach(async () => {
+    __clearSessionCache();
+    db = await makeTestDb();
+    await db.insert(userTable).values({ id: "alice", username: "u_alice" });
+  });
+
+  it("sets the value the switch shows, so repeating a tap changes nothing", async () => {
+    await register(db, "alice", PHONE);
+
+    expect((await set("alice", false)).json).toEqual({ streakPushOff: true });
+    expect((await set("alice", false)).json).toEqual({ streakPushOff: true });
+    expect((await set("alice", true)).json).toEqual({ streakPushOff: false });
+    expect(await prefsOf(db, "alice")).toBe(ALL_PUSH_CATEGORIES);
+  });
+
+  it("keeps the opt-out when push turns off with the last device and back on", async () => {
+    await register(db, "alice", PHONE);
+    await set("alice", false);
+
+    await unregister(db, "alice", PHONE);
+    expect(await prefsOf(db, "alice")).toBe(0);
+    await register(db, "alice", LAPTOP);
+
+    expect(await prefsOf(db, "alice")).toBe(ALL_PUSH_CATEGORIES);
+    expect(await streakPushOff("alice")).toBe(true);
+  });
+});

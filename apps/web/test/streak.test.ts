@@ -89,6 +89,7 @@ describe("recordStreak (real libSQL)", () => {
     expect(await recordStreak(db, "u1", today)).toEqual({
       streak: 1,
       streakDay: today,
+      streakBroken: 0,
     });
     expect(await state()).toEqual({
       streak: 1,
@@ -186,7 +187,11 @@ describe("save actions count toward streaks (real libSQL)", () => {
       { content: "hello" },
     );
 
-    expect(json.streakUpdate).toEqual({ streak: 5, streakDay: toStreakDay() });
+    expect(json.streakUpdate).toEqual({
+      streak: 5,
+      streakDay: toStreakDay(),
+      streakBroken: 0,
+    });
     expect(await streak()).toEqual({
       streak: 5,
       streakDay: toStreakDay(),
@@ -201,7 +206,11 @@ describe("save actions count toward streaks (real libSQL)", () => {
     }>(app, "createPostAction", { content: "QA post" });
 
     expect(json.success).toBe(true);
-    expect(json.streakUpdate).toEqual({ streak: 5, streakDay: toStreakDay() });
+    expect(json.streakUpdate).toEqual({
+      streak: 5,
+      streakDay: toStreakDay(),
+      streakBroken: 0,
+    });
     expect(await streak()).toEqual({ streak: 5, streakDay: toStreakDay() });
   });
 

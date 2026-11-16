@@ -8,17 +8,75 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const STREAK_MIN_DISPLAY = 2;
 
 // What a save that changed the streak returns to the client.
-export type StreakUpdate = { streak: number; streakDay: number };
+// streakBroken is set when this save reset a streak that's still
+// restorable today.
+export type StreakUpdate = {
+  streak: number;
+  streakDay: number;
+  streakBroken?: number;
+};
 
 export type StreakState = {
   streak?: number | null;
   streakDay?: number | null;
+  // Owner-only restore state, on the current-user payload and nowhere else.
+  streakBroken?: number | null;
+  streakRestoresUsed?: number | null;
+  streakRestoreMonth?: number | null;
+};
+
+export const STREAK_RESTORES_PER_MONTH = 3;
+
+// What a restore returns to the client.
+export type StreakRestore = StreakUpdate & {
+  streakBroken: number;
+  streakRestoresUsed: number;
+  streakRestoreMonth: number;
 };
 
 /** Manila calendar day number (days since the epoch, shifted to UTC+8). */
 export function toStreakDay(date: Date | number = Date.now()): number {
   const ms = typeof date === "number" ? date : date.getTime();
   return Math.floor((ms + MANILA_OFFSET_MS) / DAY_MS);
+}
+
+/** Manila calendar month key, year * 12 + month index. */
+export function toStreakMonth(date: Date | number = Date.now()): number {
+  const ms = typeof date === "number" ? date : date.getTime();
+  const manila = new Date(ms + MANILA_OFFSET_MS);
+  return manila.getUTCFullYear() * 12 + manila.getUTCMonth();
+}
+
+/**
+ * The count a restore would bring back today, or 0. A restore is only offered
+ * the day after one missed day: either nothing has been saved yet today
+ * (streakDay is two days back), or today's save already reset the streak and
+ * streakBroken holds what it was.
+ */
+export function restorableStreak(
+  state: StreakState,
+  today = toStreakDay(),
+): number {
+  const { streak, streakDay, streakBroken } = state;
+  if (streakDay === today - 2 && (streak ?? 0) >= STREAK_MIN_DISPLAY) {
+    return streak ?? 0;
+  }
+  if (streakDay === today && (streakBroken ?? 0) >= STREAK_MIN_DISPLAY) {
+    return streakBroken ?? 0;
+  }
+  return 0;
+}
+
+/** Restores left in the given Manila month. */
+export function restoresLeft(
+  state: StreakState,
+  month = toStreakMonth(),
+): number {
+  if (state.streakRestoreMonth !== month) return STREAK_RESTORES_PER_MONTH;
+  return Math.max(
+    0,
+    STREAK_RESTORES_PER_MONTH - (state.streakRestoresUsed ?? 0),
+  );
 }
 
 /**

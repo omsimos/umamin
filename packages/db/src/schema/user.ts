@@ -103,6 +103,19 @@ export const userTable = sqliteTable(
     streak: integer("streak").notNull().default(0),
     streakBest: integer("streak_best").notNull().default(0),
     streakDay: integer("streak_day"),
+    // Owner-private streak restore state. streakBroken is the count a save
+    // after a one-day gap just reset to 1; it only means anything while
+    // streakDay is today. streakRestoresUsed counts against the Manila month
+    // key in streakRestoreMonth, so a new month starts at 0 without a sweep.
+    streakBroken: integer("streak_broken").notNull().default(0),
+    streakRestoresUsed: integer("streak_restores_used").notNull().default(0),
+    streakRestoreMonth: integer("streak_restore_month"),
+    // Owner-private opt-out from streak reminder pushes. A column, not a
+    // pushPrefs bit: pushPrefs drops to 0 when the last device goes, and the
+    // opt-out has to survive that.
+    streakPushOff: integer("streak_push_off", { mode: "boolean" })
+      .notNull()
+      .default(false),
     // Owner-private opt-out from /leaderboard (same exposure rules as
     // blockedWords). Part of the rank indexes' WHERE, so a hidden user costs
     // the leaderboard reads nothing.
@@ -138,6 +151,12 @@ export const userTable = sqliteTable(
     index("user_streak_best_rank_idx")
       .on(sql`${t.streakBest} DESC`, t.createdAt)
       .where(sql`banned_at IS NULL AND leaderboard_hidden = 0`),
+    // The daily streak push crons look up users by last counted day. Only
+    // streaks worth a reminder are indexed; apps/web server-lib/streak-push.ts
+    // repeats this WHERE so SQLite picks the index.
+    index("user_streak_day_idx")
+      .on(t.streakDay)
+      .where(sql`streak >= 2 AND push_prefs <> 0`),
   ],
 );
 

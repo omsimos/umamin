@@ -5,6 +5,7 @@ import { and, desc, eq, ne, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ALL_PUSH_CATEGORIES } from "../../lib/push-prefs";
 import { action } from "../../server-lib/action";
+import { USER_NOT_FOUND_ERROR } from "../../server-lib/errors";
 import { pushEndpointSchema } from "../../server-lib/push";
 import { clearPushPrefsWithoutDevices } from "../../server-lib/push-devices";
 import { ctxDb } from "./_shared";
@@ -114,5 +115,26 @@ export const unregisterPushSubscriptionHandler = action(
     ]);
 
     return { pushPrefs: prefsRows[0]?.pushPrefs ?? 0 };
+  },
+);
+
+// Streak reminders are opted out on their own column, so the choice survives
+// push turning off with the last device. Sets the value the switch shows
+// rather than flipping it, so a stale tab can't do the opposite.
+export const setStreakPushHandler = action(
+  {
+    schema: z.object({ enabled: z.boolean() }),
+    auth: "user",
+    rateLimit: { name: "write", key: ({ user }) => `push:${user.id}` },
+  },
+  async ({ enabled }, { user, c }) => {
+    const [row] = await ctxDb(c)
+      .update(userTable)
+      .set({ streakPushOff: !enabled })
+      .where(eq(userTable.id, user.id))
+      .returning({ streakPushOff: userTable.streakPushOff });
+
+    if (!row) return { error: USER_NOT_FOUND_ERROR };
+    return { streakPushOff: row.streakPushOff };
   },
 );

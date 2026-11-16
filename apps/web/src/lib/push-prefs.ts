@@ -14,6 +14,8 @@ export const PUSH_CATEGORY = {
   message: 1 << 2,
   // Group activity: joins, invites, requests, accepts, mentions.
   group: 1 << 3,
+  // 1 << 4 was briefly streak reminders (migration 0035 set it, 0036 cleared
+  // it). Streak reminders now use user.streakPushOff.
 } as const;
 
 // The master toggle enables every current category. Phase 2 will let a user
