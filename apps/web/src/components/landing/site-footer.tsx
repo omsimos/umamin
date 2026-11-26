@@ -74,7 +74,8 @@ export function SiteFooter() {
           <div className="max-w-xs">
             <UmaminLogo className="size-8" />
             <p className="pt-4 text-sm text-muted-foreground">
-              The open-source platform for anonymity, built in public by{" "}
+              A Filipino social media built around anonymity, developed in
+              public by{" "}
               <a
                 className="font-medium underline underline-offset-4 transition-colors hover:text-primary"
                 href="https://www.instagram.com/josh.xfi/"

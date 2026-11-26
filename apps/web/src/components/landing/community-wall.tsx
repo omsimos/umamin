@@ -269,9 +269,11 @@ export function CommunityWall() {
     <div className="relative">
       <section
         aria-label="Example posts"
-        className="relative h-[34rem] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)] md:h-[40rem]"
+        className="relative h-[28rem] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)] md:h-[34rem] lg:h-[38rem]"
       >
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+        {/* Three columns while the hero stacks, two once it sits beside the
+            headline. */}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-2">
           {COLUMNS.map((column, i) => (
             <div
               // oxlint-disable-next-line react/no-array-index-key -- fixed columns
@@ -280,7 +282,7 @@ export function CommunityWall() {
                 "flex animate-scroll-up flex-col gap-3 hover:[animation-play-state:paused] motion-reduce:animate-none md:gap-4",
                 paused && "[animation-play-state:paused]",
                 i === 1 && "[animation-duration:75s]",
-                i === 2 && "hidden [animation-duration:68s] md:flex",
+                i === 2 && "hidden [animation-duration:68s] md:flex lg:hidden",
               )}
             >
               {[0, 1].map((copy) =>

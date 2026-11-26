@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Umamin",
   "short_name": "Umamin",
-  "description": "Umamin is an open-source social platform for sending and receiving encrypted anonymous messages.",
+  "description": "A Filipino social media built around anonymity. Get anonymous messages, post notes and chat with strangers.",
   "lang": "en",
   "dir": "ltr",
   "categories": ["social", "communication"],

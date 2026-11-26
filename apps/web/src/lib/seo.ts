@@ -8,9 +8,12 @@
 // www.umamin.link host robots.txt + sitemap.xml advertise — mixing hosts across
 // canonical/og/sitemap reads as duplicate content).
 
-export const SITE_TITLE = "Umamin | Get anonymous messages with your own link";
+export const SITE_TITLE =
+  "Umamin | The Filipino social media where you can stay anonymous";
 export const SITE_DESCRIPTION =
-  "Share your Umamin link and get anonymous messages from friends. Messages are encrypted before they're stored. Free and open source, made in the Philippines.";
+  "A Filipino social media built around anonymity. Get anonymous messages, post notes with or without your name, and chat with strangers. Free and open source.";
+
+export const SITE_SLOGAN = "The Filipino social media";
 
 export const OG_IMAGE = "/opengraph-image.png";
 export const TWITTER_IMAGE = "/twitter-image.png";
@@ -19,9 +22,11 @@ export const TWITTER_IMAGE = "/twitter-image.png";
 // from this table: the root declares og:image:width/height too, and head meta
 // dedupes per property, so a page image without its own dimensions would
 // inherit the root's wrong ones.
+const SHARE_ALT = "Umamin, a Filipino social media built around anonymity";
+
 const SHARE_IMAGES = {
-  [OG_IMAGE]: { width: 1400, height: 800, alt: "Umamin" },
-  [TWITTER_IMAGE]: { width: 1400, height: 800, alt: "Umamin" },
+  [OG_IMAGE]: { width: 1400, height: 800, alt: SHARE_ALT },
+  [TWITTER_IMAGE]: { width: 1400, height: 800, alt: SHARE_ALT },
   "/chat-opengraph.png": {
     width: 2400,
     height: 1260,
@@ -181,6 +186,7 @@ export function siteGraph(description: string): JsonLd[] {
         height: 512,
       },
       description,
+      slogan: SITE_SLOGAN,
       foundingDate: "2022-07",
       foundingLocation: { "@type": "Place", name: "Philippines" },
       parentOrganization: {

@@ -14,7 +14,7 @@ import { absoluteUrl, orgRef, pageSeo, websiteId } from "@/lib/seo";
 
 const title = "About Umamin";
 const description =
-  "The story of Umamin, an open-source anonymous platform founded in July 2022 that reached over 700,000 users in its first week, now a broader social space for self-expression, community, and meaningful conversations.";
+  "The story of Umamin, a Filipino social media built around anonymity. It started in July 2022 as an anonymous inbox and reached over 700,000 users in its first week.";
 
 export const Route = createFileRoute("/_marketing/about")({
   head: () =>
@@ -53,9 +53,9 @@ function AboutPage() {
             The story of <em className="text-primary">Umamin</em>.
           </h1>
           <p className="max-w-2xl animate-rise pt-6 text-muted-foreground [animation-delay:200ms] md:text-lg">
-            An open-source anonymous platform that went from a weekend project
-            to hundreds of thousands of people in a matter of days, and never
-            stopped growing.
+            A Filipino social media built around anonymity. It started as a
+            weekend project and reached hundreds of thousands of people in a
+            matter of days.
           </p>
           <p className="animate-rise pt-6 font-mono text-xs text-muted-foreground [animation-delay:300ms]">
             founded July 2022 · Philippines
@@ -160,9 +160,9 @@ function AboutPage() {
             Today, Umamin is solely maintained and developed by its original
             creator,{" "}
             <strong className="font-medium text-foreground">Josh Daniel</strong>
-            . What began as a simple anonymous messaging platform has since
-            evolved into a broader social platform built around community
-            interaction, self-expression, and meaningful conversations.
+            . What began as an anonymous inbox has grown into a Filipino social
+            media with a feed, notes, groups and chat. Anonymity is still at its
+            center.
           </p>
         </div>
       </section>
@@ -245,9 +245,9 @@ function AboutPage() {
             A place to feel <em className="text-primary">heard</em>.
           </h2>
           <p className="mx-auto max-w-xl pt-4 text-muted-foreground md:text-lg">
-            Thousands of people use Umamin every day. As it grows, the goal
-            stays the same: a space to express yourself freely, connect with
-            others, and feel heard.
+            Thousands of Filipinos use Umamin every day. As it grows, the goal
+            stays the same: a place to say what you think, with or without your
+            name.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-8">
             <Button size="lg" className="rounded-full md:text-base" asChild>

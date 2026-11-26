@@ -14,13 +14,6 @@
   --font-display:
     "Allo", "Geist Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --animate-marquee: marquee 32s linear infinite;
-  @keyframes marquee {
-    to {
-      transform: translateX(-50%);
-    }
-  }
-
   --animate-heart-pop: heart-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   @keyframes heart-pop {
     0% {
@@ -208,12 +201,6 @@
   }
 }
 
-@utility text-outline {
-  -webkit-text-stroke: 1px
-    color-mix(in oklch, var(--color-foreground) 40%, transparent);
-  color: transparent;
-}
-
 @layer base {
   body {
     font-family: var(--font-sans);
@@ -310,6 +297,38 @@
   --uma-fold: oklch(0.78 0.06 300);
   --uma-ink: oklch(0.24 0.04 300);
   --uma-cheek: oklch(0.78 0.12 352);
+}
+
+/* Uma idling on the landing page: a slow bob and a blink every few seconds.
+   Add `uma-alive` to an <Uma>. */
+.uma-alive {
+  animation: uma-bob 3.2s ease-in-out infinite;
+}
+.uma-alive .uma-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: uma-blink 4.8s ease-in-out infinite;
+}
+@keyframes uma-bob {
+  50% {
+    transform: translateY(-6%) rotate(-3deg);
+  }
+}
+@keyframes uma-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .uma-alive,
+  .uma-alive .uma-eye {
+    animation: none;
+  }
 }
 
 /* Dismissed announcements (lib/announcements.ts). Unlayered, so it beats the

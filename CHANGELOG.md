@@ -18,6 +18,14 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.27.0] - 2026-11-27
+
+### Changed
+
+- Umamin is now introduced as a Filipino social media built around anonymity, on the home page, the about page, link previews and the installed app.
+- Headings use a new display typeface, Allo.
+- The home page opens with a wall of example posts, notes and polls, and Uma now talks you through the drama filter demo. Claiming your link moved to the bottom of the page.
+
 ## [7.26.0] - 2026-11-16
 
 ### Added
@@ -1386,6 +1394,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.27.0]: https://github.com/omsimos/umamin/compare/v7.26.0...v7.27.0
 [7.26.0]: https://github.com/omsimos/umamin/compare/v7.25.0...v7.26.0
 [7.25.0]: https://github.com/omsimos/umamin/compare/v7.24.0...v7.25.0
 [7.24.0]: https://github.com/omsimos/umamin/compare/v7.23.0...v7.24.0
