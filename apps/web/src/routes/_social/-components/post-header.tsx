@@ -1,3 +1,4 @@
+import { useCanGoBack, useRouter } from "@tanstack/react-router";
 import { Button } from "@umamin/ui/components/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { useAppNavigate } from "@/lib/navigation";
@@ -21,14 +22,17 @@ export function PostHeader({
   currentUserId,
 }: Props) {
   const navigate = useAppNavigate();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
 
+  // Prefer a real back nav (keeps feed scroll position); fall back to /feed
+  // when the post was opened directly (shared link, new tab). Replacing keeps
+  // system back from reopening this post, which matters once it's deleted.
   const goBack = () => {
-    // Prefer a real back nav (keeps feed scroll position); fall back to /feed
-    // when the post was opened directly (shared link, new tab).
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      window.history.back();
+    if (canGoBack) {
+      router.history.back();
     } else {
-      navigate("/feed");
+      navigate("/feed", { replace: true });
     }
   };
 
@@ -57,6 +61,7 @@ export function PostHeader({
           imageId={imageId}
           isAuthenticated={isAuthenticated}
           currentUserId={currentUserId}
+          onDeleted={goBack}
         />
       ) : (
         <span aria-hidden className="size-9" />
