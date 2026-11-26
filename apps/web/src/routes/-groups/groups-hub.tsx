@@ -32,6 +32,7 @@ import {
   fetchUserGroups,
 } from "@/lib/query-fetchers";
 import { hasPlusFeatures } from "@/lib/utils";
+import { useRefreshWhenStale } from "../-shared/use-refresh-when-stale";
 import { respondToInviteAction } from "./actions";
 
 function GroupGlyph({ icon, accent }: { icon: string; accent: string | null }) {
@@ -67,6 +68,7 @@ export function GroupsHub() {
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
   });
+  useRefreshWhenStale(queryKeys.userGroups());
 
   const memberships = groups?.data ?? [];
   const invites = groups?.invites ?? [];

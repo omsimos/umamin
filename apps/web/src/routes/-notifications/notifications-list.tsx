@@ -17,6 +17,7 @@ import {
 } from "@/lib/query";
 import { fetchNotificationsPage } from "@/lib/query-fetchers";
 import type { NotificationsResponse } from "@/lib/types";
+import { useRefreshWhenStale } from "../-shared/use-refresh-when-stale";
 import { NotificationCard } from "./notification-card";
 import { NotificationListSkeleton } from "./notification-skeleton";
 
@@ -29,6 +30,8 @@ export function NotificationsList() {
 
   const {
     data,
+    dataUpdatedAt,
+    errorUpdatedAt,
     isLoading,
     error,
     fetchNextPage,
@@ -47,6 +50,8 @@ export function NotificationsList() {
     ...infiniteQueryDefaults,
   });
 
+  useRefreshWhenStale(queryKeys.notifications());
+
   // Visiting the page "reads" notifications: advance the server watermark
   // through the newest rendered item, then refresh the bell badge.
   const newest = data?.pages[0]?.notifications[0];
@@ -61,19 +66,29 @@ export function NotificationsList() {
   }
   const lastSeen = visitLastSeenRef.current;
 
+  const markedRef = useRef<number | null>(null);
+  const settledAt = Math.max(dataUpdatedAt, errorUpdatedAt);
+
   useEffect(() => {
-    if (seenThroughMs === null) {
+    if (seenThroughMs === null || seenThroughMs === markedRef.current) {
       return;
     }
+    // A stale list is about to refresh. Marking its old newest item wouldn't
+    // move the server watermark, so the badge would stay lit; wait for the
+    // refresh to settle, which bumps settledAt and re-runs this.
+    if (Date.now() - settledAt > PRIVATE_STALE_TIME) {
+      return;
+    }
+    markedRef.current = seenThroughMs;
 
     markNotificationsSeenAction({ seenThrough: seenThroughMs })
       .then(() => {
         queryClient.invalidateQueries({
           queryKey: queryKeys.notificationBadge(),
         });
-        // Advance the cached watermark too — the list itself isn't refetched
-        // on remount, so without this a revisit within gcTime re-lights rows
-        // this visit already showed as new.
+        // Advance the cached watermark too — a revisit inside the stale window
+        // reuses this cache, so without this it re-lights rows this visit
+        // already showed as new.
         queryClient.setQueryData<InfiniteData<NotificationsResponse>>(
           queryKeys.notifications(),
           (current) =>
@@ -86,7 +101,7 @@ export function NotificationsList() {
         );
       })
       .catch(() => {});
-  }, [seenThroughMs, queryClient]);
+  }, [seenThroughMs, settledAt, queryClient]);
 
   if (error && !data) {
     return (

@@ -14,6 +14,7 @@ import {
 import { fetchMessagesPage } from "@/lib/query-fetchers";
 import type { MessagesResponse } from "@/lib/types";
 import { useInfiniteScroll } from "../-shared/use-infinite-scroll";
+import { useRefreshWhenStale } from "../-shared/use-refresh-when-stale";
 import { ReceivedMessageCard } from "./received-card";
 import { ReceivedMessageCardSkeleton } from "./received-message-card-skeleton";
 
@@ -37,6 +38,7 @@ export function ReceivedMessages() {
     staleTime: PRIVATE_STALE_TIME,
     ...infiniteQueryDefaults,
   });
+  useRefreshWhenStale(queryKeys.receivedMessages());
 
   const messages = data?.pages.flatMap((page) => page.messages) ?? [];
   const sentinelRef = useInfiniteScroll({
