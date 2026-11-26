@@ -529,6 +529,12 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
         );
 
       await tx.delete(messageTable).where(eq(messageTable.receiverId, uid));
+      // sender_id has no FK, so a leftover id would make every later reply
+      // notify a user row that no longer exists.
+      await tx
+        .update(messageTable)
+        .set({ senderId: null, updatedAt: sql`${messageTable.updatedAt}` })
+        .where(eq(messageTable.senderId, uid));
       await tx.delete(accountTable).where(eq(accountTable.userId, uid));
       await tx.delete(noteTable).where(eq(noteTable.userId, uid));
       // Before the cascade drops the dm_thread rows that name the rooms.
