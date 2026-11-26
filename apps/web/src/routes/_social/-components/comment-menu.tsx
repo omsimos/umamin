@@ -28,6 +28,7 @@ import { queryKeys } from "@/lib/query";
 import {
   patchPostAcrossFeed,
   patchPostResponse,
+  rememberDeletedComment,
   removeComment,
 } from "@/lib/query-cache";
 import type { CommentsResponse, FeedResponse, PostResponse } from "@/lib/types";
@@ -74,6 +75,7 @@ export function CommentMenu({
       }
     },
     onSuccess: () => {
+      rememberDeletedComment(commentId);
       // Drop the comment from the thread...
       queryClient.setQueryData<InfiniteData<CommentsResponse>>(
         queryKeys.postComments(postId),

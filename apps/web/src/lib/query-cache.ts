@@ -437,3 +437,76 @@ export function applyStreakUpdate(
     (current) => patchUserProfile(current, (u) => ({ ...u, ...update })),
   );
 }
+
+// The Worker caches every comment page for two minutes (PUBLIC_COMMENTS_MAX_AGE
+// in api/routes/public.ts), and signed-in reads overlay that cached page, so a
+// reload can bring back a comment this browser just deleted. The ids live in
+// sessionStorage so they survive that reload.
+const DELETED_COMMENTS_KEY = "umamin:deleted-comments";
+const DELETED_COMMENT_TTL_MS = 5 * 60_000;
+
+function readDeletedComments(): Map<string, number> {
+  const now = Date.now();
+  try {
+    const raw = sessionStorage.getItem(DELETED_COMMENTS_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    if (!parsed || typeof parsed !== "object") return new Map();
+    return new Map(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, number] =>
+          typeof entry[1] === "number" &&
+          now - entry[1] < DELETED_COMMENT_TTL_MS,
+      ),
+    );
+  } catch {
+    // No sessionStorage on the server, or the browser blocks it.
+    return new Map();
+  }
+}
+
+export function rememberDeletedComment(commentId: string): void {
+  const deleted = readDeletedComments();
+  deleted.set(commentId, Date.now());
+  try {
+    sessionStorage.setItem(
+      DELETED_COMMENTS_KEY,
+      JSON.stringify(Object.fromEntries(deleted)),
+    );
+  } catch {
+    // Without storage the delete still holds until the next reload.
+  }
+}
+
+function withoutDeleted(
+  page: CommentsResponse,
+  deleted: Map<string, number>,
+): CommentsResponse {
+  const data = page.data.filter((comment) => !deleted.has(comment.id));
+  return data.length === page.data.length ? page : { ...page, data };
+}
+
+export function dropDeletedComments(page: CommentsResponse): CommentsResponse {
+  const deleted = readDeletedComments();
+  return deleted.size === 0 ? page : withoutDeleted(page, deleted);
+}
+
+/**
+ * Removes remembered deletes from a comments entry that was filled without
+ * the filter, such as by SSR hydration. Call it from an effect, never during
+ * render: the server can't read sessionStorage.
+ */
+export function pruneDeletedComments(
+  queryClient: QueryClient,
+  postId: string,
+): void {
+  const deleted = readDeletedComments();
+  if (deleted.size === 0) return;
+  const key = queryKeys.postComments(postId);
+  const current = queryClient.getQueryData<InfiniteData<CommentsResponse>>(key);
+  if (!current?.pages.some((page) => page.data.some((c) => deleted.has(c.id))))
+    return;
+  queryClient.setQueryData<InfiniteData<CommentsResponse>>(key, {
+    ...current,
+    pages: current.pages.map((page) => withoutDeleted(page, deleted)),
+  });
+}
