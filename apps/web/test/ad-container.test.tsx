@@ -27,9 +27,12 @@ beforeEach(() => {
   vi.stubEnv("PROD", true);
   vi.stubEnv("DEV", false);
   vi.resetModules();
+  // jsdom has no layout, so every box would read as zero width.
+  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(360);
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -53,6 +56,36 @@ describe("AdContainer in production", () => {
     const { container } = render(<AdContainer placement="feed_top" />);
 
     expect(container.querySelector("ins.adsbygoogle")).not.toBeNull();
+    expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  // A slot in a box that is hidden or not laid out yet has no width, and
+  // AdSense throws "No slot size for availableWidth=0" for it.
+  it("waits for the slot to have a width before pushing", async () => {
+    let width = 0;
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(
+      () => width,
+    );
+    let resize: ResizeObserverCallback = () => {};
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resize = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const push = vi.fn();
+    liveAdsense(push);
+    const AdContainer = await loadAdContainer();
+    render(<AdContainer placement="feed_top" />);
+
+    expect(push).not.toHaveBeenCalled();
+
+    width = 360;
+    act(() => resize([], {} as ResizeObserver));
     expect(push).toHaveBeenCalledTimes(1);
   });
 

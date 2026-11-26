@@ -89,10 +89,9 @@ const AdContainer = ({ placement, className }: Props) => {
     const adElement = adRef.current;
     if (!adElement || pushedRef.current) return;
 
-    // Waits for the script instead of queueing: a queued push can outlive its
-    // <ins> (a navigation before the idle-time load), and AdSense throws "All
-    // 'ins' elements ... already have ads" for every push it can't place.
-    return onAdsenseReady(() => {
+    let resizeObserver: ResizeObserver | undefined;
+
+    const push = () => {
       if (
         pushedRef.current ||
         !adElement.isConnected ||
@@ -109,7 +108,32 @@ const AdContainer = ({ placement, className }: Props) => {
       } catch (err) {
         captureException(err, { source: "ads" });
       }
-    });
+    };
+
+    // AdSense sizes the unit from the slot's width and throws "No slot size
+    // for availableWidth=0" when the box is hidden or not laid out yet.
+    const pushOnceLaidOut = () => {
+      if (adElement.offsetWidth > 0) {
+        push();
+        return;
+      }
+      resizeObserver = new ResizeObserver(() => {
+        if (adElement.offsetWidth === 0) return;
+        resizeObserver?.disconnect();
+        push();
+      });
+      resizeObserver.observe(adElement);
+    };
+
+    // Waits for the script instead of queueing: a queued push can outlive its
+    // <ins> (a navigation before the idle-time load), and AdSense throws "All
+    // 'ins' elements ... already have ads" for every push it can't place.
+    const cancelReady = onAdsenseReady(pushOnceLaidOut);
+
+    return () => {
+      cancelReady();
+      resizeObserver?.disconnect();
+    };
   }, [config, shouldInitialize]);
 
   // Second guard behind ClientOnlyAdContainer's, after the hooks so their order
