@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono";
-import { getCookie, setCookie } from "hono/cookie";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import {
   LEGACY_SESSION_COOKIE_NAME,
   SESSION_COOKIE_NAME,
@@ -7,10 +7,13 @@ import {
 } from "./cookies";
 import { securityHeaders } from "./csp";
 import { isBearerAuthed, originMatchesHost } from "./csrf";
+import { getDb } from "./db";
 import type { AppEnv } from "./env";
 import { ACCESS_BLOCKED_ERROR } from "./errors";
 import { extractClientIp } from "./ip";
 import { isIpDenied } from "./ip-denylist";
+import { type SessionValidationResult, validateSessionToken } from "./session";
+import { deleteSessionCookie } from "./session-cookie";
 
 type Middleware = MiddlewareHandler<{ Bindings: AppEnv }>;
 
@@ -128,21 +131,22 @@ function setsSessionCookie(res: Response): boolean {
  * Sliding session-cookie renewal — port of proxy.ts. GET page routes only
  * (skips /api/* and static), and only once per SESSION_RENEW_INTERVAL_MS via the
  * non-secret SESSION_RENEWED marker so ~all authed navigations drop the
- * Set-Cookie.
+ * Set-Cookie. When that check finds the session gone, the cookie is cleared
+ * instead.
  */
-export function cookieRenewal(): Middleware {
+export function cookieRenewal(
+  validate: (env: AppEnv, token: string) => Promise<SessionValidationResult> = (
+    env,
+    token,
+  ) => validateSessionToken(getDb(env), token),
+): Middleware {
   return async (c, next) => {
-    await next();
-
-    if (c.req.method !== "GET") return;
     const path = new URL(c.req.url).pathname;
-    if (path.startsWith("/api/") || isStaticPath(path)) return;
-    if (setsSessionCookie(c.res)) return;
-
     const token =
-      getCookie(c, SESSION_COOKIE_NAME) ??
-      getCookie(c, LEGACY_SESSION_COOKIE_NAME);
-    if (!token) return;
+      c.req.method === "GET" && !path.startsWith("/api/") && !isStaticPath(path)
+        ? (getCookie(c, SESSION_COOKIE_NAME) ??
+          getCookie(c, LEGACY_SESSION_COOKIE_NAME))
+        : undefined;
 
     const marker = getCookie(c, SESSION_RENEWED_COOKIE_NAME);
     const renewedAt = marker ? Number(marker) : 0;
@@ -150,9 +154,33 @@ export function cookieRenewal(): Middleware {
       !Number.isFinite(renewedAt) ||
       renewedAt <= 0 ||
       Date.now() - renewedAt >= SESSION_RENEW_INTERVAL_MS;
-    if (!due) return;
+
+    // Started alongside the page so it collapses with the loaders' own lookup
+    // of the same token (request-scope.ts) instead of adding a round trip.
+    // Only a lookup that answered "no session" counts: a failed one says
+    // nothing about the session and must never sign anyone out.
+    const dead =
+      token && due
+        ? validate(c.env, token).then(
+            ({ session }) => session === null,
+            () => false,
+          )
+        : null;
+
+    await next();
+
+    if (!token || !dead) return;
+    if (setsSessionCookie(c.res)) return;
 
     const secure = process.env.NODE_ENV === "production";
+    if (await dead) {
+      // Re-sliding it would keep a revoked or expired session's cookie alive
+      // for another 30 days on every due page load.
+      deleteSessionCookie(c);
+      deleteCookie(c, SESSION_RENEWED_COOKIE_NAME, { path: "/", secure });
+      return;
+    }
+
     const base = {
       path: "/",
       maxAge: SESSION_MAX_AGE_SECONDS,

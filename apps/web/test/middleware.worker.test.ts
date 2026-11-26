@@ -1,7 +1,7 @@
 import { env } from "cloudflare:test";
 import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppEnv } from "../src/server-lib/env";
 import { ACCESS_BLOCKED_ERROR } from "../src/server-lib/errors";
 import { __clearDenylistCache, denyIp } from "../src/server-lib/ip-denylist";
@@ -11,6 +11,7 @@ import {
   ipDenylist,
   securityHeadersMiddleware,
 } from "../src/server-lib/middleware";
+import type { SessionValidationResult } from "../src/server-lib/session";
 
 const kv = (env as { KV: KVNamespace }).KV;
 const OK = "ok";
@@ -248,7 +249,12 @@ describe("middleware", () => {
   });
 
   describe("cookieRenewal", () => {
-    const app = appWith(cookieRenewal());
+    const LIVE = {
+      session: { id: "s", userId: "u", expiresAt: Date.now() + 1e9 },
+      user: {},
+    } as unknown as SessionValidationResult;
+    const NONE: SessionValidationResult = { session: null, user: null };
+    const app = appWith(cookieRenewal(async () => LIVE));
 
     it("re-slides the session cookie on a GET page route when no marker exists", async () => {
       const res = await fetch(app, "/feed", {
@@ -278,12 +284,72 @@ describe("middleware", () => {
       expect(res.headers.get("set-cookie")).toBeNull();
     });
 
+    // A revoked or expired session used to get its cookie re-slid for another
+    // 30 days on every due page load, so it never went away.
+    it("clears a cookie whose session no longer exists", async () => {
+      const res = await fetch(
+        appWith(cookieRenewal(async () => NONE)),
+        "/feed",
+        {
+          headers: { cookie: "session=dead" },
+        },
+      );
+      const cookies = res.headers.getSetCookie();
+      expect(cookies.some((v) => v.startsWith("session=dead"))).toBe(false);
+      expect(
+        cookies.some((v) => v.startsWith("session=;") && /Max-Age=0/i.test(v)),
+      ).toBe(true);
+    });
+
+    it("keeps renewing when the session lookup fails", async () => {
+      const failing = cookieRenewal(async () => {
+        throw new Error("turso unreachable");
+      });
+      const res = await fetch(appWith(failing), "/feed", {
+        headers: { cookie: "session=tok" },
+      });
+      expect(res.status).toBe(200);
+      expect(res.headers.get("set-cookie") ?? "").toContain("session=tok");
+    });
+
+    it("looks the session up only when a renewal is due", async () => {
+      const validate = vi.fn(async () => NONE);
+      const res = await fetch(appWith(cookieRenewal(validate)), "/feed", {
+        headers: { cookie: `session=tok; session_r=${Date.now()}` },
+      });
+      expect(res.headers.get("set-cookie")).toBeNull();
+      expect(validate).not.toHaveBeenCalled();
+    });
+
+    // A banned account's sessions are gone, and the callback sends it to
+    // /banned without minting one. Clearing the cookie must not touch that.
+    it("keeps the banned redirect while clearing the dead cookie", async () => {
+      const callback = new Hono<{ Bindings: AppEnv }>()
+        .use(
+          "*",
+          cookieRenewal(async () => NONE),
+        )
+        .get("/auth/google/callback", (c) => c.redirect("/banned", 302));
+
+      const res = await fetch(callback, "/auth/google/callback", {
+        headers: { cookie: "session=dead" },
+      });
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe("/banned");
+      expect(
+        res.headers.getSetCookie().some((v) => v.startsWith("session=dead")),
+      ).toBe(false);
+    });
+
     // The Google OAuth callback is a GET that mints a session. Appending a
     // renewal for the request's OLD token would win (last Set-Cookie for a name
     // wins) and silently undo the fresh login.
     it("skips renewal when the route already minted a session cookie", async () => {
       const minting = new Hono<{ Bindings: AppEnv }>()
-        .use("*", cookieRenewal())
+        .use(
+          "*",
+          cookieRenewal(async () => NONE),
+        )
         .get("/auth/google/callback", (c) => {
           c.header("set-cookie", "session=fresh; Path=/; HttpOnly", {
             append: true,
