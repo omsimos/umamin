@@ -279,7 +279,11 @@ export const addNoteReactionHandler = action(
 
       await tx
         .update(noteTable)
-        .set({ reactionCount: sql`${noteTable.reactionCount} + 1` })
+        .set({
+          reactionCount: sql`${noteTable.reactionCount} + 1`,
+          // /notes orders by updated_at, so only an author save may move it.
+          updatedAt: sql`${noteTable.updatedAt}`,
+        })
         .where(eq(noteTable.id, noteId));
 
       return { success: true };
@@ -320,6 +324,7 @@ export const removeNoteReactionHandler = action(
         .update(noteTable)
         .set({
           reactionCount: sql`CASE WHEN ${noteTable.reactionCount} > 0 THEN ${noteTable.reactionCount} - 1 ELSE 0 END`,
+          updatedAt: sql`${noteTable.updatedAt}`,
         })
         .where(eq(noteTable.id, noteId));
 

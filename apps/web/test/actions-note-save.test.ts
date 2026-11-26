@@ -73,6 +73,38 @@ describe("saving a note (real libSQL)", () => {
     expect(await db.select().from(moderationDisputeTable)).toHaveLength(0);
   });
 
+  it("reacting to a note keeps its place in the list", async () => {
+    const note = await save("u1", "hello");
+    const savedAt = new Date("2026-01-01T00:00:00Z");
+    await db
+      .update(noteTable)
+      .set({ updatedAt: savedAt })
+      .where(eq(noteTable.id, note.id));
+    const updatedAt = async () => {
+      const [row] = await db
+        .select({ updatedAt: noteTable.updatedAt })
+        .from(noteTable)
+        .where(eq(noteTable.id, note.id));
+      return row.updatedAt?.getTime();
+    };
+
+    const added = await callJson<{ success?: boolean }>(
+      buildApp(db, authed("u3")),
+      "addNoteReactionAction",
+      { noteId: note.id },
+    );
+    expect(added.json.success).toBe(true);
+    expect(await updatedAt()).toBe(savedAt.getTime());
+
+    const removed = await callJson<{ success?: boolean }>(
+      buildApp(db, authed("u3")),
+      "removeNoteReactionAction",
+      { noteId: note.id },
+    );
+    expect(removed.json.success).toBe(true);
+    expect(await updatedAt()).toBe(savedAt.getTime());
+  });
+
   it("saving never touches another user's note", async () => {
     const other = await save("u2", "mine");
     await react(other.id, "u3");
