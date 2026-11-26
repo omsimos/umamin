@@ -111,6 +111,9 @@ export function createR2(env: AppEnv) {
     secretAccessKey,
     service: "s3",
     region: "auto",
+    // aws4fetch defaults to 10 retries with exponential backoff, which holds a
+    // post or photo save for close to a minute while R2 is erroring.
+    retries: 1,
   });
 
   // Keys are nanoid + fixed prefixes (URL-safe already); encode defensively.
@@ -196,20 +199,27 @@ export function createR2(env: AppEnv) {
       .map(encodeURIComponent)
       .join("/")}`;
 
-    const res = await r2.fetch(objectUrl(dstKey), {
-      method: "PUT",
-      headers: {
-        "x-amz-copy-source": encodedSource,
-        // REPLACE so the permanent object gets the long-lived immutable cache
-        // policy (keys are content-unique, never rewritten) + verified type.
-        "x-amz-metadata-directive": "REPLACE",
-        "Content-Type": contentType,
-        "Cache-Control": IMMUTABLE_CACHE_CONTROL,
-      },
-    });
+    // A thrown copy reads as a failed one, so claimStagedImages still rolls
+    // back the images that did copy instead of leaving them in posts/.
+    try {
+      const res = await r2.fetch(objectUrl(dstKey), {
+        method: "PUT",
+        headers: {
+          "x-amz-copy-source": encodedSource,
+          // REPLACE so the permanent object gets the long-lived immutable cache
+          // policy (keys are content-unique, never rewritten) + verified type.
+          "x-amz-metadata-directive": "REPLACE",
+          "Content-Type": contentType,
+          "Cache-Control": IMMUTABLE_CACHE_CONTROL,
+        },
+      });
 
-    await res.body?.cancel();
-    return res.ok;
+      await res.body?.cancel();
+      return res.ok;
+    } catch (err) {
+      console.error("[r2] copyObject failed", err);
+      return false;
+    }
   }
 
   async function deleteObject(key: string) {
