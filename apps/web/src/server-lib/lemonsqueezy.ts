@@ -14,6 +14,7 @@ import { captureServerException } from "./posthog";
 const CHECKOUT_ENDPOINT = "https://api.lemonsqueezy.com/v1/checkouts";
 // Checkouts are minted per click, so a leaked/shared link expires on its own.
 const CHECKOUT_TTL_MS = 24 * 60 * 60 * 1000;
+const CHECKOUT_TIMEOUT_MS = 8000;
 
 /**
  * Creates a single-use hosted checkout for the Pro variant, carrying the
@@ -42,6 +43,9 @@ export async function createProCheckout(
         "Content-Type": "application/vnd.api+json",
         Authorization: `Bearer ${apiKey}`,
       },
+      // Without a deadline a stalled provider leaves the button spinning; the
+      // catch below turns the abort into the friendly error.
+      signal: AbortSignal.timeout(CHECKOUT_TIMEOUT_MS),
       body: JSON.stringify({
         data: {
           type: "checkouts",
