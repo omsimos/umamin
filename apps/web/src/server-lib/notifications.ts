@@ -129,12 +129,17 @@ export async function notify(
 
     // Fire a best-effort Web Push. It must never throw into the parent action —
     // hence the inner .catch and the defer isolation.
-    const push = sendPushForNotification(deps.db, deps.env, {
-      recipientId,
-      type,
-      targetId,
-      actorId,
-    }).catch((err) => console.error("push send failed", err));
+    const push = sendPushForNotification(
+      deps.db,
+      deps.env,
+      { recipientId, type, targetId, actorId },
+      deps.defer,
+    ).catch((err) => {
+      console.error("push send failed", err);
+      captureServerException(deps.env, deps.defer, err, {
+        properties: { push: "send failed", type },
+      });
+    });
 
     if (deps.defer) {
       deps.defer(push);

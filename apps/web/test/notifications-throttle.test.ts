@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "../src/server-lib/db";
 import type { AppEnv } from "../src/server-lib/env";
 import { notify } from "../src/server-lib/notifications";
+import { captureServerException } from "../src/server-lib/posthog";
 import { makeTestDb } from "./helpers/db";
 
 const { sendPushForNotification } = vi.hoisted(() => ({
@@ -12,6 +13,9 @@ const { sendPushForNotification } = vi.hoisted(() => ({
 }));
 vi.mock("../src/server-lib/notification-push", () => ({
   sendPushForNotification,
+}));
+vi.mock("../src/server-lib/posthog", () => ({
+  captureServerException: vi.fn(),
 }));
 
 const env = {} as AppEnv;
@@ -96,5 +100,45 @@ describe("notify throttling", () => {
     await comment();
     await comment();
     expect(sendPushForNotification).toHaveBeenCalledTimes(2);
+  });
+
+  describe("on the request path", () => {
+    const deferred: Promise<unknown>[] = [];
+    const defer = (promise: Promise<unknown>) => {
+      deferred.push(promise);
+    };
+    const likeLater = () =>
+      notify(
+        { db, env, defer },
+        { recipientId: "u2", type: "like", targetId: "p1", actorId: "u1" },
+      );
+
+    beforeEach(() => {
+      deferred.length = 0;
+      vi.mocked(captureServerException).mockReset();
+    });
+
+    it("gives the push the request's defer for its own reports", async () => {
+      await likeLater();
+      expect(sendPushForNotification).toHaveBeenCalledWith(
+        db,
+        env,
+        expect.objectContaining({ recipientId: "u2" }),
+        defer,
+      );
+    });
+
+    it("reports a failed push through the request's defer", async () => {
+      const failure = new Error("push read failed");
+      sendPushForNotification.mockRejectedValueOnce(failure);
+      await likeLater();
+      await Promise.all(deferred);
+      expect(captureServerException).toHaveBeenCalledWith(
+        env,
+        defer,
+        failure,
+        expect.anything(),
+      );
+    });
   });
 });

@@ -1,5 +1,27 @@
-import { describe, expect, it } from "vitest";
-import { PUSH_COPY } from "../src/server-lib/notification-push";
+import { WebPushError } from "@mmmike/web-push/send";
+import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
+import { userTable } from "@umamin/db/schema/user";
+import { describe, expect, it, vi } from "vitest";
+import { ALL_PUSH_CATEGORIES } from "../src/lib/push-prefs";
+import type { AppEnv } from "../src/server-lib/env";
+import {
+  PUSH_COPY,
+  sendPushForNotification,
+} from "../src/server-lib/notification-push";
+import { captureServerException } from "../src/server-lib/posthog";
+import { sendPush } from "../src/server-lib/push";
+import { makeTestDb } from "./helpers/db";
+
+vi.mock("../src/server-lib/posthog", () => ({
+  captureServerException: vi.fn(),
+}));
+
+// Keeps the real endpoint allowlist; only the network send is faked.
+vi.mock("../src/server-lib/push", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../src/server-lib/push")>();
+  return { ...actual, sendPush: vi.fn() };
+});
 
 // Ported from apps/www/lib/server/push.test.ts — asserts the static copy map's
 // invariants (no DB / web-push needed). The Record<NotificationType,…> type
@@ -69,5 +91,45 @@ describe("PUSH_COPY", () => {
     expect(PUSH_COPY.reply.url("", null)).toBe("/inbox?tab=sent");
     expect(PUSH_COPY.thread.url("msg1", null)).toBe("/inbox/msg1");
     expect(PUSH_COPY.message.url("", null)).toBe("/inbox");
+  });
+});
+
+describe("sendPushForNotification failure reports", () => {
+  it("hands the report to the request's defer", async () => {
+    const db = await makeTestDb();
+    await db.insert(userTable).values({
+      id: "u1",
+      username: "one",
+      pushPrefs: ALL_PUSH_CATEGORIES,
+    });
+    await db.insert(pushSubscriptionTable).values({
+      userId: "u1",
+      endpoint: "https://fcm.googleapis.com/fcm/send/u1",
+      p256dh: "k",
+      auth: "a",
+    });
+    const rejected = new WebPushError("Push service error", 403, "", "", null);
+    vi.mocked(sendPush).mockRejectedValue(rejected);
+    const env = {
+      VAPID_PUBLIC_KEY: "public",
+      VAPID_PRIVATE_KEY: "private",
+    } as AppEnv;
+    const defer = vi.fn();
+
+    await sendPushForNotification(
+      db,
+      env,
+      { recipientId: "u1", type: "message" },
+      defer,
+    );
+
+    expect(captureServerException).toHaveBeenCalledWith(
+      env,
+      defer,
+      rejected,
+      expect.objectContaining({
+        properties: expect.objectContaining({ push: "vapid rejected" }),
+      }),
+    );
   });
 });

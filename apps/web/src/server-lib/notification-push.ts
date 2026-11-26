@@ -151,6 +151,8 @@ export async function sendPushForNotification(
   db: Db,
   env: AppEnv,
   { recipientId, type, targetId = "", actorId = null }: SendParams,
+  // The request's waitUntil, so a failure report outlives the response.
+  defer?: (promise: Promise<unknown>) => void,
 ): Promise<void> {
   const vapid = vapidFromEnv(env);
   if (!vapid) return;
@@ -207,7 +209,7 @@ export async function sendPushForNotification(
   };
 
   await deliverPush(db, recipientId, subs, payload, vapid, (err, push) => {
-    captureServerException(env, undefined, err, {
+    captureServerException(env, defer, err, {
       properties: { push, type },
     });
   });
