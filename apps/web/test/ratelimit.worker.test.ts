@@ -68,6 +68,18 @@ describe("ratelimit (binding stub)", () => {
     spy.mockRestore();
   });
 
+  it("fails OPEN when the binding throws", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const broken = {
+      limit: vi.fn().mockRejectedValue(new Error("binding unavailable")),
+    } as unknown as RateLimit;
+    await expect(
+      checkReadRateLimit(envWith({ RL_READ: broken }), "9.9.9.9"),
+    ).resolves.toBe(true);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
   it("checkReadRateLimit keys per IP under the read limiter", async () => {
     const read = fakeLimiter(100);
     await checkReadRateLimit(envWith({ RL_READ: read }), "9.9.9.9");
