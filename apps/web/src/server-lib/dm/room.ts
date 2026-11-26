@@ -247,9 +247,14 @@ export class DmRoom extends DurableObject<AppEnv> {
 
   // --- RPC from the Worker -------------------------------------------------
 
+  // Memory only: it orders a sever against a restore still awaiting its
+  // access read, and the room can't hibernate while that RPC is running.
+  private severs = 0;
+
   /** A block closes the conversation for both sides at once. An unfollow
    *  keeps it readable but stops sending. */
   async sever(kind: "block" | "unfollow"): Promise<void> {
+    this.severs += 1;
     for (const ws of this.ctx.getWebSockets()) {
       const att = this.attachment(ws);
       if (!att) continue;
@@ -274,9 +279,14 @@ export class DmRoom extends DurableObject<AppEnv> {
       .map((ws) => this.attachment(ws))
       .find((att) => att && !att.canSend);
     const pair = readOnly ? parseThreadId(readOnly.threadId) : null;
-    if (!pair || !(await this.store().canMessage(pair))) return;
+    if (!pair) return;
+    const severs = this.severs;
+    const allowed = await this.store().canMessage(pair);
+    // A sever that arrived during the read is newer than this answer. It
+    // skips sockets that are already read-only, so nothing on them shows it.
+    if (!allowed || severs !== this.severs) return;
     const now = Date.now();
-    for (const ws of sockets) {
+    for (const ws of this.ctx.getWebSockets()) {
       const att = this.attachment(ws);
       if (att)
         ws.serializeAttachment({ ...att, canSend: true, checkedAt: now });

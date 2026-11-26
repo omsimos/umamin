@@ -139,4 +139,46 @@ describe.each([
       client.getQueryData<InfiniteData<MessagesResponse>>(queryKey)?.pages,
     ).toHaveLength(1);
   });
+
+  it("keeps the loaded pages on focus while scrolled deep into the list", async () => {
+    const scrollY = vi.spyOn(window, "scrollY", "get").mockReturnValue(5000);
+    const client = renderList(
+      ui,
+      queryKey,
+      [
+        { messages: [message("old")], nextCursor: "c1" },
+        { messages: [message("older")], nextCursor: null },
+      ],
+      Date.now() - 60_000,
+    );
+    refocus();
+
+    expect(await screen.findByText("question older")).toBeInTheDocument();
+    expect(fetchMessagesPage).not.toHaveBeenCalled();
+    expect(
+      client.getQueryData<InfiniteData<MessagesResponse>>(queryKey)?.pages,
+    ).toHaveLength(2);
+    scrollY.mockRestore();
+  });
+
+  it("still refreshes a stale list after a cache patch touched it", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const client = renderList(
+      ui,
+      queryKey,
+      [{ messages: [message("old")], nextCursor: null }],
+      Date.now(),
+    );
+    vi.setSystemTime(Date.now() + 60_000);
+    // What opening a thread does: a patch, which resets dataUpdatedAt.
+    act(() => {
+      client.setQueryData<InfiniteData<MessagesResponse>>(queryKey, (old) =>
+        old ? { ...old } : old,
+      );
+    });
+    refocus();
+
+    expect(await screen.findByText("question new")).toBeInTheDocument();
+    expect(fetchMessagesPage).toHaveBeenCalledTimes(1);
+  });
 });

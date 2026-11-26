@@ -157,4 +157,33 @@ describe("useCreatePost", () => {
     await expect(loading).resolves.toBe(loaded);
     expect(queryClient.getQueryData(feedKey)).toBe(loaded);
   });
+
+  it("adds the post to a feed that finished loading while it was sending", async () => {
+    const queryClient = new QueryClient();
+    const sending = deferred<unknown>();
+    vi.mocked(createPostAction).mockReturnValue(sending.promise as never);
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useCreatePost(user), { wrapper });
+
+    let submitted!: Promise<unknown>;
+    await act(async () => {
+      submitted = result.current.submitPost({ content: "hi" });
+    });
+    // The feed's cached read arrives now and predates the post.
+    queryClient.setQueryData<InfiniteData<FeedResponse>>(feedKey, {
+      pages: [{ data: [], nextCursor: null }],
+      pageParams: [null],
+    } as unknown as InfiniteData<FeedResponse>);
+    await act(async () => {
+      sending.resolve({ post: { id: "new-post", images: null } });
+      await submitted;
+    });
+
+    const ids = queryClient
+      .getQueryData<InfiniteData<FeedResponse>>(feedKey)
+      ?.pages.flatMap((page) => page.data.map((item) => item.post.id));
+    expect(ids).toEqual(["new-post"]);
+  });
 });

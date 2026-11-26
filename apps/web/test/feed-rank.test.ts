@@ -174,4 +174,21 @@ describe("getRedisHotPostIdsPage", () => {
     expect(page.data.map((item) => item.post.id)).toEqual(["dbpost"]);
     error.mockRestore();
   });
+
+  // Null on a later page would become an empty, cacheable end of feed.
+  it("keeps a KV failure on a later page an error", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const kv = {
+      get: vi.fn().mockRejectedValue(new Error("kv unavailable")),
+    } as unknown as KVNamespace;
+    const db = await makeTestDb();
+
+    await expect(getRedisHotPostIdsPage(kv, "rh.20", 15, 1)).rejects.toThrow(
+      "kv unavailable",
+    );
+    await expect(
+      getPostsPage(db, kv, { sort: "hot", cursor: "rh.20" }),
+    ).rejects.toThrow("kv unavailable");
+    error.mockRestore();
+  });
 });

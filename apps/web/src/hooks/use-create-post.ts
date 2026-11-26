@@ -204,18 +204,33 @@ export function useCreatePost(user: PublicUser | null) {
           },
         };
 
+        const postId = res.post.id;
         queryClient.setQueriesData<InfiniteData<FeedResponse>>(
           {
             queryKey: queryKeys.postsRoot(),
             predicate: (query) => isNonFollowingFeedQuery(query.queryKey),
           },
-          (previous) =>
-            replaceFeedItem(
-              previous,
-              (item) =>
-                item.type === "post" && item.post.id === ctx.optimisticId,
-              nextItem,
-            ),
+          (previous) => {
+            if (!previous) return previous;
+            const has = (id: string) =>
+              previous.pages.some((page) =>
+                page.data.some(
+                  (item) => item.type === "post" && item.post.id === id,
+                ),
+              );
+            if (has(ctx.optimisticId)) {
+              return replaceFeedItem(
+                previous,
+                (item) =>
+                  item.type === "post" && item.post.id === ctx.optimisticId,
+                nextItem,
+              );
+            }
+            // A feed whose first load finished while the post was sending
+            // never got the optimistic item, and its cached read predates
+            // the post.
+            return has(postId) ? previous : prependFeedItem(previous, nextItem);
+          },
         );
 
         for (const image of nextItem.post.images ?? []) {

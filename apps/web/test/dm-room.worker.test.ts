@@ -143,9 +143,14 @@ class FakeStore implements DmStore {
   failReports = false;
   accessChecks = 0;
 
+  // Holds the next access read open until the test releases it.
+  gate: Promise<void> | null = null;
+
   async canMessage() {
     this.accessChecks += 1;
-    return this.allowed;
+    const allowed = this.allowed;
+    if (this.gate) await this.gate;
+    return allowed;
   }
   async isBlocked() {
     return this.blocked;
@@ -633,6 +638,32 @@ describe("DmRoom access changes", () => {
     expect((await ca.next("err", (f) => f.id === "still-no")).code).toBe(
       "closed",
     );
+  });
+
+  it("stays read-only when an unfollow lands while the restore is checking access", async () => {
+    const { stub, pair, a, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    await runInDurableObject(stub, (instance: DmRoom) =>
+      instance.sever("unfollow"),
+    );
+    await ca.next("meta", (f) => !f.meta.canSend);
+
+    let release!: () => void;
+    store.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await runInDurableObject(stub, async (instance: DmRoom) => {
+      const restoring = instance.restore();
+      await instance.sever("unfollow");
+      release();
+      await restoring;
+    });
+    store.gate = null;
+    store.allowed = false;
+
+    ca.send({ t: "send", id: "raced", text: "hello?" });
+    expect((await ca.next("err", (f) => f.id === "raced")).code).toBe("closed");
   });
 
   it("asks the store nothing when no open socket is read-only", async () => {
