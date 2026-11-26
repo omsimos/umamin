@@ -481,6 +481,32 @@ describe("user actions (real libSQL)", () => {
       expect(json).toEqual({ error: "User not found." });
     });
 
+    it("following a user deleted mid-request returns not found", async () => {
+      // Delete the target between the existence read and the follow batch.
+      const racing = new Proxy(db, {
+        get(target, key) {
+          if (key === "batch") {
+            return async (statements: never) => {
+              await target.delete(userTable).where(eq(userTable.id, "target"));
+              return target.batch(statements);
+            };
+          }
+          const value = Reflect.get(target, key);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      const app = buildApp(racing, authed("actor", { createdAt: OLD }));
+
+      const { status, json } = await callJson(app, "followUserAction", {
+        userId: "target",
+      });
+
+      expect(json).toEqual({ error: "User not found." });
+      expect(status).toBeLessThan(500);
+      expect(await db.select().from(userFollowTable)).toHaveLength(0);
+      expect(captureRequestException).not.toHaveBeenCalled();
+    });
+
     it("a follow from an under-age actor counts but awards no aura", async () => {
       const app = buildApp(db, authed("actor", { createdAt: new Date() }));
       await callJson(app, "followUserAction", { userId: "target" });

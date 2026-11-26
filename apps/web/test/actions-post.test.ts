@@ -463,6 +463,31 @@ describe("post actions (real libSQL)", () => {
       expect(await points(db, "author")).toBe(0);
       expect(await db.select().from(notificationTable)).toHaveLength(0);
     });
+
+    it("voting on a poll deleted mid-request returns not available", async () => {
+      // Delete the post between the option read and the vote batch.
+      const racing = new Proxy(db, {
+        get(target, key) {
+          if (key === "batch") {
+            return async (statements: never) => {
+              await target.delete(postTable).where(eq(postTable.id, "p1"));
+              return target.batch(statements);
+            };
+          }
+          const value = Reflect.get(target, key);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      const app = buildApp(racing, authed("viewer", { createdAt: OLD }));
+
+      const { status, json } = await callJson(app, "votePollAction", {
+        optionId: "o1",
+      });
+
+      expect(json).toEqual({ error: "This poll is no longer available." });
+      expect(status).toBeLessThan(500);
+      expect(await db.select().from(pollVoteTable)).toHaveLength(0);
+    });
   });
 
   it("a comment from a blocked user is rejected as not found and writes nothing", async () => {

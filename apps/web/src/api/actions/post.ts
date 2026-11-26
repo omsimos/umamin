@@ -716,6 +716,12 @@ export const votePollHandler = action(
       name: "write",
       key: ({ session }) => `pollvote:${session.userId}`,
     },
+    // A delete between the option read and the batch fails the vote's FK: a
+    // lost race, not a fault.
+    onError: (err) =>
+      isForeignKeyConstraintViolation(err)
+        ? { error: "This poll is no longer available." }
+        : undefined,
   },
   async ({ optionId }, { session, user, c }) => {
     const db = ctxDb(c);

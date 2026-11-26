@@ -21,6 +21,7 @@ import type { Db } from "../../server-lib/db";
 import { revokeDmSockets, severDm } from "../../server-lib/dm/lifecycle";
 import {
   formatErrorChain,
+  isForeignKeyConstraintViolation,
   isUniqueConstraintViolation,
   LAST_LOGIN_METHOD_ERROR,
   USER_NOT_FOUND_ERROR,
@@ -359,6 +360,12 @@ export const followUserHandler = action(
       name: "write",
       key: ({ session }) => `follow:${session.userId}`,
     },
+    // A delete between the target read and the batch fails the follow's FK: a
+    // lost race, not a fault.
+    onError: (err) =>
+      isForeignKeyConstraintViolation(err)
+        ? { error: "User not found." }
+        : undefined,
   },
   async ({ userId }, { session, user, c }) => {
     const db = ctxDb(c);
