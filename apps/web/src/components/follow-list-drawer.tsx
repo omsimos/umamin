@@ -54,9 +54,14 @@ import {
   PRIVATE_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
-import { patchFollowListUser } from "@/lib/query-cache";
+import { patchFollowListUser, patchUserProfile } from "@/lib/query-cache";
 import { fetchFollowersPage, fetchFollowingPage } from "@/lib/query-fetchers";
-import type { FollowListResponse, FollowListUser } from "@/lib/types";
+import type {
+  CurrentUserResponse,
+  FollowListResponse,
+  FollowListUser,
+  UserProfileResponse,
+} from "@/lib/types";
 import { getActionError } from "@/lib/utils";
 
 type FollowTab = "followers" | "following";
@@ -387,9 +392,31 @@ function FollowUserRow({
       // to converge the caches this row does not own.
       if (alreadyFollowing || alreadyRemoved) return;
 
-      // The profile header, the viewer overlay and currentUser.followingCount
-      // all carry follow state this row just changed; refetch the active ones.
-      void queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      // The Worker caches the public profile read, so a refetch can return
+      // counts from before this follow. Patch the two profiles it moved and
+      // refetch only the private reads.
+      const delta = prevFollowing ? -1 : 1;
+      queryClient.setQueryData<UserProfileResponse>(
+        queryKeys.userProfile(user.username),
+        (current) =>
+          patchUserProfile(current, (u) => ({
+            ...u,
+            followerCount: Math.max(u.followerCount + delta, 0),
+          })),
+      );
+      const viewerUsername = queryClient.getQueryData<CurrentUserResponse>(
+        queryKeys.currentUser(),
+      )?.user?.username;
+      if (viewerUsername) {
+        queryClient.setQueryData<UserProfileResponse>(
+          queryKeys.userProfile(viewerUsername),
+          (current) =>
+            patchUserProfile(current, (u) => ({
+              ...u,
+              followingCount: Math.max(u.followingCount + delta, 0),
+            })),
+        );
+      }
       void queryClient.invalidateQueries({ queryKey: ["user-profile-viewer"] });
       void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.dmPeerRoot() });
