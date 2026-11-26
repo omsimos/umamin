@@ -136,6 +136,21 @@ export const getPostPublicHandler = action(
     }),
 );
 
+/** True when the post is there or the lookup fails: an orphaned object costs
+ *  less than a broken image. */
+async function postExists(db: ReturnType<typeof ctxDb>, postId: string) {
+  try {
+    const rows = await db
+      .select({ id: postTable.id })
+      .from(postTable)
+      .where(eq(postTable.id, postId))
+      .limit(1);
+    return rows.length > 0;
+  } catch {
+    return true;
+  }
+}
+
 export const createPostHandler = action(
   {
     schema: createPostSchema,
@@ -231,12 +246,15 @@ export const createPostHandler = action(
 
     let createdPost: typeof postTable.$inferSelect;
     let createdPollOptions: (typeof pollOptionTable.$inferSelect)[] = [];
+    // Known up front so a failed write can be checked against the database.
+    const postId = nanoid();
 
     try {
       const created = await db.transaction(async (tx) => {
         const [inserted] = await tx
           .insert(postTable)
           .values({
+            id: postId,
             content: formattedContent,
             authorId: session.userId,
             images: claimedImages,
@@ -286,7 +304,11 @@ export const createPostHandler = action(
       createdPost = created.post;
       createdPollOptions = created.pollOptions;
     } catch (err) {
-      if (r2) await r2.deletePostImages(claimedImages);
+      // A gateway error or timeout can arrive after COMMIT, and deleting the
+      // images then would break a live post.
+      if (r2 && claimedImages && !(await postExists(db, postId))) {
+        await r2.deletePostImages(claimedImages);
+      }
       throw err;
     }
 

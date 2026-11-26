@@ -97,6 +97,27 @@ async function swapUserBannerUrl(
   });
 }
 
+/** After a failed swap: does the column hold the new URL anyway? A gateway
+ *  error or timeout can arrive after COMMIT. True when the read fails too, since
+ *  an orphaned object costs less than a broken photo. */
+async function userColumnHolds(
+  db: Db,
+  userId: string,
+  column: typeof userTable.imageUrl | typeof userTable.bannerImageUrl,
+  url: string,
+) {
+  try {
+    const [row] = await db
+      .select({ url: column })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+    return row?.url === url;
+  } catch {
+    return true;
+  }
+}
+
 export const getCurrentUserHandler = action({}, (_input, { session, c }) =>
   getCurrentUserData(ctxDb(c), session.userId, c.env.MODERATOR_USERS),
 );
@@ -912,7 +933,9 @@ export const updateProfilePhotoHandler = action(
     try {
       previousImageUrl = await swapUserImageUrl(db, user.id, imageUrl);
     } catch (err) {
-      await r2.deleteR2Avatar(imageUrl);
+      if (!(await userColumnHolds(db, user.id, userTable.imageUrl, imageUrl))) {
+        await r2.deleteR2Avatar(imageUrl);
+      }
       throw err;
     }
 
@@ -948,7 +971,16 @@ export const updateProfileBannerHandler = action(
     try {
       previousBannerUrl = await swapUserBannerUrl(db, user.id, bannerImageUrl);
     } catch (err) {
-      await r2.deleteR2Banner(bannerImageUrl);
+      if (
+        !(await userColumnHolds(
+          db,
+          user.id,
+          userTable.bannerImageUrl,
+          bannerImageUrl,
+        ))
+      ) {
+        await r2.deleteR2Banner(bannerImageUrl);
+      }
       throw err;
     }
 

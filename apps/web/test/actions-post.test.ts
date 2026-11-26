@@ -17,6 +17,15 @@ vi.mock("../src/server-lib/content-classifier", async (importActual) => {
   return { ...actual, classifyContent };
 });
 
+// Real R2 factory by default (no credentials, so it returns null); a test can
+// hand back a fake bucket client.
+const { createR2 } = vi.hoisted(() => ({ createR2: vi.fn() }));
+vi.mock("../src/server-lib/r2", async (importActual) => {
+  const actual = await importActual<typeof import("../src/server-lib/r2")>();
+  createR2.mockImplementation(actual.createR2);
+  return { ...actual, createR2 };
+});
+
 import { moderationDisputeTable } from "@umamin/db/schema/moderation-dispute";
 import { noteReactionTable, noteTable } from "@umamin/db/schema/note";
 import { notificationTable } from "@umamin/db/schema/notification";
@@ -36,6 +45,7 @@ import { RATE_LIMIT_ERROR } from "../src/server-lib/ratelimit";
 import { __clearSessionCache } from "../src/server-lib/session";
 import { ANON, authed, buildApp, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
+import { commitThenFail, failTransaction } from "./helpers/flaky-db";
 
 // Aura is only awarded from an actor whose account is older than the 3-day gate.
 const OLD = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -911,6 +921,57 @@ describe("post actions (real libSQL)", () => {
       expect(json).toEqual({ success: true });
       expect(await noteRows("author")).toHaveLength(0);
       expect(await db.select().from(moderationDisputeTable)).toHaveLength(0);
+    });
+  });
+
+  describe("post images when the write errors", () => {
+    const images = [{ key: "staging/viewer/a.webp", width: 10, height: 10 }];
+    const claimed = [{ key: "posts/viewer/a.webp", width: 10, height: 10 }];
+    const fakeR2 = () => ({
+      claimStagedImages: vi.fn(async () => claimed),
+      deletePostImages: vi.fn(async () => {}),
+    });
+    const postWithImages = (target: Db) =>
+      callJson(
+        buildApp(target, authed("viewer", { points: 100 })),
+        "createPostAction",
+        { content: "pic", images },
+      );
+    const viewerPosts = () =>
+      db
+        .select({ images: postTable.images })
+        .from(postTable)
+        .where(eq(postTable.authorId, "viewer"));
+
+    it("keeps the images of a post that committed before the error", async () => {
+      const r2 = fakeR2();
+      createR2.mockReturnValueOnce(r2);
+
+      const { status } = await postWithImages(commitThenFail(db));
+
+      expect(status).toBe(500);
+      expect(await viewerPosts()).toEqual([{ images: claimed }]);
+      expect(r2.deletePostImages).not.toHaveBeenCalled();
+    });
+
+    it("keeps the images when the post can't be looked up either", async () => {
+      const r2 = fakeR2();
+      createR2.mockReturnValueOnce(r2);
+
+      await postWithImages(commitThenFail(db, { failReadsAfter: true }));
+
+      expect(r2.deletePostImages).not.toHaveBeenCalled();
+    });
+
+    it("deletes the images of a post that was never saved", async () => {
+      const r2 = fakeR2();
+      createR2.mockReturnValueOnce(r2);
+
+      const { status } = await postWithImages(failTransaction(db));
+
+      expect(status).toBe(500);
+      expect(await viewerPosts()).toEqual([]);
+      expect(r2.deletePostImages).toHaveBeenCalledWith(claimed);
     });
   });
 
