@@ -191,6 +191,56 @@ describe("session core (real libSQL)", () => {
     expect(row.expiresAt).toBeGreaterThan(Date.now() + TTL_MS - 5000);
   });
 
+  // The renewal and expiry writes are idempotent housekeeping; a dropped Turso
+  // response on them must not fail a request whose lookup already succeeded.
+  function failSecondExecute() {
+    const client = (db as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    return vi
+      .spyOn(client, "execute")
+      .mockImplementationOnce(execute)
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+  }
+
+  it("keeps the session when the renewal write fails", async () => {
+    await seedUser(db, "user4");
+    const token = generateSessionToken();
+    const id = await hashSessionToken(token);
+    const soon = Date.now() + 1000 * 60 * 60 * 24 * 10;
+    await db
+      .insert(sessionTable)
+      .values({ id, userId: "user4", expiresAt: soon });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const spy = failSecondExecute();
+
+    const result = await validateSessionToken(db, token);
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(result.session?.userId).toBe("user4");
+    expect(result.session?.expiresAt).toBe(soon);
+    error.mockRestore();
+  });
+
+  it("signs out an expired session when its delete fails", async () => {
+    await seedUser(db, "user2");
+    const token = generateSessionToken();
+    const id = await hashSessionToken(token);
+    await db
+      .insert(sessionTable)
+      .values({ id, userId: "user2", expiresAt: Date.now() - 1000 });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const spy = failSecondExecute();
+
+    await expect(validateSessionToken(db, token)).resolves.toEqual({
+      session: null,
+      user: null,
+    });
+    expect(spy).toHaveBeenCalledTimes(2);
+    error.mockRestore();
+  });
+
   it("invalidateSession removes the row", async () => {
     await seedUser(db, "user5");
     const token = generateSessionToken();

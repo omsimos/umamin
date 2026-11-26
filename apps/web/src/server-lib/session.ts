@@ -173,7 +173,7 @@ async function loadSession(
 ): Promise<SessionValidationResult> {
   // Every authed request starts here, so one dropped Turso response would
   // otherwise fail the whole request. Only the read is retried; the expiry
-  // delete and renewal below are writes.
+  // delete and renewal below are writes, logged and skipped when they fail.
   const [row] = await retryTransientRead(() =>
     db
       .select({ session: sessionColumns, user: sessionUserColumns })
@@ -190,7 +190,13 @@ async function loadSession(
   const { session, user } = row;
 
   if (Date.now() >= session.expiresAt) {
-    await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
+    try {
+      await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
+    } catch (error) {
+      // Housekeeping only: the session is rejected either way, and the
+      // cleanup cron or the next request removes the row.
+      console.error("[session] expired session delete failed", error);
+    }
     return { session: null, user: null };
   }
 
@@ -200,11 +206,17 @@ async function loadSession(
   }
 
   if (Date.now() >= session.expiresAt - SESSION_RENEW_THRESHOLD_MS) {
-    session.expiresAt = Date.now() + SESSION_TTL_MS;
-    await db
-      .update(sessionTable)
-      .set({ expiresAt: session.expiresAt })
-      .where(eq(sessionTable.id, sessionId));
+    const renewedExpiresAt = Date.now() + SESSION_TTL_MS;
+    try {
+      await db
+        .update(sessionTable)
+        .set({ expiresAt: renewedExpiresAt })
+        .where(eq(sessionTable.id, sessionId));
+      session.expiresAt = renewedExpiresAt;
+    } catch (error) {
+      // The session is still valid; a later request retries the renewal.
+      console.error("[session] session renewal failed", error);
+    }
   }
 
   // Cache positive results ONLY: a negative result must never be served from
