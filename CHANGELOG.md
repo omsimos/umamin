@@ -44,6 +44,16 @@ any that are empty.
 - The push notification switch no longer stays on "Checking notification status…" in browsers that block the app's background worker.
 - Profile share images use the heading typeface on the first export.
 - Moderators can load more of the review queue after clearing a page, and see an error with a retry when the blocked IP list fails to load.
+- Pages and actions no longer fail at random under load. A request could end up waiting on another visitor's sign-in or feature check that had already been dropped.
+- A comment you just posted stays after a reload, and a comment you just deleted stays gone.
+- Sending a comment while offline keeps what you typed and tells you to send it again once you're back online.
+- A post's images and a new profile photo or banner are kept when the save succeeds but the confirmation is lost on the way back.
+- Following, commenting on or quoting someone who blocks you at the same moment no longer goes through.
+- An open chat lets you send again as soon as you and the other person follow each other again.
+- Signing up no longer leaves a taken username behind when the account couldn't finish being created.
+- A browser holding an ended session is signed out cleanly instead of keeping the old cookie.
+- Following someone from a follower list no longer brings back an old follower count on the profile.
+- Streak reminders keep going out when one push service is slow.
 
 ## [7.26.0] - 2026-11-16
 
