@@ -141,8 +141,10 @@ class FakeStore implements DmStore {
   allowed = true;
   blocked = false;
   failReports = false;
+  accessChecks = 0;
 
   async canMessage() {
+    this.accessChecks += 1;
     return this.allowed;
   }
   async isBlocked() {
@@ -586,6 +588,62 @@ describe("DmRoom access changes", () => {
     c.send({ t: "send", id: "late", text: "still there?" });
     expect((await c.next("err", (f) => f.id === "late")).code).toBe("closed");
     expect(c.closed).toBeNull();
+  });
+
+  it("lets both open screens send again when the pair follow each other again", async () => {
+    const { stub, pair, a, b, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+    await runInDurableObject(stub, (instance: DmRoom) =>
+      instance.sever("unfollow"),
+    );
+    await ca.next("meta", (f) => !f.meta.canSend);
+    await cb.next("meta", (f) => !f.meta.canSend);
+    const metasBefore = ca.count("meta");
+
+    await runInDurableObject(stub, (instance: DmRoom) => instance.restore());
+
+    await eventually(
+      () =>
+        ca.frames.filter((f) => f.t === "meta").length > metasBefore &&
+        ca.frames.at(-1)?.t === "meta",
+      "meta after restore",
+    );
+    const last = ca.frames.findLast((f) => f.t === "meta") as FrameOf<"meta">;
+    expect(last.meta).toMatchObject({ canSend: true, peerOnline: true });
+    await cb.next("meta", (f) => f.meta.canSend);
+    await sendText(ca, "back again");
+    expect(ca.count("err")).toBe(0);
+  });
+
+  it("keeps a read-only screen read-only when access is still gone", async () => {
+    const { stub, pair, a, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    await runInDurableObject(stub, (instance: DmRoom) =>
+      instance.sever("unfollow"),
+    );
+    await ca.next("meta", (f) => !f.meta.canSend);
+    store.allowed = false;
+
+    await runInDurableObject(stub, (instance: DmRoom) => instance.restore());
+
+    ca.send({ t: "send", id: "still-no", text: "hello?" });
+    expect((await ca.next("err", (f) => f.id === "still-no")).code).toBe(
+      "closed",
+    );
+  });
+
+  it("asks the store nothing when no open socket is read-only", async () => {
+    const { stub, pair, a, store, install } = setup();
+    await install();
+    await join(stub, pair.threadId, a);
+    const checks = store.accessChecks;
+
+    await runInDurableObject(stub, (instance: DmRoom) => instance.restore());
+
+    expect(store.accessChecks).toBe(checks);
   });
 
   it("closes the conversation for both sides when the recheck finds a block", async () => {

@@ -36,6 +36,23 @@ export async function severDm(
   }
 }
 
+/** The pair follow each other again: open screens that went read-only can
+ *  send again. Best effort, like severDm: a reconnect restores access too. */
+export async function restoreDm(
+  env: AppEnv,
+  a: string,
+  b: string,
+): Promise<void> {
+  if (!env.DM_ROOM) return;
+  try {
+    await roomStub(env, dmPair(a, b).threadId).restore();
+  } catch (err) {
+    captureServerException(env, undefined, err, {
+      properties: { where: "dm-restore" },
+    });
+  }
+}
+
 /** A banned user's open conversations close now; their session is already
  *  gone, so they can't reopen one. */
 export async function severAllDms(

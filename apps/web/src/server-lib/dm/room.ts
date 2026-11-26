@@ -264,6 +264,28 @@ export class DmRoom extends DurableObject<AppEnv> {
     }
   }
 
+  /** The pair follow each other again. Open sockets that went read-only can
+   *  send at once instead of waiting for a reconnect, since a read-only
+   *  screen can't send or react to trigger the recheck. A room with no
+   *  read-only socket asks Turso nothing. */
+  async restore(): Promise<void> {
+    const sockets = this.ctx.getWebSockets();
+    const readOnly = sockets
+      .map((ws) => this.attachment(ws))
+      .find((att) => att && !att.canSend);
+    const pair = readOnly ? parseThreadId(readOnly.threadId) : null;
+    if (!pair || !(await this.store().canMessage(pair))) return;
+    const now = Date.now();
+    for (const ws of sockets) {
+      const att = this.attachment(ws);
+      if (att)
+        ws.serializeAttachment({ ...att, canSend: true, checkedAt: now });
+    }
+    // Both sides: presence is gated on canSend, so the peer's view changes too.
+    this.broadcastMeta(0);
+    this.broadcastMeta(1);
+  }
+
   /** The user's sessions were revoked (password change): close their side's
    *  sockets reconnectably, so each must pass the upgrade route's session
    *  check again. The peer's sockets are untouched. */

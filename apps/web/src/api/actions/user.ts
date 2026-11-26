@@ -1,3 +1,4 @@
+import { dmThreadTable } from "@umamin/db/schema/dm";
 import {
   accountTable,
   sessionTable,
@@ -9,6 +10,7 @@ import {
 import { and, eq, ne, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { dmPair } from "../../lib/dm/pair";
 import { type MusicAttachment, parseMusicUrl } from "../../lib/music";
 import { publicImageUrl } from "../../lib/post-images";
 import { generalSettingsSchema, passwordFormSchema } from "../../lib/types";
@@ -20,7 +22,11 @@ import { noBlockBetween } from "../../server-lib/blocks";
 import { formatContent } from "../../server-lib/content";
 import { getCurrentUserData, getUserProfileData } from "../../server-lib/data";
 import type { Db } from "../../server-lib/db";
-import { revokeDmSockets, severDm } from "../../server-lib/dm/lifecycle";
+import {
+  restoreDm,
+  revokeDmSockets,
+  severDm,
+} from "../../server-lib/dm/lifecycle";
 import {
   formatErrorChain,
   isUniqueConstraintViolation,
@@ -444,6 +450,17 @@ export const followUserHandler = action(
     const targetProbe = db
       .select({
         blocked: sql<number>`CASE WHEN ${noBlockBetween(userTable.id, session.userId)} THEN 0 ELSE 1 END`,
+        // Two index seeks in the same round trip: an open conversation can
+        // only be read-only when the pair already have a thread and the
+        // follow just made it mutual again.
+        reopensDm: sql<number>`CASE WHEN EXISTS (
+          SELECT 1 FROM ${userFollowTable}
+          WHERE ${userFollowTable.followerId} = ${userId}
+            AND ${userFollowTable.followingId} = ${session.userId}
+        ) AND EXISTS (
+          SELECT 1 FROM ${dmThreadTable}
+          WHERE ${dmThreadTable.id} = ${dmPair(session.userId, userId).threadId}
+        ) THEN 1 ELSE 0 END`,
       })
       .from(userTable)
       .where(eq(userTable.id, userId))
@@ -456,7 +473,10 @@ export const followUserHandler = action(
     const [inserted] = results;
     // The award statement is optional, so the tuple's last slot is a union;
     // the probe is always last.
-    const [target] = results[results.length - 1] as { blocked: number }[];
+    const [target] = results[results.length - 1] as {
+      blocked: number;
+      reopensDm: number;
+    }[];
 
     if (!target) {
       return { error: "User not found." };
@@ -474,6 +494,10 @@ export const followUserHandler = action(
       actorId: session.userId,
       blockChecked: true,
     });
+
+    if (target.reopensDm === 1) {
+      defer(c)(restoreDm(c.env, session.userId, userId));
+    }
 
     return { success: true } as const;
   },

@@ -538,6 +538,79 @@ describe("user actions (real libSQL)", () => {
       expect(await db.select().from(notificationTable)).toHaveLength(0);
     });
 
+    describe("a follow that makes the pair mutual again", () => {
+      const pair = dmPair("actor", "target");
+      const restored: string[] = [];
+      const DM_ROOM = {
+        idFromName: (name: string) => name,
+        get: (name: string) => ({
+          restore: async () => {
+            restored.push(name);
+          },
+        }),
+      };
+      const follow = () =>
+        callJson(
+          buildApp(db, authed("actor", { createdAt: OLD })),
+          "followUserAction",
+          { userId: "target" },
+          { DM_ROOM } as never,
+        );
+      const seedThread = () =>
+        db.insert(dmThreadTable).values({
+          id: pair.threadId,
+          userLowId: pair.lowId,
+          userHighId: pair.highId,
+        });
+      const seedFollowBack = () =>
+        db
+          .insert(userFollowTable)
+          .values({ followerId: "target", followingId: "actor" });
+
+      beforeEach(() => {
+        restored.length = 0;
+      });
+
+      it("reopens their existing conversation", async () => {
+        await seedThread();
+        await seedFollowBack();
+
+        const { json } = await follow();
+
+        expect(json).toEqual({ success: true });
+        expect(restored).toEqual([`dm:v1:${pair.threadId}`]);
+      });
+
+      it("leaves the room alone when they never talked", async () => {
+        await seedFollowBack();
+
+        await follow();
+
+        expect(restored).toEqual([]);
+      });
+
+      it("leaves the room alone when the follow is one way", async () => {
+        await seedThread();
+
+        await follow();
+
+        expect(restored).toEqual([]);
+      });
+
+      it("leaves the room alone when the follow already existed", async () => {
+        await seedThread();
+        await seedFollowBack();
+        await db
+          .insert(userFollowTable)
+          .values({ followerId: "actor", followingId: "target" });
+
+        const { json } = await follow();
+
+        expect(json).toEqual({ success: true, alreadyFollowing: true });
+        expect(restored).toEqual([]);
+      });
+    });
+
     it("a follow from an under-age actor counts but awards no aura", async () => {
       const app = buildApp(db, authed("actor", { createdAt: new Date() }));
       await callJson(app, "followUserAction", { userId: "target" });
