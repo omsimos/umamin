@@ -115,18 +115,28 @@ function pruneMicroCache(now: number): void {
 // from here.
 export { generateSessionToken, hashSessionToken };
 
-export async function createSession(
-  db: DbOrTx,
-  token: string,
-  userId: string,
-): Promise<SelectSession> {
+// Builds the insert without running it, so a caller can batch it with the
+// write that creates the user (password signup).
+export async function sessionInsert(db: DbOrTx, token: string, userId: string) {
   const session: InsertSession = {
     id: await hashSessionToken(token),
     userId,
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
-  await db.insert(sessionTable).values(session);
-  return session as SelectSession;
+  return {
+    session: session as SelectSession,
+    query: db.insert(sessionTable).values(session),
+  };
+}
+
+export async function createSession(
+  db: DbOrTx,
+  token: string,
+  userId: string,
+): Promise<SelectSession> {
+  const { session, query } = await sessionInsert(db, token, userId);
+  await query;
+  return session;
 }
 
 /**
