@@ -107,4 +107,17 @@ describe("NotificationsList", () => {
     await waitFor(() => expect(seenThroughCalls()).toHaveLength(1));
     expect(fetchNotificationsPage).not.toHaveBeenCalled();
   });
+
+  it("keeps the cached watermark when marking seen fails", async () => {
+    callAction.mockResolvedValue({ error: "Slow down" });
+
+    const client = renderList(Date.now(), 0);
+
+    await waitFor(() => expect(callAction).toHaveBeenCalled());
+    await act(async () => {});
+    const cached = client.getQueryData<InfiniteData<NotificationsResponse>>(
+      queryKeys.notifications(),
+    );
+    expect(cached?.pages[0]?.lastSeen).toBe(0);
+  });
 });

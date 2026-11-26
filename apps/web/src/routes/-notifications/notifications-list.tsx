@@ -9,7 +9,7 @@ import { Button } from "@umamin/ui/components/button";
 import { AlertCircleIcon, BellOffIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { RefetchErrorAlert } from "@/components/refetch-error-alert";
-import { callAction } from "@/lib/api";
+import { actionError, callAction } from "@/lib/api";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -82,7 +82,12 @@ export function NotificationsList() {
     markedRef.current = seenThroughMs;
 
     markNotificationsSeenAction({ seenThrough: seenThroughMs })
-      .then(() => {
+      .then((res) => {
+        // The server watermark didn't move, so the rows are still unseen.
+        if (actionError(res)) {
+          markedRef.current = null;
+          return;
+        }
         queryClient.invalidateQueries({
           queryKey: queryKeys.notificationBadge(),
         });
