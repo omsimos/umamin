@@ -100,7 +100,9 @@ export default function ReplyForm({ user, postId }: Props) {
         optimisticId: optimistic.id,
       };
     },
-    onError: (err, _vars, ctx) => {
+    onError: (err, failedContent, ctx) => {
+      // Keep anything typed since the send; otherwise restore the draft.
+      setContent((current) => current || failedContent);
       if (ctx?.previous) {
         queryClient.setQueryData(queryKeys.postComments(postId), ctx.previous);
       }
