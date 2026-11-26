@@ -3,7 +3,7 @@
 export const CARD_W = 1080;
 export const CARD_H = 1920;
 
-export const DISPLAY_FONT = '"Archivo Variable", system-ui, sans-serif';
+export const DISPLAY_FONT = '"Allo", system-ui, sans-serif';
 export const SANS_FONT = '"Geist Variable", system-ui, sans-serif';
 
 // The short domain printed on story images, for people who retype it. The

@@ -7,10 +7,8 @@ import type { QueryClient } from "@tanstack/react-query";
 // `*.css`); the family names map to --font-* in styles.css.
 import "@fontsource-variable/geist/index.css";
 import "@fontsource-variable/geist-mono/index.css";
-// "standard" carries the width axis as well as weight: headings use Archivo
-// slightly expanded (styles.css), and the italic is real, not synthesized.
-import "@fontsource-variable/archivo/standard.css";
-import "@fontsource-variable/archivo/standard-italic.css";
+// Allo, the display face, is self-hosted from src/fonts (not on fontsource).
+import "../fonts/allo.css";
 import {
   createRootRouteWithContext,
   HeadContent,
@@ -85,10 +83,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       // AFTER styles.css downloads and parses — html → css → woff2, three
       // serial hops before text paints in the right face. Preloading the latin
       // body face starts it alongside the CSS instead. Only `latin`: the other
-      // subsets are unicode-range gated and must stay lazy. Archivo is not
-      // preloaded: its width axis makes the file 90 KB at high priority, the
-      // app routes barely use it, and a wght-only file would drop the 112%
-      // stretch on headings.
+      // subsets are unicode-range gated and must stay lazy. Allo is not
+      // preloaded: the app routes barely use it, so it would compete with the
+      // body face at high priority for little gain.
       {
         rel: "preload",
         as: "font",

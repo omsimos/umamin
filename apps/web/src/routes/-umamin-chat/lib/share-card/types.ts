@@ -5,7 +5,7 @@ export interface TextOp {
   text: string;
   x: number;
   y: number;
-  /** Full CSS font shorthand, e.g. `700 72px "Archivo Variable"`. */
+  /** Full CSS font shorthand, e.g. `700 72px "Allo"`. */
   font: string;
   fill: string;
   align?: CanvasTextAlign;
