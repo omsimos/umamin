@@ -4,7 +4,7 @@ import Privacy from "@/markdown/privacy.mdx";
 
 const title = "Privacy Policy | Umamin";
 const description =
-  "Learn how Umamin, an open-source platform for sending and receiving encrypted anonymous messages, collects, uses, and protects your personal information.";
+  "Learn how Umamin, a Filipino social media built around anonymity, collects, uses, and protects your personal information.";
 
 export const Route = createFileRoute("/_public/privacy")({
   head: () => pageSeo({ title, description, path: "/privacy" }),
