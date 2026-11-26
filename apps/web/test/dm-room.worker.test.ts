@@ -478,7 +478,7 @@ describe("DmRoom thread index", () => {
     cb.send({ t: "read", upTo: seq });
     await ca.next("meta", (f) => f.meta.peerReadSeq === Number(seq));
     await eventually(() => store.writes.length === 2, "read write");
-    expect(store.writes[1]?.readSeq).toEqual([0, Number(seq)]);
+    expect(store.writes[1]?.readSeq).toEqual([Number(seq), Number(seq)]);
   });
 
   describe("live exchange", () => {
@@ -501,8 +501,28 @@ describe("DmRoom thread index", () => {
       expect(await runDurableObjectAlarm(stub)).toBe(true);
       expect(store.writes).toHaveLength(3);
       expect(store.writes[2]).toMatchObject({ lastSeq: 2, preview: "m2" });
-      expect(store.writes[2]?.readSeq).toEqual([0, 2]);
+      expect(store.writes[2]?.readSeq).toEqual([2, 2]);
     });
+  });
+
+  it("counts only the peer's messages after your own as unread", async () => {
+    const { stub, pair, a, b, store, install } = setup();
+    await install();
+    const ca = await join(stub, pair.threadId, a);
+    const cb = await join(stub, pair.threadId, b);
+
+    await sendText(ca, "m1");
+    const seq2 = await sendText(ca, "m2");
+    cb.send({ t: "read", upTo: seq2 });
+    await ca.next("meta", (f) => f.meta.peerReadSeq === Number(seq2));
+    await sendText(cb, "reply");
+    await runDurableObjectAlarm(stub);
+
+    const last = store.writes.at(-1);
+    expect(last?.lastSeq).toBe(3);
+    // threads.ts shows lastSeq - readSeq as the unread number.
+    expect((last?.lastSeq ?? 0) - (last?.readSeq[0] ?? 0)).toBe(1);
+    expect((last?.lastSeq ?? 0) - (last?.readSeq[1] ?? 0)).toBe(0);
   });
 
   it("hides history for one side only", async () => {

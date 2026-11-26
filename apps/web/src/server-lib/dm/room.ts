@@ -566,6 +566,22 @@ export class DmRoom extends DurableObject<AppEnv> {
 
   // --- Thread index -------------------------------------------------------
 
+  /** The read mark the Chats list counts unread from: a side has seen its own
+   *  messages, so it is at least its newest one. `st.read` stays the real
+   *  mark, because "Seen" must not light up when only the sender has looked.
+   *  Derived here instead of moved on send, which would cost a meta write per
+   *  message. */
+  private effectiveRead(st: RoomState, side: DmSide): number {
+    const own = this.sql
+      .exec<{ seq: number }>(
+        "SELECT seq FROM messages WHERE seq > ? AND author = ? ORDER BY seq DESC LIMIT 1",
+        st.read[side],
+        side,
+      )
+      .toArray()[0];
+    return own?.seq ?? st.read[side];
+  }
+
   private async snapshot(st: RoomState): Promise<ThreadSnapshot> {
     const raw = this.sql
       .exec<MessageRowSql>(
@@ -578,7 +594,7 @@ export class DmRoom extends DurableObject<AppEnv> {
       lastAt: last?.createdAt ?? 0,
       lastSender: last?.author ?? null,
       preview: engine.previewOf(last?.text ?? null),
-      readSeq: [st.read[0], st.read[1]],
+      readSeq: [this.effectiveRead(st, 0), this.effectiveRead(st, 1)],
       hiddenSeq: [st.hidden[0], st.hidden[1]],
     };
   }

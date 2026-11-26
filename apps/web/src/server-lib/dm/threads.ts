@@ -136,8 +136,9 @@ export async function getDmThreadsPage(
       preview: r.lastPreview ? await aesDecrypt(r.lastPreview) : null,
       lastFromMe: r.lastSenderId === viewerId,
       lastMessageAt: r.lastMessageAt.getTime(),
-      // Seqs number messages, and sending moves the sender's read mark to
-      // their own message, so this gap is the peer's messages since then.
+      // Seqs number messages, and the room writes each side's read mark as at
+      // least its own newest message, so this gap is the peer's messages since
+      // then.
       unread:
         r.lastSenderId === r.peerId ? Math.max(0, r.lastSeq - r.readSeq) : 0,
     })),
