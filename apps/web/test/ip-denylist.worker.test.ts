@@ -1,5 +1,5 @@
 import { env } from "cloudflare:test";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __clearDenylistCache,
   allowIp,
@@ -21,6 +21,10 @@ describe("ip-denylist (miniflare KV)", () => {
   beforeEach(async () => {
     __clearDenylistCache();
     await clearKv();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("denies a listed IP and allows others", async () => {
@@ -90,5 +94,26 @@ describe("ip-denylist (miniflare KV)", () => {
     expect(await isIpDenied(kv, "203.0.113.9")).toBe(true);
     await clearKv();
     expect(await isIpDenied(kv, "203.0.113.9")).toBe(true);
+  });
+
+  // During a KV brownout the isolate keeps the list it already held, and waits
+  // before asking KV again instead of paying a failing call on every request.
+  it("keeps the last list and backs off when a refresh fails", async () => {
+    await denyIp(kv, "203.0.113.5");
+    __clearDenylistCache();
+    const start = Date.now();
+    const clock = vi.spyOn(Date, "now").mockReturnValue(start);
+    expect(await isIpDenied(kv, "203.0.113.5")).toBe(true);
+
+    const list = vi.fn().mockRejectedValue(new Error("kv unavailable"));
+    const failing = {
+      get: kv.get.bind(kv),
+      list,
+    } as unknown as KVNamespace;
+    clock.mockReturnValue(start + 60_000);
+
+    expect(await isIpDenied(failing, "203.0.113.5")).toBe(true);
+    expect(await isIpDenied(failing, "203.0.113.5")).toBe(true);
+    expect(list).toHaveBeenCalledTimes(1);
   });
 });

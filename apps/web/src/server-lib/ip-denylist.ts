@@ -22,6 +22,7 @@ const LEGACY_DENYLIST_KEY = "ip:denylist";
 // allowed IP propagates within CACHE_TTL_MS (+ KV's own ~60s), and the mutating
 // isolate busts its own cache immediately.
 const CACHE_TTL_MS = 30_000;
+const FAILURE_RETRY_MS = 10_000;
 
 let cache: { ips: Set<string>; fetchedAt: number } | null = null;
 let inflight: Promise<Set<string>> | null = null;
@@ -58,10 +59,21 @@ async function getDenylist(
   // Collapse a burst of concurrent refreshes into a single KV read.
   if (!inflight) {
     inflight = loadDenylist(kv)
-      .then((ips) => {
-        cache = { ips, fetchedAt: now };
-        return ips;
-      })
+      .then(
+        (ips) => {
+          cache = { ips, fetchedAt: now };
+          return ips;
+        },
+        (error: unknown) => {
+          // Keep enforcing the last list we held, and stamp it so the next
+          // refresh waits FAILURE_RETRY_MS instead of hitting a failing KV on
+          // every request.
+          console.error("[ip-denylist] refresh failed", error);
+          const ips = cache?.ips ?? new Set<string>();
+          cache = { ips, fetchedAt: now - CACHE_TTL_MS + FAILURE_RETRY_MS };
+          return ips;
+        },
+      )
       .finally(() => {
         inflight = null;
       });
