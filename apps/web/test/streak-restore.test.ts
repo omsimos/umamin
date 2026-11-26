@@ -363,6 +363,36 @@ describe("streak push cron (real libSQL)", () => {
     expect(result.failures).toBe(2);
     expect(result.firstFailure).toBeInstanceOf(Error);
   });
+
+  // Every batch waits for its slowest send, so the per-send deadline bounds
+  // how long one stalled push service can hold the run.
+  it("gives up on a stalled push service within a few seconds", async () => {
+    await user("a", { streak: 5, streakDay: TODAY - 1 });
+    // Behaves like the library against a service that never answers: rejects
+    // once the caller's timeout passes (its default is 30 s).
+    vi.mocked(sendPush).mockImplementation(
+      (_sub, _payload, _vapid, opts) =>
+        new Promise((_, reject) => {
+          setTimeout(
+            () => reject(new DOMException("stalled", "TimeoutError")),
+            opts?.timeoutMs ?? 30_000,
+          );
+        }),
+    );
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      let settled = false;
+      const run = sendStreakPushes(db, vapid, "ending", NOW).finally(() => {
+        settled = true;
+      });
+      await vi.waitFor(() => expect(sendPush).toHaveBeenCalled());
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(settled).toBe(true);
+      expect((await run).failures).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 // Turso bills per row scanned, and these crons run twice a day. Pin the plan

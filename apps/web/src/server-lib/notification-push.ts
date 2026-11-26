@@ -224,6 +224,11 @@ export type PushFailureReport = (
   push: "vapid rejected" | "send failed",
 ) => void;
 
+// The library waits 30 s by default. The streak cron sends in batches that
+// each wait for their slowest device, and a request's waitUntil budget is 30 s,
+// so one stalled push service must not hold a send that long.
+const PUSH_SEND_TIMEOUT_MS = 5_000;
+
 /**
  * Sends one payload to a user's devices. Prunes dead subscriptions (and push
  * prefs with them when it was the last device) and hands VAPID
@@ -253,7 +258,10 @@ export async function deliverPush(
   await Promise.all(
     subs.map(async (sub) => {
       try {
-        const result = await sendPush(sub, payload, vapid, { ttl: 3600 });
+        const result = await sendPush(sub, payload, vapid, {
+          ttl: 3600,
+          timeoutMs: PUSH_SEND_TIMEOUT_MS,
+        });
         // 404/410 = the subscription is dead/expired — prune it (scoped to this
         // recipient).
         if (!result.ok && result.expired) {
