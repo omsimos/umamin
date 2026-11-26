@@ -24,6 +24,7 @@ vi.mock("../src/server-lib/posthog", () => ({
 }));
 
 import { dmThreadTable } from "@umamin/db/schema/dm";
+import { notificationTable } from "@umamin/db/schema/notification";
 import {
   accountTable,
   sessionTable,
@@ -505,6 +506,36 @@ describe("user actions (real libSQL)", () => {
       expect(status).toBeLessThan(500);
       expect(await db.select().from(userFollowTable)).toHaveLength(0);
       expect(captureRequestException).not.toHaveBeenCalled();
+    });
+
+    it("a block landing between the checks and the write refuses the follow", async () => {
+      const racing = new Proxy(db, {
+        get(target, key) {
+          if (key === "batch") {
+            return async (statements: never) => {
+              await target
+                .insert(userBlockTable)
+                .values({ blockerId: "target", blockedId: "actor" });
+              return target.batch(statements);
+            };
+          }
+          const value = Reflect.get(target, key);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      const app = buildApp(racing, authed("actor", { createdAt: OLD }));
+
+      const { json } = await callJson(app, "followUserAction", {
+        userId: "target",
+      });
+
+      expect(json).toEqual({ error: "You can't follow this user." });
+      expect(await db.select().from(userFollowTable)).toHaveLength(0);
+      expect(await counters(db, "target")).toMatchObject({
+        followerCount: 0,
+        points: 0,
+      });
+      expect(await db.select().from(notificationTable)).toHaveLength(0);
     });
 
     it("a follow from an under-age actor counts but awards no aura", async () => {

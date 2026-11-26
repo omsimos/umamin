@@ -6,7 +6,8 @@ import {
   userMuteTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { and, eq, ne, or, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { z } from "zod";
 import { type MusicAttachment, parseMusicUrl } from "../../lib/music";
 import { publicImageUrl } from "../../lib/post-images";
@@ -15,13 +16,13 @@ import { action } from "../../server-lib/action";
 import { hash, verify } from "../../server-lib/argon2";
 import { PREV_CHANGED } from "../../server-lib/batch";
 import { sanitizeBlockedWords } from "../../server-lib/blocked-words";
+import { noBlockBetween } from "../../server-lib/blocks";
 import { formatContent } from "../../server-lib/content";
 import { getCurrentUserData, getUserProfileData } from "../../server-lib/data";
 import type { Db } from "../../server-lib/db";
 import { revokeDmSockets, severDm } from "../../server-lib/dm/lifecycle";
 import {
   formatErrorChain,
-  isForeignKeyConstraintViolation,
   isUniqueConstraintViolation,
   LAST_LOGIN_METHOD_ERROR,
   USER_NOT_FOUND_ERROR,
@@ -381,50 +382,11 @@ export const followUserHandler = action(
       name: "write",
       key: ({ session }) => `follow:${session.userId}`,
     },
-    // A delete between the target read and the batch fails the follow's FK: a
-    // lost race, not a fault.
-    onError: (err) =>
-      isForeignKeyConstraintViolation(err)
-        ? { error: "User not found." }
-        : undefined,
   },
   async ({ userId }, { session, user, c }) => {
     const db = ctxDb(c);
     if (session.userId === userId) {
       return { error: "You cannot follow yourself." };
-    }
-
-    // Independent reads: one round trip instead of two.
-    const [[target], [blockExists]] = await Promise.all([
-      db
-        .select({ id: userTable.id, username: userTable.username })
-        .from(userTable)
-        .where(eq(userTable.id, userId))
-        .limit(1),
-      db
-        .select({ id: userBlockTable.id })
-        .from(userBlockTable)
-        .where(
-          or(
-            and(
-              eq(userBlockTable.blockerId, session.userId),
-              eq(userBlockTable.blockedId, userId),
-            ),
-            and(
-              eq(userBlockTable.blockerId, userId),
-              eq(userBlockTable.blockedId, session.userId),
-            ),
-          ),
-        )
-        .limit(1),
-    ]);
-
-    if (!target) {
-      return { error: "User not found." };
-    }
-
-    if (blockExists) {
-      return { error: "You can't follow this user." };
     }
 
     // One round trip instead of five (BEGIN+insert, two counters, award,
@@ -442,9 +404,27 @@ export const followUserHandler = action(
       PREV_CHANGED,
     );
     const statements = [
+      // Inserted from a SELECT on the target, so a block or a deleted account
+      // vetoes the row in the write itself.
       db
         .insert(userFollowTable)
-        .values({ followerId: session.userId, followingId: userId })
+        .select(
+          db
+            .select({
+              // drizzle requires every table column, in table order.
+              id: sql<string>`${nanoid()}`.as("id"),
+              followerId: sql<string>`${session.userId}`.as("follower_id"),
+              followingId: userTable.id,
+              createdAt: sql<Date>`unixepoch()`.as("created_at"),
+            })
+            .from(userTable)
+            .where(
+              and(
+                eq(userTable.id, userId),
+                noBlockBetween(userTable.id, session.userId),
+              ),
+            ),
+        )
         .onConflictDoNothing()
         .returning({ id: userFollowTable.id }),
       db
@@ -457,10 +437,33 @@ export const followUserHandler = action(
         .where(and(eq(userTable.id, userId), PREV_CHANGED)),
     ] as const;
 
-    const [inserted] = award
-      ? await db.batch([...statements, award])
-      : await db.batch(statements);
+    // Must be the LAST statement, since PREV_CHANGED reads changes() from the
+    // statement directly before it. It tells a missing or blocked target
+    // apart from an existing follow: the vetoed insert returns no row in all
+    // three cases.
+    const targetProbe = db
+      .select({
+        blocked: sql<number>`CASE WHEN ${noBlockBetween(userTable.id, session.userId)} THEN 0 ELSE 1 END`,
+      })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
 
+    const results = award
+      ? await db.batch([...statements, award, targetProbe])
+      : await db.batch([...statements, targetProbe]);
+
+    const [inserted] = results;
+    // The award statement is optional, so the tuple's last slot is a union;
+    // the probe is always last.
+    const [target] = results[results.length - 1] as { blocked: number }[];
+
+    if (!target) {
+      return { error: "User not found." };
+    }
+    if (target.blocked === 1) {
+      return { error: "You can't follow this user." };
+    }
     if (inserted.length === 0) {
       return { success: true, alreadyFollowing: true } as const;
     }

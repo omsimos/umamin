@@ -924,6 +924,81 @@ describe("post actions (real libSQL)", () => {
     });
   });
 
+  it("stores a comment's scores and queues a high score for review", async () => {
+    classifyContent.mockResolvedValueOnce({
+      severe: 95,
+      drama: 10,
+      reason: "threat",
+    });
+    const before = Math.floor(Date.now() / 1000);
+    const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+
+    await callJson(app, "createCommentAction", { postId: "p1", content: "x" });
+
+    const [row] = await db.select().from(postCommentTable);
+    expect(row).toMatchObject({
+      authorId: "viewer",
+      content: "x",
+      modSevere: 95,
+      modDrama: 10,
+      modReason: "threat",
+      modClearedAt: null,
+    });
+    const flaggedAt = (row.modFlaggedAt?.getTime() ?? 0) / 1000;
+    expect(flaggedAt).toBeGreaterThanOrEqual(before);
+    expect(flaggedAt).toBeLessThanOrEqual(before + 60);
+  });
+
+  describe("a block that lands during the classifier call", () => {
+    const blockDuringClassify = () =>
+      classifyContent.mockImplementationOnce(async () => {
+        await db
+          .insert(userBlockTable)
+          .values({ blockerId: "author", blockedId: "viewer" });
+        return null;
+      });
+
+    it("refuses the comment and sends no notification", async () => {
+      blockDuringClassify();
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+
+      const { json } = await callJson(app, "createCommentAction", {
+        postId: "p1",
+        content: "hi",
+      });
+
+      expect(json).toEqual({ error: "Post not found" });
+      expect(await db.select().from(postCommentTable)).toHaveLength(0);
+      expect(await db.select().from(notificationTable)).toHaveLength(0);
+      const [post] = await db
+        .select({ commentCount: postTable.commentCount })
+        .from(postTable)
+        .where(eq(postTable.id, "p1"));
+      expect(post.commentCount).toBe(0);
+    });
+
+    it("refuses the quote", async () => {
+      blockDuringClassify();
+      const app = buildApp(db, authed("viewer", { createdAt: OLD }));
+
+      const { json } = await callJson(app, "createPostAction", {
+        content: "q",
+        quotedPostId: "p1",
+      });
+
+      expect(json).toEqual({
+        error: "The post you're quoting is no longer available.",
+      });
+      const posts = await db.select({ id: postTable.id }).from(postTable);
+      expect(posts).toEqual([{ id: "p1" }]);
+      const [post] = await db
+        .select({ repostCount: postTable.repostCount })
+        .from(postTable)
+        .where(eq(postTable.id, "p1"));
+      expect(post.repostCount).toBe(0);
+    });
+  });
+
   describe("post images when the write errors", () => {
     const images = [{ key: "staging/viewer/a.webp", width: 10, height: 10 }];
     const claimed = [{ key: "posts/viewer/a.webp", width: 10, height: 10 }];
