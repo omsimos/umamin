@@ -105,4 +105,28 @@ describe("useCreatePost", () => {
 
     expect(queryClient.getQueryState(followingKey)?.status).toBe("error");
   });
+
+  // A one-item page with no cursor would be served as the whole feed by the
+  // loader and never paged, since the feeds don't refetch on mount.
+  it("doesn't turn a feed that never loaded into a one-post feed", async () => {
+    const queryClient = new QueryClient();
+    await queryClient.prefetchQuery({
+      queryKey: feedKey,
+      queryFn: () => Promise.reject(new Error("offline")),
+      retry: false,
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    vi.mocked(createPostAction).mockResolvedValue({
+      post: { id: "new-post", images: null },
+    } as never);
+    const { result } = renderHook(() => useCreatePost(user), { wrapper });
+
+    await act(async () => {
+      await result.current.submitPost({ content: "hi" });
+    });
+
+    expect(queryClient.getQueryData(feedKey)).toBeUndefined();
+  });
 });
