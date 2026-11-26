@@ -90,7 +90,9 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const inputRef = useDynamicTextarea(content);
   const submitReply = useSingleFlightAction(createReplyAction);
-  const markedRef = useRef(false);
+  // lastReplyAt (ms) this view already handled; a newer one from a focus
+  // refetch is a reply the viewer is now reading.
+  const markedReplyAtRef = useRef<number | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
   const seenCountRef = useRef<number | null>(null);
 
@@ -124,8 +126,17 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
   }, [data]);
 
   useEffect(() => {
-    if (!data || markedRef.current) return;
-    markedRef.current = true;
+    if (!data) return;
+    const lastReplyAt = data.message.lastReplyAt
+      ? new Date(data.message.lastReplyAt).getTime()
+      : 0;
+    if (
+      markedReplyAtRef.current !== null &&
+      lastReplyAt <= markedReplyAtRef.current
+    ) {
+      return;
+    }
+    markedReplyAtRef.current = lastReplyAt;
 
     // Only write when there is something to record — an unread reply or a
     // still-sealed message. Re-opening an already-read thread costs nothing
@@ -141,8 +152,8 @@ export function MessageThreadView({ messageId }: { messageId: string }) {
     }
 
     void markThreadReadAction({ messageId });
-    // The inbox lists don't refetch on remount, so clear the unread dot (and
-    // the seal) in their caches directly.
+    // The inbox lists reuse their cache on a quick remount, so clear the
+    // unread dot (and the seal) in their caches directly.
     const now = new Date();
     for (const key of [
       queryKeys.receivedMessages(),
