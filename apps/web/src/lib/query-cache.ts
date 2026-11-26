@@ -440,22 +440,26 @@ export function applyStreakUpdate(
 
 // The Worker caches every comment page for two minutes (PUBLIC_COMMENTS_MAX_AGE
 // in api/routes/public.ts), and signed-in reads overlay that cached page, so a
-// reload can bring back a comment this browser just deleted. The ids live in
-// sessionStorage so they survive that reload.
+// reload can bring back a comment this browser just deleted or drop one it
+// just posted. Both live in sessionStorage so they survive that reload.
 const DELETED_COMMENTS_KEY = "umamin:deleted-comments";
-const DELETED_COMMENT_TTL_MS = 5 * 60_000;
+const CREATED_COMMENTS_KEY = "umamin:created-comments";
+const RECENT_COMMENT_TTL_MS = 5 * 60_000;
+const CREATED_COMMENTS_CAP = 20;
 
-function readDeletedComments(): Map<string, number> {
+type Remembered<T> = { at: number; value: T };
+
+function readRemembered<T>(key: string): Map<string, Remembered<T>> {
   const now = Date.now();
   try {
-    const raw = sessionStorage.getItem(DELETED_COMMENTS_KEY);
+    const raw = sessionStorage.getItem(key);
     const parsed: unknown = raw ? JSON.parse(raw) : null;
     if (!parsed || typeof parsed !== "object") return new Map();
     return new Map(
-      Object.entries(parsed).filter(
-        (entry): entry is [string, number] =>
-          typeof entry[1] === "number" &&
-          now - entry[1] < DELETED_COMMENT_TTL_MS,
+      Object.entries(parsed as Record<string, Remembered<T>>).filter(
+        ([, entry]) =>
+          typeof entry?.at === "number" &&
+          now - entry.at < RECENT_COMMENT_TTL_MS,
       ),
     );
   } catch {
@@ -464,49 +468,143 @@ function readDeletedComments(): Map<string, number> {
   }
 }
 
-export function rememberDeletedComment(commentId: string): void {
-  const deleted = readDeletedComments();
-  deleted.set(commentId, Date.now());
+function writeRemembered<T>(
+  key: string,
+  entries: Map<string, Remembered<T>>,
+): void {
   try {
-    sessionStorage.setItem(
-      DELETED_COMMENTS_KEY,
-      JSON.stringify(Object.fromEntries(deleted)),
-    );
+    sessionStorage.setItem(key, JSON.stringify(Object.fromEntries(entries)));
   } catch {
-    // Without storage the delete still holds until the next reload.
+    // Without storage the change still holds until the next reload.
   }
 }
 
-function withoutDeleted(
-  page: CommentsResponse,
-  deleted: Map<string, number>,
-): CommentsResponse {
-  const data = page.data.filter((comment) => !deleted.has(comment.id));
-  return data.length === page.data.length ? page : { ...page, data };
+export function rememberDeletedComment(commentId: string): void {
+  const deleted = readRemembered<true>(DELETED_COMMENTS_KEY);
+  deleted.set(commentId, { at: Date.now(), value: true });
+  writeRemembered(DELETED_COMMENTS_KEY, deleted);
+
+  const created = readRemembered<CommentData>(CREATED_COMMENTS_KEY);
+  if (created.delete(commentId)) {
+    writeRemembered(CREATED_COMMENTS_KEY, created);
+  }
 }
 
-export function dropDeletedComments(page: CommentsResponse): CommentsResponse {
-  const deleted = readDeletedComments();
-  return deleted.size === 0 ? page : withoutDeleted(page, deleted);
+export function rememberCreatedComment(comment: CommentData): void {
+  const created = readRemembered<CommentData>(CREATED_COMMENTS_KEY);
+  created.set(comment.id, { at: Date.now(), value: comment });
+  const newest = [...created].sort(([, a], [, b]) => b.at - a.at);
+  writeRemembered(
+    CREATED_COMMENTS_KEY,
+    new Map(newest.slice(0, CREATED_COMMENTS_CAP)),
+  );
+}
+
+function commentTime(comment: CommentData): number {
+  return new Date(comment.createdAt).getTime();
+}
+
+// Drops remembered deletes from a page and, on the first page, adds the
+// remembered comments for this post that `present` lacks. The list is newest
+// first, so each one goes before the first older comment. A comment older
+// than the whole page belongs on a later page and is left out.
+function withRemembered(
+  page: CommentsResponse,
+  postId: string,
+  deleted: Map<string, Remembered<true>>,
+  created: Map<string, Remembered<CommentData>>,
+  present: Set<string>,
+): CommentsResponse {
+  let data = page.data.filter((comment) => !deleted.has(comment.id));
+  let changed = data.length !== page.data.length;
+
+  for (const { value: comment } of created.values()) {
+    if (
+      comment.postId !== postId ||
+      deleted.has(comment.id) ||
+      present.has(comment.id)
+    ) {
+      continue;
+    }
+    const time = commentTime(comment);
+    const at = data.findIndex((other) => commentTime(other) < time);
+    if (at === -1 && page.nextCursor) continue;
+    const index = at === -1 ? data.length : at;
+    data = [...data.slice(0, index), comment, ...data.slice(index)];
+    changed = true;
+  }
+
+  return changed ? { ...page, data } : page;
 }
 
 /**
- * Removes remembered deletes from a comments entry that was filled without
- * the filter, such as by SSR hydration. Call it from an effect, never during
- * render: the server can't read sessionStorage.
+ * Applies this browser's recent comment deletes and creates to a page fresh
+ * from the server. A remembered comment the page already holds is forgotten:
+ * the server has caught up.
  */
-export function pruneDeletedComments(
+export function settleCommentPage(
+  postId: string,
+  page: CommentsResponse,
+  pageParam: unknown,
+): CommentsResponse {
+  const deleted = readRemembered<true>(DELETED_COMMENTS_KEY);
+  const created = readRemembered<CommentData>(CREATED_COMMENTS_KEY);
+  if (deleted.size === 0 && created.size === 0) return page;
+
+  const present = new Set(page.data.map((comment) => comment.id));
+  let caughtUp = false;
+  for (const id of present) {
+    if (created.delete(id)) caughtUp = true;
+  }
+  if (caughtUp) writeRemembered(CREATED_COMMENTS_KEY, created);
+
+  return withRemembered(
+    page,
+    postId,
+    deleted,
+    pageParam == null ? created : new Map(),
+    present,
+  );
+}
+
+/**
+ * The same for a comments entry that was filled without it, such as by SSR
+ * hydration. Call it from an effect, never during render: the server can't
+ * read sessionStorage.
+ */
+export function settleCachedComments(
   queryClient: QueryClient,
   postId: string,
 ): void {
-  const deleted = readDeletedComments();
-  if (deleted.size === 0) return;
+  const deleted = readRemembered<true>(DELETED_COMMENTS_KEY);
+  const created = readRemembered<CommentData>(CREATED_COMMENTS_KEY);
+  if (deleted.size === 0 && created.size === 0) return;
+
   const key = queryKeys.postComments(postId);
   const current = queryClient.getQueryData<InfiniteData<CommentsResponse>>(key);
-  if (!current?.pages.some((page) => page.data.some((c) => deleted.has(c.id))))
-    return;
-  queryClient.setQueryData<InfiniteData<CommentsResponse>>(key, {
-    ...current,
-    pages: current.pages.map((page) => withoutDeleted(page, deleted)),
+  if (!current) return;
+
+  const present = new Set(
+    current.pages.flatMap((page) => page.data.map((comment) => comment.id)),
+  );
+  const firstPageIsTop = current.pageParams[0] == null;
+  let changed = false;
+  const pages = current.pages.map((page, i) => {
+    const next = withRemembered(
+      page,
+      postId,
+      deleted,
+      i === 0 && firstPageIsTop ? created : new Map(),
+      present,
+    );
+    if (next !== page) changed = true;
+    return next;
   });
+
+  if (changed) {
+    queryClient.setQueryData<InfiniteData<CommentsResponse>>(key, {
+      ...current,
+      pages,
+    });
+  }
 }

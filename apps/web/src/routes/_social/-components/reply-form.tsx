@@ -14,6 +14,7 @@ import {
   patchPostAcrossFeed,
   patchPostResponse,
   prependComment,
+  rememberCreatedComment,
   replaceComment,
 } from "@/lib/query-cache";
 import type {
@@ -127,6 +128,7 @@ export default function ReplyForm({ user, postId }: Props) {
           author,
           isLiked: false,
         };
+        rememberCreatedComment(nextComment);
 
         queryClient.setQueryData<InfiniteData<CommentsResponse>>(
           queryKeys.postComments(postId),

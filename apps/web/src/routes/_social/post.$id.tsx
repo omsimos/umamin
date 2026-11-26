@@ -4,7 +4,7 @@ import { ClientOnlyAdContainer } from "@/components/ad-container-client";
 import { RouteSegmentError } from "@/components/route-segment-error";
 import { loadViewer } from "@/lib/loader-viewer";
 import { PUBLIC_STALE_TIME, queryKeys } from "@/lib/query";
-import { dropDeletedComments } from "@/lib/query-cache";
+import { settleCommentPage } from "@/lib/query-cache";
 import { absoluteUrl, pageSeo, truncate, websiteId } from "@/lib/seo";
 import type { CommentsResponse, PostData } from "@/lib/types";
 import { visibleText } from "@/lib/utils";
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/_social/post/$id")({
             id,
             (pageParam as string | null) ?? null,
             !!viewerId,
-          ).then(dropDeletedComments),
+          ).then((page) => settleCommentPage(id, page, pageParam)),
         initialPageParam: null as string | null,
         getNextPageParam: (lastPage: CommentsResponse) =>
           lastPage.nextCursor ?? null,

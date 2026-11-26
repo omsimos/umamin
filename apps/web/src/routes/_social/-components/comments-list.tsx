@@ -13,7 +13,7 @@ import {
   PUBLIC_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
-import { dropDeletedComments, pruneDeletedComments } from "@/lib/query-cache";
+import { settleCachedComments, settleCommentPage } from "@/lib/query-cache";
 import { fetchPostCommentsPage } from "@/lib/query-fetchers";
 import type { CommentData, CommentsResponse } from "@/lib/types";
 import { useIntersectionLoadMore } from "../-lib/hooks";
@@ -50,7 +50,7 @@ export function CommentsList({
         postId,
         (pageParam as string | null) ?? null,
         isAuthenticated,
-      ).then(dropDeletedComments),
+      ).then((page) => settleCommentPage(postId, page, pageParam)),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: isAuthenticated ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME,
@@ -58,10 +58,10 @@ export function CommentsList({
   });
   const hasResolvedData = data !== undefined;
 
-  // SSR fills this cache without seeing sessionStorage, so recent deletes are
-  // filtered once the page has hydrated.
+  // SSR fills this cache without seeing sessionStorage, so recent deletes and
+  // creates are applied once the page has hydrated.
   useEffect(() => {
-    if (data) pruneDeletedComments(queryClient, postId);
+    if (data) settleCachedComments(queryClient, postId);
   }, [data, queryClient, postId]);
 
   const comments = useMemo(() => {
