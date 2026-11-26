@@ -23,6 +23,9 @@ import {
 } from "./-lib/loader-queries";
 
 export const Route = createFileRoute("/_social/user/$username")({
+  // Remount per profile so a pending follow settles against its own
+  // username, not the next profile opened from a link on this one.
+  remountDeps: ({ params }) => params,
   loader: async ({ context, params, preload }) => {
     const { queryClient } = context;
     const username = formatUsername(params.username);

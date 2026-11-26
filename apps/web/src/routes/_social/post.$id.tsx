@@ -18,6 +18,9 @@ import {
 } from "./-lib/loader-queries";
 
 export const Route = createFileRoute("/_social/post/$id")({
+  // Opening a quoted post keeps this route matched. Remount so a reply draft
+  // or a pending like can't carry over and land on the other post.
+  remountDeps: ({ params }) => params,
   loader: async ({ context, params }) => {
     const { id } = params;
     const me = await loadViewer(context.queryClient);
