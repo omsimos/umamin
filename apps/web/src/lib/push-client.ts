@@ -34,10 +34,20 @@ export function isIosWebPushBlocked(): boolean {
   return isIos && !isStandaloneMode();
 }
 
+// The lib waits on navigator.serviceWorker.ready, which never settles when no
+// worker was registered (a failed or skipped register()), so a caller would
+// hang on "loading". getRegistration() resolves undefined right away instead.
+async function getPushRegistration(): Promise<
+  ServiceWorkerRegistration | undefined
+> {
+  if (!isPushSupported()) return undefined;
+  return navigator.serviceWorker.getRegistration();
+}
+
 export async function getExistingSubscription(): Promise<PushSubscription | null> {
-  // SSR guard only — getCurrentSubscription re-checks push support itself.
-  if (typeof window === "undefined") return null;
-  return getCurrentSubscription();
+  const registration = await getPushRegistration();
+  if (!registration) return null;
+  return getCurrentSubscription({ registration });
 }
 
 // Subscribes this device and returns the fields the server needs. Caller must
@@ -46,7 +56,10 @@ export async function getExistingSubscription(): Promise<PushSubscription | null
 export async function subscribeToPush(
   vapidPublicKey: string,
 ): Promise<SerializedSubscription> {
-  const result = await subscribe(vapidPublicKey);
+  const registration = await getPushRegistration();
+  const result = registration
+    ? await subscribe(vapidPublicKey, { registration })
+    : ({ status: "unsupported" } as const);
   if (result.status !== "subscribed") {
     throw new ExpectedError(
       result.status === "denied"
@@ -73,8 +86,7 @@ export async function subscribeToPush(
 // endpoint would leave a live browser subscription it believes is gone. A
 // failure here has to surface to the caller.
 export async function unsubscribeFromPush(): Promise<string | null> {
-  if (typeof window === "undefined") return null;
-  const sub = await getCurrentSubscription();
+  const sub = await getExistingSubscription();
   if (!sub) return null;
   const { endpoint } = sub;
   await sub.unsubscribe();
