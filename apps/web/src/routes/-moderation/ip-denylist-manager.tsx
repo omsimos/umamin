@@ -4,6 +4,7 @@ import { Input } from "@umamin/ui/components/input";
 import { Loader2Icon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import { callAction } from "@/lib/api";
 import { ExpectedError } from "@/lib/expected-error";
 import { getActionError } from "@/lib/utils";
@@ -33,7 +34,13 @@ export function IpDenylistManager() {
   const queryClient = useQueryClient();
   const [ip, setIp] = useState("");
 
-  const { data: ips, isLoading } = useQuery({
+  const {
+    data: ips,
+    isLoading,
+    error,
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: fetchDenylist,
   });
@@ -96,8 +103,25 @@ export function IpDenylistManager() {
         </Button>
       </form>
 
+      {error && ips && (
+        <RefetchErrorAlert onRetry={() => refetch()} retrying={isFetching} />
+      )}
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : error && !ips ? (
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Couldn't load blocked IPs.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isFetching}
+            onClick={() => refetch()}
+          >
+            Try again
+          </Button>
+        </div>
       ) : ips && ips.length > 0 ? (
         <ul className="divide-y rounded-lg border">
           {ips.map((entry) => (
