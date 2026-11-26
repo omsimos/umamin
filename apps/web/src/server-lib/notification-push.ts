@@ -224,9 +224,9 @@ export type PushFailureReport = (
   push: "vapid rejected" | "send failed",
 ) => void;
 
-// The library waits 30 s by default. The streak cron sends in batches that
-// each wait for their slowest device, and a request's waitUntil budget is 30 s,
-// so one stalled push service must not hold a send that long.
+// The library waits 30 s by default. The streak cron's workers each wait on
+// their user's slowest device, and a request's waitUntil budget is 30 s, so
+// one stalled push service must not hold a send that long.
 const PUSH_SEND_TIMEOUT_MS = 5_000;
 
 /**
