@@ -1,6 +1,7 @@
 import { postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getPostsPage } from "../src/server-lib/data";
 import type { Db } from "../src/server-lib/db";
 import {
   getRedisHotPostIdsPage,
@@ -141,5 +142,20 @@ describe("getRedisHotPostIdsPage", () => {
     const { kv } = fakeKv();
     await kv.put("feed:hot:v2", JSON.stringify(["p0", "p1"]));
     expect(await getRedisHotPostIdsPage(kv, "rh.15", 15, 1)).toBeNull();
+  });
+
+  it("falls back to the database when the KV read fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const kv = {
+      get: vi.fn().mockRejectedValue(new Error("kv unavailable")),
+    } as unknown as KVNamespace;
+    const db = await makeTestDb();
+    await seed(db, [{ id: "dbpost", createdAt: new Date() }]);
+
+    expect(await getRedisHotPostIdsPage(kv, null, 15, 1)).toBeNull();
+
+    const page = await getPostsPage(db, kv, { sort: "hot" });
+    expect(page.data.map((item) => item.post.id)).toEqual(["dbpost"]);
+    error.mockRestore();
   });
 });
