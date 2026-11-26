@@ -72,6 +72,7 @@ export function CommentsList({
   const { setSentinel } = useIntersectionLoadMore<HTMLDivElement>({
     hasNextPage: Boolean(hasNextPage),
     isFetchingNextPage,
+    isFetchNextPageError,
     loadMoreKey: nextCursor,
     onLoadMore: fetchNextPage,
   });
