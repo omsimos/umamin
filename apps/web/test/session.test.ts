@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "../src/server-lib/db";
+import { runInRequestScope } from "../src/server-lib/request-scope";
 import {
   __clearSessionCache,
   __MICRO_CACHE_MAX_ENTRIES,
@@ -67,7 +68,7 @@ describe("session core (real libSQL)", () => {
   // The micro-cache only holds settled results, so concurrent validations of
   // the same token used to each issue their own Turso read. Route loaders that
   // run in parallel (the feed) hit exactly that case.
-  it("collapses concurrent validations of one token into a single query", async () => {
+  it("collapses concurrent validations of one token within a request", async () => {
     await seedUser(db, "user1");
     const token = generateSessionToken();
     await createSession(db, token, "user1");
@@ -81,9 +82,11 @@ describe("session core (real libSQL)", () => {
       },
     }) as Db;
 
-    const results = await Promise.all(
-      Array.from({ length: 5 }, () =>
-        validateSessionToken(instrumented, token),
+    const results = await runInRequestScope(() =>
+      Promise.all(
+        Array.from({ length: 5 }, () =>
+          validateSessionToken(instrumented, token),
+        ),
       ),
     );
 

@@ -1,4 +1,5 @@
 import { canonicalizeIp } from "./ip";
+import { shareWithinRequest } from "./request-scope";
 
 // Self-controlled, revocable IP denylist (a moderator lever), DISTINCT from the
 // CF WAF: the WAF blocks at the edge before the Worker runs (right tool for
@@ -25,7 +26,6 @@ const CACHE_TTL_MS = 30_000;
 const FAILURE_RETRY_MS = 10_000;
 
 let cache: { ips: Set<string>; fetchedAt: number } | null = null;
-let inflight: Promise<Set<string>> | null = null;
 
 async function loadLegacyDenylist(kv: KVNamespace): Promise<string[]> {
   return (await kv.get<string[]>(LEGACY_DENYLIST_KEY, "json")) ?? [];
@@ -56,29 +56,24 @@ async function getDenylist(
   if (cache && now - cache.fetchedAt < CACHE_TTL_MS) {
     return cache.ips;
   }
-  // Collapse a burst of concurrent refreshes into a single KV read.
-  if (!inflight) {
-    inflight = loadDenylist(kv)
-      .then(
-        (ips) => {
-          cache = { ips, fetchedAt: now };
-          return ips;
-        },
-        (error: unknown) => {
-          // Keep enforcing the last list we held, and stamp it so the next
-          // refresh waits FAILURE_RETRY_MS instead of hitting a failing KV on
-          // every request.
-          console.error("[ip-denylist] refresh failed", error);
-          const ips = cache?.ips ?? new Set<string>();
-          cache = { ips, fetchedAt: now - CACHE_TTL_MS + FAILURE_RETRY_MS };
-          return ips;
-        },
-      )
-      .finally(() => {
-        inflight = null;
-      });
-  }
-  return inflight;
+  // Collapses the refreshes within one request only (see request-scope.ts).
+  return shareWithinRequest("ip-denylist", () =>
+    loadDenylist(kv).then(
+      (ips) => {
+        cache = { ips, fetchedAt: now };
+        return ips;
+      },
+      (error: unknown) => {
+        // Keep enforcing the last list we held, and stamp it so the next
+        // refresh waits FAILURE_RETRY_MS instead of hitting a failing KV on
+        // every request.
+        console.error("[ip-denylist] refresh failed", error);
+        const ips = cache?.ips ?? new Set<string>();
+        cache = { ips, fetchedAt: now - CACHE_TTL_MS + FAILURE_RETRY_MS };
+        return ips;
+      },
+    ),
+  );
 }
 
 export async function isIpDenied(
@@ -136,5 +131,4 @@ export async function listDeniedIps(
 // Test-only: reset the in-process cache between cases.
 export function __clearDenylistCache(): void {
   cache = null;
-  inflight = null;
 }

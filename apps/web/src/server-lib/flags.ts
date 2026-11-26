@@ -9,6 +9,7 @@ import {
 import type { AppEnv } from "./env";
 import { formatErrorChain } from "./errors";
 import { captureServerException } from "./posthog";
+import { shareWithinRequest } from "./request-scope";
 
 // PostHog feature flags, evaluated in the Worker.
 //
@@ -95,9 +96,6 @@ const FLAG_FALLBACK: Readonly<Record<string, boolean>> = {
 const lastKnown = new Map<string, boolean>();
 
 const cache = new Map<string, Entry>();
-// Concurrent resolvers for one distinct id share a single /flags request — the
-// same collapsing validateSessionToken does for parallel loaders.
-const inflight = new Map<string, Promise<Record<string, boolean>>>();
 
 // The KV snapshot as this isolate last read it; `flags: null` means there was
 // none (a fresh deploy before the first cron run, or a failed read).
@@ -106,7 +104,6 @@ let snapshotEntry: {
   cachedAt: number;
   ttl: number;
 } | null = null;
-let snapshotInflight: Promise<Record<string, boolean> | null> | null = null;
 
 // When each missing flag key was last reported from this isolate. Such a key
 // stays missing on every evaluation, so reporting it each time only buried
@@ -317,8 +314,10 @@ function readSnapshot(env: AppEnv): Promise<Record<string, boolean> | null> {
     return Promise.resolve(snapshotEntry.flags);
   }
 
-  if (!snapshotInflight) {
-    snapshotInflight = env.KV.get<StoredSnapshot>(SNAPSHOT_KV_KEY, "json")
+  const kv = env.KV;
+  return shareWithinRequest("flags-snapshot", () =>
+    kv
+      .get<StoredSnapshot>(SNAPSHOT_KV_KEY, "json")
       .then((stored) => {
         const flags = parseSnapshot(stored);
         if (flags) {
@@ -337,12 +336,8 @@ function readSnapshot(env: AppEnv): Promise<Record<string, boolean> | null> {
           ttl: MISSING_TTL_MS,
         };
         return null;
-      })
-      .finally(() => {
-        snapshotInflight = null;
-      });
-  }
-  return snapshotInflight;
+      }),
+  );
 }
 
 /**
@@ -435,47 +430,44 @@ export async function resolveFlags(
     return { ...hit.flags, ...pickForced(forced, keys) };
   }
 
-  let pending = inflight.get(cacheKey);
-  if (!pending) {
-    pending = evaluate(env, distinctId, keys)
-      .then(({ answered, missing, failure }) => {
-        const flags: Record<string, boolean> = { ...answered };
-        for (const [key, value] of Object.entries(answered)) {
-          rememberAnswer(distinctId, key, value);
-        }
-        for (const key of missing) {
-          flags[key] = failure
-            ? fallbackFor(distinctId, key)
-            : omittedValue(distinctId, key);
-        }
+  // Concurrent resolvers for one distinct id within a request (parallel SSR
+  // loaders) share a single /flags request; separate requests never share a
+  // pending one (see request-scope.ts).
+  const pending = shareWithinRequest(`flags:${cacheKey}`, () =>
+    evaluate(env, distinctId, keys).then(({ answered, missing, failure }) => {
+      const flags: Record<string, boolean> = { ...answered };
+      for (const [key, value] of Object.entries(answered)) {
+        rememberAnswer(distinctId, key, value);
+      }
+      for (const key of missing) {
+        flags[key] = failure
+          ? fallbackFor(distinctId, key)
+          : omittedValue(distinctId, key);
+      }
 
-        if (failure) {
-          const list = [...keys].sort().join(",");
-          console.warn(`flag evaluation request failed (${failure}):`, list);
-          captureServerException(
-            env,
-            undefined,
-            new Error("flag evaluation request failed"),
-            { distinctId, properties: { flags: list, reason: failure } },
-          );
-        } else if (missing.length > 0) {
-          reportMissing(env, distinctId, missing);
-        }
+      if (failure) {
+        const list = [...keys].sort().join(",");
+        console.warn(`flag evaluation request failed (${failure}):`, list);
+        captureServerException(
+          env,
+          undefined,
+          new Error("flag evaluation request failed"),
+          { distinctId, properties: { flags: list, reason: failure } },
+        );
+      } else if (missing.length > 0) {
+        reportMissing(env, distinctId, missing);
+      }
 
-        prune(Date.now());
-        cache.set(cacheKey, {
-          flags,
-          cachedAt: Date.now(),
-          // PostHog leaving a key out is an answer; a failed request is not.
-          ttl: failure ? MISSING_TTL_MS : CACHE_TTL_MS,
-        });
-        return flags;
-      })
-      .finally(() => {
-        inflight.delete(cacheKey);
+      prune(Date.now());
+      cache.set(cacheKey, {
+        flags,
+        cachedAt: Date.now(),
+        // PostHog leaving a key out is an answer; a failed request is not.
+        ttl: failure ? MISSING_TTL_MS : CACHE_TTL_MS,
       });
-    inflight.set(cacheKey, pending);
-  }
+      return flags;
+    }),
+  );
 
   try {
     const flags = await pending;
@@ -530,10 +522,8 @@ export function isDmEnabled(env: AppEnv): Promise<boolean> {
 /** Test-only: drop the in-isolate caches between cases. */
 export function __clearFlagCache(): void {
   cache.clear();
-  inflight.clear();
   lastKnown.clear();
   flagsClients.clear();
   reportedMissing.clear();
   snapshotEntry = null;
-  snapshotInflight = null;
 }
