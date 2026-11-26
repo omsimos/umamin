@@ -14,6 +14,7 @@ vi.mock("../src/server-lib/push", async (importOriginal) => {
   return { ...actual, sendPush: vi.fn() };
 });
 
+import { type Client, LibsqlError } from "@libsql/client";
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
 import { eq, sql } from "drizzle-orm";
@@ -362,6 +363,20 @@ describe("streak push cron (real libSQL)", () => {
     const result = await sendStreakPushes(db, vapid, "ending", NOW);
     expect(result.failures).toBe(2);
     expect(result.firstFailure).toBeInstanceOf(Error);
+  });
+
+  it("survives one transient gateway error on the due-users read", async () => {
+    await user("a", { streak: 5, streakDay: TODAY - 1 });
+    const client = (db as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    vi.spyOn(client, "execute")
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+
+    const result = await sendStreakPushes(db, vapid, "ending", NOW);
+    expect(result).toMatchObject({ users: 1, devices: 1 });
   });
 
   // The per-send timeout bounds how long one stalled push service can hold a

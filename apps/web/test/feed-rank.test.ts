@@ -1,3 +1,4 @@
+import { type Client, LibsqlError } from "@libsql/client";
 import { postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -118,6 +119,21 @@ describe("recomputeHotFeed", () => {
     const { kv, read } = fakeKv();
     await recomputeHotFeed(db, kv);
     expect(read(HOT_FEED_KEY)).toEqual([]);
+  });
+
+  it("survives one transient gateway error on the candidate read", async () => {
+    await seed(db, [{ id: "p1", createdAt: new Date() }]);
+    const client = (db as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    vi.spyOn(client, "execute")
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+
+    const { kv, read } = fakeKv();
+    await recomputeHotFeed(db, kv);
+    expect(read(HOT_FEED_KEY)).toEqual(["p1"]);
   });
 });
 

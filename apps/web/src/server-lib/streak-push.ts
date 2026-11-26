@@ -4,6 +4,7 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { toStreakDay, toStreakMonth } from "../lib/streak";
 import type { Db } from "./db";
+import { retryTransientRead } from "./db-retry";
 import {
   deliverPush,
   type PushDevice,
@@ -108,13 +109,8 @@ export async function sendStreakPushes(
   const today = toStreakDay(now);
   const month = toStreakMonth(now);
 
-  const rows = await streakPushQuery(
-    db,
-    kind,
-    today,
-    month,
-    pivot,
-    maxDevices + 1,
+  const rows = await retryTransientRead(() =>
+    streakPushQuery(db, kind, today, month, pivot, maxDevices + 1),
   );
 
   // Cut at a whole user so nobody gets the push on only some devices: past

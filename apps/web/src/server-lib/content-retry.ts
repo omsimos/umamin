@@ -21,6 +21,7 @@ import { classifyContentWithOutcome } from "./content-classifier";
 import { getEarlierComments, postClassifierText } from "./content-context";
 import { reviewableScoreColumns } from "./content-label";
 import type { Db } from "./db";
+import { retryTransientRead } from "./db-retry";
 import type { AppEnv } from "./env";
 import { captureServerException } from "./posthog";
 
@@ -119,65 +120,66 @@ export async function retryUnclassifiedContent(
 
   // Oldest first, so rows nearest the window's edge are tried before they age
   // out. Each query rides its table's partial unclassified index.
-  const [candidatePosts, candidateComments, candidateNotes] = await Promise.all(
-    [
-      db
-        .select({
-          id: postTable.id,
-          content: postTable.content,
-          pollEndsAt: postTable.pollEndsAt,
-          quotedContent: quoted.content,
-        })
-        .from(postTable)
-        .leftJoin(quoted, eq(quoted.id, postTable.quotedPostId))
-        .where(
-          and(
-            gte(postTable.createdAt, from),
-            lte(postTable.createdAt, to),
-            isNull(postTable.modSevere),
-          ),
-        )
-        .orderBy(asc(postTable.createdAt))
-        .limit(RETRY_CANDIDATES),
-      db
-        .select({
-          id: postCommentTable.id,
-          content: postCommentTable.content,
-          postId: postCommentTable.postId,
-          authorId: postCommentTable.authorId,
-          createdAt: postCommentTable.createdAt,
-          postContent: postTable.content,
-        })
-        .from(postCommentTable)
-        .innerJoin(postTable, eq(postTable.id, postCommentTable.postId))
-        .where(
-          and(
-            gte(postCommentTable.createdAt, from),
-            lte(postCommentTable.createdAt, to),
-            isNull(postCommentTable.modSevere),
-          ),
-        )
-        .orderBy(asc(postCommentTable.createdAt))
-        .limit(RETRY_CANDIDATES),
-      db
-        .select({
-          id: noteTable.id,
-          content: noteTable.content,
-          updatedAt: noteTable.updatedAt,
-        })
-        .from(noteTable)
-        .where(
-          and(
-            gte(noteTable.updatedAt, from),
-            lte(noteTable.updatedAt, to),
-            isNull(noteTable.modSevere),
-            ne(noteTable.content, ""),
-          ),
-        )
-        .orderBy(asc(noteTable.updatedAt))
-        .limit(RETRY_CANDIDATES),
-    ],
-  );
+  const [candidatePosts, candidateComments, candidateNotes] =
+    await retryTransientRead(() =>
+      Promise.all([
+        db
+          .select({
+            id: postTable.id,
+            content: postTable.content,
+            pollEndsAt: postTable.pollEndsAt,
+            quotedContent: quoted.content,
+          })
+          .from(postTable)
+          .leftJoin(quoted, eq(quoted.id, postTable.quotedPostId))
+          .where(
+            and(
+              gte(postTable.createdAt, from),
+              lte(postTable.createdAt, to),
+              isNull(postTable.modSevere),
+            ),
+          )
+          .orderBy(asc(postTable.createdAt))
+          .limit(RETRY_CANDIDATES),
+        db
+          .select({
+            id: postCommentTable.id,
+            content: postCommentTable.content,
+            postId: postCommentTable.postId,
+            authorId: postCommentTable.authorId,
+            createdAt: postCommentTable.createdAt,
+            postContent: postTable.content,
+          })
+          .from(postCommentTable)
+          .innerJoin(postTable, eq(postTable.id, postCommentTable.postId))
+          .where(
+            and(
+              gte(postCommentTable.createdAt, from),
+              lte(postCommentTable.createdAt, to),
+              isNull(postCommentTable.modSevere),
+            ),
+          )
+          .orderBy(asc(postCommentTable.createdAt))
+          .limit(RETRY_CANDIDATES),
+        db
+          .select({
+            id: noteTable.id,
+            content: noteTable.content,
+            updatedAt: noteTable.updatedAt,
+          })
+          .from(noteTable)
+          .where(
+            and(
+              gte(noteTable.updatedAt, from),
+              lte(noteTable.updatedAt, to),
+              isNull(noteTable.modSevere),
+              ne(noteTable.content, ""),
+            ),
+          )
+          .orderBy(asc(noteTable.updatedAt))
+          .limit(RETRY_CANDIDATES),
+      ]),
+    );
 
   const [posts, comments, notes] = await Promise.all([
     withAttempts(env, "post", candidatePosts),

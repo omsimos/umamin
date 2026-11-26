@@ -1,6 +1,7 @@
 import { postTable } from "@umamin/db/schema/post";
 import { desc } from "drizzle-orm";
 import type { Db } from "./db";
+import { retryTransientRead } from "./db-retry";
 import { getHotScore, isHotEligible } from "./hot-score";
 
 // Hot-feed ranking, ported from apps/www's Redis zset to a single Workers KV
@@ -117,11 +118,13 @@ export async function recomputeHotFeed(
     return;
   }
 
-  const posts = await db
-    .select(hotRankColumns)
-    .from(postTable)
-    .orderBy(desc(postTable.createdAt), desc(postTable.id))
-    .limit(HOT_FEED_RECOMPUTE_SCAN);
+  const posts = await retryTransientRead(() =>
+    db
+      .select(hotRankColumns)
+      .from(postTable)
+      .orderBy(desc(postTable.createdAt), desc(postTable.id))
+      .limit(HOT_FEED_RECOMPUTE_SCAN),
+  );
 
   const ids = posts
     .filter((post) => isHotEligible(post, enforce))

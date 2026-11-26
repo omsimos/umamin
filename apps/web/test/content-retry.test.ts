@@ -7,6 +7,7 @@ vi.mock("../src/server-lib/content-classifier", () => ({
   classifyContentWithOutcome,
 }));
 
+import { type Client, LibsqlError } from "@libsql/client";
 import { noteTable } from "@umamin/db/schema/note";
 import {
   pollOptionTable,
@@ -403,5 +404,25 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
 
     expect(result).toEqual({ attempted: 3, classified: 2, backlog: 1 });
     error.mockRestore();
+  });
+
+  it("survives one transient gateway error on the candidate read", async () => {
+    await db.insert(postTable).values({
+      id: "p1",
+      content: "missed",
+      authorId: "a",
+      createdAt: minutesAgo(10),
+    });
+    const client = (db as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    vi.spyOn(client, "execute")
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+
+    const result = await retryUnclassifiedContent(db, env);
+
+    expect(result).toEqual({ attempted: 1, classified: 1, backlog: 0 });
   });
 });
