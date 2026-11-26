@@ -191,6 +191,9 @@ export async function renderProfileCard(
   // face is lazy and most app routes never render it, so request the weights
   // the card draws or the first export falls back to a system font.
   if (typeof document.fonts?.load === "function") {
+    // The drawn text picks the unicode-range files, so a name outside basic
+    // Latin loads its subset too.
+    const text = `Mg1${Object.values(model).join("")}`;
     await Promise.all(
       [
         `700 48px ${display}`,
@@ -199,7 +202,7 @@ export async function renderProfileCard(
         `500 36px ${sans}`,
         `600 36px ${sans}`,
         `700 36px ${sans}`,
-      ].map((font) => document.fonts.load(font, "Mg1").catch(() => {})),
+      ].map((font) => document.fonts.load(font, text).catch(() => {})),
     );
   }
 

@@ -129,4 +129,32 @@ describe("useCreatePost", () => {
 
     expect(queryClient.getQueryData(feedKey)).toBeUndefined();
   });
+
+  it("lets a feed's first load finish when a post is sent meanwhile", async () => {
+    const queryClient = new QueryClient();
+    const firstLoad = deferred<InfiniteData<FeedResponse>>();
+    const loading = queryClient.fetchQuery({
+      queryKey: feedKey,
+      queryFn: () => firstLoad.promise,
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    vi.mocked(createPostAction).mockResolvedValue({
+      post: { id: "new-post", images: null },
+    } as never);
+    const { result } = renderHook(() => useCreatePost(user), { wrapper });
+
+    await act(async () => {
+      await result.current.submitPost({ content: "hi" });
+    });
+    const loaded = {
+      pages: [{ data: [], nextCursor: null }],
+      pageParams: [null],
+    } as unknown as InfiniteData<FeedResponse>;
+    firstLoad.resolve(loaded);
+
+    await expect(loading).resolves.toBe(loaded);
+    expect(queryClient.getQueryData(feedKey)).toBe(loaded);
+  });
 });

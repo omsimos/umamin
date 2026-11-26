@@ -99,7 +99,13 @@ export function useCreatePost(user: PublicUser | null) {
       quotedPost,
     }) => {
       if (!user) return {};
-      await queryClient.cancelQueries({ queryKey: queryKeys.postsRoot() });
+      // Only feeds that hold data get the optimistic post, so only they need
+      // their in-flight fetch stopped. Cancelling a first load would leave
+      // that feed on its skeleton with nothing to fetch it again.
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.postsRoot(),
+        predicate: (query) => query.state.data !== undefined,
+      });
 
       // Temp option ids: the optimistic poll renders but is not votable until
       // the server swap brings the real ids (onSuccess below).

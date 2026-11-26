@@ -102,7 +102,7 @@ describe.each([
     expect(fetchMessagesPage).toHaveBeenCalledTimes(1);
   });
 
-  it("refetches only page 1 of a stale multi-page list on a revisit", async () => {
+  it("keeps a stale multi-page list in place on a revisit", async () => {
     const client = renderList(
       ui,
       queryKey,
@@ -112,6 +112,25 @@ describe.each([
       ],
       Date.now() - 60_000,
     );
+
+    expect(await screen.findByText("question older")).toBeInTheDocument();
+    expect(fetchMessagesPage).not.toHaveBeenCalled();
+    expect(
+      client.getQueryData<InfiniteData<MessagesResponse>>(queryKey)?.pages,
+    ).toHaveLength(2);
+  });
+
+  it("refetches only page 1 of a stale multi-page list on focus", async () => {
+    const client = renderList(
+      ui,
+      queryKey,
+      [
+        { messages: [message("old")], nextCursor: "c1" },
+        { messages: [message("older")], nextCursor: null },
+      ],
+      Date.now() - 60_000,
+    );
+    refocus();
 
     expect(await screen.findByText("question new")).toBeInTheDocument();
     expect(fetchMessagesPage).toHaveBeenCalledTimes(1);

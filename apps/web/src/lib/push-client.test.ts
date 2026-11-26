@@ -44,20 +44,52 @@ describe("push-client without a ready service worker", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     // oxlint-disable-next-line typescript/no-explicit-any -- jsdom has no serviceWorker to restore
     delete (navigator as any).serviceWorker;
   });
 
-  it("reports no subscription when no registration exists", async () => {
+  // No registration means a bounded wait for one still on its way, never the
+  // unbounded wait on `ready`.
+  it("reports no subscription once the wait for a registration runs out", async () => {
+    vi.useFakeTimers();
     stubServiceWorker(undefined);
-    expect(await settle(getExistingSubscription())).toBeNull();
-    expect(await settle(unsubscribeFromPush())).toBeNull();
+
+    const existing = getExistingSubscription();
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(await existing).toBeNull();
+
+    const removed = unsubscribeFromPush();
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(await removed).toBeNull();
   });
 
-  it("refuses to subscribe when no registration exists", async () => {
+  it("refuses to subscribe once the wait for a registration runs out", async () => {
+    vi.useFakeTimers();
     stubServiceWorker(undefined);
-    await expect(settle(subscribeToPush(VAPID_KEY))).rejects.toThrow();
+
+    const result = subscribeToPush(VAPID_KEY).catch((err: unknown) => err);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(await result).toBeInstanceOf(Error);
+  });
+
+  it("uses a registration that finishes while it waits", async () => {
+    const sub = { endpoint: "https://push.example/late" };
+    let ready!: (registration: unknown) => void;
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        ready: new Promise((resolve) => {
+          ready = resolve;
+        }),
+        getRegistration: async () => undefined,
+      },
+    });
+
+    const existing = getExistingSubscription();
+    ready({ active: {}, pushManager: { getSubscription: async () => sub } });
+    expect(await settle(existing)).toBe(sub);
   });
 
   it("reads and creates subscriptions through the existing registration", async () => {

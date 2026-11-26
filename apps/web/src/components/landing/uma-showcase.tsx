@@ -64,13 +64,16 @@ export function UmaShowcase() {
           mood={line === "viewed" ? "serious" : "calm"}
           className="size-12 animate-heart-pop motion-reduce:animate-none"
         />
-        <p
-          key={`say-${line}`}
-          aria-live="polite"
-          className="min-h-14 flex-1 animate-reveal-pop rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-sm motion-reduce:animate-none"
-        >
-          {LINES[line]}
-        </p>
+        {/* The live region stays mounted; a region inserted together with
+            its text is often not announced. */}
+        <div aria-live="polite" className="flex-1">
+          <p
+            key={line}
+            className="min-h-14 animate-reveal-pop rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-sm motion-reduce:animate-none"
+          >
+            {LINES[line]}
+          </p>
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3">

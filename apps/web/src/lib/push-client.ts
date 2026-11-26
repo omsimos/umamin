@@ -34,14 +34,24 @@ export function isIosWebPushBlocked(): boolean {
   return isIos && !isStandaloneMode();
 }
 
+const REGISTRATION_WAIT_MS = 3000;
+
 // The lib waits on navigator.serviceWorker.ready, which never settles when no
 // worker was registered (a failed or skipped register()), so a caller would
-// hang on "loading". getRegistration() resolves undefined right away instead.
+// hang on "loading". The worker registers after load, so one that is still on
+// its way gets a bounded wait instead of reading as "no push here".
 async function getPushRegistration(): Promise<
   ServiceWorkerRegistration | undefined
 > {
   if (!isPushSupported()) return undefined;
-  return navigator.serviceWorker.getRegistration();
+  const existing = await navigator.serviceWorker.getRegistration();
+  if (existing) return existing;
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<undefined>((resolve) => {
+      setTimeout(() => resolve(undefined), REGISTRATION_WAIT_MS);
+    }),
+  ]);
 }
 
 export async function getExistingSubscription(): Promise<PushSubscription | null> {

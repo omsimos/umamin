@@ -128,4 +128,37 @@ describe("useIntersectionLoadMore", () => {
 
     expect(onLoadMore).toHaveBeenCalledTimes(1);
   });
+
+  it("loads the failed cursor again once the error clears", async () => {
+    vi.stubGlobal("IntersectionObserver", TestIntersectionObserver);
+    const onLoadMore = vi.fn().mockResolvedValue(undefined);
+
+    const { rerender } = render(
+      <InfiniteLoadHarness onLoadMore={onLoadMore} loadMoreKey="c1" />,
+    );
+    await act(async () => {
+      TestIntersectionObserver.latest?.trigger(true);
+    });
+    rerender(
+      <InfiniteLoadHarness
+        onLoadMore={onLoadMore}
+        loadMoreKey="c1"
+        isFetchingNextPage
+      />,
+    );
+    rerender(
+      <InfiniteLoadHarness
+        onLoadMore={onLoadMore}
+        loadMoreKey="c1"
+        isFetchNextPageError
+      />,
+    );
+    // A refresh of page 1 succeeds and hands back the same cursor.
+    rerender(<InfiniteLoadHarness onLoadMore={onLoadMore} loadMoreKey="c1" />);
+    await act(async () => {
+      TestIntersectionObserver.latest?.trigger(true);
+    });
+
+    expect(onLoadMore).toHaveBeenCalledTimes(2);
+  });
 });

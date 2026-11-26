@@ -41,20 +41,24 @@ export function useIntersectionLoadMore<TElement extends HTMLElement>({
   const sentinelRef = useRef<TElement | null>(null);
   const lastTriggeredKeyRef = useRef<string | null>(null);
   const wasFetchingNextPageRef = useRef(isFetchingNextPage);
+  const hadNextPageErrorRef = useRef(isFetchNextPageError);
 
   // A next-page fetch can settle without moving the cursor: a pull-to-refresh
   // trims back to page 1, and a cancelQueries reverts silently. Release the
   // guard then, or the sentinel never loads that cursor again. After an error
-  // keep it, so a failing page can't auto-retry in a loop.
+  // keep it, so a failing page can't auto-retry in a loop, until the error
+  // itself clears (a refresh of page 1 succeeded).
   useEffect(() => {
-    if (
+    const settledCleanly =
       wasFetchingNextPageRef.current &&
       !isFetchingNextPage &&
-      !isFetchNextPageError
-    ) {
+      !isFetchNextPageError;
+    const errorCleared = hadNextPageErrorRef.current && !isFetchNextPageError;
+    if (settledCleanly || errorCleared) {
       lastTriggeredKeyRef.current = null;
     }
     wasFetchingNextPageRef.current = isFetchingNextPage;
+    hadNextPageErrorRef.current = isFetchNextPageError;
   }, [isFetchingNextPage, isFetchNextPageError]);
 
   useEffect(() => {

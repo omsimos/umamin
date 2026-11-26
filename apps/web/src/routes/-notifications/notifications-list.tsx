@@ -30,8 +30,6 @@ export function NotificationsList() {
 
   const {
     data,
-    dataUpdatedAt,
-    errorUpdatedAt,
     isLoading,
     error,
     fetchNextPage,
@@ -67,16 +65,21 @@ export function NotificationsList() {
   const lastSeen = visitLastSeenRef.current;
 
   const markedRef = useRef<number | null>(null);
-  const settledAt = Math.max(dataUpdatedAt, errorUpdatedAt);
 
   useEffect(() => {
     if (seenThroughMs === null || seenThroughMs === markedRef.current) {
       return;
     }
-    // A stale list is about to refresh. Marking its old newest item wouldn't
-    // move the server watermark, so the badge would stay lit; wait for the
-    // refresh to settle, which bumps settledAt and re-runs this.
-    if (Date.now() - settledAt > PRIVATE_STALE_TIME) {
+    // useRefreshWhenStale's effect runs before this one and may have just
+    // started a refresh. Marking the old newest item wouldn't move the server
+    // watermark, so the badge would stay lit; wait for the fetch to settle,
+    // which flips isFetching and re-runs this. Read from the cache because
+    // this render's isFetching predates that refresh.
+    if (
+      isFetching ||
+      queryClient.getQueryState(queryKeys.notifications())?.fetchStatus ===
+        "fetching"
+    ) {
       return;
     }
     markedRef.current = seenThroughMs;
@@ -105,8 +108,10 @@ export function NotificationsList() {
             },
         );
       })
-      .catch(() => {});
-  }, [seenThroughMs, settledAt, queryClient]);
+      .catch(() => {
+        markedRef.current = null;
+      });
+  }, [seenThroughMs, isFetching, queryClient]);
 
   if (error && !data) {
     return (
