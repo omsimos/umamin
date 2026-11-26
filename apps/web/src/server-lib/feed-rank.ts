@@ -78,6 +78,9 @@ export async function getRedisHotPostIdsPage(
     });
   } catch (error) {
     console.error("[feed-rank] hot list KV read failed", error);
+    // Only page 1 can fall back to the database. A later page has an offset
+    // into this list, and null would read as a cacheable end of feed.
+    if (cursor) throw error;
     return null;
   }
 

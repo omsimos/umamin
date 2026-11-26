@@ -44,7 +44,7 @@ any that are empty.
 - The push notification switch no longer stays on "Checking notification status…" in browsers that block the app's background worker.
 - Profile share images use the heading typeface on the first export.
 - Moderators can load more of the review queue after clearing a page, and see an error with a retry when the blocked IP list fails to load.
-- Pages and actions no longer fail at random under load. A request could end up waiting on another visitor's sign-in or feature check that had already been dropped.
+- Pages and actions no longer fail at random under load.
 - A comment you just posted stays after a reload, and a comment you just deleted stays gone.
 - Sending a comment while offline keeps what you typed and tells you to send it again once you're back online.
 - A post's images and a new profile photo or banner are kept when the save succeeds but the confirmation is lost on the way back.
