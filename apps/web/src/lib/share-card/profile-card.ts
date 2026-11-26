@@ -187,8 +187,20 @@ export async function renderProfileCard(
     loadBitmap(user.imageUrl),
     loadLogo(),
   ]);
-  if (typeof document.fonts?.ready?.then === "function") {
-    await document.fonts.ready;
+  // `fonts.ready` only covers faces the page already asked for. The display
+  // face is lazy and most app routes never render it, so request the weights
+  // the card draws or the first export falls back to a system font.
+  if (typeof document.fonts?.load === "function") {
+    await Promise.all(
+      [
+        `700 48px ${display}`,
+        `800 48px ${display}`,
+        `400 36px ${sans}`,
+        `500 36px ${sans}`,
+        `600 36px ${sans}`,
+        `700 36px ${sans}`,
+      ].map((font) => document.fonts.load(font, "Mg1").catch(() => {})),
+    );
   }
 
   const canvas = document.createElement("canvas");
