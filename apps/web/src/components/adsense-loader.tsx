@@ -7,13 +7,35 @@ export const ADSENSE_IDLE_TIMEOUT_MS = 3000;
 // Browsers without requestIdleCallback (Safari) wait this long after `load`.
 export const ADSENSE_NO_IDLE_DELAY_MS = 1000;
 
+const readyListeners = new Set<() => void>();
+let scriptLoaded = false;
+
+function notifyReady() {
+  scriptLoaded = true;
+  const listeners = [...readyListeners];
+  readyListeners.clear();
+  for (const listener of listeners) listener();
+}
+
+/**
+ * Runs `callback` once adsbygoogle.js has loaded, right away if it already
+ * has. Returns a function that cancels the wait.
+ */
+export function onAdsenseReady(callback: () => void): () => void {
+  if (scriptLoaded || window.adsbygoogle?.loaded === true) {
+    callback();
+    return () => {};
+  }
+  readyListeners.add(callback);
+  return () => readyListeners.delete(callback);
+}
+
 // Requests adsbygoogle.js only after the window `load` event and an idle
 // period. Auto ads insert nodes wherever they like, and this loader lives in
 // the shell, whose effects run before Suspense-wrapped route content
 // hydrates; injecting the script on mount let those nodes land in markup React
-// had not hydrated yet (React #418). Slots that mount earlier have already
-// pushed onto the window.adsbygoogle queue, which the script drains when it
-// arrives.
+// had not hydrated yet (React #418). Slots that mount earlier wait for the
+// script through onAdsenseReady.
 export function AdsenseLoader() {
   useEffect(() => {
     if (!import.meta.env.PROD || !ADS_ENABLED) return;
@@ -27,6 +49,7 @@ export function AdsenseLoader() {
       script.async = true;
       script.crossOrigin = "anonymous";
       script.src = ADSENSE_SCRIPT_SRC;
+      script.addEventListener("load", notifyReady, { once: true });
       document.head.appendChild(script);
     };
 

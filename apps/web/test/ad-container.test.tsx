@@ -13,6 +13,16 @@ async function loadAdContainer() {
   return mod.default;
 }
 
+// What adsbygoogle.js does when it runs: swaps the window.adsbygoogle queue
+// for a live object with `loaded: true`, then drains what was queued.
+function liveAdsense(push: (slot: object) => void) {
+  const queued: object[] = Array.isArray(window.adsbygoogle)
+    ? window.adsbygoogle
+    : [];
+  window.adsbygoogle = { push, loaded: true };
+  for (const slot of queued) push(slot);
+}
+
 beforeEach(() => {
   vi.stubEnv("PROD", true);
   vi.stubEnv("DEV", false);
@@ -38,7 +48,7 @@ describe("AdContainer in production", () => {
 
   it("mounts the <ins> in the browser and pushes it once", async () => {
     const push = vi.fn();
-    window.adsbygoogle = { push };
+    liveAdsense(push);
     const AdContainer = await loadAdContainer();
     const { container } = render(<AdContainer placement="feed_top" />);
 
@@ -53,7 +63,7 @@ describe("AdContainer in production", () => {
     const push = vi.fn(() => {
       throw new Error("adsbygoogle.push() error: All 'ins' elements ...");
     });
-    window.adsbygoogle = { push };
+    liveAdsense(push);
     const AdContainer = await loadAdContainer();
     render(<AdContainer placement="feed_top" />);
 
@@ -90,7 +100,7 @@ describe("AdContainer in production", () => {
         },
       );
       const push = vi.fn();
-      window.adsbygoogle = { push };
+      liveAdsense(push);
       const AdContainer = await loadAdContainer();
       const { container } = render(<AdContainer placement={placement} />);
 
@@ -110,4 +120,77 @@ describe("AdContainer in production", () => {
       expect(push).toHaveBeenCalledTimes(1);
     },
   );
+});
+
+// The script loads only once the page is idle, and slots mount before that.
+// A push queued for a slot that is gone by then (a navigation, a re-render)
+// makes AdSense throw "All 'ins' elements in the DOM with class=adsbygoogle
+// already have ads in them" when it drains the queue.
+describe("AdContainer before AdSense loads", () => {
+  beforeEach(() => {
+    window.requestIdleCallback = vi.fn((cb: IdleRequestCallback) => {
+      cb({ didTimeout: false, timeRemaining: () => 50 });
+      return 1;
+    });
+    window.cancelIdleCallback = vi.fn();
+    vi.spyOn(document, "readyState", "get").mockReturnValue("complete");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    for (const el of document.querySelectorAll('script[src*="adsbygoogle.js"]'))
+      el.remove();
+  });
+
+  async function renderWithLoader() {
+    const AdContainer = await loadAdContainer();
+    const { AdsenseLoader } = await import("@/components/adsense-loader");
+    const view = render(
+      <>
+        <AdsenseLoader />
+        <AdContainer placement="feed_top" />
+      </>,
+    );
+    const script = document.querySelector<HTMLScriptElement>(
+      'script[src*="adsbygoogle.js"]',
+    );
+    if (!script) throw new Error("AdSense script was not injected");
+    const load = (push: (slot: object) => void) =>
+      act(() => {
+        liveAdsense(push);
+        script.dispatchEvent(new Event("load"));
+      });
+    return { ...view, load };
+  }
+
+  it("queues nothing until the script has loaded", async () => {
+    await renderWithLoader();
+    expect(window.adsbygoogle ?? []).toHaveLength(0);
+  });
+
+  it("pushes a mounted slot once the script loads", async () => {
+    const { load } = await renderWithLoader();
+    const push = vi.fn();
+    load(push);
+    expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the push for a slot removed before the script loads", async () => {
+    const { load, rerender } = await renderWithLoader();
+    const { AdsenseLoader } = await import("@/components/adsense-loader");
+    rerender(<AdsenseLoader />);
+    const push = vi.fn();
+    load(push);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("skips a slot AdSense filled before the push ran", async () => {
+    const { container, load } = await renderWithLoader();
+    container
+      .querySelector("ins.adsbygoogle")
+      ?.setAttribute("data-adsbygoogle-status", "done");
+    const push = vi.fn();
+    load(push);
+    expect(push).not.toHaveBeenCalled();
+  });
 });
