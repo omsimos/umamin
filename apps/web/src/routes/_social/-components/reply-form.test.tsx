@@ -1,8 +1,12 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+  onlineManager,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublicUser } from "@/lib/types";
 
 const mocks = vi.hoisted(() => ({ createComment: vi.fn() }));
@@ -64,5 +68,42 @@ describe("ReplyForm", () => {
 
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     expect(box).toHaveValue("");
+  });
+
+  describe("offline", () => {
+    function goOnline(online: boolean) {
+      vi.spyOn(navigator, "onLine", "get").mockReturnValue(online);
+      act(() => {
+        onlineManager.setOnline(online);
+        window.dispatchEvent(new Event(online ? "online" : "offline"));
+      });
+    }
+
+    afterEach(() => {
+      goOnline(true);
+      vi.restoreAllMocks();
+    });
+
+    it("keeps the draft and says why when sent offline", async () => {
+      mocks.createComment.mockResolvedValue({
+        comment: { id: "c-1", postId: "post-1", content: "my reply" },
+      });
+      renderForm();
+      goOnline(false);
+      const box = screen.getByPlaceholderText("Leave a reply...");
+
+      await userEvent.type(box, "my reply");
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      expect(await screen.findByRole("status")).toHaveTextContent(/offline/i);
+      expect(box).toHaveValue("my reply");
+      expect(mocks.createComment).not.toHaveBeenCalled();
+
+      goOnline(true);
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+      await waitFor(() => expect(toast.success).toHaveBeenCalled());
+      expect(box).toHaveValue("");
+    });
   });
 });

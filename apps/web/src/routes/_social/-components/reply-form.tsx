@@ -5,6 +5,7 @@ import { Textarea } from "@umamin/ui/components/textarea";
 import { Loader2Icon, SendIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useIsOnline } from "@/components/network-status";
 import { useDynamicTextarea } from "@/hooks/use-dynamic-textarea";
 import { useSingleFlightAction } from "@/hooks/use-single-flight-action";
 import { ExpectedError } from "@/lib/expected-error";
@@ -31,6 +32,8 @@ type Props = {
 
 export default function ReplyForm({ user, postId }: Props) {
   const [content, setContent] = useState("");
+  const [sentOffline, setSentOffline] = useState(false);
+  const online = useIsOnline();
   const inputRef = useDynamicTextarea(content);
   const queryClient = useQueryClient();
   const author = useMemo(() => user, [user]);
@@ -144,40 +147,51 @@ export default function ReplyForm({ user, postId }: Props) {
     e.preventDefault();
 
     if (!content.trim()) return;
+    // Offline, the mutation would pause and post whenever the connection came
+    // back, possibly after the user has left. Keep the draft instead.
+    if (!online) {
+      setSentOffline(true);
+      return;
+    }
+    setSentOffline(false);
     mutation.mutate(content);
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex items-center space-x-2 w-full"
-    >
-      <Textarea
-        id="message"
-        required
-        ref={inputRef}
-        value={content}
-        onChange={(e) => {
-          setContent(e.target.value);
-        }}
-        maxLength={500}
-        placeholder="Leave a reply..."
-        className="focus-visible:ring-transparent resize-none min-h-10 max-h-20 bg-muted/50 caret-pink-300"
-        autoComplete="off"
-      />
-      <Button
-        data-testid="note-send-reply-btn"
-        type="submit"
-        size="icon"
-        disabled={mutation.isPending}
-      >
-        {mutation.isPending ? (
-          <Loader2Icon className="w-4 h-4 animate-spin" />
-        ) : (
-          <SendIcon className="h-4 w-4" />
-        )}
-        <span className="sr-only">Send</span>
-      </Button>
+    <form onSubmit={handleSubmit} className="w-full">
+      {sentOffline && !online && (
+        <p role="status" className="mb-2 text-muted-foreground text-xs">
+          You're offline. Send your reply again once you're back online.
+        </p>
+      )}
+      <div className="flex items-center space-x-2">
+        <Textarea
+          id="message"
+          required
+          ref={inputRef}
+          value={content}
+          onChange={(e) => {
+            setContent(e.target.value);
+          }}
+          maxLength={500}
+          placeholder="Leave a reply..."
+          className="focus-visible:ring-transparent resize-none min-h-10 max-h-20 bg-muted/50 caret-pink-300"
+          autoComplete="off"
+        />
+        <Button
+          data-testid="note-send-reply-btn"
+          type="submit"
+          size="icon"
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? (
+            <Loader2Icon className="w-4 h-4 animate-spin" />
+          ) : (
+            <SendIcon className="h-4 w-4" />
+          )}
+          <span className="sr-only">Send</span>
+        </Button>
+      </div>
     </form>
   );
 }
