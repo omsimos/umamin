@@ -28,6 +28,7 @@ import { queryKeys } from "@/lib/query";
 import {
   patchPostAcrossFeed,
   patchPostResponse,
+  rememberDeletedComment,
   removeComment,
 } from "@/lib/query-cache";
 import type { CommentsResponse, FeedResponse, PostResponse } from "@/lib/types";
@@ -74,6 +75,7 @@ export function CommentMenu({
       }
     },
     onSuccess: () => {
+      rememberDeletedComment(commentId);
       // Drop the comment from the thread...
       queryClient.setQueryData<InfiniteData<CommentsResponse>>(
         queryKeys.postComments(postId),
@@ -101,6 +103,17 @@ export function CommentMenu({
       toast.success(canModerate ? "Comment removed." : "Comment deleted.");
     },
     onError: (err) => {
+      // Already removed somewhere else (a moderator, another device). This
+      // browser may still be re-adding its remembered copy, so drop it.
+      if (err instanceof ExpectedError && /not found/i.test(err.message)) {
+        rememberDeletedComment(commentId);
+        queryClient.setQueryData<InfiniteData<CommentsResponse>>(
+          queryKeys.postComments(postId),
+          (current) => removeComment(current, commentId),
+        );
+        toast.error("This comment was already removed.");
+        return;
+      }
       console.error(err);
       toast.error("Couldn't delete comment.");
     },

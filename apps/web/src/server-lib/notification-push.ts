@@ -151,6 +151,8 @@ export async function sendPushForNotification(
   db: Db,
   env: AppEnv,
   { recipientId, type, targetId = "", actorId = null }: SendParams,
+  // The request's waitUntil, so a failure report outlives the response.
+  defer?: (promise: Promise<unknown>) => void,
 ): Promise<void> {
   const vapid = vapidFromEnv(env);
   if (!vapid) return;
@@ -207,7 +209,7 @@ export async function sendPushForNotification(
   };
 
   await deliverPush(db, recipientId, subs, payload, vapid, (err, push) => {
-    captureServerException(env, undefined, err, {
+    captureServerException(env, defer, err, {
       properties: { push, type },
     });
   });
@@ -223,6 +225,11 @@ export type PushFailureReport = (
   err: unknown,
   push: "vapid rejected" | "send failed",
 ) => void;
+
+// The library waits 30 s by default. The streak cron's workers each wait on
+// their user's slowest device, and a request's waitUntil budget is 30 s, so
+// one stalled push service must not hold a send that long.
+const PUSH_SEND_TIMEOUT_MS = 5_000;
 
 /**
  * Sends one payload to a user's devices. Prunes dead subscriptions (and push
@@ -253,7 +260,10 @@ export async function deliverPush(
   await Promise.all(
     subs.map(async (sub) => {
       try {
-        const result = await sendPush(sub, payload, vapid, { ttl: 3600 });
+        const result = await sendPush(sub, payload, vapid, {
+          ttl: 3600,
+          timeoutMs: PUSH_SEND_TIMEOUT_MS,
+        });
         // 404/410 = the subscription is dead/expired — prune it (scoped to this
         // recipient).
         if (!result.ok && result.expired) {

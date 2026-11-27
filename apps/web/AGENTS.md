@@ -126,6 +126,11 @@ Use these for all new code.
   positive results plus single-flight. A ban or logout is instant on the
   isolate that handled it; other warm isolates keep their cached entry until
   the TTL.
+- Never share a pending promise between requests in module state. workerd
+  drops a request's I/O when that request ends, so another request waiting on
+  the same promise never settles. Collapse duplicate lookups with
+  `shareWithinRequest` from `server-lib/request-scope.ts`, which is scoped to
+  one request, and share only settled values across requests.
 - Per-viewer overlay caches are keyed on `(viewerId, sorted ids)`. Keep that
   shape.
 

@@ -1,11 +1,11 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@umamin/ui/components/alert";
 import { AlertCircleIcon, MessageCircleDashedIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { RefetchErrorAlert } from "@/components/refetch-error-alert";
 import {
   infiniteQueryDefaults,
@@ -13,6 +13,7 @@ import {
   PUBLIC_STALE_TIME,
   queryKeys,
 } from "@/lib/query";
+import { settleCachedComments, settleCommentPage } from "@/lib/query-cache";
 import { fetchPostCommentsPage } from "@/lib/query-fetchers";
 import type { CommentData, CommentsResponse } from "@/lib/types";
 import { useIntersectionLoadMore } from "../-lib/hooks";
@@ -31,6 +32,7 @@ export function CommentsList({
   isAuthenticated,
   currentUserId,
 }: CommentsListProps) {
+  const queryClient = useQueryClient();
   const {
     data,
     error,
@@ -48,13 +50,19 @@ export function CommentsList({
         postId,
         (pageParam as string | null) ?? null,
         isAuthenticated,
-      ),
+      ).then((page) => settleCommentPage(postId, page, pageParam)),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: isAuthenticated ? PRIVATE_STALE_TIME : PUBLIC_STALE_TIME,
     ...infiniteQueryDefaults,
   });
   const hasResolvedData = data !== undefined;
+
+  // SSR fills this cache without seeing sessionStorage, so recent deletes and
+  // creates are applied once the page has hydrated.
+  useEffect(() => {
+    if (data) settleCachedComments(queryClient, postId);
+  }, [data, queryClient, postId]);
 
   const comments = useMemo(() => {
     const flat = data?.pages.flatMap((page) => page.data) ?? [];
@@ -72,6 +80,7 @@ export function CommentsList({
   const { setSentinel } = useIntersectionLoadMore<HTMLDivElement>({
     hasNextPage: Boolean(hasNextPage),
     isFetchingNextPage,
+    isFetchNextPageError,
     loadMoreKey: nextCursor,
     onLoadMore: fetchNextPage,
   });

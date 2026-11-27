@@ -41,6 +41,7 @@ const {
   SNAPSHOT_FLAGS,
   SNAPSHOT_KV_KEY,
 } = await import("@/server-lib/flags");
+const { runInRequestScope } = await import("@/server-lib/request-scope");
 
 const ENV = {
   POSTHOG_PROJECT_TOKEN: "phc_test",
@@ -191,13 +192,25 @@ describe("resolveFlags", () => {
 
   // Parallel loaders on one page resolve the same viewer at once; collapsing
   // them is what keeps that one /flags request instead of N.
-  it("collapses concurrent lookups into one request", async () => {
-    await Promise.all([
-      resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO]),
-      resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO]),
-      resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO]),
-    ]);
+  it("collapses concurrent lookups within one request", async () => {
+    await runInRequestScope(() =>
+      Promise.all([
+        resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO]),
+        resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO]),
+        resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO]),
+      ]),
+    );
     expect(evaluateFlags).toHaveBeenCalledTimes(1);
+  });
+
+  // workerd drops a pending lookup when the request that started it ends, so
+  // a second request must never wait on it.
+  it("never shares a pending lookup between requests", async () => {
+    await Promise.all([
+      runInRequestScope(() => resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO])),
+      runInRequestScope(() => resolveFlags(ENV, "user_1", [FLAG_UMAMIN_PRO])),
+    ]);
+    expect(evaluateFlags).toHaveBeenCalledTimes(2);
   });
 
   it("honours FLAGS_FORCE_ON without contacting PostHog", async () => {
@@ -430,11 +443,13 @@ describe("global flag snapshot", () => {
     const now = vi.spyOn(Date, "now").mockReturnValue(1_000_000);
     const { kv, get } = memoryKv(stored(ALL_ON));
     const env = { ...ENV, KV: kv };
-    await Promise.all([
-      isModerationEnforced(env),
-      isUmaminChatEnabled(env),
-      resolveFlags(env, null, [FLAG_UMAMIN_DM, FLAG_UMAMIN_PRO]),
-    ]);
+    await runInRequestScope(() =>
+      Promise.all([
+        isModerationEnforced(env),
+        isUmaminChatEnabled(env),
+        resolveFlags(env, null, [FLAG_UMAMIN_DM, FLAG_UMAMIN_PRO]),
+      ]),
+    );
     await isModerationEnforced(env);
     expect(get).toHaveBeenCalledTimes(1);
 

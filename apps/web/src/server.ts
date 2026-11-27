@@ -26,6 +26,7 @@ import {
   captureRequestException,
   captureServerException,
 } from "./server-lib/posthog";
+import { runInRequestScope } from "./server-lib/request-scope";
 import {
   runWithSsrContext,
   type SsrExecutionContext,
@@ -130,7 +131,10 @@ const scheduled: ExportedHandlerScheduledHandler<AppEnv> = async (
 };
 
 export default {
-  fetch: app.fetch,
+  // Each request gets its own scope for collapsing duplicate lookups; see
+  // server-lib/request-scope.ts for why they are never shared across requests.
+  fetch: (request: Request, env: AppEnv, ctx: ExecutionContext) =>
+    runInRequestScope(() => app.fetch(request, env, ctx)),
   scheduled,
 };
 

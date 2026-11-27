@@ -1,6 +1,8 @@
+import { type Client, LibsqlError } from "@libsql/client";
 import { postTable } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getPostsPage } from "../src/server-lib/data";
 import type { Db } from "../src/server-lib/db";
 import {
   getRedisHotPostIdsPage,
@@ -118,6 +120,21 @@ describe("recomputeHotFeed", () => {
     await recomputeHotFeed(db, kv);
     expect(read(HOT_FEED_KEY)).toEqual([]);
   });
+
+  it("survives one transient gateway error on the candidate read", async () => {
+    await seed(db, [{ id: "p1", createdAt: new Date() }]);
+    const client = (db as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    vi.spyOn(client, "execute")
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+
+    const { kv, read } = fakeKv();
+    await recomputeHotFeed(db, kv);
+    expect(read(HOT_FEED_KEY)).toEqual(["p1"]);
+  });
 });
 
 describe("getRedisHotPostIdsPage", () => {
@@ -141,5 +158,37 @@ describe("getRedisHotPostIdsPage", () => {
     const { kv } = fakeKv();
     await kv.put("feed:hot:v2", JSON.stringify(["p0", "p1"]));
     expect(await getRedisHotPostIdsPage(kv, "rh.15", 15, 1)).toBeNull();
+  });
+
+  it("falls back to the database when the KV read fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const kv = {
+      get: vi.fn().mockRejectedValue(new Error("kv unavailable")),
+    } as unknown as KVNamespace;
+    const db = await makeTestDb();
+    await seed(db, [{ id: "dbpost", createdAt: new Date() }]);
+
+    expect(await getRedisHotPostIdsPage(kv, null, 15, 1)).toBeNull();
+
+    const page = await getPostsPage(db, kv, { sort: "hot" });
+    expect(page.data.map((item) => item.post.id)).toEqual(["dbpost"]);
+    error.mockRestore();
+  });
+
+  // Null on a later page would become an empty, cacheable end of feed.
+  it("keeps a KV failure on a later page an error", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const kv = {
+      get: vi.fn().mockRejectedValue(new Error("kv unavailable")),
+    } as unknown as KVNamespace;
+    const db = await makeTestDb();
+
+    await expect(getRedisHotPostIdsPage(kv, "rh.20", 15, 1)).rejects.toThrow(
+      "kv unavailable",
+    );
+    await expect(
+      getPostsPage(db, kv, { sort: "hot", cursor: "rh.20" }),
+    ).rejects.toThrow("kv unavailable");
+    error.mockRestore();
   });
 });

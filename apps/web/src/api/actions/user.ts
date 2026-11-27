@@ -1,3 +1,4 @@
+import { dmThreadTable } from "@umamin/db/schema/dm";
 import {
   accountTable,
   sessionTable,
@@ -6,8 +7,10 @@ import {
   userMuteTable,
   userTable,
 } from "@umamin/db/schema/user";
-import { and, eq, ne, or, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { z } from "zod";
+import { dmPair } from "../../lib/dm/pair";
 import { type MusicAttachment, parseMusicUrl } from "../../lib/music";
 import { publicImageUrl } from "../../lib/post-images";
 import { generalSettingsSchema, passwordFormSchema } from "../../lib/types";
@@ -15,10 +18,15 @@ import { action } from "../../server-lib/action";
 import { hash, verify } from "../../server-lib/argon2";
 import { PREV_CHANGED } from "../../server-lib/batch";
 import { sanitizeBlockedWords } from "../../server-lib/blocked-words";
+import { noBlockBetween } from "../../server-lib/blocks";
 import { formatContent } from "../../server-lib/content";
 import { getCurrentUserData, getUserProfileData } from "../../server-lib/data";
 import type { Db } from "../../server-lib/db";
-import { revokeDmSockets, severDm } from "../../server-lib/dm/lifecycle";
+import {
+  restoreDm,
+  revokeDmSockets,
+  severDm,
+} from "../../server-lib/dm/lifecycle";
 import {
   formatErrorChain,
   isUniqueConstraintViolation,
@@ -94,6 +102,27 @@ async function swapUserBannerUrl(
 
     return row?.bannerImageUrl ?? null;
   });
+}
+
+/** After a failed swap: does the column hold the new URL anyway? A gateway
+ *  error or timeout can arrive after COMMIT. True when the read fails too, since
+ *  an orphaned object costs less than a broken photo. */
+async function userColumnHolds(
+  db: Db,
+  userId: string,
+  column: typeof userTable.imageUrl | typeof userTable.bannerImageUrl,
+  url: string,
+) {
+  try {
+    const [row] = await db
+      .select({ url: column })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+    return row?.url === url;
+  } catch {
+    return true;
+  }
 }
 
 export const getCurrentUserHandler = action({}, (_input, { session, c }) =>
@@ -366,39 +395,6 @@ export const followUserHandler = action(
       return { error: "You cannot follow yourself." };
     }
 
-    // Independent reads: one round trip instead of two.
-    const [[target], [blockExists]] = await Promise.all([
-      db
-        .select({ id: userTable.id, username: userTable.username })
-        .from(userTable)
-        .where(eq(userTable.id, userId))
-        .limit(1),
-      db
-        .select({ id: userBlockTable.id })
-        .from(userBlockTable)
-        .where(
-          or(
-            and(
-              eq(userBlockTable.blockerId, session.userId),
-              eq(userBlockTable.blockedId, userId),
-            ),
-            and(
-              eq(userBlockTable.blockerId, userId),
-              eq(userBlockTable.blockedId, session.userId),
-            ),
-          ),
-        )
-        .limit(1),
-    ]);
-
-    if (!target) {
-      return { error: "User not found." };
-    }
-
-    if (blockExists) {
-      return { error: "You can't follow this user." };
-    }
-
     // One round trip instead of five (BEGIN+insert, two counters, award,
     // COMMIT): each statement gates on PREV_CHANGED, so the counters move only
     // when the follow row was really inserted and the award only after the
@@ -414,9 +410,27 @@ export const followUserHandler = action(
       PREV_CHANGED,
     );
     const statements = [
+      // Inserted from a SELECT on the target, so a block or a deleted account
+      // vetoes the row in the write itself.
       db
         .insert(userFollowTable)
-        .values({ followerId: session.userId, followingId: userId })
+        .select(
+          db
+            .select({
+              // drizzle requires every table column, in table order.
+              id: sql<string>`${nanoid()}`.as("id"),
+              followerId: sql<string>`${session.userId}`.as("follower_id"),
+              followingId: userTable.id,
+              createdAt: sql<Date>`unixepoch()`.as("created_at"),
+            })
+            .from(userTable)
+            .where(
+              and(
+                eq(userTable.id, userId),
+                noBlockBetween(userTable.id, session.userId),
+              ),
+            ),
+        )
         .onConflictDoNothing()
         .returning({ id: userFollowTable.id }),
       db
@@ -429,10 +443,47 @@ export const followUserHandler = action(
         .where(and(eq(userTable.id, userId), PREV_CHANGED)),
     ] as const;
 
-    const [inserted] = award
-      ? await db.batch([...statements, award])
-      : await db.batch(statements);
+    // Must be the LAST statement, since PREV_CHANGED reads changes() from the
+    // statement directly before it. It tells a missing or blocked target
+    // apart from an existing follow: the vetoed insert returns no row in all
+    // three cases.
+    const targetProbe = db
+      .select({
+        blocked: sql<number>`CASE WHEN ${noBlockBetween(userTable.id, session.userId)} THEN 0 ELSE 1 END`,
+        // Two index seeks in the same round trip: an open conversation can
+        // only be read-only when the pair already have a thread and the
+        // follow just made it mutual again.
+        reopensDm: sql<number>`CASE WHEN EXISTS (
+          SELECT 1 FROM ${userFollowTable}
+          WHERE ${userFollowTable.followerId} = ${userId}
+            AND ${userFollowTable.followingId} = ${session.userId}
+        ) AND EXISTS (
+          SELECT 1 FROM ${dmThreadTable}
+          WHERE ${dmThreadTable.id} = ${dmPair(session.userId, userId).threadId}
+        ) THEN 1 ELSE 0 END`,
+      })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
 
+    const results = award
+      ? await db.batch([...statements, award, targetProbe])
+      : await db.batch([...statements, targetProbe]);
+
+    const [inserted] = results;
+    // The award statement is optional, so the tuple's last slot is a union;
+    // the probe is always last.
+    const [target] = results[results.length - 1] as {
+      blocked: number;
+      reopensDm: number;
+    }[];
+
+    if (!target) {
+      return { error: "User not found." };
+    }
+    if (target.blocked === 1) {
+      return { error: "You can't follow this user." };
+    }
     if (inserted.length === 0) {
       return { success: true, alreadyFollowing: true } as const;
     }
@@ -443,6 +494,10 @@ export const followUserHandler = action(
       actorId: session.userId,
       blockChecked: true,
     });
+
+    if (target.reopensDm === 1) {
+      defer(c)(restoreDm(c.env, session.userId, userId));
+    }
 
     return { success: true } as const;
   },
@@ -905,7 +960,9 @@ export const updateProfilePhotoHandler = action(
     try {
       previousImageUrl = await swapUserImageUrl(db, user.id, imageUrl);
     } catch (err) {
-      await r2.deleteR2Avatar(imageUrl);
+      if (!(await userColumnHolds(db, user.id, userTable.imageUrl, imageUrl))) {
+        await r2.deleteR2Avatar(imageUrl);
+      }
       throw err;
     }
 
@@ -941,7 +998,16 @@ export const updateProfileBannerHandler = action(
     try {
       previousBannerUrl = await swapUserBannerUrl(db, user.id, bannerImageUrl);
     } catch (err) {
-      await r2.deleteR2Banner(bannerImageUrl);
+      if (
+        !(await userColumnHolds(
+          db,
+          user.id,
+          userTable.bannerImageUrl,
+          bannerImageUrl,
+        ))
+      ) {
+        await r2.deleteR2Banner(bannerImageUrl);
+      }
       throw err;
     }
 

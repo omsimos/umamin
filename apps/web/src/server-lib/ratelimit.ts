@@ -1,4 +1,5 @@
 import type { AppEnv } from "./env";
+import { captureServerException } from "./posthog";
 
 export const RATE_LIMIT_ERROR =
   "Too many requests. Please try again in a minute.";
@@ -28,9 +29,12 @@ const BINDING: Record<LimiterName, keyof Env> = {
   "login-account": "RL_LOGIN_ACCOUNT",
 };
 
+const REPORT_INTERVAL_MS = 60_000;
+let lastReportedAt = Number.NEGATIVE_INFINITY;
+
 /**
  * Returns true if the request may proceed. FAIL-OPEN with a loud log when a
- * binding is missing — mirrors apps/www's posture (a limiter outage must never
+ * binding is missing or throws — mirrors apps/www's posture (a limiter outage must never
  * brick core features incl. anonymous messaging; the CF WAF is the volumetric
  * backstop). Per-colo looseness is accepted (plan R10).
  */
@@ -46,8 +50,25 @@ export async function checkRateLimit(
     );
     return true;
   }
-  const { success } = await binding.limit({ key });
-  return success;
+  try {
+    const { success } = await binding.limit({ key });
+    return success;
+  } catch (error) {
+    console.error(
+      `[ratelimit] binding ${BINDING[name]} threw — '${name}' fails open.`,
+      error,
+    );
+    // Every request hits this during an outage; one report a minute per
+    // isolate is enough to alert without flooding PostHog.
+    const now = Date.now();
+    if (now - lastReportedAt >= REPORT_INTERVAL_MS) {
+      lastReportedAt = now;
+      captureServerException(env, undefined, error, {
+        properties: { limiter: name },
+      });
+    }
+    return true;
+  }
 }
 
 // Per-IP read throttle for the DB-backed GET routes (withPublicRead/

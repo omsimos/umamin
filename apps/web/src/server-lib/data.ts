@@ -504,7 +504,13 @@ function compareHotCandidates(left: HotFeedCandidate, right: HotFeedCandidate) {
     return rightCreatedAt - leftCreatedAt;
   }
 
-  return right.post.id.localeCompare(left.post.id);
+  // Code-unit order, matching isAfterHotCursor's `<`: a locale-aware compare
+  // orders mixed-case ids differently and a page boundary then skips a post.
+  return right.post.id < left.post.id
+    ? -1
+    : right.post.id > left.post.id
+      ? 1
+      : 0;
 }
 
 function isAfterHotCursor(

@@ -24,6 +24,7 @@ vi.mock("../src/server-lib/posthog", () => ({
 }));
 
 import { dmThreadTable } from "@umamin/db/schema/dm";
+import { notificationTable } from "@umamin/db/schema/notification";
 import {
   accountTable,
   sessionTable,
@@ -479,6 +480,135 @@ describe("user actions (real libSQL)", () => {
       });
 
       expect(json).toEqual({ error: "User not found." });
+    });
+
+    it("following a user deleted mid-request returns not found", async () => {
+      // Delete the target between the existence read and the follow batch.
+      const racing = new Proxy(db, {
+        get(target, key) {
+          if (key === "batch") {
+            return async (statements: never) => {
+              await target.delete(userTable).where(eq(userTable.id, "target"));
+              return target.batch(statements);
+            };
+          }
+          const value = Reflect.get(target, key);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      const app = buildApp(racing, authed("actor", { createdAt: OLD }));
+
+      const { status, json } = await callJson(app, "followUserAction", {
+        userId: "target",
+      });
+
+      expect(json).toEqual({ error: "User not found." });
+      expect(status).toBeLessThan(500);
+      expect(await db.select().from(userFollowTable)).toHaveLength(0);
+      expect(captureRequestException).not.toHaveBeenCalled();
+    });
+
+    it("a block landing between the checks and the write refuses the follow", async () => {
+      const racing = new Proxy(db, {
+        get(target, key) {
+          if (key === "batch") {
+            return async (statements: never) => {
+              await target
+                .insert(userBlockTable)
+                .values({ blockerId: "target", blockedId: "actor" });
+              return target.batch(statements);
+            };
+          }
+          const value = Reflect.get(target, key);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      const app = buildApp(racing, authed("actor", { createdAt: OLD }));
+
+      const { json } = await callJson(app, "followUserAction", {
+        userId: "target",
+      });
+
+      expect(json).toEqual({ error: "You can't follow this user." });
+      expect(await db.select().from(userFollowTable)).toHaveLength(0);
+      expect(await counters(db, "target")).toMatchObject({
+        followerCount: 0,
+        points: 0,
+      });
+      expect(await db.select().from(notificationTable)).toHaveLength(0);
+    });
+
+    describe("a follow that makes the pair mutual again", () => {
+      const pair = dmPair("actor", "target");
+      const restored: string[] = [];
+      const DM_ROOM = {
+        idFromName: (name: string) => name,
+        get: (name: string) => ({
+          restore: async () => {
+            restored.push(name);
+          },
+        }),
+      };
+      const follow = () =>
+        callJson(
+          buildApp(db, authed("actor", { createdAt: OLD })),
+          "followUserAction",
+          { userId: "target" },
+          { DM_ROOM } as never,
+        );
+      const seedThread = () =>
+        db.insert(dmThreadTable).values({
+          id: pair.threadId,
+          userLowId: pair.lowId,
+          userHighId: pair.highId,
+        });
+      const seedFollowBack = () =>
+        db
+          .insert(userFollowTable)
+          .values({ followerId: "target", followingId: "actor" });
+
+      beforeEach(() => {
+        restored.length = 0;
+      });
+
+      it("reopens their existing conversation", async () => {
+        await seedThread();
+        await seedFollowBack();
+
+        const { json } = await follow();
+
+        expect(json).toEqual({ success: true });
+        expect(restored).toEqual([`dm:v1:${pair.threadId}`]);
+      });
+
+      it("leaves the room alone when they never talked", async () => {
+        await seedFollowBack();
+
+        await follow();
+
+        expect(restored).toEqual([]);
+      });
+
+      it("leaves the room alone when the follow is one way", async () => {
+        await seedThread();
+
+        await follow();
+
+        expect(restored).toEqual([]);
+      });
+
+      it("leaves the room alone when the follow already existed", async () => {
+        await seedThread();
+        await seedFollowBack();
+        await db
+          .insert(userFollowTable)
+          .values({ followerId: "actor", followingId: "target" });
+
+        const { json } = await follow();
+
+        expect(json).toEqual({ success: true, alreadyFollowing: true });
+        expect(restored).toEqual([]);
+      });
     });
 
     it("a follow from an under-age actor counts but awards no aura", async () => {

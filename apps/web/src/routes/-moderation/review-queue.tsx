@@ -219,7 +219,9 @@ function ReviewList({ kind }: { kind: QueueKind }) {
     );
   }
   const items = data?.pages.flatMap((page) => page.data) ?? [];
-  if (!items.length) {
+  // Handled rows are filtered out of the loaded pages, so an empty list can
+  // still have pages left to load.
+  if (!items.length && !hasNextPage) {
     return <p className="text-sm text-muted-foreground">Nothing to review.</p>;
   }
 
@@ -231,7 +233,7 @@ function ReviewList({ kind }: { kind: QueueKind }) {
           retrying={isFetching}
         />
       )}
-      <ul className="divide-y rounded-lg border">
+      <ul className="divide-y rounded-lg border empty:hidden">
         {items.map((item) => {
           const key = rowKey(item);
           const rowBusy = busy.has(key);

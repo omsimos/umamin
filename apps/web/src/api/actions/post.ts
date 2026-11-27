@@ -136,6 +136,28 @@ export const getPostPublicHandler = action(
     }),
 );
 
+const QUOTE_UNAVAILABLE_ERROR =
+  "The post you're quoting is no longer available.";
+
+/** Rolls the quote back when the quoted post is gone or blocked by the time
+ *  the transaction runs. */
+class QuoteUnavailableError extends Error {}
+
+/** True when the post is there or the lookup fails: an orphaned object costs
+ *  less than a broken image. */
+async function postExists(db: ReturnType<typeof ctxDb>, postId: string) {
+  try {
+    const rows = await db
+      .select({ id: postTable.id })
+      .from(postTable)
+      .where(eq(postTable.id, postId))
+      .limit(1);
+    return rows.length > 0;
+  } catch {
+    return true;
+  }
+}
+
 export const createPostHandler = action(
   {
     schema: createPostSchema,
@@ -177,7 +199,7 @@ export const createPostHandler = action(
         .where(eq(postTable.id, quotedPostId))
         .limit(1);
       if (!quoted || quoted.blocked === 1) {
-        return { error: "The post you're quoting is no longer available." };
+        return { error: QUOTE_UNAVAILABLE_ERROR };
       }
       quotedContent = quoted.content;
     }
@@ -231,12 +253,15 @@ export const createPostHandler = action(
 
     let createdPost: typeof postTable.$inferSelect;
     let createdPollOptions: (typeof pollOptionTable.$inferSelect)[] = [];
+    // Known up front so a failed write can be checked against the database.
+    const postId = nanoid();
 
     try {
       const created = await db.transaction(async (tx) => {
         const [inserted] = await tx
           .insert(postTable)
           .values({
+            id: postId,
             content: formattedContent,
             authorId: session.userId,
             images: claimedImages,
@@ -268,17 +293,24 @@ export const createPostHandler = action(
               repostCount: sql`${postTable.repostCount} + 1`,
               resharerCount: addResharer(session.userId, inserted.id),
             })
-            .where(eq(postTable.id, quotedPostId))
+            .where(
+              and(
+                eq(postTable.id, quotedPostId),
+                // Re-checked in the write: a block can land during the
+                // classifier await, after the read above passed.
+                noBlockBetween(postTable.authorId, session.userId),
+              ),
+            )
             .returning({ authorId: postTable.authorId });
 
-          if (bumped) {
-            await awardAura(tx, {
-              beneficiaryId: bumped.authorId,
-              actorId: session.userId,
-              actorCreatedAt: user.createdAt,
-              delta: AURA_POINTS.quote,
-            });
-          }
+          if (!bumped) throw new QuoteUnavailableError();
+
+          await awardAura(tx, {
+            beneficiaryId: bumped.authorId,
+            actorId: session.userId,
+            actorCreatedAt: user.createdAt,
+            delta: AURA_POINTS.quote,
+          });
         }
 
         return { post: inserted, pollOptions: insertedOptions };
@@ -286,7 +318,14 @@ export const createPostHandler = action(
       createdPost = created.post;
       createdPollOptions = created.pollOptions;
     } catch (err) {
-      if (r2) await r2.deletePostImages(claimedImages);
+      // A gateway error or timeout can arrive after COMMIT, and deleting the
+      // images then would break a live post.
+      if (r2 && claimedImages && !(await postExists(db, postId))) {
+        await r2.deletePostImages(claimedImages);
+      }
+      if (err instanceof QuoteUnavailableError) {
+        return { error: QUOTE_UNAVAILABLE_ERROR };
+      }
       throw err;
     }
 
@@ -414,14 +453,6 @@ export const createCommentHandler = action(
       name: "write",
       key: ({ session }) => `comment:${session.userId}`,
     },
-    // The classifier await sits between the existence read and the insert, so a
-    // delete in that window fails the insert's FK: a lost race, not a fault.
-    // The like and repost batches insert from a SELECT on the target row and
-    // cannot hit this.
-    onError: (err) =>
-      isForeignKeyConstraintViolation(err)
-        ? { error: "Post not found" }
-        : undefined,
   },
   async ({ content, postId }, { session, user, c }) => {
     const db = ctxDb(c);
@@ -471,6 +502,7 @@ export const createCommentHandler = action(
     // existing, which needs the new row's id up front. Nothing may sit between
     // these statements.
     const commentId = nanoid();
+    const scoreValues = reviewableScoreColumns(scores);
     const award = auraAwardStatement(
       db,
       {
@@ -482,15 +514,52 @@ export const createCommentHandler = action(
       sql`${PREV_CHANGED} AND NOT ${hasCommented(session.userId, postId, commentId)}`,
     );
     const statements = [
+      // Inserted from a SELECT on the post, so a delete or a block during the
+      // classifier await vetoes the row instead of landing it.
       db
         .insert(postCommentTable)
-        .values({
-          id: commentId,
-          postId,
-          content: formatted,
-          authorId: session.userId,
-          ...reviewableScoreColumns(scores),
-        })
+        .select(
+          db
+            .select({
+              // drizzle requires every table column, in table order.
+              id: sql<string>`${commentId}`.as("id"),
+              postId: postTable.id,
+              authorId: sql<string>`${session.userId}`.as("author_id"),
+              content: sql<string>`${formatted}`.as("content"),
+              createdAt: sql<Date>`unixepoch()`.as("created_at"),
+              updatedAt: sql<Date>`unixepoch()`.as("updated_at"),
+              likeCount: sql<number>`0`.as("like_count"),
+              modSevere: sql<number | null>`${scoreValues.modSevere}`.as(
+                "mod_severe",
+              ),
+              modDrama: sql<number | null>`${scoreValues.modDrama}`.as(
+                "mod_drama",
+              ),
+              modReason: sql<string | null>`${scoreValues.modReason}`.as(
+                "mod_reason",
+              ),
+              modFlaggedAt: sql<Date | null>`${sql.param(
+                scoreValues.modFlaggedAt,
+                postCommentTable.modFlaggedAt,
+              )}`.as("mod_flagged_at"),
+              modClearedAt: sql<Date | null>`${scoreValues.modClearedAt}`.as(
+                "mod_cleared_at",
+              ),
+              modReviewedAt: sql<Date | null>`${scoreValues.modReviewedAt}`.as(
+                "mod_reviewed_at",
+              ),
+              modAppealedAt: sql<Date | null>`${scoreValues.modAppealedAt}`.as(
+                "mod_appealed_at",
+              ),
+            })
+            .from(postTable)
+            .where(
+              and(
+                eq(postTable.id, postId),
+                noBlockBetween(postTable.authorId, session.userId),
+              ),
+            ),
+        )
         .returning(),
       db
         .update(postTable)
@@ -505,6 +574,10 @@ export const createCommentHandler = action(
     const [[comment], [updated]] = award
       ? await db.batch([...statements, award])
       : await db.batch(statements);
+
+    if (!comment) {
+      return { error: "Post not found" };
+    }
 
     createdComment = comment;
     postAuthorId = updated?.authorId;
@@ -716,6 +789,12 @@ export const votePollHandler = action(
       name: "write",
       key: ({ session }) => `pollvote:${session.userId}`,
     },
+    // A delete between the option read and the batch fails the vote's FK: a
+    // lost race, not a fault.
+    onError: (err) =>
+      isForeignKeyConstraintViolation(err)
+        ? { error: "This poll is no longer available." }
+        : undefined,
   },
   async ({ optionId }, { session, user, c }) => {
     const db = ctxDb(c);

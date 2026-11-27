@@ -2,7 +2,7 @@ import { Button } from "@umamin/ui/components/button";
 import { cn } from "@umamin/ui/lib/utils";
 import { blobatarUri } from "blobatar/uri";
 import { ArrowRightIcon, MailIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/lib/navigation";
 
 const INCOMING = [
@@ -19,42 +19,65 @@ function clean(value: string) {
 }
 
 /**
- * The hero's right side: type a username and see the profile people would
+ * The closing call to action: type a username and see the profile people would
  * land on, with sealed messages arriving that open on tap. The name carries
  * over to /register.
  */
-export function HeroPreview() {
+export function ClaimPreview() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
   const [name, setName] = useState("");
   const [arrived, setArrived] = useState(0);
   const [opened, setOpened] = useState<number[]>([]);
   const shown = name || "you";
   const avatar = useMemo(() => blobatarUri(name || "umamin"), [name]);
 
+  // It sits at the bottom of the page, so messages start arriving once it
+  // scrolls into view instead of finishing before anyone sees them.
   useEffect(() => {
-    if (arrived >= INCOMING.length) return;
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!inView || arrived >= INCOMING.length) return;
     const id = setTimeout(
       () => setArrived((n) => n + 1),
       arrived === 0 ? 900 : 1800,
     );
     return () => clearTimeout(id);
-  }, [arrived]);
+  }, [inView, arrived]);
 
   const valid = name.length >= 5;
 
   return (
-    <div className="relative mx-auto w-full max-w-sm">
+    <div ref={ref} className="relative mx-auto w-full max-w-sm">
       <div
         aria-hidden
         className="pointer-events-none absolute -inset-8 -z-10 rounded-full bg-primary/15 blur-3xl"
       />
 
       <label
-        htmlFor="hero-username"
+        htmlFor="claim-username"
         className="flex items-center rounded-full border bg-card px-4 py-2.5 text-sm shadow-sm focus-within:ring-2 focus-within:ring-ring"
       >
         <span className="text-muted-foreground">umamin.link/to/</span>
         <input
-          id="hero-username"
+          id="claim-username"
           value={name}
           onChange={(e) => setName(clean(e.target.value))}
           placeholder="yourname"

@@ -21,7 +21,9 @@ import { classifyContentWithOutcome } from "./content-classifier";
 import { getEarlierComments, postClassifierText } from "./content-context";
 import { reviewableScoreColumns } from "./content-label";
 import type { Db } from "./db";
+import { retryTransientRead } from "./db-retry";
 import type { AppEnv } from "./env";
+import { captureServerException } from "./posthog";
 
 // A write that timed out or hit a rate limit stores its row unclassified. This
 // re-classifies the recent ones from the */5 cron. Messages are left out: null
@@ -76,21 +78,31 @@ async function withAttempts<T extends { id: string }>(
     .slice(0, RETRY_BATCH);
 }
 
+// A failed task (a dropped Turso response on one row) must not reject the
+// pool: the other workers would keep running unawaited and their paid
+// classifications could be cut off when the invocation ends.
 async function runPool(tasks: (() => Promise<boolean>)[]) {
   let next = 0;
   let landed = 0;
+  let failures = 0;
+  let firstFailure: unknown = null;
   await Promise.all(
     Array.from(
       { length: Math.min(RETRY_CONCURRENCY, tasks.length) },
       async () => {
         while (next < tasks.length) {
           const task = tasks[next++];
-          if (await task()) landed++;
+          try {
+            if (await task()) landed++;
+          } catch (error) {
+            failures++;
+            firstFailure ??= error;
+          }
         }
       },
     ),
   );
-  return landed;
+  return { landed, failures, firstFailure };
 }
 
 export async function retryUnclassifiedContent(
@@ -108,65 +120,66 @@ export async function retryUnclassifiedContent(
 
   // Oldest first, so rows nearest the window's edge are tried before they age
   // out. Each query rides its table's partial unclassified index.
-  const [candidatePosts, candidateComments, candidateNotes] = await Promise.all(
-    [
-      db
-        .select({
-          id: postTable.id,
-          content: postTable.content,
-          pollEndsAt: postTable.pollEndsAt,
-          quotedContent: quoted.content,
-        })
-        .from(postTable)
-        .leftJoin(quoted, eq(quoted.id, postTable.quotedPostId))
-        .where(
-          and(
-            gte(postTable.createdAt, from),
-            lte(postTable.createdAt, to),
-            isNull(postTable.modSevere),
-          ),
-        )
-        .orderBy(asc(postTable.createdAt))
-        .limit(RETRY_CANDIDATES),
-      db
-        .select({
-          id: postCommentTable.id,
-          content: postCommentTable.content,
-          postId: postCommentTable.postId,
-          authorId: postCommentTable.authorId,
-          createdAt: postCommentTable.createdAt,
-          postContent: postTable.content,
-        })
-        .from(postCommentTable)
-        .innerJoin(postTable, eq(postTable.id, postCommentTable.postId))
-        .where(
-          and(
-            gte(postCommentTable.createdAt, from),
-            lte(postCommentTable.createdAt, to),
-            isNull(postCommentTable.modSevere),
-          ),
-        )
-        .orderBy(asc(postCommentTable.createdAt))
-        .limit(RETRY_CANDIDATES),
-      db
-        .select({
-          id: noteTable.id,
-          content: noteTable.content,
-          updatedAt: noteTable.updatedAt,
-        })
-        .from(noteTable)
-        .where(
-          and(
-            gte(noteTable.updatedAt, from),
-            lte(noteTable.updatedAt, to),
-            isNull(noteTable.modSevere),
-            ne(noteTable.content, ""),
-          ),
-        )
-        .orderBy(asc(noteTable.updatedAt))
-        .limit(RETRY_CANDIDATES),
-    ],
-  );
+  const [candidatePosts, candidateComments, candidateNotes] =
+    await retryTransientRead(() =>
+      Promise.all([
+        db
+          .select({
+            id: postTable.id,
+            content: postTable.content,
+            pollEndsAt: postTable.pollEndsAt,
+            quotedContent: quoted.content,
+          })
+          .from(postTable)
+          .leftJoin(quoted, eq(quoted.id, postTable.quotedPostId))
+          .where(
+            and(
+              gte(postTable.createdAt, from),
+              lte(postTable.createdAt, to),
+              isNull(postTable.modSevere),
+            ),
+          )
+          .orderBy(asc(postTable.createdAt))
+          .limit(RETRY_CANDIDATES),
+        db
+          .select({
+            id: postCommentTable.id,
+            content: postCommentTable.content,
+            postId: postCommentTable.postId,
+            authorId: postCommentTable.authorId,
+            createdAt: postCommentTable.createdAt,
+            postContent: postTable.content,
+          })
+          .from(postCommentTable)
+          .innerJoin(postTable, eq(postTable.id, postCommentTable.postId))
+          .where(
+            and(
+              gte(postCommentTable.createdAt, from),
+              lte(postCommentTable.createdAt, to),
+              isNull(postCommentTable.modSevere),
+            ),
+          )
+          .orderBy(asc(postCommentTable.createdAt))
+          .limit(RETRY_CANDIDATES),
+        db
+          .select({
+            id: noteTable.id,
+            content: noteTable.content,
+            updatedAt: noteTable.updatedAt,
+          })
+          .from(noteTable)
+          .where(
+            and(
+              gte(noteTable.updatedAt, from),
+              lte(noteTable.updatedAt, to),
+              isNull(noteTable.modSevere),
+              ne(noteTable.content, ""),
+            ),
+          )
+          .orderBy(asc(noteTable.updatedAt))
+          .limit(RETRY_CANDIDATES),
+      ]),
+    );
 
   const [posts, comments, notes] = await Promise.all([
     withAttempts(env, "post", candidatePosts),
@@ -303,7 +316,16 @@ export async function retryUnclassifiedContent(
     }),
   ];
 
-  const classified = await runPool(tasks);
+  const { landed: classified, failures, firstFailure } = await runPool(tasks);
+  if (failures > 0) {
+    console.error(
+      `[content-retry] ${failures}/${tasks.length} retries failed`,
+      firstFailure,
+    );
+    captureServerException(env, defer, firstFailure, {
+      properties: { source: "content-retry", failures },
+    });
+  }
 
   // One count per table over the same window; each rides the partial
   // unclassified index, so a clean window reads ~0 rows.

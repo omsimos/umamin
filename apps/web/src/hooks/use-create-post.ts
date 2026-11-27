@@ -99,18 +99,13 @@ export function useCreatePost(user: PublicUser | null) {
       quotedPost,
     }) => {
       if (!user) return {};
-      await queryClient.cancelQueries({ queryKey: queryKeys.postsRoot() });
-
-      // A feed with no data yet becomes a one-item feed after the prepend. On
-      // failure it is reset so it loads normally instead of showing empty.
-      // Only the feeds the prepend writes to: the following feed is left alone.
-      const emptyKeys = queryClient
-        .getQueriesData<InfiniteData<FeedResponse>>({
-          queryKey: queryKeys.postsRoot(),
-          predicate: (query) => isNonFollowingFeedQuery(query.queryKey),
-        })
-        .filter(([, data]) => data === undefined)
-        .map(([queryKey]) => queryKey);
+      // Only feeds that hold data get the optimistic post, so only they need
+      // their in-flight fetch stopped. Cancelling a first load would leave
+      // that feed on its skeleton with nothing to fetch it again.
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.postsRoot(),
+        predicate: (query) => query.state.data !== undefined,
+      });
 
       // Temp option ids: the optimistic poll renders but is not votable until
       // the server swap brings the real ids (onSuccess below).
@@ -154,10 +149,13 @@ export function useCreatePost(user: PublicUser | null) {
           queryKey: queryKeys.postsRoot(),
           predicate: (query) => isNonFollowingFeedQuery(query.queryKey),
         },
-        (current) => prependFeedItem(current, optimistic),
+        // A feed with no data yet (failed or cancelled first load) is left
+        // to load normally. Seeding it would leave a one-post feed with no
+        // next cursor that the loader serves as-is.
+        (current) => (current ? prependFeedItem(current, optimistic) : current),
       );
 
-      return { emptyKeys, optimisticId: optimisticPost.id };
+      return { optimisticId: optimisticPost.id };
     },
     onError: (err, _vars, ctx) => {
       // Remove only the optimistic item. Restoring whole-feed snapshots would
@@ -171,9 +169,6 @@ export function useCreatePost(user: PublicUser | null) {
           },
           (current) => removePostFromFeed(current, optimisticId),
         );
-        for (const queryKey of ctx.emptyKeys ?? []) {
-          void queryClient.resetQueries({ queryKey, exact: true });
-        }
       }
       toast.error(err.message ?? "Couldn't post.");
     },
@@ -209,18 +204,33 @@ export function useCreatePost(user: PublicUser | null) {
           },
         };
 
+        const postId = res.post.id;
         queryClient.setQueriesData<InfiniteData<FeedResponse>>(
           {
             queryKey: queryKeys.postsRoot(),
             predicate: (query) => isNonFollowingFeedQuery(query.queryKey),
           },
-          (previous) =>
-            replaceFeedItem(
-              previous,
-              (item) =>
-                item.type === "post" && item.post.id === ctx.optimisticId,
-              nextItem,
-            ),
+          (previous) => {
+            if (!previous) return previous;
+            const has = (id: string) =>
+              previous.pages.some((page) =>
+                page.data.some(
+                  (item) => item.type === "post" && item.post.id === id,
+                ),
+              );
+            if (has(ctx.optimisticId)) {
+              return replaceFeedItem(
+                previous,
+                (item) =>
+                  item.type === "post" && item.post.id === ctx.optimisticId,
+                nextItem,
+              );
+            }
+            // A feed whose first load finished while the post was sending
+            // never got the optimistic item, and its cached read predates
+            // the post.
+            return has(postId) ? previous : prependFeedItem(previous, nextItem);
+          },
         );
 
         for (const image of nextItem.post.images ?? []) {

@@ -150,4 +150,26 @@ describe("ReviewQueue", () => {
     ).toBeInTheDocument();
     expect(callAction).not.toHaveBeenCalled();
   });
+
+  it("keeps Load more reachable after every loaded row is handled", async () => {
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({ data: [item("a", "first post")], nextCursor: "c1" }),
+        ),
+    );
+    callAction.mockResolvedValue({ success: true });
+    renderQueue();
+    await screen.findByText("first post");
+
+    fireEvent.click(row("first post").getByRole("button", { name: "Keep" }));
+    await waitFor(() =>
+      expect(screen.queryByText("first post")).not.toBeInTheDocument(),
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Load more" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Nothing to review.")).not.toBeInTheDocument();
+  });
 });

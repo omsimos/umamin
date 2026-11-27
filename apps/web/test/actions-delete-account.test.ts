@@ -22,6 +22,7 @@ vi.mock("../src/server-lib/posthog", () => ({
 
 import { dmPurgeTable, dmThreadTable } from "@umamin/db/schema/dm";
 import { groupMemberTable, groupTable } from "@umamin/db/schema/group";
+import { messageTable } from "@umamin/db/schema/message";
 import {
   pollOptionTable,
   pollVoteTable,
@@ -233,6 +234,42 @@ describe("deleteAccount (real libSQL)", () => {
     expect(
       await db.select().from(userTable).where(eq(userTable.id, "leaver")),
     ).toHaveLength(1);
+  });
+
+  it("clears the sender from messages the user sent, keeping them for the receiver", async () => {
+    await db.insert(messageTable).values([
+      {
+        id: "m1",
+        question: "q",
+        content: "from leaver",
+        receiverId: "stayer",
+        senderId: "leaver",
+      },
+      {
+        id: "m2",
+        question: "q",
+        content: "from owner",
+        receiverId: "stayer",
+        senderId: "owner",
+      },
+    ]);
+    const app = buildApp(db, authed("leaver"));
+    await callJson(
+      app,
+      "deleteAccount",
+      { confirmation: CONFIRM },
+      {},
+      { cookie },
+    );
+
+    const rows = await db
+      .select({ id: messageTable.id, senderId: messageTable.senderId })
+      .from(messageTable)
+      .orderBy(messageTable.id);
+    expect(rows).toEqual([
+      { id: "m1", senderId: null },
+      { id: "m2", senderId: "owner" },
+    ]);
   });
 
   it("queues the user's conversations for a Durable Object purge", async () => {

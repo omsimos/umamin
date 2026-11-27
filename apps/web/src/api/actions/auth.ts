@@ -33,6 +33,7 @@ import {
   DELETE_CONFIRMATION_ERROR,
   formatErrorChain,
   GENERIC_ERROR,
+  isUniqueConstraintViolation,
   USERNAME_TAKEN_ERROR,
 } from "../../server-lib/errors";
 import {
@@ -56,6 +57,7 @@ import {
   invalidateSession,
   invalidateUserSessions,
   resolveSession,
+  sessionInsert,
 } from "../../server-lib/session";
 import {
   deleteSessionCookie,
@@ -215,30 +217,27 @@ export async function signupHandler(c: AppContext): Promise<Response> {
   const db = ctxDb(c);
 
   try {
-    const res = await db
-      .insert(userTable)
-      .values({
+    // One batch, so a failed session write can't leave an account behind
+    // that the owner can neither sign into nor sign up for again.
+    const userId = nanoid();
+    const token = generateSessionToken();
+    const { session, query: insertSession } = await sessionInsert(
+      db,
+      token,
+      userId,
+    );
+    await db.batch([
+      db.insert(userTable).values({
+        id: userId,
         username: validatedFields.data.username.toLowerCase(),
         passwordHash,
-      })
-      .returning({ id: userTable.id });
-
-    const token = generateSessionToken();
-    const session = await createSession(db, token, res[0].id);
+      }),
+      insertSession,
+    ]);
     setSessionCookie(c, token, new Date(session.expiresAt));
   } catch (err) {
-    if (
-      err instanceof Error &&
-      typeof err.cause === "object" &&
-      err.cause !== null
-    ) {
-      const cause = err.cause as { code?: string; message?: string };
-      if (
-        cause.code === "SQLITE_CONSTRAINT" &&
-        cause.message?.includes("user.username")
-      ) {
-        return c.json({ error: USERNAME_TAKEN_ERROR });
-      }
+    if (isUniqueConstraintViolation(err, "user.username")) {
+      return c.json({ error: USERNAME_TAKEN_ERROR });
     }
     console.error("Signup error:", formatErrorChain(err));
     captureRequestException(c, err, { properties: { action: "signup" } });
@@ -529,6 +528,12 @@ export async function deleteAccountHandler(c: AppContext): Promise<Response> {
         );
 
       await tx.delete(messageTable).where(eq(messageTable.receiverId, uid));
+      // sender_id has no FK, so a leftover id would make every later reply
+      // notify a user row that no longer exists.
+      await tx
+        .update(messageTable)
+        .set({ senderId: null, updatedAt: sql`${messageTable.updatedAt}` })
+        .where(eq(messageTable.senderId, uid));
       await tx.delete(accountTable).where(eq(accountTable.userId, uid));
       await tx.delete(noteTable).where(eq(noteTable.userId, uid));
       // Before the cascade drops the dm_thread rows that name the rooms.

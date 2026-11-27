@@ -173,4 +173,58 @@ describe("pro actions (real libSQL)", () => {
     expect(json).toEqual({ error: PRO_CHECKOUT_UNAVAILABLE_ERROR });
     expect(createProCheckout).toHaveBeenCalled();
   });
+
+  it("returns the friendly error when the provider never answers", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    // Node's AbortSignal.timeout ignores fake timers, so drive it with one.
+    vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+      const controller = new AbortController();
+      setTimeout(
+        () => controller.abort(new DOMException("timed out", "TimeoutError")),
+        ms,
+      );
+      return controller.signal;
+    });
+    // A provider that accepts the connection and never responds.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise<Response>((_, reject) => {
+            init?.signal?.addEventListener("abort", () =>
+              reject(init.signal?.reason),
+            );
+          }),
+      ),
+    );
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const app = buildApp(db, authed("buyer", {}));
+      let settled = false;
+      const pending = callJson<{ error: string }>(
+        app,
+        "createProCheckoutAction",
+        undefined,
+        {
+          ...OFFER_LIVE,
+          LEMONSQUEEZY_API_KEY: "key",
+          LEMONSQUEEZY_STORE_ID: "1",
+          LEMONSQUEEZY_VARIANT_ID: "2",
+        },
+      ).finally(() => {
+        settled = true;
+      });
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+      await vi.advanceTimersByTimeAsync(30_000);
+
+      expect(settled).toBe(true);
+      expect((await pending).json).toEqual({
+        error: PRO_CHECKOUT_UNAVAILABLE_ERROR,
+      });
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  });
 });

@@ -247,9 +247,14 @@ export class DmRoom extends DurableObject<AppEnv> {
 
   // --- RPC from the Worker -------------------------------------------------
 
+  // Memory only: it orders a sever against a restore still awaiting its
+  // access read, and the room can't hibernate while that RPC is running.
+  private severs = 0;
+
   /** A block closes the conversation for both sides at once. An unfollow
    *  keeps it readable but stops sending. */
   async sever(kind: "block" | "unfollow"): Promise<void> {
+    this.severs += 1;
     for (const ws of this.ctx.getWebSockets()) {
       const att = this.attachment(ws);
       if (!att) continue;
@@ -262,6 +267,33 @@ export class DmRoom extends DurableObject<AppEnv> {
       ws.serializeAttachment(next);
       if (next.ready) this.sendTo(ws, { t: "meta", meta: this.metaFor(next) });
     }
+  }
+
+  /** The pair follow each other again. Open sockets that went read-only can
+   *  send at once instead of waiting for a reconnect, since a read-only
+   *  screen can't send or react to trigger the recheck. A room with no
+   *  read-only socket asks Turso nothing. */
+  async restore(): Promise<void> {
+    const sockets = this.ctx.getWebSockets();
+    const readOnly = sockets
+      .map((ws) => this.attachment(ws))
+      .find((att) => att && !att.canSend);
+    const pair = readOnly ? parseThreadId(readOnly.threadId) : null;
+    if (!pair) return;
+    const severs = this.severs;
+    const allowed = await this.store().canMessage(pair);
+    // A sever that arrived during the read is newer than this answer. It
+    // skips sockets that are already read-only, so nothing on them shows it.
+    if (!allowed || severs !== this.severs) return;
+    const now = Date.now();
+    for (const ws of this.ctx.getWebSockets()) {
+      const att = this.attachment(ws);
+      if (att)
+        ws.serializeAttachment({ ...att, canSend: true, checkedAt: now });
+    }
+    // Both sides: presence is gated on canSend, so the peer's view changes too.
+    this.broadcastMeta(0);
+    this.broadcastMeta(1);
   }
 
   /** The user's sessions were revoked (password change): close their side's
@@ -566,6 +598,22 @@ export class DmRoom extends DurableObject<AppEnv> {
 
   // --- Thread index -------------------------------------------------------
 
+  /** The read mark the Chats list counts unread from: a side has seen its own
+   *  messages, so it is at least its newest one. `st.read` stays the real
+   *  mark, because "Seen" must not light up when only the sender has looked.
+   *  Derived here instead of moved on send, which would cost a meta write per
+   *  message. */
+  private effectiveRead(st: RoomState, side: DmSide): number {
+    const own = this.sql
+      .exec<{ seq: number }>(
+        "SELECT seq FROM messages WHERE seq > ? AND author = ? ORDER BY seq DESC LIMIT 1",
+        st.read[side],
+        side,
+      )
+      .toArray()[0];
+    return own?.seq ?? st.read[side];
+  }
+
   private async snapshot(st: RoomState): Promise<ThreadSnapshot> {
     const raw = this.sql
       .exec<MessageRowSql>(
@@ -578,7 +626,7 @@ export class DmRoom extends DurableObject<AppEnv> {
       lastAt: last?.createdAt ?? 0,
       lastSender: last?.author ?? null,
       preview: engine.previewOf(last?.text ?? null),
-      readSeq: [st.read[0], st.read[1]],
+      readSeq: [this.effectiveRead(st, 0), this.effectiveRead(st, 1)],
       hiddenSeq: [st.hidden[0], st.hidden[1]],
     };
   }

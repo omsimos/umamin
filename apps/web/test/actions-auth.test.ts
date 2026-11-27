@@ -26,6 +26,7 @@ vi.mock("../src/server-lib/posthog", () => ({
 
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { sessionTable, userTable } from "@umamin/db/schema/user";
+import { sql } from "drizzle-orm";
 import { hash } from "../src/server-lib/argon2";
 import { SESSION_COOKIE_NAME } from "../src/server-lib/cookies";
 import type { Db } from "../src/server-lib/db";
@@ -375,6 +376,27 @@ describe("auth flows (real libSQL)", () => {
     expect(json).toEqual({ error: "An unexpected error occurred" });
     expect(captureRequestException).toHaveBeenCalledTimes(1);
     expect(captureRequestException.mock.calls[0][1]).toBeInstanceOf(Error);
+  });
+
+  it("rolls back the new account when its session write fails", async () => {
+    const app = buildApp(db, ANON);
+    const body = {
+      username: "dave12",
+      password: "password123",
+      confirmPassword: "password123",
+    };
+    await db.run(
+      sql`CREATE TRIGGER fail_session BEFORE INSERT ON session BEGIN SELECT RAISE(ABORT, 'session write failed'); END`,
+    );
+
+    const failed = await callJson(app, "signup", body);
+    expect(failed.json).toEqual({ error: "An unexpected error occurred" });
+    expect(await db.select().from(userTable)).toHaveLength(0);
+
+    await db.run(sql`DROP TRIGGER fail_session`);
+    const retry = await call(app, "signup", body);
+    expect(await retry.json()).toEqual({ redirect: "/inbox" });
+    expect(sessionToken(retry)).toBeTruthy();
   });
 
   describe("limiter keys", () => {

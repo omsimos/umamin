@@ -47,7 +47,7 @@ export const Route = createFileRoute("/_social/notes")({
     const seo = pageSeo({
       title: "Anonymous notes | Umamin",
       description:
-        "Explore notes on Umamin, the open-source platform for sending and receiving encrypted anonymous messages. Send your messages anonymously and discover what others have to share.",
+        "Read notes on Umamin, a Filipino social media built around anonymity. Post a note with or without your name and see what others are sharing.",
       path: "/notes",
     });
     return {

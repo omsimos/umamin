@@ -14,6 +14,7 @@ vi.mock("../src/server-lib/push", async (importOriginal) => {
   return { ...actual, sendPush: vi.fn() };
 });
 
+import { type Client, LibsqlError } from "@libsql/client";
 import { pushSubscriptionTable } from "@umamin/db/schema/push-subscription";
 import { userTable } from "@umamin/db/schema/user";
 import { eq, sql } from "drizzle-orm";
@@ -362,6 +363,112 @@ describe("streak push cron (real libSQL)", () => {
     const result = await sendStreakPushes(db, vapid, "ending", NOW);
     expect(result.failures).toBe(2);
     expect(result.firstFailure).toBeInstanceOf(Error);
+  });
+
+  it("survives one transient gateway error on the due-users read", async () => {
+    await user("a", { streak: 5, streakDay: TODAY - 1 });
+    const client = (db as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    vi.spyOn(client, "execute")
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+
+    const result = await sendStreakPushes(db, vapid, "ending", NOW);
+    expect(result).toMatchObject({ users: 1, devices: 1 });
+  });
+
+  // The per-send timeout bounds how long one stalled push service can hold a
+  // worker of the run.
+  it("gives up on a stalled push service within a few seconds", async () => {
+    await user("a", { streak: 5, streakDay: TODAY - 1 });
+    // Behaves like the library against a service that never answers: rejects
+    // once the caller's timeout passes (its default is 30 s).
+    vi.mocked(sendPush).mockImplementation(
+      (_sub, _payload, _vapid, opts) =>
+        new Promise((_, reject) => {
+          setTimeout(
+            () => reject(new DOMException("stalled", "TimeoutError")),
+            opts?.timeoutMs ?? 30_000,
+          );
+        }),
+    );
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      let settled = false;
+      const run = sendStreakPushes(db, vapid, "ending", NOW).finally(() => {
+        settled = true;
+      });
+      await vi.waitFor(() => expect(sendPush).toHaveBeenCalled());
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(settled).toBe(true);
+      expect((await run).failures).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  describe("with a stalled push service", () => {
+    const ids = Array.from(
+      { length: 30 },
+      (_, i) => `u${`${i}`.padStart(2, "0")}`,
+    );
+
+    beforeEach(async () => {
+      for (const id of ids) {
+        await user(id, { streak: 5, streakDay: TODAY - 1 });
+      }
+    });
+
+    function stall(match: (endpoint: string) => boolean) {
+      vi.mocked(sendPush).mockImplementation((sub, _payload, _vapid, opts) =>
+        match(sub.endpoint)
+          ? new Promise((_, reject) => {
+              setTimeout(
+                () => reject(new DOMException("stalled", "TimeoutError")),
+                opts?.timeoutMs ?? 30_000,
+              );
+            })
+          : Promise.resolve({ ok: true } as never),
+      );
+    }
+
+    it("keeps sending to other users while one send waits", async () => {
+      stall((endpoint) => endpoint.endsWith("/u00-0"));
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      try {
+        const run = sendStreakPushes(db, vapid, "ending", NOW, "a");
+        await vi.waitFor(() =>
+          expect(sendPush).toHaveBeenCalledTimes(ids.length),
+        );
+        await vi.advanceTimersByTimeAsync(10_000);
+        expect(await run).toMatchObject({
+          users: ids.length,
+          failures: 1,
+          deadlineHit: false,
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("starts no new sends once the run passes its deadline", async () => {
+      stall(() => true);
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+      try {
+        const run = sendStreakPushes(db, vapid, "ending", NOW, "a", 4000, 1000);
+        await vi.waitFor(() => expect(sendPush).toHaveBeenCalled());
+        await vi.advanceTimersByTimeAsync(60_000);
+        const result = await run;
+        const sent = vi.mocked(sendPush).mock.calls.length;
+        expect(result.deadlineHit).toBe(true);
+        expect(sent).toBeLessThan(ids.length);
+        expect(result).toMatchObject({ devices: sent, failures: sent });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });
 

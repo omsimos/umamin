@@ -14,6 +14,7 @@ import { getCookie } from "hono/cookie";
 import { LEGACY_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME } from "./cookies";
 import type { Db } from "./db";
 import { retryTransientRead } from "./db-retry";
+import { forgetWithinRequest, shareWithinRequest } from "./request-scope";
 
 // Session TTL + sliding-renewal window, unchanged from apps/www/lib/session.ts.
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
@@ -82,16 +83,17 @@ const microCache = new Map<string, CacheEntry>();
 // The micro-cache only holds SETTLED results, so concurrent lookups of the same
 // token all miss it and each issues its own Turso read. That happens on every
 // page whose loaders run in parallel (the feed's /api/me alongside
-// /api/posts). Collapsing them to one in-flight promise is
-// what makes parallelising those loaders cheaper than serialising them.
-const inflight = new Map<string, Promise<SessionValidationResult>>();
+// /api/posts). Those loaders share one request, so collapsing them there is
+// what makes parallelising them cheaper than serialising them. Separate
+// requests never share a pending lookup (see request-scope.ts).
+const INFLIGHT_PREFIX = "session:";
 
 function clearMicroCache(): void {
   microCache.clear();
   // A validation started before an invalidation may have already read the row,
   // so its resolved value can still be stale — but dropping it here stops the
   // NEXT caller from joining a lookup that predates the revocation.
-  inflight.clear();
+  forgetWithinRequest(INFLIGHT_PREFIX);
 }
 
 // Drop expired entries, then — if still over the cap — the oldest insertions
@@ -115,18 +117,28 @@ function pruneMicroCache(now: number): void {
 // from here.
 export { generateSessionToken, hashSessionToken };
 
-export async function createSession(
-  db: DbOrTx,
-  token: string,
-  userId: string,
-): Promise<SelectSession> {
+// Builds the insert without running it, so a caller can batch it with the
+// write that creates the user (password signup).
+export async function sessionInsert(db: DbOrTx, token: string, userId: string) {
   const session: InsertSession = {
     id: await hashSessionToken(token),
     userId,
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
-  await db.insert(sessionTable).values(session);
-  return session as SelectSession;
+  return {
+    session: session as SelectSession,
+    query: db.insert(sessionTable).values(session),
+  };
+}
+
+export async function createSession(
+  db: DbOrTx,
+  token: string,
+  userId: string,
+): Promise<SelectSession> {
+  const { session, query } = await sessionInsert(db, token, userId);
+  await query;
+  return session;
 }
 
 /**
@@ -153,18 +165,9 @@ export async function validateSessionToken(
     microCache.delete(sessionId);
   }
 
-  const pending = inflight.get(sessionId);
-  if (pending) return pending;
-
-  const lookup = loadSession(db, sessionId);
-  inflight.set(sessionId, lookup);
-  try {
-    return await lookup;
-  } finally {
-    // Only clear our own entry: clearMicroCache() may have wiped the map and a
-    // later request may already have registered a fresh lookup under this key.
-    if (inflight.get(sessionId) === lookup) inflight.delete(sessionId);
-  }
+  return shareWithinRequest(`${INFLIGHT_PREFIX}${sessionId}`, () =>
+    loadSession(db, sessionId),
+  );
 }
 
 async function loadSession(
@@ -173,7 +176,7 @@ async function loadSession(
 ): Promise<SessionValidationResult> {
   // Every authed request starts here, so one dropped Turso response would
   // otherwise fail the whole request. Only the read is retried; the expiry
-  // delete and renewal below are writes.
+  // delete and renewal below are writes, logged and skipped when they fail.
   const [row] = await retryTransientRead(() =>
     db
       .select({ session: sessionColumns, user: sessionUserColumns })
@@ -190,7 +193,13 @@ async function loadSession(
   const { session, user } = row;
 
   if (Date.now() >= session.expiresAt) {
-    await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
+    try {
+      await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
+    } catch (error) {
+      // Housekeeping only: the session is rejected either way, and the
+      // cleanup cron or the next request removes the row.
+      console.error("[session] expired session delete failed", error);
+    }
     return { session: null, user: null };
   }
 
@@ -200,11 +209,17 @@ async function loadSession(
   }
 
   if (Date.now() >= session.expiresAt - SESSION_RENEW_THRESHOLD_MS) {
-    session.expiresAt = Date.now() + SESSION_TTL_MS;
-    await db
-      .update(sessionTable)
-      .set({ expiresAt: session.expiresAt })
-      .where(eq(sessionTable.id, sessionId));
+    const renewedExpiresAt = Date.now() + SESSION_TTL_MS;
+    try {
+      await db
+        .update(sessionTable)
+        .set({ expiresAt: renewedExpiresAt })
+        .where(eq(sessionTable.id, sessionId));
+      session.expiresAt = renewedExpiresAt;
+    } catch (error) {
+      // The session is still valid; a later request retries the renewal.
+      console.error("[session] session renewal failed", error);
+    }
   }
 
   // Cache positive results ONLY: a negative result must never be served from

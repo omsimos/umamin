@@ -104,10 +104,10 @@ export async function sendStreakReminders(
   const vapid = vapidFromEnv(env);
   if (!vapid) return;
 
-  const { users, devices, capped, failures, firstFailure } =
+  const { users, devices, capped, deadlineHit, failures, firstFailure } =
     await sendStreakPushes(getDb(env), vapid, kind, scheduledTime);
   console.log(
-    `[cron] streak ${kind} push: ${users} users, ${devices} devices, ${failures} failed${capped ? " (capped)" : ""}`,
+    `[cron] streak ${kind} push: ${users} users, ${devices} devices, ${failures} failed${capped ? " (capped)" : ""}${deadlineHit ? " (deadline)" : ""}`,
   );
   // One report per run, not per device: a VAPID problem fails every send.
   if (failures > 0) {
@@ -117,6 +117,11 @@ export async function sendStreakReminders(
   }
   if (capped) {
     captureServerException(env, defer, new Error("streak push capped"), {
+      properties: { kind, devices },
+    });
+  }
+  if (deadlineHit) {
+    captureServerException(env, defer, new Error("streak push deadline"), {
       properties: { kind, devices },
     });
   }

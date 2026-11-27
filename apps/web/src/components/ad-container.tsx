@@ -1,5 +1,6 @@
 import { cn } from "@umamin/ui/lib/utils";
 import { useEffect, useRef, useState } from "react";
+import { onAdsenseReady } from "@/components/adsense-loader";
 import {
   ADS_ENABLED,
   type AdPlacement,
@@ -86,23 +87,53 @@ const AdContainer = ({ placement, className }: Props) => {
     }
 
     const adElement = adRef.current;
-    if (
-      !adElement ||
-      pushedRef.current ||
-      adElement.hasAttribute("data-adsbygoogle-status")
-    ) {
-      return;
-    }
+    if (!adElement || pushedRef.current) return;
 
-    // One push per <ins>, never retried: a push that throws has usually
-    // already claimed or failed this slot, and re-pushing only makes AdSense
-    // throw "All 'ins' elements already have ads" on every attempt.
-    pushedRef.current = true;
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (err) {
-      captureException(err, { source: "ads" });
-    }
+    let resizeObserver: ResizeObserver | undefined;
+
+    const push = () => {
+      if (
+        pushedRef.current ||
+        !adElement.isConnected ||
+        adElement.hasAttribute("data-adsbygoogle-status")
+      ) {
+        return;
+      }
+
+      // One push per <ins>, never retried: a push that throws has usually
+      // already claimed or failed this slot, and re-pushing only throws again.
+      pushedRef.current = true;
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (err) {
+        captureException(err, { source: "ads" });
+      }
+    };
+
+    // AdSense sizes the unit from the slot's width and throws "No slot size
+    // for availableWidth=0" when the box is hidden or not laid out yet.
+    const pushOnceLaidOut = () => {
+      if (adElement.offsetWidth > 0) {
+        push();
+        return;
+      }
+      resizeObserver = new ResizeObserver(() => {
+        if (adElement.offsetWidth === 0) return;
+        resizeObserver?.disconnect();
+        push();
+      });
+      resizeObserver.observe(adElement);
+    };
+
+    // Waits for the script instead of queueing: a queued push can outlive its
+    // <ins> (a navigation before the idle-time load), and AdSense throws "All
+    // 'ins' elements ... already have ads" for every push it can't place.
+    const cancelReady = onAdsenseReady(pushOnceLaidOut);
+
+    return () => {
+      cancelReady();
+      resizeObserver?.disconnect();
+    };
   }, [config, shouldInitialize]);
 
   // Second guard behind ClientOnlyAdContainer's, after the hooks so their order

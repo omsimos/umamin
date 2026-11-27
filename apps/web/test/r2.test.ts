@@ -143,3 +143,64 @@ describe("claimStagedAvatar", () => {
     );
   });
 });
+
+describe("claimStagedImages", () => {
+  const fetchMock = vi.fn<(req: Request) => Promise<Response>>();
+  const requests = () => fetchMock.mock.calls.map(([req]) => req);
+  const images = [
+    { key: "staging/u1/a.jpg", width: 10, height: 10 },
+    { key: "staging/u1/b.jpg", width: 10, height: 10 },
+  ];
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    // Zero backoff so a retry loop costs no wall time in the test.
+    vi.spyOn(Math, "random").mockReturnValue(0);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  // Each retry adds exponential backoff; ten of them held a post save for
+  // close to a minute while R2 returned errors.
+  it("gives up on an R2 error after one retry", async () => {
+    fetchMock.mockImplementation(
+      async () => new Response(null, { status: 503 }),
+    );
+    const r2 = createR2(env());
+
+    expect(await r2?.claimStagedImages("u1", images.slice(0, 1))).toBeNull();
+    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(2);
+  });
+
+  it("removes copied images when another image's copy throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchMock.mockImplementation(async (req) => {
+      if (req.method === "PUT") {
+        if (req.headers.get("x-amz-copy-source")?.endsWith("/b.jpg")) {
+          throw new TypeError("network connection lost");
+        }
+        return new Response(null, { status: 200 });
+      }
+      if (req.method === "DELETE") return new Response(null, { status: 204 });
+      return rangedHead(JPEG_MAGIC, 5000);
+    });
+    const r2 = createR2(env());
+
+    expect(await r2?.claimStagedImages("u1", images)).toBeNull();
+
+    const copied = requests().find(
+      (req) =>
+        req.method === "PUT" &&
+        req.headers.get("x-amz-copy-source")?.endsWith("/a.jpg"),
+    );
+    expect(copied).toBeDefined();
+    const deleted = requests()
+      .filter((req) => req.method === "DELETE")
+      .map((req) => req.url);
+    expect(deleted).toContain(copied?.url);
+  });
+});

@@ -4,7 +4,7 @@ import TermsOfService from "@/markdown/terms.mdx";
 
 const title = "Terms of Service | Umamin";
 const description =
-  "Understand the terms and conditions for using Umamin, an open-source platform for sending and receiving encrypted anonymous messages.";
+  "Understand the terms and conditions for using Umamin, a Filipino social media built around anonymity.";
 
 export const Route = createFileRoute("/_public/terms")({
   head: () => pageSeo({ title, description, path: "/terms" }),

@@ -74,7 +74,9 @@ export function ReplyDialog(props: Props) {
     },
     onError: (err) => {
       console.error(err);
-      toast.error("Couldn't send reply.");
+      toast.error(
+        err instanceof ExpectedError ? err.message : "Couldn't send reply.",
+      );
     },
   });
 

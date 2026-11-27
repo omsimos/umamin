@@ -1,6 +1,7 @@
 import { postTable } from "@umamin/db/schema/post";
 import { desc } from "drizzle-orm";
 import type { Db } from "./db";
+import { retryTransientRead } from "./db-retry";
 import { getHotScore, isHotEligible } from "./hot-score";
 
 // Hot-feed ranking, ported from apps/www's Redis zset to a single Workers KV
@@ -53,8 +54,8 @@ function parseRedisHotCursor(cursor: string | null | undefined) {
 
 /**
  * A page of ranked post ids from the KV list. Returns null (→ caller's DB
- * fallback) when KV is unbound, the list is shorter than `minRankedItems`, or
- * the cursor offset is past the end. A trailing page shorter than `pageSize`
+ * fallback) when KV is unbound or the read fails, the list is shorter than
+ * `minRankedItems`, or the cursor offset is past the end. A trailing page shorter than `pageSize`
  * is served with `nextCursor: null` (the old apps/www contract dropped it).
  * `nextCursor` is `rh.<nextOffset>` when a full page + 1 was available, else
  * null.
@@ -69,10 +70,19 @@ export async function getRedisHotPostIdsPage(
     return null;
   }
 
-  const ranked = await kv.get<string[]>(HOT_FEED_KEY, {
-    type: "json",
-    cacheTtl: HOT_FEED_KV_TTL_SECONDS,
-  });
+  let ranked: string[] | null;
+  try {
+    ranked = await kv.get<string[]>(HOT_FEED_KEY, {
+      type: "json",
+      cacheTtl: HOT_FEED_KV_TTL_SECONDS,
+    });
+  } catch (error) {
+    console.error("[feed-rank] hot list KV read failed", error);
+    // Only page 1 can fall back to the database. A later page has an offset
+    // into this list, and null would read as a cacheable end of feed.
+    if (cursor) throw error;
+    return null;
+  }
 
   if (!ranked) {
     return null;
@@ -111,11 +121,13 @@ export async function recomputeHotFeed(
     return;
   }
 
-  const posts = await db
-    .select(hotRankColumns)
-    .from(postTable)
-    .orderBy(desc(postTable.createdAt), desc(postTable.id))
-    .limit(HOT_FEED_RECOMPUTE_SCAN);
+  const posts = await retryTransientRead(() =>
+    db
+      .select(hotRankColumns)
+      .from(postTable)
+      .orderBy(desc(postTable.createdAt), desc(postTable.id))
+      .limit(HOT_FEED_RECOMPUTE_SCAN),
+  );
 
   const ids = posts
     .filter((post) => isHotEligible(post, enforce))

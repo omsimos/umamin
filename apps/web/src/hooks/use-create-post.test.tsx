@@ -105,4 +105,85 @@ describe("useCreatePost", () => {
 
     expect(queryClient.getQueryState(followingKey)?.status).toBe("error");
   });
+
+  // A one-item page with no cursor would be served as the whole feed by the
+  // loader and never paged, since the feeds don't refetch on mount.
+  it("doesn't turn a feed that never loaded into a one-post feed", async () => {
+    const queryClient = new QueryClient();
+    await queryClient.prefetchQuery({
+      queryKey: feedKey,
+      queryFn: () => Promise.reject(new Error("offline")),
+      retry: false,
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    vi.mocked(createPostAction).mockResolvedValue({
+      post: { id: "new-post", images: null },
+    } as never);
+    const { result } = renderHook(() => useCreatePost(user), { wrapper });
+
+    await act(async () => {
+      await result.current.submitPost({ content: "hi" });
+    });
+
+    expect(queryClient.getQueryData(feedKey)).toBeUndefined();
+  });
+
+  it("lets a feed's first load finish when a post is sent meanwhile", async () => {
+    const queryClient = new QueryClient();
+    const firstLoad = deferred<InfiniteData<FeedResponse>>();
+    const loading = queryClient.fetchQuery({
+      queryKey: feedKey,
+      queryFn: () => firstLoad.promise,
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    vi.mocked(createPostAction).mockResolvedValue({
+      post: { id: "new-post", images: null },
+    } as never);
+    const { result } = renderHook(() => useCreatePost(user), { wrapper });
+
+    await act(async () => {
+      await result.current.submitPost({ content: "hi" });
+    });
+    const loaded = {
+      pages: [{ data: [], nextCursor: null }],
+      pageParams: [null],
+    } as unknown as InfiniteData<FeedResponse>;
+    firstLoad.resolve(loaded);
+
+    await expect(loading).resolves.toBe(loaded);
+    expect(queryClient.getQueryData(feedKey)).toBe(loaded);
+  });
+
+  it("adds the post to a feed that finished loading while it was sending", async () => {
+    const queryClient = new QueryClient();
+    const sending = deferred<unknown>();
+    vi.mocked(createPostAction).mockReturnValue(sending.promise as never);
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useCreatePost(user), { wrapper });
+
+    let submitted!: Promise<unknown>;
+    await act(async () => {
+      submitted = result.current.submitPost({ content: "hi" });
+    });
+    // The feed's cached read arrives now and predates the post.
+    queryClient.setQueryData<InfiniteData<FeedResponse>>(feedKey, {
+      pages: [{ data: [], nextCursor: null }],
+      pageParams: [null],
+    } as unknown as InfiniteData<FeedResponse>);
+    await act(async () => {
+      sending.resolve({ post: { id: "new-post", images: null } });
+      await submitted;
+    });
+
+    const ids = queryClient
+      .getQueryData<InfiniteData<FeedResponse>>(feedKey)
+      ?.pages.flatMap((page) => page.data.map((item) => item.post.id));
+    expect(ids).toEqual(["new-post"]);
+  });
 });

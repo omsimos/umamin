@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "../src/server-lib/db";
+import { runInRequestScope } from "../src/server-lib/request-scope";
 import {
   __clearSessionCache,
   __MICRO_CACHE_MAX_ENTRIES,
@@ -67,7 +68,7 @@ describe("session core (real libSQL)", () => {
   // The micro-cache only holds settled results, so concurrent validations of
   // the same token used to each issue their own Turso read. Route loaders that
   // run in parallel (the feed) hit exactly that case.
-  it("collapses concurrent validations of one token into a single query", async () => {
+  it("collapses concurrent validations of one token within a request", async () => {
     await seedUser(db, "user1");
     const token = generateSessionToken();
     await createSession(db, token, "user1");
@@ -81,9 +82,11 @@ describe("session core (real libSQL)", () => {
       },
     }) as Db;
 
-    const results = await Promise.all(
-      Array.from({ length: 5 }, () =>
-        validateSessionToken(instrumented, token),
+    const results = await runInRequestScope(() =>
+      Promise.all(
+        Array.from({ length: 5 }, () =>
+          validateSessionToken(instrumented, token),
+        ),
       ),
     );
 
@@ -189,6 +192,56 @@ describe("session core (real libSQL)", () => {
       .where(eq(sessionTable.id, id));
     expect(row.expiresAt).toBeGreaterThan(soon);
     expect(row.expiresAt).toBeGreaterThan(Date.now() + TTL_MS - 5000);
+  });
+
+  // The renewal and expiry writes are idempotent housekeeping; a dropped Turso
+  // response on them must not fail a request whose lookup already succeeded.
+  function failSecondExecute() {
+    const client = (db as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    return vi
+      .spyOn(client, "execute")
+      .mockImplementationOnce(execute)
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+  }
+
+  it("keeps the session when the renewal write fails", async () => {
+    await seedUser(db, "user4");
+    const token = generateSessionToken();
+    const id = await hashSessionToken(token);
+    const soon = Date.now() + 1000 * 60 * 60 * 24 * 10;
+    await db
+      .insert(sessionTable)
+      .values({ id, userId: "user4", expiresAt: soon });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const spy = failSecondExecute();
+
+    const result = await validateSessionToken(db, token);
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(result.session?.userId).toBe("user4");
+    expect(result.session?.expiresAt).toBe(soon);
+    error.mockRestore();
+  });
+
+  it("signs out an expired session when its delete fails", async () => {
+    await seedUser(db, "user2");
+    const token = generateSessionToken();
+    const id = await hashSessionToken(token);
+    await db
+      .insert(sessionTable)
+      .values({ id, userId: "user2", expiresAt: Date.now() - 1000 });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const spy = failSecondExecute();
+
+    await expect(validateSessionToken(db, token)).resolves.toEqual({
+      session: null,
+      user: null,
+    });
+    expect(spy).toHaveBeenCalledTimes(2);
+    error.mockRestore();
   });
 
   it("invalidateSession removes the row", async () => {

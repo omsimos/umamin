@@ -4,6 +4,7 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { toStreakDay, toStreakMonth } from "../lib/streak";
 import type { Db } from "./db";
+import { retryTransientRead } from "./db-retry";
 import {
   deliverPush,
   type PushDevice,
@@ -23,7 +24,14 @@ export type StreakPushKind = "ending" | "restore";
 // are batched into one per run, so 4,000 devices stay under the limit with
 // room to spare.
 export const MAX_DEVICES_PER_RUN = 4000;
-const SEND_CONCURRENCY = 25;
+// Workers keep six outgoing connections open at a time and queue the rest.
+// A queued send's 5 s timeout already runs while it waits, so a wider pool
+// would only turn queueing into timeouts. Six users, each with a device or
+// two, keeps the connections busy without that.
+const SEND_CONCURRENCY = 6;
+// A cron invocation gets 15 minutes of wall time. A run killed at the limit
+// never logs or reports, so stop starting sends well before it.
+export const SEND_DEADLINE_MS = 10 * 60 * 1000;
 
 export function streakPushKindForHour(utcHour: number): StreakPushKind | null {
   if (utcHour === 12) return "ending";
@@ -82,6 +90,8 @@ export type StreakPushResult = {
   users: number;
   devices: number;
   capped: boolean;
+  // Stopped at the deadline; users and devices count only what was sent.
+  deadlineHit: boolean;
   failures: number;
   firstFailure: unknown;
 };
@@ -93,17 +103,14 @@ export async function sendStreakPushes(
   now = Date.now(),
   pivot = nanoid(),
   maxDevices = MAX_DEVICES_PER_RUN,
+  deadlineMs = SEND_DEADLINE_MS,
 ): Promise<StreakPushResult> {
+  const deadline = Date.now() + deadlineMs;
   const today = toStreakDay(now);
   const month = toStreakMonth(now);
 
-  const rows = await streakPushQuery(
-    db,
-    kind,
-    today,
-    month,
-    pivot,
-    maxDevices + 1,
+  const rows = await retryTransientRead(() =>
+    streakPushQuery(db, kind, today, month, pivot, maxDevices + 1),
   );
 
   // Cut at a whole user so nobody gets the push on only some devices: past
@@ -134,30 +141,46 @@ export async function sendStreakPushes(
   };
 
   const users = [...byUser.entries()];
-  for (let i = 0; i < users.length; i += SEND_CONCURRENCY) {
-    await Promise.all(
-      users.slice(i, i + SEND_CONCURRENCY).map(([userId, { streak, subs }]) =>
-        deliverPush(
-          db,
-          userId,
-          subs,
-          {
-            title: streakPushTitle(kind, streak),
-            url: "/notes",
-            // One per user per day per kind on the device.
-            tag: `streak-${kind}:${today}`,
-          },
-          vapid,
-          report,
-        ).catch((err: unknown) => report(err, "send failed")),
-      ),
-    );
-  }
+  let next = 0;
+  let sentUsers = 0;
+  let sentDevices = 0;
+  let deadlineHit = false;
+  // A pool rather than fixed batches, so one slow send holds only its worker.
+  await Promise.all(
+    Array.from(
+      { length: Math.min(SEND_CONCURRENCY, users.length) },
+      async () => {
+        while (next < users.length) {
+          if (Date.now() >= deadline) {
+            deadlineHit = true;
+            return;
+          }
+          const [userId, { streak, subs }] = users[next++];
+          sentUsers += 1;
+          sentDevices += subs.length;
+          await deliverPush(
+            db,
+            userId,
+            subs,
+            {
+              title: streakPushTitle(kind, streak),
+              url: "/notes",
+              // One per user per day per kind on the device.
+              tag: `streak-${kind}:${today}`,
+            },
+            vapid,
+            report,
+          ).catch((err: unknown) => report(err, "send failed"));
+        }
+      },
+    ),
+  );
 
   return {
-    users: byUser.size,
-    devices: kept.length,
+    users: sentUsers,
+    devices: sentDevices,
     capped,
+    deadlineHit,
     failures,
     firstFailure,
   };

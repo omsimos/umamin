@@ -11,6 +11,7 @@ vi.mock("../src/server-lib/posthog", () => ({
   captureServerException: vi.fn(),
 }));
 
+import { type Client, LibsqlError } from "@libsql/client";
 import { dmPurgeTable } from "@umamin/db/schema/dm";
 import { drainDmPurge } from "../src/server-lib/dm/lifecycle";
 import type { AppEnv } from "../src/server-lib/env";
@@ -64,5 +65,18 @@ describe("drainDmPurge", () => {
 
     expect(purged).toEqual(["dm:v1:c:d"]);
     expect(await queued()).toEqual([]);
+  });
+
+  it("survives one transient gateway error on the queue read", async () => {
+    const client = (testDb as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    vi.spyOn(client, "execute")
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+
+    expect(await drainDmPurge(env)).toBe(2);
+    expect(await queued()).toEqual(["c:d"]);
   });
 });

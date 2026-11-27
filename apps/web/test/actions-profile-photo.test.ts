@@ -7,11 +7,21 @@ vi.mock("../src/server-lib/argon2", () => ({
   verify: async () => false,
 }));
 
+// Real R2 factory by default (no credentials, so it returns null); a test can
+// hand back a fake bucket client.
+const { createR2 } = vi.hoisted(() => ({ createR2: vi.fn() }));
+vi.mock("../src/server-lib/r2", async (importActual) => {
+  const actual = await importActual<typeof import("../src/server-lib/r2")>();
+  createR2.mockImplementation(actual.createR2);
+  return { ...actual, createR2 };
+});
+
 import { userTable } from "@umamin/db/schema/user";
 import { eq } from "drizzle-orm";
 import type { Db } from "../src/server-lib/db";
 import { authed, buildApp, call, callJson } from "./helpers/actions";
 import { makeTestDb } from "./helpers/db";
+import { commitThenFail, failTransaction } from "./helpers/flaky-db";
 
 const GOOGLE_PHOTO = "https://lh3.googleusercontent.com/a/abc123";
 
@@ -20,6 +30,13 @@ async function seedUser(db: Db, imageUrl: string | null) {
     .insert(userTable)
     .values({ id: "user_1", username: "alice", imageUrl });
 }
+
+const bannerUrlOf = (db: Db) =>
+  db
+    .select({ bannerImageUrl: userTable.bannerImageUrl })
+    .from(userTable)
+    .where(eq(userTable.id, "user_1"))
+    .then(([row]) => row?.bannerImageUrl);
 
 const imageUrlOf = (db: Db) =>
   db
@@ -89,4 +106,82 @@ describe("profile photo actions (real libSQL)", () => {
       expect(await imageUrlOf(db)).toBeNull();
     },
   );
+
+  describe("a new photo or banner when the write errors", () => {
+    const CDN = "https://cdn.test";
+    const OLD_AVATAR = `${CDN}/avatars/user_1/old.webp`;
+    const OLD_BANNER = `${CDN}/banners/user_1/old.webp`;
+    const NEW_AVATAR = `${CDN}/avatars/user_1/new.webp`;
+    const NEW_BANNER = `${CDN}/banners/user_1/new.webp`;
+
+    const fakeR2 = () => ({
+      claimStagedAvatar: vi.fn(async () => "avatars/user_1/new.webp"),
+      claimStagedBanner: vi.fn(async () => "banners/user_1/new.webp"),
+      deleteR2Avatar: vi.fn(async () => {}),
+      deleteR2Banner: vi.fn(async () => {}),
+    });
+
+    beforeEach(async () => {
+      await seedUser(db, OLD_AVATAR);
+      await db
+        .update(userTable)
+        .set({ bannerImageUrl: OLD_BANNER })
+        .where(eq(userTable.id, "user_1"));
+    });
+
+    const save = (target: Db, name: string) =>
+      call(
+        buildApp(target, authed("user_1")),
+        name,
+        { key: "staging/user_1/x.webp" },
+        { R2_PUBLIC_URL: CDN },
+      );
+
+    it("keeps a photo that was saved before the error", async () => {
+      const r2 = fakeR2();
+      createR2.mockReturnValueOnce(r2);
+
+      const res = await save(commitThenFail(db), "updateProfilePhotoAction");
+
+      expect(res.status).toBe(500);
+      expect(await imageUrlOf(db)).toBe(NEW_AVATAR);
+      expect(r2.deleteR2Avatar).not.toHaveBeenCalledWith(NEW_AVATAR);
+    });
+
+    it("keeps a banner that was saved before the error", async () => {
+      const r2 = fakeR2();
+      createR2.mockReturnValueOnce(r2);
+
+      const res = await save(commitThenFail(db), "updateProfileBannerAction");
+
+      expect(res.status).toBe(500);
+      expect(await bannerUrlOf(db)).toBe(NEW_BANNER);
+      expect(r2.deleteR2Banner).not.toHaveBeenCalledWith(NEW_BANNER);
+    });
+
+    it("keeps the new objects when the profile can't be read back", async () => {
+      const r2 = fakeR2();
+      createR2.mockReturnValueOnce(r2).mockReturnValueOnce(r2);
+      const flaky = () => commitThenFail(db, { failReadsAfter: true });
+
+      await save(flaky(), "updateProfilePhotoAction");
+      await save(flaky(), "updateProfileBannerAction");
+
+      expect(r2.deleteR2Avatar).not.toHaveBeenCalledWith(NEW_AVATAR);
+      expect(r2.deleteR2Banner).not.toHaveBeenCalledWith(NEW_BANNER);
+    });
+
+    it("deletes the new objects when nothing was saved", async () => {
+      const r2 = fakeR2();
+      createR2.mockReturnValueOnce(r2).mockReturnValueOnce(r2);
+
+      await save(failTransaction(db), "updateProfilePhotoAction");
+      await save(failTransaction(db), "updateProfileBannerAction");
+
+      expect(await imageUrlOf(db)).toBe(OLD_AVATAR);
+      expect(await bannerUrlOf(db)).toBe(OLD_BANNER);
+      expect(r2.deleteR2Avatar).toHaveBeenCalledWith(NEW_AVATAR);
+      expect(r2.deleteR2Banner).toHaveBeenCalledWith(NEW_BANNER);
+    });
+  });
 });

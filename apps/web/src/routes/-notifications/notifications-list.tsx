@@ -9,7 +9,7 @@ import { Button } from "@umamin/ui/components/button";
 import { AlertCircleIcon, BellOffIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { RefetchErrorAlert } from "@/components/refetch-error-alert";
-import { callAction } from "@/lib/api";
+import { actionError, callAction } from "@/lib/api";
 import {
   infiniteQueryDefaults,
   PRIVATE_STALE_TIME,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/query";
 import { fetchNotificationsPage } from "@/lib/query-fetchers";
 import type { NotificationsResponse } from "@/lib/types";
+import { useRefreshWhenStale } from "../-shared/use-refresh-when-stale";
 import { NotificationCard } from "./notification-card";
 import { NotificationListSkeleton } from "./notification-skeleton";
 
@@ -47,6 +48,8 @@ export function NotificationsList() {
     ...infiniteQueryDefaults,
   });
 
+  useRefreshWhenStale(queryKeys.notifications());
+
   // Visiting the page "reads" notifications: advance the server watermark
   // through the newest rendered item, then refresh the bell badge.
   const newest = data?.pages[0]?.notifications[0];
@@ -61,19 +64,39 @@ export function NotificationsList() {
   }
   const lastSeen = visitLastSeenRef.current;
 
+  const markedRef = useRef<number | null>(null);
+
   useEffect(() => {
-    if (seenThroughMs === null) {
+    if (seenThroughMs === null || seenThroughMs === markedRef.current) {
       return;
     }
+    // useRefreshWhenStale's effect runs before this one and may have just
+    // started a refresh. Marking the old newest item wouldn't move the server
+    // watermark, so the badge would stay lit; wait for the fetch to settle,
+    // which flips isFetching and re-runs this. Read from the cache because
+    // this render's isFetching predates that refresh.
+    if (
+      isFetching ||
+      queryClient.getQueryState(queryKeys.notifications())?.fetchStatus ===
+        "fetching"
+    ) {
+      return;
+    }
+    markedRef.current = seenThroughMs;
 
     markNotificationsSeenAction({ seenThrough: seenThroughMs })
-      .then(() => {
+      .then((res) => {
+        // The server watermark didn't move, so the rows are still unseen.
+        if (actionError(res)) {
+          markedRef.current = null;
+          return;
+        }
         queryClient.invalidateQueries({
           queryKey: queryKeys.notificationBadge(),
         });
-        // Advance the cached watermark too — the list itself isn't refetched
-        // on remount, so without this a revisit within gcTime re-lights rows
-        // this visit already showed as new.
+        // Advance the cached watermark too — a revisit inside the stale window
+        // reuses this cache, so without this it re-lights rows this visit
+        // already showed as new.
         queryClient.setQueryData<InfiniteData<NotificationsResponse>>(
           queryKeys.notifications(),
           (current) =>
@@ -85,8 +108,10 @@ export function NotificationsList() {
             },
         );
       })
-      .catch(() => {});
-  }, [seenThroughMs, queryClient]);
+      .catch(() => {
+        markedRef.current = null;
+      });
+  }, [seenThroughMs, isFetching, queryClient]);
 
   if (error && !data) {
     return (

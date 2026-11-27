@@ -38,8 +38,22 @@ export function Uma({
         strokeWidth={5}
         {...ink}
       />
-      <ellipse cx="50" cy="56" rx="3.4" ry="4.4" fill="var(--uma-ink)" />
-      <ellipse cx="72" cy="56" rx="3.4" ry="4.4" fill="var(--uma-ink)" />
+      <ellipse
+        className="uma-eye"
+        cx="50"
+        cy="56"
+        rx="3.4"
+        ry="4.4"
+        fill="var(--uma-ink)"
+      />
+      <ellipse
+        className="uma-eye"
+        cx="72"
+        cy="56"
+        rx="3.4"
+        ry="4.4"
+        fill="var(--uma-ink)"
+      />
       {mood === "serious" ? (
         <path d="M57 66.5h8" strokeWidth={2.4} {...ink} />
       ) : (

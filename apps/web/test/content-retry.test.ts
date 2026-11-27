@@ -7,6 +7,7 @@ vi.mock("../src/server-lib/content-classifier", () => ({
   classifyContentWithOutcome,
 }));
 
+import { type Client, LibsqlError } from "@libsql/client";
 import { noteTable } from "@umamin/db/schema/note";
 import {
   pollOptionTable,
@@ -14,7 +15,7 @@ import {
   postTable,
 } from "@umamin/db/schema/post";
 import { userTable } from "@umamin/db/schema/user";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { retryUnclassifiedContent } from "../src/server-lib/content-retry";
 import type { Db } from "../src/server-lib/db";
 import type { AppEnv } from "../src/server-lib/env";
@@ -384,5 +385,44 @@ describe("retryUnclassifiedContent (real libSQL)", () => {
     const result = await retryUnclassifiedContent(db, env);
 
     expect(result).toEqual({ attempted: 2, classified: 0, backlog: 2 });
+  });
+
+  it("keeps going when one row's write fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    await db.insert(postTable).values([
+      { id: "bad", content: "one", authorId: "a", createdAt: minutesAgo(30) },
+      { id: "ok1", content: "two", authorId: "a", createdAt: minutesAgo(20) },
+      { id: "ok2", content: "three", authorId: "a", createdAt: minutesAgo(10) },
+    ]);
+    await db.run(
+      sql.raw(
+        "CREATE TRIGGER fail_bad BEFORE UPDATE ON postTable WHEN OLD.id = 'bad' BEGIN SELECT RAISE(ABORT, 'boom'); END",
+      ),
+    );
+
+    const result = await retryUnclassifiedContent(db, env);
+
+    expect(result).toEqual({ attempted: 3, classified: 2, backlog: 1 });
+    error.mockRestore();
+  });
+
+  it("survives one transient gateway error on the candidate read", async () => {
+    await db.insert(postTable).values({
+      id: "p1",
+      content: "missed",
+      authorId: "a",
+      createdAt: minutesAgo(10),
+    });
+    const client = (db as unknown as { $client: Client }).$client;
+    const execute = client.execute.bind(client);
+    vi.spyOn(client, "execute")
+      .mockRejectedValueOnce(
+        new LibsqlError("Server returned HTTP status 502", "SERVER_ERROR"),
+      )
+      .mockImplementation(execute);
+
+    const result = await retryUnclassifiedContent(db, env);
+
+    expect(result).toEqual({ attempted: 1, classified: 1, backlog: 0 });
   });
 });

@@ -18,6 +18,43 @@ any that are empty.
 - **Deprecated** — features marked for removal.
 - **Removed** — features removed.
 
+## [7.27.0] - 2026-11-27
+
+### Changed
+
+- Umamin is now introduced as a Filipino social media built around anonymity, on the home page, the about page, link previews and the installed app.
+- Headings use a new display typeface, Allo.
+- The home page opens with a wall of example posts, notes and polls, and Uma now talks you through the drama filter demo. Claiming your link moved to the bottom of the page.
+
+### Fixed
+
+- Your inbox, sent messages, notifications and group invites refresh when you come back to them or reopen the app, so a new message shows up after you tap its notification.
+- The notification badge clears once you've seen your notifications, and stays lit if marking them seen didn't go through.
+- A reply that arrives while its thread is open is marked read.
+- Reacting to a note no longer moves it to the top of Notes or resets its time.
+- The unread number on a chat no longer counts your own messages.
+- Scrolling loads more posts again after a pull to refresh or after you post while the next page is loading.
+- Deleting a post from its own page takes you back instead of leaving the deleted post on screen.
+- A reply you typed on one post no longer follows you to the next post you open, and a comment that fails to send stays in the box.
+- The Hot feed still loads when its ranking cache is unavailable, and no longer skips a post between pages.
+- Signing in, loading pages and posting keep working through a short outage in rate limiting or session renewal.
+- Posting with images fails within a few seconds when image storage is down instead of hanging for close to a minute.
+- Voting on a poll or following an account that was just deleted shows a clear message instead of an error.
+- The reply dialog shows the reason a reply was rejected.
+- The push notification switch no longer stays on "Checking notification status…" in browsers that block the app's background worker.
+- Profile share images use the heading typeface on the first export.
+- Moderators can load more of the review queue after clearing a page, and see an error with a retry when the blocked IP list fails to load.
+- Pages and actions no longer fail at random under load.
+- A comment you just posted stays after a reload, and a comment you just deleted stays gone.
+- Sending a comment while offline keeps what you typed and tells you to send it again once you're back online.
+- A post's images and a new profile photo or banner are kept when the save succeeds but the confirmation is lost on the way back.
+- Following, commenting on or quoting someone who blocks you at the same moment no longer goes through.
+- An open chat lets you send again as soon as you and the other person follow each other again.
+- Signing up no longer leaves a taken username behind when the account couldn't finish being created.
+- A browser holding an ended session is signed out cleanly instead of keeping the old cookie.
+- Following someone from a follower list no longer brings back an old follower count on the profile.
+- Streak reminders keep going out when one push service is slow.
+
 ## [7.26.0] - 2026-11-16
 
 ### Added
@@ -1386,6 +1423,7 @@ Turso query cost, and a set of audit-driven correctness and security fixes.
 - Stopped logging raw errors that could contain usernames or token internals.
 - Added a daily cron that prunes expired sessions.
 
+[7.27.0]: https://github.com/omsimos/umamin/compare/v7.26.0...v7.27.0
 [7.26.0]: https://github.com/omsimos/umamin/compare/v7.25.0...v7.26.0
 [7.25.0]: https://github.com/omsimos/umamin/compare/v7.24.0...v7.25.0
 [7.24.0]: https://github.com/omsimos/umamin/compare/v7.23.0...v7.24.0

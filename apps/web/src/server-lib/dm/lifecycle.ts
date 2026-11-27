@@ -3,6 +3,7 @@ import { asc, eq, inArray, or } from "drizzle-orm";
 import { dmPair, dmRoomName } from "../../lib/dm/pair";
 import type { Db } from "../db";
 import { getDb } from "../db";
+import { retryTransientRead } from "../db-retry";
 import type { AppEnv } from "../env";
 import { captureServerException } from "../posthog";
 
@@ -31,6 +32,23 @@ export async function severDm(
   } catch (err) {
     captureServerException(env, undefined, err, {
       properties: { where: "dm-sever", kind },
+    });
+  }
+}
+
+/** The pair follow each other again: open screens that went read-only can
+ *  send again. Best effort, like severDm: a reconnect restores access too. */
+export async function restoreDm(
+  env: AppEnv,
+  a: string,
+  b: string,
+): Promise<void> {
+  if (!env.DM_ROOM) return;
+  try {
+    await roomStub(env, dmPair(a, b).threadId).restore();
+  } catch (err) {
+    captureServerException(env, undefined, err, {
+      properties: { where: "dm-restore" },
     });
   }
 }
@@ -82,11 +100,13 @@ export async function revokeDmSockets(
  *  queued for the next run. */
 export async function drainDmPurge(env: AppEnv): Promise<number> {
   const db = getDb(env);
-  const rows = await db
-    .select({ threadId: dmPurgeTable.threadId })
-    .from(dmPurgeTable)
-    .orderBy(asc(dmPurgeTable.createdAt))
-    .limit(PURGE_BATCH);
+  const rows = await retryTransientRead(() =>
+    db
+      .select({ threadId: dmPurgeTable.threadId })
+      .from(dmPurgeTable)
+      .orderBy(asc(dmPurgeTable.createdAt))
+      .limit(PURGE_BATCH),
+  );
   const results = await Promise.allSettled(
     rows.map((r) => roomStub(env, r.threadId).purge()),
   );
