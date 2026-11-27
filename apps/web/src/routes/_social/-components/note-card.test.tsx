@@ -390,6 +390,6 @@ describe("NoteCard streak", () => {
         user: { ...author, streak: 6, streakDay: toStreakDay() - 2 },
       }),
     );
-    expect(screen.queryByText(/note streak/)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/-day streak/)).not.toBeInTheDocument();
   });
 });
